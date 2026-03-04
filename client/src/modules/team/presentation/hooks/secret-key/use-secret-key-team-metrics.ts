@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import useSecretKeyUseCases from './use-secret-key-use-cases';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import usePollingFetch from '@/shared/presentation/hooks/use-polling-fetch';
 import type { TeamUsageMetrics } from '@/modules/team/domain/entities';
 
 const POLL_INTERVAL = 60_000;
@@ -8,33 +9,19 @@ const POLL_INTERVAL = 60_000;
 const useSecretKeyTeamMetrics = (days: number = 30) => {
     const { secretKeyRepository } = useSecretKeyUseCases();
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
-    const [metrics, setMetrics] = useState<TeamUsageMetrics | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    const fetchMetrics = useCallback(async () => {
-        if (!selectedTeam?._id) return;
-        try {
-            const data = await secretKeyRepository.getTeamMetrics(selectedTeam._id, { days });
-            setMetrics(data);
-        } catch {
-            setMetrics(null);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [secretKeyRepository, selectedTeam?._id, days]);
+    const fetcher = useCallback(
+        () => secretKeyRepository.getTeamMetrics(selectedTeam!._id, { days }),
+        [secretKeyRepository, selectedTeam?._id, days]
+    );
 
-    useEffect(() => {
-        setIsLoading(true);
-        fetchMetrics();
+    const { data: metrics, isLoading, error, refetch } = usePollingFetch<TeamUsageMetrics>(
+        fetcher,
+        POLL_INTERVAL,
+        !!selectedTeam?._id
+    );
 
-        intervalRef.current = setInterval(fetchMetrics, POLL_INTERVAL);
-        return () => {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-        };
-    }, [fetchMetrics]);
-
-    return { metrics, isLoading, refetch: fetchMetrics };
+    return { metrics, isLoading, error, refetch };
 };
 
 export default useSecretKeyTeamMetrics;

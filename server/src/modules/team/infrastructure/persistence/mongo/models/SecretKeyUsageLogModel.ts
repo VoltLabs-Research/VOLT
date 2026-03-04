@@ -3,6 +3,8 @@ import { SecretKeyUsageLogProps } from '@modules/team/domain/entities/SecretKeyU
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 
+const USAGE_LOG_TTL_SECONDS = 90 * 24 * 60 * 60;
+
 type SecretKeyUsageLogRelations = 'secretKey' | 'team';
 
 export interface SecretKeyUsageLogDocument extends Persistable<SecretKeyUsageLogProps, SecretKeyUsageLogRelations>, Document {}
@@ -48,7 +50,7 @@ const SecretKeyUsageLogSchema: Schema<SecretKeyUsageLogDocument> = new Schema({
 SecretKeyUsageLogSchema.index({ team: 1, createdAt: -1 });
 SecretKeyUsageLogSchema.index({ secretKey: 1, createdAt: -1 });
 SecretKeyUsageLogSchema.index({ team: 1, secretKey: 1, createdAt: -1 });
-SecretKeyUsageLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7776000 });
+SecretKeyUsageLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: USAGE_LOG_TTL_SECONDS });
 
 const SecretKeyUsageLogModel: Model<SecretKeyUsageLogDocument> = mongoose.model<SecretKeyUsageLogDocument>('SecretKeyUsageLog', SecretKeyUsageLogSchema);
 

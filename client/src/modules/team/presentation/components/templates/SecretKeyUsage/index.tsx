@@ -23,6 +23,8 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
 import useSecretKeyUsage from '@/modules/team/presentation/hooks/secret-key/use-secret-key-usage';
+import { CHART_COLORS, createTooltipRenderer } from '@/modules/team/presentation/utilities/chart-helpers';
+import '../SecretKeyShared.css';
 import './SecretKeyUsage.css';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -47,6 +49,19 @@ const getStatusColorGroup = (code: number): string => {
     if (code >= 300 && code < 400) return '3xx';
     if (code >= 400 && code < 500) return '4xx';
     return '5xx';
+};
+
+const renderAreaTooltip = createTooltipRenderer('date', 'Requests', CHART_COLORS.requests);
+const renderBarTooltip = createTooltipRenderer('endpoint', 'Requests', CHART_COLORS.endpoints);
+
+const renderPieTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ value: string | number; payload: Record<string, string | number> }> }) => {
+    if (!active || !payload?.length) return null;
+    return (
+        <ChartTooltip
+            title={`Status ${payload[0].payload.statusCode}`}
+            items={[{ label: 'Count', value: payload[0].value }]}
+        />
+    );
 };
 
 const SecretKeyUsage = () => {
@@ -84,62 +99,26 @@ const SecretKeyUsage = () => {
     }, [usage?.key]);
 
     const handleBack = () => {
-        navigate('/dashboard/secret-keys');
-    };
-
-    const renderAreaTooltip = ({ active, payload }: any) => {
-        if (!active || !payload?.length) return null;
-        return (
-            <ChartTooltip
-                title={payload[0].payload.date}
-                items={[
-                    { label: 'Requests', value: payload[0].value, color: '#0062FF' }
-                ]}
-            />
-        );
-    };
-
-    const renderBarTooltip = ({ active, payload }: any) => {
-        if (!active || !payload?.length) return null;
-        return (
-            <ChartTooltip
-                title={payload[0].payload.endpoint}
-                items={[
-                    { label: 'Requests', value: payload[0].value, color: 'var(--accent-green)' }
-                ]}
-            />
-        );
-    };
-
-    const renderPieTooltip = ({ active, payload }: any) => {
-        if (!active || !payload?.length) return null;
-        return (
-            <ChartTooltip
-                title={`Status ${payload[0].payload.statusCode}`}
-                items={[
-                    { label: 'Count', value: payload[0].value }
-                ]}
-            />
-        );
+        navigate(-1);
     };
 
     if (isLoading) {
         return (
-            <Container className='secret-key-usage-page vh-max color-primary'>
-                <Container className='secret-key-usage-main d-flex column gap-2 w-max'>
+            <Container className='secret-key-page vh-max color-primary'>
+                <Container className='secret-key-page-main d-flex column gap-2 w-max'>
                     <Container className='d-flex items-center gap-1'>
                         <Skeleton variant='circular' width={24} height={24} />
                         <Skeleton variant='text' width={300} height={32} />
                     </Container>
-                    <Container className='secret-key-usage-cards gap-1'>
+                    <Container className='secret-key-page-cards gap-1'>
                         {[...Array(4)].map((_, i) => (
-                            <Container key={i} className='secret-key-usage-card radius-lg transition-normal'>
+                            <Container key={i} className='secret-key-page-card radius-lg transition-normal'>
                                 <Skeleton variant='text' width={100} height={16} />
                                 <Skeleton variant='rectangular' width={80} height={40} sx={{ borderRadius: '4px', marginTop: '0.5rem' }} />
                             </Container>
                         ))}
                     </Container>
-                    <Container className='secret-key-usage-charts'>
+                    <Container className='secret-key-page-charts'>
                         {[...Array(4)].map((_, i) => (
                             <Skeleton key={i} variant='rectangular' width='100%' height={300} sx={{ borderRadius: '8px' }} />
                         ))}
@@ -151,8 +130,8 @@ const SecretKeyUsage = () => {
 
     if (!usage) {
         return (
-            <Container className='secret-key-usage-page vh-max color-primary'>
-                <Container className='secret-key-usage-main d-flex column gap-2 w-max'>
+            <Container className='secret-key-page vh-max color-primary'>
+                <Container className='secret-key-page-main d-flex column gap-2 w-max'>
                     <Container className='d-flex items-center gap-1'>
                         <ArrowLeft
                             className='secret-key-usage-back color-muted'
@@ -169,9 +148,35 @@ const SecretKeyUsage = () => {
         );
     }
 
+    const cards = [
+        {
+            icon: Hash,
+            title: 'Total Requests',
+            value: usage.stats.totalRequests.toLocaleString()
+        },
+        {
+            icon: Zap,
+            title: 'Avg Response Time',
+            value: `${usage.stats.avgResponseTime.toFixed(0)}ms`
+        },
+        {
+            icon: CheckCircle,
+            title: 'Success Rate',
+            value: `${usage.stats.successRate.toFixed(1)}%`
+        },
+        {
+            icon: Clock,
+            title: 'Last Used',
+            value: usage.key.lastUsedAt
+                ? formatDistanceToNow(new Date(usage.key.lastUsedAt), { addSuffix: true })
+                : 'Never',
+            smallText: true
+        }
+    ];
+
     return (
-        <Container className='secret-key-usage-page vh-max color-primary'>
-            <Container className='secret-key-usage-main d-flex column gap-2 w-max'>
+        <Container className='secret-key-page vh-max color-primary'>
+            <Container className='secret-key-page-main d-flex column gap-2 w-max'>
                 <Container className='d-flex column gap-05'>
                     <Container className='d-flex items-center gap-1'>
                         <ArrowLeft
@@ -186,51 +191,21 @@ const SecretKeyUsage = () => {
                     </Paragraph>
                 </Container>
 
-                <Container className='secret-key-usage-cards gap-1'>
-                    <Container className='secret-key-usage-card radius-lg transition-normal glass-bg'>
-                        <Container className='d-flex items-center gap-05 mb-075'>
-                            <Hash className='color-muted-foreground' style={{ width: 16, height: 16 }} />
-                            <span className='font-size-2 color-secondary'>Total Requests</span>
+                <Container className='secret-key-page-cards gap-1'>
+                    {cards.map((card) => (
+                        <Container key={card.title} className='secret-key-page-card radius-lg transition-normal glass-bg'>
+                            <Container className='d-flex items-center gap-05 mb-075'>
+                                <card.icon className='color-muted-foreground' style={{ width: 16, height: 16 }} />
+                                <span className='font-size-2 color-secondary'>{card.title}</span>
+                            </Container>
+                            <span className={`secret-key-page-card-value ${card.smallText ? 'font-size-4' : 'font-size-6'} font-weight-6 color-primary`}>
+                                {card.value}
+                            </span>
                         </Container>
-                        <span className='secret-key-usage-card-value font-size-6 font-weight-6 color-primary'>
-                            {usage.stats.totalRequests.toLocaleString()}
-                        </span>
-                    </Container>
-
-                    <Container className='secret-key-usage-card radius-lg transition-normal glass-bg'>
-                        <Container className='d-flex items-center gap-05 mb-075'>
-                            <Zap className='color-muted-foreground' style={{ width: 16, height: 16 }} />
-                            <span className='font-size-2 color-secondary'>Avg Response Time</span>
-                        </Container>
-                        <span className='secret-key-usage-card-value font-size-6 font-weight-6 color-primary'>
-                            {usage.stats.avgResponseTime.toFixed(0)}ms
-                        </span>
-                    </Container>
-
-                    <Container className='secret-key-usage-card radius-lg transition-normal glass-bg'>
-                        <Container className='d-flex items-center gap-05 mb-075'>
-                            <CheckCircle className='color-muted-foreground' style={{ width: 16, height: 16 }} />
-                            <span className='font-size-2 color-secondary'>Success Rate</span>
-                        </Container>
-                        <span className='secret-key-usage-card-value font-size-6 font-weight-6 color-primary'>
-                            {usage.stats.successRate.toFixed(1)}%
-                        </span>
-                    </Container>
-
-                    <Container className='secret-key-usage-card radius-lg transition-normal glass-bg'>
-                        <Container className='d-flex items-center gap-05 mb-075'>
-                            <Clock className='color-muted-foreground' style={{ width: 16, height: 16 }} />
-                            <span className='font-size-2 color-secondary'>Last Used</span>
-                        </Container>
-                        <span className='secret-key-usage-card-value font-size-4 font-weight-6 color-primary'>
-                            {usage.key.lastUsedAt
-                                ? formatDistanceToNow(new Date(usage.key.lastUsedAt), { addSuffix: true })
-                                : 'Never'}
-                        </span>
-                    </Container>
+                    ))}
                 </Container>
 
-                <Container className='secret-key-usage-charts'>
+                <Container className='secret-key-page-charts'>
                     <ChartContainer
                         icon={Activity}
                         title='Hourly Requests'
@@ -244,8 +219,8 @@ const SecretKeyUsage = () => {
                             <AreaChart data={hourlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id='colorHourlyReqs' x1='0' y1='0' x2='0' y2='1'>
-                                        <stop offset='5%' stopColor='#0062FF' stopOpacity={0.3} />
-                                        <stop offset='95%' stopColor='#0062FF' stopOpacity={0} />
+                                        <stop offset='5%' stopColor={CHART_COLORS.requests} stopOpacity={0.3} />
+                                        <stop offset='95%' stopColor={CHART_COLORS.requests} stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />
@@ -264,7 +239,7 @@ const SecretKeyUsage = () => {
                                 <Area
                                     type='monotone'
                                     dataKey='count'
-                                    stroke='#0062FF'
+                                    stroke={CHART_COLORS.requests}
                                     strokeWidth={2}
                                     fillOpacity={1}
                                     fill='url(#colorHourlyReqs)'
@@ -302,7 +277,7 @@ const SecretKeyUsage = () => {
                                 <Tooltip content={renderBarTooltip} />
                                 <Bar
                                     dataKey='count'
-                                    fill='var(--accent-green)'
+                                    fill={CHART_COLORS.endpoints}
                                     radius={[0, 4, 4, 0]}
                                     isAnimationActive={false}
                                 />
@@ -352,7 +327,7 @@ const SecretKeyUsage = () => {
                         ]}
                     >
                         <Container style={{ overflowX: 'auto', maxHeight: 250 }}>
-                            <table className='secret-key-usage-table'>
+                            <table className='secret-key-page-table'>
                                 <thead>
                                     <tr>
                                         <th>Method</th>

@@ -41,12 +41,10 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
                     teamId: input.teamId,
                     trajectoryId: input.trajectoryId,
                     userId: input.userId,
-                    notebook: notebook
-                        ? {
-                            notebookPath: notebook.props.notebookPath,
-                            content: notebook.props.content
-                        }
-                        : undefined
+                    notebook: {
+                        notebookPath: notebook.props.notebookPath,
+                        content: notebook.props.content
+                    }
                 });
 
                 return {
@@ -82,38 +80,66 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
     private async resolveNotebookForSession(input: {
         teamId: string;
         trajectoryId: string;
+        userId?: string;
         notebookId?: string;
-    }): Promise<ScriptingNotebook | null> {
-        if (!input.notebookId) {
-            return null;
+    }): Promise<ScriptingNotebook> {
+        if (input.notebookId) {
+            const notebook = await this.scriptingNotebookRepository.findOne({
+                _id: input.notebookId,
+                team: input.teamId
+            } as any);
+
+            if (!notebook) {
+                throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
+            }
+
+            const currentTrajectoryIds = Array.isArray(notebook.props.trajectories)
+                ? notebook.props.trajectories.map((trajectory) => String(trajectory))
+                : [];
+            const nextTrajectoryIds = currentTrajectoryIds.includes(input.trajectoryId)
+                ? currentTrajectoryIds
+                : Array.from(new Set([...currentTrajectoryIds, input.trajectoryId]));
+            const now = new Date();
+
+            const touched = await this.scriptingNotebookRepository.updateById(notebook.id, {
+                lastOpenedAt: now,
+                updatedAt: now,
+                ...(nextTrajectoryIds.length !== currentTrajectoryIds.length
+                    ? { trajectories: nextTrajectoryIds }
+                    : {})
+            } as any);
+
+            return touched || notebook;
         }
 
-        const notebook = await this.scriptingNotebookRepository.findOne({
-            _id: input.notebookId,
-            team: input.teamId
+        const existing = await this.scriptingNotebookRepository.findOne({
+            team: input.teamId,
+            trajectories: input.trajectoryId
         } as any);
 
-        if (!notebook) {
-            throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
+        if (existing) {
+            const now = new Date();
+            const touched = await this.scriptingNotebookRepository.updateById(existing.id, {
+                lastOpenedAt: now,
+                updatedAt: now
+            } as any);
+            return touched || existing;
         }
 
-        const currentTrajectoryIds = Array.isArray(notebook.props.trajectories)
-            ? notebook.props.trajectories.map((trajectory) => String(trajectory))
-            : [];
-        const nextTrajectoryIds = currentTrajectoryIds.includes(input.trajectoryId)
-            ? currentTrajectoryIds
-            : Array.from(new Set([...currentTrajectoryIds, input.trajectoryId]));
-        const now = new Date();
+        const notebookPath = `scripting-notebook-${input.trajectoryId}.ipynb`;
+        const templateRaw = this.jupyterService.resolveDefaultNotebookTemplateContent({
+            trajectoryId: input.trajectoryId
+        });
 
-        const touched = await this.scriptingNotebookRepository.updateById(notebook.id, {
-            lastOpenedAt: now,
-            updatedAt: now,
-            ...(nextTrajectoryIds.length !== currentTrajectoryIds.length
-                ? { trajectories: nextTrajectoryIds }
-                : {})
+        return this.scriptingNotebookRepository.create({
+            team: input.teamId,
+            title: 'Scripting Notebook',
+            notebookPath,
+            trajectories: [input.trajectoryId],
+            createdBy: input.userId,
+            content: JSON.parse(templateRaw),
+            lastOpenedAt: new Date()
         } as any);
-
-        return touched || notebook;
     }
 
     private mapError(error: unknown): Result<CreateScriptingJupyterSessionOutputDTO, ApplicationError> {

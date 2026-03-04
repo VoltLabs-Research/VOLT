@@ -6,6 +6,8 @@ import Button from '@/shared/presentation/components/Button';
 import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
 import { useCurrentUser } from '@/modules/auth/presentation/hooks/use-current-user';
 import UserMenuPopover from '@/modules/auth/presentation/components/molecules/UserMenuPopover';
+import { openModal } from '@/shared/presentation/components/Modal';
+import { SCREENSHOT_MODAL_ID } from '../../organisms/ScreenshotModal';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import useTrajectoryFilePicker from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-file-picker';
 import MenuPopover from '../../molecules/MenuPopover';
@@ -50,16 +52,7 @@ const TopToolbar = () => {
     }, []);
 
     const handleScreenshot = useCallback(() => {
-        const canvas = document.querySelector('canvas');
-        if (!canvas) {
-            sileo.warning({ title: 'No canvas found' });
-            return;
-        }
-        const link = document.createElement('a');
-        link.download = `volt-screenshot-${Date.now()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        sileo.success({ title: 'Screenshot saved' });
+        openModal(SCREENSHOT_MODAL_ID);
     }, []);
 
     const menus = buildMenus({

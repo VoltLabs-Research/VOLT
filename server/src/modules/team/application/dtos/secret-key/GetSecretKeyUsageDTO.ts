@@ -1,4 +1,4 @@
-import { KeyUsageMetrics } from '@modules/team/domain/ports/ISecretKeyUsageLogRepository';
+import { KeyUsageMetrics } from '@modules/team/application/dtos/secret-key/SecretKeyUsageTypes';
 
 export interface GetSecretKeyUsageInputDTO {
     teamId: string;
@@ -8,7 +8,7 @@ export interface GetSecretKeyUsageInputDTO {
 
 export interface GetSecretKeyUsageOutputDTO extends KeyUsageMetrics {
     key: {
-        _id: string;
+        id: string;
         name: string;
         keyPrefix: string;
         roleName: string;

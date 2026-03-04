@@ -27,7 +27,7 @@ export default class GetSecretKeyUsageUseCase
         const { teamId, secretKeyId, days = 30 } = input;
 
         if (!teamId || !secretKeyId) {
-            return Result.fail(ApplicationError.badRequest('SecretKey::ParamsRequired', 'Team ID and Secret Key ID are required'));
+            return Result.fail(ApplicationError.badRequest(ErrorCodes.SECRET_KEY_PARAMS_REQUIRED, 'Team ID and Secret Key ID are required'));
         }
 
         const secretKey = await this.secretKeyRepo.findById(secretKeyId, {
@@ -43,7 +43,7 @@ export default class GetSecretKeyUsageUseCase
 
         return Result.ok({
             key: {
-                _id: secretKey.id,
+                id: secretKey.id,
                 name: secretKey.props.name,
                 keyPrefix: secretKey.props.keyPrefix,
                 roleName: role?.name || 'Unknown',

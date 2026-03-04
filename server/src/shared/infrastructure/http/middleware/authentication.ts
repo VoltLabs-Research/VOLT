@@ -7,6 +7,7 @@ import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import type { ISecretKeyRepository } from '@modules/team/domain/ports/ISecretKeyRepository';
 import type { ISecretKeyUsageLogRepository } from '@modules/team/domain/ports/ISecretKeyUsageLogRepository';
 import jwt from 'jsonwebtoken';
+import logger from '@shared/infrastructure/logger';
 
 export interface AuthenticatedRequest extends Request {
     user?: any;
@@ -86,7 +87,9 @@ export const protect = async (
                 responseTime: Date.now() - startTime,
                 ip: req.ip || req.socket.remoteAddress || 'unknown',
                 userAgent: req.get('user-agent') || 'unknown'
-            }).catch(() => {});
+            }).catch((err) => {
+                logger.warn(err, '@authentication: failed to log secret key usage');
+            });
         });
 
         next();

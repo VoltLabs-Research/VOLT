@@ -4,24 +4,20 @@ export interface EndpointStat {
     count: number;
     avgResponseTime: number;
     successRate: number;
-}
+};
 
 export interface StatusCodeStat {
     code: number;
     count: number;
-}
+};
 
 export interface PerKeyMetric {
     secretKeyId: string;
-    name: string;
-    keyPrefix: string;
-    roleName: string;
-    isActive: boolean;
     totalRequests: number;
     successRequests: number;
     avgResponseTime: number;
-    lastRequestAt: string | null;
-}
+    lastRequestAt: Date | null;
+};
 
 export interface TeamUsageMetrics {
     overview: {
@@ -29,9 +25,6 @@ export interface TeamUsageMetrics {
         successRate: number;
         avgResponseTime: number;
     };
-    totalKeys: number;
-    activeKeys: number;
-    revokedKeys: number;
     perKey: PerKeyMetric[];
     daily: {
         labels: string[];
@@ -39,18 +32,9 @@ export interface TeamUsageMetrics {
         byKey: Record<string, number[]>;
     };
     topEndpoints: EndpointStat[];
-}
+};
 
 export interface KeyUsageMetrics {
-    key: {
-        id: string;
-        name: string;
-        keyPrefix: string;
-        roleName: string;
-        isActive: boolean;
-        createdAt: string;
-        lastUsedAt: string | null;
-    };
     stats: {
         totalRequests: number;
         requests24h: number;
@@ -75,6 +59,6 @@ export interface KeyUsageMetrics {
         statusCode: number;
         responseTime: number;
         ip: string;
-        createdAt: string;
+        createdAt: Date;
     }[];
-}
+};

@@ -102,6 +102,7 @@ export const ErrorCodes = {
     SECRET_KEY_NOT_FOUND: 'SecretKey::NotFound',
     SECRET_KEY_NAME_REQUIRED: 'SecretKey::NameRequired',
     SECRET_KEY_ROLE_REQUIRED: 'SecretKey::RoleRequired',
+    SECRET_KEY_PARAMS_REQUIRED: 'SecretKey::ParamsRequired',
 
     AI_CONVERSATION_NOT_FOUND: 'AI::Conversation::NotFound',
     AI_INTEGRATION_NOT_CONFIGURED: 'AI::Integration::NotConfigured',
