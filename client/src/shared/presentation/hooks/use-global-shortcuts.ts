@@ -1,13 +1,18 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const useGlobalShortcuts = () => {
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
-                navigate('/start');
+                if (location.pathname === '/start') {
+                    navigate('/dashboard');
+                } else {
+                    navigate('/start');
+                }
             }
         };
 
@@ -16,5 +21,5 @@ export const useGlobalShortcuts = () => {
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [navigate]);
+    }, [navigate, location.pathname]);
 };
