@@ -6,6 +6,7 @@ import { IStorageService } from '@shared/domain/ports/IStorageService';
 import pLimit from '@shared/infrastructure/utilities/p-limit';
 import readExposurePayload from '@modules/plugin/infrastructure/utilities/read-exposure-payload';
 import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import { parseSchemaAnnotations } from '@modules/plugin/infrastructure/utilities/schema-annotations';
 
 @injectable()
 export default class ExposureHandler implements INodeHandler{
@@ -67,8 +68,15 @@ export default class ExposureHandler implements INodeHandler{
 
     private analyzeRequirements(nodeId: string, context: ExecutionContext){
         const exportNode = context.workflow.findDescendantByType(nodeId, WorkflowNodeType.Export);
-        const visualizerNode = context.workflow.findDescendantByType(nodeId, WorkflowNodeType.Visualizers);
-        const hasListing = !!(visualizerNode?.data?.visualizers?.listing && Object.keys(visualizerNode.data.visualizers.listing).length);
+        const schemaNode = context.workflow.findDescendantByType(nodeId, WorkflowNodeType.Schema);
+
+        let hasListing = false;
+        if (schemaNode?.data?.schema?.definition) {
+            const annotations = parseSchemaAnnotations(
+                schemaNode.data.schema.definition as Record<string, unknown>
+            );
+            hasListing = annotations.listingFields.length > 0;
+        }
 
         return {
             needsData: !!exportNode,

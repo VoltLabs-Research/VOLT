@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/ITrajectoryDumpStorageService';
-import { IAtomPropertiesService } from '@modules/trajectory/domain/port/IAtomPropertiesService';
+import { IAtomPropertiesService, ExposureAtomConfig } from '@modules/trajectory/domain/port/IAtomPropertiesService';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/ports/Result';
@@ -29,8 +29,14 @@ export interface AtomRecord {
 }
 
 interface ExposureFetchResult {
+    exposureName: string;
     properties: string[];
     data: unknown;
+}
+
+interface PropertyRenameMap {
+    original: string;
+    display: string;
 }
 
 @injectable()
@@ -70,7 +76,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInput, PaginatedResult<
             const atomCount = parsed.ids?.length || parsed.positions.length / 3;
 
             let perAtomData: Map<number, Record<string, number>> | null = null;
-            let perAtomProperties: string[] = [];
+            let displayProperties: string[] = [];
 
             const isDefaultAnalysis = !analysisId || analysisId === 'default';
             let exposureIdsToFetch: string[] = [];
@@ -101,30 +107,42 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInput, PaginatedResult<
                     );
 
                     return {
+                        exposureName: config.exposureName,
                         properties: config.perAtomProperties,
                         data: modifierData
                     };
                 });
 
                 const results = await Promise.all(fetchPromises);
+                const validResults = results.filter((r): r is ExposureFetchResult => r !== null);
+                const renameMap = this.buildPropertyRenameMap(validResults);
+                displayProperties = renameMap.map((entry) => entry.display);
 
-                for (const fetchResult of results) {
-                    if (!fetchResult) continue;
-                    
-                    for (const prop of fetchResult.properties) {
-                        if (!perAtomProperties.includes(prop)) {
-                            perAtomProperties.push(prop);
-                        }
-                    }
+                for (const fetchResult of validResults) {
+                    if (!Array.isArray(fetchResult.data)) continue;
 
-                    if (Array.isArray(fetchResult.data)) {
-                        for (const item of fetchResult.data) {
-                            if (item?.id !== undefined) {
-                                const existing = perAtomData.get(item.id) ?? { id: item.id };
-                                Object.assign(existing, item);
-                                perAtomData.set(item.id, existing);
+                    const exposureRenames = renameMap.filter((entry) =>
+                        fetchResult.properties.includes(entry.original.includes(': ')
+                            ? entry.original.split(': ').slice(1).join(': ')
+                            : entry.original)
+                    );
+
+                    for (const item of fetchResult.data) {
+                        if (item?.id === undefined) continue;
+
+                        const existing = perAtomData.get(item.id) ?? { id: item.id };
+                        for (const rename of exposureRenames) {
+                            const rawProp = rename.original === rename.display
+                                ? rename.original
+                                : rename.original;
+                            const sourceProp = fetchResult.properties.find((p) =>
+                                rename.display === p || rename.display === `${fetchResult.exposureName}: ${p}`
+                            );
+                            if (sourceProp && item[sourceProp] !== undefined) {
+                                existing[rename.display] = item[sourceProp];
                             }
                         }
+                        perAtomData.set(item.id, existing);
                     }
                 }
             }
@@ -144,7 +162,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInput, PaginatedResult<
 
                 if (perAtomData?.has(id)) {
                     const pluginData = perAtomData.get(id)!;
-                    for (const prop of perAtomProperties) {
+                    for (const prop of displayProperties) {
                         if (pluginData[prop] !== undefined) {
                             atom[prop] = pluginData[prop];
                         }
@@ -162,7 +180,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInput, PaginatedResult<
                 limit: limitNum,
                 total: totalAtoms,
                 totalPages,
-                _meta: { properties: perAtomProperties }
+                _meta: { properties: displayProperties }
             });
         } catch (error: unknown) {
             if (error instanceof RuntimeError) {
@@ -170,5 +188,34 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInput, PaginatedResult<
             }
             return Result.fail(new ApplicationError('INTERNAL_SERVER_ERROR', 'Internal server error', 500));
         }
+    }
+
+    private buildPropertyRenameMap(results: ExposureFetchResult[]): PropertyRenameMap[] {
+        const propertyOccurrences = new Map<string, number>();
+
+        for (const fetchResult of results) {
+            for (const prop of fetchResult.properties) {
+                propertyOccurrences.set(prop, (propertyOccurrences.get(prop) || 0) + 1);
+            }
+        }
+
+        const renameMap: PropertyRenameMap[] = [];
+
+        for (const fetchResult of results) {
+            for (const prop of fetchResult.properties) {
+                const occurrenceCount = propertyOccurrences.get(prop) || 1;
+                const needsPrefix = occurrenceCount > 1 && fetchResult.exposureName;
+                const displayName = needsPrefix
+                    ? `${fetchResult.exposureName}: ${prop}`
+                    : prop;
+
+                renameMap.push({
+                    original: prop,
+                    display: displayName
+                });
+            }
+        }
+
+        return renameMap;
     }
 }

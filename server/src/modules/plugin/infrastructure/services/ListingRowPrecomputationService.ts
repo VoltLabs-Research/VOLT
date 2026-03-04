@@ -6,6 +6,7 @@ import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowR
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 import { resolveRow, Column } from '@modules/plugin/infrastructure/utilities/listing-resolver';
+import { parseSchemaAnnotations, ListingField } from '@modules/plugin/infrastructure/utilities/schema-annotations';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import logger from '@shared/infrastructure/logger';
@@ -399,16 +400,14 @@ export class ListingRowPrecomputationService {
                 const targetNode = nodes.find((node: any) => node.id === edge.target);
                 if (!targetNode) continue;
 
-                if (targetNode.type === WorkflowNodeType.Visualizers) {
-                    const listing = targetNode?.data?.visualizers?.listing;
-                    if (!listing || typeof listing !== 'object' || Object.keys(listing).length === 0) {
-                        continue;
-                    }
+                if (targetNode.type === WorkflowNodeType.Schema) {
+                    const definition = targetNode?.data?.schema?.definition;
+                    if (!definition || typeof definition !== 'object') continue;
 
-                    return Object.entries(listing).map(([path, label]) => ({
-                        path,
-                        label: String(label)
-                    }));
+                    const annotations = parseSchemaAnnotations(definition as Record<string, unknown>);
+                    if (annotations.listingFields.length === 0) continue;
+
+                    return this.buildColumnsFromAnnotations(targetNode.id, annotations.listingFields);
                 }
 
                 queue.push(targetNode.id);
@@ -416,5 +415,36 @@ export class ListingRowPrecomputationService {
         }
 
         return [];
+    }
+
+    private buildColumnsFromAnnotations(schemaNodeId: string, listingFields: ListingField[]): Column[] {
+        const columns: Column[] = [];
+
+        for (const field of listingFields) {
+            if (field.kind === 'primitive') {
+                columns.push({
+                    path: `{{ ${schemaNodeId}.definition.${field.path} }}`,
+                    label: field.label
+                });
+            }
+
+            if (field.kind === 'array' && field.labels) {
+                for (let i = 0; i < field.labels.length; i++) {
+                    columns.push({
+                        path: `{{ ${schemaNodeId}.definition.${field.path}.${i} }}`,
+                        label: `${field.label} ${field.labels[i]}`
+                    });
+                }
+            }
+
+            if (field.kind === 'object') {
+                columns.push({
+                    path: `{{ ${schemaNodeId}.definition.${field.path}.* }}`,
+                    label: 'auto'
+                });
+            }
+        }
+
+        return columns;
     }
 }

@@ -16,7 +16,7 @@ interface PluginResultsViewerProps {
 const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps) => {
     const {
         title, tabs, activeTab, setActiveTab,
-        activeExposureName, isAtomsTab, atomExposureId,
+        activeExposureName, isAtomsTab,
         trajectoryId, teamId,
         isDownloading, isEmpty, close, download
     } = usePluginResults({ pluginId, analysisId });
@@ -83,11 +83,10 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                                 compact
                             />
                         )}
-                        {isAtomsTab && atomExposureId && trajectoryId && (
+                        {isAtomsTab && trajectoryId && (
                             <PluginAtomsTable
                                 trajectoryId={trajectoryId}
                                 analysisId={analysisId}
-                                exposureId={atomExposureId}
                             />
                         )}
                     </Container>

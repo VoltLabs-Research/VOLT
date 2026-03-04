@@ -157,8 +157,6 @@ export interface IVisualizersData {
     canvas?: boolean;
     raster?: boolean;
     listingTitle?: string;
-    listing?: Record<string, string>;
-    perAtomProperties?: string[];
 };
 
 export interface IChartExportOptions {

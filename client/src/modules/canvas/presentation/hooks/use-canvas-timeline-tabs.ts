@@ -105,16 +105,16 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
         ? pluginListingExposures
         : fallbackListingExposures;
 
-    const atomExposureId = useMemo(() => {
-        if (!plugin?.exposures?.length) return undefined;
-        return plugin.exposures.find((item) => item.perAtomProperties?.length > 0)?._id;
+    const hasAtomProperties = useMemo(() => {
+        if (!plugin?.exposures?.length) return false;
+        return plugin.exposures.some((item) => item.perAtomProperties?.length > 0);
     }, [plugin?.exposures]);
 
     return {
         pluginId: resolvedPluginId,
         isPluginReady: Boolean(plugin),
         listingExposures,
-        atomExposureId
+        hasAtomProperties
     };
 };
 

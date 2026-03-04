@@ -15,7 +15,7 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { decodeMultiStreamFromFile } from '@shared/infrastructure/utilities/msgpack';
 import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/merge-chunked-value';
 import getNestedValue from '@shared/infrastructure/utilities/get-nested-value';
-import normalizePerAtomProperties from '@shared/infrastructure/utilities/normalize-per-atom-properties';
+import { parseSchemaAnnotations } from '@modules/plugin/infrastructure/utilities/schema-annotations';
 
 import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utils/record-scene-artifact';
 import logger from '@shared/infrastructure/logger';
@@ -61,8 +61,16 @@ export default class ExportHandler implements INodeHandler{
         const config = node.data.export!;
         const exposureNode = context.workflow.findAncestorByType(node.id, WorkflowNodeType.Exposure);
         if(!exposureNode) throw new Error('ExportHandler: Orphaned export node');
-        const visualizerNode = context.workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Visualizers);
-        const perAtomProperties = normalizePerAtomProperties(visualizerNode?.data?.visualizers?.perAtomProperties);
+
+        const schemaNode = context.workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Schema);
+        let perAtomProperties: string[] = [];
+        if (schemaNode?.data?.schema?.definition) {
+            const annotations = parseSchemaAnnotations(
+                schemaNode.data.schema.definition as Record<string, unknown>
+            );
+            perAtomProperties = annotations.perAtomProperties;
+        }
+
         const exposureName = typeof exposureNode.data.exposure?.name === 'string'
             ? exposureNode.data.exposure.name.trim()
             : '';

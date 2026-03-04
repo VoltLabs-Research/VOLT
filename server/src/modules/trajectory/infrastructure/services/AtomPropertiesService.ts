@@ -23,6 +23,7 @@ import {
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import Plugin from '@modules/plugin/domain/entities/Plugin';
 import Analysis from '@modules/analysis/domain/entities/Analysis';
+import { parseSchemaAnnotations } from '@modules/plugin/infrastructure/utilities/schema-annotations';
 
 @injectable()
 export default class AtomPropertiesService implements IAtomPropertiesService {
@@ -44,25 +45,20 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         const { plugin } = await this.getAnalysisAndPlugin(analysisId);
         const workflow = plugin.props.workflow;
         const props: Record<string, string[]> = {};
-        const visualizerNodes = workflow.props.nodes.filter((node: any) => node.type === WorkflowNodeType.Visualizers);
+        const exposureNodes = workflow.props.nodes.filter((node: any) => node.type === WorkflowNodeType.Exposure);
 
-        logger.debug(`[AtomPropertiesService.getModifierPerAtomProps] Found ${visualizerNodes.length} visualizer nodes`);
+        for (const exposureNode of exposureNodes) {
+            const schemaNode = workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Schema);
+            if (!schemaNode?.data?.schema?.definition) continue;
 
-        for (const visualizerNode of visualizerNodes) {
-            const perAtom = visualizerNode?.data?.visualizers?.perAtomProperties;
-            logger.debug(`[AtomPropertiesService.getModifierPerAtomProps] Visualizer ${visualizerNode.id} perAtomProperties: ${JSON.stringify(perAtom)}`);
+            const annotations = parseSchemaAnnotations(
+                schemaNode.data.schema.definition as Record<string, unknown>
+            );
 
-            if (!Array.isArray(perAtom) || perAtom.length === 0) continue;
-
-            const exposureNode = workflow.findAncestorByType(visualizerNode.id, WorkflowNodeType.Exposure);
-            logger.debug(`[AtomPropertiesService.getModifierPerAtomProps] Found ancestor exposure for visualizer ${visualizerNode.id}: ${exposureNode?.id || 'none'}`);
-
-            if (exposureNode?.id) {
-                props[String(exposureNode.id)] = perAtom;
-            }
+            if (annotations.perAtomProperties.length === 0) continue;
+            props[String(exposureNode.id)] = annotations.perAtomProperties;
         }
 
-        logger.debug(`[AtomPropertiesService.getModifierPerAtomProps] Final props: ${JSON.stringify(props)}`);
         return props;
     }
 
@@ -76,27 +72,36 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         if (!exposureNode) throw new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404);
 
         const schemaNode = workflow.findDescendantByType(String(exposureId), WorkflowNodeType.Schema);
-        const visualizerNode = workflow.findDescendantByType(String(exposureId), WorkflowNodeType.Visualizers);
-
         if (!schemaNode) throw new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404);
 
         const iterableKey: string | undefined = exposureNode?.data?.exposure?.iterable;
-        const perAtomProperties: string[] = visualizerNode?.data?.visualizers?.perAtomProperties || [];
+        const exposureName: string = typeof exposureNode?.data?.exposure?.name === 'string'
+            ? exposureNode.data.exposure.name.trim()
+            : '';
 
-        const schemaDefinition = schemaNode?.data?.schema?.definition?.data?.items;
+        let perAtomProperties: string[] = [];
         const schemaKeysMap = new Map<string, string[]>();
 
-        if (schemaDefinition && perAtomProperties.length > 0) {
-            for (const prop of perAtomProperties) {
-                const def = schemaDefinition[prop];
-                if (def?.keys && Array.isArray(def.keys)) {
-                    schemaKeysMap.set(prop, def.keys);
+        if (schemaNode?.data?.schema?.definition) {
+            const annotations = parseSchemaAnnotations(
+                schemaNode.data.schema.definition as Record<string, unknown>
+            );
+            perAtomProperties = annotations.perAtomProperties;
+
+            const schemaDefinition = schemaNode.data.schema.definition?.data?.items;
+            if (schemaDefinition && perAtomProperties.length > 0) {
+                for (const prop of perAtomProperties) {
+                    const def = schemaDefinition[prop];
+                    if (def?.keys && Array.isArray(def.keys)) {
+                        schemaKeysMap.set(prop, def.keys);
+                    }
                 }
             }
         }
 
         return {
             exposureId: String(exposureId),
+            exposureName,
             iterableKey,
             perAtomProperties,
             schemaKeysMap

@@ -5,6 +5,7 @@ import ListingRow from '@modules/plugin/domain/entities/ListingRow';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ExportType, PaginatedResult } from '@shared/domain/ports/IBaseRepository';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import { parseSchemaAnnotations, ListingField } from '@modules/plugin/infrastructure/utilities/schema-annotations';
 
 interface ListingOptions {
     teamId?: string;
@@ -285,18 +286,14 @@ export class PluginListingService {
                 const target = nodes.find((node: any) => node.id === edge.target);
                 if (!target) continue;
 
-                if (target.type === WorkflowNodeType.Visualizers) {
-                    const listing = target?.data?.visualizers?.listing;
-                    if (!listing || typeof listing !== 'object' || Object.keys(listing).length === 0) {
-                        continue;
-                    }
+                if (target.type === WorkflowNodeType.Schema) {
+                    const definition = target?.data?.schema?.definition;
+                    if (!definition || typeof definition !== 'object') continue;
 
-                    return Object.entries(listing).map(([path, label]) => ({
-                        path: String(label),
-                        label: String(label),
-                        sortable: true,
-                        sourcePath: String(path)
-                    }));
+                    const annotations = parseSchemaAnnotations(definition as Record<string, unknown>);
+                    if (annotations.listingFields.length === 0) continue;
+
+                    return this.buildColumnConfigsFromAnnotations(target.id, annotations.listingFields);
                 }
 
                 queue.push(target.id);
@@ -304,6 +301,44 @@ export class PluginListingService {
         }
 
         return [];
+    }
+
+    private buildColumnConfigsFromAnnotations(schemaNodeId: string, listingFields: ListingField[]): ColumnConfig[] {
+        const columns: ColumnConfig[] = [];
+
+        for (const field of listingFields) {
+            if (field.kind === 'primitive') {
+                columns.push({
+                    path: field.label,
+                    label: field.label,
+                    sortable: true,
+                    sourcePath: `{{ ${schemaNodeId}.definition.${field.path} }}`
+                });
+            }
+
+            if (field.kind === 'array' && field.labels) {
+                for (let i = 0; i < field.labels.length; i++) {
+                    const columnLabel = `${field.label} ${field.labels[i]}`;
+                    columns.push({
+                        path: columnLabel,
+                        label: columnLabel,
+                        sortable: true,
+                        sourcePath: `{{ ${schemaNodeId}.definition.${field.path}.${i} }}`
+                    });
+                }
+            }
+
+            if (field.kind === 'object') {
+                columns.push({
+                    path: 'auto',
+                    label: 'auto',
+                    sortable: true,
+                    sourcePath: `{{ ${schemaNodeId}.definition.${field.path}.* }}`
+                });
+            }
+        }
+
+        return columns;
     }
 
     private isAutoWildcardColumn(column: ColumnConfig): boolean {
