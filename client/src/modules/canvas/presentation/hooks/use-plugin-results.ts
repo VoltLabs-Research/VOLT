@@ -29,18 +29,18 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
 
     const listingExposures = useMemo(() => getListingRelevantExposures(exposures), [exposures]);
 
-    const atomExposureId = useMemo(
-        () => exposures.find((e: any) => e.perAtomProperties?.length)?._id,
+    const hasAtomProperties = useMemo(
+        () => exposures.some((e: any) => e.perAtomProperties?.length > 0),
         [exposures]
     );
 
     const tabs = useMemo(() => {
         const result = listingExposures.map((e: any) => e.name as string);
-        if (atomExposureId) result.push('Atoms');
+        if (hasAtomProperties) result.push('Atoms');
         return result;
-    }, [listingExposures, atomExposureId]);
+    }, [listingExposures, hasAtomProperties]);
 
-    const isAtomsTab = Boolean(atomExposureId) && activeTab === listingExposures.length;
+    const isAtomsTab = hasAtomProperties && activeTab === listingExposures.length;
 
     const activeExposureName = !isAtomsTab && activeTab < listingExposures.length
         ? listingExposures[activeTab].name
@@ -80,7 +80,7 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
         setActiveTab,
         activeExposureName,
         isAtomsTab,
-        atomExposureId,
+        hasAtomProperties,
         trajectoryId,
         teamId,
         isDownloading,

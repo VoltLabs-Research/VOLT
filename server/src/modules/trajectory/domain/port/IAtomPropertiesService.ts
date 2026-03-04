@@ -11,6 +11,7 @@ export interface FilterResult {
 
 export interface ExposureAtomConfig {
     exposureId: string;
+    exposureName: string;
     iterableKey?: string;
     perAtomProperties: string[];
     schemaKeysMap: Map<string, string[]>;

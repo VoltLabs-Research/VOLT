@@ -33,7 +33,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
     const [activeTab, setActiveTab] = useState<string>('timeline');
     const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();
     const selectedTeamId = useTeamStore((state) => state.selectedTeam?._id);
-    const { pluginId, isPluginReady, listingExposures, atomExposureId } = useCanvasTimelineTabs({ trajectory, analysisId });
+    const { pluginId, isPluginReady, listingExposures } = useCanvasTimelineTabs({ trajectory, analysisId });
 
     const exposureTabs = useMemo<TimelineTabOption[]>(() => {
         return listingExposures.map((exposure) => ({
@@ -93,20 +93,6 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
             setActiveTab('timeline');
         }
     }, [analysisId, timelineExposureId, setTimelineExposureId]);
-
-    const resolvedExposureId = useMemo(() => {
-        if (atomExposureId) return atomExposureId;
-        if (!trajectory?.analysis?.length) return undefined;
-        for (const analysis of trajectory.analysis) {
-            if ((analysis as any).exposures?.length) {
-                const exposure = (analysis as any).exposures.find(
-                    (e: any) => e.perAtomProperties?.length > 0
-                );
-                if (exposure) return exposure._id;
-            }
-        }
-        return undefined;
-    }, [trajectory?.analysis, atomExposureId]);
 
     const activeExposureId = useMemo(() => {
         return activeTab.startsWith('exposure:')
@@ -321,7 +307,6 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
                     <PluginAtomsTable
                         trajectoryId={trajectory._id}
                         analysisId={analysisId}
-                        exposureId={resolvedExposureId}
                     />
                 </Container>
             )}

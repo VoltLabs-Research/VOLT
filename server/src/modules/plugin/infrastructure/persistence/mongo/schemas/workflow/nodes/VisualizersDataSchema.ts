@@ -12,12 +12,5 @@ export const VisualizersDataSchema = new Schema({
     listingTitle: {
         type: String,
         default: ''
-    },
-    listing: {
-        type: Schema.Types.Mixed
-    },
-    perAtomProperties: {
-        type: [String],
-        default: []
     }
 }, { _id: false });

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine } from 'react-icons/ri';
+import { RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine, RiCheckLine, RiDraftLine, RiForbidLine } from 'react-icons/ri';
 import { usePluginUseCases, useDeletePlugin, useExportPlugin, useImportPlugin } from '../../../hooks';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
@@ -11,6 +11,8 @@ import Button from '@/shared/presentation/components/Button';
 import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 import type { GetPluginsInputDTO } from '@/modules/plugin/application/dtos';
 import type { Plugin } from '../../../../domain/entities';
+import { PluginStatus } from '../../../../domain/entities/Workflow';
+import type { MenuOption } from '@/shared/presentation/components/DocumentListingTable';
 import { dateColumn } from '@/shared/presentation/utils/column-presets';
 import './PluginsListing.css';
 
@@ -23,6 +25,7 @@ const PluginsListing = () => {
 
     const selectedTeam = useSelectedTeam()!;
     const canCreate = usePermission(['plugin:create']);
+    const canUpdate = usePermission(['plugin:update']);
 
     const { clonePluginUseCase, pluginRepository } = usePluginUseCases();
     const deletePlugin = useDeletePlugin();
@@ -65,7 +68,28 @@ const PluginsListing = () => {
         }
     }, [importPlugin]);
 
-    const { getMenuOptions } = useListingActions<Plugin>({
+    const handleStatusChange = useCallback(async (plugin: Plugin, newStatus: PluginStatus) => {
+        const statusLabels: Record<PluginStatus, string> = {
+            [PluginStatus.PUBLISHED]: 'Publishing',
+            [PluginStatus.DRAFT]: 'Setting as draft',
+            [PluginStatus.DISABLED]: 'Disabling'
+        };
+        const successLabels: Record<PluginStatus, string> = {
+            [PluginStatus.PUBLISHED]: 'Plugin published',
+            [PluginStatus.DRAFT]: 'Plugin set as draft',
+            [PluginStatus.DISABLED]: 'Plugin disabled'
+        };
+        await showPromise(
+            pluginRepository.update({ id: plugin._id, status: newStatus }),
+            {
+                loading: { title: `${statusLabels[newStatus]}...` },
+                success: { title: successLabels[newStatus] },
+                error: { title: 'Failed to update plugin status' }
+            }
+        );
+    }, [pluginRepository]);
+
+    const { getMenuOptions: getBaseMenuOptions } = useListingActions<Plugin>({
         actions: {
             edit: {
                 label: 'Edit',
@@ -102,6 +126,40 @@ const PluginsListing = () => {
             }
         }
     });
+
+    const getMenuOptions = useCallback((item: Plugin, selectedItems: Plugin[]): MenuOption[] => {
+        const baseOptions = getBaseMenuOptions(item, selectedItems);
+        if(selectedItems.length > 1 || !canUpdate){
+            return baseOptions;
+        }
+
+        const statusActions: MenuOption[] = [];
+        if(item.status !== PluginStatus.PUBLISHED){
+            statusActions.push({
+                label: 'Publish',
+                icon: RiCheckLine,
+                onClick: () => handleStatusChange(item, PluginStatus.PUBLISHED)
+            });
+        }
+        if(item.status !== PluginStatus.DRAFT){
+            statusActions.push({
+                label: 'Set as Draft',
+                icon: RiDraftLine,
+                onClick: () => handleStatusChange(item, PluginStatus.DRAFT)
+            });
+        }
+        if(item.status !== PluginStatus.DISABLED){
+            statusActions.push({
+                label: 'Disable',
+                icon: RiForbidLine,
+                onClick: () => handleStatusChange(item, PluginStatus.DISABLED)
+            });
+        }
+
+        const deleteOption = baseOptions.filter((option) => option.destructive);
+        const nonDeleteOptions = baseOptions.filter((option) => !option.destructive);
+        return [...nonDeleteOptions, ...statusActions, ...deleteOption];
+    }, [getBaseMenuOptions, canUpdate, handleStatusChange]);
 
     const columns: ColumnConfig[] = useMemo(() => [
         {

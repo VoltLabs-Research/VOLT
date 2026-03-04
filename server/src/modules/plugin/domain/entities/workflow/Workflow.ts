@@ -1,6 +1,7 @@
 import { EntrypointNodeData } from './nodes/EntrypointNode';
 import { WorkflowEdge } from './WorkflowEdge';
 import { WorkflowNode, WorkflowNodeType } from './WorkflowNode';
+import { parseSchemaAnnotations, ListingField } from '@modules/plugin/infrastructure/utilities/schema-annotations';
 
 export interface WorkflowViewport{
     x: number;
@@ -110,11 +111,14 @@ export default class Workflow{
                 const target = this.props.nodes.find((node) => node.id === edge.target);
                 if(!target) continue;
 
-                if(target.type === WorkflowNodeType.Visualizers && target.data.visualizers?.listing){
-                    const listingDefinition = target.data.visualizers.listing || {};
-                    return Object
-                        .entries(listingDefinition)
-                        .map(([ path, label ]) => ({ path, label }));
+                if(target.type === WorkflowNodeType.Schema){
+                    const definition = target?.data?.schema?.definition;
+                    if(!definition || typeof definition !== 'object') continue;
+
+                    const annotations = parseSchemaAnnotations(definition as Record<string, unknown>);
+                    if(annotations.listingFields.length === 0) continue;
+
+                    return this.buildColumnDefinitions(target.id, annotations.listingFields);
                 }
 
                 queue.push(edge.target);
@@ -122,6 +126,37 @@ export default class Workflow{
         }
 
         return [];
+    }
+
+    private buildColumnDefinitions(schemaNodeId: string, listingFields: ListingField[]){
+        const columns: Array<{ path: string; label: string }> = [];
+
+        for(const field of listingFields){
+            if(field.kind === 'primitive'){
+                columns.push({
+                    path: `{{ ${schemaNodeId}.definition.${field.path} }}`,
+                    label: field.label
+                });
+            }
+
+            if(field.kind === 'array' && field.labels){
+                for(let i = 0; i < field.labels.length; i++){
+                    columns.push({
+                        path: `{{ ${schemaNodeId}.definition.${field.path}.${i} }}`,
+                        label: `${field.label} ${field.labels[i]}`
+                    });
+                }
+            }
+
+            if(field.kind === 'object'){
+                columns.push({
+                    path: `{{ ${schemaNodeId}.definition.${field.path}.* }}`,
+                    label: 'auto'
+                });
+            }
+        }
+
+        return columns;
     }
 
     /**

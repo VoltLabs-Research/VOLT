@@ -10,9 +10,7 @@ export default class VisualizersHandler implements INodeHandler {
         properties: {
             canvas: T.boolean('Whether canvas visualization is enabled'),
             raster: T.boolean('Whether raster visualization is enabled'),
-            listingTitle: T.string('Title for the listing'),
-            listing: T.object({}, 'Listing configuration'),
-            perAtomProperties: T.array(T.string(), 'Per-atom properties to visualize')
+            listingTitle: T.string('Title for the listing')
         }
     };
 
@@ -22,9 +20,7 @@ export default class VisualizersHandler implements INodeHandler {
         return {
             canvas: config.canvas ?? false,
             raster: config.raster ?? false,
-            listingTitle: config.listingTitle,
-            listing: config.listing || {},
-            perAtomProperties: config.perAtomProperties || []
+            listingTitle: config.listingTitle
         };
     }
 };

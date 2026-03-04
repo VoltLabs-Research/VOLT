@@ -186,6 +186,7 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
         && !noProviderConfigured
     );
 
+    // TODO: Use repository here.
     const streamUrl = selectedTeam?._id && conversationId
         ? `${import.meta.env.VITE_API_URL}/api/ai/conversations/${selectedTeam._id}/${conversationId}/messages/stream`
         : '/api/ai/conversations/invalid/invalid/messages/stream';
