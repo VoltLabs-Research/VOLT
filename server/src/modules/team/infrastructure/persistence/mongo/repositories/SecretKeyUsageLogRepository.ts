@@ -2,14 +2,46 @@ import mongoose from 'mongoose';
 import { injectable } from 'tsyringe';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import SecretKeyUsageLog, { SecretKeyUsageLogProps } from '@modules/team/domain/entities/SecretKeyUsageLog';
-import {
-    ISecretKeyUsageLogRepository,
-    LogRequestInput,
-    TeamUsageMetrics,
-    KeyUsageMetrics
-} from '@modules/team/domain/ports/ISecretKeyUsageLogRepository';
+import { ISecretKeyUsageLogRepository, LogRequestInput } from '@modules/team/domain/ports/ISecretKeyUsageLogRepository';
+import { TeamUsageMetrics, KeyUsageMetrics } from '@modules/team/application/dtos/secret-key/SecretKeyUsageTypes';
 import SecretKeyUsageLogModel, { SecretKeyUsageLogDocument } from '@modules/team/infrastructure/persistence/mongo/models/SecretKeyUsageLogModel';
 import secretKeyUsageLogMapper from '@modules/team/infrastructure/persistence/mongo/mappers/SecretKeyUsageLogMapper';
+
+const IS_SUCCESS_STATUS = { $and: [{ $gte: ['$statusCode', 200] }, { $lt: ['$statusCode', 300] }] };
+const COUNT_SUCCESS = { $sum: { $cond: [IS_SUCCESS_STATUS, 1, 0] } };
+
+const calcSuccessRate = (success: number, total: number): number =>
+    total > 0 ? Math.round((success / total) * 1000) / 10 : 0;
+
+const endpointPipelineStages = (limit?: number): Record<string, unknown>[] => {
+    const stages: Record<string, unknown>[] = [
+        {
+            $group: {
+                _id: { method: '$method', path: '$path' },
+                count: { $sum: 1 },
+                avgResponseTime: { $avg: '$responseTime' },
+                successCount: COUNT_SUCCESS
+            }
+        },
+        { $sort: { count: -1 } }
+    ];
+    if (limit !== undefined) {
+        stages.push({ $limit: limit });
+    }
+    stages.push({
+        $project: {
+            _id: 0,
+            method: '$_id.method',
+            path: '$_id.path',
+            count: 1,
+            avgResponseTime: { $round: ['$avgResponseTime', 0] },
+            successRate: {
+                $round: [{ $multiply: [{ $divide: ['$successCount', '$count'] }, 100] }, 1]
+            }
+        }
+    });
+    return stages;
+};
 
 @injectable()
 export default class SecretKeyUsageLogRepository
@@ -21,16 +53,7 @@ export default class SecretKeyUsageLogRepository
     }
 
     async logRequest(data: LogRequestInput): Promise<void> {
-        await this.model.create({
-            secretKey: data.secretKey,
-            team: data.team,
-            method: data.method,
-            path: data.path,
-            statusCode: data.statusCode,
-            responseTime: data.responseTime,
-            ip: data.ip,
-            userAgent: data.userAgent
-        });
+        await this.create(data as unknown as SecretKeyUsageLogProps);
     }
 
     async getTeamMetrics(teamId: string, days: number): Promise<TeamUsageMetrics> {
@@ -47,9 +70,7 @@ export default class SecretKeyUsageLogRepository
                             $group: {
                                 _id: null,
                                 totalRequests: { $sum: 1 },
-                                successRequests: {
-                                    $sum: { $cond: [{ $and: [{ $gte: ['$statusCode', 200] }, { $lt: ['$statusCode', 300] }] }, 1, 0] }
-                                },
+                                successRequests: COUNT_SUCCESS,
                                 avgResponseTime: { $avg: '$responseTime' }
                             }
                         }
@@ -59,9 +80,7 @@ export default class SecretKeyUsageLogRepository
                             $group: {
                                 _id: '$secretKey',
                                 totalRequests: { $sum: 1 },
-                                successRequests: {
-                                    $sum: { $cond: [{ $and: [{ $gte: ['$statusCode', 200] }, { $lt: ['$statusCode', 300] }] }, 1, 0] }
-                                },
+                                successRequests: COUNT_SUCCESS,
                                 avgResponseTime: { $avg: '$responseTime' },
                                 lastRequestAt: { $max: '$createdAt' }
                             }
@@ -80,40 +99,13 @@ export default class SecretKeyUsageLogRepository
                         },
                         { $sort: { '_id.date': 1 } }
                     ],
-                    topEndpoints: [
-                        {
-                            $group: {
-                                _id: { method: '$method', path: '$path' },
-                                count: { $sum: 1 },
-                                avgResponseTime: { $avg: '$responseTime' },
-                                successCount: {
-                                    $sum: { $cond: [{ $and: [{ $gte: ['$statusCode', 200] }, { $lt: ['$statusCode', 300] }] }, 1, 0] }
-                                }
-                            }
-                        },
-                        { $sort: { count: -1 } },
-                        { $limit: 10 },
-                        {
-                            $project: {
-                                _id: 0,
-                                method: '$_id.method',
-                                path: '$_id.path',
-                                count: 1,
-                                avgResponseTime: { $round: ['$avgResponseTime', 0] },
-                                successRate: {
-                                    $round: [{ $multiply: [{ $divide: ['$successCount', '$count'] }, 100] }, 1]
-                                }
-                            }
-                        }
-                    ]
+                    topEndpoints: endpointPipelineStages(10)
                 }
             }
         ]);
 
         const overview = result.overview[0] || { totalRequests: 0, successRequests: 0, avgResponseTime: 0 };
-        const successRate = overview.totalRequests > 0
-            ? Math.round((overview.successRequests / overview.totalRequests) * 1000) / 10
-            : 0;
+        const successRate = calcSuccessRate(overview.successRequests, overview.totalRequests);
 
         const dateSet = new Set<string>();
         const keyDayMap: Record<string, Record<string, number>> = {};
@@ -144,8 +136,8 @@ export default class SecretKeyUsageLogRepository
                 successRate,
                 avgResponseTime: Math.round(overview.avgResponseTime || 0)
             },
-            perKey: result.perKey.map((pk: any) => ({
-                _id: pk._id.toString(),
+            perKey: result.perKey.map((pk: Record<string, any>) => ({
+                secretKeyId: pk._id.toString(),
                 totalRequests: pk.totalRequests,
                 successRequests: pk.successRequests,
                 avgResponseTime: Math.round(pk.avgResponseTime || 0),
@@ -173,9 +165,7 @@ export default class SecretKeyUsageLogRepository
                             $group: {
                                 _id: null,
                                 totalRequests: { $sum: 1 },
-                                successRequests: {
-                                    $sum: { $cond: [{ $and: [{ $gte: ['$statusCode', 200] }, { $lt: ['$statusCode', 300] }] }, 1, 0] }
-                                },
+                                successRequests: COUNT_SUCCESS,
                                 avgResponseTime: { $avg: '$responseTime' },
                                 requests24h: {
                                     $sum: { $cond: [{ $gte: ['$createdAt', last24h] }, 1, 0] }
@@ -205,31 +195,7 @@ export default class SecretKeyUsageLogRepository
                         },
                         { $sort: { _id: 1 } }
                     ],
-                    endpoints: [
-                        {
-                            $group: {
-                                _id: { method: '$method', path: '$path' },
-                                count: { $sum: 1 },
-                                avgResponseTime: { $avg: '$responseTime' },
-                                successCount: {
-                                    $sum: { $cond: [{ $and: [{ $gte: ['$statusCode', 200] }, { $lt: ['$statusCode', 300] }] }, 1, 0] }
-                                }
-                            }
-                        },
-                        { $sort: { count: -1 } },
-                        {
-                            $project: {
-                                _id: 0,
-                                method: '$_id.method',
-                                path: '$_id.path',
-                                count: 1,
-                                avgResponseTime: { $round: ['$avgResponseTime', 0] },
-                                successRate: {
-                                    $round: [{ $multiply: [{ $divide: ['$successCount', '$count'] }, 100] }, 1]
-                                }
-                            }
-                        }
-                    ],
+                    endpoints: endpointPipelineStages(),
                     statusDistribution: [
                         {
                             $group: {
@@ -256,9 +222,7 @@ export default class SecretKeyUsageLogRepository
         ]);
 
         const ov = result.overview[0] || { totalRequests: 0, successRequests: 0, avgResponseTime: 0, requests24h: 0, requests7d: 0 };
-        const successRate = ov.totalRequests > 0
-            ? Math.round((ov.successRequests / ov.totalRequests) * 1000) / 10
-            : 0;
+        const successRate = calcSuccessRate(ov.successRequests, ov.totalRequests);
 
         const peakHourRaw = result.peakHour[0]?._id;
         const peakHour = peakHourRaw !== undefined
@@ -282,16 +246,16 @@ export default class SecretKeyUsageLogRepository
                 peakHour
             },
             hourly: {
-                labels: result.hourly.map((h: any) => h._id),
-                data: result.hourly.map((h: any) => h.count)
+                labels: result.hourly.map((h: Record<string, any>) => h._id),
+                data: result.hourly.map((h: Record<string, any>) => h.count)
             },
             daily: {
-                labels: result.daily.map((d: any) => d._id),
-                data: result.daily.map((d: any) => d.count)
+                labels: result.daily.map((d: Record<string, any>) => d._id),
+                data: result.daily.map((d: Record<string, any>) => d.count)
             },
             endpoints: result.endpoints,
             statusDistribution: result.statusDistribution,
-            recentRequests: recentDocs.map((doc: any) => ({
+            recentRequests: recentDocs.map((doc: Record<string, any>) => ({
                 method: doc.method,
                 path: doc.path,
                 statusCode: doc.statusCode,

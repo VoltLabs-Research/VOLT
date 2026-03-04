@@ -1,11 +1,11 @@
-import { TeamUsageMetrics } from '@modules/team/domain/ports/ISecretKeyUsageLogRepository';
+import { TeamUsageMetrics } from '@modules/team/application/dtos/secret-key/SecretKeyUsageTypes';
 
 export interface GetSecretKeyTeamMetricsInputDTO {
     teamId: string;
     days?: number;
 };
 
-export type GetSecretKeyTeamMetricsOutputDTO = TeamUsageMetrics & {
+export type GetSecretKeyTeamMetricsOutputDTO = Omit<TeamUsageMetrics, 'perKey'> & {
     totalKeys: number;
     activeKeys: number;
     revokedKeys: number;

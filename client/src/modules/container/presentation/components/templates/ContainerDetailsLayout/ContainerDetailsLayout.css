@@ -5,14 +5,9 @@
 
 .container-details-sidebar {
     width: 260px;
-    background: var(--color-surface-1);
+    background: var(--color-content-bg);
     border-right: 1px solid var(--color-border-soft);
     transition: width 0.3s ease;
-}
-
-.container-details-sidebar-header {
-    border-bottom: 1px solid var(--color-border-soft);
-    background: linear-gradient(to bottom, var(--color-surface-1), rgba(0, 0, 0, 0.02));
 }
 
 .container-details-icon-large {
@@ -87,9 +82,8 @@
     background: var(--accent-blue);
     color: white;
 }
-
 .container-details-content-area {
-    background: var(--color-bg);
+    background: var(--color-content-bg);
 }
 
 .container-details-pane {

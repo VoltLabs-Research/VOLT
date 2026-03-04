@@ -9,6 +9,7 @@ import DynamicEffects from '@/modules/fractal/presentation/components/molecules/
 import CameraRig from '@/modules/fractal/presentation/components/atoms/CameraRig';
 import CanvasGrid from '@/modules/fractal/presentation/components/atoms/CanvasGrid';
 import SlicePlaneHelper from '@/modules/fractal/presentation/components/atoms/SlicePlaneHelper';
+import ScreenshotCapture from '@/modules/fractal/presentation/components/atoms/ScreenshotCapture';
 import type { FractalSceneConfig } from '@/modules/fractal/presentation/types/scene-config';
 
 interface FractalScenePipelineProps {
@@ -79,6 +80,8 @@ const FractalScenePipeline = ({
             <Bvh firstHitOnly>
                 {children}
             </Bvh>
+
+            <ScreenshotCapture />
 
             <EffectComposer enableNormalPass={isDefectScene} multisampling={0} renderPriority={1}>
                 {isDefectScene && <SSAO {...config.renderConfig.SSAO} />}

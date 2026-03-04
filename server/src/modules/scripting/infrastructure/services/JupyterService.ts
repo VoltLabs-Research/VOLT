@@ -215,7 +215,7 @@ export class JupyterService{
         return this.resolveDefaultNotebookTemplateContent(context);
     }
 
-    private resolveDefaultNotebookTemplateContent(context: { trajectoryId: string }): string {
+    public resolveDefaultNotebookTemplateContent(context: { trajectoryId: string }): string {
         const serverDomain = process.env.SERVER_ENDPOINT;
         if (!serverDomain) {
             throw new RuntimeError(ErrorCodes.RESOURCE_LOAD_ERROR, 500);

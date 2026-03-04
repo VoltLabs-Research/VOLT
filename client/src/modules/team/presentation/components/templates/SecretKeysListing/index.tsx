@@ -14,6 +14,7 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import SecretKeyCreationModal, { SECRET_KEY_CREATION_MODAL_ID } from '../../organisms/SecretKeyCreationModal';
 import type { SecretKey } from '@/modules/team/domain/entities';
+import { SECRET_KEY_ROUTES } from '@/modules/team/domain/constants';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import Button from '@/shared/presentation/components/Button';
 import './SecretKeysListing.css';
@@ -87,7 +88,7 @@ const SecretKeysListing = () => {
             viewUsage: {
                 label: 'View Usage',
                 icon: RiLineChartLine,
-                handler: ({ item: key }) => navigate(`/dashboard/secret-keys/${key._id}/usage`)
+                handler: ({ item: key }) => navigate(SECRET_KEY_ROUTES.USAGE(key._id))
             },
             copy: {
                 label: 'Copy Prefix',
@@ -160,7 +161,7 @@ const SecretKeysListing = () => {
                     <Button
                         variant='ghost'
                         intent='neutral'
-                        onClick={() => navigate('/dashboard/secret-keys/metrics')}
+                        onClick={() => navigate(SECRET_KEY_ROUTES.METRICS)}
                         leftIcon={<RiBarChartLine size={18} />}
                     >
                         Metrics

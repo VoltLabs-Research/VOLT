@@ -2,6 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/ports/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ISecretKeyRepository } from '@modules/team/domain/ports/ISecretKeyRepository';
 import { ISecretKeyUsageLogRepository } from '@modules/team/domain/ports/ISecretKeyUsageLogRepository';
@@ -9,6 +10,8 @@ import {
     GetSecretKeyTeamMetricsInputDTO,
     GetSecretKeyTeamMetricsOutputDTO
 } from '@modules/team/application/dtos/secret-key/GetSecretKeyTeamMetricsDTO';
+
+const MAX_KEYS_PER_TEAM = 500;
 
 @injectable()
 export default class GetSecretKeyTeamMetricsUseCase
@@ -26,14 +29,14 @@ export default class GetSecretKeyTeamMetricsUseCase
         const { teamId, days = 30 } = input;
 
         if (!teamId) {
-            return Result.fail(ApplicationError.badRequest('Team::IdRequired', 'Team ID is required'));
+            return Result.fail(ApplicationError.badRequest(ErrorCodes.TEAM_ID_REQUIRED, 'Team ID is required'));
         }
 
         const metrics = await this.usageLogRepo.getTeamMetrics(teamId, days);
 
         const keysResult = await this.secretKeyRepo.findAll({
             filter: { team: teamId } as any,
-            limit: 1000,
+            limit: MAX_KEYS_PER_TEAM,
             populate: { path: 'role', select: ['name'] } as any
         });
 
@@ -42,13 +45,13 @@ export default class GetSecretKeyTeamMetricsUseCase
         const activeKeys = allKeys.filter(k => k.props.isActive).length;
         const revokedKeys = totalKeys - activeKeys;
 
-        const usageMap = new Map(metrics.perKey.map(pk => [pk._id, pk]));
+        const usageMap = new Map(metrics.perKey.map(pk => [pk.secretKeyId, pk]));
 
         const enrichedPerKey = allKeys.map(key => {
             const usage = usageMap.get(key.id);
             const role = key.props.role as any;
             return {
-                _id: key.id,
+                secretKeyId: key.id,
                 name: key.props.name,
                 keyPrefix: key.props.keyPrefix,
                 roleName: role?.name || 'Unknown',
