@@ -5,6 +5,7 @@ import { CHAT_TOKENS } from '@/modules/chat/infrastructure/di/tokens';
 import type IChatMessageRepository from '@/modules/chat/domain/ports/IChatMessageRepository';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
+import ApiError from '@/shared/errors/ApiError';
 
 const useMessageActions = (chatId?: string) => {
     const addMessage = useChatMessageStore((state) => state.addMessage);
@@ -27,7 +28,11 @@ const useMessageActions = (chatId?: string) => {
             
             addMessage(message);
             return message;
-        } catch {
+        } catch(error) {
+            if(ApiError.isRBACError(error)){
+                sileo.error({ title: error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to send messages' });
+                return;
+            }
             sileo.error({ title: 'Failed to send message' });
         }
     }, [chatId, addMessage, chatMessageRepository]);
@@ -40,6 +45,10 @@ const useMessageActions = (chatId?: string) => {
             addMessage(message);
             return message;
         } catch (error) {
+            if(ApiError.isRBACError(error)){
+                sileo.error({ title: error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to send files' });
+                throw error;
+            }
             sileo.error({ title: 'Failed to send file' });
             throw error;
         }

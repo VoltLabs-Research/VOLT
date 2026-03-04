@@ -74,6 +74,14 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
                 setButtonState('success');
                 setTimeout(() => setButtonState('idle'), 2500);
             }catch(error){
+                if(ApiError.isRBACError(error)){
+                    const rbacMsg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to send invitations';
+                    setErrors({ email: rbacMsg });
+                    sileo.error({ title: rbacMsg });
+                    setButtonState('error');
+                    setTimeout(() => setButtonState('idle'), 2000);
+                    return;
+                }
                 const message = error instanceof ApiError
                     ? error.getFriendlyMessage()
                     : 'An unexpected error occurred';

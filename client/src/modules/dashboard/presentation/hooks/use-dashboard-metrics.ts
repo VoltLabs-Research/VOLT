@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import useTrajectoryUseCases from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-use-cases';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type { DashboardMetrics, DashboardCard } from '@/modules/dashboard/domain/entities';
 
 const ROTATION_INTERVAL_MS = 5000;
@@ -44,6 +45,7 @@ const buildCard = (
 
 export const useDashboardMetrics = (teamId?: string) => {
     const { trajectoryRepository } = useTrajectoryUseCases();
+    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
 
     const [data, setData] = useState<DashboardMetrics | null>(null);
     const [loading, setLoading] = useState(true);
@@ -58,8 +60,10 @@ export const useDashboardMetrics = (teamId?: string) => {
             .then((metrics: DashboardMetrics) => {
                 setData(metrics);
             })
-            .catch((err: Error) => {
-                setError(err.message || 'Failed to load metrics');
+            .catch((err: unknown) => {
+                if(checkRBACError(err)) return;
+                const message = err instanceof Error ? err.message : 'Failed to load metrics';
+                setError(message);
             })
             .finally(() => {
                 setLoading(false);
@@ -93,7 +97,7 @@ export const useDashboardMetrics = (teamId?: string) => {
         return staticCards;
     }, [data, rotationIndex]);
 
-    return { loading, error, data, cards };
+    return { loading, error, data, cards, accessDenied, accessDeniedMessage };
 };
 
 export default useDashboardMetrics;

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { sileo } from 'sileo';
 import useSceneArtifactUseCases from '@/modules/trajectory/presentation/hooks/generated-scenes/use-scene-artifact-use-cases';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type { SceneArtifact } from '@/modules/trajectory/domain/entities/SceneArtifact';
 
 interface UseSceneArtifactsOptions {
@@ -15,6 +16,7 @@ const isSceneArtifact = (item: unknown): item is SceneArtifact => {
 
 const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
     const { listSceneArtifactsUseCase } = useSceneArtifactUseCases();
+    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -50,6 +52,7 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
             setColorCodingArtifacts(colorCoding.data.filter(isSceneArtifact));
             setParticleFilterArtifacts(particleFilter.data.filter(isSceneArtifact));
         } catch (err: any) {
+            if(checkRBACError(err)) return;
             setError(err?.message || 'Failed to load scene artifacts');
             sileo.error({ title: 'Failed to load scene artifacts' });
             setColorCodingArtifacts([]);
@@ -84,6 +87,8 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
     return {
         isLoading,
         error,
+        accessDenied,
+        accessDeniedMessage,
         totalArtifacts,
         colorCodingArtifacts,
         particleFilterArtifacts,

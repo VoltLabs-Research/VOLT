@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
 import { usePluginCatalog } from '@/modules/plugin/presentation/hooks';
 import PluginExposureTable from '@/modules/plugin/presentation/components/organisms/PluginExposureTable';
+import ApiError from '@/shared/errors/ApiError';
+import { sileo } from 'sileo';
 
 interface PluginExposureListingPanelProps {
     pluginId: string;
@@ -32,7 +34,12 @@ const PluginExposureListingPanel = ({
 
     useEffect(() => {
         if (!pluginId || plugin) return;
-        ensurePluginById(pluginId).catch(() => {});
+        ensurePluginById(pluginId).catch((error: unknown) => {
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
+                sileo.error({ title: msg });
+            }
+        });
     }, [pluginId, plugin, ensurePluginById]);
 
     const exposureName = useMemo(() => {

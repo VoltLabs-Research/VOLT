@@ -21,6 +21,8 @@ import { getListingRelevantExposures } from '@/modules/plugin/presentation/utils
 import { canAccessTeamPermissions } from '@/modules/team/presentation/utils/permission-evaluator';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
+import ApiError from '@/shared/errors/ApiError';
+import { sileo } from 'sileo';
 import './SidebarNavigation.css';
 
 type PermissionMode = 'any' | 'all';
@@ -43,7 +45,13 @@ const MAIN_NAV_ITEMS: NavItem[] = [
         requiredPermissions: ['container:read'],
         disabledReason: 'You do not have permission to view containers.'
     },
-    { label: 'Notebooks', icon: IoBookOutline, to: '/dashboard/notebooks' },
+    {
+        label: 'Notebooks',
+        icon: IoBookOutline,
+        to: '/dashboard/notebooks',
+        requiredPermissions: ['plugin:read'],
+        disabledReason: 'You do not have permission to view notebooks.'
+    },
 ];
 
 const SECONDARY_NAV_ITEMS: NavItem[] = [
@@ -55,7 +63,13 @@ const SECONDARY_NAV_ITEMS: NavItem[] = [
         disabledReason: 'You do not have permission to view plugins.'
     },
     { label: 'Messages', icon: CiChat1, to: '/dashboard/messages' },
-    { label: 'Volt AI', icon: MdAutoAwesome, to: '/dashboard/ai' },
+    {
+        label: 'Volt AI',
+        icon: MdAutoAwesome,
+        to: '/dashboard/ai',
+        requiredPermissions: ['ai-conversation:read'],
+        disabledReason: 'You do not have permission to access Volt AI.'
+    },
     { label: 'Clusters', icon: HiOutlineServer, to: '/dashboard/clusters' },
     {
         label: 'Import',
@@ -104,7 +118,12 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false }: SidebarNavigat
 
     useEffect(() => {
         if (!selectedTeam?._id) return;
-        loadAllPlugins({ force: true }).catch(() => {});
+        loadAllPlugins({ force: true }).catch((error: unknown) => {
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
+                sileo.error({ title: msg });
+            }
+        });
     }, [selectedTeam?._id, loadAllPlugins]);
 
     const handleNavigate = (to: string) => {
@@ -171,6 +190,9 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false }: SidebarNavigat
             })
     ], [pathname, searchParams, navigate, setSidebarOpen, plugins]);
 
+    const canAccessTrajectories = canAccess({ label: '', icon: TbCube3dSphere, to: '', requiredPermissions: ['trajectory:read'] });
+    const canAccessAnalysis = canAccess({ label: '', icon: IoAnalytics, to: '', requiredPermissions: ['analysis:read'] });
+
     return (
         <nav className='sidebar-nav y-auto'>
             {MAIN_NAV_ITEMS.map((item, index) => {
@@ -199,19 +221,33 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false }: SidebarNavigat
                 );
             })}
 
-            <SidebarExpandableSection
-                label='Trajectories'
-                icon={TbCube3dSphere}
-                isActive={pathname.includes('/trajectories') || pathname.includes('/simulation-cells')}
-                subItems={trajectoriesSubItems}
-            />
+            <Tooltip
+                content='You do not have permission to view trajectories.'
+                placement='right'
+                disabled={canAccessTrajectories}
+            >
+                <SidebarExpandableSection
+                    label='Trajectories'
+                    icon={TbCube3dSphere}
+                    isActive={pathname.includes('/trajectories') || pathname.includes('/simulation-cells')}
+                    subItems={trajectoriesSubItems}
+                    disabled={!canAccessTrajectories}
+                />
+            </Tooltip>
 
-            <SidebarExpandableSection
-                label='Analysis'
-                icon={IoAnalytics}
-                isActive={pathname.includes('/analysis-configs')}
-                subItems={analysisSubItems}
-            />
+            <Tooltip
+                content='You do not have permission to view analysis.'
+                placement='right'
+                disabled={canAccessAnalysis}
+            >
+                <SidebarExpandableSection
+                    label='Analysis'
+                    icon={IoAnalytics}
+                    isActive={pathname.includes('/analysis-configs')}
+                    subItems={analysisSubItems}
+                    disabled={!canAccessAnalysis}
+                />
+            </Tooltip>
 
             {SECONDARY_NAV_ITEMS.map((item, index) => {
                 const isAllowed = canAccess(item);

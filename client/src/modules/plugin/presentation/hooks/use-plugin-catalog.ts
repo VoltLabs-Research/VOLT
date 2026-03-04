@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react';
 import type { Plugin } from '../../domain/entities';
 import usePluginUseCases from './use-plugin-use-cases';
 import usePluginStore from '../stores/use-plugin-store';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 
 interface LoadAllPluginsOptions {
     limit?: number;
@@ -15,6 +16,7 @@ const usePluginCatalog = () => {
     const registerPlugins = usePluginStore((state) => state.registerPlugins);
     const setLoading = usePluginStore((state) => state.setLoading);
     const setError = usePluginStore((state) => state.setError);
+    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
 
     const loadAllPromiseRef = useRef<Promise<void> | null>(null);
     const ensurePluginPromisesRef = useRef<Map<string, Promise<Plugin | null>>>(new Map());
@@ -44,6 +46,7 @@ const usePluginCatalog = () => {
                 setPlugins(allPlugins);
                 setError(null);
             } catch (error) {
+                if(checkRBACError(error)) throw error;
                 setError(error instanceof Error ? error.message : 'Failed to load plugins');
                 throw error;
             } finally {
@@ -77,6 +80,7 @@ const usePluginCatalog = () => {
                 }
                 return plugin;
             } catch (error) {
+                if(checkRBACError(error)) throw error;
                 setError(error instanceof Error ? error.message : `Failed to load plugin ${id}`);
                 throw error;
             } finally {
@@ -90,7 +94,9 @@ const usePluginCatalog = () => {
 
     return {
         loadAllPlugins,
-        ensurePluginById
+        ensurePluginById,
+        accessDenied,
+        accessDeniedMessage
     };
 };
 

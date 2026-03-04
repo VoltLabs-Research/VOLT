@@ -470,3 +470,45 @@
 :root[data-theme='light'] .button.premium:hover:not(:disabled) {
     filter: brightness(1.1);
 }
+
+/* --- Variant: Toggle (for inline toggle groups) --- */
+.button.variant-toggle {
+    background: transparent;
+    color: var(--color-text-muted);
+    border-color: transparent;
+    border-right: 1px solid var(--color-border-soft);
+    border-radius: 0;
+    font-weight: 500;
+}
+
+.button.variant-toggle:last-child {
+    border-right-color: transparent;
+}
+
+.button.variant-toggle:hover:not(:disabled):not(.active) {
+    color: var(--color-text-secondary);
+    background: var(--hover-bg);
+}
+
+.button.variant-toggle.active {
+    color: var(--color-text-primary);
+    background: var(--color-surface-3);
+}
+
+.button.variant-toggle.size-sm {
+    height: auto;
+    padding: 4px 10px;
+    font-size: 0.7rem;
+}
+
+.button.variant-toggle.size-md {
+    height: auto;
+    padding: 5px 12px;
+    font-size: 0.75rem;
+}
+
+.button.variant-toggle.size-lg {
+    height: auto;
+    padding: 6px 14px;
+    font-size: 0.8125rem;
+}

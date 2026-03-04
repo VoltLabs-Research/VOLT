@@ -11,7 +11,8 @@ export type RBACResource =
     | Resource.PLUGIN
     | Resource.CONTAINER
     | Resource.ANALYSIS
-    | Resource.SIMULATION_CELL;
+    | Resource.SIMULATION_CELL
+    | Resource.AI_CONVERSATION;
     
 export enum Action {
     READ = 'read',

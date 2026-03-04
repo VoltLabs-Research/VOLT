@@ -4,11 +4,14 @@ import { TRAJECTORY_TOKENS } from '@/modules/trajectory/infrastructure/di/tokens
 import type ITrajectoryRepository from '@/modules/trajectory/domain/ports/ITrajectoryRepository';
 import type { Trajectory } from '@/modules/trajectory/domain/entities/Trajectory';
 import { usePluginDebugStore } from '../stores/use-plugin-debug-store';
+import ApiError from '@/shared/errors/ApiError';
 
 const useDebugTrajectorySelector = () => {
     const [trajectories, setTrajectories] = useState<Trajectory[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [accessDenied, setAccessDenied] = useState(false);
+    const [accessDeniedMessage, setAccessDeniedMessage] = useState<string>();
 
     const { selectedTrajectoryId, selectedTimestep, setSelectedTrajectory, setSelectedTimestep } = usePluginDebugStore();
 
@@ -30,7 +33,12 @@ const useDebugTrajectorySelector = () => {
                 }
             } catch (err: any) {
                 if (!cancelled) {
-                    setError(err.message || 'Failed to load trajectories');
+                    if(ApiError.isRBACError(err)){
+                        setAccessDenied(true);
+                        if(err instanceof ApiError) setAccessDeniedMessage(err.getFriendlyMessage());
+                    }else{
+                        setError(err.message || 'Failed to load trajectories');
+                    }
                 }
             } finally {
                 if (!cancelled) {
@@ -61,7 +69,9 @@ const useDebugTrajectorySelector = () => {
         setSelectedTrajectory,
         setSelectedTimestep,
         isLoading,
-        error
+        error,
+        accessDenied,
+        accessDeniedMessage
     };
 };
 

@@ -17,6 +17,9 @@ interface AIConversationSidebarProps {
     activeConversationId?: string;
     isLoading?: boolean;
     error?: string | null;
+    canCreate?: boolean;
+    canUpdate?: boolean;
+    canDelete?: boolean;
     onCreateConversation: () => void;
     onSelectConversation: (conversationId: string) => void;
     onDeleteConversation: (conversationId: string) => Promise<void>;
@@ -28,6 +31,9 @@ const AIConversationSidebar = ({
     activeConversationId,
     isLoading = false,
     error,
+    canCreate = true,
+    canUpdate = true,
+    canDelete = true,
     onCreateConversation,
     onSelectConversation,
     onDeleteConversation,
@@ -79,11 +85,17 @@ const AIConversationSidebar = ({
                     onChange={(event) => setQuery(event.target.value)}
                 />
 
-                <SidebarNavItem
-                    label='Chat'
-                    icon={CiChat1}
-                    onClick={onCreateConversation}
-                />
+                <Tooltip
+                    content='You do not have permission to create conversations.'
+                    disabled={canCreate}
+                >
+                    <SidebarNavItem
+                        label='Chat'
+                        icon={CiChat1}
+                        onClick={canCreate ? onCreateConversation : undefined}
+                        disabled={!canCreate}
+                    />
+                </Tooltip>
 
                 {error && (
                     <Paragraph className='font-size-1 color-danger'>{error}</Paragraph>
@@ -138,10 +150,11 @@ const AIConversationSidebar = ({
                                     )}
 
                                     <Container className='d-flex items-center gap-025 ai-conversation-item-actions'>
-                                        <Tooltip content='Rename conversation'>
+                                        <Tooltip content={canUpdate ? 'Rename conversation' : 'You do not have permission to rename conversations.'}>
                                             <IconButton
                                                 size='sm'
                                                 variant='ghost'
+                                                disabled={!canUpdate}
                                                 onClick={(event) => {
                                                     event.stopPropagation();
                                                     beginEditing(conversation);
@@ -151,10 +164,11 @@ const AIConversationSidebar = ({
                                             </IconButton>
                                         </Tooltip>
 
-                                        <Tooltip content='Delete conversation'>
+                                        <Tooltip content={canDelete ? 'Delete conversation' : 'You do not have permission to delete conversations.'}>
                                             <IconButton
                                                 size='sm'
                                                 variant='ghost'
+                                                disabled={!canDelete}
                                                 onClick={(event) => {
                                                     event.stopPropagation();
                                                     handleDeleteConversation(conversation._id).catch(() => {});

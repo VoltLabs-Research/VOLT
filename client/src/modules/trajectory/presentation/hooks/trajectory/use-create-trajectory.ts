@@ -4,6 +4,7 @@ import useTrajectoryUseCases from './use-trajectory-use-cases';
 import { sileo } from 'sileo';
 import { Trajectory } from '@/modules/trajectory/domain/entities';
 import { v4 } from 'uuid';
+import ApiError from '@/shared/errors/ApiError';
 
 const useCreateTrajectory = () => {
     const { trajectoryRepository } = useTrajectoryUseCases();
@@ -32,6 +33,12 @@ const useCreateTrajectory = () => {
         }catch(error){
             setUploadStatus(uploadId, 'failed');
             setTimeout(() => removeUpload(uploadId), 2000);
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to create trajectories';
+                setError(msg);
+                sileo.error({ title: msg });
+                return null;
+            }
             setError(error instanceof Error ? error.message : 'Failed to create trajectory');
             sileo.error({ title: 'Failed to create trajectory', description: 'Please check your files and try again.' });
             return null;

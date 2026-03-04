@@ -8,6 +8,7 @@ import Button from '@/shared/presentation/components/Button';
 import useTeamInvitationUseCases from '@/modules/team/presentation/hooks/team-invitation/use-team-invitation-use-cases';
 import type { TeamInvitation } from '@/modules/team/domain/entities/TeamInvitation';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import ApiError from '@/shared/errors/ApiError';
 import './TeamInvitation.css';
 
 const TeamInvitationTemplate: React.FC = () => {
@@ -30,8 +31,12 @@ const TeamInvitationTemplate: React.FC = () => {
         try{
             const details = await teamInvitationRepository.getDetails(invitationId);
             setInvitation(details);
-        }catch(err: any){
-            setError(err?.message || 'An error occurred');
+        }catch(err: unknown){
+            if(ApiError.isRBACError(err)){
+                setError(err instanceof ApiError ? err.getFriendlyMessage() : 'You do not have permission to perform this action.');
+            } else {
+                setError(err instanceof Error ? err.message : 'An error occurred');
+            }
         }finally{
             setLoading(false);
         }
@@ -54,8 +59,12 @@ const TeamInvitationTemplate: React.FC = () => {
             });
             setError(null);
             window.location.href = '/dashboard';
-        }catch(err: any){
-            setError(err?.message || 'An error occurred');
+        }catch(err: unknown){
+            if(ApiError.isRBACError(err)){
+                setError(err instanceof ApiError ? err.getFriendlyMessage() : 'You do not have permission to perform this action.');
+            } else {
+                setError(err instanceof Error ? err.message : 'An error occurred');
+            }
         }finally{
             setActionLoading(false);
         }
@@ -73,8 +82,12 @@ const TeamInvitationTemplate: React.FC = () => {
             });
             setError(null);
             window.location.href = '/dashboard';
-        }catch(err: any){
-            setError(err?.message || 'An error occurred');
+        }catch(err: unknown){
+            if(ApiError.isRBACError(err)){
+                setError(err instanceof ApiError ? err.getFriendlyMessage() : 'You do not have permission to perform this action.');
+            } else {
+                setError(err instanceof Error ? err.message : 'An error occurred');
+            }
         }finally{
             setActionLoading(false);
         }

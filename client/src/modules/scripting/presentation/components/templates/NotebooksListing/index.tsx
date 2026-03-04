@@ -116,6 +116,8 @@ const NotebooksListing = () => {
                 data: documents
             };
         } catch (error) {
+            const { default: ApiError } = await import('@/shared/errors/ApiError');
+            if(ApiError.isRBACError(error)) throw error;
             sileo.error({ title: 'Failed to fetch notebooks' });
             return emptyPaginatedResponse(params);
         }
@@ -134,7 +136,8 @@ const NotebooksListing = () => {
                     }
 
                     navigate(`/canvas/${trajectoryId}?workspace=scripting&notebook=${encodeURIComponent(notebook.id)}`);
-                }
+                },
+                requiredPermission: 'plugin:read'
             },
             delete: {
                 variant: 'danger',
@@ -153,7 +156,8 @@ const NotebooksListing = () => {
                     selectedItems.length === 1
                         ? `Delete notebook "${selectedItems[0].title || 'Untitled Notebook'}"? This action cannot be undone.`
                         : `Delete ${selectedItems.length} notebooks? This action cannot be undone.`
-                )
+                ),
+                requiredPermission: 'plugin:delete'
             }
         }
     });

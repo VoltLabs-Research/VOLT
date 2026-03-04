@@ -4,6 +4,7 @@ import { GoUpload, GoTrash, GoBeaker } from 'react-icons/go';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import useDailyActivityData from '@/modules/daily-activity/presentation/hooks/use-daily-activity-data';
 import type { ActivityItem, PopulatedUser } from '@/modules/daily-activity/domain/entities/DailyActivity';
 import './DashboardTeamTimeline.css';
@@ -49,7 +50,7 @@ const getUserName = (user: string | PopulatedUser): string => {
 };
 
 const DashboardTeamTimeline = () => {
-    const { activityData, isLoading, fetchActivity } = useDailyActivityData();
+    const { activityData, isLoading, accessDenied, accessDeniedMessage, fetchActivity } = useDailyActivityData();
 
     useEffect(() => {
         fetchActivity(7);
@@ -74,6 +75,14 @@ const DashboardTeamTimeline = () => {
         items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         return items;
     }, [activityData]);
+
+    if (accessDenied) {
+        return (
+            <Container className='dashboard-timeline-card'>
+                <AccessDenied description={accessDeniedMessage} showBack={false} />
+            </Container>
+        );
+    }
 
     if (isLoading) {
         return (

@@ -10,6 +10,7 @@ import { useNodeForm, useNodeReferenceAutocomplete, usePluginUseCases } from '@/
 import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
+import ApiError from '@/shared/errors/ApiError';
 import type { IEntrypointData } from '@/modules/plugin/domain/entities';
 import type { EditorProps } from '../types';
 import './EntrypointEditor.css';
@@ -57,6 +58,11 @@ const EntrypointEditor = ({ node }: EditorProps) => {
             setUploadProgress(100);
             sileo.success({ title: 'Binary uploaded successfully' });
         } catch (error) {
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to upload binaries';
+                setUploadError(msg);
+                return;
+            }
             setUploadError(error instanceof Error ? error.message : 'Failed to upload binary');
         } finally {
             setIsUploading(false);
@@ -81,6 +87,11 @@ const EntrypointEditor = ({ node }: EditorProps) => {
             setValues(newData);
             updateNodeData(node.id, { entrypoint: newData });
         } catch (error) {
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to delete binaries';
+                setUploadError(msg);
+                return;
+            }
             setUploadError(error instanceof Error ? error.message : 'Failed to delete binary');
         }
     }, [currentPluginId, values, pluginRepository, setValues, updateNodeData, node.id]);

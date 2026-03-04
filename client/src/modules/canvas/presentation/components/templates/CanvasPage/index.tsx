@@ -33,7 +33,7 @@ import PluginResultsViewer from '../../organisms/PluginResultsViewer';
 import KeyboardShortcutsPanel from '../../organisms/KeyboardShortcutsPanel';
 import ScriptingWorkspace from '@/modules/scripting/presentation/components/organisms/ScriptingWorkspace';
 import useResizable from '../../../hooks/use-resizable';
-import ScreenshotModal from '../../organisms/ScreenshotModal';
+
 
 const CanvasPage = () => {
     usePageTitle('Canvas');
@@ -283,7 +283,7 @@ const CanvasPage = () => {
             <KeyboardShortcutsPanel />
             <ShortcutFeedback />
             <ExposureSettingsWidget />
-            <ScreenshotModal />
+
         </Container>
     );
 };

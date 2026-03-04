@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { useNotificationStore } from '../stores/use-notification-store';
 import useNotificationUseCases from './use-notification-use-cases';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { sileo } from 'sileo';
 
 const DEFAULT_LIMIT = 20;
@@ -18,6 +19,7 @@ const useNotificationData = () => {
     const setHasMore = useNotificationStore((state) => state.setHasMore);
     const setPage = useNotificationStore((state) => state.setPage);
     const setError = useNotificationStore((state) => state.setError);
+    const { checkRBACError } = useAccessDenied();
 
     const { notificationRepository } = useNotificationUseCases();
 
@@ -42,7 +44,9 @@ const useNotificationData = () => {
             setHasMore(response.pagination.hasMore);
             setPage(pageToFetch);
         } catch (error: any) {
-            setError(error?.message ?? 'Failed to fetch notifications');
+            if(!checkRBACError(error)){
+                setError(error?.message ?? 'Failed to fetch notifications');
+            }
         } finally {
             setLoading(false);
         }

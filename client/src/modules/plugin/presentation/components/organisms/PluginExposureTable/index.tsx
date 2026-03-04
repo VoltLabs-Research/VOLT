@@ -4,6 +4,8 @@ import DocumentListing, { type ColumnConfig } from '@/shared/presentation/compon
 import PluginCompactTable from '@/modules/plugin/presentation/components/organisms/PluginCompactTable';
 import useListingLifecycle, { type ListingMeta } from '@/shared/presentation/hooks/use-listing-lifecycle';
 import usePluginListing from '@/modules/plugin/presentation/hooks/use-plugin-listing';
+import ApiError from '@/shared/errors/ApiError';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import '@/modules/plugin/presentation/components/organisms/PluginExposureTable/PluginExposureTable.css';
 
 export interface PluginExposureTableProps {
@@ -53,6 +55,8 @@ const PluginExposureTable = ({
     const [loading, setLoading] = useState(false);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [rbacDenied, setRbacDenied] = useState(false);
+    const [rbacMessage, setRbacMessage] = useState<string>();
 
     const fetchBatch = useCallback(async (params: any) => {
         const { force, page } = params;
@@ -94,6 +98,11 @@ const PluginExposureTable = ({
 
             setRows((prev) => (isInitial && !params.append ? (payload.data ?? []) : [...prev, ...(payload.data ?? [])]));
         } catch (err: any) {
+            if(ApiError.isRBACError(err)){
+                setRbacDenied(true);
+                if(err instanceof ApiError) setRbacMessage(err.getFriendlyMessage());
+                return;
+            }
             const message = err?.response?.data?.message || err?.message || 'Failed to load listing.';
             setError(message);
         } finally {
@@ -124,6 +133,10 @@ const PluginExposureTable = ({
         if (!onDataReady || !compact) return;
         onDataReady(columns, displayRows);
     }, [columns, displayRows, onDataReady, compact]);
+
+    if (rbacDenied) {
+        return <AccessDenied description={rbacMessage} showBack={false} />;
+    }
 
     if (compact) {
         return (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { container } from 'tsyringe';
 import { sileo } from 'sileo';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type { ScriptingNotebookDTO } from '@/modules/scripting/application/dtos';
 import type IScriptingRepository from '@/modules/scripting/domain/ports/IScriptingRepository';
 import { SCRIPTING_TOKENS } from '@/modules/scripting/infrastructure/di/tokens';
@@ -56,6 +57,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
     const [isStartingJupyter, setIsStartingJupyter] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [startAttempt, setStartAttempt] = useState(0);
+    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
 
     const activeNotebook = pickActiveNotebook(notebooks, notebookId);
 
@@ -84,9 +86,11 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                 if (!cancelled) {
                     setNotebooks(result.data);
                 }
-            } catch {
+            } catch(error) {
                 if (!cancelled) {
-                    sileo.error({ title: 'Failed to load notebooks' });
+                    if(!checkRBACError(error)){
+                        sileo.error({ title: 'Failed to load notebooks' });
+                    }
                     setNotebooks([]);
                 }
             } finally {
@@ -136,8 +140,10 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                 }
             } catch (err) {
                 if (!cancelled) {
-                    setError(getJupyterStartErrorMessage(err));
-                    sileo.error({ title: 'Failed to start Jupyter session' });
+                    if(!checkRBACError(err)){
+                        setError(getJupyterStartErrorMessage(err));
+                        sileo.error({ title: 'Failed to start Jupyter session' });
+                    }
                 }
             } finally {
                 if (!cancelled) {
@@ -166,6 +172,8 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         activeNotebook,
         isStartingJupyter,
         error,
+        accessDenied,
+        accessDeniedMessage,
         jupyterUrl,
         retryStartJupyter
     };

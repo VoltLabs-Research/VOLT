@@ -5,6 +5,7 @@ import usePluginBuilderStore from '../../../stores/use-plugin-builder-store';
 import useLoadPlugin from '../../../hooks/use-load-plugin';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import Loader from '@/shared/presentation/components/Loader';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 
 const PluginBuilderPage = () => {
     const { searchParams } = useSearchParamsState();
@@ -12,7 +13,7 @@ const PluginBuilderPage = () => {
 
     const clearWorkflow = usePluginBuilderStore((state) => state.clearWorkflow);
     const isLoading = usePluginBuilderStore((state) => state.isLoading);
-    const loadPlugin = useLoadPlugin();
+    const { loadPlugin, accessDenied, accessDeniedMessage } = useLoadPlugin();
 
     useEffect(() => {
         if (pluginId) {
@@ -21,6 +22,10 @@ const PluginBuilderPage = () => {
             clearWorkflow();
         }
     }, [pluginId, loadPlugin, clearWorkflow]);
+
+    if (accessDenied) {
+        return <AccessDenied description={accessDeniedMessage} />;
+    }
 
     if (isLoading) {
         return <Loader scale={0.8} />;

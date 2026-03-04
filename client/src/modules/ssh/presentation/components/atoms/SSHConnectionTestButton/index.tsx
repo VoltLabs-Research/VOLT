@@ -4,6 +4,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import useSSHUseCases from '@/modules/ssh/presentation/hooks/use-ssh-use-cases';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import ApiError from '@/shared/errors/ApiError';
 
 interface TestResult {
     valid: boolean;
@@ -31,6 +32,11 @@ const SSHConnectionTestButton = ({ connectionId, disabled }: SSHConnectionTestBu
             });
             setTestResult(result);
         } catch (err: unknown) {
+            if(ApiError.isRBACError(err)){
+                const msg = err instanceof ApiError ? err.getFriendlyMessage() : 'You do not have permission to test this connection';
+                setTestResult({ valid: false, error: msg });
+                return;
+            }
             const message = err instanceof Error ? err.message : 'Connection failed';
             setTestResult({ valid: false, error: message });
         } finally {

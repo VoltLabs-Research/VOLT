@@ -10,7 +10,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
      * Visual style of the button
      * @default 'solid'
      */
-    variant?: 'solid' | 'soft' | 'outline' | 'ghost';
+    variant?: 'solid' | 'soft' | 'outline' | 'ghost' | 'toggle';
 
     children?: React.ReactNode;
 

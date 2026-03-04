@@ -10,6 +10,7 @@ import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ExportType } from '@/shared/domain/export/types';
 import { sileo } from 'sileo';
+import ApiError from '@/shared/errors/ApiError';
 import type { ListingRow } from '../../domain/entities';
 
 interface UsePluginListingParams {
@@ -154,7 +155,8 @@ const usePluginListing = ({
                     error: { title: 'Failed to delete analysis' }
                 })
             ));
-        } catch {
+        } catch(error: unknown) {
+            if(ApiError.isRBACError(error)) return;
             reset();
         }
     }, [deleteAnalysis, removeRowByAnalysisId, reset]);

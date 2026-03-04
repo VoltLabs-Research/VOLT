@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Activity } from 'lucide-react';
 import useContainerUseCases from '../../../hooks/use-container-use-cases';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Table, { type Column } from '@/shared/presentation/components/Table';
 import type { RawContainerProcess } from '@/modules/container/domain/entities';
 import './ContainerProcesses.css';
@@ -56,6 +58,7 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
     const [processes, setProcesses] = useState<RawContainerProcess[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
 
     const { containerRepository } = useContainerUseCases();
 
@@ -66,11 +69,12 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
             const result = await containerRepository.getProcesses(containerId);
             setProcesses(result);
         } catch (e: any) {
+            if(checkRBACError(e)) return;
             setError(e?.message || 'Failed to fetch processes');
         } finally {
             setIsLoading(false);
         }
-    }, [containerId, containerRepository]);
+    }, [containerId, containerRepository, checkRBACError]);
 
     useEffect(() => {
         handleFetch();
@@ -79,6 +83,14 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
     }, [handleFetch]);
 
     const mappedProcesses = processes.map(mapProcess);
+
+    if(accessDenied){
+        return (
+            <Container className='d-flex column flex-center h-max gap-1 p-2'>
+                <AccessDenied description={accessDeniedMessage} showBack={false} />
+            </Container>
+        );
+    }
 
     if(error && mappedProcesses.length === 0){
         return (

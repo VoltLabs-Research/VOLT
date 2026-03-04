@@ -26,6 +26,7 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.26",
     "gsap": "^3.13.0",
+    "idb-keyval": "^6.2.2",
     "invokers-polyfill": "^0.5.7",
     "lucide-react": "^0.553.0",
     "monaco-editor": "^0.52.2",

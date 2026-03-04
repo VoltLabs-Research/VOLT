@@ -7,6 +7,7 @@ import useAnalysisUseCases from '@/modules/analysis/presentation/hooks/use-analy
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 import useAnalysisStatus, { seedAnalysisStatuses } from './use-analysis-status';
 import useExposureManager, { type ExposureEntry, DEFAULT_ENTRY } from './use-exposure-manager';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 
@@ -31,6 +32,7 @@ interface UseCanvasSidebarSceneProps {
 const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: UseCanvasSidebarSceneProps) => {
     const socketService = useSocket();
     const { getAnalysesByTrajectoryUseCase, deleteAnalysisUseCase } = useAnalysisUseCases();
+    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
 
     const trajectoryId = propTrajectoryId || trajectory?._id;
 
@@ -102,7 +104,8 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                     status: analysis.status
                 })));
                 setAnalyses(response.data);
-            } catch {
+            } catch(error) {
+                if(checkRBACError(error)) return;
                 sileo.error({ title: 'Failed to load analyses' });
             } finally {
                 if (!cancelled) setBootstrapLoading(false);
@@ -328,6 +331,8 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         bootstrapLoading,
         analyses,
         headerPopoverStates,
+        accessDenied,
+        accessDeniedMessage,
 
         // Computed
         filteredSections,

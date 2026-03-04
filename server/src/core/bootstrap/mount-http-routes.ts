@@ -1,7 +1,7 @@
 import { Router, Response, NextFunction } from 'express';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 import { Action } from '@core/constants/permissions';
-import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import { AuthenticatedRequest, protect } from '@shared/infrastructure/http/middleware/authentication';
 import { checkTeamMembership } from '@modules/team/infrastructure/http/middlewares/check-team-membership';
 import BaseResponse from '@shared/infrastructure/http/BaseResponse';
 import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
@@ -34,9 +34,6 @@ import DailyActivityHttpModule from '@modules/daily-activity/infrastructure/http
 import SystemHttpModule from '@modules/system/infrastructure/http/routes/system-routes';
 import AIConversationHttpModule from '@modules/ai/infrastructure/http/routes/ai-conversation-routes';
 
-/**
- * Maps HTTP methods to RBAC actions.
- */
 const METHOD_ACTION_MAP: Record<string, Action> = {
     'GET': Action.READ,
     'HEAD': Action.READ,
@@ -100,19 +97,18 @@ const createTeamParamHandler = (resource?: string) => {
     };
 };
 
-/**
- * Mount all module routes on the Express app.
- *
- * For each module:
- * 1. Registers a combined teamId param handler (membership + RBAC)
- * 2. Mounts the module's router at its basePath
- */
 const mountHttpRoutes = (): Router => {
     const router = Router();
 
     for (const module of HTTP_MODULES) {
-        module.router.param('teamId', createTeamParamHandler(module.resource));
-        router.use(module.basePath, module.router);
+        const hasTeamIdInBasePath = module.basePath.includes(':teamId');
+
+        if (hasTeamIdInBasePath) {
+            router.use(module.basePath, protect, createTeamParamHandler(module.resource), module.router);
+        } else {
+            module.router.param('teamId', createTeamParamHandler(module.resource));
+            router.use(module.basePath, module.router);
+        }
     }
 
     return router;

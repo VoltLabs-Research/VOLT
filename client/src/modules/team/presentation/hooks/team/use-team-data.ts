@@ -6,6 +6,7 @@ import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store'
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
 import type ITeamStorage from '@/modules/team/domain/ports/ITeamStorage';
 import { TEAM_TOKENS } from '@/modules/team/infrastructure/di/tokens';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 
 const useTeamData = () => {
     const teams = useTeamStore((state) => state.teams);
@@ -17,6 +18,7 @@ const useTeamData = () => {
     const setError = useTeamStore((state) => state.setError);
 
     const { teamRepository } = useTeamUseCases();
+    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
 
     const fetchTeams = useCallback(async () => {
         if(teams.length > 0) return;
@@ -38,6 +40,7 @@ const useTeamData = () => {
                 setSelectedTeam(selectedTeam);
             }
         }catch(error: any){
+            if(checkRBACError(error)) return;
             sileo.error({ title: 'Failed to load teams' });
             setError(error?.message ?? 'Failed to fetch teams');
         }finally{
@@ -101,7 +104,7 @@ const useTeamData = () => {
         await syncPermissions(teamId, { showLoadingToast: true, clearOnError: true });
     }, [setPermissions, setPermissionsLoading, syncPermissions]);
 
-    return { fetchTeams, hydrateTeamAccess };
+    return { fetchTeams, hydrateTeamAccess, accessDenied, accessDeniedMessage };
 };
 
 export default useTeamData;

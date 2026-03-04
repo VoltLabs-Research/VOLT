@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import useSSHUseCases from './use-ssh-use-cases';
 import { sileo } from 'sileo';
 import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type { SSHConnection, SSHFileEntry } from '@/modules/ssh/domain/entities';
 
 interface UseSSHFileExplorerOptions {
@@ -13,6 +14,7 @@ const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
     const { sshRepository } = useSSHUseCases();
+    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
 
     const [connection, setConnection] = useState<SSHConnection | null>(null);
     const [entries, setEntries] = useState<SSHFileEntry[]>([]);
@@ -34,7 +36,8 @@ const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
                 sileo.error({ title: 'Connection not found' });
                 navigate('/dashboard/ssh-connections');
             }
-        } catch {
+        } catch(error) {
+            if(checkRBACError(error)) return;
             sileo.error({ title: 'Failed to load connection' });
             navigate('/dashboard/ssh-connections');
         }
@@ -93,6 +96,8 @@ const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
         cwd,
         isLoading,
         error,
+        accessDenied,
+        accessDeniedMessage,
         selectedPath,
         setSelectedPath,
         navigateTo,

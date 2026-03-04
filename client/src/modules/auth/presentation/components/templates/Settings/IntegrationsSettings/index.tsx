@@ -3,6 +3,7 @@ import { IoAddOutline } from 'react-icons/io5';
 import { Settings2, Trash2 } from 'lucide-react';
 import { Skeleton } from '@mui/material';
 import { sileo } from 'sileo';
+import ApiError from '@/shared/errors/ApiError';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Button from '@/shared/presentation/components/Button';
@@ -134,8 +135,13 @@ const IntegrationsSettings: React.FC = () => {
             ]);
             setIntegrations(integrationsResponse.integrations);
             setProviderModels(modelsResponse.providers);
-        } catch {
-            sileo.error({ title: 'Failed to load integrations' });
+        } catch(error: unknown) {
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
+                sileo.error({ title: msg });
+            } else {
+                sileo.error({ title: 'Failed to load integrations' });
+            }
         } finally {
             setIsLoading(false);
         }
@@ -295,6 +301,8 @@ const IntegrationsSettings: React.FC = () => {
             closeModal(TEAM_AI_INTEGRATION_MODAL_ID);
             resetModalState();
             await refreshData();
+        } catch(error: unknown) {
+            if(ApiError.isRBACError(error)) return;
         } finally {
             setIsSaving(false);
         }
@@ -321,6 +329,8 @@ const IntegrationsSettings: React.FC = () => {
                 }
             );
             await refreshData();
+        } catch(error: unknown) {
+            if(ApiError.isRBACError(error)) return;
         } finally {
             setBusyProvider(null);
         }

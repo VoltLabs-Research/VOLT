@@ -15,6 +15,7 @@ import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Title from '@/shared/presentation/components/Title';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
+import usePermission from '@/shared/presentation/hooks/use-permission';
 import type { Container as ContainerEntity } from '@/modules/container/domain/entities';
 import type { LucideIcon } from 'lucide-react';
 
@@ -41,6 +42,7 @@ const ContainerSidebar = ({
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const isRunning = container.status === 'running';
+    const canUpdate = usePermission(['container:update']);
 
     const basePath = `/dashboard/containers/${container._id}`;
 
@@ -89,39 +91,43 @@ const ContainerSidebar = ({
             </nav>
 
             <Container className='container-details-actions d-flex column gap-075 p-1-5'>
-                {!isRunning ? (
-                    <Button
-                        variant='solid'
-                        intent='success'
-                        block
-                        leftIcon={<Play size={16} />}
-                        onClick={() => onAction('start')}
-                        disabled={actionLoading}
-                    >
-                        Start Container
-                    </Button>
-                ) : (
+                {canUpdate && (
                     <>
-                        <Button
-                            variant='outline'
-                            intent='neutral'
-                            block
-                            leftIcon={<RefreshCw size={16} />}
-                            onClick={() => onAction('restart')}
-                            disabled={actionLoading}
-                        >
-                            Restart
-                        </Button>
-                        <Button
-                            variant='soft'
-                            intent='danger'
-                            block
-                            leftIcon={<Square size={16} />}
-                            onClick={() => onAction('stop')}
-                            disabled={actionLoading}
-                        >
-                            Stop
-                        </Button>
+                        {!isRunning ? (
+                            <Button
+                                variant='solid'
+                                intent='success'
+                                block
+                                leftIcon={<Play size={16} />}
+                                onClick={() => onAction('start')}
+                                disabled={actionLoading}
+                            >
+                                Start Container
+                            </Button>
+                        ) : (
+                            <>
+                                <Button
+                                    variant='outline'
+                                    intent='neutral'
+                                    block
+                                    leftIcon={<RefreshCw size={16} />}
+                                    onClick={() => onAction('restart')}
+                                    disabled={actionLoading}
+                                >
+                                    Restart
+                                </Button>
+                                <Button
+                                    variant='soft'
+                                    intent='danger'
+                                    block
+                                    leftIcon={<Square size={16} />}
+                                    onClick={() => onAction('stop')}
+                                    disabled={actionLoading}
+                                >
+                                    Stop
+                                </Button>
+                            </>
+                        )}
                     </>
                 )}
 

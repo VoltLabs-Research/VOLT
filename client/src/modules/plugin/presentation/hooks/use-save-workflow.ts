@@ -3,6 +3,8 @@ import usePluginUseCases from './use-plugin-use-cases';
 import usePluginStore from '../stores/use-plugin-store';
 import usePluginBuilderStore from '../stores/use-plugin-builder-store';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import ApiError from '@/shared/errors/ApiError';
+import { sileo } from 'sileo';
 import type { Plugin } from '../../domain/entities';
 
 const useSaveWorkflow = () => {
@@ -51,6 +53,12 @@ const useSaveWorkflow = () => {
 
             return plugin;
         } catch (error) {
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to save this workflow';
+                setSaveError(msg);
+                sileo.error({ title: msg });
+                return null;
+            }
             const message = error instanceof Error ? error.message : 'Failed to save workflow';
             setSaveError(message);
             return null;

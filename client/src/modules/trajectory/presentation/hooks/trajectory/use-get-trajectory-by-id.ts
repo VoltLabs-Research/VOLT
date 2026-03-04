@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import useTrajectoryStore from '../../stores/use-trajectory-store';
 import useTrajectoryUseCases from './use-trajectory-use-cases';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { Trajectory } from '@/modules/trajectory/domain/entities';
 
 interface UseGetTrajectoryByIdParams{
@@ -13,6 +14,8 @@ interface UseGetTrajectoryByIdResult{
     isLoading: boolean;
     error: string | null;
     isReady: boolean;
+    accessDenied: boolean;
+    accessDeniedMessage: string | undefined;
     refetch: () => Promise<void>;
 };
 
@@ -20,6 +23,7 @@ const useGetTrajectoryById = (params: UseGetTrajectoryByIdParams = {}): UseGetTr
     const { trajectoryId, enabled = true } = params;
     
     const { trajectoryRepository } = useTrajectoryUseCases();
+    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const isLoading = useTrajectoryStore((state) => state.isLoading);
     const error = useTrajectoryStore((state) => state.error);
@@ -37,6 +41,7 @@ const useGetTrajectoryById = (params: UseGetTrajectoryByIdParams = {}): UseGetTr
             const result = await trajectoryRepository.getById(trajectoryId);
             setTrajectory(result);
         }catch(err){
+            if(checkRBACError(err)) return;
             setError(err instanceof Error ? err.message : 'Failed to fetch trajectory');
         }finally{
             setLoading(false);
@@ -54,6 +59,8 @@ const useGetTrajectoryById = (params: UseGetTrajectoryByIdParams = {}): UseGetTr
         isLoading,
         error,
         isReady: !!trajectory && trajectory._id === trajectoryId && !isLoading,
+        accessDenied,
+        accessDeniedMessage,
         refetch: fetchTrajectory
     };
 };

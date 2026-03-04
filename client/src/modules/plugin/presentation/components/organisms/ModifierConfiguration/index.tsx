@@ -11,6 +11,7 @@ import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
+import ApiError from '@/shared/errors/ApiError';
 import useGetTrajectoryById from '@/modules/trajectory/presentation/hooks/trajectory/use-get-trajectory-by-id';
 import '@/modules/plugin/presentation/components/organisms/ModifierConfiguration/ModifierConfiguration.css';
 
@@ -173,6 +174,10 @@ const ModifierConfiguration = ({
             const analysisId = (response as any)?.analysisId;
             onAnalysisSuccess?.(analysisId);
         } catch (error) {
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to run this analysis';
+                sileo.error({ title: msg });
+            }
             onAnalysisError?.(error);
         } finally {
             setIsLoading(false);
@@ -199,7 +204,12 @@ const ModifierConfiguration = ({
                     const analysisId = (response as any)?.analysisId;
                     onAnalysisSuccess?.(analysisId);
                 } catch (error) {
-                    sileo.error({ title: 'Plugin failed to run' });
+                    if(ApiError.isRBACError(error)){
+                        const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to run this plugin';
+                        sileo.error({ title: msg });
+                    }else{
+                        sileo.error({ title: 'Plugin failed to run' });
+                    }
                     onAnalysisError?.(error);
                 } finally {
                     setIsLoading(false);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useState, useEffect } from 'react';
 import useColorCodingUseCases from '../color-coding/use-color-coding-use-cases';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type { ColorCodingProperties } from '../../../application/dtos/color-coding';
 
 interface UseFramePropertiesParams{
@@ -21,6 +21,7 @@ const useFrameProperties = (params: UseFramePropertiesParams): UseFramePropertie
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { colorCodingRepository } = useColorCodingUseCases();
+    const { checkRBACError } = useAccessDenied();
 
     const fetchProperties = async (
         trajectoryId: string,
@@ -38,7 +39,9 @@ const useFrameProperties = (params: UseFramePropertiesParams): UseFramePropertie
             });
             setProperties(result);
         }catch(err){
-            setError(err instanceof Error ? err.message : 'Failed to fetch properties');
+            if(!checkRBACError(err)){
+                setError(err instanceof Error ? err.message : 'Failed to fetch properties');
+            }
         }finally{
             setIsLoading(false);
         }

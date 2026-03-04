@@ -2,6 +2,7 @@ import { useState } from 'react';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import type { MenuOption } from '@/shared/presentation/components/DocumentListingTable';
 import { sileo } from 'sileo';
+import ApiError from '@/shared/errors/ApiError';
 
 interface AsyncMenuItemWrapperProps {
     option: MenuOption;
@@ -14,8 +15,13 @@ const AsyncMenuItemWrapper: React.FC<AsyncMenuItemWrapperProps> = ({ option }) =
         try{
             setIsLoading(true);
             await option.onClick();
-        }catch{
-            sileo.error({ title: `${option.label} failed` });
+        }catch(error: unknown){
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
+                sileo.error({ title: msg });
+            } else {
+                sileo.error({ title: `${option.label} failed` });
+            }
         }finally{
             setIsLoading(false);
         }

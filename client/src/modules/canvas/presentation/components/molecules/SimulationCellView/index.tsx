@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import useGetSimulationCells from '@/modules/simulation-cell/presentation/hooks/use-get-simulation-cells';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import ApiError from '@/shared/errors/ApiError';
 import type { SimulationCell } from '@/modules/simulation-cell/domain/entities';
 import type { Trajectory } from '@/modules/trajectory/domain/entities/Trajectory';
 
@@ -14,6 +16,8 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
     const getSimulationCells = useGetSimulationCells();
     const [cell, setCell] = useState<SimulationCell | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [rbacDenied, setRbacDenied] = useState(false);
+    const [rbacMessage, setRbacMessage] = useState<string>();
 
     useEffect(() => {
         if (!trajectory?._id) return;
@@ -35,14 +39,25 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
                 return trajId === trajectory._id;
             });
             setCell(match);
-        }).catch(() => {
-            if (!cancelled) setCell(null);
+        }).catch((error) => {
+            if (!cancelled) {
+                if(ApiError.isRBACError(error)){
+                    setRbacDenied(true);
+                    if(error instanceof ApiError) setRbacMessage(error.getFriendlyMessage());
+                }else{
+                    setCell(null);
+                }
+            }
         }).finally(() => {
             if (!cancelled) setIsLoading(false);
         });
 
         return () => { cancelled = true; };
     }, [trajectory?._id, currentTimestep, getSimulationCells]);
+
+    if (rbacDenied) {
+        return <AccessDenied description={rbacMessage} showBack={false} />;
+    }
 
     if (isLoading || !cell) {
         return (

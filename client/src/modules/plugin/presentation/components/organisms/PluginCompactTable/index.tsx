@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { List } from 'react-window';
+import ApiError from '@/shared/errors/ApiError';
 import '@/modules/plugin/presentation/components/organisms/PluginExposureTable/PluginExposureTable.css';
 
 export interface ColumnConfig {
@@ -117,6 +118,10 @@ const PluginCompactTable = ({
     }
 
     if (error) {
+        const isRBAC = ApiError.isCodePermissionDenied(error);
+        if(isRBAC){
+            return <div className='plugin-exposure-error'>You do not have permission to view this data.</div>;
+        }
         return <div className='plugin-exposure-error'>{error}</div>;
     }
 

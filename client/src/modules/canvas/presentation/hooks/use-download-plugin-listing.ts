@@ -3,6 +3,7 @@ import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-us
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { ExportType } from '@/shared/domain/export/types';
+import ApiError from '@/shared/errors/ApiError';
 
 export interface DownloadPluginListingParams {
     pluginId: string;
@@ -58,6 +59,8 @@ const useDownloadPluginListing = () => {
                     error: { title: 'Failed to download listing' }
                 }
             );
+        } catch(error: unknown) {
+            if(ApiError.isRBACError(error)) return;
         } finally {
             setIsDownloading(false);
         }
@@ -88,6 +91,8 @@ const useDownloadPluginListing = () => {
                     error: { title: 'Failed to download analysis listings' }
                 }
             );
+        } catch(error: unknown) {
+            if(ApiError.isRBACError(error)) return;
         } finally {
             setIsDownloading(false);
         }

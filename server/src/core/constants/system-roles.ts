@@ -37,7 +37,8 @@ export const SystemRoles = {
             ...allActionsFor(Resource.TEAM_INVITATION),
             ...allActionsFor(Resource.TEAM_MEMBER),
             ...allActionsFor(Resource.TEAM_ROLE),
-            ...allActionsFor(Resource.SIMULATION_CELL)
+            ...allActionsFor(Resource.SIMULATION_CELL),
+            ...allActionsFor(Resource.AI_CONVERSATION)
         ],
         isSystem: true
     },
@@ -50,7 +51,11 @@ export const SystemRoles = {
             `${Resource.PLUGIN}:${Action.CREATE}`,
             ...crudFor(Resource.CONTAINER),
             ...crudFor(Resource.SSH_CONNECTION),
-            readOnlyFor(Resource.SIMULATION_CELL)
+            readOnlyFor(Resource.SIMULATION_CELL),
+            readOnlyFor(Resource.AI_CONVERSATION),
+            `${Resource.AI_CONVERSATION}:${Action.CREATE}`,
+            `${Resource.AI_CONVERSATION}:${Action.UPDATE}`,
+            `${Resource.AI_CONVERSATION}:${Action.DELETE}`
         ],
         isSystem: true
     },
