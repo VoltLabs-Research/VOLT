@@ -5,6 +5,7 @@ import useGetTrajectories from '../../../hooks/trajectory/use-get-trajectories';
 import useDeleteTrajectory from '../../../hooks/trajectory/use-delete-trajectory';
 import useTrajectoryFilePicker from '../../../hooks/trajectory/use-trajectory-file-picker';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import usePermission from '@/shared/presentation/hooks/use-permission';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
@@ -64,13 +65,15 @@ const COLUMNS: ColumnConfig[] = [
 const TrajectoriesListing = () => {
     const navigate = useNavigate();
     const { fileInputRef, handlePickerChange, openFilePicker } = useTrajectoryFilePicker();
+    const canCreate = usePermission(['trajectory:create']);
     const getTrajectories = useGetTrajectories();
     const deleteTrajectory = useDeleteTrajectory();
     const { getMenuOptions } = useListingActions<Trajectory>({
         actions: {
             view: {
                 label: 'View Scene',
-                handler: ({ item: trajectory }) => navigate(`/canvas/${trajectory._id}`)
+                handler: ({ item: trajectory }) => navigate(`/canvas/${trajectory._id}`),
+                requiredPermission: 'trajectory:read'
             },
             viewAtoms: {
                 label: 'Inspect Atoms',
@@ -78,7 +81,8 @@ const TrajectoriesListing = () => {
                 handler: ({ item: trajectory }) => {
                     const firstTimestep = trajectory.frames[0].timestep;
                     navigate(`/dashboard/trajectory/${trajectory._id}/analysis/default/atoms/default?timestep=${firstTimestep}`);
-                }
+                },
+                requiredPermission: 'trajectory:read'
             },
             delete: {
                 handler: async ({ item: trajectory }) => {
@@ -92,7 +96,8 @@ const TrajectoriesListing = () => {
                     selectedItems.length === 1
                         ? `Delete trajectory "${selectedItems[0].name}"? This action cannot be undone.`
                         : `Delete ${selectedItems.length} trajectories? This action cannot be undone.`
-                )
+                ),
+                requiredPermission: 'trajectory:delete'
             }
         }
     });
@@ -117,10 +122,10 @@ const TrajectoriesListing = () => {
                     />
                 </>
             }
-            createNew={{
+            createNew={canCreate ? {
                 buttonTitle: 'Upload',
                 onCreate: openFilePicker
-            }}
+            } : undefined}
         />
     );
 };

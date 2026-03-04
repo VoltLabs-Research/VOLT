@@ -21,6 +21,7 @@ interface SidebarExpandableSectionProps {
     defaultExpanded?: boolean;
     expanded?: boolean;
     onExpandedChange?: (expanded: boolean) => void;
+    disabled?: boolean;
 };
 
 const SidebarExpandableSection = ({
@@ -30,7 +31,8 @@ const SidebarExpandableSection = ({
     subItems,
     defaultExpanded = false,
     expanded: controlledExpanded,
-    onExpandedChange
+    onExpandedChange,
+    disabled = false
 }: SidebarExpandableSectionProps) => {
     const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
     
@@ -38,6 +40,7 @@ const SidebarExpandableSection = ({
     const expanded = isControlled ? controlledExpanded : internalExpanded;
 
     const handleToggle = () => {
+        if (disabled) return;
         const newExpanded = !expanded;
         if (isControlled) {
             onExpandedChange?.(newExpanded);
@@ -76,12 +79,13 @@ const SidebarExpandableSection = ({
     };
 
     return (
-        <>
+        <Container className='sidebar-expandable-section'>
             <Button
                 variant='ghost'
                 intent='neutral'
                 className={`sidebar-nav-item sidebar-section-header ${isActive ? 'is-selected' : ''} p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer`}
                 onClick={handleToggle}
+                disabled={disabled}
             >
                 <Container className='sidebar-nav-icon font-size-4'>
                     <Icon />
@@ -93,12 +97,12 @@ const SidebarExpandableSection = ({
                 />
             </Button>
 
-            {expanded && (
+            {expanded && !disabled && (
                 <Container className='sidebar-sub-items'>
                     {subItems.map(renderSubItem)}
                 </Container>
             )}
-        </>
+        </Container>
     );
 };
 

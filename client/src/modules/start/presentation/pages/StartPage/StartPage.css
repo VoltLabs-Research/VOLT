@@ -1,0 +1,166 @@
+.metro-start-screen {
+    width: 100vw;
+    height: 100vh;
+    background: var(--color-bg);
+    color: #ffffff;
+}
+
+.metro-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 3rem;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, transparent 100%);
+    flex-shrink: 0;
+}
+
+.metro-user-info .user-info-name {
+    color: white !important;
+    font-size: 1.1rem;
+}
+
+.metro-user-info .user-info-email {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.metro-user-info .avatar {
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    width: 48px;
+    height: 48px;
+}
+
+.metro-content {
+    flex: 1;
+    padding: 0 3rem 4rem 3rem;
+}
+
+.metro-title {
+    font-size: 4rem;
+    font-weight: 200;
+    letter-spacing: -1.5px;
+    margin-bottom: 2.5rem;
+    margin-top: 1rem;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.metro-empty-state {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.6;
+    max-width: 600px;
+}
+
+.metro-grid {
+    display: grid;
+    /* Fixed pixel size for tiles to guarantee perfect iframe scaling */
+    grid-template-columns: repeat(auto-fill, 320px);
+    grid-auto-rows: 200px;
+    gap: 20px;
+    align-content: start;
+}
+
+.metro-tile {
+    position: relative;
+    width: 320px;
+    height: 200px;
+    background: var(--color-surface-2);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: var(--shadow-glass);
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+    border: 1px solid var(--color-border);
+}
+
+.metro-tile:hover {
+    background: var(--color-surface-3);
+    box-shadow: var(--shadow-card);
+    z-index: 10;
+}
+
+.metro-tile:active {
+    background: var(--color-surface-1);
+}
+
+.metro-tile-preview-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1280px;
+    height: 800px;
+    transform: scale(0.25);
+    transform-origin: 0 0;
+    pointer-events: none;
+}
+
+.metro-tile-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    pointer-events: none;
+}
+
+
+.metro-tile-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.5) 40%, transparent 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1.25rem;
+    pointer-events: none;
+}
+
+.metro-tile-name {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0;
+    margin-bottom: 4px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.2px;
+}
+
+.metro-tile-time {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+}
+
+.metro-tile-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 20;
+    cursor: pointer;
+}
+
+.metro-tile:hover .metro-tile-close {
+    opacity: 1;
+}
+
+.metro-tile-close:hover {
+    background: #ff3b30;
+    border-color: #ff3b30;
+    color: white;
+    transform: scale(1.1);
+}

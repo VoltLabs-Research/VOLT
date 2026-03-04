@@ -11,13 +11,14 @@ import Avatar from '@/shared/presentation/components/Avatar';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Button from '@/shared/presentation/components/Button';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import type { User } from '@/modules/auth/domain/entities/User';
 import './DashboardTeamPresence.css';
 
 const DashboardTeamPresence = () => {
     const navigate = useNavigate();
     const selectedTeam = useSelectedTeam()!;
-    const { fetchMembers } = useTeamMemberData();
+    const { fetchMembers, accessDenied, accessDeniedMessage } = useTeamMemberData();
     const members = useTeamMemberStore((state) => state.members);
     const isLoading = useTeamMemberStore((state) => state.isLoading);
     const onlineUserIds = useTeamPresenceStore((s) => s.onlineUserIds);
@@ -46,6 +47,14 @@ const DashboardTeamPresence = () => {
 
     const totalCount = members.length;
     const onlineCount = onlineMembers.length;
+
+    if (accessDenied) {
+        return (
+            <Container className='dashboard-presence-card'>
+                <AccessDenied description={accessDeniedMessage} showBack={false} />
+            </Container>
+        );
+    }
 
     if (isLoading) {
         return (

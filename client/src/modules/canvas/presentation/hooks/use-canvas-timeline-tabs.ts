@@ -5,6 +5,8 @@ import { getListingRelevantExposures } from '@/modules/plugin/presentation/utils
 import type { Trajectory } from '@/modules/trajectory/domain/entities/Trajectory';
 import useSceneArtifactUseCases from '@/modules/trajectory/presentation/hooks/generated-scenes/use-scene-artifact-use-cases';
 import type { RenderableExposurePayload } from '@/modules/trajectory/application/dtos/scene-artifacts';
+import ApiError from '@/shared/errors/ApiError';
+import { sileo } from 'sileo';
 
 interface UseCanvasTimelineTabsParams {
     trajectory: Trajectory | null | undefined;
@@ -29,7 +31,12 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
 
     useEffect(() => {
         if (!pluginId || plugin) return;
-        ensurePluginById(pluginId).catch(() => {});
+        ensurePluginById(pluginId).catch((error: unknown) => {
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
+                sileo.error({ title: msg });
+            }
+        });
     }, [pluginId, plugin, ensurePluginById]);
 
     useEffect(() => {
@@ -53,8 +60,12 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
 
                 if (cancelled) return;
                 setSceneExposureFallback(response.data as RenderableExposurePayload[]);
-            } catch {
+            } catch(error: unknown) {
                 if (cancelled) return;
+                if(ApiError.isRBACError(error)){
+                    const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
+                    sileo.error({ title: msg });
+                }
                 setSceneExposureFallback([]);
             }
         };

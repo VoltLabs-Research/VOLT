@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { Navigate, Route } from 'react-router-dom';
+import { Route } from 'react-router-dom';
 import { routesConfig } from './config';
 import ProtectedRoute from '@/modules/auth/presentation/components/atoms/ProtectedRoute';
 import PageTransition from '@/shared/presentation/components/PageTransition';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import type { RouteConfig } from './types';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { canAccessByPermissions, getScopedPermissions, isPermissionScopeReady } from '@/modules/team/presentation/utils/permission-evaluator';
@@ -50,7 +51,7 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
     const isAllowed = canAccessByPermissions(scopedPermissions, permissions, mode);
 
     if (!isAllowed) {
-        return <Navigate to='/dashboard' replace state={{ fromForbidden: true }} />;
+        return <AccessDenied />;
     }
 
     return <>{children}</>;

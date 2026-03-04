@@ -5,9 +5,11 @@ import { FlaskConical } from 'lucide-react';
 import { Skeleton } from '@mui/material';
 import { formatDistanceToNow } from 'date-fns';
 import useAnalysisUseCases from '@/modules/analysis/presentation/hooks/use-analysis-use-cases';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Title from '@/shared/presentation/components/Title';
 import Button from '@/shared/presentation/components/Button';
 import type { Analysis } from '@/modules/analysis/domain/entities';
@@ -18,18 +20,20 @@ const DashboardRecentAnalyses: React.FC = () => {
     const { getAnalysesUseCase } = useAnalysisUseCases();
     const [analyses, setAnalyses] = useState<Analysis[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
 
     const fetchRecent = useCallback(async () => {
         setIsLoading(true);
         try {
             const result = await getAnalysesUseCase.execute({ page: 1, limit: 5 });
             setAnalyses(result.data);
-        } catch {
+        } catch(error) {
+            if(checkRBACError(error)) return;
             setAnalyses([]);
         } finally {
             setIsLoading(false);
         }
-    }, [getAnalysesUseCase]);
+    }, [getAnalysesUseCase, checkRBACError]);
 
     useEffect(() => {
         fetchRecent();
@@ -62,7 +66,9 @@ const DashboardRecentAnalyses: React.FC = () => {
             </Container>
 
             <Container className='dashboard-recent-analyses-list d-flex column flex-1 y-auto gap-1 min-h-0'>
-                {isLoading ? (
+                {accessDenied ? (
+                    <AccessDenied description={accessDeniedMessage} showBack={false} />
+                ) : isLoading ? (
                     Array.from({ length: 3 }).map((_, i) => (
                         <Container key={i} className='dashboard-recent-analyses-item list-item-hoverable d-flex items-center content-between gap-075'>
                             <Skeleton variant='rounded' width='100%' height={40} sx={{ borderRadius: 'var(--radius-md)' }} />

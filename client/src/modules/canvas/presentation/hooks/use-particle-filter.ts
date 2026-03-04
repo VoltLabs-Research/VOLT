@@ -4,6 +4,7 @@ import useParticleFilterUseCases from '@/modules/trajectory/presentation/hooks/p
 import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
+import ApiError from '@/shared/errors/ApiError';
 
 export type FilterOperator = '==' | '!=' | '>' | '>=' | '<' | '<=';
 export type FilterAction = 'delete' | 'highlight';
@@ -85,8 +86,13 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 property, exposureId: normalizedExposureId, maxValues: 50
             });
             setValueSuggestions(result.values);
-        } catch {
-            sileo.error({ title: 'Failed to load suggestions' });
+        } catch(error: unknown) {
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
+                sileo.error({ title: msg });
+            } else {
+                sileo.error({ title: 'Failed to load suggestions' });
+            }
         }
     }, [trajectoryId, currentTimestep, property, analysisId, exposureId, particleFilterRepository]);
 

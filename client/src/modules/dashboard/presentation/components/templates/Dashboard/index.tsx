@@ -9,6 +9,7 @@ import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import DashboardOverviewCard from '@/modules/dashboard/presentation/components/atoms/DashboardOverviewCard';
 import DashboardOverviewSkeleton from '@/modules/dashboard/presentation/components/atoms/DashboardOverviewSkeleton';
 import DashboardTeamTimeline from '@/modules/dashboard/presentation/components/molecules/DashboardTeamTimeline';
@@ -48,7 +49,7 @@ const DashboardPage = () => {
 
     const selectedTeam = useSelectedTeam()!;
     const user = useCurrentUser();
-    const { loading, cards } = useDashboardMetrics(selectedTeam._id);
+    const { loading, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam._id);
 
     const firstName = useMemo(() => {
         const name = user?.firstName || '';
@@ -77,7 +78,11 @@ const DashboardPage = () => {
                 </Container>
 
                 {/* Stat overview cards */}
-                {loading ? (
+                {accessDenied ? (
+                    <Container className='dashboard-stat-card' style={{ gridColumn: 'span 4' }}>
+                        <AccessDenied description={accessDeniedMessage} showBack={false} />
+                    </Container>
+                ) : loading ? (
                     <DashboardOverviewSkeleton count={3} />
                 ) : (
                     cards.map((card: DashboardCard, index: number) => (

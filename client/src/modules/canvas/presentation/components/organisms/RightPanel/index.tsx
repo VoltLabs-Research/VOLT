@@ -17,6 +17,7 @@ import ModifierConfig, { ArgumentField } from '../../molecules/ModifierConfig';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import usePluginExecution, { type ExecState } from '../../../hooks/usePluginExecution';
 import { sileo } from 'sileo';
+import ApiError from '@/shared/errors/ApiError';
 import type { LegacyActionRef } from '../ColorCoding';
 import './RightPanel.css';
 
@@ -88,8 +89,13 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
 
     useEffect(() => {
         if (plugins.length > 0) return;
-        loadAllPlugins({ limit: 200, force: true }).catch(() => {
-            sileo.error({ title: 'Failed to load plugins' });
+        loadAllPlugins({ limit: 200, force: true }).catch((error: unknown) => {
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
+                sileo.error({ title: msg });
+            } else {
+                sileo.error({ title: 'Failed to load plugins' });
+            }
         });
     }, [plugins.length, loadAllPlugins]);
 

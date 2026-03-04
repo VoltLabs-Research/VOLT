@@ -7,6 +7,7 @@ import AIConversationThread from '@/modules/ai/presentation/components/organisms
 import useAIPage from '@/modules/ai/presentation/hooks/use-ai-page';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { type SelectOption } from '@/shared/presentation/components/Select';
@@ -34,6 +35,8 @@ const AIFloatingAssistantPanel = () => {
         sendMessageError,
         noProviderConfigured,
         canSendMessage,
+        accessDenied,
+        accessDeniedMessage,
         setSelectedModel,
         handleCreateConversation,
         addToolApprovalResponse,
@@ -157,7 +160,11 @@ const AIFloatingAssistantPanel = () => {
                         </Container>
                     )}
 
-                    {!selectedTeam?._id ? (
+                    {accessDenied ? (
+                        <Container className='d-flex flex-center flex-1'>
+                            <AccessDenied description={accessDeniedMessage} showBack={false} />
+                        </Container>
+                    ) : !selectedTeam?._id ? (
                         <Container className='d-flex flex-center flex-1'>
                             <EmptyState
                                 title='No team selected'

@@ -8,6 +8,7 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { teamCreatorSchema, TeamCreatorForm } from './validation-schema';
+import ApiError from '@/shared/errors/ApiError';
 import './TeamCreatorModal.css';
 
 const MODAL_ID = 'team-creator-modal';
@@ -52,8 +53,13 @@ const TeamCreatorModal: React.FC<TeamCreatorModalProps> = ({
                 reset();
                 closeModal(MODAL_ID);
                 onSuccess?.();
-            }catch(err: any){
-                setApiError(err?.message || 'Failed to create team');
+            }catch(err: unknown){
+                if(ApiError.isRBACError(err)){
+                    const msg = err instanceof ApiError ? err.getFriendlyMessage() : 'You do not have permission to perform this action.';
+                    setApiError(msg);
+                    return;
+                }
+                setApiError(err instanceof Error ? err.message : 'Failed to create team');
                 throw err;
             }
         }

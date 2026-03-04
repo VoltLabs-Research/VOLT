@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import useSceneArtifactUseCases from '@/modules/trajectory/presentation/hooks/generated-scenes/use-scene-artifact-use-cases';
 import { sileo } from 'sileo';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type { RenderableExposure } from '@/modules/plugin/presentation/stores/use-plugin-store';
 import type { RenderableExposurePayload } from '@/modules/trajectory/application/dtos/scene-artifacts';
 
@@ -27,6 +28,7 @@ interface UseExposureManagerReturn {
 
 const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExposureManagerReturn => {
     const { listSceneArtifactsUseCase } = useSceneArtifactUseCases();
+    const { checkRBACError } = useAccessDenied();
     const [exposureEntries, setExposureEntries] = useState<Map<string, ExposureEntry>>(new Map());
     const exposureEntriesRef = useRef(exposureEntries);
 
@@ -73,6 +75,7 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
 
             setEntry(analysisId, { state: 'loaded', exposures: exposures as RenderableExposure[] });
         } catch (error) {
+            if(checkRBACError(error)) return;
             sileo.error({ title: 'Failed to load exposures' });
             setEntry(analysisId, { state: 'error', exposures: [], error });
         }

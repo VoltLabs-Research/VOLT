@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine } from 'react-icons/ri';
 import { usePluginUseCases, useDeletePlugin, useExportPlugin, useImportPlugin } from '../../../hooks';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import usePermission from '@/shared/presentation/hooks/use-permission';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
@@ -21,6 +22,7 @@ const PluginsListing = () => {
     const [isImporting, setIsImporting] = useState(false);
 
     const selectedTeam = useSelectedTeam()!;
+    const canCreate = usePermission(['plugin:create']);
 
     const { clonePluginUseCase, pluginRepository } = usePluginUseCases();
     const deletePlugin = useDeletePlugin();
@@ -68,17 +70,20 @@ const PluginsListing = () => {
             edit: {
                 label: 'Edit',
                 icon: RiEditLine,
-                handler: ({ item }) => navigate(`/plugins/builder?id=${item._id}`)
+                handler: ({ item }) => navigate(`/plugins/builder?id=${item._id}`),
+                requiredPermission: 'plugin:update'
             },
             clone: {
                 label: 'Clone',
                 icon: RiFileCopyLine,
-                handler: ({ item }) => handleClone(item)
+                handler: ({ item }) => handleClone(item),
+                requiredPermission: 'plugin:create'
             },
             export: {
                 label: 'Export',
                 icon: RiDownloadLine,
-                handler: ({ item }) => exportPlugin(item._id, `${item.modifier?.name || item._id}.zip`)
+                handler: ({ item }) => exportPlugin(item._id, `${item.modifier?.name || item._id}.zip`),
+                requiredPermission: 'plugin:read'
             },
             delete: {
                 handler: async ({ item }) => {
@@ -92,7 +97,8 @@ const PluginsListing = () => {
                     selectedItems.length === 1
                         ? `Delete plugin "${selectedItems[0].modifier?.name || selectedItems[0]._id}"? This action cannot be undone.`
                         : `Delete ${selectedItems.length} plugins? This action cannot be undone.`
-                )
+                ),
+                requiredPermission: 'plugin:delete'
             }
         }
     });
@@ -161,11 +167,11 @@ const PluginsListing = () => {
             defaultLimit={20}
             getMenuOptions={getMenuOptions}
             emptyMessage='No plugins found. Create your first plugin!'
-            createNew={{
+            createNew={canCreate ? {
                 buttonTitle: 'New plugin',
                 onCreate: () => navigate('/plugins/builder')
-            }}
-            headerActions={
+            } : undefined}
+            headerActions={canCreate ? (
                 <>
                     <input
                         ref={importInputRef}
@@ -186,7 +192,7 @@ const PluginsListing = () => {
                         Import
                     </Button>
                 </>
-            }
+            ) : undefined}
             listSyncConfig={LIST_SYNC}
         />
     );

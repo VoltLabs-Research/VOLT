@@ -1,6 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
 import { useNavigate } from 'react-router-dom';
-import { Box, Gauge } from 'lucide-react';
+import { Box, Camera, Gauge } from 'lucide-react';
+import { useScreenshotStore } from '@/modules/canvas/presentation/stores/use-screenshot-store';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
@@ -108,6 +109,20 @@ const Viewport = ({
                 <Container className="flex-1" />
 
                 {headerActionsBeforePerformance}
+
+                <Tooltip content="Screenshot (Ctrl+S)">
+                    <Button
+                        variant="ghost"
+                        intent="canvas"
+                        shape="rounded"
+                        size="sm"
+                        className="font-size-05 canvas-btn-compact"
+                        leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Camera size={12} /></span>}
+                        onClick={() => useScreenshotStore.getState().requestCapture()}
+                    >
+                        Screenshot
+                    </Button>
+                </Tooltip>
 
                 <Popover
                     id="viewport-performance"

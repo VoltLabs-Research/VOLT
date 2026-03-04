@@ -68,7 +68,11 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
             return <Loader scale={0.6} />;
         }
 
-        return <Outlet />;
+        return (
+            <>
+                <Outlet />
+            </>
+        );
     }
 
     // Guest mode: redirect authenticated users away

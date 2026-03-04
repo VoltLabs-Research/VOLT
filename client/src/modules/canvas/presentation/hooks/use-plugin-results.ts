@@ -8,6 +8,7 @@ import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store'
 import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { getListingRelevantExposures } from '@/modules/plugin/presentation/utils/listing-exposures';
+import ApiError from '@/shared/errors/ApiError';
 
 interface UsePluginResultsOptions {
     pluginId: string;
@@ -65,6 +66,8 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
                     error: { title: 'Failed to download results' }
                 }
             );
+        } catch(error: unknown) {
+            if(ApiError.isRBACError(error)) return;
         } finally {
             setIsDownloading(false);
         }

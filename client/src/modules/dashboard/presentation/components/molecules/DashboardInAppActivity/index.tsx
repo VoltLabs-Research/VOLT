@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import useDailyActivityData from '@/modules/daily-activity/presentation/hooks/use-daily-activity-data';
 import './DashboardInAppActivity.css';
 
@@ -28,7 +29,7 @@ const formatMinutes = (minutes: number): string => {
 const toMondayIndex = (jsDay: number): number => (jsDay === 0 ? 6 : jsDay - 1);
 
 const DashboardInAppActivity = () => {
-    const { activityData, isLoading, fetchActivity } = useDailyActivityData();
+    const { activityData, isLoading, accessDenied, accessDeniedMessage, fetchActivity } = useDailyActivityData();
 
     useEffect(() => {
         fetchActivity(365);
@@ -96,6 +97,14 @@ const DashboardInAppActivity = () => {
             </div>
         );
     };
+
+    if (accessDenied) {
+        return (
+            <Container className='dashboard-inapp-activity-card'>
+                <AccessDenied description={accessDeniedMessage} showBack={false} />
+            </Container>
+        );
+    }
 
     if (isLoading) {
         return (

@@ -5,6 +5,7 @@ import { LuFolderOpen } from 'react-icons/lu';
 import { formatDistanceToNow } from 'date-fns';
 import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import usePermission from '@/shared/presentation/hooks/use-permission';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { useSSHUseCases } from '@/modules/ssh/presentation/hooks';
@@ -17,6 +18,7 @@ const LIST_SYNC = createListSyncConfig('ssh-connection');
 const SSHConnectionsPage = () => {
     const navigate = useNavigate();
     const { sshRepository } = useSSHUseCases();
+    const canCreate = usePermission(['ssh-connection:create']);
 
     const [editingConnection, setEditingConnection] = useState<SSHConnection | null>(null);
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -80,17 +82,20 @@ const SSHConnectionsPage = () => {
             fileExplorer: {
                 label: 'File Explorer',
                 icon: LuFolderOpen,
-                handler: ({ item }) => handleOpenFileExplorer(item)
+                handler: ({ item }) => handleOpenFileExplorer(item),
+                requiredPermission: 'ssh-connection:read'
             },
             test: {
                 label: 'Test Connection',
                 icon: RiWifiLine,
-                handler: ({ item }) => handleTestConnection(item)
+                handler: ({ item }) => handleTestConnection(item),
+                requiredPermission: 'ssh-connection:read'
             },
             edit: {
                 label: 'Edit',
                 icon: RiEditLine,
-                handler: ({ item }) => handleEditConnection(item)
+                handler: ({ item }) => handleEditConnection(item),
+                requiredPermission: 'ssh-connection:update'
             },
             delete: {
                 handler: ({ item }) => handleDeleteConnection(item),
@@ -99,7 +104,8 @@ const SSHConnectionsPage = () => {
                         ? `Delete connection "${selectedItems[0].name}"? This action cannot be undone.`
                         : `Delete ${selectedItems.length} connections? This action cannot be undone.`
                 ),
-                variant: 'danger'
+                variant: 'danger',
+                requiredPermission: 'ssh-connection:delete'
             }
         }
     });
@@ -147,10 +153,10 @@ const SSHConnectionsPage = () => {
                 defaultLimit={20}
                 getMenuOptions={getMenuOptions}
                 emptyMessage='No SSH connections found. Create one to get started.'
-                createNew={{
+                createNew={canCreate ? {
                     buttonTitle: 'Add Connection',
                     onCreate: handleCreateNew
-                }}
+                } : undefined}
                 listSyncConfig={LIST_SYNC}
             />
             <SSHConnectionModal

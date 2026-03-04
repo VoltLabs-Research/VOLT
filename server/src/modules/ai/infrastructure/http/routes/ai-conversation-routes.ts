@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import { Resource } from '@core/constants/resources';
 import controllers from '@modules/ai/infrastructure/http/controllers';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/ai/conversations',
-    router
+    router,
+    resource: Resource.AI_CONVERSATION
 };
 
 router.use(protect);

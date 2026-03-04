@@ -48,7 +48,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     { id: 'decrease-point-size', description: 'Decrease point size', keys: ['ctrl', '-'], scope: 'canvas', category: 'view' },
     { id: 'show-shortcuts', description: 'Show shortcuts', keys: ['?'], scope: 'global', category: 'general' },
     { id: 'show-shortcuts-ctrl-k', description: 'Show shortcuts', keys: ['ctrl', 'k'], scope: 'global', category: 'general' },
-    { id: 'screenshot', description: 'Screenshot', keys: ['ctrl', 'shift', 's'], scope: 'canvas', category: 'general' },
+    { id: 'screenshot', description: 'Screenshot', keys: ['ctrl', 's'], scope: 'canvas', category: 'general' },
     { id: 'escape', description: 'Close panels', keys: ['escape'], scope: 'global', category: 'general' }
 ];
 

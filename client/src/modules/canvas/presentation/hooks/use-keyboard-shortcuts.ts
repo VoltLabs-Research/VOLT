@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useKeyboardShortcutsStore } from '../stores/use-keyboard-shortcuts-store';
 import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
-import { openModal } from '@/shared/presentation/components/Modal';
-import { SCREENSHOT_MODAL_ID } from '../components/organisms/ScreenshotModal';
+import { useScreenshotStore } from '../stores/use-screenshot-store';
 import useCanvasUrlState from './use-canvas-url-state';
 
 const normalizeKey = (key: string): string => {
@@ -121,7 +120,7 @@ const useKeyboardShortcuts = () => {
             'show-shortcuts-ctrl-k': togglePanel,
 
             'screenshot': () => {
-                openModal(SCREENSHOT_MODAL_ID);
+                useScreenshotStore.getState().requestCapture();
             },
 
             'escape': () => {

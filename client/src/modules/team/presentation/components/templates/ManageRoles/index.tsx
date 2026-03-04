@@ -12,9 +12,11 @@ import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
 import useTeamRoleUseCases from '@/modules/team/presentation/hooks/team-role/use-team-role-use-cases';
 import useSystemUseCases from '@/modules/system/presentation/hooks/use-system-use-cases';
+import usePermission from '@/shared/presentation/hooks/use-permission';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
+import ApiError from '@/shared/errors/ApiError';
 import type { GetTeamRolesParams } from '@/modules/team/domain/ports/ITeamRoleRepository';
 import type { TeamRole } from '@/modules/team/domain/entities/TeamRole';
 import type { RBACResource, RBACAction } from '@/modules/system/domain/entities';
@@ -75,6 +77,10 @@ const ManageRolesTemplate: React.FC = () => {
     const [actions, setActions] = useState<RBACAction[]>([]);
 
     const selectedTeam = useSelectedTeam()!;
+    const canCreate = usePermission(['team-role:create']);
+    const canUpdate = usePermission(['team-role:update']);
+    const canDelete = usePermission(['team-role:delete']);
+    const canRead = usePermission(['team-role:read']);
     const addRole = useTeamRoleStore((state) => state.addRole);
     const updateRole = useTeamRoleStore((state) => state.updateRole);
     const removeRole = useTeamRoleStore((state) => state.removeRole);
@@ -88,7 +94,8 @@ const ManageRolesTemplate: React.FC = () => {
             if(cancelled) return;
             setResources(config.resources);
             setActions(config.actions);
-        }).catch(() => {
+        }).catch((error) => {
+            if(ApiError.isRBACError(error)) return;
             sileo.error({ title: 'Failed to load permissions config' });
         });
         return () => { cancelled = true; };
@@ -134,6 +141,10 @@ const ManageRolesTemplate: React.FC = () => {
             }
             setEditingRole(null);
         }catch(err){
+            if(ApiError.isRBACError(err)){
+                const msg = err instanceof ApiError ? err.getFriendlyMessage() : 'You do not have permission to manage roles';
+                sileo.error({ title: msg });
+            }
             throw err;
         }finally{
             setIsSaving(false);
@@ -173,7 +184,7 @@ const ManageRolesTemplate: React.FC = () => {
         const hasDeletableRoleInSelection = targetRoles.some((entry) => !entry.isSystem);
 
         if (isMultipleSelection) {
-            if (!hasDeletableRoleInSelection) {
+            if (!hasDeletableRoleInSelection || !canDelete) {
                 return [];
             }
 
@@ -186,6 +197,7 @@ const ManageRolesTemplate: React.FC = () => {
         }
 
         if(role.isSystem){
+            if(!canRead) return [];
             return [{
                 label: 'View',
                 icon: RiEyeLine,
@@ -193,20 +205,27 @@ const ManageRolesTemplate: React.FC = () => {
             }];
         }
 
-        return [
-            {
+        const options: MenuOption[] = [];
+
+        if(canUpdate){
+            options.push({
                 label: 'Edit',
                 icon: RiEditLine,
                 onClick: () => handleOpenEdit(role)
-            },
-            {
+            });
+        }
+
+        if(canDelete){
+            options.push({
                 label: 'Delete',
                 icon: RiDeleteBin6Line,
                 onClick: () => handleDeleteRoles(targetRoles),
                 destructive: true
-            }
-        ];
-    }, [handleOpenEdit, handleDeleteRoles]);
+            });
+        }
+
+        return options;
+    }, [canRead, canUpdate, canDelete, handleOpenEdit, handleDeleteRoles]);
 
     return (
         <Container className='manage-roles-page h-max'>
@@ -216,10 +235,10 @@ const ManageRolesTemplate: React.FC = () => {
                 fetchData={fetchData}
                 getMenuOptions={getMenuOptions}
                 emptyMessage='No roles found. Create your first custom role.'
-                createNew={{
+                createNew={canCreate ? {
                     buttonTitle: 'New Role',
                     onCreate: handleOpenCreate
-                }}
+                } : undefined}
                 listSyncConfig={LIST_SYNC}
             />
 

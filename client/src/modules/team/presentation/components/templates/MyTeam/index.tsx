@@ -26,6 +26,7 @@ import useDailyActivityData from '@/modules/daily-activity/presentation/hooks/us
 import ActivityHeatmap from '@/modules/daily-activity/presentation/components/molecules/ActivityHeatmap';
 import { useTeamPresenceStore } from '@/modules/team/presentation/stores/use-team-presence-store';
 import { canAccessTeamPermissions } from '@/modules/team/presentation/utils/permission-evaluator';
+import ApiError from '@/shared/errors/ApiError';
 import './MyTeam.css';
 
 const LIST_SYNC = createListSyncConfig('team-member');
@@ -80,7 +81,8 @@ const MyTeamTemplate: React.FC = () => {
                 }
             );
             updateTeamInList(selectedTeam._id, { name: newName });
-        }catch{
+        }catch(error: unknown){
+            if(ApiError.isRBACError(error)) return;
         }
     }, [selectedTeam._id, teamRepository, updateTeamInList]);
 
@@ -95,7 +97,8 @@ const MyTeamTemplate: React.FC = () => {
                 }
             );
             updateMember(memberId, updated);
-        }catch{
+        }catch(error: unknown){
+            if(ApiError.isRBACError(error)) return;
         }
     }, [selectedTeam._id, teamMemberRepository, updateMember]);
 
@@ -120,7 +123,8 @@ const MyTeamTemplate: React.FC = () => {
                     }
                 );
                 removeMemberFromStore(member._id);
-            }catch{
+            }catch(error: unknown){
+                if(ApiError.isRBACError(error)) return;
             }
         }
     }, [selectedTeam._id, teamMemberRepository, removeMemberFromStore]);

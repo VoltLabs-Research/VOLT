@@ -7,9 +7,12 @@ import { CHAT_SOCKET_EVENTS } from '@/modules/chat/domain/constants';
 import type IChatRepository from '@/modules/chat/domain/ports/IChatRepository';
 import type IChatMessageRepository from '@/modules/chat/domain/ports/IChatMessageRepository';
 import { sileo } from 'sileo';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import ApiError from '@/shared/errors/ApiError';
 
 const useChatData = () => {
     const socket = useSocket();
+    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
 
     // Resolve DI inside hook to ensure container is ready
     const chatRepository = useMemo(
@@ -53,7 +56,8 @@ const useChatData = () => {
         try {
             const data = await chatRepository.getAll();
             setChats(data);
-        } catch {
+        } catch(error) {
+            if(checkRBACError(error)) return;
             sileo.error({ title: 'Failed to load chats' });
             hasFetchedChatsRef.current = false;
         } finally {
@@ -75,7 +79,8 @@ const useChatData = () => {
             
             setHasMore(response.pagination.hasMore);
             setPage(page);
-        } catch {
+        } catch(error) {
+            if(checkRBACError(error)) return;
             sileo.error({ title: 'Failed to load messages' });
         } finally {
             setMessagesLoading(false);
@@ -94,7 +99,12 @@ const useChatData = () => {
 
         socket.emit(CHAT_SOCKET_EVENTS.JOIN_CHAT, chatId);
         await fetchMessages(chatId);
-        chatMessageRepository.markAsRead(chatId).catch(() => {});
+        chatMessageRepository.markAsRead(chatId).catch((error: unknown) => {
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
+                sileo.error({ title: msg });
+            }
+        });
 
         const chat = chatsRef.current.find((c) => c._id === chatId);
         if (chat) {
@@ -120,7 +130,9 @@ const useChatData = () => {
         fetchChats,
         fetchMessages,
         selectChat,
-        loadMoreMessages
+        loadMoreMessages,
+        accessDenied,
+        accessDeniedMessage
     };
 };
 

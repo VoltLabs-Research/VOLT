@@ -6,6 +6,8 @@ import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
 import GlobalErrorListener from '@/shared/presentation/components/GlobalErrorListener';
 import { buildErrorPath } from '@/shared/utils';
 import { Toaster } from 'sileo';
+import { useGlobalShortcuts } from '@/shared/presentation/hooks/use-global-shortcuts';
+import { usePageTracker } from '@/shared/presentation/hooks/use-page-tracker';
 import 'sileo/styles.css';
 
 const NotFoundRedirect = () => {
@@ -20,6 +22,9 @@ const NotFoundRedirect = () => {
 
 const AppRoutes = () => {
     const navigate = useNavigate();
+
+    useGlobalShortcuts();
+    usePageTracker();
 
     const handleRenderError = useCallback((error: Error, info: ErrorInfo) => {
         const stack = info.componentStack ?? error.stack;

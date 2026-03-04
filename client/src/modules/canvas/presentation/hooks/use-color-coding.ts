@@ -3,6 +3,7 @@ import useModifierBase, { UseModifierBaseOptions } from './use-modifier-base';
 import useColorCodingUseCases from '@/modules/trajectory/presentation/hooks/color-coding/use-color-coding-use-cases';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
+import ApiError from '@/shared/errors/ApiError';
 
 export const COLOR_GRADIENTS = ['Viridis', 'Plasma', 'BlueRed', 'GrayScale'] as const;
 export type ColorGradient = typeof COLOR_GRADIENTS[number];
@@ -50,8 +51,13 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
                 });
             setStartValue(stats.min);
             setEndValue(stats.max);
-        } catch {
-            sileo.error({ title: 'Failed to fetch property statistics' });
+        } catch(error: unknown) {
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
+                sileo.error({ title: msg });
+            } else {
+                sileo.error({ title: 'Failed to fetch property statistics' });
+            }
         } finally {
             setIsFetchingStats(false);
         }
@@ -83,6 +89,8 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
             window.dispatchEvent(new CustomEvent('canvas:scene-artifacts:changed', {
                 detail: { sourceType: 'color-coding', trajectoryId }
             }));
+        } catch(error: unknown) {
+            if(ApiError.isRBACError(error)) return;
         } finally {
             setIsApplying(false);
         }

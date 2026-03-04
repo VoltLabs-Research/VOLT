@@ -8,6 +8,7 @@ import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import ApiError from '@/shared/errors/ApiError';
 import './TeamSelector.css';
 
 interface TeamSelectorProps {
@@ -51,7 +52,8 @@ const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
                 hydrateTeamAccess(newTeamId);
                 updateSearchParams({ team: newTeamId }, { replace: true });
             }
-        } catch (err: unknown) {
+        } catch(error: unknown) {
+            if(ApiError.isRBACError(error)) return;
         }
     }, [teamRepository, hydrateTeamAccess, updateSearchParams]);
 

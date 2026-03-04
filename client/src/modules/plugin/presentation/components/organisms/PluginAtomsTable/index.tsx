@@ -3,6 +3,7 @@ import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/presentation/components/organisms/PluginCompactTable';
 import useListingLifecycle, { type ListingMeta } from '@/shared/presentation/hooks/use-listing-lifecycle';
 import useGetAtoms from '@/modules/trajectory/presentation/hooks/trajectory/use-get-atoms';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 
 interface PluginAtomsTableProps {
     trajectoryId: string;
@@ -28,6 +29,7 @@ const getTypeColor = (t?: number): string => {
 const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId, onDataReady }: PluginAtomsTableProps) => {
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
     const getAtoms = useGetAtoms();
+    const { checkRBACError } = useAccessDenied();
 
     const [rows, setRows] = useState<any[]>([]);
     const [properties, setProperties] = useState<string[]>([]);
@@ -76,7 +78,9 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId, onDataReady }:
                 setListingMeta(prev => ({ ...prev, hasMore: false }));
             }
         } catch (err: any) {
-            setError(err.message || 'Failed to fetch atoms');
+            if(!checkRBACError(err)){
+                setError(err.message || 'Failed to fetch atoms');
+            }
         } finally {
             setIsLoading(false);
             setIsFetchingMore(false);

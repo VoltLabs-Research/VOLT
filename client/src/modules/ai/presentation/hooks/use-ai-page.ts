@@ -15,6 +15,7 @@ import useListTeamAIIntegrationModels from '@/modules/team/presentation/hooks/ai
 import TokenStorage from '@/modules/auth/infrastructure/storage/TokenStorage';
 import { aiConversationRepository } from '@/modules/ai/infrastructure/repositories/AIConversationRepository';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type {
     TeamAIModelListItem,
     TeamAIProvider,
@@ -104,6 +105,7 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const listTeamAIIntegrations = useListTeamAIIntegrations();
     const listTeamAIIntegrationModels = useListTeamAIIntegrationModels();
+    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
 
     const [conversations, setConversations] = useState<AIConversation[]>([]);
     const [integrations, setIntegrations] = useState<Array<{ provider: TeamAIProvider; isEnabled: boolean; hasApiKey: boolean }>>([]);
@@ -229,7 +231,9 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
             });
             setConversations(sortConversations(response.data));
         } catch (error) {
-            setConversationsError('Failed to load conversations. Please try again.');
+            if (!checkRBACError(error)) {
+                setConversationsError('Failed to load conversations. Please try again.');
+            }
             setConversations([]);
         } finally {
             setIsConversationsLoading(false);
@@ -260,7 +264,9 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
             })));
             setProviderCatalog(modelsResponse.providers);
         } catch (error) {
-            setProviderCatalogError('Failed to load provider catalog.');
+            if(!checkRBACError(error)){
+                setProviderCatalogError('Failed to load provider catalog.');
+            }
             setIntegrations([]);
             setProviderCatalog([]);
         } finally {
@@ -307,7 +313,9 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
             });
             setMessages(response.data.map(toUIMessage));
         } catch (error) {
-            setMessagesError('Failed to load conversation messages.');
+            if(!checkRBACError(error)){
+                setMessagesError('Failed to load conversation messages.');
+            }
             setMessages([]);
         } finally {
             setIsMessagesLoading(false);
@@ -392,6 +400,7 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
             handleConversationChange(conversation._id);
             return conversation;
         } catch (error) {
+            if(checkRBACError(error)) throw error;
             sileo.error({ title: 'Failed to create conversation' });
             throw error;
         }
@@ -433,6 +442,7 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
                 ))
             ));
         } catch (error) {
+            if(checkRBACError(error)) throw error;
             sileo.error({ title: 'Failed to rename conversation' });
             throw error;
         }
@@ -487,6 +497,8 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
         sendMessageError,
         noProviderConfigured,
         canSendMessage,
+        accessDenied,
+        accessDeniedMessage,
         setSelectedProvider,
         setSelectedModel,
         loadConversations,

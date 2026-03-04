@@ -73,7 +73,7 @@ const buildMenus = ({
                 checked: showStatusBar,
                 action: onToggleStatusBar
             },
-            { type: 'item', label: 'Screenshot', icon: <Camera size={ICON_SIZE} />, shortcut: 'Ctrl+Shift+S', action: onScreenshot }
+            { type: 'item', label: 'Screenshot', icon: <Camera size={ICON_SIZE} />, shortcut: 'Ctrl+S', action: onScreenshot }
         ]
     },
     {

@@ -3,6 +3,7 @@ import useTrajectoryStore from '../../stores/use-trajectory-store';
 import useTrajectoryUseCases from './use-trajectory-use-cases';
 import { Trajectory } from '@/modules/trajectory/domain/entities';
 import { sileo } from 'sileo';
+import ApiError from '@/shared/errors/ApiError';
 
 const useUpdateTrajectory = () => {
     const { trajectoryRepository } = useTrajectoryUseCases();
@@ -24,7 +25,12 @@ const useUpdateTrajectory = () => {
             patchTrajectory(id, updated);
             sileo.success({ title: 'Trajectory updated' });
         }catch(error){
-            sileo.error({ title: 'Failed to update trajectory' });
+            if(ApiError.isRBACError(error)){
+                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to update this trajectory';
+                sileo.error({ title: msg });
+            }else{
+                sileo.error({ title: 'Failed to update trajectory' });
+            }
             setTrajectories(previousTrajectories);
             setTrajectory(previousTrajectory);
             throw error;

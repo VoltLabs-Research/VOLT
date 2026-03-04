@@ -10,11 +10,11 @@ import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shar
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { openModal } from '@/shared/presentation/components/Modal';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import usePermission from '@/shared/presentation/hooks/use-permission';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import SecretKeyCreationModal, { SECRET_KEY_CREATION_MODAL_ID } from '../../organisms/SecretKeyCreationModal';
 import type { SecretKey } from '@/modules/team/domain/entities';
-import { SECRET_KEY_ROUTES } from '@/modules/team/domain/constants';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import Button from '@/shared/presentation/components/Button';
 import './SecretKeysListing.css';
@@ -64,6 +64,7 @@ const COLUMNS: ColumnConfig[] = [
 
 const SecretKeysListing = () => {
     const navigate = useNavigate();
+    const canCreate = usePermission(['team-secret-key:create']);
     const getSecretKeys = useGetSecretKeys();
     const revokeSecretKey = useRevokeSecretKey();
     const deleteSecretKey = useDeleteSecretKey();
@@ -88,12 +89,14 @@ const SecretKeysListing = () => {
             viewUsage: {
                 label: 'View Usage',
                 icon: RiLineChartLine,
-                handler: ({ item: key }) => navigate(SECRET_KEY_ROUTES.USAGE(key._id))
+                handler: ({ item: key }) => navigate(`/dashboard/secret-keys/${key._id}/usage`),
+                requiredPermission: 'team-secret-key:read'
             },
             copy: {
                 label: 'Copy Prefix',
                 icon: RiFileCopyLine,
-                handler: ({ item: key }) => copySecretKeyPrefix(key)
+                handler: ({ item: key }) => copySecretKeyPrefix(key),
+                requiredPermission: 'team-secret-key:read'
             },
             revoke: {
                 label: 'Revoke Key',
@@ -105,7 +108,8 @@ const SecretKeysListing = () => {
                     selectedItems.length === 1
                         ? `Are you sure you want to revoke the secret key "${selectedItems[0].name}"? Any applications using this key will immediately lose access.`
                         : `Are you sure you want to revoke ${selectedItems.length} secret keys? Any applications using these keys will immediately lose access.`
-                )
+                ),
+                requiredPermission: 'team-secret-key:update'
             },
             delete: {
                 label: 'Delete',
@@ -120,7 +124,8 @@ const SecretKeysListing = () => {
                     selectedItems.length === 1
                         ? `Are you sure you want to permanently delete the secret key "${selectedItems[0].name}"? This action cannot be undone.`
                         : `Are you sure you want to permanently delete ${selectedItems.length} secret keys? This action cannot be undone.`
-                )
+                ),
+                requiredPermission: 'team-secret-key:delete'
             }
         }
     });
@@ -153,15 +158,15 @@ const SecretKeysListing = () => {
                 emptyIcon={<PiKeyLight size={32} />}
                 emptyButtonText='Create new'
                 onEmptyButtonClick={handleCreateKey}
-                createNew={{
+                createNew={canCreate ? {
                     buttonTitle: 'Create new',
                     onCreate: handleCreateKey
-                }}
+                } : undefined}
                 headerActions={
                     <Button
                         variant='ghost'
                         intent='neutral'
-                        onClick={() => navigate(SECRET_KEY_ROUTES.METRICS)}
+                        onClick={() => navigate('/dashboard/secret-keys/metrics')}
                         leftIcon={<RiBarChartLine size={18} />}
                     >
                         Metrics

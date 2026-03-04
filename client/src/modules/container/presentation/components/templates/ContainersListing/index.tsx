@@ -5,6 +5,7 @@ import { RiTerminalLine } from 'react-icons/ri';
 import { formatDistanceToNow } from 'date-fns';
 import useContainerUseCases from '../../../hooks/use-container-use-cases';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import usePermission from '@/shared/presentation/hooks/use-permission';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
@@ -104,6 +105,7 @@ const COLUMNS: ColumnConfig[] = [
 const ContainersListing = () => {
     const navigate = useNavigate();
     const [terminalContainer, setTerminalContainer] = useState<ContainerEntity | null>(null);
+    const canCreate = usePermission(['container:create']);
 
     const { containerRepository } = useContainerUseCases();
 
@@ -127,7 +129,8 @@ const ContainersListing = () => {
         actions: {
             view: {
                 label: 'View Details',
-                handler: ({ item: container }) => navigate(`/dashboard/containers/${container._id}`)
+                handler: ({ item: container }) => navigate(`/dashboard/containers/${container._id}`),
+                requiredPermission: 'container:read'
             },
             terminal: {
                 label: 'Open Terminal',
@@ -138,7 +141,8 @@ const ContainersListing = () => {
                     }else{
                         sileo.error({ title: 'Container must be running to open terminal' });
                     }
-                }
+                },
+                requiredPermission: 'container:read'
             },
             start: {
                 label: 'Start',
@@ -153,7 +157,8 @@ const ContainersListing = () => {
                             error: { title: 'Failed to start container' }
                         }
                     );
-                }
+                },
+                requiredPermission: 'container:update'
             },
             stop: {
                 label: 'Stop',
@@ -168,7 +173,8 @@ const ContainersListing = () => {
                             error: { title: 'Failed to stop container' }
                         }
                     );
-                }
+                },
+                requiredPermission: 'container:update'
             },
             restart: {
                 label: 'Restart',
@@ -182,7 +188,8 @@ const ContainersListing = () => {
                             error: { title: 'Failed to restart container' }
                         }
                     );
-                }
+                },
+                requiredPermission: 'container:update'
             },
             delete: {
                 variant: 'danger',
@@ -200,7 +207,8 @@ const ContainersListing = () => {
                     selectedItems.length === 1
                         ? `Delete container "${selectedItems[0].name}"? This action cannot be undone.`
                         : `Delete ${selectedItems.length} containers? This action cannot be undone.`
-                )
+                ),
+                requiredPermission: 'container:delete'
             }
         }
     });
@@ -223,10 +231,10 @@ const ContainersListing = () => {
                 fetchData={fetchData}
                 getMenuOptions={getDynamicMenuOptions}
                 emptyMessage='No containers found. Create one to get started.'
-                createNew={{
+                createNew={canCreate ? {
                     buttonTitle: 'New Container',
                     onCreate: () => navigate('/dashboard/containers/new')
-                }}
+                } : undefined}
                 listSyncConfig={LIST_SYNC}
             />
 

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import useTrajectoryStore from '../../stores/use-trajectory-store';
 import useGetTrajectories from './use-get-trajectories';
 import { sileo } from 'sileo';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 import type { Trajectory } from '../../../domain/entities';
 
@@ -25,6 +26,7 @@ const useTrajectorySelector = (options: UseTrajectorySelectorOptions = {}): UseT
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const setTrajectories = useTrajectoryStore((state) => state.setTrajectories);
     const appendTrajectories = useTrajectoryStore((state) => state.appendTrajectories);
+    const { checkRBACError } = useAccessDenied();
 
     const getTrajectories = useGetTrajectories();
 
@@ -51,8 +53,10 @@ const useTrajectorySelector = (options: UseTrajectorySelectorOptions = {}): UseT
 
             setHasMore(response.pagination.hasMore);
             setPage(pageNum);
-        } catch {
-            sileo.error({ title: 'Failed to load trajectories' });
+        } catch(error) {
+            if(!checkRBACError(error)){
+                sileo.error({ title: 'Failed to load trajectories' });
+            }
         } finally {
             setIsLoading(false);
         }

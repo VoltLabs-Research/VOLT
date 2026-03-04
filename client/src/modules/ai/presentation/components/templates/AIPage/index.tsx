@@ -8,7 +8,9 @@ import AIArtifactSpreadsheetPanel from '@/modules/ai/presentation/components/org
 import ResizeHandle from '@/modules/canvas/presentation/components/atoms/ResizeHandle';
 import useResizable from '@/modules/canvas/presentation/hooks/use-resizable';
 import useAIPage from '@/modules/ai/presentation/hooks/use-ai-page';
+import usePermission from '@/shared/presentation/hooks/use-permission';
 import Container from '@/shared/presentation/components/Container';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import type { SelectOption } from '@/shared/presentation/components/Select';
@@ -45,6 +47,8 @@ const AIPage = () => {
         providerCatalogError,
         sendMessageError,
         canSendMessage,
+        accessDenied,
+        accessDeniedMessage,
         setSelectedModel,
         handleSelectConversation,
         handleCreateConversation,
@@ -54,6 +58,10 @@ const AIPage = () => {
         handleSendMessage,
         loadConversationMessages
     } = useAIPage(conversationId);
+
+    const canCreate = usePermission(['ai-conversation:create']);
+    const canUpdate = usePermission(['ai-conversation:update']);
+    const canDelete = usePermission(['ai-conversation:delete']);
 
     const modelOptions: SelectOption[] = useMemo(() => (
         availableModelsForProvider.map((model) => ({
@@ -135,6 +143,10 @@ const AIPage = () => {
         handleSendMessage(text).catch(() => setMessageDraft(text));
     }, [conversationId, canSendMessage, handleSendMessage]);
 
+    if (accessDenied) {
+        return <AccessDenied description={accessDeniedMessage} />;
+    }
+
     return (
         <Container className='d-flex h-max ai-page'>
             <AIConversationSidebar
@@ -146,6 +158,9 @@ const AIPage = () => {
                 onSelectConversation={handleSelectConversation}
                 onDeleteConversation={handleDelete}
                 onRenameConversation={handleRename}
+                canCreate={canCreate}
+                canUpdate={canUpdate}
+                canDelete={canDelete}
             />
 
             <Container className='d-flex column h-max flex-1 ai-page-main'>
@@ -192,7 +207,7 @@ const AIPage = () => {
                                             onChange={setMessageDraft}
                                             onModelChange={setSelectedModel}
                                             onSend={handleSend}
-                                            disabled={!canSendMessage || isProviderCatalogLoading || noProviderConfigured}
+                                            disabled={!canSendMessage || !canCreate || isProviderCatalogLoading || noProviderConfigured}
                                             isSending={isSendingMessage}
                                             error={sendMessageError}
                                         />
@@ -212,7 +227,7 @@ const AIPage = () => {
                                         onChange={setMessageDraft}
                                         onModelChange={setSelectedModel}
                                         onSend={handleSend}
-                                        disabled={!canSendMessage || isProviderCatalogLoading || noProviderConfigured}
+                                        disabled={!canSendMessage || !canCreate || isProviderCatalogLoading || noProviderConfigured}
                                         isSending={isSendingMessage}
                                         error={sendMessageError}
                                     />

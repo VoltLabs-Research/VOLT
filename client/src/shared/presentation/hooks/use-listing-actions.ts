@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
+import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import { canAccessTeamPermissions } from '@/modules/team/presentation/utils/permission-evaluator';
 import { confirm, confirmDelete } from './use-confirm';
 import type { MenuOption } from '../components/DocumentListingTable';
 
@@ -12,6 +14,7 @@ export interface ActionConfig<T = unknown> {
     confirm?: boolean | string | ((payload: { item: T; selectedItems: T[] }) => string);
     variant?: 'default' | 'danger';
     scope?: 'item' | 'selection';
+    requiredPermission?: string;
 };
 
 export interface UseListingActionsConfig<T = unknown> {
@@ -36,6 +39,20 @@ const capitalize = (str: string): string => {
 
 const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): UseListingActionsReturn<T> => {
     const { actions } = config;
+
+    const selectedTeamId = useTeamStore((state) => state.selectedTeam?._id ?? null);
+    const teamPermissions = useTeamStore((state) => state.permissions);
+    const permissionsTeamId = useTeamStore((state) => state.permissionsTeamId);
+
+    const hasPermission = useCallback((permission?: string): boolean => {
+        if(!permission) return true;
+        return canAccessTeamPermissions({
+            selectedTeamId,
+            permissionsTeamId,
+            permissions: teamPermissions,
+            requiredPermissions: [permission]
+        });
+    }, [selectedTeamId, permissionsTeamId, teamPermissions]);
     
     const getActionIcon = useCallback((actionKey: string, actionConfig: ActionConfig<T>): IconType | null => {
         if(actionConfig.icon) return actionConfig.icon;
@@ -101,10 +118,8 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
 
     const executeAction = useCallback(async (actionKey: string, item: T, selectedItems: T[]): Promise<void> => {
         const actionConfig = actions[actionKey];
-        if(!actionConfig){
-            console.warn(`Action "${actionKey}" not found in actions config`);
-            return;
-        }
+        if(!actionConfig) return;
+        if(!hasPermission(actionConfig.requiredPermission)) return;
 
         const scope = getActionScope(actionKey, actionConfig);
         const targets = getActionTargets(item, selectedItems, scope);
@@ -124,7 +139,7 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
         }catch(err){
             throw err;
         }
-    }, [actions, shouldConfirm, getActionScope, getActionTargets]);
+    }, [actions, hasPermission, shouldConfirm, getActionScope, getActionTargets]);
 
     const handleAction = executeAction;
 
@@ -133,20 +148,22 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
             ? Object.entries(actions).filter(([actionKey]) => actionKey === 'delete')
             : Object.entries(actions);
 
-        return actionEntries.map(([actionKey, actionConfig]) => {
-            const label = getActionLabel(actionKey, actionConfig);
-            const icon = getActionIcon(actionKey, actionConfig);
-            const onClick = () => executeAction(actionKey, item, selectedItems);
-            const destructive = actionConfig.variant === 'danger' || actionKey === 'delete';
+        return actionEntries
+            .filter(([, actionConfig]) => hasPermission(actionConfig.requiredPermission))
+            .map(([actionKey, actionConfig]) => {
+                const label = getActionLabel(actionKey, actionConfig);
+                const icon = getActionIcon(actionKey, actionConfig);
+                const onClick = () => executeAction(actionKey, item, selectedItems);
+                const destructive = actionConfig.variant === 'danger' || actionKey === 'delete';
 
-            return {
-                label,
-                icon: icon || undefined,
-                onClick,
-                destructive
-            };
-        });
-    }, [actions, getActionLabel, getActionIcon, executeAction]);
+                return {
+                    label,
+                    icon: icon || undefined,
+                    onClick,
+                    destructive
+                };
+            });
+    }, [actions, hasPermission, getActionLabel, getActionIcon, executeAction]);
 
     return {
         handleAction,

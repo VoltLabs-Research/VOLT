@@ -56,14 +56,16 @@ const AnalysesListing = () => {
                 label: 'View Scene',
                 handler: ({ item: analysis }) => {
                     navigate(`/canvas/${analysis.trajectory._id}`);
-                }
+                },
+                requiredPermission: 'analysis:read'
             },
             retry: {
                 label: 'Retry Failed Frames',
                 icon: RiRefreshLine,
                 handler: async ({ item: analysis }) => {
                     await retryFailedFrames(analysis._id);
-                }
+                },
+                requiredPermission: 'analysis:update'
             },
             delete: {
                 handler: async ({ item: analysis }) => {
@@ -77,7 +79,8 @@ const AnalysesListing = () => {
                     selectedItems.length === 1
                         ? 'Delete this analysis? This cannot be undone.'
                         : `Delete ${selectedItems.length} analyses? This cannot be undone.`
-                )
+                ),
+                requiredPermission: 'analysis:delete'
             }
         }
     });

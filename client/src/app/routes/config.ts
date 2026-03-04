@@ -36,6 +36,7 @@ import NotebooksListing from '@/modules/scripting/presentation/components/templa
 import IntegrationsSettings from '@/modules/auth/presentation/components/templates/Settings/IntegrationsSettings';
 import SessionSettings from '@/modules/session/presentation/components/templates/SessionSettings';
 import AIPage from '@/modules/ai/presentation/components/templates/AIPage';
+import StartPage from '@/modules/start/presentation/pages/StartPage';
 
 export const routesConfig: RouteGroup = {
     public: [
@@ -46,6 +47,10 @@ export const routesConfig: RouteGroup = {
     ],
 
     protected: [
+        {
+            path: '/start',
+            component: StartPage
+        },
         {
             path: '/dashboard',
             component: Dashboard,
@@ -103,7 +108,8 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/canvas/:trajectoryId',
-            component: CanvasPage
+            component: CanvasPage,
+            requiredPermissions: ['trajectory:read']
         },
         {
             path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/atoms/:exposureId?',
@@ -128,7 +134,8 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/plugins/builder',
-            component: PluginBuilderPage
+            component: PluginBuilderPage,
+            requiredPermissions: ['plugin:create']
         },
         {
             path: '/dashboard/plugins/:pluginId/exposure/:exposureId/listing',
@@ -182,16 +189,19 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/dashboard/ai/:conversationId?',
-            component: AIPage
+            component: AIPage,
+            requiredPermissions: ['ai-conversation:read']
         },
         {
             path: '/dashboard/notebooks',
-            component: NotebooksListing
+            component: NotebooksListing,
+            requiredPermissions: ['plugin:read']
         },
         {
             path: '/team-invitation/:invitationId',
             component: TeamInvitationTemplate
-        }
+        },
+
     ],
 
     guest: [

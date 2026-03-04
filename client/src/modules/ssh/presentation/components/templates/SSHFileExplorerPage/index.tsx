@@ -7,6 +7,7 @@ import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileE
 import SSHExplorerHeaderLeft from '@/modules/ssh/presentation/components/atoms/SSHExplorerHeaderLeft';
 import SSHExplorerHeaderRight from '@/modules/ssh/presentation/components/atoms/SSHExplorerHeaderRight';
 import SSHBreadcrumbs from '@/modules/ssh/presentation/components/atoms/SSHBreadcrumbs';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import { formatSize } from '@/shared/utils/format';
 import type { SSHFileEntry } from '@/modules/ssh/domain/entities';
 
@@ -24,6 +25,8 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
         cwd,
         isLoading,
         error,
+        accessDenied,
+        accessDeniedMessage,
         selectedPath,
         setSelectedPath,
         navigateTo,
@@ -31,6 +34,10 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
         goBack,
         refresh
     } = useSSHFileExplorer({ connectionId });
+
+    if(accessDenied){
+        return <AccessDenied description={accessDeniedMessage} />;
+    }
 
     const handleEntryClick = (entry: SSHFileEntry) => {
         setSelectedPath(entry.relPath);

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
 import { MdContentCopy, MdCheck } from 'react-icons/md';
 import Modal, { closeModal } from '@/shared/presentation/components/Modal';
 import FormField from '@/shared/presentation/components/FormField';
@@ -12,14 +11,10 @@ import useCreateSecretKey from '@/modules/team/presentation/hooks/secret-key/use
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
 import useTeamRoleData from '@/modules/team/presentation/hooks/team-role/use-team-role-data';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import ApiError from '@/shared/errors/ApiError';
 import './SecretKeyCreationModal.css';
 
 export const SECRET_KEY_CREATION_MODAL_ID = 'secret-key-creation-modal';
-
-interface CreateSecretKeyFormData {
-    name: string;
-    roleId: string;
-}
 
 interface SecretKeyCreationModalProps {
     onCreated?: (secretKey: string) => void;
@@ -35,16 +30,18 @@ const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreat
     const [generatedKey, setGeneratedKey] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
 
-    const { control, handleSubmit, reset, formState: { errors } } = useForm<CreateSecretKeyFormData>({
-        defaultValues: {
-            name: '',
-            roleId: ''
-        }
-    });
+    const [name, setName] = useState('');
+    const [roleId, setRoleId] = useState('');
+    const [errors, setErrors] = useState<{ name?: string; roleId?: string }>({});
 
     useEffect(() => {
         if (selectedTeam?._id) {
-            fetchRoles(selectedTeam._id).catch(() => {});
+            fetchRoles(selectedTeam._id).catch((error: unknown) => {
+                if(ApiError.isRBACError(error)){
+                    const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
+                    sileo.error({ title: msg });
+                }
+            });
         }
     }, [selectedTeam?._id, fetchRoles]);
 
@@ -61,15 +58,26 @@ const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreat
         closeModal(SECRET_KEY_CREATION_MODAL_ID);
         setTimeout(() => {
             setGeneratedKey(null);
-            reset();
+            setName('');
+            setRoleId('');
+            setErrors({});
         }, 300);
     };
 
-    const onSubmit = async (data: CreateSecretKeyFormData) => {
+    const handleSubmit = async () => {
+        const newErrors: { name?: string; roleId?: string } = {};
+        if (!name.trim()) newErrors.name = 'Name is required';
+        if (!roleId) newErrors.roleId = 'Role is required';
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
+
         try {
             setIsLoading(true);
             const response = await showPromise(
-                createSecretKey(data.name, data.roleId),
+                createSecretKey(name, roleId),
                 {
                     loading: { title: 'Creating secret key...' },
                     success: { title: 'Secret key created successfully' },
@@ -80,6 +88,8 @@ const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreat
                 setGeneratedKey(response.secretKey);
                 onCreated?.(response.secretKey);
             }
+        } catch(error: unknown) {
+            if(ApiError.isRBACError(error)) return;
         } finally {
             setIsLoading(false);
         }
@@ -111,7 +121,7 @@ const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreat
                         <Button variant='ghost' intent='neutral' onClick={handleClose} disabled={isLoading}>
                             Cancel
                         </Button>
-                        <Button variant='solid' intent='brand' onClick={handleSubmit(onSubmit)} isLoading={isLoading}>
+                        <Button variant='solid' intent='brand' onClick={handleSubmit} isLoading={isLoading}>
                             Create Key
                         </Button>
                     </>
@@ -137,35 +147,29 @@ const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreat
                         </Container>
                     ) : (
                         <>
-                            <Controller
-                                name='name'
-                                control={control}
-                                rules={{ required: 'Name is required' }}
-                                render={({ field }) => (
-                                    <FormField
-                                        label='Key Name'
-                                        placeholder='e.g., Production API Key'
-                                        error={errors.name?.message}
-                                        {...field}
-                                    />
-                                )}
+                            <FormField
+                                label='Key Name'
+                                placeholder='e.g., Production API Key'
+                                error={errors.name}
+                                value={name}
+                                onChange={(e: any) => {
+                                    setName(e.target.value);
+                                    if (errors.name) setErrors({ ...errors, name: undefined });
+                                }}
                             />
-                            
-                            <Controller
-                                name='roleId'
-                                control={control}
-                                rules={{ required: 'Role is required' }}
-                                render={({ field }) => (
-                                    <FormField
-                                        fieldType='select'
-                                        variant='inline'
-                                        label='Role'
-                                        options={roleOptions}
-                                        placeholder={roleOptions.length ? 'Select a role...' : 'No roles for selected team'}
-                                        error={errors.roleId?.message}
-                                        {...field}
-                                    />
-                                )}
+
+                            <FormField
+                                fieldType='select'
+                                variant='inline'
+                                label='Role'
+                                options={roleOptions}
+                                placeholder={roleOptions.length ? 'Select a role...' : 'No roles for selected team'}
+                                error={errors.roleId}
+                                value={roleId}
+                                onChange={(e: any) => {
+                                    setRoleId(e.target.value);
+                                    if (errors.roleId) setErrors({ ...errors, roleId: undefined });
+                                }}
                             />
                         </>
                     )}
