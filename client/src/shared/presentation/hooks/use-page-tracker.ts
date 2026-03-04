@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAccessedPagesStore } from '../stores/use-accessed-pages-store';
+import { fadeFromBlack } from '../utils/page-transition';
 
 const EXCLUDED_PATHS = ['/start', '/auth/sign-in', '/auth/oauth/callback', '/error'];
 
@@ -61,6 +62,7 @@ export const usePageTracker = () => {
     const currentPageRef = useRef<{ path: string; title: string } | null>(null);
 
     useEffect(() => {
+        fadeFromBlack();
         const path = location.pathname;
 
         if (!path || EXCLUDED_PATHS.some(ex => path === ex || path.startsWith(ex + '/'))) {

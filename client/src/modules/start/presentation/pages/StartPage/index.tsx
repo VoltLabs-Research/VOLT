@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import UserInfo from '@/modules/auth/presentation/components/atoms/UserInfo';
 import Button from '@/shared/presentation/components/Button';
 import PageBox from '../../components/PageBox';
@@ -10,6 +11,28 @@ const StartPage = () => {
     const user = useAuthStore((state) => state.user);
     const pages = useAccessedPagesStore((state) => state.pages);
     const clearAll = useAccessedPagesStore((state) => state.clearAll);
+    const wrapperRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const wrapper = wrapperRef.current;
+        if (!wrapper) return;
+
+        const tiles = wrapper.querySelectorAll<HTMLElement>('.metro-tile');
+        tiles.forEach((tile, i) => {
+            tile.style.opacity = '0';
+            tile.style.transform = 'perspective(800px) translateX(80px) scale3d(0.92, 0.92, 1)';
+
+            setTimeout(() => {
+                tile.style.transition = 'opacity 0.7s cubic-bezier(0.23, 1, 0.32, 1), transform 0.7s cubic-bezier(0.23, 1, 0.32, 1)';
+                tile.style.opacity = '1';
+                tile.style.transform = 'perspective(800px) translateX(0) scale3d(1, 1, 1)';
+
+                setTimeout(() => {
+                    tile.style.transition = '';
+                }, 700);
+            }, 100 + i * 120);
+        });
+    }, [pages.length]);
 
     return (
         <div className="metro-start-screen">
@@ -42,10 +65,12 @@ const StartPage = () => {
                         As you navigate through the application, your recent pages will appear here.
                     </p>
                 ) : (
-                    <div className="metro-grid">
-                        {pages.map((page) => (
-                            <PageBox key={page.path} page={page} />
-                        ))}
+                    <div className="metro-grid-wrapper" ref={wrapperRef}>
+                        <div className="metro-grid">
+                            {pages.map((page) => (
+                                <PageBox key={page.path} page={page} />
+                            ))}
+                        </div>
                     </div>
                 )}
             </main>
