@@ -104,7 +104,7 @@ export default class DislocationExporter implements IDislocationExporter {
         const typeColors = { ...this.TYPE_COLORS, ...opts.typeColors };
         let currentVertexOffset = 0;
 
-        for (const segment of data.data) {
+        for (const segment of data.segments) {
             if (!segment.points || segment.points.length < opts.minSegmentPoints) continue;
 
             const type = calculateDislocationType(segment);

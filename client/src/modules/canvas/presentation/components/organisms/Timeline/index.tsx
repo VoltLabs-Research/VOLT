@@ -8,6 +8,7 @@ import TimelineHeader, { CORE_TABS, type TimelineTabOption } from '../../molecul
 import TimelineRuler from '../../molecules/TimelineRuler';
 import PluginAtomsTable from '@/modules/plugin/presentation/components/organisms/PluginAtomsTable';
 import PluginExposureListingPanel from '@/modules/plugin/presentation/components/organisms/PluginExposureListingPanel';
+import PluginSubListingPanel from '@/modules/plugin/presentation/components/organisms/PluginSubListingPanel';
 import SimulationCellView from '../../molecules/SimulationCellView';
 import useCanvasUrlState from '@/modules/canvas/presentation/hooks/use-canvas-url-state';
 import useCanvasTimelineTabs from '@/modules/canvas/presentation/hooks/use-canvas-timeline-tabs';
@@ -33,7 +34,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
     const [activeTab, setActiveTab] = useState<string>('timeline');
     const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();
     const selectedTeamId = useTeamStore((state) => state.selectedTeam?._id);
-    const { pluginId, isPluginReady, listingExposures } = useCanvasTimelineTabs({ trajectory, analysisId });
+    const { pluginId, isPluginReady, listingExposures, subListingEntries } = useCanvasTimelineTabs({ trajectory, analysisId });
 
     const exposureTabs = useMemo<TimelineTabOption[]>(() => {
         return listingExposures.map((exposure) => ({
@@ -43,9 +44,16 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
         }));
     }, [listingExposures]);
 
+    const subListingTabs = useMemo<TimelineTabOption[]>(() => {
+        return subListingEntries.map((entry) => ({
+            id: `sublisting:${entry.exposureId}:${entry.subListingName}`,
+            label: entry.label
+        }));
+    }, [subListingEntries]);
+
     const tabs = useMemo<TimelineTabOption[]>(() => {
-        return [...CORE_TABS, ...exposureTabs];
-    }, [exposureTabs]);
+        return [...CORE_TABS, ...exposureTabs, ...subListingTabs];
+    }, [exposureTabs, subListingTabs]);
 
     const hasExposure = useCallback((exposureId?: string) => {
         if (!exposureId) return false;
@@ -85,7 +93,15 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
                 }
             }
         }
-    }, [activeTab, hasExposure, isPluginReady, timelineExposureId, setTimelineExposureId]);
+
+        if (activeTab.startsWith('sublisting:')) {
+            const parts = activeTab.split(':');
+            const subListingExposureId = parts[1];
+            if (!hasExposure(subListingExposureId)) {
+                setActiveTab('timeline');
+            }
+        }
+    }, [activeTab, hasExposure, isPluginReady, timelineExposureId, setTimelineExposureId, subListingEntries]);
 
     useEffect(() => {
         if (!analysisId && timelineExposureId) {
@@ -98,6 +114,15 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
         return activeTab.startsWith('exposure:')
             ? activeTab.replace('exposure:', '')
             : undefined;
+    }, [activeTab]);
+
+    const activeSubListing = useMemo(() => {
+        if (!activeTab.startsWith('sublisting:')) return undefined;
+        const parts = activeTab.split(':');
+        return {
+            exposureId: parts[1],
+            subListingName: parts.slice(2).join(':')
+        };
     }, [activeTab]);
 
     const {
@@ -323,10 +348,20 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
                         pluginId={pluginId}
                         exposureId={activeExposureId}
                         trajectoryId={trajectory._id}
-                        analysisId={analysisId}
                         teamId={selectedTeamId}
                         compact
                         showTrajectoryColumn={false}
+                    />
+                </Container>
+            )}
+
+            {activeSubListing && analysisId && currentTimestep != null && (
+                <Container className="canvas-timeline-body flex-1 p-relative overflow-hidden min-h-0">
+                    <PluginSubListingPanel
+                        analysisId={analysisId}
+                        exposureId={activeSubListing.exposureId}
+                        timestep={currentTimestep}
+                        subListingName={activeSubListing.subListingName}
                     />
                 </Container>
             )}

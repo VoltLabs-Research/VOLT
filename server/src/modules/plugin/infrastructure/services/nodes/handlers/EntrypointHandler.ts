@@ -46,7 +46,6 @@ export default class EntrypointHandler implements INodeHandler{
         const binaryPath = await this.binaryCache.getBinaryPath({
             pluginId: context.pluginId,
             binaryObjectPath: config.binaryObjectPath,
-            binaryHash: config.binaryHash!,
             binaryFileName: config.binaryFileName
         });
 

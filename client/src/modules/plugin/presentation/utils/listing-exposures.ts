@@ -5,10 +5,6 @@ export interface ListingRelevantExposure {
     name: string;
 }
 
-const hasListingMetadata = (listing: IExposureComputed['listing']): boolean => {
-    return Boolean(listing && typeof listing === 'object' && Object.keys(listing).length > 0);
-};
-
 export const getListingRelevantExposures = (
     exposures: IExposureComputed[] | undefined | null
 ): ListingRelevantExposure[] => {
@@ -17,7 +13,7 @@ export const getListingRelevantExposures = (
     }
 
     return exposures
-        .filter((exposure) => Boolean(exposure?._id) && Boolean(exposure?.name) && hasListingMetadata(exposure?.listing))
+        .filter((exposure) => Boolean(exposure?._id) && Boolean(exposure?.name) && exposure?.hasListing)
         .map((exposure) => ({
             exposureId: exposure._id,
             name: exposure.name

@@ -70,7 +70,7 @@ export default class MeshExporter implements IMeshExporter{
     }
 
     private async processMeshGeometry(mesh: Mesh, opts: Required<DefectMeshExportOptions>): Promise<ProcessedMesh> {
-        const { points, facets } = mesh.data;
+        const { vertices: points, facets } = mesh;
         const vertexCount = points.length;
         const triangleCount = facets.length;
 

@@ -21,7 +21,6 @@ export const ValidationCodes = {
     PLUGIN_FOREACH_ITERABLE_SOURCE_REQUIRED: 'Plugin::ForeachData::IterableSource::Required',
     PLUGIN_EXPOSURE_NAME_REQUIRED: 'Plugin::Exposure::Name::Required',
     PLUGIN_EXPOSURE_RESULTS_REQUIRED: 'Plugin::Exposure::Results::Required',
-    PLUGIN_SCHEMA_DEFINITION_REQUIRED: 'Plugin::Schema::Definition::Required',
     PLUGIN_EXPORT_EXPORTER_REQUIRED: 'Plugin::Export::Exporter::Required',
     PLUGIN_EXPORT_TYPE_REQUIRED: 'Plugin::Export::Exporter::Type',
     PLUGIN_POSITION_X_REQUIRED: 'Plugin::Position::X::Required',

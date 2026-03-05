@@ -15,15 +15,12 @@ import ProcessExecutorService from '@modules/plugin/infrastructure/services/Proc
 import AnalysisProcessingQueue from '@modules/plugin/infrastructure/queues/AnalysisProcessingQueue';
 import AnalysisJobFactory from '@modules/plugin/infrastructure/services/AnalysisJobFactory';
 
-// Node Handlers
 import ModifierHandler from '@modules/plugin/infrastructure/services/nodes/handlers/ModifierHandler';
 import ArgumentsHandler from '@modules/plugin/infrastructure/services/nodes/handlers/ArgumentsHandler';
 import ContextHandler from '@modules/plugin/infrastructure/services/nodes/handlers/ContextHandler';
 import ForEachHandler from '@modules/plugin/infrastructure/services/nodes/handlers/ForEachHandler';
 import EntrypointHandler from '@modules/plugin/infrastructure/services/nodes/handlers/EntrypointHandler';
 import ExposureHandler from '@modules/plugin/infrastructure/services/nodes/handlers/ExposureHandler';
-import SchemaHandler from '@modules/plugin/infrastructure/services/nodes/handlers/SchemaHandler';
-import VisualizersHandler from '@modules/plugin/infrastructure/services/nodes/handlers/VisualizersHandler';
 import ExportHandler from '@modules/plugin/infrastructure/services/nodes/handlers/ExportHandler';
 import IfStatementHandler from '@modules/plugin/infrastructure/services/nodes/handlers/IfStatementHandler';
 
@@ -47,7 +44,6 @@ import * as pluginAiTools from '@modules/plugin/application/ai-tools';
 import { INodeRegistry, INodeHandler } from '@modules/plugin/domain/ports/INodeRegistry';
 
 export const registerPluginDependencies = (): void => {
-    // Services
     container.registerSingleton(PLUGIN_TOKENS.PluginListingService, PluginListingService);
     container.registerSingleton(PLUGIN_TOKENS.WorkflowValidatorService, WorkflowValidatorService);
     container.registerSingleton(PLUGIN_TOKENS.ListingRowPrecomputationService, ListingRowPrecomputationService);
@@ -55,33 +51,25 @@ export const registerPluginDependencies = (): void => {
     container.registerSingleton(PLUGIN_TOKENS.PluginBinaryCacheService, PluginBinaryCacheService);
     container.registerSingleton(PLUGIN_TOKENS.ProcessExecutorService, ProcessExecutorService);
 
-    // Repositories - register with both Symbol and string tokens
     container.registerSingleton(PLUGIN_TOKENS.PluginRepository, PluginRepository);
     container.registerSingleton(PLUGIN_TOKENS.ListingRowRepository, ListingRowRepository);
 
-    // Node Registry
     container.registerSingleton(PLUGIN_TOKENS.NodeRegistry, NodeRegistry);
 
-    // Node Handlers
     container.registerSingleton(PLUGIN_TOKENS.ModifierHandler, ModifierHandler);
     container.registerSingleton(PLUGIN_TOKENS.ArgumentsHandler, ArgumentsHandler);
     container.registerSingleton(PLUGIN_TOKENS.ContextHandler, ContextHandler);
     container.registerSingleton(PLUGIN_TOKENS.ForEachHandler, ForEachHandler);
     container.registerSingleton(PLUGIN_TOKENS.EntrypointHandler, EntrypointHandler);
     container.registerSingleton(PLUGIN_TOKENS.ExposureHandler, ExposureHandler);
-    container.registerSingleton(PLUGIN_TOKENS.SchemaHandler, SchemaHandler);
-    container.registerSingleton(PLUGIN_TOKENS.VisualizersHandler, VisualizersHandler);
     container.registerSingleton(PLUGIN_TOKENS.ExportHandler, ExportHandler);
     container.registerSingleton(PLUGIN_TOKENS.IfStatementHandler, IfStatementHandler);
 
-    // Workflow Engine (depends on NodeRegistry)
     container.registerSingleton(PLUGIN_TOKENS.PluginWorkflowEngine, PluginWorkflowEngine);
 
-    // Analysis Queue Infrastructure
     container.registerSingleton(PLUGIN_TOKENS.AnalysisProcessingQueue, AnalysisProcessingQueue);
     container.registerSingleton(PLUGIN_TOKENS.AnalysisJobFactory, AnalysisJobFactory);
 
-    // Use Cases
     container.registerSingleton(CreatePluginUseCase);
     container.registerSingleton(GetPluginByIdUseCase);
     container.registerSingleton(UpdatePluginByIdUseCase);
@@ -97,21 +85,14 @@ export const registerPluginDependencies = (): void => {
     container.registerSingleton(ExportPluginListingDocumentsUseCase);
     container.registerSingleton(ExportListingRowsByAnalysisIdUseCase);
 
-    // AI Tools
     for (const ToolClass of Object.values(pluginAiTools)) {
         container.registerSingleton(AI_TOKENS.AITool, ToolClass as any);
     }
 };
 
-/**
- * Initialize and register all node handlers with the NodeRegistry.
- * This should be called after registerPluginDependencies() to ensure
- * all dependencies are available for injection.
- */
 export const initializeNodeHandlers = (): void => {
     const nodeRegistry = container.resolve<INodeRegistry>(PLUGIN_TOKENS.NodeRegistry);
 
-    // Resolve all handlers from the container (they get their dependencies injected)
     const handlers: INodeHandler[] = [
         container.resolve<INodeHandler>(PLUGIN_TOKENS.ModifierHandler),
         container.resolve<INodeHandler>(PLUGIN_TOKENS.ArgumentsHandler),
@@ -119,12 +100,9 @@ export const initializeNodeHandlers = (): void => {
         container.resolve<INodeHandler>(PLUGIN_TOKENS.ForEachHandler),
         container.resolve<INodeHandler>(PLUGIN_TOKENS.EntrypointHandler),
         container.resolve<INodeHandler>(PLUGIN_TOKENS.ExposureHandler),
-        container.resolve<INodeHandler>(PLUGIN_TOKENS.SchemaHandler),
-        container.resolve<INodeHandler>(PLUGIN_TOKENS.VisualizersHandler),
         container.resolve<INodeHandler>(PLUGIN_TOKENS.ExportHandler),
         container.resolve<INodeHandler>(PLUGIN_TOKENS.IfStatementHandler)
     ];
 
-    // Register all handlers with the NodeRegistry
     handlers.forEach((handler) => nodeRegistry.register(handler));
 };

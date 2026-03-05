@@ -8,7 +8,9 @@ import type {
     ExportPluginListingInputDTO,
     ExportPluginListingOutputDTO,
     ExportListingByAnalysisInputDTO,
-    ExportListingByAnalysisOutputDTO
+    ExportListingByAnalysisOutputDTO,
+    GetSubListingInputDTO,
+    GetSubListingOutputDTO
 } from '../../application/dtos';
 
 @injectable()
@@ -104,5 +106,12 @@ export default class PluginListingRepository extends BaseRepository implements I
         const { analysisId, format } = params;
         const path = `/listing/analysis/${analysisId}/export`;
         return this.exportFile(path, { format });
+    }
+
+    async getSubListing(params: GetSubListingInputDTO): Promise<GetSubListingOutputDTO> {
+        const { analysisId, exposureId, timestep, subListingName } = params;
+        const path = `/listing/analysis/${analysisId}/sub-listing/${exposureId}/${timestep}/${subListingName}`;
+        const response = await this.client.get<{ data: GetSubListingOutputDTO }>(path);
+        return response.data;
     }
 };

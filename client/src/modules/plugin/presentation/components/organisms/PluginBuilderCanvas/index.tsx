@@ -20,8 +20,6 @@ const NODE_MINIMAP_COLORS: Record<string, string> = {
     [NodeType.FOREACH]: '#bf5af2',
     [NodeType.ENTRYPOINT]: '#2dcc70',
     [NodeType.EXPOSURE]: '#ff9f0a',
-    [NodeType.SCHEMA]: '#ffd60a',
-    [NodeType.VISUALIZERS]: '#64d2ff',
     [NodeType.EXPORT]: '#ff453a',
     [NodeType.IF_STATEMENT]: '#bf5af2'
 };

@@ -177,9 +177,6 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
             const exposureOutput = context.outputs.get(exposureNode.id);
             if(!exposureOutput?.results) continue;
 
-            // Find related configuration nodes
-            const schemaNode = workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Schema);
-            const visualizersNode = workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Visualizers);
             const exportNode = workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Export);
 
             const exposureData = exposureNode.data.exposure;
@@ -190,8 +187,8 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
                 exposureName: exposureData.name,
                 nodeId: exposureNode.id,
                 data: firstSuccess?.data,
-                schema: schemaNode ? context.outputs.get(schemaNode.id)?.definition : undefined,
-                visualizers: visualizersNode ? context.outputs.get(visualizersNode.id) as any : undefined,
+                canvas: exposureData.canvas,
+                raster: exposureData.raster,
                 export: exportNode ? {
                     exporter: exportNode.data.export!.exporter,
                     type: exportNode.data.export!.type,

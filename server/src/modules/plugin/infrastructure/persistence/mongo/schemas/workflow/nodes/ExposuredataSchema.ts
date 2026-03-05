@@ -15,6 +15,12 @@ export const ExposureDataSchema = new Schema({
     },
     iterable: {
         type: String
+    },
+    canvas: {
+        type: Boolean
+    },
+    raster: {
+        type: Boolean
     }
 }, { _id: false });
 

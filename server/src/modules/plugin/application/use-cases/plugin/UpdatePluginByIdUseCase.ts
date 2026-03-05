@@ -38,6 +38,27 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
             const { isValid, errors } = this.workflowValidator.validate(input.workflow);
             update.validated = isValid;
             update.validationErrors = errors;
+
+            // Binary fields (binaryObjectPath, binaryFileName, binary) are managed
+            // exclusively by PluginStorageService (upload/delete endpoints). 
+            // Preserve them from the current DB state to prevent frontend overwrites.
+            if(!input._allowBinaryFieldUpdate){
+                const currentEntrypoint = plugin.props.workflow.props.nodes
+                    .find((n) => n.type === WorkflowNodeType.Entrypoint);
+                const incomingEntrypoint = input.workflow.nodes
+                    .find((n) => n.type === WorkflowNodeType.Entrypoint);
+
+                if(currentEntrypoint?.data?.entrypoint && incomingEntrypoint?.data?.entrypoint){
+                    const { binary, binaryObjectPath, binaryFileName } = currentEntrypoint.data.entrypoint;
+                    incomingEntrypoint.data.entrypoint = {
+                        ...incomingEntrypoint.data.entrypoint,
+                        binary,
+                        binaryObjectPath,
+                        binaryFileName
+                    };
+                }
+            }
+
             update.workflow = input.workflow;
         }
 

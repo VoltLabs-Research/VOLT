@@ -1,5 +1,6 @@
 import { BinaryUploadResult, IPluginStorageService, PluginImportResult } from '@modules/plugin/domain/ports/IPluginStorageService';
 import { UpdatePluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/UpdatePluginByIdUseCase';
+import { IPluginBinaryCacheService } from '@modules/plugin/domain/ports/IPluginBinaryCacheService';
 import { injectable, inject } from 'tsyringe';
 import { PassThrough, Readable } from 'node:stream';
 import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
@@ -26,7 +27,10 @@ export default class PluginStorageService implements IPluginStorageService {
         private storageService: IStorageService,
 
         @inject(UpdatePluginByIdUseCase)
-        private updateByIdUseCase: UpdatePluginByIdUseCase
+        private updateByIdUseCase: UpdatePluginByIdUseCase,
+
+        @inject(PLUGIN_TOKENS.PluginBinaryCacheService)
+        private binaryCacheService: IPluginBinaryCacheService
     ){}
 
     async deleteBinary(pluginId: string): Promise<void> {
@@ -42,6 +46,7 @@ export default class PluginStorageService implements IPluginStorageService {
         }
 
         await this.storageService.delete(SYS_BUCKETS.PLUGINS, pathToDelete);
+        await this.binaryCacheService.evictByPluginId(pluginId);
 
         plugin.props.workflow.updateEntrypoint({
             binaryObjectPath: undefined,
@@ -49,7 +54,7 @@ export default class PluginStorageService implements IPluginStorageService {
             binary: undefined
         });
 
-        await this.updateByIdUseCase.execute({ pluginId, workflow: plugin.props.workflow.props });
+        await this.updateByIdUseCase.execute({ pluginId, workflow: plugin.props.workflow.props, _allowBinaryFieldUpdate: true });
 
         logger.info(`@plugin-storage-service: binary deleted: ${pathToDelete}`);
     }
@@ -64,6 +69,17 @@ export default class PluginStorageService implements IPluginStorageService {
         const fileExtension = path.extname(originalName) || '';
         const uniqueName = `${v4()}${fileExtension}`;
         const objectPath = `plugin-binaries/${pluginId}/${uniqueName}`;
+
+        // Delete the old binary from storage if one exists (prevents orphaned files)
+        const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
+        const oldBinaryPath = entrypointNode?.data.entrypoint?.binaryObjectPath;
+        if(oldBinaryPath){
+            await this.storageService.delete(SYS_BUCKETS.PLUGINS, oldBinaryPath).catch((err) => {
+                logger.warn(`@plugin-storage-service: failed to delete old binary ${oldBinaryPath}: ${err}`);
+            });
+        }
+
+        await this.binaryCacheService.evictByPluginId(pluginId);
 
         await this.storageService.upload(
             SYS_BUCKETS.PLUGINS,
@@ -81,7 +97,7 @@ export default class PluginStorageService implements IPluginStorageService {
             binaryFileName: originalName
         });
 
-        await this.updateByIdUseCase.execute({ pluginId, workflow: plugin.props.workflow.props });
+        await this.updateByIdUseCase.execute({ pluginId, workflow: plugin.props.workflow.props, _allowBinaryFieldUpdate: true });
 
         logger.info(`@plugin-storage-service: binary uploaded: ${objectPath} (${file.size} bytes)`);
         return {
@@ -165,7 +181,7 @@ export default class PluginStorageService implements IPluginStorageService {
                 binaryFileName
             });
             
-            await this.updateByIdUseCase.execute({ pluginId: newPlugin.id, workflow: newPlugin.props.workflow.props, });
+            await this.updateByIdUseCase.execute({ pluginId: newPlugin.id, workflow: newPlugin.props.workflow.props, _allowBinaryFieldUpdate: true });
 
             logger.info(`@plugin-workflow-service: imported binary ${binaryObjectPath}`);
             binaryImported = true;

@@ -164,7 +164,7 @@ export default class GetTeamMetricsUseCase implements IUseCase<GetTeamMetricsInp
             for (const exposure of pluginExposures) {
                 const exposureId = exposure._id;
                 const exposureName = exposure.name;
-                const hasListing = Boolean(exposure.listing && Object.keys(exposure.listing).length > 0);
+                const hasListing = Boolean(exposure.hasListing);
                 if (!exposureName || !exposureId || !hasListing) continue;
 
                 // Count listing rows

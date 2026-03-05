@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import PluginCompactTable from '@/modules/plugin/presentation/components/organisms/PluginCompactTable';
+import SubListingModal from '@/modules/plugin/presentation/components/organisms/SubListingModal';
 import useListingLifecycle, { type ListingMeta } from '@/shared/presentation/hooks/use-listing-lifecycle';
 import usePluginListing from '@/modules/plugin/presentation/hooks/use-plugin-listing';
 import ApiError from '@/shared/errors/ApiError';
@@ -44,7 +45,6 @@ const PluginExposureTable = ({
     });
     const pageSize = compact ? 20 : 50;
 
-    const [columns, setColumns] = useState<ColumnConfig[]>([]);
     const [rows, setRows] = useState<any[]>([]);
     const [listingMeta, setListingMeta] = useState<ListingMeta>({
         page: 1,
@@ -86,9 +86,6 @@ const PluginExposureTable = ({
                 limit: pageSize
             }) as any;
 
-            const nextColumns = (payload?._meta?.columns as ColumnConfig[] | undefined) ?? listingHook.columns;
-            setColumns(nextColumns);
-
             setListingMeta(prev => ({
                 ...prev,
                 page,
@@ -122,7 +119,6 @@ const PluginExposureTable = ({
         skipInitialFetch: !compact,
         onReset: () => {
             setRows([]);
-            setColumns([]);
             setListingMeta(prev => ({ ...prev, page: 1, hasMore: false, nextCursor: null }));
         }
     });
@@ -131,8 +127,8 @@ const PluginExposureTable = ({
 
     useEffect(() => {
         if (!onDataReady || !compact) return;
-        onDataReady(columns, displayRows);
-    }, [columns, displayRows, onDataReady, compact]);
+        onDataReady(listingHook.columns, displayRows);
+    }, [listingHook.columns, displayRows, onDataReady, compact]);
 
     if (rbacDenied) {
         return <AccessDenied description={rbacMessage} showBack={false} />;
@@ -140,33 +136,39 @@ const PluginExposureTable = ({
 
     if (compact) {
         return (
-            <PluginCompactTable
-                columns={columns}
-                data={displayRows}
-                hasMore={listingMeta.hasMore}
-                isLoading={loading}
-                isFetchingMore={isFetchingMore}
-                onLoadMore={handleLoadMore}
-                error={error}
-                onDataReady={onDataReady}
-            />
+            <>
+                <PluginCompactTable
+                    columns={listingHook.columns}
+                    data={displayRows}
+                    hasMore={listingMeta.hasMore}
+                    isLoading={loading}
+                    isFetchingMore={isFetchingMore}
+                    onLoadMore={handleLoadMore}
+                    error={error}
+                    onDataReady={onDataReady}
+                />
+                <SubListingModal />
+            </>
         );
     }
 
     return (
-        <DocumentListing
-            title={exposureName || exposureId || 'Listing'}
-            fetchData={listingHook.fetchData}
-            context={listingHook.context}
-            enabled={listingHook.isEnabled}
-            columns={listingHook.columns}
-            getMenuOptions={listingHook.getMenuOptions}
-            exportConfig={{
-                onExport: ({ format }) => listingHook.exportData(format),
-                getFilename: (format) => `${pluginId}_${exposureName || exposureId || 'listing'}.${format}`
-            }}
-            headerActions={headerActions}
-        />
+        <>
+            <DocumentListing
+                title={exposureName || exposureId || 'Listing'}
+                fetchData={listingHook.fetchData}
+                context={listingHook.context}
+                enabled={listingHook.isEnabled}
+                columns={listingHook.columns}
+                getMenuOptions={listingHook.getMenuOptions}
+                exportConfig={{
+                    onExport: ({ format }) => listingHook.exportData(format),
+                    getFilename: (format) => `${pluginId}_${exposureName || exposureId || 'listing'}.${format}`
+                }}
+                headerActions={headerActions}
+            />
+            <SubListingModal />
+        </>
     );
 };
 

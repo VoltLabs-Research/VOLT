@@ -7,9 +7,8 @@ import { IStorageService } from '@shared/domain/ports/IStorageService';
 import logger from '@shared/infrastructure/logger';
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import crypto from 'node:crypto';
 import { SYS_BUCKETS } from '@core/config/minio';
-import { createReadStream, createWriteStream } from 'node:fs';
+import { createWriteStream } from 'node:fs';
 
 @singleton()
 @injectable()
@@ -29,29 +28,60 @@ export default class PluginBinaryCacheService implements IPluginBinaryCacheServi
 
     async getBinaryPath(request: BinaryCacheRequest): Promise<string>{
         await this.ensureCacheDir();
-    
-        // Check if a download is already in progress for this binary
-        if(this.locks.has(request.binaryHash)){
-            logger.debug(`@plugin-binary-cache-service: waiting for existing download: ${request.binaryHash}`);
-            return this.locks.get(request.binaryHash)!;
+
+        const cacheKey = this.buildCacheKey(request);
+
+        // Check if a download is already in progress for this binary+plugin combination
+        if(this.locks.has(cacheKey)){
+            logger.debug(`@plugin-binary-cache-service: waiting for existing download: ${cacheKey}`);
+            return this.locks.get(cacheKey)!;
         }
 
         // Create the promise and set the lock
-        const promise = this.resolveBinary(request, request.binaryHash)
-            .finally(() => this.locks.delete(request.binaryHash));
+        const promise = this.resolveBinary(request, cacheKey)
+            .finally(() => this.locks.delete(cacheKey));
 
-        this.locks.set(request.binaryHash, promise);
+        this.locks.set(cacheKey, promise);
 
         return promise;
     }
 
-    private async resolveBinary(request: BinaryCacheRequest, _cacheKey: string): Promise<string>{
-        const name = `${request.pluginId}-${request.binaryHash}`;
-        const finalPath = path.join(this.cacheDir, name);
+    async evictByPluginId(pluginId: string): Promise<void>{
+        await this.ensureCacheDir();
 
-        // Check existence
-        if(await this.isValidBinary(finalPath, request.binaryHash)){
-            // Update access time (touch)
+        const prefix = `${pluginId}-`;
+
+        try{
+            const entries = await fs.readdir(this.cacheDir);
+            const matchingFiles = entries.filter((entry) => entry.startsWith(prefix));
+
+            if(matchingFiles.length === 0) return;
+
+            const deletionPromises = matchingFiles.map((fileName) => {
+                const filePath = path.join(this.cacheDir, fileName);
+                return fs.unlink(filePath).catch(() => {});
+            });
+
+            await Promise.all(deletionPromises);
+
+            logger.info(`@plugin-binary-cache-service: evicted ${matchingFiles.length} cached file(s) for plugin ${pluginId}`);
+        }catch(error){
+            logger.warn(`@plugin-binary-cache-service: failed to evict cache for plugin ${pluginId}: ${error}`);
+        }
+    }
+
+    private buildCacheKey(request: BinaryCacheRequest): string{
+        // Use the basename of the object path (a UUID per upload) as the cache identifier.
+        // Each upload generates a unique objectPath, so cache invalidation is automatic.
+        const objectBasename = path.basename(request.binaryObjectPath);
+        return `${request.pluginId}-${objectBasename}`;
+    }
+
+    private async resolveBinary(request: BinaryCacheRequest, cacheKey: string): Promise<string>{
+        const finalPath = path.join(this.cacheDir, cacheKey);
+
+        // Check if file exists and is executable (objectPath identifier is embedded in filename)
+        if(await this.isExecutable(finalPath)){
             const now = new Date();
             await fs.utimes(finalPath, now, now).catch(() => {});
             return finalPath;
@@ -67,14 +97,6 @@ export default class PluginBinaryCacheService implements IPluginBinaryCacheServi
 
             await pipeline(stream, writeStream);
 
-            // Verify integrity
-            if(request.binaryHash){
-                const calculatedHash = await this.calculateFileHash(tempPath);
-                if(calculatedHash !== request.binaryHash){
-                    throw new Error(`Binary integrity check failed. Expected ${request.binaryHash}, got ${calculatedHash}`);
-                }
-            }
-
             // Set permissions (rwx-r-x-r-x)
             await fs.chmod(tempPath, 0o755);
 
@@ -82,21 +104,11 @@ export default class PluginBinaryCacheService implements IPluginBinaryCacheServi
 
             logger.info(`@plugin-binary-cache-service: cached successfully: ${finalPath}`);
             return finalPath;
-        }catch(error: any){
+        }catch(error){
             await fs.unlink(tempPath).catch(() => {});
-            logger.error(`@plugin-binary-cache-service: failed to download binary: ${request.binaryObjectPath}`, error);
+            logger.error(`@plugin-binary-cache-service: failed to download binary: ${request.binaryObjectPath}: ${error}`);
             throw error;
         }
-    }
-
-    private async calculateFileHash(filePath: string): Promise<string>{
-        return new Promise((resolve, reject) => {
-            const hash = crypto.createHash('sha256');
-            const stream = createReadStream(filePath);
-            stream.on('error', (err) => reject(err));
-            stream.on('data', (chunk) => hash.update(chunk));
-            stream.on('end', () => resolve(hash.digest('hex')));
-        });
     }
 
     private async ensureCacheDir(): Promise<void>{
@@ -107,12 +119,10 @@ export default class PluginBinaryCacheService implements IPluginBinaryCacheServi
         }
     }
 
-    private async isValidBinary(filePath: string, expectedHash?: string): Promise<boolean>{
+    private async isExecutable(filePath: string): Promise<boolean>{
         try{
             await fs.access(filePath, fs.constants.X_OK);
-            if(!expectedHash) return true;
-            const actualHash = await this.calculateFileHash(filePath);
-            return actualHash === expectedHash;
+            return true;
         }catch{
             return false;
         }

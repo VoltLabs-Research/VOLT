@@ -5,8 +5,6 @@ export enum NodeType {
     FOREACH = 'forEach',
     ENTRYPOINT = 'entrypoint',
     EXPOSURE = 'exposure',
-    SCHEMA = 'schema',
-    VISUALIZERS = 'visualizers',
     EXPORT = 'export',
     IF_STATEMENT = 'if-statement'
 };
@@ -144,19 +142,11 @@ export interface IExposureData {
     name: string;
     icon?: string;
     results: string;
+    canvas?: boolean;
+    raster?: boolean;
     iterable?: string;
     iterableChunkSize?: number;
     [key: string]: unknown;
-};
-
-export interface ISchemaData {
-    definition: Record<string, unknown>;
-};
-
-export interface IVisualizersData {
-    canvas?: boolean;
-    raster?: boolean;
-    listingTitle?: string;
 };
 
 export interface IChartExportOptions {
@@ -199,8 +189,6 @@ export interface INodeData {
     forEach?: IForEachData;
     entrypoint?: IEntrypointData;
     exposure?: IExposureData;
-    schema?: ISchemaData;
-    visualizers?: IVisualizersData;
     export?: IExportData;
     ifStatement?: IIfStatementData;
     [key: string]: unknown;

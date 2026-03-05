@@ -45,6 +45,18 @@ const ExposureEditor = ({ node }: EditorProps) => {
                 inputProps={{ type: 'number', min: 1 }}
                 placeholder='50000'
             />
+            <FormField
+                variant='inline'
+                label='3D Canvas'
+                fieldType='toggle'
+                {...field('canvas')}
+            />
+            <FormField
+                variant='inline'
+                label='Raster Output'
+                fieldType='toggle'
+                {...field('raster')}
+            />
         </CollapsibleSection>
     );
 };

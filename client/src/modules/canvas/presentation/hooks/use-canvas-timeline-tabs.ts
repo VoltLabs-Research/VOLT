@@ -1,12 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
 import { usePluginCatalog } from '@/modules/plugin/presentation/hooks';
+import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
 import { getListingRelevantExposures } from '@/modules/plugin/presentation/utils/listing-exposures';
+import formatSnakeCaseToTitle from '@/modules/plugin/presentation/utils/format-snake-case';
+import type { IExposureComputed } from '@/modules/plugin/domain/entities/Exposure';
 import type { Trajectory } from '@/modules/trajectory/domain/entities/Trajectory';
 import useSceneArtifactUseCases from '@/modules/trajectory/presentation/hooks/generated-scenes/use-scene-artifact-use-cases';
 import type { RenderableExposurePayload } from '@/modules/trajectory/application/dtos/scene-artifacts';
 import ApiError from '@/shared/errors/ApiError';
 import { sileo } from 'sileo';
+
+export interface SubListingEntry {
+    exposureId: string;
+    exposureName: string;
+    subListingName: string;
+    label: string;
+}
 
 interface UseCanvasTimelineTabsParams {
     trajectory: Trajectory | null | undefined;
@@ -15,9 +25,11 @@ interface UseCanvasTimelineTabsParams {
 
 const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabsParams) => {
     const { listSceneArtifactsUseCase } = useSceneArtifactUseCases();
+    const { pluginListingRepository } = usePluginUseCases();
     const { ensurePluginById } = usePluginCatalog();
     const pluginsById = usePluginStore((state) => state.pluginsById);
     const [sceneExposureFallback, setSceneExposureFallback] = useState<RenderableExposurePayload[]>([]);
+    const [subListingMap, setSubListingMap] = useState<Map<string, string[]>>(new Map());
 
     const trajectoryId = trajectory?._id;
 
@@ -107,14 +119,89 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
 
     const hasAtomProperties = useMemo(() => {
         if (!plugin?.exposures?.length) return false;
-        return plugin.exposures.some((item) => item.perAtomProperties?.length > 0);
+        return plugin.exposures.some((item) => {
+            const perAtomProperties = (item as IExposureComputed & { perAtomProperties?: unknown[] }).perAtomProperties;
+            return Boolean(perAtomProperties?.length);
+        });
     }, [plugin?.exposures]);
+
+    useEffect(() => {
+        setSubListingMap(new Map());
+    }, [analysisId]);
+
+    useEffect(() => {
+        if (!resolvedPluginId || !trajectoryId || listingExposures.length === 0) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const discoverSubListings = async () => {
+            const discoveredMap = new Map<string, string[]>();
+
+            for (const exposure of listingExposures) {
+                if (cancelled) return;
+
+                try {
+                    const response = await pluginListingRepository.getListing({
+                        pluginId: resolvedPluginId,
+                        exposureId: exposure.exposureId,
+                        exposureName: exposure.name,
+                        trajectoryId,
+                        limit: 1,
+                        page: 1
+                    });
+
+                    const subListingNames = response._meta?.subListingNames;
+                    if (subListingNames && subListingNames.length > 0) {
+                        discoveredMap.set(exposure.exposureId, subListingNames);
+                    }
+                } catch (error: unknown) {
+                    if (ApiError.isRBACError(error)) {
+                        let message = 'You do not have permission to perform this action.';
+                        if (error instanceof ApiError) {
+                            message = error.getFriendlyMessage();
+                        }
+                        sileo.error({ title: message });
+                    }
+                }
+            }
+
+            if (!cancelled) {
+                setSubListingMap(discoveredMap);
+            }
+        };
+
+        discoverSubListings();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [resolvedPluginId, trajectoryId, listingExposures, pluginListingRepository]);
+
+    const subListingEntries = useMemo<SubListingEntry[]>(() => {
+        const entries: SubListingEntry[] = [];
+        for (const exposure of listingExposures) {
+            const names = subListingMap.get(exposure.exposureId);
+            if (!names) continue;
+            for (const subListingName of names) {
+                entries.push({
+                    exposureId: exposure.exposureId,
+                    exposureName: exposure.name,
+                    subListingName,
+                    label: formatSnakeCaseToTitle(subListingName)
+                });
+            }
+        }
+        return entries;
+    }, [listingExposures, subListingMap]);
 
     return {
         pluginId: resolvedPluginId,
         isPluginReady: Boolean(plugin),
         listingExposures,
-        hasAtomProperties
+        hasAtomProperties,
+        subListingEntries
     };
 };
 

@@ -1,11 +1,15 @@
 import { injectable, inject } from 'tsyringe';
 import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
 import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
+import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { SYS_BUCKETS } from '@core/config/minio';
+import { decodeMultiStream } from '@shared/infrastructure/utilities/msgpack';
+import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/merge-chunked-value';
 import ListingRow from '@modules/plugin/domain/entities/ListingRow';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ExportType, PaginatedResult } from '@shared/domain/ports/IBaseRepository';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
-import { parseSchemaAnnotations, ListingField } from '@modules/plugin/infrastructure/utilities/schema-annotations';
 
 interface ListingOptions {
     teamId?: string;
@@ -17,23 +21,20 @@ interface ListingOptions {
     limit?: number;
     sortAsc?: boolean;
     format?: ExportType;
-};
+}
 
 interface ListingPreparedContext {
     pluginId: string;
     exposureId: string;
     exposureName: string;
-    columns: ColumnConfig[];
     baseQuery: Record<string, unknown>;
-};
+}
 
 interface ColumnConfig {
-    path: string;
     label: string;
     sortable: boolean;
     width?: number;
-    sourcePath?: string;
-};
+}
 
 interface ListingRowData {
     _id: string;
@@ -43,7 +44,7 @@ interface ListingRowData {
     exposureId: string;
     trajectoryName: string;
     [key: string]: unknown;
-};
+}
 
 export interface PluginListingPaginatedResult {
     data: ListingRowData[];
@@ -56,8 +57,9 @@ export interface PluginListingPaginatedResult {
         exposureName: string;
         exposureId: string;
         columns: ColumnConfig[];
+        subListingNames: string[];
     };
-};
+}
 
 export interface PluginListingExportResult {
     meta: {
@@ -70,13 +72,23 @@ export interface PluginListingExportResult {
         format: ExportType;
     };
     data: ListingRowData[];
-};
+}
+
+const SYSTEM_KEYS = new Set([
+    '_id',
+    'timestep',
+    'analysisId',
+    'trajectoryId',
+    'exposureId',
+    'trajectoryName'
+]);
 
 @injectable()
 export class PluginListingService {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
-        @inject(PLUGIN_TOKENS.ListingRowRepository) private listingRowRepository: IListingRowRepository
+        @inject(PLUGIN_TOKENS.ListingRowRepository) private listingRowRepository: IListingRowRepository,
+        @inject(SHARED_TOKENS.StorageService) private storageService: IStorageService
     ) {}
 
     async getListingDocuments(pluginId: string, options: ListingOptions): Promise<PluginListingPaginatedResult> {
@@ -85,9 +97,8 @@ export class PluginListingService {
         const sortAsc = options.sortAsc || false;
         const prepared = await this.prepareListingContext(pluginId, options);
 
-        // Query database with pagination
         const result: PaginatedResult<ListingRow> = await this.listingRowRepository.findAll({
-            filter: prepared.baseQuery as any,
+            filter: prepared.baseQuery as Record<string, unknown>,
             limit,
             page,
             sort: {
@@ -97,9 +108,9 @@ export class PluginListingService {
             populate: 'trajectory'
         });
 
-        // Transform to raw rows
         const rows = this.toListingRows(result.data);
-        const columns = this.materializeColumns(prepared.columns, rows);
+        const columns = this.deriveColumns(rows);
+        const subListingNames = await this.discoverSubListingNames(result.data);
 
         return {
             data: rows,
@@ -111,7 +122,8 @@ export class PluginListingService {
                 pluginId: prepared.pluginId,
                 exposureName: prepared.exposureName,
                 exposureId: prepared.exposureId,
-                columns
+                columns,
+                subListingNames
             }
         };
     }
@@ -129,7 +141,7 @@ export class PluginListingService {
 
         do {
             const pageResult = await this.listingRowRepository.findAll({
-                filter: prepared.baseQuery as any,
+                filter: prepared.baseQuery as Record<string, unknown>,
                 limit: pageSize,
                 page,
                 sort: {
@@ -145,7 +157,7 @@ export class PluginListingService {
             page += 1;
         } while (page <= totalPages);
 
-        const columns = this.materializeColumns(prepared.columns, rows);
+        const columns = this.deriveColumns(rows);
 
         return {
             meta: {
@@ -171,20 +183,19 @@ export class PluginListingService {
             throw new Error('Plugin::NotFound');
         }
 
-        const exposureDescriptor = this.resolveListingExposure(plugin, options.exposureId, options.exposureName);
-        if (!exposureDescriptor) {
+        const exposure = this.findExposure(plugin, options.exposureId, options.exposureName);
+        if (!exposure) {
             throw new Error('Exposure::NotFound');
         }
 
-        const { exposureId, exposureName, columns } = exposureDescriptor;
         const baseQuery: Record<string, unknown> = {
             plugin: plugin.id,
-            exposureId,
+            exposureId: exposure.exposureId,
             team: options.teamId
         };
 
-        if (exposureName) {
-            baseQuery.exposureName = exposureName;
+        if (exposure.exposureName) {
+            baseQuery.exposureName = exposure.exposureName;
         }
 
         if (options.trajectoryId) {
@@ -199,213 +210,112 @@ export class PluginListingService {
 
         return {
             pluginId,
-            exposureId,
-            exposureName,
-            columns,
+            exposureId: exposure.exposureId,
+            exposureName: exposure.exposureName,
             baseQuery
         };
     }
 
-    private toListingRows(documents: ListingRow[]): ListingRowData[] {
-        const rawRows = documents.map((doc: ListingRow) => {
-            const trajectory = doc.props.trajectory as any;
-            return {
-                _id: doc.id,
-                timestep: doc.props.timestep,
-                analysisId: doc.props.analysis,
-                trajectoryId: trajectory?._id ?? trajectory,
-                exposureId: doc.props.exposureId,
-                trajectoryName: trajectory?.name ?? '',
-                ...(doc.props.row || {})
-            };
-        });
-
-        return rawRows.map((row: any) => {
-            const fixed: Record<string, unknown> = {
-                _id: row._id,
-                timestep: row.timestep,
-                analysisId: row.analysisId,
-                trajectoryId: row.trajectoryId,
-                exposureId: row.exposureId,
-                trajectoryName: row.trajectoryName
-            };
-
-            const rest = { ...row };
-            for (const key of Object.keys(fixed)) {
-                delete rest[key];
-            }
-
-            return { ...fixed, ...rest } as ListingRowData;
-        });
-    }
-
-    private resolveListingExposure(
-        plugin: any,
+    private findExposure(
+        plugin: Record<string, any>,
         exposureId?: string,
         exposureName?: string
-    ): { exposureId: string; exposureName: string; columns: ColumnConfig[] } | null {
-        const workflow = plugin?.props?.workflow;
-        const nodes = workflow?.props?.nodes || [];
-        const edges = workflow?.props?.edges || [];
+    ): { exposureId: string; exposureName: string } | null {
+        const nodes = plugin?.props?.workflow?.props?.nodes || [];
 
-        const exposures = nodes.filter((node: any) => node?.type === WorkflowNodeType.Exposure);
-        for (const exposureNode of exposures) {
-            const id = String(exposureNode?.id || '');
-            const name = String(exposureNode?.data?.exposure?.name || '').trim();
-            if (!id || !name) continue;
+        for (const node of nodes) {
+            if (node.type !== WorkflowNodeType.Exposure) continue;
 
-            if (exposureId && id !== exposureId) continue;
-            if (!exposureId && exposureName && name !== exposureName) continue;
+            const nodeId = String(node.id || '');
+            const nodeName = String(node.data?.exposure?.name || '').trim();
+            if (!nodeId || !nodeName) continue;
 
-            const columns = this.findColumnsForExposure(id, nodes, edges);
-            if (!columns.length) {
-                continue;
-            }
+            if (exposureId && nodeId !== exposureId) continue;
+            if (!exposureId && exposureName && nodeName !== exposureName) continue;
 
             return {
-                exposureId: id,
-                exposureName: name,
-                columns
+                exposureId: nodeId,
+                exposureName: nodeName
             };
         }
 
         return null;
     }
 
-    private findColumnsForExposure(exposureId: string, nodes: any[], edges: any[]): ColumnConfig[] {
-        const visited = new Set<string>();
-        const queue = [exposureId];
+    private toListingRows(documents: ListingRow[]): ListingRowData[] {
+        return documents.map((document) => {
+            const trajectory = document.props.trajectory as Record<string, unknown> | string;
+            const trajectoryId = (typeof trajectory === 'object' && trajectory !== null)
+                ? String((trajectory as Record<string, unknown>)._id ?? '')
+                : String(trajectory ?? '');
+            const trajectoryName = (typeof trajectory === 'object' && trajectory !== null)
+                ? String((trajectory as Record<string, unknown>).name ?? '')
+                : '';
 
-        while (queue.length > 0) {
-            const current = queue.shift()!;
-            if (visited.has(current)) continue;
-            visited.add(current);
-
-            const outgoing = edges.filter((edge: any) => edge.source === current);
-            for (const edge of outgoing) {
-                const target = nodes.find((node: any) => node.id === edge.target);
-                if (!target) continue;
-
-                if (target.type === WorkflowNodeType.Schema) {
-                    const definition = target?.data?.schema?.definition;
-                    if (!definition || typeof definition !== 'object') continue;
-
-                    const annotations = parseSchemaAnnotations(definition as Record<string, unknown>);
-                    if (annotations.listingFields.length === 0) continue;
-
-                    return this.buildColumnConfigsFromAnnotations(target.id, annotations.listingFields);
-                }
-
-                queue.push(target.id);
-            }
-        }
-
-        return [];
-    }
-
-    private buildColumnConfigsFromAnnotations(schemaNodeId: string, listingFields: ListingField[]): ColumnConfig[] {
-        const columns: ColumnConfig[] = [];
-
-        for (const field of listingFields) {
-            if (field.kind === 'primitive') {
-                columns.push({
-                    path: field.label,
-                    label: field.label,
-                    sortable: true,
-                    sourcePath: `{{ ${schemaNodeId}.definition.${field.path} }}`
-                });
-            }
-
-            if (field.kind === 'array' && field.labels) {
-                for (let i = 0; i < field.labels.length; i++) {
-                    const columnLabel = `${field.label} ${field.labels[i]}`;
-                    columns.push({
-                        path: columnLabel,
-                        label: columnLabel,
-                        sortable: true,
-                        sourcePath: `{{ ${schemaNodeId}.definition.${field.path}.${i} }}`
-                    });
-                }
-            }
-
-            if (field.kind === 'object') {
-                columns.push({
-                    path: 'auto',
-                    label: 'auto',
-                    sortable: true,
-                    sourcePath: `{{ ${schemaNodeId}.definition.${field.path}.* }}`
-                });
-            }
-        }
-
-        return columns;
-    }
-
-    private isAutoWildcardColumn(column: ColumnConfig): boolean {
-        const label = String(column.label || '').trim().toLowerCase();
-        const sourcePath = String(column.sourcePath || '');
-        return label === 'auto' && sourcePath.includes('*');
-    }
-
-    private materializeColumns(configuredColumns: ColumnConfig[], rows: ListingRowData[]): ColumnConfig[] {
-        const staticLabels = new Set(
-            configuredColumns
-                .filter((column) => !this.isAutoWildcardColumn(column))
-                .map((column) => String(column.label || '').trim())
-                .filter(Boolean)
-        );
-
-        const systemKeys = new Set([
-            '_id',
-            'timestep',
-            'analysisId',
-            'trajectoryId',
-            'exposureId',
-            'trajectoryName',
-            ...Array.from(staticLabels)
-        ]);
-
-        const dynamicAutoLabels = new Set<string>();
-        for (const row of rows) {
-            for (const key of Object.keys(row)) {
-                if (!systemKeys.has(key)) {
-                    dynamicAutoLabels.add(key);
-                }
-            }
-        }
-
-        const orderedDynamicLabels = Array.from(dynamicAutoLabels).sort((a, b) => a.localeCompare(b));
-        const columns: ColumnConfig[] = [];
-
-        for (const column of configuredColumns) {
-            if (this.isAutoWildcardColumn(column)) {
-                for (const dynamicLabel of orderedDynamicLabels) {
-                    columns.push({
-                        path: dynamicLabel,
-                        label: dynamicLabel,
-                        sortable: true
-                    });
-                }
-                continue;
-            }
-
-            const label = String(column.label || '').trim();
-            if (!label) continue;
-
-            columns.push({
-                path: label,
-                label,
-                sortable: Boolean(column.sortable),
-                width: column.width
-            });
-        }
-
-        const seen = new Set<string>();
-        return columns.filter((column) => {
-            const key = String(column.label || '').trim();
-            if (!key || seen.has(key)) return false;
-            seen.add(key);
-            return true;
+            return {
+                _id: document.id,
+                timestep: document.props.timestep,
+                analysisId: document.props.analysis,
+                trajectoryId,
+                exposureId: document.props.exposureId,
+                trajectoryName,
+                ...(document.props.row || {})
+            };
         });
     }
-};
+
+    private async discoverSubListingNames(documents: ListingRow[]): Promise<string[]> {
+        if (documents.length === 0) return [];
+
+        const sampleDocument = documents[0];
+        const trajectory = sampleDocument.props.trajectory as Record<string, unknown> | string;
+        const trajectoryId = (typeof trajectory === 'object' && trajectory !== null)
+            ? String((trajectory as Record<string, unknown>)._id ?? '')
+            : String(trajectory ?? '');
+
+        const analysisId = sampleDocument.props.analysis;
+        const exposureId = sampleDocument.props.exposureId;
+        const timestep = sampleDocument.props.timestep;
+
+        const storageKey = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
+
+        try {
+            const stream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, storageKey);
+            let decoded: Record<string, unknown> | null = null;
+
+            for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array | Buffer>)) {
+                if (message && typeof message === 'object') {
+                    decoded = mergeChunkedValue(decoded, message);
+                }
+            }
+
+            if (!decoded) return [];
+
+            const subListings = decoded.sub_listings;
+            if (!subListings || typeof subListings !== 'object') return [];
+
+            return Object.keys(subListings as Record<string, unknown>);
+        } catch {
+            return [];
+        }
+    }
+
+    private deriveColumns(rows: ListingRowData[]): ColumnConfig[] {
+        const columnLabels = new Set<string>();
+
+        for (const row of rows) {
+            for (const key of Object.keys(row)) {
+                if (!SYSTEM_KEYS.has(key)) {
+                    columnLabels.add(key);
+                }
+            }
+        }
+
+        return Array.from(columnLabels)
+            .sort((a, b) => a.localeCompare(b))
+            .map((label) => ({
+                label,
+                sortable: true
+            }));
+    }
+}

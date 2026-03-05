@@ -12,7 +12,6 @@ export interface RenderableExposurePayload {
     results: string;
     canvas: boolean;
     raster: boolean;
-    perAtomProperties?: string[];
     export?: {
         exporter?: string;
         type?: string;

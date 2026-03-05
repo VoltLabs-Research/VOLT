@@ -86,33 +86,9 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
         icon: 'TbEye',
         description: 'Results exposure',
         inputs: 1,
-        outputs: 2,
+        outputs: 1,
         allowedConnections: {
             from: [NodeType.ENTRYPOINT],
-            to: [NodeType.SCHEMA, NodeType.EXPORT, NodeType.VISUALIZERS]
-        }
-    },
-    [NodeType.SCHEMA]: {
-        type: NodeType.SCHEMA,
-        label: 'Schema',
-        icon: 'TbSchema',
-        description: 'Data structure definition',
-        inputs: 1,
-        outputs: 1,
-        allowedConnections: {
-            from: [NodeType.EXPOSURE],
-            to: [NodeType.VISUALIZERS]
-        }
-    },
-    [NodeType.VISUALIZERS]: {
-        type: NodeType.VISUALIZERS,
-        label: 'Visualizers',
-        icon: 'TbChartDots3',
-        description: 'Visualization configuration',
-        inputs: 1,
-        outputs: 1,
-        allowedConnections: {
-            from: [NodeType.SCHEMA],
             to: [NodeType.EXPORT]
         }
     },
@@ -124,7 +100,7 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
         inputs: 1,
         outputs: 0,
         allowedConnections: {
-            from: [NodeType.EXPOSURE, NodeType.VISUALIZERS],
+            from: [NodeType.EXPOSURE],
             to: []
         }
     },

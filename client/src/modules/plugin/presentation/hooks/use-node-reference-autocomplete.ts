@@ -16,27 +16,8 @@ const BASE_OUTPUT_PROPERTIES: Partial<Record<NodeType, string[]>> = {
     [NodeType.FOREACH]: ['items', 'count', 'currentValue', 'currentValue.path', 'currentValue.frame', 'currentIndex', 'outputPath'],
     [NodeType.ENTRYPOINT]: ['results', 'successCount', 'failCount', 'stdout', 'stderr', 'exitCode'],
     [NodeType.EXPOSURE]: ['results', 'sample'],
-    [NodeType.SCHEMA]: ['definition'],
-    [NodeType.VISUALIZERS]: ['canvas', 'raster', 'listingTitle', 'listing', 'perAtomProperties'],
     [NodeType.EXPORT]: ['results'],
     [NodeType.IF_STATEMENT]: ['result', 'branch']
-};
-
-const collectSchemaPaths = (value: unknown, prefix = ''): string[] => {
-    if (value === null || value === undefined) return [];
-    if (typeof value !== 'object' || Array.isArray(value)) {
-        return prefix ? [prefix] : [];
-    }
-
-    const entries = Object.entries(value as Record<string, unknown>);
-    if (entries.length === 0) {
-        return prefix ? [prefix] : [];
-    }
-
-    return entries.flatMap(([key, child]) => {
-        const nextPrefix = prefix ? `${prefix}.${key}` : key;
-        return collectSchemaPaths(child, nextPrefix);
-    });
 };
 
 const getNodeOutputProperties = (node: Node<INodeData>): string[] => {
@@ -49,11 +30,6 @@ const getNodeOutputProperties = (node: Node<INodeData>): string[] => {
             .map((arg) => arg.argument?.trim())
             .filter((arg): arg is string => Boolean(arg));
         dynamicProperties.push(...argumentKeys);
-    }
-
-    if (nodeType === NodeType.SCHEMA) {
-        const schemaPaths = collectSchemaPaths(node.data.schema?.definition).map((path) => `definition.${path}`);
-        dynamicProperties.push(...schemaPaths);
     }
 
     return Array.from(new Set([...baseProperties, ...dynamicProperties]));

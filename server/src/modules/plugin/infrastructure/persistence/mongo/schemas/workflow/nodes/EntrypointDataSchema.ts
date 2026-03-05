@@ -12,10 +12,6 @@ export const EntrypointDataSchema = new Schema({
     binaryFileName: {
         type: String
     },
-    // SHA256 hash of binary for caching
-    binaryHash: {
-        type: String
-    },
     arguments: {
         type: String
     },

@@ -6,7 +6,6 @@ import { IStorageService } from '@shared/domain/ports/IStorageService';
 import pLimit from '@shared/infrastructure/utilities/p-limit';
 import readExposurePayload from '@modules/plugin/infrastructure/utilities/read-exposure-payload';
 import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
-import { parseSchemaAnnotations } from '@modules/plugin/infrastructure/utilities/schema-annotations';
 
 @injectable()
 export default class ExposureHandler implements INodeHandler{
@@ -35,7 +34,8 @@ export default class ExposureHandler implements INodeHandler{
     async execute(node: WorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
         const config = node.data.exposure!;
         const items = this.getInputItems(node.id, context);
-        const reqs = this.analyzeRequirements(node.id, context);
+        const exportNode = context.workflow.findDescendantByType(node.id, WorkflowNodeType.Export);
+        const needsData = !!exportNode;
         const limit = pLimit(4);
 
         const results = await Promise.all(items.map((item: any) => limit(async () => {
@@ -44,7 +44,7 @@ export default class ExposureHandler implements INodeHandler{
             }
 
             try{
-                return await this.processItem(item, config, node.id, context, reqs);
+                return await this.processItem(item, config, node.id, context, needsData);
             }catch(err: any){
                 return {
                     index: item.index,
@@ -66,36 +66,17 @@ export default class ExposureHandler implements INodeHandler{
         return output.results;
     }
 
-    private analyzeRequirements(nodeId: string, context: ExecutionContext){
-        const exportNode = context.workflow.findDescendantByType(nodeId, WorkflowNodeType.Export);
-        const schemaNode = context.workflow.findDescendantByType(nodeId, WorkflowNodeType.Schema);
-
-        let hasListing = false;
-        if (schemaNode?.data?.schema?.definition) {
-            const annotations = parseSchemaAnnotations(
-                schemaNode.data.schema.definition as Record<string, unknown>
-            );
-            hasListing = annotations.listingFields.length > 0;
-        }
-
-        return {
-            needsData: !!exportNode,
-            needsMetadata: hasListing
-        };
-    }
-
     private async processItem(
         item: any, 
         config: any, 
         nodeId: string, 
         context: ExecutionContext, 
-        reqs: any
+        needsData: boolean
     ){
         const localPath = `${item.outputPath}_${config.results}`;
         const timestep = item.input.frame;
         const storageKey = `plugins/trajectory-${context.trajectoryId}/analysis-${context.analysisId}/${nodeId}/timestep-${timestep}.msgpack`;
 
-        // Upload result using injected service
         context.generatedFiles.push(localPath);
         await this.storage.upload(
             SYS_BUCKETS.PLUGINS,
@@ -104,16 +85,10 @@ export default class ExposureHandler implements INodeHandler{
             { 'Content-Type': 'application/msgpack' }
         );
 
-        // Extract data/metadata locally
-        let payload: any = {
-            data: null,
-            count: 0,
-            metadata: null
-        };
-
-        if(reqs.needsData || reqs.needsMetadata){
-            payload = await readExposurePayload(localPath, config.iterable, reqs);
-        }
+        const payload = await readExposurePayload(localPath, config.iterable, {
+            needsData,
+            needsMetadata: true
+        });
 
         return {
             index: item.index,
@@ -121,19 +96,7 @@ export default class ExposureHandler implements INodeHandler{
             name: config.name,
             data: payload.data,
             count: payload.count,
-            metadata: payload.metadata ? {
-                ...payload.metadata,
-                _resolvedContext: {
-                    arguments: context.userConfig || {},
-                    timestep,
-                    analysis: {
-                        createdAt: new Date(),
-                        _id: context.analysisId,
-                        trajectory: context.trajectoryId,
-                        plugin: context.pluginId
-                    }
-                }
-            } : null,
+            metadata: payload.metadata,
             storageKey,
             localPath
         };

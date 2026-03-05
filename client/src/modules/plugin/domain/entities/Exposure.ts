@@ -9,9 +9,7 @@ export interface IExposureComputed {
     iterableChunkSize?: number;
     canvas: boolean;
     raster: boolean;
-    perAtomProperties: string[];
-    listing: Record<string, string> | null;
-    listingTitle: string;
+    hasListing: boolean;
     export: IExposureExport | null;
 };
 
@@ -36,8 +34,6 @@ export interface IComputedArgumentDefinition {
 export interface IListingExposure {
     exposureId: string;
     name: string;
-    exposureName: string;
-    hasPerAtomProperties: boolean;
 };
 
 export interface IListingsWithExposures {

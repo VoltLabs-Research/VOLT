@@ -17,12 +17,8 @@ export interface ExposureResult{
     exposureName: string;
     nodeId: string;
     data: any;
-    schema?: Record<string, any>;
-    visualizers?: {
-        canvas: boolean;
-        raster?: boolean;
-        listing?: Record<string, string>;
-    };
+    canvas?: boolean;
+    raster?: boolean;
     export?: {
         exporter: Exporter;
         type: string;

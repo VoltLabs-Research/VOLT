@@ -27,8 +27,7 @@ export class GetPluginByIdAITool extends AITool {
             status: plugin.status, validated: plugin.validated,
             exposures: Array.isArray(plugin.exposures) ? plugin.exposures.map((e: any) => ({
                 exposureId: e._id, name: e.name,
-                hasListing: Boolean(e.listing && Object.keys(e.listing).length > 0),
-                listingColumns: e.listing ? Object.values(e.listing) : [],
+                hasListing: Boolean(e.hasListing),
                 canvas: e.canvas ?? false, raster: e.raster ?? false
             })) : []
         };
