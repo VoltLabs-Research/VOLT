@@ -6,8 +6,6 @@ import ContextNode from './ContextNode';
 import ForEachNode from './ForEachNode';
 import EntrypointNode from './EntrypointNode';
 import ExposureNode from './ExposureNode';
-import SchemaNode from './SchemaNode';
-import VisualizersNode from './VisualizersNode';
 import ExportNode from './ExportNode';
 import IfStatementNode from './IfStatementNode';
 
@@ -18,8 +16,6 @@ export const nodeTypes: NodeTypes = {
     [NodeType.FOREACH]: ForEachNode,
     [NodeType.ENTRYPOINT]: EntrypointNode,
     [NodeType.EXPOSURE]: ExposureNode,
-    [NodeType.SCHEMA]: SchemaNode,
-    [NodeType.VISUALIZERS]: VisualizersNode,
     [NodeType.EXPORT]: ExportNode,
     [NodeType.IF_STATEMENT]: IfStatementNode
 };

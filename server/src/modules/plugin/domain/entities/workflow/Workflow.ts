@@ -1,7 +1,6 @@
 import { EntrypointNodeData } from './nodes/EntrypointNode';
 import { WorkflowEdge } from './WorkflowEdge';
 import { WorkflowNode, WorkflowNodeType } from './WorkflowNode';
-import { parseSchemaAnnotations, ListingField } from '@modules/plugin/infrastructure/utilities/schema-annotations';
 
 export interface WorkflowViewport{
     x: number;
@@ -87,76 +86,6 @@ export default class Workflow{
         }
 
         return result;
-    }
-
-    /**
-     * Traverses the workflow graph downwards from the exposure node
-     * looking for a node of type visualizer. If found, it extracts the column
-     * definitions configured within it.
-     */
-    findColumnsDefinitionsFromExposureVisualizer(exposureName: string){
-        const exposureNodeId = this.findExposureByName(exposureName);
-        if(!exposureNodeId) return [];
-
-        const visited = new Set<string>();
-        const queue = [exposureNodeId];
-
-        while(queue.length){
-            const id = queue.shift()!;
-            if(visited.has(id)) continue;
-            visited.add(id);
-
-            const outEdges = this.props.edges.filter((edge) => edge.source === id);
-            for(const edge of outEdges){
-                const target = this.props.nodes.find((node) => node.id === edge.target);
-                if(!target) continue;
-
-                if(target.type === WorkflowNodeType.Schema){
-                    const definition = target?.data?.schema?.definition;
-                    if(!definition || typeof definition !== 'object') continue;
-
-                    const annotations = parseSchemaAnnotations(definition as Record<string, unknown>);
-                    if(annotations.listingFields.length === 0) continue;
-
-                    return this.buildColumnDefinitions(target.id, annotations.listingFields);
-                }
-
-                queue.push(edge.target);
-            }
-        }
-
-        return [];
-    }
-
-    private buildColumnDefinitions(schemaNodeId: string, listingFields: ListingField[]){
-        const columns: Array<{ path: string; label: string }> = [];
-
-        for(const field of listingFields){
-            if(field.kind === 'primitive'){
-                columns.push({
-                    path: `{{ ${schemaNodeId}.definition.${field.path} }}`,
-                    label: field.label
-                });
-            }
-
-            if(field.kind === 'array' && field.labels){
-                for(let i = 0; i < field.labels.length; i++){
-                    columns.push({
-                        path: `{{ ${schemaNodeId}.definition.${field.path}.${i} }}`,
-                        label: `${field.label} ${field.labels[i]}`
-                    });
-                }
-            }
-
-            if(field.kind === 'object'){
-                columns.push({
-                    path: `{{ ${schemaNodeId}.definition.${field.path}.* }}`,
-                    label: 'auto'
-                });
-            }
-        }
-
-        return columns;
     }
 
     /**

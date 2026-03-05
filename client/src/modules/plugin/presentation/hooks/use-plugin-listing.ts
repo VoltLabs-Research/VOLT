@@ -1,17 +1,21 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
+import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri';
 import usePluginListingStore from '../stores/use-plugin-listing-store';
 import usePluginUseCases from './use-plugin-use-cases';
 import useDeleteAnalysis from '@/modules/analysis/presentation/hooks/use-delete-analysis';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
+import { openModal } from '@/shared/presentation/components/Modal';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ExportType } from '@/shared/domain/export/types';
 import { sileo } from 'sileo';
 import ApiError from '@/shared/errors/ApiError';
 import type { ListingRow } from '../../domain/entities';
+import formatSnakeCaseToTitle from '../utils/format-snake-case';
+
+export const SUB_LISTING_MODAL_ID = 'sub-listing-modal';
 
 interface UsePluginListingParams {
     pluginId: string;
@@ -64,6 +68,10 @@ const usePluginListing = ({
     const setColumns = usePluginListingStore((s) => s.setColumns);
     const removeRowByAnalysisId = usePluginListingStore((s) => s.removeRowByAnalysisId);
     const reset = usePluginListingStore((s) => s.reset);
+    const subListingNames = usePluginListingStore((s) => s.subListingNames);
+    const setSubListingNames = usePluginListingStore((s) => s.setSubListingNames);
+    const setSubListingData = usePluginListingStore((s) => s.setSubListingData);
+    const setSubListingLoading = usePluginListingStore((s) => s.setSubListingLoading);
 
     const shouldShowTrajectory = showTrajectoryColumn ?? !trajectoryId;
 
@@ -94,7 +102,6 @@ const usePluginListing = ({
             limit: params.limit
         });
 
-        // Update columns from response metadata
         const cols = response._meta?.columns;
         if (cols?.length) {
             const normalizedColumns: ColumnConfig[] = cols.map((column: any) => {
@@ -109,13 +116,18 @@ const usePluginListing = ({
             setColumns(normalizedColumns);
         }
 
+        const metaSubListingNames = response._meta?.subListingNames;
+        if (metaSubListingNames?.length) {
+            setSubListingNames(metaSubListingNames);
+        }
+
         return {
             status: 'success',
             data: response.data,
             pagination: response.pagination,
             _meta: response._meta
         };
-    }, [pluginListingRepository, setColumns]);
+    }, [pluginListingRepository, setColumns, setSubListingNames]);
 
     const exportData = useCallback(async (format: ExportType): Promise<Blob> => {
         return pluginListingRepository.exportListing({
@@ -161,6 +173,29 @@ const usePluginListing = ({
         }
     }, [deleteAnalysis, removeRowByAnalysisId, reset]);
 
+    const handleViewSubListing = useCallback(async (item: ListingRow, subListingName: string) => {
+        if (!item.analysisId || !item.exposureId || item.timestep === undefined) return;
+
+        setSubListingLoading(true);
+        setSubListingData(null);
+
+        try {
+            const result = await pluginListingRepository.getSubListing({
+                analysisId: item.analysisId,
+                exposureId: item.exposureId,
+                timestep: item.timestep,
+                subListingName
+            });
+
+            setSubListingData(result);
+            openModal(SUB_LISTING_MODAL_ID);
+        } catch {
+            sileo.error({ title: `Failed to load ${formatSnakeCaseToTitle(subListingName)}` });
+        } finally {
+            setSubListingLoading(false);
+        }
+    }, [pluginListingRepository, setSubListingData, setSubListingLoading]);
+
     const getMenuOptions = useCallback((item: ListingRow, selectedItems: ListingRow[]): MenuOption[] => {
         const targetRows = selectedItems.includes(item) ? selectedItems : [item];
         const isMultipleSelection = targetRows.length > 1;
@@ -174,6 +209,14 @@ const usePluginListing = ({
                     `/dashboard/trajectory/${item.trajectoryId}/analysis/${item.analysisId}/atoms?timestep=${item.timestep}`
                 )
             });
+
+            for (const name of subListingNames) {
+                options.push({
+                    label: `View ${formatSnakeCaseToTitle(name)}`,
+                    icon: RiTableLine,
+                    onClick: () => handleViewSubListing(item, name)
+                });
+            }
         }
 
         if (item.analysisId) {
@@ -186,7 +229,7 @@ const usePluginListing = ({
         }
 
         return options;
-    }, [handleDelete, navigate]);
+    }, [handleDelete, handleViewSubListing, navigate, subListingNames]);
 
     const isEnabled = !!(pluginId && (exposureName || exposureId) && (trajectoryId || teamId));
 

@@ -64,23 +64,9 @@ export const getDefaultDataForType = (type: NodeType): INodeData => {
                 exposure: {
                     name: '',
                     results: '',
-                    iterable: ''
-                }
-            };
-
-        case NodeType.SCHEMA:
-            return {
-                schema: {
-                    definition: {}
-                }
-            };
-
-        case NodeType.VISUALIZERS:
-            return {
-                visualizers: {
                     canvas: false,
                     raster: false,
-                    listingTitle: ''
+                    iterable: ''
                 }
             };
 

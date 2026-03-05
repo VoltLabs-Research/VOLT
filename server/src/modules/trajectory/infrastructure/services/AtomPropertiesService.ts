@@ -13,7 +13,7 @@ import { RuntimeError } from '@core/exceptions/RuntimeError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import nativeStats from '@modules/trajectory/infrastructure/native/NativeStats';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
-import logger from '@shared/infrastructure/logger';
+import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/merge-chunked-value';
 import {
     IAtomPropertiesService,
     FilterExpression,
@@ -23,7 +23,6 @@ import {
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import Plugin from '@modules/plugin/domain/entities/Plugin';
 import Analysis from '@modules/analysis/domain/entities/Analysis';
-import { parseSchemaAnnotations } from '@modules/plugin/infrastructure/utilities/schema-annotations';
 
 @injectable()
 export default class AtomPropertiesService implements IAtomPropertiesService {
@@ -42,69 +41,56 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
     ) { }
 
     async getModifierPerAtomProps(analysisId: string): Promise<Record<string, string[]>> {
-        const { plugin } = await this.getAnalysisAndPlugin(analysisId);
+        const { analysis, plugin } = await this.getAnalysisAndPlugin(analysisId);
         const workflow = plugin.props.workflow;
+        const trajectoryId = analysis.props.trajectory;
         const props: Record<string, string[]> = {};
-        const exposureNodes = workflow.props.nodes.filter((node: any) => node.type === WorkflowNodeType.Exposure);
+
+        const exposureNodes = workflow.props.nodes.filter(
+            (node: Record<string, unknown>) => node.type === WorkflowNodeType.Exposure
+        );
 
         for (const exposureNode of exposureNodes) {
-            const schemaNode = workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Schema);
-            if (!schemaNode?.data?.schema?.definition) continue;
-
-            const annotations = parseSchemaAnnotations(
-                schemaNode.data.schema.definition as Record<string, unknown>
+            const propertyNames = await this.discoverPerAtomPropertyNames(
+                trajectoryId,
+                analysisId,
+                String(exposureNode.id)
             );
 
-            if (annotations.perAtomProperties.length === 0) continue;
-            props[String(exposureNode.id)] = annotations.perAtomProperties;
+            if (propertyNames.length > 0) {
+                props[String(exposureNode.id)] = propertyNames;
+            }
         }
 
         return props;
     }
 
     async getExposureAtomConfig(analysisId: string, exposureId: string): Promise<ExposureAtomConfig> {
-        const { plugin } = await this.getAnalysisAndPlugin(analysisId);
+        const { analysis, plugin } = await this.getAnalysisAndPlugin(analysisId);
         const workflow = plugin.props.workflow;
+        const trajectoryId = analysis.props.trajectory;
+
         const exposureNode = workflow.props.nodes
-            .filter((node: any) => node.type === WorkflowNodeType.Exposure)
-            .find((node: any) => String(node.id) === String(exposureId));
+            .filter((node: Record<string, unknown>) => node.type === WorkflowNodeType.Exposure)
+            .find((node: Record<string, unknown>) => String(node.id) === String(exposureId));
 
         if (!exposureNode) throw new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404);
 
-        const schemaNode = workflow.findDescendantByType(String(exposureId), WorkflowNodeType.Schema);
-        if (!schemaNode) throw new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404);
-
-        const iterableKey: string | undefined = exposureNode?.data?.exposure?.iterable;
         const exposureName: string = typeof exposureNode?.data?.exposure?.name === 'string'
             ? exposureNode.data.exposure.name.trim()
             : '';
 
-        let perAtomProperties: string[] = [];
-        const schemaKeysMap = new Map<string, string[]>();
-
-        if (schemaNode?.data?.schema?.definition) {
-            const annotations = parseSchemaAnnotations(
-                schemaNode.data.schema.definition as Record<string, unknown>
-            );
-            perAtomProperties = annotations.perAtomProperties;
-
-            const schemaDefinition = schemaNode.data.schema.definition?.data?.items;
-            if (schemaDefinition && perAtomProperties.length > 0) {
-                for (const prop of perAtomProperties) {
-                    const def = schemaDefinition[prop];
-                    if (def?.keys && Array.isArray(def.keys)) {
-                        schemaKeysMap.set(prop, def.keys);
-                    }
-                }
-            }
-        }
+        const perAtomProperties = await this.discoverPerAtomPropertyNames(
+            trajectoryId,
+            analysisId,
+            String(exposureId)
+        );
 
         return {
             exposureId: String(exposureId),
             exposureName,
-            iterableKey,
             perAtomProperties,
-            schemaKeysMap
+            schemaKeysMap: new Map()
         };
     }
 
@@ -113,54 +99,26 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         analysisId: string,
         exposureId: string,
         timestep: string
-    ): Promise<any> {
-        const config = await this.getExposureAtomConfig(analysisId, exposureId);
+    ): Promise<Record<string, unknown>[] | null> {
         const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, timestep);
-
         const stream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, key);
 
-        let data: any = null;
+        let decoded: Record<string, unknown> | null = null;
 
-        const mergeChunkedValue = (target: any, incoming: any): any => {
-            if (incoming === undefined || incoming === null) return target;
-            if (target === undefined || target === null) return incoming;
-
-            if (Array.isArray(target) && Array.isArray(incoming)) {
-                target.push(...incoming);
-                return target;
+        for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
+            if (message && typeof message === 'object') {
+                decoded = mergeChunkedValue(decoded, message);
             }
-
-            if (target && incoming && typeof target === 'object' && typeof incoming === 'object') {
-                for (const [k, v] of Object.entries(incoming)) {
-                    const existing = (target as any)[k];
-
-                    if (Array.isArray(existing) && Array.isArray(v)) {
-                        existing.push(...v);
-                        continue;
-                    }
-
-                    if (existing && v && typeof existing === 'object' && typeof v === 'object') {
-                        (target as any)[k] = mergeChunkedValue(existing, v);
-                        continue;
-                    }
-
-                    (target as any)[k] = v;
-                }
-                return target;
-            }
-
-            return incoming;
-        };
-
-        for await (const msg of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
-            let chunk: any = msg;
-            if (config.iterableKey && chunk?.[config.iterableKey] !== undefined) {
-                chunk = chunk[config.iterableKey];
-            }
-            data = mergeChunkedValue(data, chunk);
         }
 
-        return data;
+        if (!decoded) return null;
+
+        const perAtomProperties = decoded['per-atom-properties'];
+        if (Array.isArray(perAtomProperties)) {
+            return perAtomProperties as Record<string, unknown>[];
+        }
+
+        return null;
     }
 
     async buildPluginIndexForAtomIds(
@@ -169,7 +127,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         exposureId: string,
         timestep: string,
         targetIds: Set<number>
-    ): Promise<Map<number, any> | null> {
+    ): Promise<Map<number, Record<string, unknown>> | null> {
         if (targetIds.size === 0) return null;
 
         const config = await this.getExposureAtomConfig(analysisId, exposureId);
@@ -178,27 +136,25 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, timestep);
         const pluginStream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, key);
 
-        const pluginIndex = new Map<number, any>();
+        const pluginIndex = new Map<number, Record<string, unknown>>();
         const stream = pluginStream as unknown as AsyncIterable<Uint8Array>;
 
-        for await (const msg of decodeMultiStream(stream)) {
-            let pluginData: any = msg;
+        for await (const message of decodeMultiStream(stream)) {
+            const decoded = message as Record<string, unknown> | null;
+            if (!decoded || typeof decoded !== 'object') continue;
 
-            if (config.iterableKey && pluginData?.[config.iterableKey]) {
-                pluginData = pluginData[config.iterableKey];
-            }
-
-            if (!Array.isArray(pluginData)) continue;
+            const perAtomData = decoded['per-atom-properties'];
+            if (!Array.isArray(perAtomData)) continue;
 
             let shouldBreak = false;
-            for (const item of pluginData) {
+            for (const item of perAtomData) {
                 if (shouldBreak) break;
 
-                const id = item?.id;
+                const id = (item as Record<string, unknown>)?.id as number | undefined;
                 if (id === undefined) continue;
                 if (!targetIds.has(id)) continue;
 
-                pluginIndex.set(id, item);
+                pluginIndex.set(id, item as Record<string, unknown>);
 
                 if (pluginIndex.size >= targetIds.size) {
                     shouldBreak = true;
@@ -206,8 +162,8 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             }
 
             if (shouldBreak) {
-                if (typeof (pluginStream as any).destroy === 'function') {
-                    (pluginStream as any).destroy();
+                if (typeof (pluginStream as Record<string, unknown> & { destroy?: () => void }).destroy === 'function') {
+                    (pluginStream as Record<string, unknown> & { destroy: () => void }).destroy();
                 }
                 return pluginIndex;
             }
@@ -216,43 +172,46 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         return pluginIndex.size > 0 ? pluginIndex : null;
     }
 
-    toFloat32ByAtomId(data: any, property: string): Float32Array | undefined {
+    toFloat32ByAtomId(data: unknown, property: string): Float32Array | undefined {
         if (!data) return undefined;
 
-        if (data[property] instanceof Float32Array) return data[property];
-        if (data[property] instanceof Float64Array) return new Float32Array(data[property]);
+        const dataRecord = data as Record<string, unknown>;
 
-        if (Array.isArray(data[property])) {
-            return new Float32Array(data[property]);
+        if (dataRecord[property] instanceof Float32Array) return dataRecord[property] as Float32Array;
+        if (dataRecord[property] instanceof Float64Array) return new Float32Array(dataRecord[property] as Float64Array);
+
+        if (Array.isArray(dataRecord[property])) {
+            return new Float32Array(dataRecord[property] as number[]);
         }
 
-        if (!Array.isArray(data) || data.length === 0) return undefined;
+        if (!Array.isArray(data) || (data as unknown[]).length === 0) return undefined;
 
+        const items = data as Array<Record<string, unknown>>;
         let maxId = 0;
-        for (let i = 0; i < data.length; i++) {
-            const id = data[i]?.id;
+        for (let i = 0; i < items.length; i++) {
+            const id = items[i]?.id as number | undefined;
             if (typeof id === 'number' && id > maxId) maxId = id;
         }
         if (maxId <= 0) return undefined;
 
         const out = new Float32Array(maxId + 1);
 
-        const first = data[0];
+        const first = items[0];
         const isVector = Array.isArray(first?.[property]);
 
         if (!isVector) {
-            for (let i = 0; i < data.length; i++) {
-                const item = data[i];
-                const id = item?.id;
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const id = item?.id as number | undefined;
                 if (typeof id !== 'number') continue;
                 out[id] = Number(item?.[property]) || 0;
             }
             return out;
         }
 
-        for (let i = 0; i < data.length; i++) {
-            const item = data[i];
-            const id = item?.id;
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const id = item?.id as number | undefined;
             if (typeof id !== 'number') continue;
 
             const vec = item?.[property] as number[] | undefined;
@@ -269,25 +228,29 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         return out;
     }
 
-    getMinMaxFromData(data: any, property: string): { min: number; max: number } | undefined {
-        if (data && (data[property] instanceof Float32Array || data[property] instanceof Float64Array)) {
-            const arr = data[property] instanceof Float32Array ? data[property] : new Float32Array(data[property]);
-            const r = nativeStats.getMinMaxFromTypedArray(arr);
-            return r || undefined;
+    getMinMaxFromData(data: unknown, property: string): { min: number; max: number } | undefined {
+        const dataRecord = data as Record<string, unknown>;
+
+        if (dataRecord && (dataRecord[property] instanceof Float32Array || dataRecord[property] instanceof Float64Array)) {
+            const arr = dataRecord[property] instanceof Float32Array
+                ? dataRecord[property] as Float32Array
+                : new Float32Array(dataRecord[property] as Float64Array);
+            const result = nativeStats.getMinMaxFromTypedArray(arr);
+            return result || undefined;
         }
 
-        if (data && Array.isArray(data[property])) {
-            const arr = new Float32Array(data[property]);
-            const r = nativeStats.getMinMaxFromTypedArray(arr);
-            return r || undefined;
+        if (dataRecord && Array.isArray(dataRecord[property])) {
+            const arr = new Float32Array(dataRecord[property] as number[]);
+            const result = nativeStats.getMinMaxFromTypedArray(arr);
+            return result || undefined;
         }
 
         if (Array.isArray(data)) {
             const arr = this.toFloat32ByAtomId(data, property);
             if (!arr) return undefined;
 
-            const r = nativeStats.getMinMaxFromTypedArray(arr);
-            return r || undefined;
+            const result = nativeStats.getMinMaxFromTypedArray(arr);
+            return result || undefined;
         }
 
         return undefined;
@@ -450,6 +413,41 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         }
 
         return this.evaluateFilter(values, expression.operator, expression.value);
+    }
+
+    private async discoverPerAtomPropertyNames(
+        trajectoryId: string,
+        analysisId: string,
+        exposureId: string
+    ): Promise<string[]> {
+        const prefix = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/`;
+        let firstObjectName: string | null = null;
+
+        for await (const objectName of this.storageService.listByPrefix(SYS_BUCKETS.PLUGINS, prefix, true)) {
+            if (objectName.endsWith('.msgpack')) {
+                firstObjectName = objectName;
+                break;
+            }
+        }
+
+        if (!firstObjectName) return [];
+
+        const stream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, firstObjectName);
+        let decoded: Record<string, unknown> | null = null;
+
+        for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
+            if (message && typeof message === 'object') {
+                decoded = mergeChunkedValue(decoded, message);
+            }
+        }
+
+        if (!decoded) return [];
+
+        const perAtomProperties = decoded['per-atom-properties'];
+        if (!Array.isArray(perAtomProperties) || perAtomProperties.length === 0) return [];
+
+        const firstItem = perAtomProperties[0] as Record<string, unknown>;
+        return Object.keys(firstItem).filter((key) => key !== 'id');
     }
 
     private getPluginMsgpackKey(trajectoryId: string, analysisId: string, exposureId: string, timestep: string): string {

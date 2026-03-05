@@ -4,11 +4,9 @@ export enum WorkflowNodeType {
     Modifier = 'modifier',
     Arguments = 'arguments',
     Context = 'context',
-    ForEach = 'forEach',  // Changed from 'foreach' to match legacy format
+    ForEach = 'forEach',
     Entrypoint = 'entrypoint',
     Exposure = 'exposure',
-    Schema = 'schema',
-    Visualizers = 'visualizers',
     Export = 'export',
     IfStatement = 'if-statement'
 };

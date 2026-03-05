@@ -15,7 +15,6 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { decodeMultiStreamFromFile } from '@shared/infrastructure/utilities/msgpack';
 import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/merge-chunked-value';
 import getNestedValue from '@shared/infrastructure/utilities/get-nested-value';
-import { parseSchemaAnnotations } from '@modules/plugin/infrastructure/utilities/schema-annotations';
 
 import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utils/record-scene-artifact';
 import logger from '@shared/infrastructure/logger';
@@ -61,15 +60,6 @@ export default class ExportHandler implements INodeHandler{
         const config = node.data.export!;
         const exposureNode = context.workflow.findAncestorByType(node.id, WorkflowNodeType.Exposure);
         if(!exposureNode) throw new Error('ExportHandler: Orphaned export node');
-
-        const schemaNode = context.workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Schema);
-        let perAtomProperties: string[] = [];
-        if (schemaNode?.data?.schema?.definition) {
-            const annotations = parseSchemaAnnotations(
-                schemaNode.data.schema.definition as Record<string, unknown>
-            );
-            perAtomProperties = annotations.perAtomProperties;
-        }
 
         const exposureName = typeof exposureNode.data.exposure?.name === 'string'
             ? exposureNode.data.exposure.name.trim()
@@ -129,10 +119,8 @@ export default class ExportHandler implements INodeHandler{
                         displayName: exposureName,
                         metadata: {
                             pluginId: context.pluginId,
-                            pluginId: context.pluginId,
                             exposureId: exposureNode.id,
                             exposureName,
-                            perAtomProperties,
                             exporter: config.exporter,
                             exportType: config.type,
                             listingMetadata: item.metadata || null
@@ -182,41 +170,28 @@ export default class ExportHandler implements INodeHandler{
     }
 
     private async runExporter(type: string, data: any, path: string, options: any){
+        const exportData = data?.export?.[type];
+
         switch(type){
             case Exporter.Atomistic:
-                // Handle different data formats for AtomisticExporter
-                if(data.keys && Array.isArray(data.keys)){
-                    // Extract grouped atoms (exclude 'keys' from the data)
-                    const groupedAtoms: Record<string, any[]> = {};
-                    for(const key of data.keys){
-                        if(data[key] && Array.isArray(data[key])){
-                            groupedAtoms[key] = data[key];
-                        }
-                    }
-                    await this.atomisticExporter.exportAtomsTypeToGLBBuffer(groupedAtoms, path);
+                if(exportData){
+                    await this.atomisticExporter.exportAtomsTypeToGLBBuffer(exportData, path);
                 }else if(typeof data === 'string'){
-                    // data is a file path to LAMMPS dump
                     await this.atomisticExporter.toStorage(data, path);
                 }else{
-                    // data is object with structure keys (legacy format)
-                    const structureKeys = Object.keys(data).filter(k =>
-                        Array.isArray(data[k]) && data[k].length > 0 && data[k][0]?.pos
-                    );
-                    if(structureKeys.length > 0){
-                        await this.atomisticExporter.exportAtomsTypeToGLBBuffer(data, path);
-                    }else{
-                        throw new Error('AtomisticExporter: unsupported data format');
-                    }
+                    throw new Error('AtomisticExporter: missing export.AtomisticExporter data');
                 }
                 break;
             case Exporter.Chart:
                 await this.chartExporter.toStorage(data, path, options);
                 break;
             case Exporter.Dislocation:
-                await this.dislocationExporter.toStorage(data, path, options);
+                if(!exportData) throw new Error('DislocationExporter: missing export.DislocationExporter data');
+                await this.dislocationExporter.toStorage(exportData, path, options);
                 break;
             case Exporter.Mesh:
-                await this.meshExporter.toStorage(data, path, options);
+                if(!exportData) throw new Error('MeshExporter: missing export.MeshExporter data');
+                await this.meshExporter.toStorage(exportData, path, options);
                 break;
             default:
                 throw new Error(`Unknown exporter type: ${type}`);

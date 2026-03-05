@@ -33,7 +33,26 @@ export interface GetPluginListingOutputDTO extends PaginatedResponse<ListingRow>
         exposureName: string;
         exposureId: string;
         columns: ColumnConfig[];
+        subListingNames: string[];
     };
+};
+
+export interface GetSubListingInputDTO {
+    analysisId: string;
+    exposureId: string;
+    timestep: number;
+    subListingName: string;
+};
+
+export interface SubListingColumn {
+    label: string;
+    sortable: boolean;
+};
+
+export interface GetSubListingOutputDTO {
+    subListingName: string;
+    columns: SubListingColumn[];
+    rows: Record<string, unknown>[];
 };
 
 export type ExportPluginListingOutputDTO = Blob;

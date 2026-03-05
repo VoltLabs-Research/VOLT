@@ -13,16 +13,13 @@ export interface ProcessedMesh{
 };
 
 export interface Mesh{
-    data: {
-        points: {
-            index: number;
-            position: [number, number, number];
-        }[];
-        facets: {
-            vertices: [number, number, number];
-        }[];
-        metadata: any;
-    };
+    vertices: {
+        index: number;
+        position: [number, number, number];
+    }[];
+    facets: {
+        vertices: [number, number, number];
+    }[];
 };
 
 export interface DefectMeshExportOptions{
