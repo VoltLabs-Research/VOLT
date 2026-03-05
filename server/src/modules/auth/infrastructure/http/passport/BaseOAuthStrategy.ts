@@ -3,14 +3,14 @@ import { OAuthProvider } from '@modules/auth/domain/entities/User';
 import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import { ErrorCodes } from '@core/constants/error-codes';
 
-export interface OAuthMappedProfile{
+interface OAuthMappedProfile{
     email: string;
     firstName: string;
     lastName: string;
     avatar?: string;
 };
 
-export interface OAuthProfileMapper{
+interface OAuthProfileMapper{
     map(profile: any): OAuthMappedProfile;
 };
 

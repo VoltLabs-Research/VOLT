@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
 import type AIMessage from '@modules/ai/domain/entities/AIMessage';
 import type { AIMessageDTO } from '@modules/ai/application/dtos/ListAIConversationMessagesDTO';
-import type { AIMessageModelInfo, AIMessageToolStep } from '@modules/ai/domain/entities/AIMessage';
+import type { AIMessageToolStep } from '@modules/ai/domain/entities/AIMessage';
 
 const VALID_KINDS = new Set<string>(['table', 'chart', 'image', 'text']);
 

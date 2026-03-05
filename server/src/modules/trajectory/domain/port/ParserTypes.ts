@@ -36,7 +36,7 @@ export interface ParseOptions {
     properties?: string[];
 }
 
-export interface NativeDataResult {
+interface NativeDataResult {
     positions: Float32Array;
     types: Uint16Array;
     ids?: Uint32Array;

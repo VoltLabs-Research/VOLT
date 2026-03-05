@@ -4,7 +4,7 @@ import { ExportNodeData } from '../entities/workflow/nodes/ExportNode';
 import Workflow from '../entities/workflow/Workflow';
 import { WorkflowNodeType } from '../entities/workflow/WorkflowNode';
 
-export interface ComputedExposure {
+interface ComputedExposure {
     _id: string;
     name: string;
     results: string;
@@ -17,12 +17,12 @@ export interface ComputedExposure {
     export: ExportNodeData | null;
 }
 
-export interface ListingExposureEntry {
+interface ListingExposureEntry {
     exposureId: string;
     name: string;
 }
 
-export interface ListingExposuresData {
+interface ListingExposuresData {
     pluginName: string;
     pluginId: string;
     exposures: ListingExposureEntry[];
@@ -47,6 +47,7 @@ export default class WorkflowProjectionService {
         const exposures: ComputedExposure[] = exposureNodes.map((exposureNode) => {
             const exportNode = workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Export);
 
+            // TODO: What the fuck is this................
             const exposureData = exposureNode.data.exposure || {} as Record<string, unknown>;
             const { _id: _, id: __, ...cleanedExposureData } = exposureData as Record<string, unknown>;
 

@@ -1,4 +1,4 @@
-export interface ContainerProcess {
+interface ContainerProcess {
     pid: string;
     program: string;
     threads: string;

@@ -13,7 +13,7 @@ interface Rasterizer {
     ): boolean;
 };
 
-export interface RasterizerOptions {
+interface RasterizerOptions {
     inputPath?: string;
     width?: number;
     height?: number;

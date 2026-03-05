@@ -225,7 +225,6 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
             teamId: req.teamId,
             analysisId: req.analysisId,
             generatedFiles: [],
-            pluginId: req.plugin.id,
             selectedFrameOnly: req.options?.selectedFrameOnly,
             selectedTimestep: req.options?.timestep,
             workflow: req.plugin.props.workflow

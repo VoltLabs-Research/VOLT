@@ -9,7 +9,7 @@ import { performance } from 'node:perf_hooks';
 import { ErrorCodes } from '@core/constants/error-codes';
 import Job from '@modules/jobs/domain/entities/Job';
 
-export interface TrajectoryProcessingJobMetadata {
+interface TrajectoryProcessingJobMetadata {
     trajectoryId: string;
     timestep: number;
 }

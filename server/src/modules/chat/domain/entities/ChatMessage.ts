@@ -12,7 +12,7 @@ export interface ChatMessageMetadata {
     filePath: string;
 };
 
-export interface ChatReaction {
+interface ChatReaction {
     emoji: string;
     users: string[];
 };

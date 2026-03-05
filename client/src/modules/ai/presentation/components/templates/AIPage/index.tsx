@@ -97,7 +97,7 @@ const AIPage = () => {
     }, []);
 
     const handleCreate = () => {
-        handleCreateConversation().catch(() => {});
+        handleCreateConversation().catch(console.warn);
     };
 
     const handleDelete = async (targetConversationId: string) => {
@@ -214,7 +214,7 @@ const AIPage = () => {
                                     ) : null}
                                     onRetry={() => {
                                         if (conversationId) {
-                                            loadConversationMessages(conversationId).catch(() => {});
+                                            loadConversationMessages(conversationId).catch(console.warn);
                                         }
                                     }}
                                 />

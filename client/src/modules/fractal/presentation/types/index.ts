@@ -29,7 +29,7 @@ export type SelectionRefs = {
     base: LineSegments<EdgesGeometry<BoxGeometry>, MeshBasicMaterial>;
 };
 
-export type SceneState = {
+type SceneState = {
     model: Group | null;
     mesh: Mesh | Points | null;
     isSetup: boolean;

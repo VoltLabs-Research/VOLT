@@ -55,5 +55,3 @@ export const fadeFromBlack = (): void => {
         });
     });
 };
-
-export const PAGE_TRANSITION_DURATION = TRANSITION_DURATION;

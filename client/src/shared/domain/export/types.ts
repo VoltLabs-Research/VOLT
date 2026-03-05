@@ -1,6 +1,6 @@
 export type ExportType = 'json' | 'csv';
 
-export interface ExportRequestParams {
+interface ExportRequestParams {
     format: ExportType;
     [key: string]: unknown;
 }

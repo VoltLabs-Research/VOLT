@@ -2,7 +2,7 @@ import { injectable } from 'tsyringe';
 import logger from '@shared/infrastructure/logger';
 import type { TeamAIProvider } from '@modules/team/domain/entities/TeamAIIntegration';
 
-export interface DiscoveredModel {
+interface DiscoveredModel {
     id: string;
     name: string;
     description?: string;

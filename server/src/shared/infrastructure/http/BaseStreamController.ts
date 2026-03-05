@@ -7,7 +7,7 @@ import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
 import { BaseController } from '@shared/infrastructure/http/BaseController';
 import logger from '@shared/infrastructure/logger';
 
-export interface StreamableOutput {
+interface StreamableOutput {
     stream: Readable;
 }
 

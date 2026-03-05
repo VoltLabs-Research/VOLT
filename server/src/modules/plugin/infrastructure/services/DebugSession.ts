@@ -1,14 +1,14 @@
 import { v4 as uuidv4 } from 'uuid';
 import logger from '@shared/infrastructure/logger';
 
-export type DebugNodeStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+type DebugNodeStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
 
-export interface DebugNodeInfo {
+interface DebugNodeInfo {
     nodeId: string;
     type: string;
 };
 
-export interface DebugSessionConfig {
+interface DebugSessionConfig {
     pluginId: string;
     trajectoryId: string;
     timestep: number;

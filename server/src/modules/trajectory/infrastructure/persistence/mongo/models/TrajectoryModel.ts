@@ -8,7 +8,7 @@ type TrajectoryRelations = 'createdBy' | 'team';
 type TrajectoryFrameRelations = 'simulationCell';
 
 export interface TrajectoryDocument extends Persistable<TrajectoryProps, TrajectoryRelations>, Document { }
-export interface TrajectoryFrameDocument extends Persistable<TrajectoryFrame, TrajectoryFrameRelations>, Document { }
+interface TrajectoryFrameDocument extends Persistable<TrajectoryFrame, TrajectoryFrameRelations>, Document { }
 
 const TimestepInfoSchema: Schema<TrajectoryFrameDocument> = new Schema({
     timestep: {

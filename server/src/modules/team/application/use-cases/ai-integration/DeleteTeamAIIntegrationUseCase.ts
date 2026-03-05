@@ -7,18 +7,11 @@ import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ITeamAIIntegrationRepository } from '@modules/team/domain/ports/ITeamAIIntegrationRepository';
 import TeamAIIntegrationInputService from '@modules/team/application/services/TeamAIIntegrationInputService';
 import { DeleteTeamAIIntegrationInputDTO } from '@modules/team/application/dtos/ai-integration/DeleteTeamAIIntegrationDTO';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import TeamAIIntegrationDeletedEvent from '@modules/team/domain/events/TeamAIIntegrationDeletedEvent';
-
 @injectable()
 export default class DeleteTeamAIIntegrationUseCase implements IUseCase<DeleteTeamAIIntegrationInputDTO, null, ApplicationError> {
     constructor(
         @inject(TEAM_TOKENS.TeamAIIntegrationRepository)
         private readonly integrationRepository: ITeamAIIntegrationRepository,
-
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus,
 
         @inject(TEAM_TOKENS.TeamAIIntegrationInputService)
         private readonly inputService: TeamAIIntegrationInputService
@@ -43,12 +36,6 @@ export default class DeleteTeamAIIntegrationUseCase implements IUseCase<DeleteTe
         }
 
         await this.integrationRepository.deleteByTeamAndProvider(input.teamId, provider);
-
-        await this.eventBus.publish(new TeamAIIntegrationDeletedEvent({
-            teamAIIntegrationId: integration.id,
-            teamId: input.teamId,
-            provider
-        }));
 
         return Result.ok(null);
     }

@@ -127,7 +127,7 @@ const AIFloatingAssistantPanel = () => {
                         <Container className='d-flex items-center gap-025'>
                             <Tooltip content='New conversation' placement='top'>
                                 <IconButton
-                                    onClick={() => handleCreateConversation().catch(() => {})}
+                                    onClick={() => handleCreateConversation().catch(console.warn)}
                                     disabled={noProviderConfigured || isProviderCatalogLoading}
                                 >
                                     <IoAddOutline size={16} />
@@ -205,7 +205,7 @@ const AIFloatingAssistantPanel = () => {
                                 ) : null}
                                 onRetry={() => {
                                     if (conversationId) {
-                                        loadConversationMessages(conversationId).catch(() => {});
+                                        loadConversationMessages(conversationId).catch(console.warn);
                                     }
                                 }}
                             />

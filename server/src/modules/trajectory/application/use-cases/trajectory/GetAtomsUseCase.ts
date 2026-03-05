@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/ITrajectoryDumpStorageService';
-import { IAtomPropertiesService, ExposureAtomConfig } from '@modules/trajectory/domain/port/IAtomPropertiesService';
+import { IAtomPropertiesService } from '@modules/trajectory/domain/port/IAtomPropertiesService';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/ports/Result';
@@ -19,7 +19,7 @@ export interface GetAtomsInput {
     limit?: number;
 }
 
-export interface AtomRecord {
+interface AtomRecord {
     id: number;
     type: number;
     x: number;

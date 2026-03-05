@@ -291,7 +291,7 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
             || lastAssistantMessageHasProviderExecutedApprovalResponses({ messages })
         ),
         onFinish: () => {
-            loadConversations().catch(() => {});
+            loadConversations().catch(console.warn);
         }
     });
 

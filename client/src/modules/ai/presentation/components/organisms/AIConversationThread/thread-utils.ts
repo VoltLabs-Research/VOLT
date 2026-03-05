@@ -1,6 +1,5 @@
 import { Children, isValidElement } from 'react';
 import type { ReactNode } from 'react';
-import type { AIConversationMessage } from '@/modules/ai/domain/entities/AIConversation';
 
 export const isRecord = (value: unknown): value is Record<string, unknown> => {
     if (value === null || typeof value !== 'object') {
@@ -8,38 +7,6 @@ export const isRecord = (value: unknown): value is Record<string, unknown> => {
     }
 
     return !Array.isArray(value);
-};
-
-export const resolveMessageContent = (message: AIConversationMessage): string => {
-    if (Array.isArray(message.parts)) {
-        const textParts = message.parts
-            .filter((part): part is { type: 'text'; text: string } => (
-                isRecord(part) && part.type === 'text' && typeof part.text === 'string'
-            ))
-            .map((part) => part.text)
-            .filter((text) => Boolean(text.trim()));
-
-        if (textParts.length) return textParts.join('\n');
-    }
-
-    if (message.content.trim()) return message.content;
-
-    return '';
-};
-
-/**
- * Extracts reasoning content from message parts.
- * Reasoning is stored as `{ type: 'reasoning', text: '...' }` parts.
- */
-export const resolveReasoningContent = (message: AIConversationMessage): string => {
-    if (!Array.isArray(message.parts)) return '';
-
-    return message.parts
-        .filter((part): part is { type: 'reasoning'; text: string } => (
-            isRecord(part) && part.type === 'reasoning' && typeof part.text === 'string'
-        ))
-        .map((part) => part.text)
-        .join('');
 };
 
 export const stringifyArtifactValue = (value: unknown): string => {

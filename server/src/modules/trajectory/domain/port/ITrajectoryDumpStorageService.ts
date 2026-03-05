@@ -1,6 +1,6 @@
 import { Readable } from 'node:stream';
 
-export interface PreviewStream{
+interface PreviewStream{
     stream: NodeJS.ReadableStream;
     size: number;
     filename: string;

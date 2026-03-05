@@ -139,7 +139,3 @@ const TeamCreatorModal: React.FC<TeamCreatorModalProps> = ({
 };
 
 export default TeamCreatorModal;
-
-export const openTeamCreatorModal = () => {
-    (document.getElementById(MODAL_ID) as HTMLDialogElement)?.showModal();
-};

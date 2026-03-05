@@ -77,7 +77,7 @@ export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamI
 
         // Create Team Member
         const teamMember = await this.teamMemberRepository.create({
-            team: invitation.props.team as any, // ID or object, repository handles it usually but let's assume partial props
+            team: invitation.props.team as any,
             user: userId,
             role: invitation.props.role as any,
             joinedAt: new Date()
@@ -97,9 +97,6 @@ export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamI
         invitation.props.status = TeamInvitationStatus.Accepted;
         invitation.props.acceptedAt = new Date();
         await this.invitationRepository.updateById(invitation.id, invitation.props);
-
-        // TODO: Publish TeamMemberAddedEvent if needed
-        // await this.eventBus.publish(new TeamMemberAddedEvent(...));
 
         return Result.ok({ message: 'Invitation accepted successfully' });
     }
