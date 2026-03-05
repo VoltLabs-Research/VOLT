@@ -8,6 +8,7 @@ export interface ListingRowProps{
     timestep: number;
     row: any;
     trajectoryName: string;
+    subListingNames: string[];
     createdAt: Date;
     updatedAt: Date;
 };

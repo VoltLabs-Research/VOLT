@@ -6,6 +6,7 @@ import { PLUGIN_TOKENS } from './PluginTokens';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/PluginRepository';
 import ListingRowRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/ListingRowRepository';
+import SubListingRowRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/SubListingRowRepository';
 import PluginWorkflowEngine from '@modules/plugin/infrastructure/services/PluginWorkflowEngine';
 import NodeRegistry from '@modules/plugin/infrastructure/services/nodes/NodeRegistry';
 
@@ -53,6 +54,7 @@ export const registerPluginDependencies = (): void => {
 
     container.registerSingleton(PLUGIN_TOKENS.PluginRepository, PluginRepository);
     container.registerSingleton(PLUGIN_TOKENS.ListingRowRepository, ListingRowRepository);
+    container.registerSingleton(PLUGIN_TOKENS.SubListingRowRepository, SubListingRowRepository);
 
     container.registerSingleton(PLUGIN_TOKENS.NodeRegistry, NodeRegistry);
 

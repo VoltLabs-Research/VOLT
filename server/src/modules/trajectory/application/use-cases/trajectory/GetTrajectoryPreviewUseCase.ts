@@ -5,24 +5,16 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/ports/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-
-export interface GetTrajectoryPreviewInput {
-    trajectoryId: string;
-}
-
-export interface GetTrajectoryPreviewOutput {
-    base64: string;
-    etag: string;
-}
+import { GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
 
 @injectable()
-export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajectoryPreviewInput, GetTrajectoryPreviewOutput, ApplicationError> {
+export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO, ApplicationError> {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
     ){}
 
-    async execute(input: GetTrajectoryPreviewInput): Promise<Result<GetTrajectoryPreviewOutput, ApplicationError>> {
+    async execute(input: GetTrajectoryPreviewInputDTO): Promise<Result<GetTrajectoryPreviewOutputDTO, ApplicationError>> {
         const { trajectoryId } = input;
         if (!trajectoryId) {
             return Result.fail(new ApplicationError('PREVIEW::MISSING_ID', 'Trajectory ID is required', 400));

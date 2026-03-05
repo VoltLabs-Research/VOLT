@@ -1,29 +1,84 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import usePluginListingStore from '@/modules/plugin/presentation/stores/use-plugin-listing-store';
-import type { ColumnConfig } from '@/modules/plugin/presentation/components/organisms/PluginCompactTable';
+import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
+import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/presentation/components/organisms/PluginCompactTable';
 import Modal from '@/shared/presentation/components/Modal';
 import { SUB_LISTING_MODAL_ID } from '../../../hooks/use-plugin-listing';
 import formatSnakeCaseToTitle from '@/modules/plugin/presentation/utils/format-snake-case';
 
-type SubListingRow = Record<string, unknown> & { _rowIndex: number };
+const SUB_LISTING_MODAL_PAGE_SIZE = 50;
 
 const SubListingModal: React.FC = () => {
-    const subListingData = usePluginListingStore((s) => s.subListingData);
-    const isLoading = usePluginListingStore((s) => s.isSubListingLoading);
+    const subListingParams = usePluginListingStore((s) => s.subListingParams);
+    const { pluginListingRepository } = usePluginUseCases();
 
-    const title = subListingData
-        ? formatSnakeCaseToTitle(subListingData.subListingName)
+    const [columns, setColumns] = useState<ColumnConfig[]>([]);
+    const [rows, setRows] = useState<Record<string, unknown>[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(false);
+    const currentPageRef = useRef(1);
+
+    const title = subListingParams
+        ? formatSnakeCaseToTitle(subListingParams.subListingName)
         : 'Sub-Listing';
 
-    const columns: ColumnConfig[] = (subListingData?.columns || []).map((column) => ({
-        key: column.label,
-        title: formatSnakeCaseToTitle(column.label),
-        sortable: column.sortable
-    }));
+    const fetchPage = useCallback(async (page: number) => {
+        if (!subListingParams) return;
 
-    const rows: SubListingRow[] = (subListingData?.rows || []).map((row, index) => ({
-        ...row,
-        _rowIndex: index
-    }));
+        const isFirstPage = page === 1;
+
+        if (isFirstPage) {
+            setIsLoading(true);
+            setRows([]);
+            setColumns([]);
+        } else {
+            setIsFetchingMore(true);
+        }
+
+        try {
+            const response = await pluginListingRepository.getSubListing({
+                analysisId: subListingParams.analysisId,
+                exposureId: subListingParams.exposureId,
+                timestep: subListingParams.timestep,
+                subListingName: subListingParams.subListingName,
+                page,
+                limit: SUB_LISTING_MODAL_PAGE_SIZE
+            });
+
+            const mappedColumns: ColumnConfig[] = (response.columns || []).map((column) => ({
+                key: column.label,
+                title: formatSnakeCaseToTitle(column.label),
+                sortable: column.sortable
+            }));
+
+            if (isFirstPage) {
+                setColumns(mappedColumns);
+                setRows(response.rows || []);
+            } else {
+                setRows((previousRows) => [...previousRows, ...(response.rows || [])]);
+            }
+
+            setHasMore(page < response.totalPages);
+            currentPageRef.current = page;
+        } catch {
+            // Silently handle errors for modal context
+        } finally {
+            setIsLoading(false);
+            setIsFetchingMore(false);
+        }
+    }, [subListingParams, pluginListingRepository]);
+
+    useEffect(() => {
+        if (!subListingParams) return;
+
+        currentPageRef.current = 1;
+        fetchPage(1);
+    }, [subListingParams, fetchPage]);
+
+    const handleLoadMore = useCallback(() => {
+        fetchPage(currentPageRef.current + 1);
+    }, [fetchPage]);
 
     return (
         <Modal
@@ -31,54 +86,16 @@ const SubListingModal: React.FC = () => {
             title={title}
             size="large"
         >
-            {isLoading && <div className="plugin-exposure-loading">Loading...</div>}
-
-            {!isLoading && rows.length === 0 && (
-                <div className="plugin-exposure-empty">No data available</div>
-            )}
-
-            {!isLoading && rows.length > 0 && (
-                <div style={{ maxHeight: '60vh', overflow: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr>
-                                {columns.map((col) => (
-                                    <th
-                                        key={col.key}
-                                        style={{
-                                            padding: '0.5rem',
-                                            textAlign: 'left',
-                                            borderBottom: '1px solid rgba(255,255,255,0.1)',
-                                            fontSize: '0.85rem',
-                                            fontWeight: 600
-                                        }}
-                                    >
-                                        {col.title}
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {rows.map((row) => (
-                                <tr key={row._rowIndex}>
-                                    {columns.map((col) => (
-                                        <td
-                                            key={col.key}
-                                            style={{
-                                                padding: '0.4rem 0.5rem',
-                                                fontSize: '0.8rem',
-                                                borderBottom: '1px solid rgba(255,255,255,0.05)'
-                                            }}
-                                        >
-                                            {String(row[col.key ?? ''] ?? '')}
-                                        </td>
-                                    ))}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+            <div style={{ height: '60vh' }}>
+                <PluginCompactTable
+                    columns={columns}
+                    data={rows}
+                    isLoading={isLoading}
+                    isFetchingMore={isFetchingMore}
+                    hasMore={hasMore}
+                    onLoadMore={handleLoadMore}
+                />
+            </div>
         </Modal>
     );
 };

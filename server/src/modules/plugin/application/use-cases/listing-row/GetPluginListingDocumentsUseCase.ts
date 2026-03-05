@@ -2,12 +2,8 @@ import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/ports/Result';
 import { GetPluginListingDocumentsInputDTO, GetPluginListingDocumentsOutputDTO } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
-import { PluginListingPaginatedResult } from '@modules/plugin/infrastructure/services/PluginListingService';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-
-export interface IPluginListingService {
-    getListingDocuments(pluginId: string, options: any): Promise<PluginListingPaginatedResult>;
-};
+import { IPluginListingService } from '@modules/plugin/domain/ports/IPluginListingService';
 
 @injectable()
 export class GetPluginListingDocumentsUseCase implements IUseCase<GetPluginListingDocumentsInputDTO, GetPluginListingDocumentsOutputDTO> {

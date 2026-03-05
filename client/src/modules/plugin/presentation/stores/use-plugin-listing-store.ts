@@ -1,36 +1,38 @@
 import { create } from 'zustand';
 import type { ListingRow } from '../../domain/entities';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
-import type { GetSubListingOutputDTO } from '../../application/dtos';
+
+interface SubListingParams {
+    analysisId: string;
+    exposureId: string;
+    timestep: number;
+    subListingName: string;
+}
 
 interface PluginListingState {
     rows: ListingRow[];
     columns: ColumnConfig[];
     subListingNames: string[];
-    subListingData: GetSubListingOutputDTO | null;
-    isSubListingLoading: boolean;
+    subListingParams: SubListingParams | null;
     setRows: (rows: ListingRow[]) => void;
     appendRows: (rows: ListingRow[]) => void;
     setColumns: (columns: ColumnConfig[]) => void;
     setSubListingNames: (names: string[]) => void;
-    setSubListingData: (data: GetSubListingOutputDTO | null) => void;
-    setSubListingLoading: (loading: boolean) => void;
+    setSubListingParams: (params: SubListingParams | null) => void;
     removeRowByAnalysisId: (analysisId: string) => void;
     reset: () => void;
-};
+}
 
 const usePluginListingStore = create<PluginListingState>((set) => ({
     rows: [],
     columns: [],
     subListingNames: [],
-    subListingData: null,
-    isSubListingLoading: false,
+    subListingParams: null,
     setRows: (rows) => set({ rows }),
     appendRows: (rows) => set((state) => ({ rows: [...state.rows, ...rows] })),
     setColumns: (columns) => set({ columns }),
     setSubListingNames: (subListingNames) => set({ subListingNames }),
-    setSubListingData: (subListingData) => set({ subListingData }),
-    setSubListingLoading: (isSubListingLoading) => set({ isSubListingLoading }),
+    setSubListingParams: (subListingParams) => set({ subListingParams }),
     removeRowByAnalysisId: (analysisId) => set((state) => ({
         rows: state.rows.filter((row) => row.analysisId !== analysisId)
     })),
@@ -38,8 +40,7 @@ const usePluginListingStore = create<PluginListingState>((set) => ({
         rows: [],
         columns: [],
         subListingNames: [],
-        subListingData: null,
-        isSubListingLoading: false
+        subListingParams: null
     })
 }));
 

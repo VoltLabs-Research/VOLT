@@ -1,6 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { BaseStreamController } from '@shared/infrastructure/http/BaseStreamController';
-import DownloadSampleSimulationsUseCase, { type DownloadSampleSimulationsOutput } from '@modules/trajectory/application/use-cases/trajectory/DownloadSampleSimulationsUseCase';
+import DownloadSampleSimulationsUseCase from '@modules/trajectory/application/use-cases/trajectory/DownloadSampleSimulationsUseCase';
+import type { DownloadSampleSimulationsOutputDTO } from '@modules/trajectory/application/dtos/trajectory/DownloadSampleSimulationsDTO';
 
 @injectable()
 export default class DownloadSampleSimulationsController extends BaseStreamController<DownloadSampleSimulationsUseCase> {
@@ -11,7 +12,7 @@ export default class DownloadSampleSimulationsController extends BaseStreamContr
         super(useCase);
     }
 
-    protected override getHeaders(resultValue: DownloadSampleSimulationsOutput): Record<string, string> {
+    protected override getHeaders(resultValue: DownloadSampleSimulationsOutputDTO): Record<string, string> {
         return {
             'Content-Type': 'application/zip',
             'Content-Disposition': `attachment; filename="${resultValue.filename}"`

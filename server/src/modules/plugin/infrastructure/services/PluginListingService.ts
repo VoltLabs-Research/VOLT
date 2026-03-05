@@ -1,11 +1,6 @@
 import { injectable, inject } from 'tsyringe';
 import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
 import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
-import { IStorageService } from '@shared/domain/ports/IStorageService';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { SYS_BUCKETS } from '@core/config/minio';
-import { decodeMultiStream } from '@shared/infrastructure/utilities/msgpack';
-import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/merge-chunked-value';
 import ListingRow from '@modules/plugin/domain/entities/ListingRow';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ExportType, PaginatedResult } from '@shared/domain/ports/IBaseRepository';
@@ -87,8 +82,7 @@ const SYSTEM_KEYS = new Set([
 export class PluginListingService {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
-        @inject(PLUGIN_TOKENS.ListingRowRepository) private listingRowRepository: IListingRowRepository,
-        @inject(SHARED_TOKENS.StorageService) private storageService: IStorageService
+        @inject(PLUGIN_TOKENS.ListingRowRepository) private listingRowRepository: IListingRowRepository
     ) {}
 
     async getListingDocuments(pluginId: string, options: ListingOptions): Promise<PluginListingPaginatedResult> {
@@ -110,7 +104,7 @@ export class PluginListingService {
 
         const rows = this.toListingRows(result.data);
         const columns = this.deriveColumns(rows);
-        const subListingNames = await this.discoverSubListingNames(result.data);
+        const subListingNames = this.discoverSubListingNames(result.data);
 
         return {
             data: rows,
@@ -264,40 +258,14 @@ export class PluginListingService {
         });
     }
 
-    private async discoverSubListingNames(documents: ListingRow[]): Promise<string[]> {
-        if (documents.length === 0) return [];
-
-        const sampleDocument = documents[0];
-        const trajectory = sampleDocument.props.trajectory as Record<string, unknown> | string;
-        const trajectoryId = (typeof trajectory === 'object' && trajectory !== null)
-            ? String((trajectory as Record<string, unknown>)._id ?? '')
-            : String(trajectory ?? '');
-
-        const analysisId = sampleDocument.props.analysis;
-        const exposureId = sampleDocument.props.exposureId;
-        const timestep = sampleDocument.props.timestep;
-
-        const storageKey = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
-
-        try {
-            const stream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, storageKey);
-            let decoded: Record<string, unknown> | null = null;
-
-            for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array | Buffer>)) {
-                if (message && typeof message === 'object') {
-                    decoded = mergeChunkedValue(decoded, message);
-                }
+    private discoverSubListingNames(documents: ListingRow[]): string[] {
+        for (const document of documents) {
+            const names = document.props.subListingNames;
+            if (names && names.length > 0) {
+                return names;
             }
-
-            if (!decoded) return [];
-
-            const subListings = decoded.sub_listings;
-            if (!subListings || typeof subListings !== 'object') return [];
-
-            return Object.keys(subListings as Record<string, unknown>);
-        } catch {
-            return [];
         }
+        return [];
     }
 
     private deriveColumns(rows: ListingRowData[]): ColumnConfig[] {

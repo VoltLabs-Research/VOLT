@@ -5,27 +5,16 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/ports/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import type { Readable } from 'node:stream';
-
-export interface GetTrajectoryGLBInput {
-    trajectoryId: string;
-    timestep: string;
-}
-
-export interface GetTrajectoryGLBOutput {
-    stream: Readable;
-    size: number;
-    objectName: string;
-}
+import { GetTrajectoryGLBInputDTO, GetTrajectoryGLBOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryGLBDTO';
 
 @injectable()
-export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGLBInput, GetTrajectoryGLBOutput, ApplicationError> {
+export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGLBInputDTO, GetTrajectoryGLBOutputDTO, ApplicationError> {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
     ){}
 
-    async execute(input: GetTrajectoryGLBInput): Promise<Result<GetTrajectoryGLBOutput, ApplicationError>> {
+    async execute(input: GetTrajectoryGLBInputDTO): Promise<Result<GetTrajectoryGLBOutputDTO, ApplicationError>> {
         try {
             const { trajectoryId, timestep } = input;
             const objectName = `trajectory-${trajectoryId}/timestep-${timestep}.glb`;

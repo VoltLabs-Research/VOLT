@@ -109,9 +109,16 @@ export default class PluginListingRepository extends BaseRepository implements I
     }
 
     async getSubListing(params: GetSubListingInputDTO): Promise<GetSubListingOutputDTO> {
-        const { analysisId, exposureId, timestep, subListingName } = params;
+        const { analysisId, exposureId, timestep, subListingName, page, limit } = params;
         const path = `/listing/analysis/${analysisId}/sub-listing/${exposureId}/${timestep}/${subListingName}`;
-        const response = await this.client.get<{ data: GetSubListingOutputDTO }>(path);
+        const query: Record<string, unknown> = {};
+        if (page) {
+            query.page = page;
+        }
+        if (limit) {
+            query.limit = limit;
+        }
+        const response = await this.client.get<{ data: GetSubListingOutputDTO }>(path, query);
         return response.data;
     }
 };

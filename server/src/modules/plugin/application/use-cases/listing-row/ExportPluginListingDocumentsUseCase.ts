@@ -6,11 +6,7 @@ import {
     ExportPluginListingDocumentsOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { PluginListingExportResult } from '@modules/plugin/infrastructure/services/PluginListingService';
-
-export interface IPluginListingExportService {
-    exportListingDocuments(pluginId: string, options: any): Promise<PluginListingExportResult>;
-};
+import { IPluginListingExportService } from '@modules/plugin/domain/ports/IPluginListingExportService';
 
 @injectable()
 export class ExportPluginListingDocumentsUseCase implements IUseCase<ExportPluginListingDocumentsInputDTO, ExportPluginListingDocumentsOutputDTO> {

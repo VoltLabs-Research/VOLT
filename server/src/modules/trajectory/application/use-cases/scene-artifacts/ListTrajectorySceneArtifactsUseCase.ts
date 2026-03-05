@@ -1,32 +1,20 @@
 import { injectable, inject } from 'tsyringe';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
-import type { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/SceneArtifact';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/ports/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import type { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
-
-
-
-export interface ListTrajectorySceneArtifactsInput {
-    trajectoryId: string;
-    sourceType?: SceneArtifactSourceType;
-    analysisId?: string;
-    projection?: 'raw' | 'renderable-exposures';
-    timestep?: number;
-    page?: number;
-    limit?: number;
-}
+import { ListTrajectorySceneArtifactsInputDTO } from '@modules/trajectory/application/dtos/scene-artifacts/ListTrajectorySceneArtifactsDTO';
 
 @injectable()
-export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTrajectorySceneArtifactsInput, PaginatedResult<any>, ApplicationError> {
+export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTrajectorySceneArtifactsInputDTO, PaginatedResult<any>, ApplicationError> {
     constructor(
         @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
         private readonly sceneArtifactRepository: ISceneArtifactRepository
     ) {}
 
-    async execute(input: ListTrajectorySceneArtifactsInput) {
+    async execute(input: ListTrajectorySceneArtifactsInputDTO) {
         const {
             trajectoryId,
             sourceType,
@@ -81,14 +69,12 @@ export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTraject
                 })
                 .map((artifact) => {
                     const metadata = artifact.props.metadata as Record<string, unknown> | undefined;
-                    const pluginId = artifact.props.plugin as string;
                     const exposureName = typeof metadata?.exposureName === 'string'
                         ? metadata.exposureName.trim()
                         : '';
                     if (!exposureName) return null;
 
                     return {
-                        pluginId,
                         pluginId: metadata!.pluginId as string,
                         analysisId: artifact.props.analysis,
                         exposureId: String(artifact.props.params.exposureId),
