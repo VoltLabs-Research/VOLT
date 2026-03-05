@@ -2,12 +2,8 @@ import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/ports/Result';
 import { ValidateWorkflowInputDTO, ValidateWorkflowOutputDTO } from '@modules/plugin/application/dtos/plugin/ValidateWorkflowDTO';
-
-export interface IWorkflowValidatorService {
-    validate(workflow: any): { isValid: boolean; errors?: string[]; modifier?: any };
-}
-
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { IWorkflowValidatorService } from '@modules/plugin/domain/ports/IWorkflowValidatorService';
 
 @injectable()
 export class ValidateWorkflowUseCase implements IUseCase<ValidateWorkflowInputDTO, ValidateWorkflowOutputDTO> {

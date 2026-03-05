@@ -1,10 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
 import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
+import { ISubListingRowRepository } from '@modules/plugin/domain/ports/ISubListingRowRepository';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import logger from '@shared/infrastructure/logger';
@@ -13,6 +12,7 @@ import { IStorageService } from '@shared/domain/ports/IStorageService';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { decodeMultiStream } from '@shared/infrastructure/utilities/msgpack';
 import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/merge-chunked-value';
+import { SubListingRowProps } from '@modules/plugin/domain/entities/SubListingRow';
 
 interface PrecomputeAnalysisParams {
     analysisId: string;
@@ -24,6 +24,37 @@ interface ExposureDescriptor {
     exposureName: string;
 }
 
+interface TimestepRecord {
+    timestep: number;
+    mainListing: Record<string, unknown>;
+    subListings: Record<string, Array<Record<string, unknown>>>;
+}
+
+const shouldIgnoreValue = (value: unknown): boolean => {
+    return Array.isArray(value) && value.length >= 1 && Array.isArray(value[0]);
+};
+
+const cleanSubListingRows = (
+    rawRows: Array<Record<string, unknown>>
+): Array<Record<string, unknown>> => {
+    if (rawRows.length === 0) {
+        return [];
+    }
+
+    const firstRow = rawRows[0];
+    const validKeys = Object.keys(firstRow).filter(
+        (key) => !shouldIgnoreValue(firstRow[key])
+    );
+
+    return rawRows.map((rawRow) => {
+        const cleaned: Record<string, unknown> = {};
+        for (const key of validKeys) {
+            cleaned[key] = rawRow[key];
+        }
+        return cleaned;
+    });
+};
+
 @injectable()
 export class ListingRowPrecomputationService {
     constructor(
@@ -31,8 +62,8 @@ export class ListingRowPrecomputationService {
         private pluginRepo: IPluginRepository,
         @inject(PLUGIN_TOKENS.ListingRowRepository)
         private listingRowRepo: IListingRowRepository,
-        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
-        private sceneArtifactRepo: ISceneArtifactRepository,
+        @inject(PLUGIN_TOKENS.SubListingRowRepository)
+        private subListingRowRepo: ISubListingRowRepository,
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private analysisRepo: IAnalysisRepository,
         @inject(SHARED_TOKENS.StorageService)
@@ -68,32 +99,36 @@ export class ListingRowPrecomputationService {
         const exposureFailures: string[] = [];
         let materializedRows = 0;
 
-        console.log(exposures)
         for (const descriptor of exposures) {
             try {
-                const listingRecords = await this.collectListingRecords(
-                    analysisId,
+                await this.subListingRowRepo.deleteMany({
+                    analysis: analysisId,
+                    exposureId: descriptor.exposureId
+                } as Partial<SubListingRowProps>);
+
+                const timestepRecords = await this.collectTimestepRecords(
                     trajectoryId,
+                    analysisId,
                     descriptor.exposureId
                 );
 
-                console.log('LISTING RECORDS:', listingRecords);
-
-                if (!listingRecords.length) {
+                if (!timestepRecords.length) {
                     logger.warn(
-                        `[ListingRowPrecomputation] No listing records for exposure=${descriptor.exposureName}, analysis=${analysisId}`
+                        `[ListingRowPrecomputation] No records for exposure=${descriptor.exposureName}, analysis=${analysisId}`
                     );
                     continue;
                 }
 
-                for (const record of listingRecords) {
-                    const row = record.mainListing;
-                    if (!row || typeof row !== 'object' || Object.keys(row).length === 0) {
+                for (const record of timestepRecords) {
+                    const mainListingRow = record.mainListing;
+                    if (!mainListingRow || typeof mainListingRow !== 'object' || Object.keys(mainListingRow).length === 0) {
                         logger.warn(
                             `[ListingRowPrecomputation] Empty main_listing: exposure=${descriptor.exposureName}, analysis=${analysisId}, timestep=${record.timestep}`
                         );
                         continue;
                     }
+
+                    const subListingNames = Object.keys(record.subListings);
 
                     const rowData = {
                         plugin: plugin.id,
@@ -104,7 +139,8 @@ export class ListingRowPrecomputationService {
                         exposureName: descriptor.exposureName,
                         exposureId: descriptor.exposureId,
                         timestep: record.timestep,
-                        row
+                        row: mainListingRow,
+                        subListingNames
                     };
 
                     const existing = await this.listingRowRepo.findOne({
@@ -120,6 +156,27 @@ export class ListingRowPrecomputationService {
                     }
 
                     materializedRows += 1;
+
+                    for (const [subListingName, rawRows] of Object.entries(record.subListings)) {
+                        const cleanedRows = cleanSubListingRows(rawRows);
+                        if (cleanedRows.length === 0) {
+                            continue;
+                        }
+
+                        const subListingDocuments = cleanedRows.map((cleanedRow) => ({
+                            plugin: plugin.id,
+                            team: teamId,
+                            trajectory: trajectoryId,
+                            analysis: analysisId,
+                            exposureId: descriptor.exposureId,
+                            exposureName: descriptor.exposureName,
+                            timestep: record.timestep,
+                            subListingName,
+                            row: cleanedRow
+                        }));
+
+                        await this.subListingRowRepo.insertMany(subListingDocuments as any);
+                    }
                 }
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : String(error);
@@ -160,67 +217,41 @@ export class ListingRowPrecomputationService {
         return descriptors;
     }
 
-    private async collectListingRecords(
-        analysisId: string,
-        trajectoryId: string,
-        exposureId: string
-    ): Promise<Array<{ timestep: number; mainListing: Record<string, unknown> }>> {
-        const artifacts = await this.sceneArtifactRepo.findAll({
-            filter: {
-                analysis: analysisId,
-                sourceType: 'plugin-exposure',
-                'params.exposureId': exposureId
-            } as Record<string, unknown>,
-            page: 1,
-            limit: 100000,
-            sort: { timestep: 1, _id: 1 }
-        });
-
-        if (artifacts.data.length) {
-            return this.extractFromArtifacts(artifacts.data);
-        }
-
-        return this.extractFromStoragePayloads(trajectoryId, analysisId, exposureId);
-    }
-
-    private extractFromArtifacts(
-        artifacts: Array<{ props: { timestep: number; metadata: Record<string, any> } }>
-    ): Array<{ timestep: number; mainListing: Record<string, unknown> }> {
-        const records: Array<{ timestep: number; mainListing: Record<string, unknown> }> = [];
-
-        for (const artifact of artifacts) {
-            const rawMetadata = artifact.props.metadata;
-            const listingMetadata = rawMetadata?.listingMetadata ?? rawMetadata;
-            const mainListing = listingMetadata?.main_listing;
-
-            if (!mainListing || typeof mainListing !== 'object') continue;
-
-            records.push({
-                timestep: artifact.props.timestep,
-                mainListing
-            });
-        }
-
-        return records;
-    }
-
-    private async extractFromStoragePayloads(
+    private async collectTimestepRecords(
         trajectoryId: string,
         analysisId: string,
         exposureId: string
-    ): Promise<Array<{ timestep: number; mainListing: Record<string, unknown> }>> {
+    ): Promise<TimestepRecord[]> {
         const payloadObjects = await this.listExposurePayloadObjects(trajectoryId, analysisId, exposureId);
-        const records: Array<{ timestep: number; mainListing: Record<string, unknown> }> = [];
+        const records: TimestepRecord[] = [];
 
         for (const payloadObject of payloadObjects) {
             const decoded = await this.readDecodedPayload(payloadObject.objectName);
-            const mainListing = decoded?.main_listing;
+            if (!decoded) {
+                continue;
+            }
 
-            if (!mainListing || typeof mainListing !== 'object') continue;
+            const mainListing = decoded.main_listing;
+            if (!mainListing || typeof mainListing !== 'object') {
+                continue;
+            }
+
+            const rawSubListings = decoded.sub_listings;
+            let subListings: Record<string, Array<Record<string, unknown>>> = {};
+
+            if (rawSubListings && typeof rawSubListings === 'object') {
+                const entries = Object.entries(rawSubListings as Record<string, unknown>);
+                for (const [name, value] of entries) {
+                    if (Array.isArray(value) && value.length > 0) {
+                        subListings[name] = value as Array<Record<string, unknown>>;
+                    }
+                }
+            }
 
             records.push({
                 timestep: payloadObject.timestep,
-                mainListing
+                mainListing: mainListing as Record<string, unknown>,
+                subListings
             });
         }
 

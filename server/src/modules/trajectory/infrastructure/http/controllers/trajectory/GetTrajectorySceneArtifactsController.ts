@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { PaginatedBaseController } from '@shared/infrastructure/http/PaginatedBaseController';
 import {
-    ListTrajectorySceneArtifactsUseCase,
-    type ListTrajectorySceneArtifactsInput
+    ListTrajectorySceneArtifactsUseCase
 } from '@modules/trajectory/application/use-cases/scene-artifacts/ListTrajectorySceneArtifactsUseCase';
+import type { ListTrajectorySceneArtifactsInputDTO } from '@modules/trajectory/application/dtos/scene-artifacts/ListTrajectorySceneArtifactsDTO';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 
 @injectable()
@@ -15,9 +15,9 @@ export default class GetTrajectorySceneArtifactsController extends PaginatedBase
         super(useCase);
     }
 
-    protected override getParams(req: AuthenticatedRequest): ListTrajectorySceneArtifactsInput {
-        const params = super.getParams(req) as ListTrajectorySceneArtifactsInput & {
-            type?: ListTrajectorySceneArtifactsInput['sourceType'];
+    protected override getParams(req: AuthenticatedRequest): ListTrajectorySceneArtifactsInputDTO {
+        const params = super.getParams(req) as ListTrajectorySceneArtifactsInputDTO & {
+            type?: ListTrajectorySceneArtifactsInputDTO['sourceType'];
         };
 
         const { type, sourceType, ...rest } = params;

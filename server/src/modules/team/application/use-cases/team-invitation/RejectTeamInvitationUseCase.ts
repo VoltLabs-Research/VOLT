@@ -6,15 +6,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ITeamInvitationRepository } from '@modules/team/domain/ports/ITeamInvitationRepository';
 import { TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
-
-export interface RejectTeamInvitationInputDTO {
-    invitationId: string;
-    userId: string;
-}
-
-export interface RejectTeamInvitationOutputDTO {
-    message: string;
-}
+import { RejectTeamInvitationInputDTO, RejectTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/RejectTeamInvitationDTO';
 
 @injectable()
 export default class RejectTeamInvitationUseCase implements IUseCase<RejectTeamInvitationInputDTO, RejectTeamInvitationOutputDTO, ApplicationError> {

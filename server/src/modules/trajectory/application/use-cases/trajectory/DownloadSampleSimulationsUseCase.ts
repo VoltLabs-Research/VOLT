@@ -5,22 +5,13 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import path from 'node:path';
 import fs from 'node:fs';
 import { STATIC_ROOT } from '@core/config/paths';
-import type { ReadStream } from 'node:fs';
+import { DownloadSampleSimulationsInputDTO, DownloadSampleSimulationsOutputDTO } from '@modules/trajectory/application/dtos/trajectory/DownloadSampleSimulationsDTO';
 
 const SAMPLES_PATH = path.join(STATIC_ROOT, 'default/simulations');
 
-export interface DownloadSampleSimulationsInput {
-    filename?: string;
-}
-
-export interface DownloadSampleSimulationsOutput {
-    stream: ReadStream;
-    filename: string;
-}
-
 @injectable()
-export default class DownloadSampleSimulationsUseCase implements IUseCase<DownloadSampleSimulationsInput, DownloadSampleSimulationsOutput, ApplicationError> {
-    async execute(input: DownloadSampleSimulationsInput): Promise<Result<DownloadSampleSimulationsOutput, ApplicationError>> {
+export default class DownloadSampleSimulationsUseCase implements IUseCase<DownloadSampleSimulationsInputDTO, DownloadSampleSimulationsOutputDTO, ApplicationError> {
+    async execute(input: DownloadSampleSimulationsInputDTO): Promise<Result<DownloadSampleSimulationsOutputDTO, ApplicationError>> {
         const { filename } = input;
         
         if (!filename || !filename.endsWith('.zip')) {

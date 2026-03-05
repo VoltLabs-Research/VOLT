@@ -4,6 +4,8 @@ export interface GetSubListingInputDTO {
     timestep: number;
     subListingName: string;
     teamId: string;
+    page?: number;
+    limit?: number;
 }
 
 export interface SubListingColumn {
@@ -15,4 +17,8 @@ export interface GetSubListingOutputDTO {
     subListingName: string;
     columns: SubListingColumn[];
     rows: Record<string, unknown>[];
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
 }

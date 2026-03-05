@@ -8,18 +8,10 @@ import type { IScriptingNotebookRepository } from '@modules/scripting/domain/por
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import NotebookDeletedEvent from '@modules/scripting/domain/events/NotebookDeletedEvent';
-
-interface DeleteScriptingNotebookInput {
-    notebookId: string;
-    teamId: string;
-}
-
-interface DeleteScriptingNotebookOutput {
-    message: string;
-}
+import { DeleteScriptingNotebookInputDTO, DeleteScriptingNotebookOutputDTO } from '@modules/scripting/application/dtos/DeleteScriptingNotebookDTO';
 
 @injectable()
-export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingNotebookInput, DeleteScriptingNotebookOutput, ApplicationError> {
+export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingNotebookInputDTO, DeleteScriptingNotebookOutputDTO, ApplicationError> {
     constructor(
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository)
         private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
@@ -28,7 +20,7 @@ export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingN
         private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: DeleteScriptingNotebookInput): Promise<Result<DeleteScriptingNotebookOutput, ApplicationError>> {
+    async execute(input: DeleteScriptingNotebookInputDTO): Promise<Result<DeleteScriptingNotebookOutputDTO, ApplicationError>> {
         const notebook = await this.scriptingNotebookRepository.findById(input.notebookId);
         if (!notebook) {
             throw new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'Notebook not found', 404);

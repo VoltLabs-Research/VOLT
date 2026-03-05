@@ -1,6 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { BaseStreamController } from '@shared/infrastructure/http/BaseStreamController';
-import GetTrajectoryGLBUseCase, { type GetTrajectoryGLBOutput } from '@modules/trajectory/application/use-cases/trajectory/GetTrajectoryGLBUseCase';
+import GetTrajectoryGLBUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTrajectoryGLBUseCase';
+import type { GetTrajectoryGLBOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryGLBDTO';
 
 @injectable()
 export default class GetTrajectoryGLBController extends BaseStreamController<GetTrajectoryGLBUseCase> {
@@ -11,7 +12,7 @@ export default class GetTrajectoryGLBController extends BaseStreamController<Get
         super(useCase);
     }
 
-    protected override getHeaders(resultValue: GetTrajectoryGLBOutput): Record<string, string> {
+    protected override getHeaders(resultValue: GetTrajectoryGLBOutputDTO): Record<string, string> {
         return {
             'Content-Type': 'model/gltf-binary',
             'Content-Length': String(resultValue.size),

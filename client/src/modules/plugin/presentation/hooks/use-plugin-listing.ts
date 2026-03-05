@@ -70,8 +70,7 @@ const usePluginListing = ({
     const reset = usePluginListingStore((s) => s.reset);
     const subListingNames = usePluginListingStore((s) => s.subListingNames);
     const setSubListingNames = usePluginListingStore((s) => s.setSubListingNames);
-    const setSubListingData = usePluginListingStore((s) => s.setSubListingData);
-    const setSubListingLoading = usePluginListingStore((s) => s.setSubListingLoading);
+    const setSubListingParams = usePluginListingStore((s) => s.setSubListingParams);
 
     const shouldShowTrajectory = showTrajectoryColumn ?? !trajectoryId;
 
@@ -173,28 +172,18 @@ const usePluginListing = ({
         }
     }, [deleteAnalysis, removeRowByAnalysisId, reset]);
 
-    const handleViewSubListing = useCallback(async (item: ListingRow, subListingName: string) => {
+    const handleViewSubListing = useCallback((item: ListingRow, subListingName: string) => {
         if (!item.analysisId || !item.exposureId || item.timestep === undefined) return;
 
-        setSubListingLoading(true);
-        setSubListingData(null);
+        setSubListingParams({
+            analysisId: item.analysisId,
+            exposureId: item.exposureId,
+            timestep: item.timestep,
+            subListingName
+        });
 
-        try {
-            const result = await pluginListingRepository.getSubListing({
-                analysisId: item.analysisId,
-                exposureId: item.exposureId,
-                timestep: item.timestep,
-                subListingName
-            });
-
-            setSubListingData(result);
-            openModal(SUB_LISTING_MODAL_ID);
-        } catch {
-            sileo.error({ title: `Failed to load ${formatSnakeCaseToTitle(subListingName)}` });
-        } finally {
-            setSubListingLoading(false);
-        }
-    }, [pluginListingRepository, setSubListingData, setSubListingLoading]);
+        openModal(SUB_LISTING_MODAL_ID);
+    }, [setSubListingParams]);
 
     const getMenuOptions = useCallback((item: ListingRow, selectedItems: ListingRow[]): MenuOption[] => {
         const targetRows = selectedItems.includes(item) ? selectedItems : [item];

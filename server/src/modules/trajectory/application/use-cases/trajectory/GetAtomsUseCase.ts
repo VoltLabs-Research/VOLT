@@ -9,24 +9,7 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { RuntimeError } from '@core/exceptions/RuntimeError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
-
-export interface GetAtomsInput {
-    trajectoryId: string;
-    analysisId?: string;
-    timestep?: string;
-    exposureId?: string;
-    page?: number;
-    limit?: number;
-}
-
-interface AtomRecord {
-    id: number;
-    type: number;
-    x: number;
-    y: number;
-    z: number;
-    [property: string]: number;
-}
+import { GetAtomsInputDTO, AtomRecord } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
 
 interface ExposureFetchResult {
     exposureName: string;
@@ -40,7 +23,7 @@ interface PropertyRenameMap {
 }
 
 @injectable()
-export class GetAtomsUseCase implements IUseCase<GetAtomsInput, PaginatedResult<AtomRecord>, ApplicationError> {
+export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResult<AtomRecord>, ApplicationError> {
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
         private readonly dumpStorage: ITrajectoryDumpStorageService,
@@ -49,7 +32,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInput, PaginatedResult<
         private readonly atomProps: IAtomPropertiesService
     ) {}
 
-    async execute(input: GetAtomsInput): Promise<Result<PaginatedResult<AtomRecord>, ApplicationError>> {
+    async execute(input: GetAtomsInputDTO): Promise<Result<PaginatedResult<AtomRecord>, ApplicationError>> {
         try {
             const { trajectoryId, analysisId, timestep, exposureId } = input;
             const page = input.page ? Number(input.page) : 1;

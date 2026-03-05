@@ -1,22 +1,12 @@
 import { Schema } from 'mongoose';
 
-export const ListingRowSchema = new Schema({
+export const SubListingRowSchema = new Schema({
     plugin: {
         type: Schema.Types.ObjectId,
         ref: 'Plugin',
         required: true,
         index: true,
         cascade: 'delete'
-    },
-    exposureName: {
-        type: String,
-        required: true,
-        index: true
-    },
-    exposureId: {
-        type: String,
-        required: true,
-        index: true
     },
     team: {
         type: Schema.Types.ObjectId,
@@ -39,21 +29,28 @@ export const ListingRowSchema = new Schema({
         index: true,
         cascade: 'delete'
     },
+    exposureId: {
+        type: String,
+        required: true,
+        index: true
+    },
+    exposureName: {
+        type: String,
+        required: true
+    },
     timestep: {
         type: Number,
+        required: true,
+        index: true
+    },
+    subListingName: {
+        type: String,
         required: true,
         index: true
     },
     row: {
         type: Schema.Types.Mixed,
         default: {}
-    },
-    trajectoryName: {
-        type: String
-    },
-    subListingNames: {
-        type: [String],
-        default: []
     }
 }, {
     timestamps: true

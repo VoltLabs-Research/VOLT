@@ -10,15 +10,7 @@ import { TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitati
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { ITeamRepository } from '@modules/team/domain/ports/ITeamRepository';
-
-export interface AcceptTeamInvitationInputDTO {
-    invitationId: string;
-    userId: string;
-}
-
-export interface AcceptTeamInvitationOutputDTO {
-    message: string;
-}
+import { AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/AcceptTeamInvitationDTO';
 
 @injectable()
 export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO, ApplicationError> {

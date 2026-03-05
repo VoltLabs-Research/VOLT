@@ -10,6 +10,8 @@ interface PluginSubListingPanelProps {
     subListingName: string;
 }
 
+const SUB_LISTING_PAGE_SIZE = 50;
+
 const PluginSubListingPanel = ({
     analysisId,
     exposureId,
@@ -20,11 +22,24 @@ const PluginSubListingPanel = ({
     const [columns, setColumns] = useState<ColumnConfig[]>([]);
     const [rows, setRows] = useState<Record<string, unknown>[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const currentPageRef = useRef(1);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const fetchSubListing = useCallback(async (signal: { cancelled: boolean }) => {
-        setIsLoading(true);
+    const fetchPage = useCallback(async (
+        page: number,
+        signal: { cancelled: boolean }
+    ) => {
+        const isFirstPage = page === 1;
+
+        if (isFirstPage) {
+            setIsLoading(true);
+        } else {
+            setIsFetchingMore(true);
+        }
+
         setError(null);
 
         try {
@@ -32,7 +47,9 @@ const PluginSubListingPanel = ({
                 analysisId,
                 exposureId,
                 timestep,
-                subListingName
+                subListingName,
+                page,
+                limit: SUB_LISTING_PAGE_SIZE
             });
 
             if (signal.cancelled) return;
@@ -43,27 +60,36 @@ const PluginSubListingPanel = ({
                 sortable: column.sortable
             }));
 
-            setColumns(mappedColumns);
-            setRows(response.rows || []);
+            if (isFirstPage) {
+                setColumns(mappedColumns);
+                setRows(response.rows || []);
+            } else {
+                setRows((previousRows) => [...previousRows, ...(response.rows || [])]);
+            }
+
+            setHasMore(page < response.totalPages);
+            currentPageRef.current = page;
         } catch {
             if (signal.cancelled) return;
             setError('Failed to load sub-listing data.');
         } finally {
             if (!signal.cancelled) {
                 setIsLoading(false);
+                setIsFetchingMore(false);
             }
         }
     }, [pluginListingRepository, analysisId, exposureId, timestep, subListingName]);
 
     useEffect(() => {
         const signal = { cancelled: false };
+        currentPageRef.current = 1;
 
         if (debounceTimerRef.current) {
             clearTimeout(debounceTimerRef.current);
         }
 
         debounceTimerRef.current = setTimeout(() => {
-            fetchSubListing(signal);
+            fetchPage(1, signal);
         }, 200);
 
         return () => {
@@ -72,13 +98,21 @@ const PluginSubListingPanel = ({
                 clearTimeout(debounceTimerRef.current);
             }
         };
-    }, [fetchSubListing]);
+    }, [fetchPage]);
+
+    const handleLoadMore = useCallback(() => {
+        const signal = { cancelled: false };
+        fetchPage(currentPageRef.current + 1, signal);
+    }, [fetchPage]);
 
     return (
         <PluginCompactTable
             columns={columns}
             data={rows}
             isLoading={isLoading}
+            isFetchingMore={isFetchingMore}
+            hasMore={hasMore}
+            onLoadMore={handleLoadMore}
             error={error}
         />
     );

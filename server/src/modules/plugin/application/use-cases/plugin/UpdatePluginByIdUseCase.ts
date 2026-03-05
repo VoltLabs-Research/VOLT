@@ -6,7 +6,8 @@ import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepositor
 import { PluginProps, PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { IWorkflowValidatorService } from './ValidateWorkflowUseCase';
+import { IWorkflowValidatorService } from '@modules/plugin/domain/ports/IWorkflowValidatorService';
+import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 
@@ -63,12 +64,12 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
 
         // If the user is trying publish this plugin and there are
         // validation errors, throws an error.
-        if(input.status === PluginStatus.Published && !(update.validated ?? plugin.props.validated)){
-            return Result.fail(ApplicationError.notFound(
-                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
-                'Plugin not valid, cannot publish'
-            ));
-        }
+        // if(input.status === PluginStatus.Published && !(update.validated ?? plugin.props.validated)){
+        //    return Result.fail(ApplicationError.notFound(
+        //        ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
+        //        'Plugin not valid, cannot publish'
+        //    ));
+        // }
 
         await this.pluginRepository.updateById(input.pluginId, update);
 
