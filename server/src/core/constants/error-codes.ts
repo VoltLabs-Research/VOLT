@@ -27,7 +27,6 @@ export const ErrorCodes = {
     CONTAINER_FILE_READ_FAILED: 'Container::File::ReadFailed',
     CONTAINER_EXEC_FAILED: 'Container::Exec::Failed',
 
-    SSH_CONNECTION_ID_REQUIRED: 'SSH::ConnectionId::Required',
     SSH_CONNECTION_NOT_FOUND: 'SSHConnection::NotFound',
     SSH_CONNECTION_UPDATE_ERROR: 'SSHConnection::UpdateError',
     SSH_CONNECTION_DELETE_ERROR: 'SSHConnection::DeleteError',
@@ -62,7 +61,6 @@ export const ErrorCodes = {
     COLOR_CODING_DUMP_NOT_FOUND: 'ColorCoding::DumpNotFound',
 
     PARTICLE_FILTER_INVALID_ACTION: 'ParticleFilter::InvalidAction',
-    PARTICLE_FILTER_ALL_DELETED: 'ParticleFilter::AllDeleted',
 
     DOCKER_CREATE_ERROR: 'Docker::Create::Error',
     DOCKER_EXEC_ERROR: 'Docker::Exec::Error',

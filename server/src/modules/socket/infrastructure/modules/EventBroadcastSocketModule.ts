@@ -53,11 +53,7 @@ export default class EventBroadcastSocketModule extends BaseSocketModule {
         'container.created',
         'container.deleted',
         // Notebook CRUD
-        'notebook.created',
         'notebook.deleted',
-        // Simulation cell CRUD
-        'simulation-cell.created',
-        'simulation-cell.deleted',
     ];
 
     constructor(

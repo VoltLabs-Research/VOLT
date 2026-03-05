@@ -28,7 +28,7 @@ When users ask about their data, use available tools to query it. For destructiv
 Be concise and factual. Format responses in markdown when helpful.`;
 const MAX_TOOL_STEPS = 8;
 
-export interface GenerateReplyInput {
+interface GenerateReplyInput {
     teamId: string;
     userId: string;
     provider?: string;

@@ -1,7 +1,7 @@
 import type { UIMessage } from 'ai';
 import { injectable } from 'tsyringe';
 
-export interface AIResponseMessagePartsMappingResult {
+interface AIResponseMessagePartsMappingResult {
     parts: UIMessage['parts'];
     textContent: string;
 }

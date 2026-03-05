@@ -13,7 +13,7 @@ import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTok
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { initializeNodeHandlers } from '@modules/plugin/infrastructure/di/container';
 
-export interface AnalysisJobMetadata {
+interface AnalysisJobMetadata {
     trajectoryId: string;
     analysisId: string;
     config: Record<string, any>;

@@ -6,7 +6,6 @@ import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepositor
 import { PluginProps, PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import { IWorkflowValidatorService } from './ValidateWorkflowUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 

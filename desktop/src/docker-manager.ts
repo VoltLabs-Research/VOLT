@@ -113,7 +113,7 @@ export default class DockerManager{
         });
     }
 
-    async waitForServices(): Promise<boolean>{
+    private async waitForServices(): Promise<boolean>{
         let retries = 0;
         while(retries < this.MAX_RETRIES){
             const isHealthy = await this.checkServicesHealth();
@@ -171,7 +171,7 @@ export default class DockerManager{
         }
     }
 
-    async getIsRunning(): Promise<boolean>{
+    private async getIsRunning(): Promise<boolean>{
         try{
             const containers = await this.docker.listContainers({
                 filters: {

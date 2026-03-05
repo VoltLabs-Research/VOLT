@@ -4,7 +4,7 @@ import { Exporter } from '@modules/plugin/domain/entities/workflow/nodes/ExportN
 /**
  * Configuration options for the workflow execution context.
  */
-export interface WorkflowContextOptions{
+interface WorkflowContextOptions{
     selectedFrameOnly?: boolean;
     timestep?: number;
 };

@@ -21,7 +21,7 @@ const ANIMALS = [
     'Whale',
 ];
 
-export interface GenerateRandomNameResult{
+interface GenerateRandomNameResult{
     firstName: string;
     lastName: string;
 };

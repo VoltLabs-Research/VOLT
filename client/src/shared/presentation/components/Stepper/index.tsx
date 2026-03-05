@@ -8,7 +8,7 @@ export interface Step<K extends string>{
     content: ReactNode;
 }
 
-export interface StepTitle{
+interface StepTitle{
     title: string;
     subtitle: string;
 }

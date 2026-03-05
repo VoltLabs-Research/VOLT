@@ -6,7 +6,7 @@ import type {
 } from '@modules/trajectory/domain/entities/SceneArtifact';
 import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 
-export interface RecordSceneArtifactInput {
+interface RecordSceneArtifactInput {
     objectName: string;
     trajectory: string;
     analysis?: string;

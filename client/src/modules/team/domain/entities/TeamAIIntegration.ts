@@ -1,6 +1,5 @@
-import { AI_PROVIDERS, type AIProvider } from '@/modules/ai/domain/constants/AIProviders';
+import { type AIProvider } from '@/modules/ai/domain/constants/AIProviders';
 
-export const TEAM_AI_PROVIDERS = AI_PROVIDERS;
 export type TeamAIProvider = AIProvider;
 
 export interface TeamAIIntegration {

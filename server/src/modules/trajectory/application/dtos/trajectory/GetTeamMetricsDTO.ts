@@ -2,7 +2,7 @@ export interface GetTeamMetricsInputDTO {
     teamId: string;
 }
 
-export interface MetricMeta {
+interface MetricMeta {
     displayName?: string;
     listingUrl?: string;
     pluginName?: string;

@@ -55,11 +55,11 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
         socketService.emit('subscribe_to_canvas', {
             trajectoryId,
             previousTrajectoryId: undefined
-        }).catch(() => { });
+        }).catch(console.warn);
 
         socketService.emit('subscribe_to_raster', {
             trajectoryId
-        }).catch(() => { });
+        }).catch(console.warn);
     }, [enabled, trajectoryId, socketService]);
 
     useEffect(() => {
@@ -78,8 +78,8 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
             unsubscribeRaster();
 
             if (isConnectedRef.current) {
-                socketService.emit('unsubscribe_from_canvas', { trajectoryId }).catch(() => { });
-                socketService.emit('unsubscribe_from_raster', { trajectoryId }).catch(() => { });
+                socketService.emit('unsubscribe_from_canvas', { trajectoryId }).catch(console.warn);
+                socketService.emit('unsubscribe_from_raster', { trajectoryId }).catch(console.warn);
             }
 
             setUsers('canvasUsers', []);

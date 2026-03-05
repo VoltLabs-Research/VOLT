@@ -4,7 +4,7 @@ import type { ModelWorldBounds } from '@/modules/fractal/presentation/types/conf
 // =============================================================================
 // Model Types
 // =============================================================================
-export interface TrajectoryGLBs {
+interface TrajectoryGLBs {
     trajectory: string;
     defect_mesh: string;
     interface_mesh: string;

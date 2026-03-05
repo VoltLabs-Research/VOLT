@@ -11,9 +11,6 @@ import {
     CreateTeamAIIntegrationInputDTO,
     CreateTeamAIIntegrationOutputDTO
 } from '@modules/team/application/dtos/ai-integration/CreateTeamAIIntegrationDTO';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import TeamAIIntegrationCreatedEvent from '@modules/team/domain/events/TeamAIIntegrationCreatedEvent';
 import TeamAIIntegrationSerializer from '@modules/team/application/services/TeamAIIntegrationSerializer';
 
 @injectable()
@@ -21,9 +18,6 @@ export default class CreateTeamAIIntegrationUseCase implements IUseCase<CreateTe
     constructor(
         @inject(TEAM_TOKENS.TeamAIIntegrationRepository)
         private readonly integrationRepository: ITeamAIIntegrationRepository,
-
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus,
 
         @inject(TEAM_TOKENS.TeamAIIntegrationInputService)
         private readonly inputService: TeamAIIntegrationInputService,
@@ -94,14 +88,6 @@ export default class CreateTeamAIIntegrationUseCase implements IUseCase<CreateTe
                 'AI integration could not be persisted'
             ));
         }
-
-        await this.eventBus.publish(new TeamAIIntegrationCreatedEvent({
-            teamAIIntegrationId: persisted.id,
-            teamId: input.teamId,
-            provider,
-            isEnabled: persisted.props.isEnabled,
-            defaultModel: persisted.props.defaultModel
-        }));
 
         return Result.ok({
             integration: this.integrationSerializer.toDTO(persisted)

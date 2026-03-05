@@ -156,7 +156,7 @@ export default class SocketIOAdapter implements ISocketService{
 
         if(this.socket?.connected){
             this.disconnect();
-            this.connect().catch(() => {});
+            this.connect().catch(console.warn);
         }
     }
 
@@ -217,7 +217,7 @@ export default class SocketIOAdapter implements ISocketService{
         this.reconnectTimer = setTimeout(() => {
             this.reconnectTimer = null;
             if(!this.manualDisconnect && !this.socket?.connected){
-                this.connect().catch(() => {});
+                this.connect().catch(console.warn);
             }
         }, delay);
     }

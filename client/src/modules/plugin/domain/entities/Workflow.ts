@@ -39,7 +39,7 @@ export enum ExportType {
     CHART_PNG = 'chart-png'
 };
 
-export enum ChartType {
+enum ChartType {
     LINE = 'line',
     BAR = 'bar',
     SCATTER = 'scatter',
@@ -147,22 +147,6 @@ export interface IExposureData {
     iterable?: string;
     iterableChunkSize?: number;
     [key: string]: unknown;
-};
-
-export interface IChartExportOptions {
-    xAxisKey: string;
-    yAxisKey: string;
-    chartType: ChartType;
-    title?: string;
-    xAxisLabel?: string;
-    yAxisLabel?: string;
-    width?: number;
-    height?: number;
-    backgroundColor?: string;
-    lineColor?: string;
-    fillColor?: string;
-    showGrid?: boolean;
-    showLegend?: boolean;
 };
 
 export interface IExportData {

@@ -1,6 +1,6 @@
 import { ChatMessageProps } from '@modules/chat/domain/entities/ChatMessage';
 
-export interface FileDataInput{
+interface FileDataInput{
     filename: string;
     originalName: string;
     size: number;

@@ -9,7 +9,3 @@ export interface UploadBinaryOutputDTO {
     fileName: string;
     size: number;
 };
-
-export interface DeleteBinaryInputDTO {
-    pluginId: string;
-};

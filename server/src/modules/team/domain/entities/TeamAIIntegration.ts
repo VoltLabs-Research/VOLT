@@ -1,9 +1,8 @@
 import { encrypt, decrypt } from '@shared/infrastructure/utilities/crypto';
-import { AI_PROVIDERS, type AIProvider } from '@modules/ai/domain/constants/AIProviders';
+import { type AIProvider } from '@modules/ai/domain/constants/AIProviders';
 
-export const TEAM_AI_PROVIDERS = AI_PROVIDERS;
 export type TeamAIProvider = AIProvider;
-export type TeamAIIntegrationCreatedBy = string | { _id?: unknown; toString?: () => string };
+type TeamAIIntegrationCreatedBy = string | { _id?: unknown; toString?: () => string };
 
 export interface TeamAIIntegrationProps {
     team: string;

@@ -1,4 +1,4 @@
-export interface EndpointStat {
+interface EndpointStat {
     method: string;
     path: string;
     count: number;
@@ -6,12 +6,12 @@ export interface EndpointStat {
     successRate: number;
 };
 
-export interface StatusCodeStat {
+interface StatusCodeStat {
     code: number;
     count: number;
 };
 
-export interface PerKeyMetric {
+interface PerKeyMetric {
     secretKeyId: string;
     totalRequests: number;
     successRequests: number;
