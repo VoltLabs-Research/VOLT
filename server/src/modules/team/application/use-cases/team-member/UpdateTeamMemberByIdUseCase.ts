@@ -1,11 +1,11 @@
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { injectable, inject } from 'tsyringe';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { UpdateTeamMemberByIdInputDTO, UpdateTeamMemberByIdOutputDTO } from '@modules/team/application/dtos/team-member/UpdateTeamMemberByIdDTO';
-import { ITeamMemberRepository } from '@modules/team/domain/ports/ITeamMemberRepository';
+import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
 
 @injectable()
 export default class UpdateTeamMemberByIdUseCase implements IUseCase<UpdateTeamMemberByIdInputDTO, UpdateTeamMemberByIdOutputDTO, ApplicationError> {

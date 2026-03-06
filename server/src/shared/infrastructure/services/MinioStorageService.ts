@@ -5,7 +5,7 @@ import { stat } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { getMinioClient, getMinioConfig } from '@core/config/minio';
-import { IStorageService, UploadSource, FileMetadata } from '@shared/domain/ports/IStorageService';
+import { IStorageService, UploadSource, FileMetadata } from '@shared/domain/port/IStorageService';
 import logger from '@shared/infrastructure/logger';
 
 @injectable()

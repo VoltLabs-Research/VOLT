@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { DeleteManyOnTrajectoryDeletedHandler } from '@shared/application/events/DeleteManyOnTrajectoryDeletedHandler';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
-import { ISimulationCellRepository } from '@modules/simulation-cell/domain/ports/ISimulationCellRepository';
+import { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
 
 @injectable()
 export default class TrajectoryDeletedEventHandler extends DeleteManyOnTrajectoryDeletedHandler {

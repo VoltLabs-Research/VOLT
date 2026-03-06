@@ -1,4 +1,4 @@
-import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { TrajectoryProps } from '@modules/trajectory/domain/entities/Trajectory';
 
 export interface GetTrajectoriesByTeamIdInputDTO {

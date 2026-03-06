@@ -1,4 +1,4 @@
-import { IBaseRepository } from '@shared/domain/ports/IBaseRepository';
+import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 import SecretKeyUsageLog, { SecretKeyUsageLogProps } from '@modules/team/domain/entities/SecretKeyUsageLog';
 import { TeamUsageMetrics, KeyUsageMetrics } from '@modules/team/application/dtos/secret-key/SecretKeyUsageTypes';
 

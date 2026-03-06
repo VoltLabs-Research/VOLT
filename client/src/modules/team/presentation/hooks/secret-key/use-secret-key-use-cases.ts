@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { container } from 'tsyringe';
 import { TEAM_TOKENS } from '@/modules/team/infrastructure/di/tokens';
-import type ISecretKeyRepository from '@/modules/team/domain/ports/ISecretKeyRepository';
+import type ISecretKeyRepository from '@/modules/team/domain/port/ISecretKeyRepository';
 
 const useSecretKeyUseCases = () => {
     return useMemo(() => ({

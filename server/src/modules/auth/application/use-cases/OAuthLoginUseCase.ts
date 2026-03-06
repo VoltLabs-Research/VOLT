@@ -1,11 +1,11 @@
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { OAuthLoginInputDTO, OAuthLoginOutputDTO } from '@modules/auth/application/dtos/OAuthLoginDTO';
-import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
-import { ITokenService } from '@modules/auth/domain/ports/ITokenService';
+import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import { ITokenService } from '@modules/auth/domain/port/ITokenService';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
-import { ISessionRepository } from '@modules/session/domain/ports/ISessionRepository';
+import { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import { injectable, inject } from 'tsyringe';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import generateRandomName from '@shared/infrastructure/utilities/generate-random-name';

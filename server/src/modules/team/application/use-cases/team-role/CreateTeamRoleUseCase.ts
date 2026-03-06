@@ -1,5 +1,5 @@
-import { ITeamRoleRepository } from '@modules/team/domain/ports/ITeamRoleRepository';
-import { Result } from '@shared/domain/ports/Result';
+import { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleRepository';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO } from '@modules/team/application/dtos/team-role/CreateTeamRoleDTO';

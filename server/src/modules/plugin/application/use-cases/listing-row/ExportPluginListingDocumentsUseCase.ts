@@ -1,12 +1,12 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import {
     ExportPluginListingDocumentsInputDTO,
     ExportPluginListingDocumentsOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { IPluginListingExportService } from '@modules/plugin/domain/ports/IPluginListingExportService';
+import { IPluginListingExportService } from '@modules/plugin/domain/port/IPluginListingExportService';
 
 @injectable()
 export class ExportPluginListingDocumentsUseCase implements IUseCase<ExportPluginListingDocumentsInputDTO, ExportPluginListingDocumentsOutputDTO> {

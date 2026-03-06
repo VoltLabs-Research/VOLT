@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import ISocketService, { SocketOptions, EventSubscription } from '../../domain/ports/ISocketService';
+import ISocketService, { SocketOptions, EventSubscription } from '../../domain/port/ISocketService';
 
 export default class SocketIOAdapter implements ISocketService{
     private socket: Socket | null = null;

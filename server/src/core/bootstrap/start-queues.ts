@@ -1,4 +1,4 @@
-import { IJobQueueService } from '@modules/jobs/domain/ports/IJobQueueService';
+import { IJobQueueService } from '@modules/jobs/domain/port/IJobQueueService';
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';

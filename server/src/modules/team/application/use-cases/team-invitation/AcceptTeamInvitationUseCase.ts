@@ -1,15 +1,15 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { ITeamInvitationRepository } from '@modules/team/domain/ports/ITeamInvitationRepository';
-import { ITeamMemberRepository } from '@modules/team/domain/ports/ITeamMemberRepository';
+import { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
+import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
 import { TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { ITeamRepository } from '@modules/team/domain/ports/ITeamRepository';
+import { ITeamRepository } from '@modules/team/domain/port/ITeamRepository';
 import { AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/AcceptTeamInvitationDTO';
 
 @injectable()

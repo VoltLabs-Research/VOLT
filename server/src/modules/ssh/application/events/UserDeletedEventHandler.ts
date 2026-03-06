@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { DeleteManyOnUserDeletedHandler } from '@shared/application/events/DeleteManyOnUserDeletedHandler';
 import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
-import { ISSHConnectionRepository } from '@modules/ssh/domain/ports/ISSHConnectionRepository';
+import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 
 @injectable()
 export default class UserDeletedEventHandler extends DeleteManyOnUserDeletedHandler {

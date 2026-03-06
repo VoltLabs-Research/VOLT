@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import TeamCreatedEvent from '@modules/team/domain/events/TeamCreatedEvent';
-import { IPluginStorageService } from '@modules/plugin/domain/ports/IPluginStorageService';
+import { IPluginStorageService } from '@modules/plugin/domain/port/IPluginStorageService';
 import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import CreateNotificationUseCase from '@modules/notification/application/use-cases/CreateNotificationUseCase';

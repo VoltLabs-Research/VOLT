@@ -1,13 +1,13 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type ISSHRepository from '../../domain/ports/ISSHRepository';
+import type ISSHRepository from '../../domain/port/ISSHRepository';
 import type { 
     CreateSSHConnectionParams, 
     UpdateSSHConnectionParams, 
     ListSSHFilesParams, 
     ListSSHFilesResponse,
     TestSSHConnectionResponse 
-} from '../../domain/ports/ISSHRepository';
+} from '../../domain/port/ISSHRepository';
 import type { SSHConnection } from '../../domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 

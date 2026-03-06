@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import { IAnalysisJobFactory, AnalysisJobCreateInput } from '@modules/plugin/domain/ports/IAnalysisJobFactory';
+import { IAnalysisJobFactory, AnalysisJobCreateInput } from '@modules/plugin/domain/port/IAnalysisJobFactory';
 import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
 
 /**

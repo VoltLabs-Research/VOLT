@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
 import BaseRepository from '@/shared/infrastructure/repositories/BaseRepository';
-import type INotificationRepository from '../../domain/ports/INotificationRepository';
-import type { GetNotificationsParams } from '../../domain/ports/INotificationRepository';
+import type INotificationRepository from '../../domain/port/INotificationRepository';
+import type { GetNotificationsParams } from '../../domain/port/INotificationRepository';
 import type { Notification } from '../../domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 

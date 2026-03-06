@@ -1,4 +1,4 @@
-import type { PaginatedResult, PaginationOptions } from '@shared/domain/ports/IBaseRepository';
+import type { PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
 
 // Create
 export interface CreateContainerInputDTO {

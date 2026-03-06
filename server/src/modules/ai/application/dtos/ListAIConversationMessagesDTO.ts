@@ -1,5 +1,5 @@
 import type { UIMessage } from 'ai';
-import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { AIMessageRole, AIMessageModelInfo, AIMessageTokenUsage } from '@modules/ai/domain/entities/AIMessage';
 
 export interface AIMessageDTO {

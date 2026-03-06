@@ -1,12 +1,12 @@
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { injectable, inject } from 'tsyringe';
 import { ExecutePluginInputDTO } from '@modules/plugin/application/dtos/plugin/ExecutePluginDTO';
-import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
+import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
 import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { IPluginWorkflowEngine } from '@modules/plugin/domain/ports/IPluginWorkflowEngine';
+import { IPluginWorkflowEngine } from '@modules/plugin/domain/port/IPluginWorkflowEngine';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
@@ -16,7 +16,7 @@ import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajecto
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
 import AnalysisCreatedEvent from '@modules/analysis/domain/events/AnalysisCreatedEvent';
-import { IAnalysisJobFactory } from '@modules/plugin/domain/ports/IAnalysisJobFactory';
+import { IAnalysisJobFactory } from '@modules/plugin/domain/port/IAnalysisJobFactory';
 import BaseProcessingQueue from '@modules/jobs/infrastructure/services/BaseProcessingQueue';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 

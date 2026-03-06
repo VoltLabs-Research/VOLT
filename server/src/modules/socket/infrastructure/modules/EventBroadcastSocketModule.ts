@@ -1,6 +1,6 @@
 import { inject, singleton } from 'tsyringe';
 import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
-import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
+import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IDomainEvent } from '@shared/application/events/IDomainEvent';

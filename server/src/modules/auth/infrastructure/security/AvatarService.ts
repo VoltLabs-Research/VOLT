@@ -3,8 +3,8 @@ import crypto from 'node:crypto';
 import sharp from 'sharp';
 import Identicon from 'identicon.js';
 import logger from '@shared/infrastructure/logger';
-import { IAvatarService, AvatarResult } from '@modules/auth/domain/ports/IAvatarService';
-import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { IAvatarService, AvatarResult } from '@modules/auth/domain/port/IAvatarService';
+import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { SYS_BUCKETS } from '@core/config/minio';
 

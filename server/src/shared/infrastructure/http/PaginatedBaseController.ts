@@ -1,6 +1,6 @@
 import type { Response } from 'express';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import type { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 import BaseResponse from '@shared/infrastructure/http/BaseResponse';
 import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';

@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { injectable } from 'tsyringe';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import SecretKeyUsageLog, { SecretKeyUsageLogProps } from '@modules/team/domain/entities/SecretKeyUsageLog';
-import { ISecretKeyUsageLogRepository, LogRequestInput } from '@modules/team/domain/ports/ISecretKeyUsageLogRepository';
+import { ISecretKeyUsageLogRepository, LogRequestInput } from '@modules/team/domain/port/ISecretKeyUsageLogRepository';
 import { TeamUsageMetrics, KeyUsageMetrics } from '@modules/team/application/dtos/secret-key/SecretKeyUsageTypes';
 import SecretKeyUsageLogModel, { SecretKeyUsageLogDocument } from '@modules/team/infrastructure/persistence/mongo/models/SecretKeyUsageLogModel';
 import secretKeyUsageLogMapper from '@modules/team/infrastructure/persistence/mongo/mappers/SecretKeyUsageLogMapper';

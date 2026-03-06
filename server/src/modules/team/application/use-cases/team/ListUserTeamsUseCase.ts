@@ -1,5 +1,5 @@
-import { ITeamRepository } from '@modules/team/domain/ports/ITeamRepository';
-import { Result } from '@shared/domain/ports/Result';
+import { ITeamRepository } from '@modules/team/domain/port/ITeamRepository';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';

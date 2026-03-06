@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import ITeamRepository, { CreateTeamParams, UpdateTeamParams } from '../../domain/ports/ITeamRepository';
+import ITeamRepository, { CreateTeamParams, UpdateTeamParams } from '../../domain/port/ITeamRepository';
 import { Team } from '../../domain/entities';
 
 @injectable()

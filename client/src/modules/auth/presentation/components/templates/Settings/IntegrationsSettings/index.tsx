@@ -29,7 +29,7 @@ import type {
     TeamAIProviderModelsCatalog
 } from '@/modules/team/domain/entities/TeamAIIntegration';
 import { AI_PROVIDER_CATALOG } from '@/modules/ai/domain/constants/AIProviders';
-import type { CreateTeamAIIntegrationParams, UpdateTeamAIIntegrationParams } from '@/modules/team/domain/ports/ITeamAIIntegrationRepository';
+import type { CreateTeamAIIntegrationParams, UpdateTeamAIIntegrationParams } from '@/modules/team/domain/port/ITeamAIIntegrationRepository';
 import './IntegrationsSettings.css';
 
 const TEAM_AI_INTEGRATION_MODAL_ID = 'team-ai-integration-modal';

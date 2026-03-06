@@ -1,4 +1,4 @@
-import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { NotificationProps } from '@modules/notification/domain/entities/Notification';
 
 export interface GetNotificationsByUserIdInputDTO{

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { container } from 'tsyringe';
 import { TEAM_TOKENS } from '@/modules/team/infrastructure/di/tokens';
-import type ITeamRepository from '@/modules/team/domain/ports/ITeamRepository';
+import type ITeamRepository from '@/modules/team/domain/port/ITeamRepository';
 import type CreateTeamUseCase from '@/modules/team/application/use-cases/team/CreateTeamUseCase';
 
 const useTeamUseCases = () => {

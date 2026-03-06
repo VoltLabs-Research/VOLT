@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import { ITempFileService, TempFileOptions, DeleteOptions } from '@shared/domain/ports/ITempFileService';
+import { ITempFileService, TempFileOptions, DeleteOptions } from '@shared/domain/port/ITempFileService';
 import { v4 } from 'uuid';
 import fs from 'node:fs/promises';
 import path from 'node:path';

@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
-import { ISocketEmitter } from '@modules/socket/domain/ports/ISocketEmitter';
-import { ISocketRoomManager } from '@modules/socket/domain/ports/ISocketRoomManager';
-import { ISocketEventRegistry } from '@modules/socket/domain/ports/ISocketEventRegistry';
+import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
+import { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';

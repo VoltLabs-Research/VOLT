@@ -1,4 +1,4 @@
-import { ITeamMemberRepository } from '@modules/team/domain/ports/ITeamMemberRepository';
+import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
 import TeamMember, { TeamMemberProps } from '@modules/team/domain/entities/TeamMember';
 import TeamMemberModel, { TeamMemberDocument } from '@modules/team/infrastructure/persistence/mongo/models/TeamMemberModel';
 import teamMemberMapper from '@modules/team/infrastructure/persistence/mongo/mappers/TeamMemberMapper';

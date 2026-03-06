@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { ListContainersInputDTO, ListContainersOutputDTO } from '@modules/container/application/dtos/ContainerDTOs';
-import { IContainerRepository } from '@modules/container/domain/ports/IContainerRepository';
+import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 
 @injectable()
 export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, ListContainersOutputDTO> {

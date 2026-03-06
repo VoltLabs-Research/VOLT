@@ -1,4 +1,4 @@
-import type { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { ScriptingNotebookDTO } from './ScriptingNotebookDTO';
 
 export interface ListScriptingNotebooksInputDTO {

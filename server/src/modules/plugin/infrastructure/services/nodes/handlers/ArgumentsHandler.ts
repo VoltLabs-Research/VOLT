@@ -1,5 +1,5 @@
 import { injectable, inject } from 'tsyringe';
-import { INodeHandler, ExecutionContext, NodeOutputSchema, T } from '@modules/plugin/domain/ports/INodeRegistry';
+import { INodeHandler, ExecutionContext, NodeOutputSchema, T } from '@modules/plugin/domain/port/INodeRegistry';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/ITrajectoryDumpStorageService';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';

@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type IChatRepository from '../../domain/ports/IChatRepository';
+import type IChatRepository from '../../domain/port/IChatRepository';
 import type { Chat } from '../../domain/entities';
 import type { CreateGroupChatDTO, UpdateGroupInfoDTO, UpdateGroupAdminsDTO } from '../../application/dtos/chat';
 

@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type ISessionRepository from '../../domain/ports/ISessionRepository';
+import type ISessionRepository from '../../domain/port/ISessionRepository';
 import { Session, LoginActivity, RevokeAllResult } from '../../domain/entities/Session';
 
 @injectable()

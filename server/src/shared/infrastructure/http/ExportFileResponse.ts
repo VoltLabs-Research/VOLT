@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { Readable } from 'stream';
-import { ExportType } from '@shared/domain/ports/IBaseRepository';
+import { ExportType } from '@shared/domain/port/IBaseRepository';
 
 const escapeCsv = (value: unknown): string => {
     if (value === null || value === undefined) return '';

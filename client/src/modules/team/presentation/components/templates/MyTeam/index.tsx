@@ -20,7 +20,7 @@ import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use
 import useTeamMemberUseCases from '@/modules/team/presentation/hooks/team-member/use-team-member-use-cases';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
-import type { GetTeamMembersParams } from '@/modules/team/domain/ports/ITeamMemberRepository';
+import type { GetTeamMembersParams } from '@/modules/team/domain/port/ITeamMemberRepository';
 import type { TeamMember } from '@/modules/team/domain/entities/TeamMember';
 import useDailyActivityData from '@/modules/daily-activity/presentation/hooks/use-daily-activity-data';
 import ActivityHeatmap from '@/modules/daily-activity/presentation/components/molecules/ActivityHeatmap';

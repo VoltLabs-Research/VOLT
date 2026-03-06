@@ -1,4 +1,4 @@
-import { ITeamInvitationRepository } from '@modules/team/domain/ports/ITeamInvitationRepository';
+import { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
 import TeamInvitation, { TeamInvitationProps, TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
 import TeamInvitationModel, { TeamInvitationDocument } from '@modules/team/infrastructure/persistence/mongo/models/TeamInvitationModel';
 import teamInvitationMapper from '@modules/team/infrastructure/persistence/mongo/mappers/TeamInvitationMapper';

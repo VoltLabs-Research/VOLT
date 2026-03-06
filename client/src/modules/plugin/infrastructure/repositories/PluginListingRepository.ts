@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { type RawPaginatedResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type IPluginListingRepository from '../../domain/ports/IPluginListingRepository';
+import type IPluginListingRepository from '../../domain/port/IPluginListingRepository';
 import type { ListingRow } from '../../domain/entities';
 import type {
     GetPluginListingInputDTO,

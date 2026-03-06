@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
+import { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
 import {
     ExportListingRowsByAnalysisIdInputDTO,
     ExportListingRowsByAnalysisIdOutputDTO,

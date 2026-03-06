@@ -6,7 +6,7 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useChatStore } from '../stores';
 import { CHAT_TOKENS } from '@/modules/chat/infrastructure/di/tokens';
 import { CHAT_SOCKET_EVENTS } from '@/modules/chat/domain/constants';
-import type IChatRepository from '@/modules/chat/domain/ports/IChatRepository';
+import type IChatRepository from '@/modules/chat/domain/port/IChatRepository';
 import type { CreateGroupChatDTO, UpdateGroupInfoDTO, UpdateGroupAdminsDTO } from '@/modules/chat/application/dtos';
 import ApiError from '@/shared/errors/ApiError';
 

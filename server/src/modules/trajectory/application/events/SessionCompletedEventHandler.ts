@@ -6,7 +6,7 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
-import { IRasterService } from '@modules/raster/domain/ports/IRasterService';
+import { IRasterService } from '@modules/raster/domain/port/IRasterService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import TrajectoryUpdatedEvent from './TrajectoryUpdatedEvent';

@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/TrajectoryDeletedEvent';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
-import type { IScriptingNotebookRepository } from '@modules/scripting/domain/ports/IScriptingNotebookRepository';
+import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 
 import { JupyterService } from '@modules/scripting/infrastructure/services/JupyterService';
 

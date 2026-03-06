@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type IAnalysisRepository from '../../domain/ports/IAnalysisRepository';
+import type IAnalysisRepository from '../../domain/port/IAnalysisRepository';
 import type {
     GetAnalysesInputDTO,
     GetAnalysesOutputDTO,

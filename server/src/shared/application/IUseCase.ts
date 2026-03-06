@@ -1,4 +1,4 @@
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 
 export interface IUseCase<TInput, TOutput, TError = Error>{
     execute(input: TInput): Promise<Result<TOutput, TError>>;

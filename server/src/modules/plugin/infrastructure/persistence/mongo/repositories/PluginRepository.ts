@@ -1,4 +1,4 @@
-import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
+import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
 import Plugin, { PluginProps } from '@modules/plugin/domain/entities/Plugin';
 import PluginModel, { PluginDocument } from '@modules/plugin/infrastructure/persistence/mongo/models/PluginModel';
 import pluginMapper from '@modules/plugin/infrastructure/persistence/mongo/mappers/PluginMapper';

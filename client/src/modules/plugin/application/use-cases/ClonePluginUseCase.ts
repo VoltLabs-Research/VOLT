@@ -1,6 +1,6 @@
 import { inject, injectable } from 'tsyringe';
 import type IUseCase from '@/shared/application/use-cases/IUseCase';
-import type IPluginRepository from '../../domain/ports/IPluginRepository';
+import type IPluginRepository from '../../domain/port/IPluginRepository';
 import type { ClonePluginInputDTO, ClonePluginOutputDTO } from '../dtos';
 import { PLUGIN_TOKENS } from '../../infrastructure/di/tokens';
 

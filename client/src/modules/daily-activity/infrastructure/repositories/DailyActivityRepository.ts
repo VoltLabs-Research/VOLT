@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type IDailyActivityRepository from '../../domain/ports/IDailyActivityRepository';
-import type { GetTeamActivityParams } from '../../domain/ports/IDailyActivityRepository';
+import type IDailyActivityRepository from '../../domain/port/IDailyActivityRepository';
+import type { GetTeamActivityParams } from '../../domain/port/IDailyActivityRepository';
 import type { DailyActivity } from '../../domain/entities';
 
 @injectable()

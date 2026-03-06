@@ -3,7 +3,7 @@ import { container } from 'tsyringe';
 import { sileo } from 'sileo';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type { ScriptingNotebookDTO } from '@/modules/scripting/application/dtos';
-import type IScriptingRepository from '@/modules/scripting/domain/ports/IScriptingRepository';
+import type IScriptingRepository from '@/modules/scripting/domain/port/IScriptingRepository';
 import { SCRIPTING_TOKENS } from '@/modules/scripting/infrastructure/di/tokens';
 
 interface UseScriptingWorkspaceInput {

@@ -2,7 +2,7 @@ import net from 'node:net';
 import path from 'node:path';
 import Docker from 'dockerode';
 import { injectable } from 'tsyringe';
-import type { IContainerService, ContainerStats } from '@modules/container/domain/ports/IContainerService';
+import type { IContainerService, ContainerStats } from '@modules/container/domain/port/IContainerService';
 import logger from '@shared/infrastructure/logger';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';

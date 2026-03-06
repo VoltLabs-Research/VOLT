@@ -1,4 +1,4 @@
-import { IBaseRepository } from '@shared/domain/ports/IBaseRepository';
+import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 import Team, { TeamProps } from '@modules/team/domain/entities/Team';
 
 interface TeamMemberInfo{

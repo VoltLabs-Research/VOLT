@@ -1,4 +1,4 @@
-import { ISSHConnectionService, SSHFileEntry, DownloadProgress } from '@modules/ssh/domain/ports/ISSHConnectionService';
+import { ISSHConnectionService, SSHFileEntry, DownloadProgress } from '@modules/ssh/domain/port/ISSHConnectionService';
 import SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
 import { Client, SFTPWrapper } from 'ssh2';
 import { createWriteStream } from 'node:fs';

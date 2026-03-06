@@ -1,6 +1,6 @@
 import { inject, singleton } from 'tsyringe';
 import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
-import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
+import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamJobsService from './TeamJobsService';

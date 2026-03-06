@@ -1,5 +1,5 @@
 import { singleton } from 'tsyringe';
-import { IQueueRegistry, QueueInfo } from '@modules/jobs/domain/ports/IQueueRegistry';
+import { IQueueRegistry, QueueInfo } from '@modules/jobs/domain/port/IQueueRegistry';
 import logger from '@shared/infrastructure/logger';
 
 @singleton()

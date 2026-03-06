@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { container } from 'tsyringe';
 import { JOBS_TOKENS } from '../../infrastructure/di/tokens';
-import type IJobsRepository from '../../domain/ports/IJobsRepository';
+import type IJobsRepository from '../../domain/port/IJobsRepository';
 
 const useJobsUseCases = () => {
     return useMemo(() => ({

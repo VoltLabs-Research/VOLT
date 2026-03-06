@@ -4,7 +4,7 @@ import TeamCreatedEvent from '@modules/team/domain/events/TeamCreatedEvent';
 import CreateTeamRoleUseCase from '@modules/team/application/use-cases/team-role/CreateTeamRoleUseCase';
 import { SystemRoles } from '@core/constants/system-roles';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { ITeamRoleRepository } from '@modules/team/domain/ports/ITeamRoleRepository';
+import { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleRepository';
 import CreateTeamMemberUseCase from '@modules/team/application/use-cases/team-member/CreateTeamMemberUseCase';
 
 @injectable()

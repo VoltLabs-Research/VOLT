@@ -1,5 +1,5 @@
-import { IDailyActivityRepository } from '@modules/daily-activity/domain/ports/IDailyActivityRepository';
-import { Result } from '@shared/domain/ports/Result';
+import { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { FindActivityByTeamIdInputDTO, FindActivityByTeamIdOutputDTO } from '@modules/daily-activity/application/dto/FindActivityByTeamIdDTO';

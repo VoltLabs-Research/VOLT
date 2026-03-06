@@ -4,16 +4,16 @@ import { Server, Socket } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { createRedisClient } from '@core/config/redis';
 import { inject, injectable } from 'tsyringe';
-import { ISocketEmitter } from '@modules/socket/domain/ports/ISocketEmitter';
-import { ISocketRoomManager } from '@modules/socket/domain/ports/ISocketRoomManager';
-import { ISocketEventRegistry } from '@modules/socket/domain/ports/ISocketEventRegistry';
+import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
+import { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
+import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import logger from '@shared/infrastructure/logger';
-import { ISocketModule } from '@modules/socket/domain/ports/ISocketModule';
+import { ISocketModule } from '@modules/socket/domain/port/ISocketModule';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import JwtTokenService from '@modules/auth/infrastructure/security/JwtTokenService';
-import { ISocketMapper } from '@modules/socket/domain/ports/ISocketMapper';
+import { ISocketMapper } from '@modules/socket/domain/port/ISocketMapper';
 
 export interface AuthenticatedSocket extends Socket{
     user?: any;

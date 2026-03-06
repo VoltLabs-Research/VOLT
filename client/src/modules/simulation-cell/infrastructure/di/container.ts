@@ -1,7 +1,7 @@
 import { container } from 'tsyringe';
 import { SIMULATION_CELL_TOKENS } from './tokens';
 import SimulationCellRepository from '../repositories/SimulationCellRepository';
-import type ISimulationCellRepository from '../../domain/ports/ISimulationCellRepository';
+import type ISimulationCellRepository from '../../domain/port/ISimulationCellRepository';
 
 export const ensureSimulationCellDI = (): void => {
     container.register<ISimulationCellRepository>(

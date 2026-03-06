@@ -1,5 +1,5 @@
-import { ITeamRepository } from '@modules/team/domain/ports/ITeamRepository';
-import { ITeamMemberRepository } from '@modules/team/domain/ports/ITeamMemberRepository';
+import { ITeamRepository } from '@modules/team/domain/port/ITeamRepository';
+import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
 import Team, { TeamProps } from '@modules/team/domain/entities/Team';
 import TeamModel, { TeamDocument } from '@modules/team/infrastructure/persistence/mongo/models/TeamModel';
 import teamMapper from '@modules/team/infrastructure/persistence/mongo/mappers/TeamMapper';

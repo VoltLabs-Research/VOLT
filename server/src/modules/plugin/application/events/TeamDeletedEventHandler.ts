@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { DeleteManyOnTeamDeletedHandler } from '@shared/application/events/DeleteManyOnTeamDeletedHandler';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import type { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
+import type { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
 import TeamDeletedEvent from '@modules/team/domain/events/TeamDeletedEvent';
 
 @injectable()

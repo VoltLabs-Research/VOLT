@@ -1,11 +1,11 @@
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type IAIConversationRepository from '@/modules/ai/domain/ports/IAIConversationRepository';
+import type IAIConversationRepository from '@/modules/ai/domain/port/IAIConversationRepository';
 import type {
     CreateAIConversationParams,
     ListAIConversationMessagesParams,
     ListAIConversationsParams,
     UpdateAIConversationParams
-} from '@/modules/ai/domain/ports/IAIConversationRepository';
+} from '@/modules/ai/domain/port/IAIConversationRepository';
 import type {
     AIConversation,
     AIConversationMessage

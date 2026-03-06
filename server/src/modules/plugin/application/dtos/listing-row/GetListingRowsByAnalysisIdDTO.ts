@@ -1,4 +1,4 @@
-import { ExportType } from '@shared/domain/ports/IBaseRepository';
+import { ExportType } from '@shared/domain/port/IBaseRepository';
 
 export interface GetListingRowsByAnalysisIdInputDTO {
     analysisId: string;

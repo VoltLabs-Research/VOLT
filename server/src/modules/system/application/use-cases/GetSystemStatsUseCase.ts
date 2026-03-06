@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
-import { IMetricsService } from '@modules/system/domain/ports/IMetricsService';
+import { Result } from '@shared/domain/port/Result';
+import { IMetricsService } from '@modules/system/domain/port/IMetricsService';
 import { GetSystemStatsOutputDTO } from '@modules/system/application/dtos/GetSystemStatsDTO';
 
 @injectable()

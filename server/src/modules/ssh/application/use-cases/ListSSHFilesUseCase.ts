@@ -1,9 +1,9 @@
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
 import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
-import { ISSHConnectionRepository } from '@modules/ssh/domain/ports/ISSHConnectionRepository';
-import { ISSHConnectionService } from '@modules/ssh/domain/ports/ISSHConnectionService';
+import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
+import { ISSHConnectionService } from '@modules/ssh/domain/port/ISSHConnectionService';
 import { ListSSHFilesInputDTO } from '@modules/ssh/application/dtos/ListSSHFilesInputDTO';
 import { ListSSHFilesOutputDTO, SSHFileEntryDTO } from '@modules/ssh/application/dtos/ListSSHFilesOutputDTO';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';

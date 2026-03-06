@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { container } from 'tsyringe';
 import { AUTH_TOKENS } from '@/modules/auth/infrastructure/di/tokens';
 import type { SignInUseCase, SignUpUseCase } from '@/modules/auth/application/use-cases';
-import type IAuthRepository from '@/modules/auth/domain/ports/IAuthRepository';
+import type IAuthRepository from '@/modules/auth/domain/port/IAuthRepository';
 import type TokenStorage from '@/modules/auth/infrastructure/storage/TokenStorage';
 
 const useAuthUseCases = () => {

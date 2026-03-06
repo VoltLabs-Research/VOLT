@@ -4,11 +4,11 @@ import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/I
 import { IAtomPropertiesService } from '@modules/trajectory/domain/port/IAtomPropertiesService';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { RuntimeError } from '@core/exceptions/RuntimeError';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { GetAtomsInputDTO, AtomRecord } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
 
 interface ExposureFetchResult {

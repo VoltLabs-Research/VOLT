@@ -1,5 +1,5 @@
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';

@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import { IWorkflowValidator, ValidationResult } from '@modules/plugin/domain/ports/INodeRegistry';
+import { IWorkflowValidator, ValidationResult } from '@modules/plugin/domain/port/INodeRegistry';
 import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
 

@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type IContainerRepository from '../../domain/ports/IContainerRepository';
-import type { GetContainersParams, CreateContainerParams, UpdateContainerParams, GetFilesParams } from '../../domain/ports/IContainerRepository';
+import type IContainerRepository from '../../domain/port/IContainerRepository';
+import type { GetContainersParams, CreateContainerParams, UpdateContainerParams, GetFilesParams } from '../../domain/port/IContainerRepository';
 import type { Container, ContainerStatsResponse, ContainerFile, RawContainerProcess } from '../../domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 

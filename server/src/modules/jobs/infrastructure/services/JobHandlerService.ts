@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
-import { IJobHandlerService } from '@modules/jobs/domain/ports/IJobHandlerService';
-import { IJobRepository } from '@modules/jobs/domain/ports/IJobRepository';
+import { IJobHandlerService } from '@modules/jobs/domain/port/IJobHandlerService';
+import { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';

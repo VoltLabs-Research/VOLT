@@ -1,5 +1,5 @@
 import IORedis from 'ioredis';
-import { IJobRepository } from '@modules/jobs/domain/ports/IJobRepository';
+import { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
 import { injectable, inject } from 'tsyringe';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 

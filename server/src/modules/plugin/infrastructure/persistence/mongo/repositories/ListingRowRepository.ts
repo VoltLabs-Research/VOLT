@@ -1,4 +1,4 @@
-import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
+import { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
 import ListingRow, { ListingRowProps } from '@modules/plugin/domain/entities/ListingRow';
 import ListingRowModel, { ListingRowDocument } from '@modules/plugin/infrastructure/persistence/mongo/models/ListingRowModel';
 import listingRowMapper from '@modules/plugin/infrastructure/persistence/mongo/mappers/ListingRowMapper';

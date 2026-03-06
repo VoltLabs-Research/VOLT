@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import { IContainerRepository } from '@modules/container/domain/ports/IContainerRepository';
+import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { ContainerModel, IContainer as IContainerDoc } from '@modules/container/infrastructure/persistence/mongo/models/ContainerModel';
 import { Container, IContainerProps } from '@modules/container/domain/entities/Container';
 import { ContainerMapper } from '@modules/container/infrastructure/persistence/mongo/mappers/ContainerMapper';

@@ -1,4 +1,4 @@
-import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 
 export interface GetAnalysesByTrajectoryIdInputDTO {

@@ -1,4 +1,4 @@
-import { IBaseRepository } from '@shared/domain/ports/IBaseRepository';
+import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 import User, { UserProps } from '@modules/auth/domain/entities/User';
 
 export interface IUserRepository extends IBaseRepository<User, UserProps>{

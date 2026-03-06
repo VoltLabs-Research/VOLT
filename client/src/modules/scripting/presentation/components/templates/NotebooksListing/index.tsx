@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { BookOpen, FolderOpen } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { ScriptingNotebookDTO } from '@/modules/scripting/application/dtos';
-import type IScriptingRepository from '@/modules/scripting/domain/ports/IScriptingRepository';
+import type IScriptingRepository from '@/modules/scripting/domain/port/IScriptingRepository';
 import { SCRIPTING_TOKENS } from '@/modules/scripting/infrastructure/di/tokens';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';

@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import { buildFileFormData } from '@/shared/utils/file';
-import type IPluginRepository from '../../domain/ports/IPluginRepository';
+import type IPluginRepository from '../../domain/port/IPluginRepository';
 import type { Plugin } from '../../domain/entities';
 import type {
     GetPluginsInputDTO,

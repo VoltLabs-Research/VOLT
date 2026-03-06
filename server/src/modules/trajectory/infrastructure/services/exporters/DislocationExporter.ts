@@ -1,7 +1,7 @@
 import nativeExporter from '@modules/trajectory/infrastructure/native/NativeExporter';
 import computeBoundsFromPoints from '@modules/trajectory/infrastructure/utilities/compute-bounds-from-points';
 import { SYS_BUCKETS } from '@core/config/minio';
-import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { IStorageService } from '@shared/domain/port/IStorageService';
 import { injectable, inject } from 'tsyringe';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IDislocationExporter, DislocationExportOptions, ProcessedDislocationGeometry } from '@modules/trajectory/domain/port/exporters/DislocationExporter';

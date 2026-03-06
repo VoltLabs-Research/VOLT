@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import IAuthRepository, { CheckEmailResult } from '../../domain/ports/IAuthRepository';
+import IAuthRepository, { CheckEmailResult } from '../../domain/port/IAuthRepository';
 import { User } from '../../domain/entities';
 import {
     ChangePasswordInputDTO,

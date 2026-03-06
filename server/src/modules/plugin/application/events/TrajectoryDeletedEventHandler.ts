@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/TrajectoryDeletedEvent';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import type { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
+import type { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 

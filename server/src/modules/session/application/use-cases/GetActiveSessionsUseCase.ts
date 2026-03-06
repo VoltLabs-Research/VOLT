@@ -1,5 +1,5 @@
-import { ISessionRepository } from '@modules/session/domain/ports/ISessionRepository';
-import { Result } from '@shared/domain/ports/Result';
+import { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { GetActiveSessionsInputDTO, GetActiveSessionsOutputDTO } from '@modules/session/application/dtos/GetActiveSessionsDTO';

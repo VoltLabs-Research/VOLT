@@ -1,9 +1,9 @@
 import { injectable, inject, singleton } from 'tsyringe';
 import { pipeline } from 'node:stream/promises';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IPluginBinaryCacheService, BinaryCacheRequest } from '@modules/plugin/domain/ports/IPluginBinaryCacheService';
-import { ITempFileService } from '@shared/domain/ports/ITempFileService';
-import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { IPluginBinaryCacheService, BinaryCacheRequest } from '@modules/plugin/domain/port/IPluginBinaryCacheService';
+import { ITempFileService } from '@shared/domain/port/ITempFileService';
+import { IStorageService } from '@shared/domain/port/IStorageService';
 import logger from '@shared/infrastructure/logger';
 import path from 'node:path';
 import fs from 'node:fs/promises';

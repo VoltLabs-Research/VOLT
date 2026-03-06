@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { DeleteBinaryInputDTO } from '@modules/plugin/application/dtos/plugin/DeleteBinaryDTO';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IPluginStorageService } from '@modules/plugin/domain/ports/IPluginStorageService';
+import { IPluginStorageService } from '@modules/plugin/domain/port/IPluginStorageService';
 
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
