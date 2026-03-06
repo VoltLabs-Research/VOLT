@@ -1,4 +1,5 @@
 import type { TeamAIProvider } from '@/modules/team/domain/entities/TeamAIIntegration';
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 
 export type AIMessageRole = 'user' | 'assistant';
 export type AIMessageArtifactKind = 'table' | 'chart' | 'image' | 'text' | 'unknown';
@@ -13,8 +14,7 @@ export interface AIMessageArtifact {
     toolName?: string | null;
 }
 
-export interface AIConversation {
-    _id: string;
+export interface AIConversation extends BaseEntity {
     userId: string;
     teamId: string;
     title: string;
@@ -22,12 +22,9 @@ export interface AIConversation {
     lastProvider?: TeamAIProvider | string | null;
     lastModel?: string | null;
     isArchived: boolean;
-    createdAt: string;
-    updatedAt: string;
 }
 
-export interface AIConversationMessage {
-    _id: string;
+export interface AIConversationMessage extends BaseEntity {
     conversationId: string;
     role: AIMessageRole;
     /** UIMessage-compatible parts stored directly from the SDK. */
@@ -39,6 +36,4 @@ export interface AIConversationMessage {
     } | null;
     modelInfo?: Record<string, unknown> | null;
     tokenUsage?: Record<string, unknown> | null;
-    createdAt: string;
-    updatedAt: string;
 }

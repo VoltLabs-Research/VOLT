@@ -1,5 +1,10 @@
-import { JobHandlerConfig } from '@modules/jobs/infrastructure/services/JobHandlerService';
 import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
+
+export interface JobHandlerConfig {
+    queueName: string;
+    statusKeyPrefix: string;
+    ttlSeconds: number;
+};
 
 export interface JobInfo<T extends Job> {
     job: T;

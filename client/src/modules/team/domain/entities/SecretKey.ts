@@ -1,5 +1,6 @@
-export interface SecretKey {
-    _id: string;
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
+
+export interface SecretKey extends BaseEntity {
     teamId: string;
     roleId: string;
     roleName: string;
@@ -7,6 +8,4 @@ export interface SecretKey {
     keyPrefix: string;
     isActive: boolean;
     lastUsedAt?: string;
-    createdAt: string;
-    updatedAt: string;
 }

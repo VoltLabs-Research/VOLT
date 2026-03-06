@@ -1,60 +1,11 @@
-import type { PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
-
-// Create
-export interface CreateContainerInputDTO {
-    name: string;
-    image: string;
-    teamId: string;
-    userId: string;
-    env?: Array<{ key: string; value: string }>;
-    ports?: Array<{ private: number; public: number }>;
-    cmd?: string[];
-    memory?: number;
-    cpus?: number;
-    mountDockerSocket?: boolean;
-    useImageCmd?: boolean;
-}
-
-export interface CreateContainerOutputDTO {
-    container: any;
-}
-
-// Update
-export interface UpdateContainerInputDTO {
-    containerId: string;
-    action?: 'start' | 'stop' | 'restart';
-    env?: Array<{ key: string; value: string }>;
-    ports?: Array<{ private: number; public: number }>;
-    // other update fields if needed
-}
-
-export interface UpdateContainerOutputDTO {
-    container: any;
-    status?: string;
-}
-
-// List
-export interface ListContainersInputDTO extends Partial<PaginationOptions> {
-    teamId: string;
-    userId: string;
-}
-
-export interface ListContainersOutputDTO extends PaginatedResult<any> { }
-
-// Get
-export interface GetContainerStatsOutputDTO {
-    stats: any;
-    limits: { memory: number; cpus: number };
-}
-
-export interface GetContainerProcessesOutputDTO {
-    processes: any[];
-}
-
-export interface GetContainerByIdOutputDTO {
-    container: any;
-}
-
-export interface DeleteContainerOutputDTO {
-    message: string;
-}
+/**
+ * @deprecated Import from individual DTO files instead.
+ * This file re-exports for backward compatibility only.
+ */
+export { CreateContainerInputDTO, CreateContainerOutputDTO } from './CreateContainerDTO';
+export { UpdateContainerInputDTO, UpdateContainerOutputDTO } from './UpdateContainerDTO';
+export { DeleteContainerOutputDTO } from './DeleteContainerDTO';
+export { ListContainersInputDTO, ListContainersOutputDTO } from './ListContainersDTO';
+export { GetContainerStatsOutputDTO } from './GetContainerStatsDTO';
+export { GetContainerProcessesOutputDTO } from './GetContainerProcessesDTO';
+export { GetContainerByIdOutputDTO } from './GetContainerByIdDTO';

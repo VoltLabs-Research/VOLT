@@ -1,9 +1,10 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { DeleteContainerOutputDTO } from '@modules/container/application/dtos/ContainerDTOs';
+import { DeleteContainerOutputDTO } from '@modules/container/application/dtos/DeleteContainerDTO';
 import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { IContainerService } from '@modules/container/domain/port/IContainerService';
+import { IDockerNetworkRepository } from '@modules/container/domain/port/IDockerNetworkRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -15,6 +16,7 @@ export class DeleteContainerUseCase implements IUseCase<{ containerId: string },
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository,
         @inject('IContainerService') private containerService: IContainerService,
+        @inject('IDockerNetworkRepository') private networkRepository: IDockerNetworkRepository,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ){}
 
@@ -28,27 +30,17 @@ export class DeleteContainerUseCase implements IUseCase<{ containerId: string },
         try {
             await this.containerService.stopContainer(container.containerId);
             await this.containerService.removeContainer(container.containerId);
-        } catch (e) {
+        } catch {
             // Ignore if already gone
         }
 
-        // Remove Network (if owned, see legacy logic)
+        // Remove Network (if owned)
         if (container.network) {
-            const { DockerNetwork } = await import('@modules/container/infrastructure/persistence/mongo/models/DockerNetworkModel');
-            const netDoc = await DockerNetwork.findById(container.network);
-            if (netDoc) {
-                await this.containerService.removeNetwork(netDoc.networkId);
-                // Cascade delete in Model handles Mongo Doc, but we should ensure consistency
+            const networkDocument = await this.networkRepository.findById(container.network);
+            if (networkDocument) {
+                await this.containerService.removeNetwork(networkDocument.networkId);
             }
         }
-
-        // Remove Volume? Legacy logic says: "v: true removes associated anonymous volumes". 
-        // Named volumes were kept or removed depending on requirements? 
-        // Legacy "deleteContainer" calls "removeNetwork", but seemingly NOT "removeVolume" explicitly?
-        // Wait, legacy `ContainerSchema.plugin(useCascadeDelete);` and `onBeforeDelete` handling.
-        // I'll stick to removing the container entity which triggers cascade hooks in the model if I use mongoose middleware,
-        // but Clean Architecture usually avoids hooks.
-        // I will explicitly delete the repository entry.
 
         await this.repository.deleteById(input.containerId);
 

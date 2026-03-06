@@ -1,13 +1,13 @@
 import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { SSH_CONN_TOKENS } from '@modules/ssh/domain/di/SSHConnectionTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
+import { ISSHImportQueue } from '@modules/ssh/domain/port/ISSHImportQueue';
 import { ImportTrajectoryFromSSHInputDTO } from '@modules/ssh/application/dtos/ImportTrajectoryFromSSHInputDTO';
 import { ImportTrajectoryFromSSHOutputDTO } from '@modules/ssh/application/dtos/ImportTrajectoryFromSSHOutputDTO';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import SSHImportQueue from '@modules/ssh/infrastructure/queues/SSHImportQueue';
 import { v4 } from 'uuid';
 import Job from '@modules/jobs/domain/entities/Job';
 
@@ -17,7 +17,7 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
         @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
         private sshConnRepository: ISSHConnectionRepository,
         @inject(SSH_CONN_TOKENS.SSHImportQueue)
-        private sshImportQueue: SSHImportQueue
+        private sshImportQueue: ISSHImportQueue
     ){}
 
     async execute(input: ImportTrajectoryFromSSHInputDTO): Promise<Result<ImportTrajectoryFromSSHOutputDTO, ApplicationError>>{
@@ -67,10 +67,13 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
                 sessionId,
                 message: 'Import job queued successfully'
             });
-        }catch(error: any){
+        }catch(error: unknown){
+            const errorMessage = error instanceof Error
+                ? error.message
+                : 'Unknown error occurred';
             return Result.fail(new ApplicationError(
                 ErrorCodes.SSH_IMPORT_ERROR,
-                `Failed to queue SSH import job: ${error.message}`,
+                `Failed to queue SSH import job: ${errorMessage}`,
                 500
             ));
         }

@@ -1,21 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
-import { IRecoveryManagerService } from '@modules/jobs/domain/port/IRecoveryManagerService';
+import { IRecoveryManagerService, RecoveryManagerConfig, JobDeserializer } from '@modules/jobs/domain/port/IRecoveryManagerService';
 import { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
 import { setImmediate } from 'node:timers/promises';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
-
-export interface RecoveryManagerConfig{
-    queueKey: string;
-    processingKey: string;
-    statusKeyPrefix: string;
-    startupLockTTLMs: number;
-    ttlSeconds: number;
-};
-
-export interface JobDeserializer<T extends Job>{
-    (rawData: string): T;
-};
 
 @injectable()
 export default class RecoveryManagerService implements IRecoveryManagerService{

@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
 import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
-import { IJobHandlerService } from '@modules/jobs/domain/port/IJobHandlerService';
+import { IJobHandlerService, JobHandlerConfig } from '@modules/jobs/domain/port/IJobHandlerService';
 import { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
@@ -10,12 +10,6 @@ import JobCompletedEvent from '@modules/jobs/application/events/JobCompletedEven
 import JobFailedEvent from '@modules/jobs/application/events/JobFailedEvent';
 import JobIncrementedEvent from '@modules/jobs/application/events/JobIncrementedEvent';
 import logger from '@shared/infrastructure/logger';
-
-export interface JobHandlerConfig {
-    queueName: string;
-    statusKeyPrefix: string;
-    ttlSeconds: number;
-};
 
 @injectable()
 export default class JobHandlerService implements IJobHandlerService {

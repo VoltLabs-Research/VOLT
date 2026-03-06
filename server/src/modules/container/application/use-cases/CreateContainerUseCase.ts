@@ -1,34 +1,47 @@
 import { injectable, inject } from 'tsyringe';
+import { promisify } from 'util';
+import { exec as execCallback } from 'child_process';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { CreateContainerInputDTO, CreateContainerOutputDTO } from '@modules/container/application/dtos/ContainerDTOs';
+import { CreateContainerInputDTO, CreateContainerOutputDTO } from '@modules/container/application/dtos/CreateContainerDTO';
 import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { IContainerService } from '@modules/container/domain/port/IContainerService';
-import { execSync } from 'child_process';
+import { IDockerNetworkRepository } from '@modules/container/domain/port/IDockerNetworkRepository';
+import { IDockerVolumeRepository } from '@modules/container/domain/port/IDockerVolumeRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import ContainerCreatedEvent from '@modules/container/domain/events/ContainerCreatedEvent';
+
+const execAsync = promisify(execCallback);
+
+interface PortBinding {
+    HostPort: string;
+}
 
 @injectable()
 export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO, CreateContainerOutputDTO> {
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository,
         @inject('IContainerService') private containerService: IContainerService,
+        @inject('IDockerNetworkRepository') private networkRepository: IDockerNetworkRepository,
+        @inject('IDockerVolumeRepository') private volumeRepository: IDockerVolumeRepository,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ){}
 
     async execute(input: CreateContainerInputDTO): Promise<Result<CreateContainerOutputDTO>> {
         const { name, image, env, ports, cmd, mountDockerSocket, useImageCmd, memory, cpus } = input;
 
-        const Env = env ? env.map((e) => `${e.key}=${e.value}`) : [];
-        const PortBindings: Record<string, any> = {};
-        const ExposedPorts: Record<string, any> = {};
+        const formattedEnv = env
+            ? env.map((entry) => `${entry.key}=${entry.value}`)
+            : [];
+        const portBindings: Record<string, PortBinding[]> = {};
+        const exposedPorts: Record<string, Record<string, never>> = {};
 
         if (ports) {
-            ports.forEach((p) => {
-                const portKey = `${p.private}/tcp`;
-                ExposedPorts[portKey] = {};
-                PortBindings[portKey] = [{ HostPort: String(p.public) }];
+            ports.forEach((portMapping) => {
+                const portKey = `${portMapping.private}/tcp`;
+                exposedPorts[portKey] = {};
+                portBindings[portKey] = [{ HostPort: String(portMapping.public) }];
             });
         }
 
@@ -37,35 +50,42 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             containerCmd = ['tail', '-f', '/dev/null'];
         }
 
-        const HostConfig: any = {
-            PortBindings,
-            Memory: (memory || 512) * 1024 * 1024,
-            NanoCpus: (cpus || 1) * 1_000_000_000
+        const memoryBytes = (memory || 512) * 1024 * 1024;
+        const nanoCpus = (cpus || 1) * 1_000_000_000;
+
+        const hostConfig: Record<string, unknown> = {
+            PortBindings: portBindings,
+            Memory: memoryBytes,
+            NanoCpus: nanoCpus
         };
 
         // Create Volume
-        const { id: volumeId, name: volumeName } = await this.containerService.createVolume(name);
-        HostConfig.Binds = HostConfig.Binds || [];
-        HostConfig.Binds.push(`${volumeName}:/data`);
+        const { id: dockerVolumeId, name: volumeName } = await this.containerService.createVolume(name);
+        const binds: string[] = [`${volumeName}:/data`];
 
         if (mountDockerSocket) {
-            HostConfig.Binds.push('/var/run/docker.sock:/var/run/docker.sock');
+            binds.push('/var/run/docker.sock:/var/run/docker.sock');
             try {
-                // This execSync is from legacy, risky in simplified env but needed for functionality
-                const dockerGid = execSync("getent group docker | cut -d: -f3").toString().trim();
-                if (dockerGid) HostConfig.GroupAdd = [dockerGid];
+                const { stdout } = await execAsync('getent group docker | cut -d: -f3');
+                const dockerGid = stdout.trim();
+                if (dockerGid) {
+                    hostConfig.GroupAdd = [dockerGid];
+                }
             } catch {
-                // ignore
+                // ignore - docker group may not exist
             }
         }
 
-        const uniqueName = `${name.replace(/\s+/g, '-')}-${Date.now()}`;
+        hostConfig.Binds = binds;
+
+        const sanitizedName = name.replace(/\s+/g, '-');
+        const uniqueName = `${sanitizedName}-${Date.now()}`;
         const dockerConfig = {
             Image: image,
             name: uniqueName,
-            Env,
-            ExposedPorts,
-            HostConfig,
+            Env: formattedEnv,
+            ExposedPorts: exposedPorts,
+            HostConfig: hostConfig,
             Tty: true,
             Cmd: containerCmd
         };
@@ -77,59 +97,36 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         await this.containerService.startContainer(dockerId);
 
         // Network
-        const { id: networkId, name: networkName } = await this.containerService.createNetwork(name);
-        await this.containerService.connectNetwork(networkId, dockerId);
+        const { id: dockerNetworkId, name: networkName } = await this.containerService.createNetwork(name);
+        await this.containerService.connectNetwork(dockerNetworkId, dockerId);
 
         await this.containerService.getStats(dockerId).catch(() => null);
 
-        // Verify/Get IP logic usually requires re-inspecting
-        // We'll skip precise IP extraction for now as it requires specific object traversing, 
-        // relying on internalIp from 'containerInfo' might be stale before network connect.
-        // We can re-inspect if we add `inspect` to IContainerService.
-
-        // Persist to DB
-        // Needed: logic to create Network Doc and Volume Doc if we want full legacy parity,
-        // but for now we persist the Container with reference IDs (docker IDs) or use separate models?
-        // Our ContainerModel expects ObjectId for network/volume. 
-        // We probably need to create those docs first.
-
-        // This confirms I DO need INetworkRepository/IVolumeRepository or similar, 
-        // OR I hack it by using the Mongoose models directly here (breaking clean arch slightly but pragmatic).
-        // OR I add `createNetworkDoc` to `IContainerRepository`? No.
-
-        // I'll skip linking to Network/Volume documents for now and just store the string IDs if Model allowed it,
-        // but Model expects ObjectIds.
-        // I will import the Models directly to create them.
-
-        const { DockerNetwork } = await import('@modules/container/infrastructure/persistence/mongo/models/DockerNetworkModel');
-        const { DockerVolume } = await import('@modules/container/infrastructure/persistence/mongo/models/DockerVolumeModel');
-
-        const networkDoc = await DockerNetwork.findOneAndUpdate(
-            { networkId },
-            { name: networkName, driver: 'bridge' },
-            { upsert: true, new: true }
+        // Persist network and volume documents via repositories
+        const networkDocument = await this.networkRepository.findOrCreateByNetworkId(
+            dockerNetworkId,
+            { name: networkName, driver: 'bridge' }
         );
 
-        const volumeDoc = await DockerVolume.findOneAndUpdate(
-            { volumeId },
-            { name: volumeName, driver: 'local' },
-            { upsert: true, new: true }
+        const volumeDocument = await this.volumeRepository.findOrCreateByVolumeId(
+            dockerVolumeId,
+            { name: volumeName, driver: 'local' }
         );
 
         const container = await this.repository.create({
             name,
             image,
             containerId: dockerId,
-            status: 'running', // we started it
+            status: 'running',
             memory: memory || 512,
             cpus: cpus || 1,
             env: env || [],
             ports: ports || [],
             createdBy: input.userId,
             team: input.teamId,
-            network: networkDoc._id.toString(),
-            volume: volumeDoc._id.toString(),
-            internalIp: '0.0.0.0' // Placeholder
+            network: networkDocument.id,
+            volume: volumeDocument.id,
+            internalIp: '0.0.0.0'
         });
 
         await this.eventBus.publish(new ContainerCreatedEvent({

@@ -1,5 +1,16 @@
-import { JobDeserializer, RecoveryManagerConfig } from '@modules/jobs/infrastructure/services/RecoveryManagerService';
 import Job from '@modules/jobs/domain/entities/Job';
+
+export interface RecoveryManagerConfig {
+    queueKey: string;
+    processingKey: string;
+    statusKeyPrefix: string;
+    startupLockTTLMs: number;
+    ttlSeconds: number;
+};
+
+export interface JobDeserializer<T extends Job> {
+    (rawData: string): T;
+};
 
 export interface IRecoveryManagerService{
     initialize(

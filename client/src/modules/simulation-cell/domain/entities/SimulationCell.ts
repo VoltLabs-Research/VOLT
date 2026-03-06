@@ -1,3 +1,5 @@
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
+
 export interface SimulationCellDims {
     width: number;
     height: number;
@@ -21,13 +23,10 @@ export interface SimulationCellTrajectory {
     name: string;
 };
 
-export interface SimulationCell {
-    _id: string;
+export interface SimulationCell extends BaseEntity {
     boundingBox: SimulationCellDims;
     geometry: SimulationCellGeometry;
     team: string;
     trajectory: SimulationCellTrajectory;
     timestep: number;
-    createdAt: string;
-    updatedAt: string;
 };

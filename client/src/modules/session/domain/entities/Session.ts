@@ -1,3 +1,5 @@
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
+
 export enum SessionActivityType {
     Login = 'login',
     Logout = 'logout',
@@ -6,8 +8,7 @@ export enum SessionActivityType {
     PasswordUpdate = 'password_update'
 }
 
-export interface Session {
-    _id: string;
+export interface Session extends BaseEntity {
     user: string;
     token: string;
     userAgent: string;
@@ -17,8 +18,6 @@ export interface Session {
     action: SessionActivityType;
     success: boolean;
     failureReason?: string;
-    createdAt: string;
-    updatedAt: string;
 }
 
 export interface LoginActivity {

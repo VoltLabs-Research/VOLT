@@ -1,5 +1,6 @@
-export interface User {
-    _id: string;
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
+
+export interface User extends BaseEntity {
     username: string;
     email: string;
     firstName?: string;
