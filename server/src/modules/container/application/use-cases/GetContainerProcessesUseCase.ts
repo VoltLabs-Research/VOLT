@@ -5,7 +5,7 @@ import { IContainerRepository } from '@modules/container/domain/port/IContainerR
 import { IContainerService } from '@modules/container/domain/port/IContainerService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { GetContainerProcessesOutputDTO } from '@modules/container/application/dtos/ContainerDTOs';
+import { GetContainerProcessesOutputDTO } from '@modules/container/application/dtos/GetContainerProcessesDTO';
 
 @injectable()
 export class GetContainerProcessesUseCase implements IUseCase<{ containerId: string }, GetContainerProcessesOutputDTO> {

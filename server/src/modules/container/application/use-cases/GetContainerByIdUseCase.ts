@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { GetContainerByIdOutputDTO } from '@modules/container/application/dtos/ContainerDTOs';
+import { GetContainerByIdOutputDTO } from '@modules/container/application/dtos/GetContainerByIdDTO';
 import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';

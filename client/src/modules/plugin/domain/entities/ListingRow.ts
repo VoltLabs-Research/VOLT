@@ -1,5 +1,6 @@
-export interface ListingRow {
-    _id: string;
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
+
+export interface ListingRow extends BaseEntity {
     trajectoryId?: string;
     trajectoryName?: string;
     analysisId?: string;

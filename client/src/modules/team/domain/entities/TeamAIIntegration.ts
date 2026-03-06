@@ -1,9 +1,9 @@
 import { type AIProvider } from '@/modules/ai/domain/constants/AIProviders';
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 
 export type TeamAIProvider = AIProvider;
 
-export interface TeamAIIntegration {
-    _id: string;
+export interface TeamAIIntegration extends BaseEntity {
     teamId: string;
     provider: TeamAIProvider;
     providerName: string;
@@ -13,8 +13,6 @@ export interface TeamAIIntegration {
     metadata?: Record<string, unknown>;
     hasApiKey: boolean;
     createdBy?: string;
-    createdAt: string;
-    updatedAt: string;
 }
 
 export interface TeamAIModelMetadata {

@@ -6,12 +6,13 @@ import { ISessionManagerService } from '@modules/jobs/domain/port/ISessionManage
 import { IRecoveryManagerService } from '@modules/jobs/domain/port/IRecoveryManagerService';
 import { IJobHandlerService } from '@modules/jobs/domain/port/IJobHandlerService';
 import { IEventBus } from '@shared/application/events/IEventBus';
+import { ISSHImportQueue } from '@modules/ssh/domain/port/ISSHImportQueue';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import path from 'path';
 
 @injectable()
-export default class SSHImportQueue extends BaseProcessingQueue{
+export default class SSHImportQueue extends BaseProcessingQueue implements ISSHImportQueue{
     constructor(
         @inject(JOBS_TOKENS.JobRepository)
         jobRepository: IJobRepository,

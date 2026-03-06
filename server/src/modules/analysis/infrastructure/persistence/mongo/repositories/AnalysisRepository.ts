@@ -20,9 +20,6 @@ export default class AnalysisRepository
         super(AnalysisModel, analysisMapper);
     }
 
-    async retryFailedFrames(_analysisId: string): Promise<void> {
-    }
-
     async deleteById(id: string): Promise<boolean> {
         const result = await this.model.findByIdAndDelete(id);
 

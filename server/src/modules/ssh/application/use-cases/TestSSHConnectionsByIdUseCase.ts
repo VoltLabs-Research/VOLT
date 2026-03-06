@@ -1,7 +1,7 @@
 import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { SSH_CONN_TOKENS } from '@modules/ssh/domain/di/SSHConnectionTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { TestSSHConnectionByIdInputDTO, TestSSHConnectionByIdOutputDTO } from '@modules/ssh/application/dtos/TestSSHConnectionByIdDTO';
 import { ISSHConnectionService } from '@modules/ssh/domain/port/ISSHConnectionService';
@@ -29,10 +29,13 @@ export class TestSSHConnectionsByIdUseCase implements IUseCase<TestSSHConnection
         try {
             const result = await this.sshConnService.testConnection(sshConnection);
             return Result.ok({ valid: result });
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error
+                ? error.message
+                : 'Connection failed';
             return Result.ok({
                 valid: false,
-                error: error.message || 'Connection failed'
+                error: errorMessage
             });
         }
     }

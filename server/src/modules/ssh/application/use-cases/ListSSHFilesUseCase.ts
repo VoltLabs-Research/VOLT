@@ -1,7 +1,7 @@
 import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { SSH_CONN_TOKENS } from '@modules/ssh/domain/di/SSHConnectionTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { ISSHConnectionService } from '@modules/ssh/domain/port/ISSHConnectionService';
 import { ListSSHFilesInputDTO } from '@modules/ssh/application/dtos/ListSSHFilesInputDTO';
@@ -50,10 +50,13 @@ export default class ListSSHFilesUseCase implements IUseCase<ListSSHFilesInputDT
                 cwd: remotePath,
                 entries
             });
-        }catch(error: any){
+        }catch(error: unknown){
+            const errorMessage = error instanceof Error
+                ? error.message
+                : 'Unknown error occurred';
             return Result.fail(new ApplicationError(
                 ErrorCodes.SSH_LIST_FILES_ERROR,
-                `Failed to list SSH files: ${error.message}`,
+                `Failed to list SSH files: ${errorMessage}`,
                 500
             ));
         }

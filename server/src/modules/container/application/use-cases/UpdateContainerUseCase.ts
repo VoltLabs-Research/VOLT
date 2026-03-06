@@ -1,17 +1,23 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { UpdateContainerInputDTO, UpdateContainerOutputDTO } from '@modules/container/application/dtos/ContainerDTOs';
+import { UpdateContainerInputDTO, UpdateContainerOutputDTO } from '@modules/container/application/dtos/UpdateContainerDTO';
 import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { IContainerService } from '@modules/container/domain/port/IContainerService';
+import { IDockerNetworkRepository } from '@modules/container/domain/port/IDockerNetworkRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
+
+interface PortBinding {
+    HostPort: string;
+}
 
 @injectable()
 export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO, UpdateContainerOutputDTO> {
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository,
-        @inject('IContainerService') private containerService: IContainerService
+        @inject('IContainerService') private containerService: IContainerService,
+        @inject('IDockerNetworkRepository') private networkRepository: IDockerNetworkRepository
     ){}
 
     async execute(input: UpdateContainerInputDTO): Promise<Result<UpdateContainerOutputDTO>> {
@@ -23,7 +29,6 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
         }
 
         if (action) {
-            // State change only
             if (action === 'start') {
                 await this.containerService.startContainer(container.containerId);
             } else if (action === 'stop') {
@@ -33,8 +38,8 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
                 await this.containerService.startContainer(container.containerId);
             }
 
-            // Just update DB status
-            const status = action === 'start' || action === 'restart' ? 'running' : 'exited';
+            const isRunning = action === 'start' || action === 'restart';
+            const status = isRunning ? 'running' : 'exited';
             container.status = status;
             await this.repository.updateById(containerId, { status });
 
@@ -43,7 +48,8 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
 
         // Configuration Update (Requires Recreation)
         // 1. Commit current state
-        const tempImageName = `Volt-temp-${container.name.replace(/\s+/g, '-').toLowerCase()}:${Date.now()}`;
+        const sanitizedName = container.name.replace(/\s+/g, '-').toLowerCase();
+        const tempImageName = `Volt-temp-${sanitizedName}:${Date.now()}`;
         const [repo, tag] = tempImageName.split(':');
         await this.containerService.commitContainer(container.containerId, repo, tag);
 
@@ -51,26 +57,31 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
         await this.containerService.removeContainer(container.containerId);
 
         // 3. Prepare new config
-        const Env = env ? env.map((e) => `${e.key}=${e.value}`) : container.env.map((e) => `${e.key}=${e.value}`);
-        const PortBindings: Record<string, any> = {};
-        const ExposedPorts: Record<string, any> = {};
+        const effectiveEnv = env || container.env;
+        const formattedEnv = effectiveEnv.map((entry) => `${entry.key}=${entry.value}`);
 
-        const portsToUse = ports || container.ports;
-        if (portsToUse) {
-            portsToUse.forEach((p) => {
-                const portKey = `${p.private}/tcp`;
-                ExposedPorts[portKey] = {};
-                PortBindings[portKey] = [{ HostPort: String(p.public) }];
+        const portBindings: Record<string, PortBinding[]> = {};
+        const exposedPorts: Record<string, Record<string, never>> = {};
+
+        const effectivePorts = ports || container.ports;
+        if (effectivePorts) {
+            effectivePorts.forEach((portMapping) => {
+                const portKey = `${portMapping.private}/tcp`;
+                exposedPorts[portKey] = {};
+                portBindings[portKey] = [{ HostPort: String(portMapping.public) }];
             });
         }
 
         // Reuse volume
-        const volumeName = `Volt-${container.name.replace(/\s+/g, '-').toLowerCase()}-data`;
+        const volumeName = `Volt-${sanitizedName}-data`;
 
-        const HostConfig: any = {
-            PortBindings,
-            Memory: container.memory * 1024 * 1024,
-            NanoCpus: container.cpus * 1_000_000_000,
+        const memoryBytes = container.memory * 1024 * 1024;
+        const nanoCpus = container.cpus * 1_000_000_000;
+
+        const hostConfig: Record<string, unknown> = {
+            PortBindings: portBindings,
+            Memory: memoryBytes,
+            NanoCpus: nanoCpus,
             Binds: [`${volumeName}:/data`],
             Tty: true
         };
@@ -79,35 +90,28 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
         const dockerConfig = {
             Image: tempImageName,
             name: uniqueName,
-            Env,
-            ExposedPorts,
-            HostConfig,
+            Env: formattedEnv,
+            ExposedPorts: exposedPorts,
+            HostConfig: hostConfig,
             Tty: true,
-            // Cmd: ... preserve cmd?
         };
 
         const newContainerInfo = await this.containerService.createContainer(dockerConfig);
         await this.containerService.startContainer(newContainerInfo.Id);
 
-        // Reconnect network
+        // Reconnect network via repository instead of direct model access
         if (container.network) {
-            // Need network ID. 
-            // container.network is ObjectId. 
-            // We assume network name standard or fetch via ID? 
-            // Ideally we fetch the Network Doc.
-            // For now, use standard name construction as fallback or query.
-            const { DockerNetwork } = await import('@modules/container/infrastructure/persistence/mongo/models/DockerNetworkModel');
-            const netDoc = await DockerNetwork.findById(container.network);
-            if (netDoc) {
-                await this.containerService.connectNetwork(netDoc.networkId, newContainerInfo.Id);
+            const networkDocument = await this.networkRepository.findById(container.network);
+            if (networkDocument) {
+                await this.containerService.connectNetwork(networkDocument.networkId, newContainerInfo.Id);
             }
         }
 
         const updated = await this.repository.updateById(containerId, {
             containerId: newContainerInfo.Id,
-            image: tempImageName, // Update image ref? Or keep original? Legacy updated it.
-            env: env || container.env,
-            ports: ports || container.ports,
+            image: tempImageName,
+            env: effectiveEnv,
+            ports: effectivePorts,
             status: 'running'
         });
 

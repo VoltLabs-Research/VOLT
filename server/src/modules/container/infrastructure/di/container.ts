@@ -1,6 +1,8 @@
 import { container } from 'tsyringe';
 import { ContainerModel } from '@modules/container/infrastructure/persistence/mongo/models/ContainerModel';
 import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
+import { DockerNetworkRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/DockerNetworkRepository';
+import { DockerVolumeRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/DockerVolumeRepository';
 import { DockerContainerService } from '@modules/container/infrastructure/services/DockerContainerService';
 import { TerminalService } from '@modules/container/infrastructure/services/TerminalService';
 import { ContainerSocketModule } from '@modules/container/infrastructure/socket/ContainerSocketModule';
@@ -21,6 +23,8 @@ import * as containerAiTools from '@modules/container/application/ai-tools';
 export const registerContainerDependencies = (): void => {
     container.register('ContainerModel', { useValue: ContainerModel });
     container.register('IContainerRepository', { useClass: ContainerRepository });
+    container.register('IDockerNetworkRepository', { useClass: DockerNetworkRepository });
+    container.register('IDockerVolumeRepository', { useClass: DockerVolumeRepository });
     container.register('IContainerService', { useClass: DockerContainerService });
     container.register('ITerminalService', { useClass: TerminalService });
 
