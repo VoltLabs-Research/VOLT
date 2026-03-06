@@ -16,6 +16,7 @@ interface ClusterActions {
     setConnected: (connected: boolean) => void;
     setHistoryLoaded: (loaded: boolean) => void;
     setHistory: (history: ClusterMetrics[]) => void;
+    resetHistory: () => void;
     reset: () => void;
 };
 
@@ -53,6 +54,11 @@ export const useClusterStore = create<ClusterStore>((set) => ({
     setHistoryLoaded: (isHistoryLoaded) => set({ isHistoryLoaded }),
 
     setHistory: (history) => set({ history, isHistoryLoaded: true }),
+
+    resetHistory: () => set({
+        history: [],
+        isHistoryLoaded: false
+    }),
 
     reset: () => set(initialState)
 }));

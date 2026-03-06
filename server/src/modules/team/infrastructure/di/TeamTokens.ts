@@ -7,6 +7,7 @@ export const TEAM_TOKENS = {
     TeamAIIntegrationRepository: Symbol.for('TeamAIIntegrationRepository'),
     TeamInvitationRepository: Symbol.for('TeamInvitationRepository'),
     TeamJobsService: Symbol.for('TeamJobsService'),
+    TeamPresenceService: Symbol.for('TeamPresenceService'),
     TeamJobsSocketModule: Symbol.for('TeamJobsSocketModule'),
     TeamAIProviderCatalog: Symbol.for('TeamAIProviderCatalog'),
     TeamAIIntegrationInputService: Symbol.for('TeamAIIntegrationInputService'),

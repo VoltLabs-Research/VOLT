@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAccessedPagesStore } from '../stores/use-accessed-pages-store';
-import { fadeFromBlack } from '../utils/page-transition';
+import { fadeFromBlack } from '../utilities/page-transition';
 
 const EXCLUDED_PATHS = ['/start', '/auth/sign-in', '/auth/oauth/callback', '/error'];
 
@@ -21,7 +21,7 @@ function captureHTMLSnapshot(): string | null {
                     allCSS += rule.cssText + '\n';
                 }
             } catch {
-                // CORS-restricted stylesheet — skip
+                // CORS-restricted stylesheet, skip
             }
         }
 

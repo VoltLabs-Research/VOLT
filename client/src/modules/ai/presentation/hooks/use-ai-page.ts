@@ -123,6 +123,7 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
     const [sendMessageError, setSendMessageError] = useState<string | null>(null);
     const selectedModelRef = useRef<{ provider?: TeamAIProvider; model?: string }>({});
     const skipNextMessageLoadRef = useRef(false);
+    const isMountedRef = useRef(true);
 
     const activeConversation = useMemo(
         () => conversations.find((conversation) => conversation._id === conversationId) || null,
@@ -281,7 +282,8 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
         error: streamError,
         sendMessage,
         setMessages,
-        addToolApprovalResponse
+        addToolApprovalResponse,
+        stop
     } = useChat({
         id: conversationId ? `ai-conversation:${conversationId}` : `ai-draft:${selectedTeam?._id || 'none'}`,
         transport: chatTransport,
@@ -291,6 +293,10 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
             || lastAssistantMessageHasProviderExecutedApprovalResponses({ messages })
         ),
         onFinish: () => {
+            if (!isMountedRef.current) {
+                return;
+            }
+
             loadConversations().catch(console.warn);
         }
     });
@@ -457,6 +463,15 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
 
         setSendMessageError(null);
     }, [streamError]);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+
+        return () => {
+            isMountedRef.current = false;
+            stop();
+        };
+    }, [stop]);
 
     const handleSendMessage = useCallback(async (text: string) => {
         const normalizedText = text.trim();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { IoFolderOutline, IoDocumentOutline, IoArrowBack } from 'react-icons/io5';
 import useContainerUseCases from '../../../hooks/use-container-repository';
@@ -21,45 +21,73 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     const [files, setFiles] = useState<ContainerFile[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [fileContent, setFileContent] = useState<string | null>(null);
+    const filesRequestIdRef = useRef(0);
+    const fileContentRequestIdRef = useRef(0);
 
     const path = searchParams.get('path') || '/';
     const viewingFile = searchParams.get('file');
 
     const { containerRepository } = useContainerUseCases();
 
-    const fetchFiles = async () => {
+    const fetchFiles = useCallback(async () => {
+        const requestId = ++filesRequestIdRef.current;
         setIsLoading(true);
+
         try {
             const result = await containerRepository.getFiles(containerId, { path });
+            if (requestId !== filesRequestIdRef.current) {
+                return;
+            }
             setFiles(result);
         } finally {
-            setIsLoading(false);
+            if (requestId === filesRequestIdRef.current) {
+                setIsLoading(false);
+            }
         }
-    };
+    }, [containerId, containerRepository, path]);
 
     useEffect(() => {
-        fetchFiles();
-    }, [containerId, path]);
+        setFiles([]);
+        void fetchFiles();
+
+        return () => {
+            filesRequestIdRef.current += 1;
+        };
+    }, [fetchFiles]);
 
     useEffect(() => {
+        const requestId = ++fileContentRequestIdRef.current;
+
         if(!viewingFile){
             setFileContent(null);
             return;
         }
 
+        setFileContent(null);
+
         const loadFile = async () => {
             const filePath = path === '/' ? `/${viewingFile}` : `${path}/${viewingFile}`;
             try {
                 const content = await containerRepository.readFile(containerId, filePath);
+                if (requestId !== fileContentRequestIdRef.current) {
+                    return;
+                }
                 setFileContent(content);
             } catch {
+                if (requestId !== fileContentRequestIdRef.current) {
+                    return;
+                }
                 sileo.error({ title: 'Failed to read file' });
                 removeParam('file');
             }
         };
 
-        loadFile();
-    }, [containerId, path, viewingFile]);
+        void loadFile();
+
+        return () => {
+            fileContentRequestIdRef.current += 1;
+        };
+    }, [containerId, containerRepository, path, removeParam, viewingFile]);
 
     const handleNavigate = (folderName: string) => {
         const newPath = path === '/' ? `/${folderName}` : `${path}/${folderName}`;

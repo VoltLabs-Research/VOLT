@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
-import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import { resetTeamSessionState, useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
 import { setGetTeamId } from '@/app/core/http/VoltClient';
 import useTeamSocketSubscription from '@/modules/socket/presentation/hooks/use-team-socket-subscription';
 import useSocketConnectionToast from '@/modules/socket/presentation/hooks/use-socket-connection-toast';
 import useTeamPresenceSocket from '@/modules/team/presentation/hooks/use-team-presence-socket';
+import useTeamActivityHeartbeat from '@/modules/team/presentation/hooks/use-team-activity-heartbeat';
 import Loader from '@/shared/presentation/components/Loader';
 
 type RouteMode = 'protected' | 'guest';
@@ -34,6 +35,7 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     useTeamSocketSubscription();
     useSocketConnectionToast();
     useTeamPresenceSocket();
+    useTeamActivityHeartbeat();
 
     const isAuthenticated = !!user;
     const hasTeam = !!selectedTeam;
@@ -44,6 +46,14 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
             initializeAuth();
         }
     }, [isInitialized, isLoading, initializeAuth]);
+
+    useEffect(() => {
+        if (!isInitialized || isAuthenticated) {
+            return;
+        }
+
+        resetTeamSessionState();
+    }, [isAuthenticated, isInitialized]);
 
     // Load teams when authenticated
     useEffect(() => {

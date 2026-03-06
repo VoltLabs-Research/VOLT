@@ -4,6 +4,7 @@ import type { User } from '@/modules/auth/domain/entities';
 import type IAuthRepository from '@/modules/auth/domain/port/IAuthRepository';
 import type ITokenStorage from '@/modules/auth/domain/port/ITokenStorage';
 import { AUTH_TOKENS } from '@/modules/auth/infrastructure/di/tokens';
+import { resetTeamSessionState } from '@/modules/team/presentation/stores/use-team-store';
 
 interface AuthState{
     user: User | null;
@@ -30,6 +31,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         const token = tokenStorage.getToken();
 
         if(!token){
+            resetTeamSessionState();
             set({ user: null, isInitialized: true, isLoading: false });
             return;
         }
@@ -42,6 +44,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
             set({ user, isInitialized: true, isLoading: false });
         }catch{
             tokenStorage.removeToken();
+            resetTeamSessionState();
             set({ user: null, isInitialized: true, isLoading: false });
         }
     },
@@ -53,11 +56,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
     signOut: () => {
         const tokenStorage = container.resolve<ITokenStorage>(AUTH_TOKENS.TokenStorage);
         tokenStorage.removeToken();
-        set({ user: null });
+        resetTeamSessionState();
+        set({ user: null, isInitialized: false, isLoading: false });
         window.location.href = '/auth/sign-in';
     },
 
     clearAuth: () => {
-        set({ user: null, isInitialized: false });
+        set({ user: null, isInitialized: false, isLoading: false });
     }
 }));

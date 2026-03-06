@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { buildErrorPath, shouldIgnoreError, isErrorPage } from '@/shared/utils';
+import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
 
 /**
  * Mounted inside the Router so it can use `useNavigate`.
@@ -12,18 +13,19 @@ const GlobalErrorListener = () => {
     const location = useLocation();
     const navigatingRef = useRef(false);
 
-    const navigateToError = (message: string, source: 'window' | 'promise', stack?: string) => {
+    const navigateToError = useCallback((message: string, source: 'window' | 'promise', stack?: string) => {
         if(shouldIgnoreError(message)) return;
         if(isErrorPage(location.pathname)) return;
         if(navigatingRef.current) return;
 
         navigatingRef.current = true;
+        runErrorRecoveryCleanup(location.pathname, '/error');
         navigate(buildErrorPath(message, source, stack), { replace: true });
 
         requestAnimationFrame(() => {
             navigatingRef.current = false;
         });
-    };
+    }, [location.pathname, navigate]);
 
     useEffect(() => {
         const onError = (event: ErrorEvent) => {
@@ -36,10 +38,15 @@ const GlobalErrorListener = () => {
 
         const onRejection = (event: PromiseRejectionEvent) => {
             const reason = event.reason;
-            const message = reason instanceof Error
-                ? reason.message
-                : typeof reason === 'string' ? reason : 'Unhandled promise rejection';
-            const stack = reason instanceof Error ? reason.stack : undefined;
+            let message = 'Unhandled promise rejection';
+            let stack: string | undefined;
+
+            if (reason instanceof Error) {
+                message = reason.message;
+                stack = reason.stack;
+            } else if (typeof reason === 'string') {
+                message = reason;
+            }
 
             navigateToError(message, 'promise', stack);
         };
@@ -50,7 +57,7 @@ const GlobalErrorListener = () => {
             window.removeEventListener('error', onError);
             window.removeEventListener('unhandledrejection', onRejection);
         };
-    });
+    }, [navigateToError]);
 
     return null;
 };

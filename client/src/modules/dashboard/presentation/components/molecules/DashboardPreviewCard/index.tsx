@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,9 +7,11 @@ import { PiAtomThin } from 'react-icons/pi';
 import FractalScene from '@/modules/fractal/presentation/components/organisms/FractalScene';
 import SingleModelViewer from '@/modules/fractal/presentation/components/molecules/SingleModelViewer';
 import useFractalSceneConfig from '@/modules/canvas/presentation/hooks/use-fractal-scene-config';
-import useCanvasCoordinator from '@/modules/canvas/presentation/hooks/use-canvas-coordinator';
 import useFirstCompletedTrajectory from '@/modules/dashboard/presentation/hooks/use-first-completed-trajectory';
 import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import { getFrameBoxBounds, getTrajectoryFrameByTimestep } from '@/modules/fractal/presentation/utilities/frameBoxBounds';
+import type { Trajectory, TimestepInfo } from '@/modules/trajectory/domain/entities';
+import useTrajectoryUseCases from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-services';
 import { DEFAULT_SCENE } from '@/modules/fractal/presentation/utilities/sceneUtils';
 import { formatNumber } from '@/shared/utils/format';
 import Container from '@/shared/presentation/components/Container';
@@ -21,26 +23,20 @@ import './DashboardPreviewCard.css';
 const DashboardPreviewCard: React.FC = () => {
     const navigate = useNavigate();
     const { completedTrajectory, isLoadingTrajectories } = useFirstCompletedTrajectory();
+    const { trajectoryRepository } = useTrajectoryUseCases();
+    const [trajectory, setTrajectory] = useState<Trajectory | null>(null);
+    const [currentTimestep, setCurrentTimestep] = useState<number | undefined>(undefined);
+    const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
     const {
         slicePlaneConfig,
         pointSizeMultiplier,
-        sceneOpacities,
-        activeModelBounds,
-        setModelBounds,
-        setIsModelLoading
+        sceneOpacities
     } = useEditorStore(useShallow((s) => ({
         slicePlaneConfig: s.configuration.slicePlaneConfig,
         pointSizeMultiplier: s.pointSizeMultiplier,
-        sceneOpacities: s.sceneOpacities,
-        activeModelBounds: s.activeModel?.modelBounds,
-        setModelBounds: s.setModelBounds,
-        setIsModelLoading: s.setIsModelLoading
+        sceneOpacities: s.sceneOpacities
     })));
-
-    const { trajectory, currentTimestep, isLoading } = useCanvasCoordinator({
-        trajectoryId: completedTrajectory?._id
-    });
 
     const sceneConfig = useFractalSceneConfig();
 
@@ -53,13 +49,80 @@ const DashboardPreviewCard: React.FC = () => {
         }
     }), [sceneConfig]);
 
-    const isReady = trajectory?._id && currentTimestep !== undefined && !isLoading;
+    useEffect(() => {
+        if (!completedTrajectory?._id) {
+            setTrajectory(null);
+            setCurrentTimestep(undefined);
+            setIsLoadingPreview(false);
+            return;
+        }
+
+        let isCancelled = false;
+
+        setTrajectory(null);
+        setCurrentTimestep(undefined);
+        setIsLoadingPreview(true);
+
+        const fetchPreviewTrajectory = async (): Promise<void> => {
+            try {
+                const result = await trajectoryRepository.getById(completedTrajectory._id);
+
+                if (isCancelled) {
+                    return;
+                }
+
+                setTrajectory(result);
+
+                const timesteps = result.frames.map((frame: TimestepInfo) => frame.timestep);
+
+                if (timesteps.length > 0) {
+                    setCurrentTimestep(Math.min(...timesteps));
+                } else {
+                    setCurrentTimestep(undefined);
+                }
+            } catch {
+                if (isCancelled) {
+                    return;
+                }
+
+                setTrajectory(null);
+                setCurrentTimestep(undefined);
+            } finally {
+                if (!isCancelled) {
+                    setIsLoadingPreview(false);
+                }
+            }
+        };
+
+        void fetchPreviewTrajectory();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [completedTrajectory?._id, trajectoryRepository]);
+
+    const hasPreviewData = Boolean(trajectory?._id) && currentTimestep !== undefined;
+    const isReady = hasPreviewData && !isLoadingPreview;
+    const readyTrajectory = isReady ? trajectory : null;
+    const readyTimestep = isReady ? currentTimestep : undefined;
+    const previewFrame = useMemo(() => {
+        return getTrajectoryFrameByTimestep(trajectory, currentTimestep);
+    }, [trajectory, currentTimestep]);
+    const previewBoxBounds = useMemo(() => {
+        if (!previewFrame) {
+            return null;
+        }
+
+        return getFrameBoxBounds(previewFrame);
+    }, [previewFrame]);
 
     const atomCount = useMemo(() => {
-        if (!trajectory?.frames || currentTimestep === undefined) return 0;
-        const frame = trajectory.frames.find((f: any) => f.timestep === currentTimestep);
-        return frame?.natoms ?? 0;
-    }, [trajectory?.frames, currentTimestep]);
+        if (!previewFrame) {
+            return 0;
+        }
+
+        return previewFrame.natoms;
+    }, [previewFrame]);
 
     const handleNavigateToCanvas = () => {
         if (trajectory?._id) {
@@ -87,16 +150,28 @@ const DashboardPreviewCard: React.FC = () => {
         );
     }
 
+    if (!isLoadingPreview && !hasPreviewData) {
+        return (
+            <Container className='dashboard-preview-card'>
+                <EmptyState
+                    icon={<PiAtomThin size={32} />}
+                    title='Preview unavailable'
+                    description='We could not load the latest simulation preview right now. Please try opening the trajectory in Canvas.'
+                />
+            </Container>
+        );
+    }
+
     return (
         <Container className='dashboard-preview-card'>
-            {!isReady && (
+            {isLoadingPreview && (
                 <Container className='d-flex flex-center w-max h-max p-absolute inset-0 z-10'>
                     <Loader scale={0.4} />
                 </Container>
             )}
 
             <AnimatePresence>
-                {isReady && (
+                {readyTrajectory && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -107,7 +182,7 @@ const DashboardPreviewCard: React.FC = () => {
 
                         <Container className='dashboard-preview-info' style={{ pointerEvents: 'auto' }}>
                             <span className='dashboard-preview-badge'>
-                                {trajectory.name}
+                                {readyTrajectory.name}
                             </span>
                             <span className='dashboard-preview-badge'>
                                 {formatNumber(atomCount)} atoms
@@ -128,17 +203,15 @@ const DashboardPreviewCard: React.FC = () => {
                 showGizmo={false}
                 showGrid={false}
             >
-                {isReady && (
+                {readyTrajectory && readyTimestep !== undefined && previewBoxBounds && (
                     <SingleModelViewer
-                        trajectoryId={trajectory._id}
-                        currentTimestep={currentTimestep}
+                        trajectoryId={readyTrajectory._id}
+                        currentTimestep={readyTimestep}
                         sceneConfig={DEFAULT_SCENE}
                         slicePlaneConfig={slicePlaneConfig}
+                        boxBounds={previewBoxBounds}
                         pointSizeMultiplier={pointSizeMultiplier}
                         sceneOpacities={sceneOpacities}
-                        activeModelBounds={activeModelBounds}
-                        onModelBoundsChanged={setModelBounds}
-                        onLoadingStateChanged={setIsModelLoading}
                         autoFit={true}
                     />
                 )}

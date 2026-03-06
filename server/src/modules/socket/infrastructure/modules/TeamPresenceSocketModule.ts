@@ -2,28 +2,27 @@ import { inject, singleton } from 'tsyringe';
 import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
 import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import logger from '@shared/infrastructure/logger';
 import { container } from 'tsyringe';
 import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
 import UpdateUserActivityUseCase from '@modules/daily-activity/application/use-cases/UpdateUserActivityUseCase';
-
-interface TeamSession {
-    teamId: string;
-    startTime: number;
-    userId: string;
-};
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import TeamPresenceService, { DetachedTeamPresenceSession } from '@modules/team/application/services/TeamPresenceService';
 
 @singleton()
 export default class TeamPresenceSocketModule extends BaseSocketModule {
     public readonly name = 'TeamPresenceSocketModule';
 
-    // Track active sessions: connectionId -> Session
-    private activeSessions: Map<string, TeamSession> = new Map();
-
     constructor(
         @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: any,
         @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: any,
-        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: any
+        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: any,
+        @inject(TEAM_TOKENS.TeamPresenceService)
+        private readonly teamPresenceService: TeamPresenceService,
+        @inject(AUTH_TOKENS.UserRepository)
+        private readonly userRepository: IUserRepository
     ) {
         super(emitter, roomManager, eventRegistry);
     }
@@ -33,7 +32,7 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
     }
 
     onConnection(connection: ISocketConnection): void {
-        this.on(connection.id, 'subscribe_to_team', async (conn, payload: { teamId: string }) => {
+        this.on(connection.id, 'subscribe_to_team', async (conn, payload: { teamId: string; previousTeamId?: string }) => {
             const currentUserId = (conn as any).user?.id || (conn as any).userId || (conn.nativeSocket?.handshake?.query?.userId as string);
 
             if (!currentUserId) {
@@ -41,41 +40,54 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
                 return;
             }
 
-            const { teamId } = payload;
+            const { teamId, previousTeamId } = payload;
             const roomName = `team:${teamId}`;
+            const attachResult = this.teamPresenceService.attachConnection(conn.id, teamId, currentUserId);
 
-            // Join room
+            if (attachResult.detachedSession) {
+                await this.finalizeDetachedSession(conn.id, attachResult.detachedSession, true);
+            } else if (previousTeamId && previousTeamId !== teamId) {
+                await this.leaveRoom(conn.id, `team:${previousTeamId}`);
+            }
+
             await this.joinRoom(conn.id, roomName);
 
-            // Record session start
-            this.activeSessions.set(conn.id, {
+            if (attachResult.userBecameOnline) {
+                this.emitToRoom(roomName, 'user:online', { teamId, userId: currentUserId });
+            }
+
+            this.emitToSocket(conn.id, 'user:list', {
                 teamId,
-                startTime: Date.now(),
-                userId: currentUserId
+                users: attachResult.onlineUserIds.map((_id) => ({ _id }))
             });
-
-            // Broadcast online status
-            this.emitToRoom(roomName, 'user:online', { teamId, userId: currentUserId });
-
-            const roomSessions = Array.from(this.activeSessions.values()).filter(s => s.teamId === teamId);
-            const userList = roomSessions.map(s => ({ _id: s.userId }));
-            const uniqueUsers = Array.from(new Set(userList.map(u => u._id)))
-                .map(id => ({ _id: id }));
-
-            this.emitToSocket(conn.id, 'user:list', { teamId, users: uniqueUsers });
 
             logger.info(`[TeamPresenceSocketModule] User ${currentUserId} joined team ${teamId}`);
         });
 
+        this.on(connection.id, 'team:heartbeat', async (_conn, payload: { teamId: string }) => {
+            const heartbeat = this.teamPresenceService.registerHeartbeat(connection.id, payload.teamId);
+
+            if (!heartbeat || heartbeat.minutesToPersist <= 0) {
+                return;
+            }
+
+            await this.updateUserActivity(
+                heartbeat.teamId,
+                heartbeat.userId,
+                heartbeat.minutesToPersist
+            );
+        });
+
         this.on(connection.id, 'disconnect', async () => {
-            this.handleDisconnection(connection.id);
+            await this.handleDisconnection(connection.id);
         });
 
         this.on(connection.id, 'leave_team', async (conn, payload: { teamId: string }) => {
-            if (this.activeSessions.has(conn.id) && this.activeSessions.get(conn.id)?.teamId === payload.teamId) {
-                this.handleDisconnection(conn.id);
+            const detachedSession = await this.handleDisconnection(conn.id, true);
+
+            if (!detachedSession || detachedSession.teamId !== payload.teamId) {
+                await this.leaveRoom(conn.id, `team:${payload.teamId}`);
             }
-            await this.leaveRoom(conn.id, `team:${payload.teamId}`);
         });
     }
 
@@ -92,26 +104,45 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
         }
     }
 
-    private async handleDisconnection(connectionId: string) {
-        const session = this.activeSessions.get(connectionId);
-        if (!session) return;
+    private async handleDisconnection(
+        connectionId: string,
+        leaveRoom = false
+    ): Promise<DetachedTeamPresenceSession | null> {
+        const detachedSession = this.teamPresenceService.detachConnection(connectionId);
 
-        const { teamId, startTime, userId } = session;
-        const sessionDurationMs = Date.now() - startTime;
-        const sessionDurationMinutes = Math.floor(sessionDurationMs / 1000 / 60);
+        if (!detachedSession) {
+            return null;
+        }
 
-        const roomName = `team:${teamId}`;
+        await this.finalizeDetachedSession(connectionId, detachedSession, leaveRoom);
+        return detachedSession;
+    }
 
-        // Broadcast offline status
-        this.emitToRoom(roomName, 'user:offline', { teamId: teamId, userId });
-        logger.info(`[TeamPresenceSocketModule] User ${userId} left team ${teamId}. Session duration: ${sessionDurationMinutes}m`);
+    private async finalizeDetachedSession(
+        connectionId: string,
+        session: DetachedTeamPresenceSession,
+        leaveRoom: boolean
+    ): Promise<void> {
+        const roomName = `team:${session.teamId}`;
 
-        // Cleanup session
-        this.activeSessions.delete(connectionId);
+        if (leaveRoom) {
+            await this.leaveRoom(connectionId, roomName);
+        }
 
-        // Update activity once with total session time
-        if (sessionDurationMinutes > 0) {
-            await this.updateUserActivity(teamId, userId, sessionDurationMinutes);
+        if (session.userWentOffline) {
+            this.emitToRoom(roomName, 'user:offline', {
+                teamId: session.teamId,
+                userId: session.userId
+            });
+            if (session.userWentOfflineCompletely) {
+                await this.userRepository.updateLastSeen(session.userId, session.endedAt);
+            }
+        }
+
+        logger.info(`[TeamPresenceSocketModule] User ${session.userId} left team ${session.teamId}. Flushed ${session.minutesToPersist.toFixed(2)}m`);
+
+        if (session.minutesToPersist > 0) {
+            await this.updateUserActivity(session.teamId, session.userId, session.minutesToPersist);
         }
     }
 }

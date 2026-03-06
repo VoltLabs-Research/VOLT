@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle } from 'lucide-react';
@@ -16,8 +16,20 @@ const OAuthCallbackTemplate = () => {
     const { authRepository, tokenStorage } = useAuthUseCases();
     const setUser = useAuthStore((state) => state.setUser);
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+    const redirectTimeoutReference = useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
     useEffect(() => {
+        let isCancelled = false;
+
+        const clearRedirectTimeout = () => {
+            if (redirectTimeoutReference.current === null) {
+                return;
+            }
+
+            window.clearTimeout(redirectTimeoutReference.current);
+            redirectTimeoutReference.current = null;
+        };
+
         const handleOAuthCallback = async () => {
             try{
                 const params = new URLSearchParams(window.location.search);
@@ -30,23 +42,37 @@ const OAuthCallbackTemplate = () => {
                 tokenStorage.setToken(token);
 
                 const user = await authRepository.getMe();
-                setUser(user);
+                if (isCancelled) {
+                    return;
+                }
 
+                setUser(user);
                 setStatus('success');
 
-                setTimeout(() => {
+                redirectTimeoutReference.current = window.setTimeout(() => {
+                    redirectTimeoutReference.current = null;
                     navigate('/');
                 }, 1500);
             }catch{
+                if (isCancelled) {
+                    return;
+                }
+
                 sileo.error({ title: 'Authentication failed', description: 'Redirecting to login...' });
                 setStatus('error');
-                setTimeout(() => {
+                redirectTimeoutReference.current = window.setTimeout(() => {
+                    redirectTimeoutReference.current = null;
                     navigate('/auth/sign-in?error=oauth_failed');
                 }, 2000);
             }
         };
 
-        handleOAuthCallback();
+        void handleOAuthCallback();
+
+        return () => {
+            isCancelled = true;
+            clearRedirectTimeout();
+        };
     }, [navigate, authRepository, tokenStorage, setUser]);
 
     return (

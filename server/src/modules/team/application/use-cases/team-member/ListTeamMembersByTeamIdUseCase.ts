@@ -11,6 +11,7 @@ import { IDailyActivityRepository } from '@modules/daily-activity/domain/port/ID
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
+import TeamPresenceService from '@modules/team/application/services/TeamPresenceService';
 
 @injectable()
 export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, ApplicationError> {
@@ -25,7 +26,10 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
         private readonly analysisRepository: IAnalysisRepository,
 
         @inject(DAILY_ACTIVITY_TOKENS.DailyActivityRepository)
-        private readonly dailyActivityRepository: IDailyActivityRepository
+        private readonly dailyActivityRepository: IDailyActivityRepository,
+
+        @inject(TEAM_TOKENS.TeamPresenceService)
+        private readonly teamPresenceService: TeamPresenceService
     ){}
 
     async execute(input: ListTeamMembersByTeamIdInputDTO): Promise<Result<ListTeamMembersByTeamIdOutputDTO, ApplicationError>> {
@@ -34,7 +38,7 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
             filter: { team: teamId },
             populate: [
                 { path: 'role', select: ['name', 'permissions', 'isSystem'] },
-                { path: 'user', select: ['email', 'avatar', 'firstName', 'lastName', 'lastLoginAt', 'createdAt'] }
+                { path: 'user', select: ['email', 'avatar', 'firstName', 'lastName', 'lastSeenAt', 'createdAt'] }
             ],
             page: input.page,
             limit: input.limit
@@ -52,11 +56,21 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
                     this.analysisRepository.count({ createdBy: userId })
                 ]);
 
-                const userActivity = dailyActivities.filter(activity => activity.user.toString() === userId);
+                const userActivity = dailyActivities.filter(activity => {
+                    const activityUserId = typeof activity.user === 'string'
+                        ? activity.user
+                        : activity.user._id.toString();
+                    return activityUserId === userId;
+                });
                 const timeSpentLast7Days = userActivity.reduce((acc, curr) => acc + (curr.minutesOnline || 0), 0);
 
                 return {
                     ...member.props,
+                    user: {
+                        ...member.props.user,
+                        isOnline: this.teamPresenceService.isUserOnline(teamId, userId),
+                        lastSeenAt: member.props.user.lastSeenAt ?? null
+                    },
                     timeSpentLast7Days,
                     trajectoriesCount,
                     analysesCount

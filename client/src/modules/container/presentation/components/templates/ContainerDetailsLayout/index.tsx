@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Outlet } from 'react-router-dom';
 import useContainerUseCases from '../../../hooks/use-container-repository';
 import useContainerStats from '../../../hooks/use-container-stats';
@@ -23,6 +23,7 @@ const ContainerDetailsLayout = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const { accessDenied, checkRBACError } = useAccessDenied();
+    const containerRequestIdRef = useRef(0);
 
     const isRunning = container?.status === 'running';
 
@@ -38,22 +39,45 @@ const ContainerDetailsLayout = () => {
 
     const fetchContainer = useCallback(async () => {
         if(!id) return;
+
+        const requestId = ++containerRequestIdRef.current;
         setIsLoading(true);
+
         try{
             const data = await containerRepository.getById(id);
+            if (requestId !== containerRequestIdRef.current) {
+                return;
+            }
+
             setContainer(data);
-        }catch(error: any){
+        }catch(error: unknown){
+            if (requestId !== containerRequestIdRef.current) {
+                return;
+            }
+
             if(!checkRBACError(error)){
-                sileo.error({ title: error?.message || 'Failed to load container' });
+                const message = error instanceof Error ? error.message : 'Failed to load container';
+                sileo.error({ title: message });
             }
         }finally{
-            setIsLoading(false);
+            if (requestId === containerRequestIdRef.current) {
+                setIsLoading(false);
+            }
         }
-    }, [id, containerRepository]);
+    }, [checkRBACError, containerRepository, id]);
 
     useEffect(() => {
-        fetchContainer();
-    }, [fetchContainer]);
+        if (!id) {
+            return;
+        }
+
+        setContainer(null);
+        void fetchContainer();
+
+        return () => {
+            containerRequestIdRef.current += 1;
+        };
+    }, [fetchContainer, id]);
 
     const handleAction = async (action: 'start' | 'stop' | 'restart' | 'delete') => {
         if(!container || !id) return;

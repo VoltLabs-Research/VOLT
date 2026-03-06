@@ -11,7 +11,7 @@ import type { Trajectory } from '@/modules/trajectory/domain/entities/Trajectory
 import type { SceneArtifact } from '@/modules/trajectory/domain/entities/SceneArtifact';
 import SceneCollection from '../../molecules/SceneCollection';
 import useSceneArtifacts from '../../../hooks/use-scene-artifacts';
-import { isArtifactSceneActive, toSceneObjectFromArtifact } from '../../../utils/scene-identity';
+import { isArtifactSceneActive, toSceneObjectFromArtifact } from '@/modules/canvas/presentation/utilities/scene-identity';
 import './ObjectsPanel.css';
 
 interface ObjectsPanelProps {

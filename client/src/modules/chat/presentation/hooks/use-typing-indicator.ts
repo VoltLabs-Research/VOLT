@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 import { CHAT_SOCKET_EVENTS } from '@/modules/chat/domain/constants';
 
@@ -18,7 +18,12 @@ const useTypingIndicator = (chatId?: string) => {
 
     const stopTyping = useCallback(() => {
         if (!chatId || !isTypingRef.current) return;
-        
+
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+
         isTypingRef.current = false;
         socket.emit(CHAT_SOCKET_EVENTS.TYPING_STOP, { chatId });
     }, [chatId, socket]);
@@ -36,6 +41,22 @@ const useTypingIndicator = (chatId?: string) => {
             stopTyping();
         }, TYPING_TIMEOUT);
     }, [chatId, startTyping, stopTyping]);
+
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+            }
+
+            if (!chatId || !isTypingRef.current) {
+                return;
+            }
+
+            isTypingRef.current = false;
+            socket.emit(CHAT_SOCKET_EVENTS.TYPING_STOP, { chatId });
+        };
+    }, [chatId, socket]);
 
     return { handleTyping, stopTyping };
 };

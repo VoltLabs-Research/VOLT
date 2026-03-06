@@ -102,8 +102,8 @@ export default function useGlbScene(params: UseGlbSceneParams) {
     }, [params]);
 
     useEffect(() => {
-        engineRef.current?.updatePointSize(pointSizeMultiplier, params.normalizationScale, params.boxBounds);
-    }, [model, pointSizeMultiplier, params.boxBounds, params.normalizationScale]);
+        engineRef.current?.updatePointSize(pointSizeMultiplier);
+    }, [model, pointSizeMultiplier]);
 
     useEffect(() => {
         engineRef.current?.updateOpacity(params.sceneKey, sceneOpacities);

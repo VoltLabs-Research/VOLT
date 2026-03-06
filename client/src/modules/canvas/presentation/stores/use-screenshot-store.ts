@@ -7,10 +7,16 @@ interface ScreenshotState {
 interface ScreenshotActions {
     requestCapture: () => void;
     clearCaptureRequest: () => void;
+    reset: () => void;
 }
 
+const initialState: ScreenshotState = {
+    captureRequested: false
+};
+
 export const useScreenshotStore = create<ScreenshotState & ScreenshotActions>((set) => ({
-    captureRequested: false,
+    ...initialState,
     requestCapture: () => set({ captureRequested: true }),
-    clearCaptureRequest: () => set({ captureRequested: false })
+    clearCaptureRequest: () => set({ captureRequested: false }),
+    reset: () => set(initialState)
 }));

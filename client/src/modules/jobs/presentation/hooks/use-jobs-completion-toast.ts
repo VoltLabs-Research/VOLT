@@ -23,6 +23,12 @@ const useJobsCompletionToast = ({
     }, []);
 
     useEffect(() => {
+        clearCompletionTimer();
+        hadActiveJobsRef.current = false;
+        hasShownCompletionToastRef.current = false;
+    }, [trajectoryId, clearCompletionTimer]);
+
+    useEffect(() => {
         if (!hasActiveJobs) return;
         hadActiveJobsRef.current = true;
         hasShownCompletionToastRef.current = false;

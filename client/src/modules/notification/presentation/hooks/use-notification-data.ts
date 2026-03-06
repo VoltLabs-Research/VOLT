@@ -1,4 +1,5 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { useNotificationStore } from '../stores/use-notification-store';
 import useNotificationUseCases from './use-notification-repository';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
@@ -7,10 +8,13 @@ import { sileo } from 'sileo';
 const DEFAULT_LIMIT = 20;
 
 const useNotificationData = () => {
+    const selectedTeamId = useTeamStore((state) => state.selectedTeam?._id);
     const page = useNotificationStore((state) => state.page);
     const hasMore = useNotificationStore((state) => state.hasMore);
     const isLoading = useNotificationStore((state) => state.isLoading);
     const isLoadingRef = useRef(isLoading);
+    const previousTeamIdRef = useRef(selectedTeamId);
+    const requestGenerationRef = useRef(0);
     isLoadingRef.current = isLoading;
     const setNotifications = useNotificationStore((state) => state.setNotifications);
     const appendNotifications = useNotificationStore((state) => state.appendNotifications);
@@ -19,12 +23,28 @@ const useNotificationData = () => {
     const setHasMore = useNotificationStore((state) => state.setHasMore);
     const setPage = useNotificationStore((state) => state.setPage);
     const setError = useNotificationStore((state) => state.setError);
+    const resetNotifications = useNotificationStore((state) => state.reset);
     const { checkRBACError } = useAccessDenied();
 
     const { notificationRepository } = useNotificationUseCases();
 
     const fetchNotifications = useCallback(async (pageToFetch: number = 1) => {
+        if (!selectedTeamId) {
+            requestGenerationRef.current += 1;
+            resetNotifications();
+            return;
+        }
+
         if (isLoadingRef.current) return;
+
+        let requestGeneration = requestGenerationRef.current;
+
+        if (pageToFetch === 1) {
+            requestGenerationRef.current += 1;
+            requestGeneration = requestGenerationRef.current;
+            setHasMore(true);
+            setPage(1);
+        }
 
         setLoading(true);
         setError(null);
@@ -35,6 +55,10 @@ const useNotificationData = () => {
                 limit: DEFAULT_LIMIT
             });
 
+            if (requestGeneration !== requestGenerationRef.current) {
+                return;
+            }
+
             if (pageToFetch === 1) {
                 setNotifications(response.data);
             } else {
@@ -43,14 +67,51 @@ const useNotificationData = () => {
 
             setHasMore(response.pagination.hasMore);
             setPage(pageToFetch);
-        } catch (error: any) {
+        } catch (error: unknown) {
+            if (requestGeneration !== requestGenerationRef.current) {
+                return;
+            }
+
             if(!checkRBACError(error)){
-                setError(error?.message ?? 'Failed to fetch notifications');
+                let errorMessage = 'Failed to fetch notifications';
+
+                if (error instanceof Error) {
+                    errorMessage = error.message;
+                }
+
+                setError(errorMessage);
             }
         } finally {
+            if (requestGeneration !== requestGenerationRef.current) {
+                return;
+            }
+
             setLoading(false);
         }
-    }, [notificationRepository, setNotifications, appendNotifications, setLoading, setHasMore, setPage, setError]);
+    }, [
+        appendNotifications,
+        checkRBACError,
+        notificationRepository,
+        resetNotifications,
+        selectedTeamId,
+        setError,
+        setHasMore,
+        setLoading,
+        setNotifications,
+        setPage
+    ]);
+
+    useEffect(() => {
+        const previousTeamId = previousTeamIdRef.current;
+
+        if (previousTeamId === selectedTeamId) {
+            return;
+        }
+
+        previousTeamIdRef.current = selectedTeamId;
+        requestGenerationRef.current += 1;
+        resetNotifications();
+    }, [resetNotifications, selectedTeamId]);
 
     const loadMore = useCallback(() => {
         if(!isLoading && hasMore){

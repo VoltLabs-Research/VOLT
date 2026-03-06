@@ -99,7 +99,6 @@ export type UseGlbSceneParams = {
     disableAutoTransform?: boolean;
     sceneKey?: string;
     boxBounds?: BoxBounds;
-    normalizationScale?: number;
     pointSizeMultiplier: number;
     sceneOpacities: Record<string, number>;
     activeModelBounds?: any;

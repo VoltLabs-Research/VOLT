@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import type { ErrorInfo } from 'react';
 import { renderPublicRoutes, renderGuestRoutes, renderProtectedRoutes } from './routes/RouteRenderer';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
@@ -8,7 +8,12 @@ import { buildErrorPath } from '@/shared/utils';
 import { Toaster } from 'sileo';
 import { useGlobalShortcuts } from '@/shared/presentation/hooks/use-global-shortcuts';
 import { usePageTracker } from '@/shared/presentation/hooks/use-page-tracker';
+import { useRouteCleanup } from '@/shared/presentation/hooks/use-route-cleanup';
+import { ensureApplicationStoreCleanupsRegistered } from '@/shared/utils/application-store-cleanups';
+import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
 import 'sileo/styles.css';
+
+ensureApplicationStoreCleanupsRegistered();
 
 const NotFoundRedirect = () => {
     const navigate = useNavigate();
@@ -21,15 +26,26 @@ const NotFoundRedirect = () => {
 };
 
 const AppRoutes = () => {
+    const location = useLocation();
     const navigate = useNavigate();
 
     useGlobalShortcuts();
     usePageTracker();
+    useRouteCleanup({
+        shouldCleanup: (previousPathname, nextPathname) => {
+            if (previousPathname.startsWith('/dashboard') && nextPathname.startsWith('/dashboard')) {
+                return false;
+            }
+
+            return true;
+        }
+    });
 
     const handleRenderError = useCallback((error: Error, info: ErrorInfo) => {
         const stack = info.componentStack ?? error.stack;
+        runErrorRecoveryCleanup(location.pathname, '/error');
         navigate(buildErrorPath(error.message, 'render', stack ?? undefined), { replace: true });
-    }, [navigate]);
+    }, [location.pathname, navigate]);
 
     return (
         <>

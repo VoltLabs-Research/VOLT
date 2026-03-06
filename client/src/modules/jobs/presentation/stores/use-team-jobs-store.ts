@@ -16,16 +16,16 @@ interface TeamJobsStore {
     reset: () => void;
 }
 
-const initialState = {
+const createInitialState = () => ({
     groups: [] as TrajectoryJobGroup[],
     isConnected: false,
-    isLoading: true,
+    isLoading: false,
     expiredSessions: new Set<string>(),
     currentTeamId: null as string | null
-};
+});
 
 const useTeamJobsStore = create<TeamJobsStore>((set) => ({
-    ...initialState,
+    ...createInitialState(),
     setGroups: (groups) => set({ groups }),
     setConnected: (isConnected) => set({ isConnected }),
     setLoading: (isLoading) => set({ isLoading }),
@@ -34,11 +34,7 @@ const useTeamJobsStore = create<TeamJobsStore>((set) => ({
     removeTrajectoryGroup: (trajectoryId) => set((state) => ({
         groups: state.groups.filter((group) => group.trajectoryId !== trajectoryId)
     })),
-    reset: () => set({
-        ...initialState,
-        groups: [],
-        expiredSessions: new Set()
-    })
+    reset: () => set(createInitialState())
 }));
 
 export default useTeamJobsStore;

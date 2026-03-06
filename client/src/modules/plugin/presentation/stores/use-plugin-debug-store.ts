@@ -4,7 +4,7 @@ export type DebugNodeStatus = 'pending' | 'running' | 'completed' | 'failed' | '
 
 export interface DebugNodeState {
     status: DebugNodeStatus;
-    output?: Record<string, any>;
+    output?: Record<string, unknown>;
     error?: string;
     stack?: string;
     durationMs?: number;
@@ -38,14 +38,14 @@ interface PluginDebugState {
     inspectedNodeId: string | null;
 
     // Context snapshot (accumulated outputs from all nodes)
-    contextSnapshot: Record<string, Record<string, any>>;
+    contextSnapshot: Record<string, Record<string, unknown>>;
 
     // ForEach iteration info
     forEachNodeId: string | null;
     totalIterations: number;
 
     // Arguments config
-    debugConfig: Record<string, any>;
+    debugConfig: Record<string, unknown>;
     showArgumentsPanel: boolean;
 
     // Results
@@ -68,8 +68,8 @@ interface PluginDebugActions {
     setSelectedTrajectory: (trajectoryId: string | null) => void;
     setSelectedTimestep: (timestep: number | null) => void;
     setInspectedNode: (nodeId: string | null) => void;
-    setDebugConfigField: (key: string, value: any) => void;
-    setDebugConfig: (config: Record<string, any>) => void;
+    setDebugConfigField: (key: string, value: unknown) => void;
+    setDebugConfig: (config: Record<string, unknown>) => void;
     setShowArgumentsPanel: (show: boolean) => void;
     reset: () => void;
 };

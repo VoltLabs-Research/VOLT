@@ -28,6 +28,7 @@ const useChatData = () => {
     const chats = useChatStore((state) => state.chats);
     const setChats = useChatStore((state) => state.setChats);
     const setChatsLoading = useChatStore((state) => state.setLoading);
+    const resetChats = useChatStore((state) => state.reset);
 
     // Message store
     const setMessages = useChatMessageStore((state) => state.setMessages);
@@ -42,6 +43,8 @@ const useChatData = () => {
     const hasFetchedChatsRef = useRef(false);
     const isFetchingRef = useRef(false);
     const chatsRef = useRef(chats);
+    const chatsRequestGenerationRef = useRef(0);
+    const messagesRequestGenerationRef = useRef(0);
 
     useEffect(() => {
         chatsRef.current = chats;
@@ -50,42 +53,69 @@ const useChatData = () => {
     const fetchChats = useCallback(async () => {
         if (hasFetchedChatsRef.current || isFetchingRef.current) return;
 
+        const requestGeneration = chatsRequestGenerationRef.current;
+
         isFetchingRef.current = true;
         hasFetchedChatsRef.current = true;
         setChatsLoading(true);
         try {
             const data = await chatRepository.getAll();
+            if (requestGeneration !== chatsRequestGenerationRef.current) return;
             setChats(data);
         } catch(error) {
+            if (requestGeneration !== chatsRequestGenerationRef.current) return;
             if(checkRBACError(error)) return;
             sileo.error({ title: 'Failed to load chats' });
             hasFetchedChatsRef.current = false;
         } finally {
+            if (requestGeneration !== chatsRequestGenerationRef.current) return;
             isFetchingRef.current = false;
             setChatsLoading(false);
         }
-    }, [chatRepository, setChats, setChatsLoading]);
+    }, [chatRepository, checkRBACError, setChats, setChatsLoading]);
 
     const fetchMessages = useCallback(async (chatId: string, page: number = 1) => {
+        const requestGeneration = messagesRequestGenerationRef.current;
+
         setMessagesLoading(true);
         try {
             const response = await chatMessageRepository.getMessages(chatId, { page, limit: 50 });
-            
+
+            if (requestGeneration !== messagesRequestGenerationRef.current) return;
+
             if (page === 1) {
                 setMessages(response.data);
             } else {
                 appendMessages(response.data);
             }
-            
+
             setHasMore(response.pagination.hasMore);
             setPage(page);
         } catch(error) {
+            if (requestGeneration !== messagesRequestGenerationRef.current) return;
             if(checkRBACError(error)) return;
             sileo.error({ title: 'Failed to load messages' });
         } finally {
+            if (requestGeneration !== messagesRequestGenerationRef.current) return;
             setMessagesLoading(false);
         }
-    }, [chatMessageRepository, setMessages, appendMessages, setMessagesLoading, setHasMore, setPage]);
+    }, [appendMessages, chatMessageRepository, checkRBACError, setHasMore, setMessages, setMessagesLoading, setPage]);
+
+    const resetState = useCallback(() => {
+        chatsRequestGenerationRef.current += 1;
+        messagesRequestGenerationRef.current += 1;
+
+        if (currentChatIdRef.current) {
+            socket.emit(CHAT_SOCKET_EVENTS.LEAVE_CHAT, currentChatIdRef.current);
+        }
+
+        currentChatIdRef.current = null;
+        hasFetchedChatsRef.current = false;
+        isFetchingRef.current = false;
+
+        resetChats();
+        resetMessages();
+    }, [resetChats, resetMessages, socket]);
 
     const selectChat = useCallback(async (chatId: string) => {
         if (currentChatIdRef.current === chatId) return;
@@ -94,11 +124,17 @@ const useChatData = () => {
             socket.emit(CHAT_SOCKET_EVENTS.LEAVE_CHAT, currentChatIdRef.current);
         }
 
+        messagesRequestGenerationRef.current += 1;
         currentChatIdRef.current = chatId;
         resetMessages();
 
         socket.emit(CHAT_SOCKET_EVENTS.JOIN_CHAT, chatId);
         await fetchMessages(chatId);
+
+        if (currentChatIdRef.current !== chatId) {
+            return;
+        }
+
         chatMessageRepository.markAsRead(chatId).catch((error: unknown) => {
             if(ApiError.isRBACError(error)){
                 const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
@@ -120,17 +156,16 @@ const useChatData = () => {
     // Cleanup on unmount
     useEffect(() => {
         return () => {
-            if (currentChatIdRef.current) {
-                socket.emit(CHAT_SOCKET_EVENTS.LEAVE_CHAT, currentChatIdRef.current);
-            }
+            resetState();
         };
-    }, [socket]);
+    }, [resetState]);
 
     return {
         fetchChats,
         fetchMessages,
         selectChat,
         loadMoreMessages,
+        resetState,
         accessDenied,
         accessDeniedMessage
     };

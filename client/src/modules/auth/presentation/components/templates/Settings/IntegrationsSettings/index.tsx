@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IoAddOutline } from 'react-icons/io5';
 import { Settings2, Trash2 } from 'lucide-react';
 import { Skeleton } from '@mui/material';
@@ -64,6 +64,13 @@ const IntegrationsSettings: React.FC = () => {
     const [modalDefaultModel, setModalDefaultModel] = useState<string | null>(null);
     const [modalEnabledModels, setModalEnabledModels] = useState<Set<string>>(new Set());
     const [modalEnabled, setModalEnabled] = useState(true);
+    const isMountedReference = useRef(true);
+
+    useEffect(() => {
+        return () => {
+            isMountedReference.current = false;
+        };
+    }, []);
 
     const integrationsByProvider = useMemo(() => {
         return new Map(integrations.map((integration) => [integration.provider, integration]));
@@ -121,9 +128,15 @@ const IntegrationsSettings: React.FC = () => {
     }, [modelsByProvider]);
 
     const refreshData = useCallback(async () => {
+        if (!isMountedReference.current) {
+            return;
+        }
+
         if (!selectedTeam?._id) {
-            setIntegrations([]);
-            setProviderModels([]);
+            if (isMountedReference.current) {
+                setIntegrations([]);
+                setProviderModels([]);
+            }
             return;
         }
 
@@ -133,9 +146,17 @@ const IntegrationsSettings: React.FC = () => {
                 listTeamAIIntegrations(),
                 listTeamAIIntegrationModels()
             ]);
+            if (!isMountedReference.current) {
+                return;
+            }
+
             setIntegrations(integrationsResponse.integrations);
             setProviderModels(modelsResponse.providers);
         } catch(error: unknown) {
+            if (!isMountedReference.current) {
+                return;
+            }
+
             if(ApiError.isRBACError(error)){
                 const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
                 sileo.error({ title: msg });
@@ -143,12 +164,28 @@ const IntegrationsSettings: React.FC = () => {
                 sileo.error({ title: 'Failed to load integrations' });
             }
         } finally {
-            setIsLoading(false);
+            if (isMountedReference.current) {
+                setIsLoading(false);
+            }
         }
     }, [listTeamAIIntegrationModels, listTeamAIIntegrations, selectedTeam?._id]);
 
     useEffect(() => {
-        refreshData();
+        let isCancelled = false;
+
+        const loadIntegrations = async () => {
+            if (isCancelled) {
+                return;
+            }
+
+            await refreshData();
+        };
+
+        void loadIntegrations();
+
+        return () => {
+            isCancelled = true;
+        };
     }, [refreshData]);
 
     useEffect(() => {

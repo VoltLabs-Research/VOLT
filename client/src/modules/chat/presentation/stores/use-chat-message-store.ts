@@ -31,10 +31,18 @@ const initialState: ChatMessageState & typeof BASE_SLICE_INITIAL_STATE = {
     ...BASE_SLICE_INITIAL_STATE
 };
 
-export const useChatMessageStore = create<ChatMessageStore>((set) => ({
-    ...initialState,
+const paginationInitialState = {
     hasMore: true,
-    page: 1,
+    page: 1
+};
+
+const resetState = {
+    ...initialState,
+    ...paginationInitialState
+};
+
+export const useChatMessageStore = create<ChatMessageStore>((set) => ({
+    ...resetState,
     ...createBaseSlice(set),
     setHasMore: (hasMore) => set({ hasMore }),
     setPage: (page) => set({ page }),
@@ -60,5 +68,5 @@ export const useChatMessageStore = create<ChatMessageStore>((set) => ({
         messages: state.messages.filter((m) => m._id !== messageId)
     })),
 
-    reset: () => set(initialState)
+    reset: () => set(resetState)
 }));

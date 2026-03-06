@@ -1,7 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import PluginExposureListingPanel from '../../organisms/PluginExposureListingPanel';
+import usePluginStore from '../../../stores/use-plugin-store';
 import Select from '@/shared/presentation/components/Select';
 import useTrajectorySelector from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-selector';
 import './PluginListingPage.css';
@@ -17,10 +18,17 @@ const PluginListingPage = () => {
     const trajectoryId = params.trajectoryId as string | null;
     const navigate = useNavigate();
     const team = useTeamStore((s) => s.selectedTeam)!;
+    const resetPlugins = usePluginStore((state) => state.resetPlugins);
     const { options, isLoading, loadMore } = useTrajectorySelector({
         allowEmpty: true,
         emptyLabel: 'All Trajectories'
     });
+
+    useEffect(() => {
+        return () => {
+            resetPlugins();
+        };
+    }, [resetPlugins]);
 
     const handleTrajectoryChange = useCallback((value: string | null) => {
         if (!exposureId && !exposureName) {

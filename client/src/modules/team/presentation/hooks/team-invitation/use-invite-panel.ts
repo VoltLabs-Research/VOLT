@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import useForm from '@/shared/presentation/hooks/use-form';
 import useTeamInvitationUseCases from '@/modules/team/presentation/hooks/team-invitation/use-team-invitation-repository';
 import { useTeamInvitationStore } from '@/modules/team/presentation/stores/use-team-invitation-store';
@@ -31,6 +31,7 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
     const [buttonState, setButtonState] = useState<InviteButtonState>('idle');
     const [loadingInvitations, setLoadingInvitations] = useState(true);
     const [cancelingId, setCancelingId] = useState<string | null>(null);
+    const buttonResetTimeoutReference = useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
     const { teamInvitationRepository } = useTeamInvitationUseCases();
     const invitations = useTeamInvitationStore((state) => state.invitations);
@@ -50,6 +51,29 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
         onFinally: () => setCancelingId(null)
     });
 
+    const clearButtonResetTimeout = useCallback(() => {
+        if (buttonResetTimeoutReference.current === null) {
+            return;
+        }
+
+        window.clearTimeout(buttonResetTimeoutReference.current);
+        buttonResetTimeoutReference.current = null;
+    }, []);
+
+    const scheduleButtonReset = useCallback((delayInMilliseconds: number) => {
+        clearButtonResetTimeout();
+        buttonResetTimeoutReference.current = window.setTimeout(() => {
+            setButtonState('idle');
+            buttonResetTimeoutReference.current = null;
+        }, delayInMilliseconds);
+    }, [clearButtonResetTimeout]);
+
+    useEffect(() => {
+        return () => {
+            clearButtonResetTimeout();
+        };
+    }, [clearButtonResetTimeout]);
+
     const { field, handleSubmit: formHandleSubmit, isSubmitting, reset, setErrors } = useForm<TeamInviteForm>({
         initialValues: {
             email: ''
@@ -61,7 +85,7 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
             if(existingInvitation){
                 setErrors({ email: 'Invitation already exists' });
                 setButtonState('error');
-                setTimeout(() => setButtonState('idle'), 2000);
+                scheduleButtonReset(2000);
                 return;
             }
 
@@ -72,23 +96,27 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
                 reset();
                 setErrors({});
                 setButtonState('success');
-                setTimeout(() => setButtonState('idle'), 2500);
-            }catch(error){
+                scheduleButtonReset(2500);
+            }catch(error: unknown){
                 if(ApiError.isRBACError(error)){
-                    const rbacMsg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to send invitations';
+                    let rbacMsg = 'You do not have permission to send invitations';
+                    if (error instanceof ApiError) {
+                        rbacMsg = error.getFriendlyMessage();
+                    }
                     setErrors({ email: rbacMsg });
                     sileo.error({ title: rbacMsg });
                     setButtonState('error');
-                    setTimeout(() => setButtonState('idle'), 2000);
+                    scheduleButtonReset(2000);
                     return;
                 }
-                const message = error instanceof ApiError
-                    ? error.getFriendlyMessage()
-                    : 'An unexpected error occurred';
+                let message = 'An unexpected error occurred';
+                if (error instanceof ApiError) {
+                    message = error.getFriendlyMessage();
+                }
 
                 setErrors({ email: message });
                 setButtonState('error');
-                setTimeout(() => setButtonState('idle'), 2000);
+                scheduleButtonReset(2000);
             }
         }
     });

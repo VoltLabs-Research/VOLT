@@ -64,14 +64,10 @@ const useTrajectorySelector = (options: UseTrajectorySelectorOptions = {}): UseT
 
     useEffect(() => {
         if (initialFetchDone.current) return;
-        if (trajectories.length > 0) {
-            initialFetchDone.current = true;
-            return;
-        }
 
         initialFetchDone.current = true;
-        fetchTrajectories(1, false);
-    }, []);
+        void fetchTrajectories(1, false);
+    }, [fetchTrajectories]);
 
     const loadMore = useCallback(() => {
         if (!isLoading && hasMore) {

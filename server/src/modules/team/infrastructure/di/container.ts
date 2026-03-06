@@ -13,6 +13,7 @@ import TeamJobsSocketModule from '@modules/team/infrastructure/socket/TeamJobsSo
 import TeamAIProviderCatalog from '@modules/team/application/services/TeamAIProviderCatalog';
 import TeamAIIntegrationInputService from '@modules/team/application/services/TeamAIIntegrationInputService';
 import TeamAIIntegrationSerializer from '@modules/team/application/services/TeamAIIntegrationSerializer';
+import TeamPresenceService from '@modules/team/application/services/TeamPresenceService';
 
 import * as teamAiTools from '@modules/team/application/ai-tools';
 
@@ -26,6 +27,7 @@ export const registerTeamDependencies = () => {
     container.registerSingleton(TEAM_TOKENS.SecretKeyUsageLogRepository, SecretKeyUsageLogRepository);
     container.registerSingleton(TEAM_TOKENS.TeamAIIntegrationRepository, TeamAIIntegrationRepository);
     container.registerSingleton(TEAM_TOKENS.TeamJobsService, TeamJobsService);
+    container.registerSingleton(TEAM_TOKENS.TeamPresenceService, TeamPresenceService);
     container.registerSingleton(TEAM_TOKENS.TeamJobsSocketModule, TeamJobsSocketModule);
     container.registerSingleton(TEAM_TOKENS.TeamAIProviderCatalog, TeamAIProviderCatalog);
     container.registerSingleton(TEAM_TOKENS.TeamAIIntegrationInputService, TeamAIIntegrationInputService);

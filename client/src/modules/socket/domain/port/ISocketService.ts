@@ -24,4 +24,5 @@ export default interface ISocketService{
     updateAuth(auth: Record<string, unknown>): void;
     onConnectionChange(listener: (connected: boolean) => void): () => void;
     subscribeToTeam(teamId: string, previousTeamId?: string): void;
+    unsubscribeFromTeam(teamId?: string): void;
 };

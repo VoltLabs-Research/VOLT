@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback } from 'react';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 import { usePluginDebugStore } from '../stores/use-plugin-debug-store';
 import { usePluginBuilderStore } from '../stores/use-plugin-builder-store';
@@ -23,10 +23,10 @@ interface DebugNodeCompletedEvent {
     sessionId: string;
     nodeId: string;
     nodeType: string;
-    output: Record<string, any>;
+    output: Record<string, unknown>;
     durationMs: number;
     index: number;
-    contextSnapshot: Record<string, Record<string, any>>;
+    contextSnapshot: Record<string, Record<string, unknown>>;
 };
 
 interface DebugNodeSkippedEvent {
@@ -46,7 +46,7 @@ interface DebugNodeErrorEvent {
 
 interface DebugSessionCompletedEvent {
     sessionId: string;
-    exposureResults: any[];
+    exposureResults: unknown[];
     totalDuration: number;
 };
 
@@ -55,9 +55,12 @@ interface DebugSessionErrorEvent {
     error: string;
 };
 
-const usePluginDebugSocket = () => {
+interface UsePluginDebugSocketOptions {
+    subscribe?: boolean;
+}
+
+const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions = {}) => {
     const socket = useSocket();
-    const unsubscribesRef = useRef<Array<() => void>>([]);
     const {
         sessionId,
         isDebugging,
@@ -69,8 +72,11 @@ const usePluginDebugSocket = () => {
 
     const currentPluginId = usePluginBuilderStore((s) => s.currentPluginId);
 
-    // Subscribe to socket events
     useEffect(() => {
+        if (!subscribe) {
+            return;
+        }
+
         const unsubs: Array<() => void> = [];
 
         unsubs.push(socket.on('debug:session:created', (data: unknown) => {
@@ -115,43 +121,41 @@ const usePluginDebugSocket = () => {
             sileo.error({ title: 'Debug session failed', description: event.error });
         }));
 
-        unsubscribesRef.current = unsubs;
-
         return () => {
             unsubs.forEach((unsub) => unsub());
+            reset();
         };
-    }, [socket]);
+    }, [reset, socket, subscribe]);
 
-    // Actions
     const startDebug = useCallback(() => {
         if (!currentPluginId || !selectedTrajectoryId || selectedTimestep === null) return;
-        
+
         const { debugConfig } = usePluginDebugStore.getState();
         setStarting();
-        socket.emit('debug:start', {
+        void socket.emit('debug:start', {
             pluginId: currentPluginId,
             trajectoryId: selectedTrajectoryId,
             timestep: selectedTimestep,
             config: debugConfig
-        });
+        }).catch(() => undefined);
     }, [socket, currentPluginId, selectedTrajectoryId, selectedTimestep, setStarting]);
 
     const step = useCallback(() => {
         const sid = usePluginDebugStore.getState().sessionId;
         if (!sid) return;
-        socket.emit('debug:step', { sessionId: sid });
+        void socket.emit('debug:step', { sessionId: sid }).catch(() => undefined);
     }, [socket]);
 
     const continueAll = useCallback(() => {
         const sid = usePluginDebugStore.getState().sessionId;
         if (!sid) return;
-        socket.emit('debug:continue', { sessionId: sid });
+        void socket.emit('debug:continue', { sessionId: sid }).catch(() => undefined);
     }, [socket]);
 
     const stop = useCallback(() => {
         const sid = usePluginDebugStore.getState().sessionId;
         if (!sid) return;
-        socket.emit('debug:stop', { sessionId: sid });
+        void socket.emit('debug:stop', { sessionId: sid }).catch(() => undefined);
         reset();
     }, [socket, reset]);
 

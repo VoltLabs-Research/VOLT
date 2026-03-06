@@ -38,6 +38,14 @@ const useTrajectoryPresence = (trajectoryId: string | undefined): UseTrajectoryP
     }, { enabled: !!trajectoryId });
 
     useEffect(() => {
+        setUsers([]);
+
+        if(!trajectoryId){
+            joinedRef.current = false;
+        }
+    }, [trajectoryId]);
+
+    useEffect(() => {
         return () => {
             if(joinedRef.current && trajectoryId){
                 socket.emit('trajectory.presence.leave', { trajectoryId });

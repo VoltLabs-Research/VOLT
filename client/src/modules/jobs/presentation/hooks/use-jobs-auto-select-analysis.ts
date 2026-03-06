@@ -34,6 +34,10 @@ const useJobsAutoSelectAnalysis = ({
         trackedJobIdsRef.current = new Set();
     }, []);
 
+    useEffect(() => {
+        resetTracking();
+    }, [trajectoryId, resetTracking]);
+
     const trackActiveJobs = useCallback(() => {
         if (!trajectoryId) return;
 
@@ -57,7 +61,7 @@ const useJobsAutoSelectAnalysis = ({
                     await refetchTrajectory();
                     const updatedTrajectory = useTrajectoryStore.getState().trajectory;
                     const analysisList = updatedTrajectory?.analysis || [];
-                    const analysis = analysisList.find((item: any) => item._id === analysisId);
+                    const analysis = analysisList.find((item) => item._id === analysisId);
                     if (analysis) {
                         updateSearchParams({ analysis: analysis._id }, { replace: true });
                         if (job.timestep !== undefined) setCurrentTimestep(job.timestep);

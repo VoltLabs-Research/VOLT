@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import useSSHUseCases from './use-ssh-repository';
 import { sileo } from 'sileo';
-import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type { SSHConnection, SSHFileEntry } from '@/modules/ssh/domain/entities';
 
@@ -22,56 +21,112 @@ const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedPath, setSelectedPath] = useState<string | null>(null);
+    const connectionRequestIdRef = useRef(0);
+    const filesRequestIdRef = useRef(0);
 
     const path = searchParams.get('path') || '.';
 
-    const fetchConnection = async () => {
-        if (!connectionId) return;
+    const fetchConnection = useCallback(async () => {
+        if (!connectionId) {
+            return;
+        }
+
+        const requestId = ++connectionRequestIdRef.current;
+
         try {
             const result = await sshRepository.getConnections({ limit: 100 });
-            const conn = result.data.find((c: SSHConnection) => c._id === connectionId);
-            if (conn) {
-                setConnection(conn);
-            } else {
-                sileo.error({ title: 'Connection not found' });
-                navigate('/dashboard/ssh-connections');
+            if (requestId !== connectionRequestIdRef.current) {
+                return;
             }
-        } catch(error) {
-            if(checkRBACError(error)) return;
+
+            const matchedConnection = result.data.find((connectionItem: SSHConnection) => connectionItem._id === connectionId);
+            if (matchedConnection) {
+                setConnection(matchedConnection);
+                return;
+            }
+
+            sileo.error({ title: 'Connection not found' });
+            navigate('/dashboard/ssh-connections');
+        } catch(error: unknown) {
+            if (requestId !== connectionRequestIdRef.current) {
+                return;
+            }
+
+            if(checkRBACError(error)) {
+                return;
+            }
+
             sileo.error({ title: 'Failed to load connection' });
             navigate('/dashboard/ssh-connections');
         }
-    };
+    }, [checkRBACError, connectionId, navigate, sshRepository]);
 
-    const filesAction = useAsyncAction({
-        onError: (err: unknown) => {
-            const message = err instanceof Error ? err.message : 'Failed to load files';
-            setError(message);
-            sileo.error({ title: message });
-        },
-        onFinally: () => setIsLoading(false)
-    });
+    const fetchFiles = useCallback(async () => {
+        if (!connectionId) {
+            return;
+        }
 
-    const fetchFiles = async () => {
-        if (!connectionId) return;
+        const requestId = ++filesRequestIdRef.current;
         setIsLoading(true);
         setError(null);
-        await filesAction.execute(async () => {
+
+        try {
             const result = await sshRepository.listFiles({ connectionId, path });
+            if (requestId !== filesRequestIdRef.current) {
+                return;
+            }
+
             setEntries(result.entries);
             setCwd(result.cwd);
-        });
-    };
+        } catch (error: unknown) {
+            if (requestId !== filesRequestIdRef.current) {
+                return;
+            }
+
+            if (checkRBACError(error)) {
+                return;
+            }
+
+            const message = error instanceof Error ? error.message : 'Failed to load files';
+            setError(message);
+            sileo.error({ title: message });
+        } finally {
+            if (requestId === filesRequestIdRef.current) {
+                setIsLoading(false);
+            }
+        }
+    }, [checkRBACError, connectionId, path, sshRepository]);
 
     useEffect(() => {
-        fetchConnection();
-    }, [connectionId]);
+        setConnection(null);
+        setEntries([]);
+        setCwd('');
+        setError(null);
+        setSelectedPath(null);
+
+        if (!connectionId) {
+            setIsLoading(false);
+            return;
+        }
+
+        setIsLoading(true);
+        void fetchConnection();
+
+        return () => {
+            connectionRequestIdRef.current += 1;
+            filesRequestIdRef.current += 1;
+        };
+    }, [connectionId, fetchConnection]);
 
     useEffect(() => {
         if (connection) {
-            fetchFiles();
+            setEntries([]);
+            void fetchFiles();
         }
-    }, [connection?._id, path]);
+        return () => {
+            filesRequestIdRef.current += 1;
+        };
+    }, [connection?._id, fetchFiles, path]);
 
     const navigateTo = (newPath: string) => {
         setSelectedPath(null);

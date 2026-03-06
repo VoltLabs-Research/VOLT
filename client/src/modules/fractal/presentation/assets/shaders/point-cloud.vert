@@ -44,7 +44,10 @@ void main(){
     gl_Position = projectionMatrix * mvPosition;
 
     // Perspective scaling. Points shrink with distance (-mvPosition.z).
-    gl_PointSize = pointScale * (300.0 / -mvPosition.z);
+    // Compensate for the group scale applied by SimulationCellBox so that
+    // pointScale (computed in local/angstrom space) maps correctly to screen pixels.
+    float modelScale = length(modelMatrix[0].xyz);
+    gl_PointSize = pointScale * modelScale * (300.0 / -mvPosition.z);
 
     #include <clipping_planes_vertex>
 }

@@ -2,32 +2,26 @@ import { useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import useGetTrajectoryById from '@/modules/trajectory/presentation/hooks/trajectory/use-get-trajectory-by-id';
-import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
 
 const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     const { trajectory, isLoading, error } = useGetTrajectoryById({
         trajectoryId,
         enabled: !!trajectoryId
     });
-    const setTrajectory = useTrajectoryStore((state) => state.setTrajectory);
 
     const {
         currentTimestep,
         setCurrentTimestep,
-        resetPlayback,
         computeTimestepData,
         timestepData,
         activeModel,
-        resetTimesteps,
         resetModel
     } = useEditorStore(useShallow((state) => ({
         currentTimestep: state.currentTimestep,
         setCurrentTimestep: state.setCurrentTimestep,
-        resetPlayback: state.resetPlayback,
         computeTimestepData: state.computeTimestepData,
         timestepData: state.timestepData,
         activeModel: state.activeModel,
-        resetTimesteps: state.resetTimesteps,
         resetModel: state.resetModel
     })));
 
@@ -52,18 +46,26 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     const prevTrajectoryStatusRef = useRef<string | undefined>(undefined);
 
     useEffect(() => {
+        let recomputeTimeoutId: number | null = null;
+
         if (trajectory?._id && trajectory.status) {
             if (trajectory.status === 'completed' && prevTrajectoryStatusRef.current !== 'completed') {
                 resetModel();
 
                 if (currentTimestep !== undefined) {
-                    setTimeout(() => {
+                    recomputeTimeoutId = window.setTimeout(() => {
                         computeTimestepData(trajectory, currentTimestep, Date.now());
                     }, 100);
                 }
             }
             prevTrajectoryStatusRef.current = trajectory.status;
         }
+
+        return () => {
+            if (recomputeTimeoutId !== null) {
+                window.clearTimeout(recomputeTimeoutId);
+            }
+        };
     }, [trajectory?.status, trajectory?._id, currentTimestep, computeTimestepData, resetModel]);
 
     useEffect(() => {
@@ -71,14 +73,6 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
             computeTimestepData(trajectory, currentTimestep);
         }
     }, [trajectory?._id, currentTimestep, computeTimestepData]);
-
-    useEffect(() => {
-        return () => {
-            resetPlayback();
-            resetTimesteps();
-            setTrajectory(null);
-        };
-    }, [resetPlayback, resetTimesteps, setTrajectory]);
 
     return {
         trajectory,

@@ -29,6 +29,7 @@ interface KeyboardShortcutsActions {
     setCurrentScope: (scope: ShortcutScope) => void;
     setLastTriggered: (trigger: ShortcutTriggered | null) => void;
     getShortcutsByCategory: () => Record<string, Shortcut[]>;
+    reset: () => void;
 }
 
 const DEFAULT_SHORTCUTS: Shortcut[] = [
@@ -54,6 +55,13 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
 
 const DEFAULT_SHORTCUTS_MAP = new Map(DEFAULT_SHORTCUTS.map((shortcut) => [shortcut.id, shortcut] as const));
 
+const createInitialState = (): KeyboardShortcutsState => ({
+    shortcuts: new Map(DEFAULT_SHORTCUTS_MAP),
+    showPanel: false,
+    currentScope: 'global',
+    lastTriggered: null
+});
+
 const groupShortcuts = (shortcuts: Map<string, Shortcut>) => {
     const groups: Record<string, Shortcut[]> = {};
     shortcuts.forEach((shortcut) => {
@@ -65,14 +73,12 @@ const groupShortcuts = (shortcuts: Map<string, Shortcut>) => {
 };
 
 export const useKeyboardShortcutsStore = create<KeyboardShortcutsState & KeyboardShortcutsActions>((set, get) => ({
-    shortcuts: DEFAULT_SHORTCUTS_MAP,
-    showPanel: false,
-    currentScope: 'global',
-    lastTriggered: null,
+    ...createInitialState(),
 
     togglePanel: () => set((state) => ({ showPanel: !state.showPanel })),
     setShowPanel: (value) => set({ showPanel: value }),
     setCurrentScope: (scope) => set({ currentScope: scope }),
     setLastTriggered: (trigger) => set({ lastTriggered: trigger }),
-    getShortcutsByCategory: () => groupShortcuts(get().shortcuts)
+    getShortcutsByCategory: () => groupShortcuts(get().shortcuts),
+    reset: () => set(createInitialState())
 }));

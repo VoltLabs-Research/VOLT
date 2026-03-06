@@ -4,11 +4,12 @@ import useGlbScene from '@/modules/fractal/presentation/hooks/use-glb-scene';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import SimulationCellBox from '@/modules/fractal/presentation/components/molecules/SimulationCellBox';
-import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
-import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset, getTrajectoryBoxBounds } from '@/modules/fractal/presentation/utilities/boxUtils';
+import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/presentation/utilities/boxUtils';
 import { getSceneKey, normalizeVec3 } from '@/modules/fractal/presentation/utilities/sceneUtils';
-import { computeGlbUrl, type ActiveScene } from '@/modules/fractal/core/glb-url';
+import { computeGlbUrl } from '@/modules/fractal/core/glb-url';
+import type { BoxBounds } from '@/modules/fractal/presentation/types';
 import type { SlicePlaneConfig, ModelWorldBounds } from '@/modules/fractal/presentation/types/configuration';
+import type { ActiveScene } from '@/modules/fractal/presentation/types/stores/editor/scene-types';
 
 interface SingleModelViewerProps {
     trajectoryId: string;
@@ -25,6 +26,7 @@ interface SingleModelViewerProps {
         gradient?: string;
     };
     slicePlaneConfig: SlicePlaneConfig;
+    boxBounds: BoxBounds;
     pointSizeMultiplier: number;
     sceneOpacities: Record<string, number>;
     activeModelBounds?: any;
@@ -50,6 +52,7 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
     analysisId = 'default',
     sceneConfig,
     slicePlaneConfig,
+    boxBounds,
     pointSizeMultiplier,
     sceneOpacities,
     activeModelBounds,
@@ -71,29 +74,28 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
     const teamId = useTeamStore(state => state.selectedTeam?._id);
     const setModelWorldBounds = useEditorStore(state => state.setModelWorldBounds);
 
-    const trajectory = useTrajectoryStore(state => state.trajectory);
-    const boxBounds = useMemo(() => {
-        return getTrajectoryBoxBounds(trajectory, currentTimestep);
-    }, [trajectory, currentTimestep]);
-
     const boxTransforms = useMemo(() => {
-        if (!boxBounds) return { scale: 1, position: { x: 0, y: 0, z: 0 }, maxDimension: 1, center: { x: 0, y: 0, z: 0 } };
-        return calculateBoxTransforms(boxBounds as any);
+        return calculateBoxTransforms(boxBounds);
     }, [boxBounds]);
 
     const groundOffset = useMemo(() => getGroundOffset(boxBounds, boxTransforms), [boxBounds, boxTransforms]);
-    const cellBoxTransforms = useMemo(() => buildCellBoxTransforms(boxTransforms, groundOffset), [boxTransforms, groundOffset]);
+    const cellBoxTransforms = useMemo(() => {
+        const transforms = buildCellBoxTransforms(boxTransforms, groundOffset);
+
+        if (!transforms) {
+            throw new Error('Failed to build canonical cell box transforms.');
+        }
+
+        return transforms;
+    }, [boxTransforms, groundOffset]);
 
     const modelWorldBounds = useMemo<ModelWorldBounds>(() => {
-        if (boxBounds && cellBoxTransforms) {
-            const s = cellBoxTransforms.scale;
-            const gz = cellBoxTransforms.groundOffset || 0;
-            return {
-                min: { x: boxBounds.xlo * s, y: boxBounds.ylo * s, z: boxBounds.zlo * s + gz },
-                max: { x: boxBounds.xhi * s, y: boxBounds.yhi * s, z: boxBounds.zhi * s + gz }
-            };
-        }
-        return { min: { x: -4, y: -4, z: -4 }, max: { x: 4, y: 4, z: 4 } };
+        const scaleFactor = cellBoxTransforms.scale;
+        const groundZOffset = cellBoxTransforms.groundOffset || 0;
+        return {
+            min: { x: boxBounds.xlo * scaleFactor, y: boxBounds.ylo * scaleFactor, z: boxBounds.zlo * scaleFactor + groundZOffset },
+            max: { x: boxBounds.xhi * scaleFactor, y: boxBounds.yhi * scaleFactor, z: boxBounds.zhi * scaleFactor + groundZOffset }
+        };
     }, [boxBounds, cellBoxTransforms]);
 
     React.useEffect(() => {
@@ -130,10 +132,9 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         onSelect,
         orbitControlsRef,
         onEmptyData: handleEmptyData,
-        disableAutoTransform: Boolean(boxBounds),
+        disableAutoTransform: true,
         sceneKey,
         boxBounds,
-        normalizationScale: cellBoxTransforms?.scale,
         pointSizeMultiplier,
         sceneOpacities,
         activeModelBounds,
@@ -159,7 +160,7 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
             boxBounds={boxBounds}
             transforms={cellBoxTransforms}
         >
-            {model && <primitive object={model} />}
+            {model && React.createElement('primitive', { object: model })}
         </SimulationCellBox>
     );
 };

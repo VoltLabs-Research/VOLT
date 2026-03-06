@@ -32,15 +32,23 @@ const initialState: NotificationState & typeof BASE_SLICE_INITIAL_STATE = {
     ...BASE_SLICE_INITIAL_STATE
 };
 
+const paginationInitialState = {
+    hasMore: true,
+    page: 1
+};
+
+const resetState = {
+    ...initialState,
+    ...paginationInitialState
+};
+
 const countUnread = (notifications: Notification[]): number => {
     return notifications.filter((n) => !n.read).length;
 };
 
 export const useNotificationStore = create<NotificationStore>((set) => ({
-    ...initialState,
+    ...resetState,
     ...createBaseSlice(set),
-    hasMore: true,
-    page: 1,
     setHasMore: (hasMore) => set({ hasMore }),
     setPage: (page) => set({ page }),
 
@@ -82,5 +90,5 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
         }));
     },
 
-    reset: () => set(initialState)
+    reset: () => set(resetState)
 }));

@@ -77,6 +77,7 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
             teams: [],
             analyses: [],
             lastLoginAt: new Date(),
+            lastSeenAt: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });

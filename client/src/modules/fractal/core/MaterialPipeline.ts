@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import vertexShader from '@/modules/fractal/presentation/assets/shaders/point-cloud.vert?raw';
 import fragmentShader from '@/modules/fractal/presentation/assets/shaders/point-cloud.frag?raw';
+import { disposeMaterialResources } from './resource-disposal';
 
 export class MaterialPipeline {
     private cache = new Map<string, THREE.MeshStandardMaterial>();
+    private pointCloudMaterials = new Set<THREE.ShaderMaterial>();
 
     configurePointCloud(points: THREE.Points) {
         const mat = new THREE.ShaderMaterial({
@@ -55,6 +57,7 @@ export class MaterialPipeline {
 
         (mat.uniforms.pointScale as any).value = dynamicPointScale;
         mat.userData.basePointScale = dynamicPointScale;
+        this.pointCloudMaterials.add(mat);
 
         points.material = mat;
         return points;
@@ -138,5 +141,17 @@ export class MaterialPipeline {
         });
 
         return mainMesh;
+    }
+
+    dispose() {
+        this.cache.forEach((material) => {
+            disposeMaterialResources(material);
+        });
+        this.cache.clear();
+
+        this.pointCloudMaterials.forEach((material) => {
+            disposeMaterialResources(material);
+        });
+        this.pointCloudMaterials.clear();
     }
 }

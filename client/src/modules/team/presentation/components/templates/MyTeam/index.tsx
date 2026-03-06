@@ -26,10 +26,28 @@ import useDailyActivityData from '@/modules/daily-activity/presentation/hooks/us
 import ActivityHeatmap from '@/modules/daily-activity/presentation/components/molecules/ActivityHeatmap';
 import { useTeamPresenceStore } from '@/modules/team/presentation/stores/use-team-presence-store';
 import { canAccessTeamPermissions } from '@/modules/team/presentation/utilities/permission-evaluator';
+import { resolveTeamUserOnline } from '@/modules/team/presentation/utilities/presence';
 import ApiError from '@/shared/errors/ApiError';
 import './MyTeam.css';
 
 const LIST_SYNC = createListSyncConfig('team-member');
+
+const formatTrackedMinutes = (minutes: number): string => {
+    const totalSeconds = Math.max(0, Math.round(minutes * 60));
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+
+    if (hours > 0) {
+        return `${hours}h ${mins}m`;
+    }
+
+    if (totalSeconds > 0 && totalMinutes === 0) {
+        return '<1m';
+    }
+
+    return `${mins}m`;
+};
 
 const MyTeamTemplate: React.FC = () => {
     const navigate = useNavigate();
@@ -59,11 +77,28 @@ const MyTeamTemplate: React.FC = () => {
     const { activityData, fetchActivity } = useDailyActivityData();
 
     const onlineUserIds = useTeamPresenceStore((s) => s.onlineUserIds);
+    const hasPresenceSnapshot = useTeamPresenceStore((s) => s.hasPresenceSnapshot);
 
     useEffect(() => {
-        fetchRoles(selectedTeam._id);
-        hydrateTeamAccess(selectedTeam._id);
-        fetchActivity();
+        let isCancelled = false;
+
+        const loadTeamContext = async () => {
+            await Promise.all([
+                fetchRoles(selectedTeam._id),
+                hydrateTeamAccess(selectedTeam._id)
+            ]);
+            if (isCancelled) {
+                return;
+            }
+
+            await fetchActivity();
+        };
+
+        void loadTeamContext();
+
+        return () => {
+            isCancelled = true;
+        };
     }, [selectedTeam._id, fetchRoles, hydrateTeamAccess, fetchActivity]);
 
     const fetchData = useCallback(async (params: GetTeamMembersParams) => {
@@ -162,9 +197,12 @@ const MyTeamTemplate: React.FC = () => {
             render: (_: unknown, row?: unknown) => {
                 const member = row as TeamMember;
                 const isCurrentUser = member.user._id === user._id;
+                const isOnline = resolveTeamUserOnline(member.user, onlineUserIds, hasPresenceSnapshot);
                 return (
                     <UserInfo
                         user={member.user}
+                        showStatus
+                        isOnline={isOnline}
                         suffix={isCurrentUser && <span className='color-secondary'>(You)</span>}
                     />
                 );
@@ -201,7 +239,8 @@ const MyTeamTemplate: React.FC = () => {
             title: 'Status',
             render: (_: unknown, row?: unknown) => {
                 const member = row as TeamMember;
-                const isOnline = onlineUserIds.has(member.user._id);
+                const isOnline = resolveTeamUserOnline(member.user, onlineUserIds, hasPresenceSnapshot);
+                const lastSeenAt = member.user.lastSeenAt ? new Date(member.user.lastSeenAt) : null;
                 return (
                     <>
                         {isOnline ? (
@@ -210,7 +249,9 @@ const MyTeamTemplate: React.FC = () => {
                             <Container className='d-flex column'>
                                 <span className='color-secondary font-size-2'>Offline</span>
                                 <span className='color-muted font-size-2'>
-                                    Seen {formatDistanceToNow(new Date(member.user.lastLoginAt))} ago
+                                    {lastSeenAt
+                                        ? `Seen ${formatDistanceToNow(lastSeenAt)} ago`
+                                        : 'Last seen unavailable'}
                                 </span>
                             </Container>
                         )}
@@ -233,11 +274,9 @@ const MyTeamTemplate: React.FC = () => {
             title: 'Time (7d)',
             render: (val: unknown) => {
                 const minutes = val as number;
-                const hours = Math.floor(minutes / 60);
-                const mins = minutes % 60;
                 return (
                     <span className='color-secondary font-size-2'>
-                        {hours > 0 ? `${hours}h ` : ''}{mins}m
+                        {formatTrackedMinutes(minutes)}
                     </span>
                 );
             }
@@ -251,7 +290,7 @@ const MyTeamTemplate: React.FC = () => {
                 </span>
             )
         }
-    ], [canInvite, user, selectedTeam, roleOptions, handleRoleChange, onlineUserIds]);
+    ], [canInvite, user, selectedTeam, roleOptions, handleRoleChange, onlineUserIds, hasPresenceSnapshot]);
 
     const getMenuOptions = useCallback((member: TeamMember, selectedMembers: TeamMember[]): MenuOption[] => {
         const targetMembers = selectedMembers.includes(member) ? selectedMembers : [member];

@@ -133,7 +133,8 @@ export interface TimestepActions {
         preloadBehavior?: boolean,
         onProgress?: (p: number, m?: { bps: number }) => void,
         maxFramesToPreload?: number,
-        currentFrameIndex?: number
+        currentFrameIndex?: number,
+        signal?: AbortSignal
     ) => Promise<TimelineGLBMap>;
     resetTimesteps: () => void;
 };

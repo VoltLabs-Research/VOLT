@@ -2,6 +2,7 @@ import React, { useMemo, forwardRef } from 'react';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
 import SingleModelViewer from '@/modules/fractal/presentation/components/molecules/SingleModelViewer';
 import { getRenderableScenes } from '@/modules/fractal/presentation/utilities/sceneUtils';
+import type { BoxBounds } from '@/modules/fractal/presentation/types';
 import type { SlicePlaneConfig } from '@/modules/fractal/presentation/types/configuration';
 import type { SceneObjectType } from '@/modules/fractal/presentation/types/stores/editor/scene-types';
 
@@ -11,6 +12,7 @@ interface TimestepViewerProps {
     analysisId?: string;
     activeScenes: SceneObjectType[];
     slicePlaneConfig: SlicePlaneConfig;
+    boxBounds: BoxBounds;
     pointSizeMultiplier: number;
     sceneOpacities: Record<string, number>;
     activeModelBounds?: any;
@@ -38,6 +40,7 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     analysisId = 'default',
     activeScenes: storeActiveScenes,
     slicePlaneConfig,
+    boxBounds,
     pointSizeMultiplier,
     sceneOpacities,
     activeModelBounds,
@@ -119,6 +122,7 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
                         analysisId={analysisId}
                         sceneConfig={scene as any}
                         slicePlaneConfig={slicePlaneConfig}
+                        boxBounds={boxBounds}
                         pointSizeMultiplier={pointSizeMultiplier}
                         sceneOpacities={sceneOpacities}
                         activeModelBounds={activeModelBounds}

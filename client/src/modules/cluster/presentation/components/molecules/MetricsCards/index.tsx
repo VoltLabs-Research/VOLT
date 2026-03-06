@@ -88,7 +88,7 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
     return (
         <Container className='metrics-cards gap-1'>
             {cards.map((card) => (
-                <Container key={card.title} className='metric-card radius-lg transition-normal glass-bg'>
+                <Container key={card.title} className='metric-card radius-lg transition-normal'>
                     <Container className='d-flex items-start content-between mb-075'>
                         <Container className='d-flex items-center gap-05'>
                             <card.icon className='metric-card-icon color-muted-foreground' />

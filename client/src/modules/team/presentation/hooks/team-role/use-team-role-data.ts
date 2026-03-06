@@ -14,14 +14,19 @@ const useTeamRoleData = () => {
 
     const fetchRoles = useCallback(async (teamId: string) => {
         setLoading(true);
+        setError(null);
 
         try{
             const response = await teamRoleRepository.getAll(teamId, { page: 1, limit: 100 });
             setRoles(response.data);
-        }catch(error: any){
+        }catch(error: unknown){
             if(checkRBACError(error)) return;
+            let errorMessage = 'Failed to fetch roles';
+            if (error instanceof Error && error.message) {
+                errorMessage = error.message;
+            }
             sileo.error({ title: 'Failed to fetch roles' });
-            setError(error?.message ?? 'Failed to fetch roles');
+            setError(errorMessage);
         }finally{
             setLoading(false);
         }

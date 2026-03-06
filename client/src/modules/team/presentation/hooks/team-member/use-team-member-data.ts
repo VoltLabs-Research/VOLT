@@ -14,14 +14,19 @@ const useTeamMemberData = () => {
 
     const fetchMembers = useCallback(async (teamId: string) => {
         setLoading(true);
+        setError(null);
 
         try{
             const response = await teamMemberRepository.getAll(teamId, { page: 1, limit: 100 });
             setMembers(response.data);
-        }catch(error: any){
+        }catch(error: unknown){
             if(checkRBACError(error)) return;
+            let errorMessage = 'Failed to fetch members';
+            if (error instanceof Error && error.message) {
+                errorMessage = error.message;
+            }
             sileo.error({ title: 'Failed to fetch team members' });
-            setError(error?.message ?? 'Failed to fetch members');
+            setError(errorMessage);
         }finally{
             setLoading(false);
         }
