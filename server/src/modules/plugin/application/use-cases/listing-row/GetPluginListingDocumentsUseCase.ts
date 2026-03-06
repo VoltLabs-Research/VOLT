@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { GetPluginListingDocumentsInputDTO, GetPluginListingDocumentsOutputDTO } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { IPluginListingService } from '@modules/plugin/domain/ports/IPluginListingService';
+import { IPluginListingService } from '@modules/plugin/domain/port/IPluginListingService';
 
 @injectable()
 export class GetPluginListingDocumentsUseCase implements IUseCase<GetPluginListingDocumentsInputDTO, GetPluginListingDocumentsOutputDTO> {

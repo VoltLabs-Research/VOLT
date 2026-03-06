@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { container } from 'tsyringe';
 import type { User } from '@/modules/auth/domain/entities';
-import type IAuthRepository from '@/modules/auth/domain/ports/IAuthRepository';
-import type ITokenStorage from '@/modules/auth/domain/ports/ITokenStorage';
+import type IAuthRepository from '@/modules/auth/domain/port/IAuthRepository';
+import type ITokenStorage from '@/modules/auth/domain/port/ITokenStorage';
 import { AUTH_TOKENS } from '@/modules/auth/infrastructure/di/tokens';
 
 interface AuthState{

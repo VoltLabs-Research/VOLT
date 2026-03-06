@@ -1,4 +1,4 @@
-import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
 export interface AIConversationDTO {
     _id: string;

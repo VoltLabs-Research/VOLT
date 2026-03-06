@@ -1,4 +1,4 @@
-import { IBaseRepository } from '@shared/domain/ports/IBaseRepository';
+import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 import TeamAIIntegration, { TeamAIIntegrationProps, TeamAIProvider } from '@modules/team/domain/entities/TeamAIIntegration';
 
 export interface ITeamAIIntegrationRepository extends IBaseRepository<TeamAIIntegration, TeamAIIntegrationProps> {

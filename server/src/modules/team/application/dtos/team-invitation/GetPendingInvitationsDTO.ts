@@ -1,4 +1,4 @@
-import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { TeamInvitationProps } from '@modules/team/domain/entities/TeamInvitation';
 
 export interface GetPendingInvitationsInputDTO {

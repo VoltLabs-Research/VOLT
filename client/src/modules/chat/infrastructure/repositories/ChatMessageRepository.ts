@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import { buildFileFormData } from '@/shared/utils/file';
-import type IChatMessageRepository from '../../domain/ports/IChatMessageRepository';
+import type IChatMessageRepository from '../../domain/port/IChatMessageRepository';
 import type { ChatMessage } from '../../domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { SendMessageDTO } from '../../application/dtos/message';

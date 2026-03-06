@@ -1,11 +1,11 @@
 import { injectable, inject } from 'tsyringe';
 import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
-import { INodeHandler, ExecutionContext, NodeOutputSchema, T, INodeRegistry } from '@modules/plugin/domain/ports/INodeRegistry';
+import { INodeHandler, ExecutionContext, NodeOutputSchema, T, INodeRegistry } from '@modules/plugin/domain/port/INodeRegistry';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IPluginBinaryCacheService } from '@modules/plugin/domain/ports/IPluginBinaryCacheService';
-import { ITempFileService } from '@shared/domain/ports/ITempFileService';
-import { IProcessExecutorService } from '@modules/plugin/domain/ports/IProcessExecutorService';
+import { IPluginBinaryCacheService } from '@modules/plugin/domain/port/IPluginBinaryCacheService';
+import { ITempFileService } from '@shared/domain/port/ITempFileService';
+import { IProcessExecutorService } from '@modules/plugin/domain/port/IProcessExecutorService';
 import path from 'node:path';
 import logger from '@shared/infrastructure/logger';
 

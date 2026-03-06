@@ -1,5 +1,5 @@
 import { container } from 'tsyringe';
-import type IJobsRepository from '../../domain/ports/IJobsRepository';
+import type IJobsRepository from '../../domain/port/IJobsRepository';
 import JobsRepository from '../repositories/JobsRepository';
 import { JOBS_TOKENS } from './tokens';
 

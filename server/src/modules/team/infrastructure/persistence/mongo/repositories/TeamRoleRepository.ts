@@ -2,7 +2,7 @@ import TeamRole, { TeamRoleProps } from '@modules/team/domain/entities/TeamRole'
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import { injectable } from 'tsyringe';
 import TeamRoleModel, { TeamRoleDocument } from '@modules/team/infrastructure/persistence/mongo/models/TeamRoleModel';
-import { ITeamRoleRepository } from '@modules/team/domain/ports/ITeamRoleRepository';
+import { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleRepository';
 import teamRoleMapper from '@modules/team/infrastructure/persistence/mongo/mappers/TeamRole';
 
 import { Types } from 'mongoose';

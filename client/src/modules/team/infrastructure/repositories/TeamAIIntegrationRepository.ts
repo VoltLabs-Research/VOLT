@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type ITeamAIIntegrationRepository from '@/modules/team/domain/ports/ITeamAIIntegrationRepository';
+import type ITeamAIIntegrationRepository from '@/modules/team/domain/port/ITeamAIIntegrationRepository';
 import type {
     ListTeamAIIntegrationsResponse,
     ListTeamAIIntegrationModelsResponse,
@@ -8,7 +8,7 @@ import type {
     CreateTeamAIIntegrationResponse,
     UpdateTeamAIIntegrationParams,
     UpdateTeamAIIntegrationResponse
-} from '@/modules/team/domain/ports/ITeamAIIntegrationRepository';
+} from '@/modules/team/domain/port/ITeamAIIntegrationRepository';
 import type { TeamAIProvider } from '@/modules/team/domain/entities/TeamAIIntegration';
 
 @injectable()

@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type IColorCodingRepository from '../../domain/ports/IColorCodingRepository';
+import type IColorCodingRepository from '../../domain/port/IColorCodingRepository';
 import type {
     ApplyColorCodingInputDTO,
     GetColorCodingPropertiesInputDTO,

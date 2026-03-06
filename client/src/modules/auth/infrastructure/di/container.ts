@@ -1,7 +1,7 @@
 import { container } from 'tsyringe';
 import AuthRepository from '@/modules/auth/infrastructure/repositories/AuthRepository';
-import type IAuthRepository from '@/modules/auth/domain/ports/IAuthRepository';
-import type ITokenStorage from '@/modules/auth/domain/ports/ITokenStorage';
+import type IAuthRepository from '@/modules/auth/domain/port/IAuthRepository';
+import type ITokenStorage from '@/modules/auth/domain/port/ITokenStorage';
 import TokenStorage from '@/modules/auth/infrastructure/storage/TokenStorage';
 import { SignInUseCase, SignUpUseCase } from '@/modules/auth/application/use-cases';
 import { AUTH_TOKENS } from './tokens';

@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type ITeamMemberRepository from '../../domain/ports/ITeamMemberRepository';
-import type { GetTeamMembersParams, UpdateTeamMemberParams } from '../../domain/ports/ITeamMemberRepository';
+import type ITeamMemberRepository from '../../domain/port/ITeamMemberRepository';
+import type { GetTeamMembersParams, UpdateTeamMemberParams } from '../../domain/port/ITeamMemberRepository';
 import type { TeamMember } from '../../domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 

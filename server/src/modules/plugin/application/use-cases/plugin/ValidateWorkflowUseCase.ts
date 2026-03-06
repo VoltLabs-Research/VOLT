@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { ValidateWorkflowInputDTO, ValidateWorkflowOutputDTO } from '@modules/plugin/application/dtos/plugin/ValidateWorkflowDTO';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { IWorkflowValidatorService } from '@modules/plugin/domain/ports/IWorkflowValidatorService';
+import { IWorkflowValidatorService } from '@modules/plugin/domain/port/IWorkflowValidatorService';
 
 @injectable()
 export class ValidateWorkflowUseCase implements IUseCase<ValidateWorkflowInputDTO, ValidateWorkflowOutputDTO> {

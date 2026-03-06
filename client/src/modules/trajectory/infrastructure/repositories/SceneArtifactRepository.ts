@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import BaseRepository from '@/shared/infrastructure/repositories/BaseRepository';
-import type ISceneArtifactRepository from '../../domain/ports/ISceneArtifactRepository';
+import type ISceneArtifactRepository from '../../domain/port/ISceneArtifactRepository';
 import type {
     ListSceneArtifactsInputDTO,
     ListSceneArtifactsOutputDTO

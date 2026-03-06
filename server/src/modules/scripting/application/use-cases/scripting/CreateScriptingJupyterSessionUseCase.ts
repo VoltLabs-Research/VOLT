@@ -1,11 +1,11 @@
 import { inject, injectable } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { RuntimeError } from '@core/exceptions/RuntimeError';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
-import type { IScriptingNotebookRepository } from '@modules/scripting/domain/ports/IScriptingNotebookRepository';
+import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 import type ScriptingNotebook from '@modules/scripting/domain/entities/ScriptingNotebook';
 import { JupyterService } from '@modules/scripting/infrastructure/services/JupyterService';
 import {

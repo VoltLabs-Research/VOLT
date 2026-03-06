@@ -2,9 +2,9 @@ import { injectable, inject } from 'tsyringe';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import type { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { ListTrajectorySceneArtifactsInputDTO } from '@modules/trajectory/application/dtos/scene-artifacts/ListTrajectorySceneArtifactsDTO';
 
 @injectable()

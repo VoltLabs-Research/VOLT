@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { container } from 'tsyringe';
 import { NOTIFICATION_TOKENS } from '@/modules/notification/infrastructure/di/tokens';
-import type INotificationRepository from '@/modules/notification/domain/ports/INotificationRepository';
+import type INotificationRepository from '@/modules/notification/domain/port/INotificationRepository';
 
 const useNotificationUseCases = () => {
     return useMemo(() => ({

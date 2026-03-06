@@ -1,9 +1,9 @@
-import { IPluginWorkflowEngine, ExposureResult, ExecutionPlanResult, WorkflowExecutionRequest, DebugHooks } from '@modules/plugin/domain/ports/IPluginWorkflowEngine';
+import { IPluginWorkflowEngine, ExposureResult, ExecutionPlanResult, WorkflowExecutionRequest, DebugHooks } from '@modules/plugin/domain/port/IPluginWorkflowEngine';
 import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import { injectable, inject } from 'tsyringe';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { ExecutionContext, INodeRegistry } from '@modules/plugin/domain/ports/INodeRegistry';
+import { ExecutionContext, INodeRegistry } from '@modules/plugin/domain/port/INodeRegistry';
 import fs from 'node:fs/promises';
 import logger from '@shared/infrastructure/logger';
 

@@ -1,5 +1,5 @@
 import { injectable, inject } from 'tsyringe';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
@@ -7,8 +7,8 @@ import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajecto
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
-import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
+import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
+import { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
 import { GetTeamMetricsInputDTO, GetTeamMetricsOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTeamMetricsDTO';
 
 type Pointer = {

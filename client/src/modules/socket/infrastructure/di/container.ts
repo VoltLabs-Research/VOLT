@@ -1,9 +1,9 @@
 import { container } from 'tsyringe';
-import ISocketService from '../../domain/ports/ISocketService';
+import ISocketService from '../../domain/port/ISocketService';
 import SocketIOAdapter from '../adapters/SocketIOAdapter';
 import { SOCKET_TOKENS } from './tokens';
 import { AUTH_TOKENS } from '@/modules/auth/infrastructure/di/tokens';
-import type ITokenStorage from '@/modules/auth/domain/ports/ITokenStorage';
+import type ITokenStorage from '@/modules/auth/domain/port/ITokenStorage';
 
 let socketInitialized = false;
 

@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { container } from 'tsyringe';
 import { useChatMessageStore } from '../stores';
 import { CHAT_TOKENS } from '@/modules/chat/infrastructure/di/tokens';
-import type IChatMessageRepository from '@/modules/chat/domain/ports/IChatMessageRepository';
+import type IChatMessageRepository from '@/modules/chat/domain/port/IChatMessageRepository';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import ApiError from '@/shared/errors/ApiError';

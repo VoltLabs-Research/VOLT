@@ -1,11 +1,11 @@
 import { inject, singleton } from 'tsyringe';
 import { Types } from 'mongoose';
 import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
-import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
+import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { IPluginWorkflowEngine, DebugHooks } from '@modules/plugin/domain/ports/IPluginWorkflowEngine';
-import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
+import { IPluginWorkflowEngine, DebugHooks } from '@modules/plugin/domain/port/IPluginWorkflowEngine';
+import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
 import DebugSession from '@modules/plugin/infrastructure/services/DebugSession';
 import logger from '@shared/infrastructure/logger';
 

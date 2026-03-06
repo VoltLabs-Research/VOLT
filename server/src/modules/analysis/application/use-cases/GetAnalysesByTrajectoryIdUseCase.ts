@@ -1,12 +1,12 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { GetAnalysesByTrajectoryIdInputDTO, GetAnalysesByTrajectoryIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTrajectoryIdDTO';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
-import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
+import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
 

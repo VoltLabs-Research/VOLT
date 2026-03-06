@@ -1,9 +1,9 @@
 import { container } from 'tsyringe';
-import type ITrajectoryRepository from '../../domain/ports/ITrajectoryRepository';
-import type IParticleFilterRepository from '../../domain/ports/IParticleFilterRepository';
-import type IColorCodingRepository from '../../domain/ports/IColorCodingRepository';
-import type ISceneArtifactRepository from '../../domain/ports/ISceneArtifactRepository';
-import type IPreviewCache from '../../domain/ports/IPreviewCache';
+import type ITrajectoryRepository from '../../domain/port/ITrajectoryRepository';
+import type IParticleFilterRepository from '../../domain/port/IParticleFilterRepository';
+import type IColorCodingRepository from '../../domain/port/IColorCodingRepository';
+import type ISceneArtifactRepository from '../../domain/port/ISceneArtifactRepository';
+import type IPreviewCache from '../../domain/port/IPreviewCache';
 import TrajectoryRepository from '../repositories/TrajectoryRepository';
 import ParticleFilterRepository from '../repositories/ParticleFilterRepository';
 import ColorCodingRepository from '../repositories/ColorCodingRepository';

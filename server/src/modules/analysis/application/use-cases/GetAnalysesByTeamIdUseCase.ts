@@ -1,4 +1,4 @@
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { injectable, inject } from 'tsyringe';
@@ -6,7 +6,7 @@ import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTok
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTeamIdDTO';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
-import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
+import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
 @injectable()

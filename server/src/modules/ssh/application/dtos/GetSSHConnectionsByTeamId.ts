@@ -1,4 +1,4 @@
-import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { SSHConnectionProps } from '@modules/ssh/domain/entities/SSHConnection';
 
 export interface GetSSHConnectionsByTeamIdInputDTO{

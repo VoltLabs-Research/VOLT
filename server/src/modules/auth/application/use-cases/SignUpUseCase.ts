@@ -1,21 +1,21 @@
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { SignUpInputDTO, SignUpOutputDTO } from '@modules/auth/application/dtos/SignUpDTO';
-import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
+import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IPasswordHasher } from '@modules/auth/domain/ports/IPasswordHasher';
-import { ITokenService } from '@modules/auth/domain/ports/ITokenService';
+import { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
+import { ITokenService } from '@modules/auth/domain/port/ITokenService';
 import validator from 'validator';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { UserRole } from '@modules/auth/domain/entities/User';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
-import { ISessionRepository } from '@modules/session/domain/ports/ISessionRepository';
+import { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import { injectable, inject } from 'tsyringe';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import UserCreatedEvent from '@modules/auth/domain/events/UserCreatedEvent';
-import { IAvatarService } from '@modules/auth/domain/ports/IAvatarService';
+import { IAvatarService } from '@modules/auth/domain/port/IAvatarService';
 
 @injectable()
 export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOutputDTO, ApplicationError> {

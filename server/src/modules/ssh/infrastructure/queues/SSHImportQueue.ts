@@ -1,10 +1,10 @@
 import { injectable, inject } from 'tsyringe';
 import BaseProcessingQueue from '@modules/jobs/infrastructure/services/BaseProcessingQueue';
-import { IJobRepository } from '@modules/jobs/domain/ports/IJobRepository';
-import { IWorkerPoolService } from '@modules/jobs/domain/ports/IWorkerPool';
-import { ISessionManagerService } from '@modules/jobs/domain/ports/ISessionManagerService';
-import { IRecoveryManagerService } from '@modules/jobs/domain/ports/IRecoveryManagerService';
-import { IJobHandlerService } from '@modules/jobs/domain/ports/IJobHandlerService';
+import { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
+import { IWorkerPoolService } from '@modules/jobs/domain/port/IWorkerPool';
+import { ISessionManagerService } from '@modules/jobs/domain/port/ISessionManagerService';
+import { IRecoveryManagerService } from '@modules/jobs/domain/port/IRecoveryManagerService';
+import { IJobHandlerService } from '@modules/jobs/domain/port/IJobHandlerService';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';

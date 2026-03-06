@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { container } from 'tsyringe';
 import type { Team } from '@/modules/team/domain/entities';
-import type ITeamStorage from '@/modules/team/domain/ports/ITeamStorage';
+import type ITeamStorage from '@/modules/team/domain/port/ITeamStorage';
 import { TEAM_TOKENS } from '@/modules/team/infrastructure/di/tokens';
 import { createBaseSlice, BASE_SLICE_INITIAL_STATE, type BaseSlice } from '@/shared/presentation/stores/create-base-store-slice';
 

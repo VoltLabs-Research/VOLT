@@ -1,4 +1,4 @@
-import { IDailyActivityRepository } from '@modules/daily-activity/domain/ports/IDailyActivityRepository';
+import { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
 import DailyActivity, { ActivityType, DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import DailyActivityModel, { DailyActivityDocument } from '@modules/daily-activity/infrastructure/persistence/mongo/models/DailyActivityModel';

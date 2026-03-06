@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { ISocketModule, ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
-import { ITerminalService } from '@modules/container/domain/ports/ITerminalService';
+import { ISocketModule, ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import { ITerminalService } from '@modules/container/domain/port/ITerminalService';
 
 @injectable()
 export class ContainerSocketModule implements ISocketModule {

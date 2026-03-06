@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { UpdateContainerInputDTO, UpdateContainerOutputDTO } from '@modules/container/application/dtos/ContainerDTOs';
-import { IContainerRepository } from '@modules/container/domain/ports/IContainerRepository';
-import { IContainerService } from '@modules/container/domain/ports/IContainerService';
+import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
+import { IContainerService } from '@modules/container/domain/port/IContainerService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 

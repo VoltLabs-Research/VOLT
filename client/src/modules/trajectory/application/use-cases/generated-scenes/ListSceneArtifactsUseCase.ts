@@ -1,6 +1,6 @@
 import { inject, injectable } from 'tsyringe';
 import type IUseCase from '@/shared/application/use-cases/IUseCase';
-import type ISceneArtifactRepository from '@/modules/trajectory/domain/ports/ISceneArtifactRepository';
+import type ISceneArtifactRepository from '@/modules/trajectory/domain/port/ISceneArtifactRepository';
 import type {
     ListSceneArtifactsInputDTO,
     ListSceneArtifactsOutputDTO

@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import path from 'node:path';
 import fs from 'node:fs';

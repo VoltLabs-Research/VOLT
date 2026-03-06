@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type ISystemRepository from '../../domain/ports/ISystemRepository';
+import type ISystemRepository from '../../domain/port/ISystemRepository';
 import type { RBACConfig } from '../../domain/entities';
 
 @injectable()

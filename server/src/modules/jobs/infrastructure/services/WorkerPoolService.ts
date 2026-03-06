@@ -9,7 +9,7 @@ import {
     WorkerMessageHandler,
     WorkerErrorHandler,
     WorkerExitHandler
-} from '@modules/jobs/domain/ports/IWorkerPool';
+} from '@modules/jobs/domain/port/IWorkerPool';
 
 @injectable()
 export default class WorkerPoolService implements IWorkerPoolService {

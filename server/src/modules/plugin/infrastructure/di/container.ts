@@ -42,7 +42,7 @@ import { ExportListingRowsByAnalysisIdUseCase } from '@modules/plugin/applicatio
 
 import * as pluginAiTools from '@modules/plugin/application/ai-tools';
 
-import { INodeRegistry, INodeHandler } from '@modules/plugin/domain/ports/INodeRegistry';
+import { INodeRegistry, INodeHandler } from '@modules/plugin/domain/port/INodeRegistry';
 
 export const registerPluginDependencies = (): void => {
     container.registerSingleton(PLUGIN_TOKENS.PluginListingService, PluginListingService);

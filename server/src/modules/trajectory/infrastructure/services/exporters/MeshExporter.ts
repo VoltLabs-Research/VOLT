@@ -1,4 +1,4 @@
-import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { injectable, inject } from 'tsyringe';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';

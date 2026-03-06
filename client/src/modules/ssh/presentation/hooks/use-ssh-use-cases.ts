@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { container } from 'tsyringe';
 import { SSH_TOKENS } from '@/modules/ssh/infrastructure/di/tokens';
-import type ISSHRepository from '@/modules/ssh/domain/ports/ISSHRepository';
+import type ISSHRepository from '@/modules/ssh/domain/port/ISSHRepository';
 
 const useSSHUseCases = () => {
     return useMemo(() => ({

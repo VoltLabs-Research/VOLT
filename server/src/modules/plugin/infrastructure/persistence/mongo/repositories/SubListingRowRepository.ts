@@ -1,4 +1,4 @@
-import { ISubListingRowRepository } from '@modules/plugin/domain/ports/ISubListingRowRepository';
+import { ISubListingRowRepository } from '@modules/plugin/domain/port/ISubListingRowRepository';
 import SubListingRow, { SubListingRowProps } from '@modules/plugin/domain/entities/SubListingRow';
 import SubListingRowModel, { SubListingRowDocument } from '@modules/plugin/infrastructure/persistence/mongo/models/SubListingRowModel';
 import subListingRowMapper from '@modules/plugin/infrastructure/persistence/mongo/mappers/SubListingRowMapper';

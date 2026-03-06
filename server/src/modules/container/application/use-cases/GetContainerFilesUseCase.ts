@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
-import { IContainerRepository } from '@modules/container/domain/ports/IContainerRepository';
-import { IContainerService } from '@modules/container/domain/ports/IContainerService';
+import { Result } from '@shared/domain/port/Result';
+import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
+import { IContainerService } from '@modules/container/domain/port/IContainerService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 

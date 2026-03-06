@@ -1,14 +1,14 @@
 import { injectable, inject } from 'tsyringe';
 import { convertToModelMessages } from 'ai';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { IAIConversationRepository } from '@modules/ai/domain/ports/IAIConversationRepository';
-import { IAIMessageRepository } from '@modules/ai/domain/ports/IAIMessageRepository';
-import type { ITeamMemberRepository } from '@modules/team/domain/ports/ITeamMemberRepository';
+import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
+import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
 import AIMessage from '@modules/ai/domain/entities/AIMessage';
 import AIChatOrchestratorService from '@modules/ai/application/services/AIChatOrchestratorService';
 import {

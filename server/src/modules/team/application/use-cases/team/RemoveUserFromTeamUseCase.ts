@@ -1,14 +1,14 @@
-import { ITeamRepository } from '@modules/team/domain/ports/ITeamRepository';
-import { Result } from '@shared/domain/ports/Result';
+import { ITeamRepository } from '@modules/team/domain/port/ITeamRepository';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { RemoveUserFromTeamInputDTO } from '@modules/team/application/dtos/team/RemoveUserFromTeamDTO';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
+import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { ITeamMemberRepository } from '@modules/team/domain/ports/ITeamMemberRepository';
+import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import TeamMemberLeaveEvent from '@modules/team/domain/events/TeamMemberLeaveEvent';

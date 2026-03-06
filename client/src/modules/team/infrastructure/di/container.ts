@@ -7,13 +7,13 @@ import TeamInvitationRepository from '../repositories/TeamInvitationRepository';
 import SecretKeyRepository from '../repositories/SecretKeyRepository';
 import TeamAIIntegrationRepository from '../repositories/TeamAIIntegrationRepository';
 import TeamStorage from '../storage/TeamStorage';
-import type ITeamRepository from '../../domain/ports/ITeamRepository';
-import type ITeamRoleRepository from '../../domain/ports/ITeamRoleRepository';
-import type ITeamMemberRepository from '../../domain/ports/ITeamMemberRepository';
-import type ITeamInvitationRepository from '../../domain/ports/ITeamInvitationRepository';
-import type ISecretKeyRepository from '../../domain/ports/ISecretKeyRepository';
-import type ITeamAIIntegrationRepository from '../../domain/ports/ITeamAIIntegrationRepository';
-import type ITeamStorage from '../../domain/ports/ITeamStorage';
+import type ITeamRepository from '../../domain/port/ITeamRepository';
+import type ITeamRoleRepository from '../../domain/port/ITeamRoleRepository';
+import type ITeamMemberRepository from '../../domain/port/ITeamMemberRepository';
+import type ITeamInvitationRepository from '../../domain/port/ITeamInvitationRepository';
+import type ISecretKeyRepository from '../../domain/port/ISecretKeyRepository';
+import type ITeamAIIntegrationRepository from '../../domain/port/ITeamAIIntegrationRepository';
+import type ITeamStorage from '../../domain/port/ITeamStorage';
 import CreateTeamUseCase from '../../application/use-cases/team/CreateTeamUseCase';
 
 export const ensureTeamDI = () => {

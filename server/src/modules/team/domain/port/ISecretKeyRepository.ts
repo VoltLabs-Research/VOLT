@@ -1,4 +1,4 @@
-import { IBaseRepository } from '@shared/domain/ports/IBaseRepository';
+import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 import SecretKey, { SecretKeyProps } from '@modules/team/domain/entities/SecretKey';
 
 export interface ISecretKeyRepository extends IBaseRepository<SecretKey, SecretKeyProps> {

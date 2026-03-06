@@ -1,6 +1,6 @@
 import { inject, injectable } from 'tsyringe';
-import type ITeamRepository from '../../../domain/ports/ITeamRepository';
-import type ITeamStorage from '../../../domain/ports/ITeamStorage';
+import type ITeamRepository from '../../../domain/port/ITeamRepository';
+import type ITeamStorage from '../../../domain/port/ITeamStorage';
 import type { CreateTeamInputDTO } from '../../dtos/team';
 import type IUseCase from '@/shared/application/use-cases/IUseCase';
 import type { Team } from '../../../domain/entities';

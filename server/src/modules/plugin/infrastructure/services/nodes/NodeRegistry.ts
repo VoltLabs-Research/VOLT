@@ -1,5 +1,5 @@
 import { singleton } from 'tsyringe';
-import { INodeRegistry, INodeHandler, ExecutionContext, NodeOutputSchema } from '@modules/plugin/domain/ports/INodeRegistry';
+import { INodeRegistry, INodeHandler, ExecutionContext, NodeOutputSchema } from '@modules/plugin/domain/port/INodeRegistry';
 import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import logger from '@shared/infrastructure/logger';
 

@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type IJobsRepository from '../../domain/ports/IJobsRepository';
+import type IJobsRepository from '../../domain/port/IJobsRepository';
 import type {
     ClearHistoryOutputDTO,
     RemoveRunningJobsOutputDTO,

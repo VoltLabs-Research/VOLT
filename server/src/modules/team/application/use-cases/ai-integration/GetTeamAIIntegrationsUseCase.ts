@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { ITeamAIIntegrationRepository } from '@modules/team/domain/ports/ITeamAIIntegrationRepository';
+import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ITeamAIIntegrationRepository';
 import {
     GetTeamAIIntegrationsInputDTO,
     GetTeamAIIntegrationsOutputDTO

@@ -1,8 +1,8 @@
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { DeleteAccountInputDTO, DeleteAccountOutputDTO } from '@modules/auth/application/dtos/DeleteAccountDTO';
-import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
+import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { injectable, inject } from 'tsyringe';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';

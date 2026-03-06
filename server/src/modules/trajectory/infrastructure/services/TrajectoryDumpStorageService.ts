@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/ITrajectoryDumpStorageService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { IStorageService } from '@shared/domain/port/IStorageService';
 import { pipeline } from 'node:stream/promises';
-import { ITempFileService } from '@shared/domain/ports/ITempFileService';
+import { ITempFileService } from '@shared/domain/port/ITempFileService';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { Readable } from 'node:stream';
 import { createReadStream, createWriteStream } from 'node:fs';

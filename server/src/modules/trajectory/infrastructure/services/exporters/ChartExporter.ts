@@ -1,7 +1,7 @@
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import type { ChartConfiguration, ChartTypeRegistry } from 'chart.js';
 import { ChartDataPoint, ChartType, IChartExporter, IChartExportOptions } from '@modules/trajectory/domain/port/exporters/ChartExporter';
-import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { inject, injectable } from 'tsyringe';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';

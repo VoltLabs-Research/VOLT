@@ -1,5 +1,5 @@
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';

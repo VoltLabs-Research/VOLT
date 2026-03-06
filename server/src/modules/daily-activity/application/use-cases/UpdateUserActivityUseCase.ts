@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
-import { IDailyActivityRepository } from '@modules/daily-activity/domain/ports/IDailyActivityRepository';
+import { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
 import { UpdateUserActivityInputDTO, UpdateUserActivityOutputDTO } from '@modules/daily-activity/application/dto/UpdateUserActivityDTO';
 import logger from '@shared/infrastructure/logger';
 

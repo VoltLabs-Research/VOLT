@@ -17,7 +17,7 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import ApiError from '@/shared/errors/ApiError';
-import type { GetTeamRolesParams } from '@/modules/team/domain/ports/ITeamRoleRepository';
+import type { GetTeamRolesParams } from '@/modules/team/domain/port/ITeamRoleRepository';
 import type { TeamRole } from '@/modules/team/domain/entities/TeamRole';
 import type { RBACResource, RBACAction } from '@/modules/system/domain/entities';
 

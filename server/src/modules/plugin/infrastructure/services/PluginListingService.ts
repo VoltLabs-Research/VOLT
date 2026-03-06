@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
-import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
-import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
+import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
+import { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
 import ListingRow from '@modules/plugin/domain/entities/ListingRow';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { ExportType, PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { ExportType, PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 
 interface ListingOptions {

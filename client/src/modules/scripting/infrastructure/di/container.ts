@@ -1,5 +1,5 @@
 import { container } from 'tsyringe';
-import type IScriptingRepository from '@/modules/scripting/domain/ports/IScriptingRepository';
+import type IScriptingRepository from '@/modules/scripting/domain/port/IScriptingRepository';
 import ScriptingRepository from '@/modules/scripting/infrastructure/repositories/ScriptingRepository';
 import { SCRIPTING_TOKENS } from './tokens';
 

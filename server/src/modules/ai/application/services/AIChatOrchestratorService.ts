@@ -17,7 +17,7 @@ import { createOllama } from 'ollama-ai-provider-v2';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import AIToolService from '@modules/ai/application/services/AIToolService';
 import { AI_PROVIDERS, type AIProvider } from '@modules/ai/domain/constants/AIProviders';
-import type { ITeamAIIntegrationRepository } from '@modules/team/domain/ports/ITeamAIIntegrationRepository';
+import type { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ITeamAIIntegrationRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';

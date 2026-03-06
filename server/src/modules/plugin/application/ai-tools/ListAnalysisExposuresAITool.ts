@@ -5,7 +5,7 @@ import type { AIToolScope } from '@modules/ai/application/services/AIToolService
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import type { IStorageService } from '@shared/domain/ports/IStorageService';
+import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { SYS_BUCKETS } from '@core/config/minio';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';

@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import { base64ToBlobUrl } from '@/shared/utils/file';
-import type ITrajectoryRepository from '../../domain/ports/ITrajectoryRepository';
-import type IPreviewCache from '../../domain/ports/IPreviewCache';
+import type ITrajectoryRepository from '../../domain/port/ITrajectoryRepository';
+import type IPreviewCache from '../../domain/port/IPreviewCache';
 import type { Trajectory } from '../../domain/entities';
 import type { DashboardMetrics } from '@/modules/dashboard/domain/entities';
 import type {

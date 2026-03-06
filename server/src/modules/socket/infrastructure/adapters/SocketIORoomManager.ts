@@ -1,9 +1,9 @@
 import { Server, Socket } from 'socket.io';
 import { inject, injectable } from 'tsyringe';
-import { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/ports/ISocketRoomManager';
-import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
+import { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
+import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import logger from '@shared/infrastructure/logger';
-import { ISocketMapper } from '@modules/socket/domain/ports/ISocketMapper';
+import { ISocketMapper } from '@modules/socket/domain/port/ISocketMapper';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 
 /**

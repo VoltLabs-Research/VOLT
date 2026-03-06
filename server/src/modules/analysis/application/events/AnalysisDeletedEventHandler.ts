@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
-import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
-import { ISubListingRowRepository } from '@modules/plugin/domain/ports/ISubListingRowRepository';
+import { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
+import { ISubListingRowRepository } from '@modules/plugin/domain/port/ISubListingRowRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';

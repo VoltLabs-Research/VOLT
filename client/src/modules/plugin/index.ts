@@ -1,7 +1,7 @@
 // Domain layer exports
 export * from './domain/entities';
-export type { default as IPluginRepository } from './domain/ports/IPluginRepository';
-export type { default as IPluginListingRepository } from './domain/ports/IPluginListingRepository';
+export type { default as IPluginRepository } from './domain/port/IPluginRepository';
+export type { default as IPluginListingRepository } from './domain/port/IPluginListingRepository';
 
 // Application layer exports
 export * from './application/dtos';

@@ -1,4 +1,4 @@
-import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
 
 export interface FindCellsByTeamIdInputDTO {

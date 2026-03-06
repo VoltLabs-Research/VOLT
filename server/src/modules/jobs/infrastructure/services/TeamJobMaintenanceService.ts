@@ -1,8 +1,8 @@
 import { inject, injectable } from 'tsyringe';
 import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
-import { IJobRepository } from '@modules/jobs/domain/ports/IJobRepository';
-import { IJobQueueService } from '@modules/jobs/domain/ports/IJobQueueService';
-import { IQueueRegistry } from '@modules/jobs/domain/ports/IQueueRegistry';
+import { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
+import { IJobQueueService } from '@modules/jobs/domain/port/IJobQueueService';
+import { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
 import { ClearTeamJobsHistoryOutputDTO } from '@modules/jobs/application/dtos/ClearTeamJobsHistoryDTO';
 import { RemoveTeamRunningJobsOutputDTO } from '@modules/jobs/application/dtos/RemoveTeamRunningJobsDTO';
 import { RetryTeamFailedJobsOutputDTO } from '@modules/jobs/application/dtos/RetryTeamFailedJobsDTO';

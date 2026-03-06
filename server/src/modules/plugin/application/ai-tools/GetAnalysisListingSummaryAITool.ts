@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { AITool } from '@shared/application/ai/AITool';
 import type { AIToolScope } from '@modules/ai/application/services/AIToolService';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import type { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
+import type { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
 import { PluginListingService } from '@modules/plugin/infrastructure/services/PluginListingService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';

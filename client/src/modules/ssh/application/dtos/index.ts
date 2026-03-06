@@ -7,4 +7,4 @@ export type {
     ListSSHFilesParams,
     ListSSHFilesResponse,
     TestSSHConnectionResponse
-} from '@/modules/ssh/domain/ports/ISSHRepository';
+} from '@/modules/ssh/domain/port/ISSHRepository';

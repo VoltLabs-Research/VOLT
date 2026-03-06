@@ -1,4 +1,4 @@
-import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { ChatMessageProps } from '@modules/chat/domain/entities/ChatMessage';
 
 export interface GetChatMessagesInputDTO{

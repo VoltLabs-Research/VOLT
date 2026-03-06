@@ -1,4 +1,4 @@
-import { ISessionRepository } from '@modules/session/domain/ports/ISessionRepository';
+import { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import Session, { SessionProps } from '@modules/session/domain/entities/Session';
 import SessionModel, { SessionDocument } from '@modules/session/infrastructure/persistence/mongo/models/SessionModel';
 import sessionMapper from '@modules/session/infrastructure/persistence/mongo/mappers/SessionMapper';

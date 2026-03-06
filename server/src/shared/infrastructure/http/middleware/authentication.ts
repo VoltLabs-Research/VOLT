@@ -2,10 +2,10 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { NextFunction, Request, Response } from 'express';
 import { container } from 'tsyringe';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import type { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import type { ISecretKeyRepository } from '@modules/team/domain/ports/ISecretKeyRepository';
-import type { ISecretKeyUsageLogRepository } from '@modules/team/domain/ports/ISecretKeyUsageLogRepository';
+import type { ISecretKeyRepository } from '@modules/team/domain/port/ISecretKeyRepository';
+import type { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/ISecretKeyUsageLogRepository';
 import jwt from 'jsonwebtoken';
 import logger from '@shared/infrastructure/logger';
 

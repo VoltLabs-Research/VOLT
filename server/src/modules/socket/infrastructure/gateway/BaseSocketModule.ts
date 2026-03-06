@@ -1,8 +1,8 @@
 import { inject } from 'tsyringe';
-import { ISocketModule, ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
-import { ISocketEmitter } from '@modules/socket/domain/ports/ISocketEmitter';
-import { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/ports/ISocketRoomManager';
-import { ISocketEventRegistry, SocketEventHandler } from '@modules/socket/domain/ports/ISocketEventRegistry';
+import { ISocketModule, ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
+import { ISocketEventRegistry, SocketEventHandler } from '@modules/socket/domain/port/ISocketEventRegistry';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 
 /**

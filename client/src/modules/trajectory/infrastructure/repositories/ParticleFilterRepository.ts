@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type IParticleFilterRepository from '../../domain/ports/IParticleFilterRepository';
+import type IParticleFilterRepository from '../../domain/port/IParticleFilterRepository';
 import type {
     GetFilterPropertiesInputDTO,
     GetFilterPropertiesOutputDTO,

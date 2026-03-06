@@ -1,8 +1,8 @@
 import { inject, injectable } from 'tsyringe';
-import type IAuthRepository from '../../domain/ports/IAuthRepository';
+import type IAuthRepository from '../../domain/port/IAuthRepository';
 import type { SignInInputDTO, SignInOutputDTO } from '../dtos/index.ts';
 import type IUseCase from '@/shared/application/use-cases/IUseCase';
-import type ITokenStorage from '../../domain/ports/ITokenStorage';
+import type ITokenStorage from '../../domain/port/ITokenStorage';
 import { AUTH_TOKENS } from '@/modules/auth/infrastructure/di/tokens';
 
 @injectable()

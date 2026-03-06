@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { container } from 'tsyringe';
 import { PLUGIN_TOKENS } from '../../infrastructure/di/tokens';
-import type IPluginRepository from '../../domain/ports/IPluginRepository';
-import type IPluginListingRepository from '../../domain/ports/IPluginListingRepository';
+import type IPluginRepository from '../../domain/port/IPluginRepository';
+import type IPluginListingRepository from '../../domain/port/IPluginListingRepository';
 import type ClonePluginUseCase from '../../application/use-cases/ClonePluginUseCase';
 
 const usePluginUseCases = () => {

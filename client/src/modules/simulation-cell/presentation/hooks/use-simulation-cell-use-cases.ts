@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { container } from 'tsyringe';
 import { SIMULATION_CELL_TOKENS } from '../../infrastructure/di/tokens';
-import type ISimulationCellRepository from '../../domain/ports/ISimulationCellRepository';
+import type ISimulationCellRepository from '../../domain/port/ISimulationCellRepository';
 
 const useSimulationCellUseCases = () => {
     return useMemo(() => ({

@@ -1,7 +1,7 @@
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { CheckEmailInputDTO, CheckEmailOutputDTO } from '@modules/auth/application/dtos/CheckEmailDTO';
-import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
+import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { injectable, inject } from 'tsyringe';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';

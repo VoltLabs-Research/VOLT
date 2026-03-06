@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import type { IStorageService } from '@shared/domain/ports/IStorageService';
+import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { SYS_BUCKETS } from '@core/config/minio';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
 

@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
-import type IPreviewCache from '../../domain/ports/IPreviewCache';
-import type { PreviewCacheEntry } from '../../domain/ports/IPreviewCache';
+import type IPreviewCache from '../../domain/port/IPreviewCache';
+import type { PreviewCacheEntry } from '../../domain/port/IPreviewCache';
 import { MemoryCacheService } from '@/shared/infrastructure/services/cache';
 
 interface PreviewData{

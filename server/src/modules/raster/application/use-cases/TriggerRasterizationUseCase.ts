@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import { TriggerRasterizationInputDTO, TriggerRasterizationOutputDTO } from '@modules/raster/application/dtos/RasterDTOs';
-import { IRasterService } from '@modules/raster/domain/ports/IRasterService';
+import { IRasterService } from '@modules/raster/domain/port/IRasterService';
 
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 

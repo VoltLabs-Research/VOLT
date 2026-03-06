@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { container } from 'tsyringe';
 import { TRAJECTORY_TOKENS } from '@/modules/trajectory/infrastructure/di/tokens';
-import type ITrajectoryRepository from '@/modules/trajectory/domain/ports/ITrajectoryRepository';
+import type ITrajectoryRepository from '@/modules/trajectory/domain/port/ITrajectoryRepository';
 import type { Trajectory } from '@/modules/trajectory/domain/entities/Trajectory';
 import { usePluginDebugStore } from '../stores/use-plugin-debug-store';
 import ApiError from '@/shared/errors/ApiError';

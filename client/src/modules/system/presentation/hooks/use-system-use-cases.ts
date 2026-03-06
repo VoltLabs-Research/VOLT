@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { container } from 'tsyringe';
 import { SYSTEM_TOKENS } from '@/modules/system/infrastructure/di/tokens';
-import type ISystemRepository from '@/modules/system/domain/ports/ISystemRepository';
+import type ISystemRepository from '@/modules/system/domain/port/ISystemRepository';
 
 const useSystemUseCases = () => {
     return useMemo(() => ({

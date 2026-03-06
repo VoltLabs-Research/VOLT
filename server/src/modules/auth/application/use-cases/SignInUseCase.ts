@@ -1,12 +1,12 @@
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SignInInputDTO, SignInOutputDTO } from '@modules/auth/application/dtos/SignInDTO';
-import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
-import { IPasswordHasher } from '@modules/auth/domain/ports/IPasswordHasher';
-import { ITokenService } from '@modules/auth/domain/ports/ITokenService';
-import { ISessionRepository } from '@modules/session/domain/ports/ISessionRepository';
+import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
+import { ITokenService } from '@modules/auth/domain/port/ITokenService';
+import { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
 import { injectable, inject } from 'tsyringe';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';

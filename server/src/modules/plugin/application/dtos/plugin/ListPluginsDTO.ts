@@ -1,4 +1,4 @@
-import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { PluginProps } from '@modules/plugin/domain/entities/Plugin';
 
 export interface ListPluginsInputDTO {

@@ -1,11 +1,11 @@
 import crypto from 'node:crypto';
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { ISecretKeyRepository } from '@modules/team/domain/ports/ISecretKeyRepository';
-import { ITeamRoleRepository } from '@modules/team/domain/ports/ITeamRoleRepository';
+import { ISecretKeyRepository } from '@modules/team/domain/port/ISecretKeyRepository';
+import { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';

@@ -1,4 +1,4 @@
-import { IBaseRepository } from '@shared/domain/ports/IBaseRepository';
+import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 import SceneArtifact, { SceneArtifactProps } from '@modules/trajectory/domain/entities/SceneArtifact';
 
 export interface ISceneArtifactRepository extends IBaseRepository<SceneArtifact, SceneArtifactProps> {

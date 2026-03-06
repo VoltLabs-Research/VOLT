@@ -1,4 +1,4 @@
-import { IBaseRepository } from '@shared/domain/ports/IBaseRepository';
+import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 import SSHConnection, { SSHConnectionProps } from '@modules/ssh/domain/entities/SSHConnection';
 
 export interface ISSHConnectionRepository extends IBaseRepository<SSHConnection, SSHConnectionProps>{

@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { injectable } from 'tsyringe';
-import { ISocketEmitter } from '@modules/socket/domain/ports/ISocketEmitter';
+import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import logger from '@shared/infrastructure/logger';
 
 /**

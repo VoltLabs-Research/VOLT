@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { container } from 'tsyringe';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { IStorageService } from '@shared/domain/port/IStorageService';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { v4 } from 'uuid';
 import path from 'node:path';

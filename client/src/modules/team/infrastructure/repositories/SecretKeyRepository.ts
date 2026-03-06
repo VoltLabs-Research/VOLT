@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type ISecretKeyRepository from '../../domain/ports/ISecretKeyRepository';
-import type { GetSecretKeysParams, CreateSecretKeyParams, CreateSecretKeyResponse } from '../../domain/ports/ISecretKeyRepository';
+import type ISecretKeyRepository from '../../domain/port/ISecretKeyRepository';
+import type { GetSecretKeysParams, CreateSecretKeyParams, CreateSecretKeyResponse } from '../../domain/port/ISecretKeyRepository';
 import type { SecretKey, TeamUsageMetrics, KeyUsageMetrics } from '../../domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 

@@ -1,10 +1,10 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { ITeamAIIntegrationRepository } from '@modules/team/domain/ports/ITeamAIIntegrationRepository';
+import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ITeamAIIntegrationRepository';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import AIProviderModelDiscoveryService from '@modules/ai/application/services/AIProviderModelDiscoveryService';
 import TeamAIProviderCatalog from '@modules/team/application/services/TeamAIProviderCatalog';

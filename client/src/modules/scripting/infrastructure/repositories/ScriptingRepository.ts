@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type IScriptingRepository from '@/modules/scripting/domain/ports/IScriptingRepository';
+import type IScriptingRepository from '@/modules/scripting/domain/port/IScriptingRepository';
 import type {
     ListScriptingNotebooksInputDTO,
     ListScriptingNotebooksOutputDTO,

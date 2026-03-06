@@ -1,14 +1,14 @@
 import { injectable, inject } from 'tsyringe';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
-import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
-import { ISubListingRowRepository } from '@modules/plugin/domain/ports/ISubListingRowRepository';
+import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
+import { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
+import { ISubListingRowRepository } from '@modules/plugin/domain/port/ISubListingRowRepository';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import logger from '@shared/infrastructure/logger';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { decodeMultiStream } from '@shared/infrastructure/utilities/msgpack';
 import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/merge-chunked-value';

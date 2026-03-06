@@ -1,4 +1,4 @@
-import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
+import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import User, { UserProps } from '@modules/auth/domain/entities/User';
 import UserModel, { UserDocument } from '@modules/auth/infrastructure/persistence/mongo/models/UserModel';
 import userMapper from '@modules/auth/infrastructure/persistence/mongo/mappers/UserMapper';

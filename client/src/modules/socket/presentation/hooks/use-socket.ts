@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { container } from 'tsyringe';
-import ISocketService from '../../domain/ports/ISocketService';
+import ISocketService from '../../domain/port/ISocketService';
 import { SOCKET_TOKENS } from '../../infrastructure/di/tokens';
 
 const useSocket = (): ISocketService => {

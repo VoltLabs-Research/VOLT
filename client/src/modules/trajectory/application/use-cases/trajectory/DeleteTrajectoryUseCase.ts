@@ -1,6 +1,6 @@
 import { inject, injectable } from 'tsyringe';
 import type IUseCase from '@/shared/application/use-cases/IUseCase';
-import type ITrajectoryRepository from '../../../domain/ports/ITrajectoryRepository';
+import type ITrajectoryRepository from '../../../domain/port/ITrajectoryRepository';
 import type { DeleteTrajectoryInputDTO } from '../../dtos/trajectory';
 import { TRAJECTORY_TOKENS } from '../../../infrastructure/di/tokens';
 

@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
 import BaseRepository from '@/shared/infrastructure/repositories/BaseRepository';
-import type ISimulationCellRepository from '../../domain/ports/ISimulationCellRepository';
-import type { GetSimulationCellsParams } from '../../domain/ports/ISimulationCellRepository';
+import type ISimulationCellRepository from '../../domain/port/ISimulationCellRepository';
+import type { GetSimulationCellsParams } from '../../domain/port/ISimulationCellRepository';
 import type { SimulationCell } from '../../domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 

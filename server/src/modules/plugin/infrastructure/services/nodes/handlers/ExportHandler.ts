@@ -1,5 +1,5 @@
 import { injectable, inject } from 'tsyringe';
-import { INodeHandler, ExecutionContext, NodeOutputSchema, T, INodeRegistry } from '@modules/plugin/domain/ports/INodeRegistry';
+import { INodeHandler, ExecutionContext, NodeOutputSchema, T, INodeRegistry } from '@modules/plugin/domain/port/INodeRegistry';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -9,7 +9,7 @@ import { IAtomisticExporter } from '@modules/trajectory/domain/port/exporters/At
 import { IChartExporter } from '@modules/trajectory/domain/port/exporters/ChartExporter';
 import { IDislocationExporter } from '@modules/trajectory/domain/port/exporters/DislocationExporter';
 import { IMeshExporter } from '@modules/trajectory/domain/port/exporters/MeshExporter';
-import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { IStorageService } from '@shared/domain/port/IStorageService';
 import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { decodeMultiStreamFromFile } from '@shared/infrastructure/utilities/msgpack';

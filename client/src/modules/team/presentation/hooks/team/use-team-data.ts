@@ -4,7 +4,7 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
-import type ITeamStorage from '@/modules/team/domain/ports/ITeamStorage';
+import type ITeamStorage from '@/modules/team/domain/port/ITeamStorage';
 import { TEAM_TOKENS } from '@/modules/team/infrastructure/di/tokens';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 

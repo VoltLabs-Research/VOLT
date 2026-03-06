@@ -1,4 +1,4 @@
-import { ISSHConnectionRepository } from '@modules/ssh/domain/ports/ISSHConnectionRepository';
+import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import SSHConnection, { SSHConnectionProps } from '@modules/ssh/domain/entities/SSHConnection';
 import SSHConnectionModel, { SSHConnectionDocument } from '@modules/ssh/infrastructure/persistence/mongo/models/SSHConnectionModel';
 import sshConnectionMapper from '@modules/ssh/infrastructure/persistence/mongo/mappers/SSHConnectionMapper';

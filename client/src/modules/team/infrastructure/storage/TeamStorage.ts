@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import ITeamStorage from '../../domain/ports/ITeamStorage';
+import ITeamStorage from '../../domain/port/ITeamStorage';
 
 const SELECTED_TEAM_KEY = 'selectedTeamId';
 const TEAM_PERMISSIONS_KEY = 'teamPermissionsByTeamId';

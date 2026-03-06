@@ -8,7 +8,7 @@ import SSHConnectionForm from '@/modules/ssh/presentation/components/molecules/S
 import SSHConnectionTestButton from '@/modules/ssh/presentation/components/atoms/SSHConnectionTestButton';
 import { SSHConnectionFormData, defaultValues, createSSHConnectionSchema } from './validation-schema';
 import type { SSHConnection } from '@/modules/ssh/domain/entities';
-import type { CreateSSHConnectionParams, UpdateSSHConnectionParams } from '@/modules/ssh/domain/ports/ISSHRepository';
+import type { CreateSSHConnectionParams, UpdateSSHConnectionParams } from '@/modules/ssh/domain/port/ISSHRepository';
 
 export const SSH_CONNECTION_MODAL_ID = 'ssh-connection-modal';
 

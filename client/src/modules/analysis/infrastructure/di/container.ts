@@ -1,5 +1,5 @@
 import { container } from 'tsyringe';
-import type IAnalysisRepository from '../../domain/ports/IAnalysisRepository';
+import type IAnalysisRepository from '../../domain/port/IAnalysisRepository';
 import AnalysisRepository from '../repositories/AnalysisRepository';
 import {
     GetAnalysesUseCase,

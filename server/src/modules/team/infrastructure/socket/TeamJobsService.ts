@@ -1,6 +1,6 @@
 import { inject, injectable } from 'tsyringe';
-import { IJobRepository } from '@modules/jobs/domain/ports/IJobRepository';
-import { IQueueRegistry } from '@modules/jobs/domain/ports/IQueueRegistry';
+import { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
+import { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import logger from '@shared/infrastructure/logger';
 

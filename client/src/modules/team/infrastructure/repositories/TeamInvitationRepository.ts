@@ -3,8 +3,8 @@ import VoltClient from '@/app/core/http/VoltClient';
 import { http } from '@/app/di';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
-import ITeamInvitationRepository from '../../domain/ports/ITeamInvitationRepository';
-import ITeamStorage from '../../domain/ports/ITeamStorage';
+import ITeamInvitationRepository from '../../domain/port/ITeamInvitationRepository';
+import ITeamStorage from '../../domain/port/ITeamStorage';
 import { TeamInvitation } from '../../domain/entities';
 import { TEAM_TOKENS } from '../di/tokens';
 

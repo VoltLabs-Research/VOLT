@@ -1,10 +1,10 @@
 import { inject, injectable } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/ports/Result';
+import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import type { ISecretKeyRepository } from '@modules/team/domain/ports/ISecretKeyRepository';
+import type { ISecretKeyRepository } from '@modules/team/domain/port/ISecretKeyRepository';
 import {
     GetCurrentSecretKeyInputDTO,
     GetCurrentSecretKeyOutputDTO

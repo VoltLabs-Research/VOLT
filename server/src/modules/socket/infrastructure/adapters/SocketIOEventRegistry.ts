@@ -1,8 +1,8 @@
 import { Socket } from 'socket.io';
 import { inject, injectable } from 'tsyringe';
-import { ISocketEventRegistry, SocketEventHandler } from '@modules/socket/domain/ports/ISocketEventRegistry';
-import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
-import { ISocketMapper } from '@modules/socket/domain/ports/ISocketMapper';
+import { ISocketEventRegistry, SocketEventHandler } from '@modules/socket/domain/port/ISocketEventRegistry';
+import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import { ISocketMapper } from '@modules/socket/domain/port/ISocketMapper';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 
 /**

@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
-import { IRecoveryManagerService } from '@modules/jobs/domain/ports/IRecoveryManagerService';
-import { IJobRepository } from '@modules/jobs/domain/ports/IJobRepository';
+import { IRecoveryManagerService } from '@modules/jobs/domain/port/IRecoveryManagerService';
+import { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
 import { setImmediate } from 'node:timers/promises';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 

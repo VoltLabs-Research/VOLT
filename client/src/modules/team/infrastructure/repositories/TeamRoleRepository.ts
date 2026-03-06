@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import type ITeamRoleRepository from '../../domain/ports/ITeamRoleRepository';
-import type { GetTeamRolesParams, CreateTeamRoleParams, UpdateTeamRoleParams } from '../../domain/ports/ITeamRoleRepository';
+import type ITeamRoleRepository from '../../domain/port/ITeamRoleRepository';
+import type { GetTeamRolesParams, CreateTeamRoleParams, UpdateTeamRoleParams } from '../../domain/port/ITeamRoleRepository';
 import type { TeamRole } from '../../domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 
