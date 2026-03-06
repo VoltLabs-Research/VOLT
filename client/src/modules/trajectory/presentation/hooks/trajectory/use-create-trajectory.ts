@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import useTrajectoryStore from '../../stores/use-trajectory-store';
-import useTrajectoryUseCases from './use-trajectory-use-cases';
+import useTrajectoryUseCases from './use-trajectory-services';
 import { sileo } from 'sileo';
 import { Trajectory } from '@/modules/trajectory/domain/entities';
 import { v4 } from 'uuid';

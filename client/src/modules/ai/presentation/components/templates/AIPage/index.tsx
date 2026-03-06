@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { AIMessageArtifact } from '@/modules/ai/presentation/utils/message-artifacts';
+import type { AIMessageArtifact } from '@/modules/ai/presentation/utilities/message-artifacts';
 import AIComposer from '@/modules/ai/presentation/components/organisms/AIComposer';
 import AIConversationSidebar from '@/modules/ai/presentation/components/organisms/AIConversationSidebar';
 import AIConversationThread from '@/modules/ai/presentation/components/organisms/AIConversationThread';

@@ -1,12 +1,11 @@
-import { useMemo } from 'react';
-import { container } from 'tsyringe';
+import useResolve from '@/shared/presentation/hooks/use-resolve';
 import { TRAJECTORY_TOKENS } from '../../../infrastructure/di/tokens';
 import type IColorCodingRepository from '../../../domain/port/IColorCodingRepository';
 
 const useColorCodingUseCases = () => {
-    return useMemo(() => ({
-        colorCodingRepository: container.resolve<IColorCodingRepository>(TRAJECTORY_TOKENS.ColorCodingRepository)
-    }), []);
+    return {
+        colorCodingRepository: useResolve<IColorCodingRepository>(TRAJECTORY_TOKENS.ColorCodingRepository)
+    };
 };
 
 export default useColorCodingUseCases;

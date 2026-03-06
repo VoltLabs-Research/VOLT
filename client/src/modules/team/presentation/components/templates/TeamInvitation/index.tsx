@@ -5,7 +5,7 @@ import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Button from '@/shared/presentation/components/Button';
-import useTeamInvitationUseCases from '@/modules/team/presentation/hooks/team-invitation/use-team-invitation-use-cases';
+import useTeamInvitationUseCases from '@/modules/team/presentation/hooks/team-invitation/use-team-invitation-repository';
 import type { TeamInvitation } from '@/modules/team/domain/entities/TeamInvitation';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import ApiError from '@/shared/errors/ApiError';

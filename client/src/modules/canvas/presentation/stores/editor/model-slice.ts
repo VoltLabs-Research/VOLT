@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { ModelStore, ModelState, SceneObjectType, ModelData } from '@/modules/fractal/presentation/types/stores/editor/scene-types';
 import type { ModelWorldBounds } from '@/modules/fractal/presentation/types/configuration';
-import { isSameScene } from '@/modules/canvas/presentation/utils/scene-identity';
+import { isSameScene } from '@/modules/canvas/presentation/utilities/scene-identity';
 
 const initialState: ModelState = {
     activeModel: null,

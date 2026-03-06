@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { TbCheck, TbX } from 'react-icons/tb';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
-import useSSHUseCases from '@/modules/ssh/presentation/hooks/use-ssh-use-cases';
+import useSSHUseCases from '@/modules/ssh/presentation/hooks/use-ssh-repository';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import ApiError from '@/shared/errors/ApiError';
 

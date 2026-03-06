@@ -1,4 +1,4 @@
-export { default as usePluginUseCases } from './use-plugin-use-cases';
+export { default as usePluginUseCases } from './use-plugin-services';
 export { default as useDeletePlugin } from './use-delete-plugin';
 export { default as useExportPlugin } from './use-export-plugin';
 export { default as useImportPlugin } from './use-import-plugin';

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, Outlet } from 'react-router-dom';
-import useContainerUseCases from '../../../hooks/use-container-use-cases';
+import useContainerUseCases from '../../../hooks/use-container-repository';
 import useContainerStats from '../../../hooks/use-container-stats';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';

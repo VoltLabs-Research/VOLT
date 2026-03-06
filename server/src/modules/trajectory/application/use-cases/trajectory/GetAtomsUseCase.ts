@@ -6,7 +6,6 @@ import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { RuntimeError } from '@core/exceptions/RuntimeError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { GetAtomsInputDTO, AtomRecord } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
@@ -166,8 +165,8 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
                 _meta: { properties: displayProperties }
             });
         } catch (error: unknown) {
-            if (error instanceof RuntimeError) {
-                return Result.fail(new ApplicationError(error.code, error.message, error.statusCode));
+            if (error instanceof ApplicationError) {
+                return Result.fail(error);
             }
             return Result.fail(new ApplicationError('INTERNAL_SERVER_ERROR', 'Internal server error', 500));
         }

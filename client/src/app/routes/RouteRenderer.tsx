@@ -6,7 +6,7 @@ import PageTransition from '@/shared/presentation/components/PageTransition';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import type { RouteConfig } from './types';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
-import { canAccessByPermissions, getScopedPermissions, isPermissionScopeReady } from '@/modules/team/presentation/utils/permission-evaluator';
+import { canAccessByPermissions, getScopedPermissions, isPermissionScopeReady } from '@/modules/team/presentation/utilities/permission-evaluator';
 
 const wrapWithPageTransition = (Component: React.ComponentType) => (
     <PageTransition>

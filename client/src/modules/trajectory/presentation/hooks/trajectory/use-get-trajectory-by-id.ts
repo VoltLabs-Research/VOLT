@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import useTrajectoryStore from '../../stores/use-trajectory-store';
-import useTrajectoryUseCases from './use-trajectory-use-cases';
+import useTrajectoryUseCases from './use-trajectory-services';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { Trajectory } from '@/modules/trajectory/domain/entities';
 

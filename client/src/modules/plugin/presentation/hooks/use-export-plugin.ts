@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import usePluginUseCases from './use-plugin-use-cases';
+import usePluginUseCases from './use-plugin-services';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import ApiError from '@/shared/errors/ApiError';

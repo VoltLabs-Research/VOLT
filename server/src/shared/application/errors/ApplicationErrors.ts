@@ -6,6 +6,8 @@ export default class ApplicationError extends Error {
         public readonly isOperational: boolean = true
     ) {
         super(message);
+        Object.setPrototypeOf(this, ApplicationError.prototype);
+        Error.captureStackTrace(this, this.constructor);
     }
 
     public static badRequest(code: string, message: string): ApplicationError {

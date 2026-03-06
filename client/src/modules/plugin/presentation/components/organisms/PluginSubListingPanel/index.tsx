@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
+import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-services';
 import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/presentation/components/organisms/PluginCompactTable';
-import formatSnakeCaseToTitle from '@/modules/plugin/presentation/utils/format-snake-case';
+import formatSnakeCaseToTitle from '@/modules/plugin/presentation/utilities/format-snake-case';
 
 interface PluginSubListingPanelProps {
     analysisId: string;

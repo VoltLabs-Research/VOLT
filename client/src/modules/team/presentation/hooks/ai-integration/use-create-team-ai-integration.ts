@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import useAIIntegrationUseCases from './use-ai-integration-use-cases';
+import useAIIntegrationUseCases from './use-ai-integration-repository';
 import type { TeamAIProvider } from '@/modules/team/domain/entities/TeamAIIntegration';
 import type { CreateTeamAIIntegrationParams } from '@/modules/team/domain/port/ITeamAIIntegrationRepository';
 import useRequiredSelectedTeamId from './use-required-selected-team-id';

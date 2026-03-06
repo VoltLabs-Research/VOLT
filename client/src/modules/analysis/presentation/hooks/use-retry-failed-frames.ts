@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import useAnalysisUseCases from './use-analysis-use-cases';
+import useAnalysisUseCases from './use-analysis-services';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import ApiError from '@/shared/errors/ApiError';
 

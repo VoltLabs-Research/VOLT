@@ -5,7 +5,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import useForm from '@/shared/presentation/hooks/use-form';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
+import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-services';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { teamCreatorSchema, TeamCreatorForm } from './validation-schema';
 import ApiError from '@/shared/errors/ApiError';

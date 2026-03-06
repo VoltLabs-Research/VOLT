@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import useSSHUseCases from './use-ssh-use-cases';
+import useSSHUseCases from './use-ssh-repository';
 import { sileo } from 'sileo';
 import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';

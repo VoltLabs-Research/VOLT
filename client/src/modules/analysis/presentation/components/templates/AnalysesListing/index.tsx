@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiRefreshLine } from 'react-icons/ri';
-import useAnalysisUseCases from '../../../hooks/use-analysis-use-cases';
+import useAnalysisUseCases from '../../../hooks/use-analysis-services';
 import useDeleteAnalysis from '../../../hooks/use-delete-analysis';
 import useRetryFailedFrames from '../../../hooks/use-retry-failed-frames';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
@@ -9,7 +9,7 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type { Analysis } from '@/modules/analysis/domain/entities';
-import { dateColumn } from '@/shared/presentation/utils/column-presets';
+import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 
 const LIST_SYNC = createListSyncConfig('analysis');
 

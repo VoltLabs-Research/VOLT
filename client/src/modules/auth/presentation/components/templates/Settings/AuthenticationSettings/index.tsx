@@ -7,7 +7,7 @@ import SettingsSectionHeader from '@/modules/auth/presentation/components/molecu
 import PasswordStatusRow from '@/modules/auth/presentation/components/molecules/PasswordStatusRow';
 import LoginActivityRow from '@/modules/auth/presentation/components/molecules/LoginActivityRow';
 import PasswordChangeForm from '@/modules/auth/presentation/components/organisms/PasswordChangeForm';
-import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
+import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-services';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import { ChangePasswordInputDTO } from '@/modules/auth/application/dtos';

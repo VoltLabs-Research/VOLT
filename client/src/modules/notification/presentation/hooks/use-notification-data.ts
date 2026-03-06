@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { useNotificationStore } from '../stores/use-notification-store';
-import useNotificationUseCases from './use-notification-use-cases';
+import useNotificationUseCases from './use-notification-repository';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { sileo } from 'sileo';
 

@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import useModifierBase, { UseModifierBaseOptions } from './use-modifier-base';
-import useParticleFilterUseCases from '@/modules/trajectory/presentation/hooks/particle-filter/use-particle-filter-use-cases';
+import useParticleFilterUseCases from '@/modules/trajectory/presentation/hooks/particle-filter/use-particle-filter-repository';
 import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';

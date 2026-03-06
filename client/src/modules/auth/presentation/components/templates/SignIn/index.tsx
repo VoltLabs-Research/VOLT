@@ -9,7 +9,7 @@ import EmailStep from '../../molecules/EmailStep';
 import RegisterStep from '../../molecules/RegisterStep';
 import PasswordStep from '../../molecules/PasswordStep';
 import { signInSchema, SignInForm } from './validation-schema';
-import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
+import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-services';
 import { useAuthStore } from '../../../stores/use-auth-store';
 import { useNavigate } from 'react-router-dom';
 import { sileo } from 'sileo';

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import usePluginUseCases from './use-plugin-use-cases';
+import usePluginUseCases from './use-plugin-services';
 import usePluginStore from '../stores/use-plugin-store';
 import type { Plugin } from '../../domain/entities';
 

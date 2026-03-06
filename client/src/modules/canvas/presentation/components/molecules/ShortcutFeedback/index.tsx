@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import { useKeyboardShortcutsStore } from '../../../stores/use-keyboard-shortcuts-store';
-import formatKeyName from '../../../utils/format-key-name';
+import formatKeyName from '../../../utilities/format-key-name';
 import './ShortcutFeedback.css';
 
 const ShortcutFeedback = () => {

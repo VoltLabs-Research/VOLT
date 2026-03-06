@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoAddOutline, IoCloseOutline, IoExpandOutline, IoSparklesOutline } from 'react-icons/io5';
-import type { AIMessageArtifact } from '@/modules/ai/presentation/utils/message-artifacts';
+import type { AIMessageArtifact } from '@/modules/ai/presentation/utilities/message-artifacts';
 import AIComposer from '@/modules/ai/presentation/components/organisms/AIComposer';
 import AIConversationThread from '@/modules/ai/presentation/components/organisms/AIConversationThread';
 import useAIPage from '@/modules/ai/presentation/hooks/use-ai-page';

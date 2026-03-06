@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import useCanvasUrlState from './use-canvas-url-state';
 import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
-import useAnalysisUseCases from '@/modules/analysis/presentation/hooks/use-analysis-use-cases';
+import useAnalysisUseCases from '@/modules/analysis/presentation/hooks/use-analysis-services';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 import useAnalysisStatus, { seedAnalysisStatuses } from './use-analysis-status';
 import useExposureManager, { type ExposureEntry, DEFAULT_ENTRY } from './use-exposure-manager';
@@ -12,8 +12,8 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 
 import type { Analysis } from '@/modules/analysis/domain/entities/Analysis';
-import { computeDifferingConfigFields } from '../utils/canvas-sidebar-scene.ts';
-import { isSameScene } from '../utils/scene-identity';
+import { computeDifferingConfigFields } from '../utilities/canvas-sidebar-scene.ts';
+import { isSameScene } from '../utilities/scene-identity';
 
 export interface AnalysisSectionData {
     analysis: Analysis;

@@ -5,7 +5,7 @@ import Select, { type SelectOption } from '@/shared/presentation/components/Sele
 import IconButton from '@/shared/presentation/components/IconButton';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
-import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
+import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-services';
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import ApiError from '@/shared/errors/ApiError';

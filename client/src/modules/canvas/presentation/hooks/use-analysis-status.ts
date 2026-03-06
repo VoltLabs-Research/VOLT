@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { createExternalStore, useExternalStore } from '../utils/external-store';
+import { createExternalStore, useExternalStore } from '../utilities/external-store';
 import useSocketEvent from '@/modules/socket/presentation/hooks/use-socket-event';
 
 export type AnalysisStatus = 'pending' | 'running' | 'completed' | 'failed';

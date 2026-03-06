@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import useForm from '@/shared/presentation/hooks/use-form';
-import useTeamInvitationUseCases from '@/modules/team/presentation/hooks/team-invitation/use-team-invitation-use-cases';
+import useTeamInvitationUseCases from '@/modules/team/presentation/hooks/team-invitation/use-team-invitation-repository';
 import { useTeamInvitationStore } from '@/modules/team/presentation/stores/use-team-invitation-store';
 import useTeamInvitationData from '@/modules/team/presentation/hooks/team-invitation/use-team-invitation-data';
 import { teamInviteSchema, TeamInviteForm } from '../../components/organisms/TeamInvitePanel/validation-schema';

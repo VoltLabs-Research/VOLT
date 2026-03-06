@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import useTrajectoryUseCases from './use-trajectory-use-cases';
+import useTrajectoryUseCases from './use-trajectory-services';
 import type { GetTrajectoriesInputDTO, GetTrajectoriesOutputDTO } from '@/modules/trajectory/application/dtos/trajectory/GetTrajectoriesDTO';
 
 const useGetTrajectories = () => {

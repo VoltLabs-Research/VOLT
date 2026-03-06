@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import useTrajectoryUseCases from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-use-cases';
+import useTrajectoryUseCases from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-services';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type { DashboardMetrics, DashboardCard } from '@/modules/dashboard/domain/entities';
 

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import useSimulationCellUseCases from './use-simulation-cell-use-cases';
+import useSimulationCellUseCases from './use-simulation-cell-repository';
 import type { GetSimulationCellsInputDTO, GetSimulationCellsOutputDTO } from '../../application/dtos';
 
 const useGetSimulationCells = () => {

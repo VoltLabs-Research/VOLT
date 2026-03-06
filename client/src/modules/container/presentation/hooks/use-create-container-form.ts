@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useContainerUseCases from './use-container-use-cases';
+import useContainerUseCases from './use-container-repository';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';

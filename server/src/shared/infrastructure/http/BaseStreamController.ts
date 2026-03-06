@@ -2,10 +2,7 @@ import type { Response } from 'express';
 import type { Readable } from 'node:stream';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import type { UseCaseInstance } from '@shared/application/IUseCase';
-import BaseResponse from '@shared/infrastructure/http/BaseResponse';
-import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
 import { BaseController } from '@shared/infrastructure/http/BaseController';
-import logger from '@shared/infrastructure/logger';
 
 interface StreamableOutput {
     stream: Readable;
@@ -25,12 +22,7 @@ export abstract class BaseStreamController<TUseCase extends UseCaseInstance> ext
             const result = await this.useCase.execute(dto);
 
             if (!result.success) {
-                return BaseResponse.error(
-                    res,
-                    result.error.message,
-                    result.error.statusCode,
-                    result.error.code
-                );
+                return this.handleResultError(res, result);
             }
 
             const output = result.value as StreamableOutput;
@@ -41,13 +33,7 @@ export abstract class BaseStreamController<TUseCase extends UseCaseInstance> ext
 
             output.stream.pipe(res);
         } catch (error) {
-            logger.error(error);
-            return BaseResponse.error(
-                res,
-                'Internal Server Error',
-                HttpStatus.InternalServerError,
-                'Internal::Server::Error'
-            );
+            return this.handleUnexpectedError(res, error);
         }
     };
 }

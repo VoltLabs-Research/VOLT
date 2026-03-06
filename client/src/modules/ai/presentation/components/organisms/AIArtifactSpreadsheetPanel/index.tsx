@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IoCloseOutline, IoClipboardOutline, IoCheckmarkOutline } from 'react-icons/io5';
 import { PiFileCsv, PiFileXls } from 'react-icons/pi';
-import type { AIMessageArtifact } from '@/modules/ai/presentation/utils/message-artifacts';
-import { resolveTabularPayload } from '@/modules/ai/presentation/utils/message-artifacts';
+import type { AIMessageArtifact } from '@/modules/ai/presentation/utilities/message-artifacts';
+import { resolveTabularPayload } from '@/modules/ai/presentation/utilities/message-artifacts';
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';

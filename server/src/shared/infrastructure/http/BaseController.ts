@@ -26,18 +26,32 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
         };
     }
 
+    protected handleResultError(res: Response, result: { error: { message: string; statusCode: number; code: string } }): void {
+        BaseResponse.error(
+            res,
+            result.error.message,
+            result.error.statusCode,
+            result.error.code
+        );
+    }
+
+    protected handleUnexpectedError(res: Response, error: unknown): void {
+        logger.error(error);
+        BaseResponse.error(
+            res,
+            'Internal Server Error',
+            HttpStatus.InternalServerError,
+            'Internal::Server::Error'
+        );
+    }
+
     public handle = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
         try {
             const dto = this.getParams(req);
             const result = await this.useCase.execute(dto);
 
             if (!result.success) {
-                return BaseResponse.error(
-                    res,
-                    result.error.message,
-                    result.error.statusCode,
-                    result.error.code
-                );
+                return this.handleResultError(res, result);
             }
 
             return BaseResponse.success(
@@ -46,13 +60,7 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
                 this.statusCode
             )
         } catch (error) {
-            logger.error(error);
-            return BaseResponse.error(
-                res,
-                'Internal Server Error',
-                HttpStatus.InternalServerError,
-                'Internal::Server::Error'
-            );
+            return this.handleUnexpectedError(res, error);
         }
     };
 };

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import type { TrajectoryJobGroup } from '@/modules/jobs/domain/entities/Job';
-import useJobsUseCases from '@/modules/jobs/presentation/hooks/use-jobs-use-cases';
+import useJobsUseCases from '@/modules/jobs/presentation/hooks/use-jobs-repository';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
 

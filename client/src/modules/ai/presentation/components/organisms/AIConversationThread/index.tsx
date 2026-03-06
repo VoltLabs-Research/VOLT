@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useMemo, useRef } from 'react';
 import { isToolUIPart, type UIMessage } from 'ai';
 import type { AIMessageArtifact } from '@/modules/ai/domain/entities/AIConversation';
-import { resolveTabularPayload } from '@/modules/ai/presentation/utils/message-artifacts';
+import { resolveTabularPayload } from '@/modules/ai/presentation/utilities/message-artifacts';
 import { IoExpandOutline } from 'react-icons/io5';
 import Button from '@/shared/presentation/components/Button';
 import AutoScrollList from '@/shared/presentation/components/AutoScrollList';

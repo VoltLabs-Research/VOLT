@@ -7,7 +7,7 @@ import Title from '@/shared/presentation/components/Title';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import useTrajectoryFilePicker from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-file-picker';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
-import { canAccessTeamPermissions } from '@/modules/team/presentation/utils/permission-evaluator';
+import { canAccessTeamPermissions } from '@/modules/team/presentation/utilities/permission-evaluator';
 import './DashboardQuickActions.css';
 
 const actions = [

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
 import { usePluginCatalog } from '@/modules/plugin/presentation/hooks';
-import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
-import { getListingRelevantExposures } from '@/modules/plugin/presentation/utils/listing-exposures';
-import formatSnakeCaseToTitle from '@/modules/plugin/presentation/utils/format-snake-case';
+import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-services';
+import { getListingRelevantExposures } from '@/modules/plugin/presentation/utilities/listing-exposures';
+import formatSnakeCaseToTitle from '@/modules/plugin/presentation/utilities/format-snake-case';
 import type { IExposureComputed } from '@/modules/plugin/domain/entities/Exposure';
 import type { Trajectory } from '@/modules/trajectory/domain/entities/Trajectory';
-import useSceneArtifactUseCases from '@/modules/trajectory/presentation/hooks/generated-scenes/use-scene-artifact-use-cases';
+import useSceneArtifactUseCases from '@/modules/trajectory/presentation/hooks/generated-scenes/use-scene-artifact-services';
 import type { RenderableExposurePayload } from '@/modules/trajectory/application/dtos/scene-artifacts';
 import ApiError from '@/shared/errors/ApiError';
 import { sileo } from 'sileo';

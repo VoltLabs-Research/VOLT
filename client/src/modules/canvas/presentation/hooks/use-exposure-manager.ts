@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import useSceneArtifactUseCases from '@/modules/trajectory/presentation/hooks/generated-scenes/use-scene-artifact-use-cases';
+import useSceneArtifactUseCases from '@/modules/trajectory/presentation/hooks/generated-scenes/use-scene-artifact-services';
 import { sileo } from 'sileo';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type { RenderableExposure } from '@/modules/plugin/presentation/stores/use-plugin-store';

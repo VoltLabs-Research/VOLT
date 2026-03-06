@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import useSecretKeyUseCases from './use-secret-key-use-cases';
+import useSecretKeyUseCases from './use-secret-key-repository';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import usePollingFetch from '@/shared/presentation/hooks/use-polling-fetch';
 import type { TeamUsageMetrics } from '@/modules/team/domain/entities';

@@ -4,7 +4,7 @@ import Container from '@/shared/presentation/components/Container';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import IconButton from '@/shared/presentation/components/IconButton';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
-import { canAccessTeamPermissions } from '@/modules/team/presentation/utils/permission-evaluator';
+import { canAccessTeamPermissions } from '@/modules/team/presentation/utilities/permission-evaluator';
 import TeamInvitePanelPopover from '@/modules/team/presentation/components/molecules/TeamInvitePanelPopover';
 import HeaderBreadcrumbs from '@/modules/dashboard/presentation/components/atoms/HeaderBreadcrumbs';
 import GlobalSearch from '@/modules/dashboard/presentation/components/molecules/GlobalSearch';

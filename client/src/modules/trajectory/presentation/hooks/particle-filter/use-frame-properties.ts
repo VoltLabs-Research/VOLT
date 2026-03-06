@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import useColorCodingUseCases from '../color-coding/use-color-coding-use-cases';
+import useColorCodingUseCases from '../color-coding/use-color-coding-repository';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type { ColorCodingProperties } from '../../../application/dtos/color-coding';
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import useModifierBase, { UseModifierBaseOptions } from './use-modifier-base';
-import useColorCodingUseCases from '@/modules/trajectory/presentation/hooks/color-coding/use-color-coding-use-cases';
+import useColorCodingUseCases from '@/modules/trajectory/presentation/hooks/color-coding/use-color-coding-repository';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import ApiError from '@/shared/errors/ApiError';

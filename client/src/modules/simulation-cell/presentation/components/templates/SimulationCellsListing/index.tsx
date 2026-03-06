@@ -3,7 +3,7 @@ import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import { formatNumber } from '@/shared/utils/format';
 import type { SimulationCell } from '@/modules/simulation-cell/domain/entities';
-import { dateColumn } from '@/shared/presentation/utils/column-presets';
+import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 
 const formatPeriodicBoundary = (cell: SimulationCell): string => {
     const pbc = cell.geometry.periodic_boundary_conditions;

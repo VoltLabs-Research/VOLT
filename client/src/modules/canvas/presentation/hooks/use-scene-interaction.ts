@@ -1,4 +1,4 @@
-import { createExternalStore, useExternalStore } from '../utils/external-store';
+import { createExternalStore, useExternalStore } from '../utilities/external-store';
 
 const store = createExternalStore({ initialState: false, serverSnapshot: false });
 
