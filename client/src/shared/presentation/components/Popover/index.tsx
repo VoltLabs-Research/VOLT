@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import Container from '@/shared/presentation/components/Container';
 import './Popover.css';
@@ -73,12 +73,17 @@ const Popover: React.FC<PopoverProps> = ({
         setIsOpen((prev) => !prev);
     }, []);
 
+    const onOpenChangeRef = useRef(onOpenChange);
+    useLayoutEffect(() => {
+        onOpenChangeRef.current = onOpenChange;
+    });
+
     useEffect(() => {
         if(isOpen){
             calculatePosition();
         }
-        onOpenChange?.(isOpen);
-    }, [isOpen, calculatePosition, onOpenChange]);
+        onOpenChangeRef.current?.(isOpen);
+    }, [isOpen, calculatePosition]);
 
     useEffect(() => {
         if(!isOpen) return;

@@ -27,6 +27,7 @@ const PluginBuilder = () => {
     const signOut = useAuthStore((state) => state.signOut);
     const [isSigningOut, setIsSigningOut] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const { nodes, updateNodeData, selectedNode, selectNode, deleteNode, addNode, undo, redo } = usePluginBuilderStore(
         useShallow((state) => ({
@@ -44,24 +45,50 @@ const PluginBuilder = () => {
     const saveWorkflow = useSaveWorkflow();
     const isSaving = usePluginBuilderStore((state) => state.isSaving);
 
+    const clearSaveStatusTimeout = useCallback(() => {
+        if (!saveStatusTimeoutRef.current) {
+            return;
+        }
+
+        clearTimeout(saveStatusTimeoutRef.current);
+        saveStatusTimeoutRef.current = null;
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            clearSaveStatusTimeout();
+        };
+    }, [clearSaveStatusTimeout]);
+
     const handleSave = useCallback(async () => {
         if (isSaving) return;
+
+        clearSaveStatusTimeout();
         setSaveStatus('saving');
         try {
             const result = await saveWorkflow();
             if (result) {
                 setSaveStatus('saved');
                 setHasUnsavedChanges(false);
-                setTimeout(() => setSaveStatus('idle'), 2000);
+                saveStatusTimeoutRef.current = setTimeout(() => {
+                    setSaveStatus('idle');
+                    saveStatusTimeoutRef.current = null;
+                }, 2000);
             } else {
                 setSaveStatus('error');
-                setTimeout(() => setSaveStatus('idle'), 3000);
+                saveStatusTimeoutRef.current = setTimeout(() => {
+                    setSaveStatus('idle');
+                    saveStatusTimeoutRef.current = null;
+                }, 3000);
             }
         } catch {
             setSaveStatus('error');
-            setTimeout(() => setSaveStatus('idle'), 3000);
+            saveStatusTimeoutRef.current = setTimeout(() => {
+                setSaveStatus('idle');
+                saveStatusTimeoutRef.current = null;
+            }, 3000);
         }
-    }, [saveWorkflow, isSaving]);
+    }, [clearSaveStatusTimeout, saveWorkflow, isSaving]);
 
     useKeyboardShortcut('s', handleSave, { ctrl: true });
 

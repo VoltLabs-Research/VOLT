@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import useTrajectoryStore from '../../stores/use-trajectory-store';
 import useTrajectoryUseCases from './use-trajectory-services';
 import { sileo } from 'sileo';
@@ -13,6 +13,17 @@ const useCreateTrajectory = () => {
     const removeUpload = useTrajectoryStore((state) => state.removeUpload);
     const addTrajectory = useTrajectoryStore((state) => state.addTrajectory);
     const setError = useTrajectoryStore((state) => state.setError);
+    const removeUploadTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+    useEffect(() => {
+        return () => {
+            for(const timer of removeUploadTimersRef.current.values()){
+                clearTimeout(timer);
+            }
+
+            removeUploadTimersRef.current.clear();
+        };
+    }, []);
 
     const createTrajectory = useCallback(async (
         formData: FormData,
@@ -27,12 +38,30 @@ const useCreateTrajectory = () => {
                 onProgress?.(progress);
             });
 
+            const existingTimer = removeUploadTimersRef.current.get(uploadId);
+
+            if(existingTimer){
+                clearTimeout(existingTimer);
+                removeUploadTimersRef.current.delete(uploadId);
+            }
+
             removeUpload(uploadId);
             addTrajectory(result.trajectory);
             return result.trajectory;
         }catch(error){
             setUploadStatus(uploadId, 'failed');
-            setTimeout(() => removeUpload(uploadId), 2000);
+            const existingTimer = removeUploadTimersRef.current.get(uploadId);
+
+            if(existingTimer){
+                clearTimeout(existingTimer);
+            }
+
+            const timer = setTimeout(() => {
+                removeUpload(uploadId);
+                removeUploadTimersRef.current.delete(uploadId);
+            }, 2000);
+
+            removeUploadTimersRef.current.set(uploadId, timer);
             if(ApiError.isRBACError(error)){
                 const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to create trajectories';
                 setError(msg);

@@ -16,6 +16,12 @@ import { Play, StepForward, FastForward, Square, Bug } from 'lucide-react';
 import Loader from '@/shared/presentation/components/Loader';
 import './DebugToolbar.css';
 
+interface ArgumentsNodeData {
+    arguments?: {
+        arguments?: IArgumentDefinition[];
+    };
+}
+
 const DebugToolbar = () => {
     const {
         trajectories,
@@ -27,7 +33,9 @@ const DebugToolbar = () => {
         isLoading: trajLoading
     } = useDebugTrajectorySelector();
 
-    const { startDebug, step, continueAll, stop, isDebugging } = usePluginDebugSocket();
+    const { startDebug, step, continueAll, stop, isDebugging } = usePluginDebugSocket({
+        subscribe: false
+    });
 
     const {
         isPaused,
@@ -44,13 +52,19 @@ const DebugToolbar = () => {
 
     const nodes = usePluginBuilderStore((s) => s.nodes);
 
-    // Check if the plugin has configurable arguments (no hardcoded `value`)
     const hasConfigurableArgs = useMemo(() => {
         const argsNode = nodes.find((n) => n.type === NodeType.ARGUMENTS);
-        if (!argsNode) return false;
-        const argsDef = (argsNode.data as any)?.arguments?.arguments as IArgumentDefinition[] | undefined;
-        if (!argsDef) return false;
-        return argsDef.some((arg) => arg.value === undefined);
+        if (!argsNode) {
+            return false;
+        }
+
+        const argsNodeData = argsNode.data as ArgumentsNodeData | undefined;
+        const argumentDefinitions = argsNodeData?.arguments?.arguments;
+        if (!argumentDefinitions) {
+            return false;
+        }
+
+        return argumentDefinitions.some((argument) => argument.value === undefined);
     }, [nodes]);
 
     const handleTrajectoryChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -67,7 +81,6 @@ const DebugToolbar = () => {
     const canContinue = isDebugging && isPaused;
     const canStop = isDebugging || isStarting;
 
-    // When play is clicked: if configurable args exist, show panel; otherwise start directly
     const handlePlayClick = useCallback(() => {
         if (hasConfigurableArgs) {
             setShowArgumentsPanel(true);
@@ -76,20 +89,20 @@ const DebugToolbar = () => {
         }
     }, [hasConfigurableArgs, setShowArgumentsPanel, startDebug]);
 
-    // Called from the arguments panel "Start Debug" button
     const handleStartFromPanel = useCallback(() => {
         startDebug();
     }, [startDebug]);
 
-    // Find current node label
-    const currentNodeType = currentNodeId
-        ? executionOrder.find((n) => n.nodeId === currentNodeId)?.type
-        : null;
-    const currentNodeLabel = currentNodeType
-        ? NODE_CONFIGS[currentNodeType as keyof typeof NODE_CONFIGS]?.label ?? currentNodeType
-        : null;
+    let currentNodeType: string | null = null;
+    if (currentNodeId) {
+        currentNodeType = executionOrder.find((node) => node.nodeId === currentNodeId)?.type ?? null;
+    }
 
-    // Count completed nodes
+    let currentNodeLabel: string | null = null;
+    if (currentNodeType) {
+        currentNodeLabel = NODE_CONFIGS[currentNodeType as keyof typeof NODE_CONFIGS]?.label ?? currentNodeType;
+    }
+
     const completedCount = Object.values(nodeStates).filter((s) => s.status === 'completed').length;
 
     return (
@@ -102,7 +115,6 @@ const DebugToolbar = () => {
 
                 <Divider orientation='vertical' className='debug-toolbar-divider' />
 
-                {/* Trajectory Selector */}
                 <select
                     className='debug-toolbar-select radius-sm font-size-1 cursor-pointer'
                     value={selectedTrajectoryId || ''}
@@ -117,7 +129,6 @@ const DebugToolbar = () => {
                     ))}
                 </select>
 
-                {/* Frame Selector */}
                 <select
                     className='debug-toolbar-select radius-sm font-size-1 cursor-pointer'
                     value={selectedTimestep ?? ''}
@@ -134,7 +145,6 @@ const DebugToolbar = () => {
 
                 <Divider orientation='vertical' className='debug-toolbar-divider' />
 
-                {/* Controls */}
                 <Container className='d-flex items-center gap-025'>
                     <Tooltip content={canStart ? (hasConfigurableArgs ? 'Configure arguments & start' : 'Start debug (single frame)') : 'Select trajectory & frame first'} placement='bottom'>
                         <Button
@@ -142,54 +152,54 @@ const DebugToolbar = () => {
                             intent='neutral'
                             iconOnly
                             size='sm'
-                        onClick={handlePlayClick}
-                        disabled={!canStart}
-                    >
-                        {isStarting ? <Loader scale={0.6} isFixed={false} /> : <Play size={14} />}
-                    </Button>
-                </Tooltip>
+                            onClick={handlePlayClick}
+                            disabled={!canStart}
+                        >
+                            {isStarting ? <Loader scale={0.6} isFixed={false} /> : <Play size={14} />}
+                        </Button>
+                    </Tooltip>
 
-                <Tooltip content='Step to next node' placement='bottom'>
-                    <Button
-                        variant='ghost'
-                        intent='neutral'
-                        iconOnly
-                        size='sm'
-                        onClick={step}
-                        disabled={!canStep}
-                    >
-                        <StepForward size={14} />
-                    </Button>
-                </Tooltip>
+                    <Tooltip content='Step to next node' placement='bottom'>
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
+                            iconOnly
+                            size='sm'
+                            onClick={step}
+                            disabled={!canStep}
+                        >
+                            <StepForward size={14} />
+                        </Button>
+                    </Tooltip>
 
-                <Tooltip content='Continue (run all remaining)' placement='bottom'>
-                    <Button
-                        variant='ghost'
-                        intent='neutral'
-                        iconOnly
-                        size='sm'
-                        onClick={continueAll}
-                        disabled={!canContinue}
-                    >
-                        <FastForward size={14} />
-                    </Button>
-                </Tooltip>
+                    <Tooltip content='Continue (run all remaining)' placement='bottom'>
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
+                            iconOnly
+                            size='sm'
+                            onClick={continueAll}
+                            disabled={!canContinue}
+                        >
+                            <FastForward size={14} />
+                        </Button>
+                    </Tooltip>
 
-                <Tooltip content='Stop debug session' placement='bottom'>
-                    <Button
-                        variant='ghost'
-                        intent='neutral'
-                        iconOnly
-                        size='sm'
-                        onClick={stop}
-                        disabled={!canStop}
-                    >
-                        <Square size={14} />
-                    </Button>
-                </Tooltip>
+                    <Tooltip content='Stop debug session' placement='bottom'>
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
+                            iconOnly
+                            size='sm'
+                            onClick={stop}
+                            disabled={!canStop}
+                        >
+                            <Square size={14} />
+                        </Button>
+                    </Tooltip>
+                </Container>
             </Container>
 
-            {/* In-toolbar status (paused / running) */}
             {isDebugging && (
                 <>
                     <Divider orientation='vertical' className='debug-toolbar-divider' />
@@ -213,10 +223,9 @@ const DebugToolbar = () => {
                     </Container>
                 </>
             )}
-            <DebugArgumentsPanel onStart={handleStartFromPanel} canStart={canStart} />
-        </Container>
 
-            {/* Below-toolbar status (completed / error) */}
+            <DebugArgumentsPanel onStart={handleStartFromPanel} canStart={canStart} />
+
             {!isDebugging && (totalDuration !== null || sessionError) && (
                 <Container className='text-center mt-1 debug-toolbar-below-status'>
                     {totalDuration !== null && totalDuration >= 0 && (

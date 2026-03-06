@@ -10,10 +10,10 @@ const initialTimestepData: TimestepData = {
     timestepCount: 0
 };
 
-const initialState: TimestepState = {
+const createInitialState = (): TimestepState => ({
     timestepData: initialTimestepData,
     isRenderOptionsLoading: false
-};
+});
 
 const extractTimestepsWorker = (frames: any[]): number[] => {
     if (!frames || frames.length === 0) return [];
@@ -29,21 +29,27 @@ const createTimestepData = (timesteps: number[]): TimestepData => ({
 });
 
 export const createTimestepSlice: StateCreator<any, [], [], TimestepStore> = (set, get) => ({
-    ...initialState,
+    ...createInitialState(),
 
     async computeTimestepData(trajectory: Trajectory | null, _currentTimestep?: number, _cacheBuster?: number) {
         if (!trajectory?.frames || trajectory.frames.length === 0) {
-            set({ timestepData: initialTimestepData });
+            set({
+                timestepData: initialTimestepData,
+                isRenderOptionsLoading: false
+            });
             return;
         }
 
         const timesteps = extractTimestepsWorker(trajectory.frames);
         const timestepData = createTimestepData(timesteps);
 
-        set({ timestepData });
+        set({
+            timestepData,
+            isRenderOptionsLoading: false
+        });
     },
 
-    loadModels: async (_preloadBehavior, onProgress, maxFramesToPreload, currentFrameIndex) => {
+    loadModels: async (_preloadBehavior, onProgress, maxFramesToPreload, currentFrameIndex, signal) => {
         const { timestepData } = get();
         if (!timestepData.timesteps.length) return {};
 
@@ -68,9 +74,18 @@ export const createTimestepSlice: StateCreator<any, [], [], TimestepStore> = (se
 
         const targetTimesteps = timesteps.slice(startIndex, endIndex);
         const total = targetTimesteps.length;
+
+        if (!total || signal?.aborted) {
+            return {};
+        }
+
         let loadedCount = 0;
 
         const promises = targetTimesteps.map(async (timestep: number) => {
+            if (signal?.aborted) {
+                return;
+            }
+
             const url = computeGlbUrl({
                 teamId,
                 trajectoryId,
@@ -82,9 +97,13 @@ export const createTimestepSlice: StateCreator<any, [], [], TimestepStore> = (se
 
             try {
                 const loader = new AssetLoader();
-                await loader.load(url);
+                await loader.load(url, undefined, signal);
             } catch {
             } finally {
+                if (signal?.aborted) {
+                    return;
+                }
+
                 loadedCount++;
                 if (onProgress) {
                     onProgress(loadedCount / total, { bps: 0 });
@@ -97,6 +116,6 @@ export const createTimestepSlice: StateCreator<any, [], [], TimestepStore> = (se
     },
 
     resetTimesteps() {
-        set(initialState);
+        set(createInitialState());
     }
 });

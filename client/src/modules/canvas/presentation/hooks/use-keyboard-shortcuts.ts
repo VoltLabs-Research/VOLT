@@ -29,6 +29,7 @@ const useKeyboardShortcuts = () => {
     } = useCanvasUrlState();
 
     const actionsRef = useRef<Record<string, () => void>>({});
+    const lastTriggeredTimeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
         actionsRef.current = {
@@ -185,8 +186,15 @@ const useKeyboardShortcuts = () => {
                         action();
                     }
 
+                    if (lastTriggeredTimeoutRef.current !== null) {
+                        window.clearTimeout(lastTriggeredTimeoutRef.current);
+                    }
+
                     setLastTriggered({ id, description: shortcut.description });
-                    setTimeout(() => setLastTriggered(null), 1500);
+                    lastTriggeredTimeoutRef.current = window.setTimeout(() => {
+                        setLastTriggered(null);
+                        lastTriggeredTimeoutRef.current = null;
+                    }, 1500);
 
                     return;
                 }
@@ -196,6 +204,11 @@ const useKeyboardShortcuts = () => {
         window.addEventListener('keydown', handleKeyDown, { capture: true });
         return () => {
             window.removeEventListener('keydown', handleKeyDown, { capture: true });
+            if (lastTriggeredTimeoutRef.current !== null) {
+                window.clearTimeout(lastTriggeredTimeoutRef.current);
+                lastTriggeredTimeoutRef.current = null;
+            }
+            setLastTriggered(null);
         };
     }, [setLastTriggered]);
 

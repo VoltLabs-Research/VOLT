@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { Plugin } from '../../domain/entities';
 import usePluginUseCases from './use-plugin-services';
 import usePluginStore from '../stores/use-plugin-store';
@@ -20,6 +20,15 @@ const usePluginCatalog = () => {
 
     const loadAllPromiseRef = useRef<Promise<void> | null>(null);
     const ensurePluginPromisesRef = useRef<Map<string, Promise<Plugin | null>>>(new Map());
+    const isMountedRef = useRef(true);
+
+    useEffect(() => {
+        return () => {
+            isMountedRef.current = false;
+            loadAllPromiseRef.current = null;
+            ensurePluginPromisesRef.current.clear();
+        };
+    }, []);
 
     const loadAllPlugins = useCallback(async ({ limit = 200, force = true }: LoadAllPluginsOptions = {}): Promise<void> => {
         const currentPlugins = usePluginStore.getState().plugins;
@@ -30,7 +39,10 @@ const usePluginCatalog = () => {
         }
 
         const request = (async () => {
-            setLoading(true);
+            if (isMountedRef.current) {
+                setLoading(true);
+            }
+
             try {
                 let page = 1;
                 let hasMore = true;
@@ -43,14 +55,20 @@ const usePluginCatalog = () => {
                     page += 1;
                 }
 
-                setPlugins(allPlugins);
-                setError(null);
+                if (isMountedRef.current) {
+                    setPlugins(allPlugins);
+                    setError(null);
+                }
             } catch (error) {
                 if(checkRBACError(error)) throw error;
-                setError(error instanceof Error ? error.message : 'Failed to load plugins');
+                if (isMountedRef.current) {
+                    setError(error instanceof Error ? error.message : 'Failed to load plugins');
+                }
                 throw error;
             } finally {
-                setLoading(false);
+                if (isMountedRef.current) {
+                    setLoading(false);
+                }
                 loadAllPromiseRef.current = null;
             }
         })();
@@ -72,16 +90,18 @@ const usePluginCatalog = () => {
 
         const request = (async () => {
             try {
-                const response = await pluginRepository.getById(id);
+                const response = await pluginRepository.getById({ id });
                 const plugin = response ?? null;
-                if (plugin) {
+                if (plugin && isMountedRef.current) {
                     registerPlugins([plugin]);
                     setError(null);
                 }
                 return plugin;
             } catch (error) {
                 if(checkRBACError(error)) throw error;
-                setError(error instanceof Error ? error.message : `Failed to load plugin ${id}`);
+                if (isMountedRef.current) {
+                    setError(error instanceof Error ? error.message : `Failed to load plugin ${id}`);
+                }
                 throw error;
             } finally {
                 ensurePluginPromisesRef.current.delete(id);

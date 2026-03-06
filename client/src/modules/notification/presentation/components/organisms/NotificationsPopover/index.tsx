@@ -19,11 +19,17 @@ const NotificationsPopover = () => {
     useNotificationSocket();
 
     useEffect(() => {
-        fetchNotifications();
-    }, []);
+        fetchNotifications(1);
+    }, [fetchNotifications]);
 
     const handleOpenChange = (isOpen: boolean) => {
-        if(isOpen && unreadCount > 0){
+        if (!isOpen) {
+            return;
+        }
+
+        fetchNotifications(1);
+
+        if (unreadCount > 0) {
             markAllAsRead();
         }
     };

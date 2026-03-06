@@ -48,6 +48,11 @@ export interface IUserRepository extends IBaseRepository<User, UserProps>{
     updateLastLogin(id: string): Promise<void>;
 
     /**
+     * Update last seen timestamp.
+     */
+    updateLastSeen(id: string, timestamp?: Date): Promise<void>;
+
+    /**
      * Update user avatar.
      */
     updateAvatar(id: string, avatarUrl: string): Promise<void>;

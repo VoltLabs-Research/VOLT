@@ -7,5 +7,7 @@ export interface User extends BaseEntity {
     lastName?: string;
     fullName?: string;
     avatar?: string;
-    lastLoginAt: string;
+    lastLoginAt?: string;
+    lastSeenAt?: string | null;
+    isOnline?: boolean;
 };

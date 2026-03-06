@@ -7,6 +7,7 @@ import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-
 import useTeamMemberData from '@/modules/team/presentation/hooks/team-member/use-team-member-data';
 import { useTeamMemberStore } from '@/modules/team/presentation/stores/use-team-member-store';
 import { useTeamPresenceStore } from '@/modules/team/presentation/stores/use-team-presence-store';
+import { resolveTeamUserOnline } from '@/modules/team/presentation/utilities/presence';
 import Avatar from '@/shared/presentation/components/Avatar';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
@@ -22,6 +23,7 @@ const DashboardTeamPresence = () => {
     const members = useTeamMemberStore((state) => state.members);
     const isLoading = useTeamMemberStore((state) => state.isLoading);
     const onlineUserIds = useTeamPresenceStore((s) => s.onlineUserIds);
+    const hasPresenceSnapshot = useTeamPresenceStore((s) => s.hasPresenceSnapshot);
 
     useEffect(() => {
         fetchMembers(selectedTeam._id);
@@ -35,7 +37,7 @@ const DashboardTeamPresence = () => {
             const user = member.user as User | undefined;
             if (!user?._id) continue;
 
-            if (onlineUserIds.has(user._id)) {
+            if (resolveTeamUserOnline(user, onlineUserIds, hasPresenceSnapshot)) {
                 online.push({ user, memberId: member._id });
             } else {
                 offline.push({ user, memberId: member._id });
@@ -43,7 +45,7 @@ const DashboardTeamPresence = () => {
         }
 
         return { onlineMembers: online, offlineMembers: offline };
-    }, [members, onlineUserIds]);
+    }, [members, onlineUserIds, hasPresenceSnapshot]);
 
     const totalCount = members.length;
     const onlineCount = onlineMembers.length;
@@ -96,7 +98,7 @@ const DashboardTeamPresence = () => {
             ) : (
                 <Container className='dashboard-presence-grid'>
                     {allSorted.map(({ user, memberId }) => {
-                        const isOnline = onlineUserIds.has(user._id);
+                        const isOnline = resolveTeamUserOnline(user, onlineUserIds, hasPresenceSnapshot);
                         return (
                             <Container
                                 key={memberId}

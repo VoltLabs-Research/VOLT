@@ -14,14 +14,19 @@ const useTeamInvitationData = () => {
 
     const fetchPendingInvitations = useCallback(async () => {
         setLoading(true);
+        setError(null);
 
         try{
             const invitations = await teamInvitationRepository.getPending();
             setInvitations(invitations);
-        }catch(error: any){
+        }catch(error: unknown){
             if(checkRBACError(error)) return;
+            let errorMessage = 'Failed to fetch invitations';
+            if (error instanceof Error && error.message) {
+                errorMessage = error.message;
+            }
             sileo.error({ title: 'Failed to fetch invitations' });
-            setError(error?.message ?? 'Failed to fetch invitations');
+            setError(errorMessage);
         }finally{
             setLoading(false);
         }

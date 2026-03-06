@@ -3,7 +3,7 @@ import { Plane, Raycaster, Vector3, Euler } from 'three';
 import { AssetLoader } from '@/modules/fractal/core/AssetLoader';
 import { MaterialPipeline } from '@/modules/fractal/core/MaterialPipeline';
 import { ModelTransform, type BoundsInfo } from '@/modules/fractal/core/ModelTransform';
-import { getBoxDimensions } from '@/modules/fractal/presentation/utilities/boxUtils';
+import { disposeMaterialResources, disposeObject3DResources } from './resource-disposal';
 
 type FractalParams = {
     url?: string | null;
@@ -19,7 +19,6 @@ type FractalParams = {
     onEmptyData?: () => void;
     sceneKey?: string;
     boxBounds?: { xlo: number; xhi: number; ylo: number; yhi: number; zlo: number; zhi: number };
-    normalizationScale?: number;
 };
 
 type EngineCallbacks = {
@@ -81,6 +80,11 @@ export class FractalEngine {
     private groundPlane = new Plane(new Vector3(0, 0, 1), 0);
     private dragOffset = new Vector3();
     private lastClickTime = 0;
+    private loadGeneration = 0;
+    private loadAbortController: AbortController | null = null;
+    private isDisposed = false;
+    private consecutiveLoadFailures = 0;
+    private static readonly MAX_LOAD_RETRIES = 3;
 
     constructor(
         private surface: {
@@ -133,9 +137,18 @@ export class FractalEngine {
     }
 
     async loadIfNeeded() {
+        if (this.isDisposed) return;
+
         const url = this.params.url ?? null;
         if (!url || url === this.state.lastLoadedUrl || this.state.isLoading) return;
 
+        if (this.consecutiveLoadFailures >= FractalEngine.MAX_LOAD_RETRIES) {
+            return;
+        }
+
+        const currentLoadGeneration = ++this.loadGeneration;
+        this.loadAbortController?.abort();
+        this.loadAbortController = new AbortController();
         this.state.isLoading = true;
         this.state.loadProgress = 0;
         this.state.loadError = null;
@@ -146,18 +159,25 @@ export class FractalEngine {
                 const pct = Math.round(progress * 100);
                 this.state.loadProgress = pct;
                 this.callbacks.onLoadingState?.({ isLoading: true, progress: pct, error: null });
-            });
+            }, this.loadAbortController.signal);
+
+            if (this.isDisposed || currentLoadGeneration !== this.loadGeneration) {
+                loadedModel.removeFromParent();
+                disposeObject3DResources(loadedModel);
+                return;
+            }
 
             if (!this.hasRenderableData(loadedModel)) {
                 this.params.onEmptyData?.();
             }
 
             const pointCloud = this.materialPipeline.detectPointCloud(loadedModel);
+            let newMesh: THREE.Mesh | THREE.Points | null = null;
             if (pointCloud) {
                 this.materialPipeline.configurePointCloud(pointCloud);
-                this.state.mesh = pointCloud;
+                newMesh = pointCloud;
             } else {
-                this.state.mesh = this.materialPipeline.configureGeometry(loadedModel, this.params.sliceClippingPlanes);
+                newMesh = this.materialPipeline.configureGeometry(loadedModel, this.params.sliceClippingPlanes);
             }
 
             this.applyClippingToModel(loadedModel, this.params.sliceClippingPlanes);
@@ -169,22 +189,36 @@ export class FractalEngine {
                 useFixedReference: this.params.useFixedReference
             });
 
+            this.disposeModel();
             this.state.model = loadedModel;
+            this.state.mesh = newMesh;
             this.state.bounds = bounds;
             this.state.lastLoadedUrl = url;
+            this.consecutiveLoadFailures = 0;
 
             this.callbacks.onModelLoaded?.(bounds);
             this.callbacks.onModelAvailable?.(loadedModel);
             this.callbacks.onLoadingState?.({ isLoading: false, progress: 100, error: null });
-        } catch (error: any) {
+        } catch (error: unknown) {
+            if (error instanceof Error && error.name === 'AbortError') {
+                return;
+            }
+
+            this.consecutiveLoadFailures += 1;
             const message = error instanceof Error ? error.message : String(error);
             this.state.loadError = message;
             this.callbacks.onLoadingState?.({ isLoading: false, progress: 0, error: message });
         } finally {
+            this.loadAbortController = null;
             this.state.isLoading = false;
-            this.surface.invalidate();
+
+            if (!this.isDisposed) {
+                this.surface.invalidate();
+            }
+
             const latestUrl = this.params.url ?? null;
-            if (latestUrl && latestUrl !== this.state.lastLoadedUrl) {
+            if (!this.isDisposed && latestUrl && latestUrl !== this.state.lastLoadedUrl
+                && this.consecutiveLoadFailures < FractalEngine.MAX_LOAD_RETRIES) {
                 this.loadIfNeeded();
             }
         }
@@ -214,29 +248,16 @@ export class FractalEngine {
         return hasData;
     }
 
-    updatePointSize(multiplier: number, normalizationScale?: number, boxBounds?: FractalParams['boxBounds']) {
+    updatePointSize(multiplier: number) {
         const mesh = this.state.mesh;
         if (!mesh || !(mesh instanceof THREE.Points) || !mesh.material) return;
 
         const mat = mesh.material as THREE.ShaderMaterial;
-        let baseScale = mat.userData.basePointScale;
+        const baseScale = mat.userData.basePointScale;
+        if (typeof baseScale !== 'number') return;
 
-        if (boxBounds) {
-            const { width, height, depth } = getBoxDimensions(boxBounds);
-            const volume = width * height * depth;
-            const numPoints = mesh.geometry.attributes.position.count;
-
-            if (volume > 0 && numPoints > 0) {
-                const spacing = Math.pow(volume / numPoints, 1.0 / 3.0);
-                baseScale = spacing * 1.5;
-            }
-        }
-
-        const normScale = normalizationScale || 1;
-        if (baseScale !== undefined) {
-            mat.uniforms.pointScale.value = baseScale * normScale * multiplier;
-            this.surface.invalidate();
-        }
+        mat.uniforms.pointScale.value = baseScale * multiplier;
+        this.surface.invalidate();
     }
 
     updateOpacity(sceneKey: string | undefined, sceneOpacities: Record<string, number>) {
@@ -259,6 +280,14 @@ export class FractalEngine {
     }
 
     setSimBoxMesh(mesh: THREE.Mesh | null) {
+        if (
+            this.simulationBox.mesh &&
+            !this.simulationBox.external &&
+            this.simulationBox.mesh !== mesh
+        ) {
+            this.disposeSimulationBoxMesh(this.simulationBox.mesh);
+        }
+
         this.simulationBox.mesh = mesh;
         this.simulationBox.external = !!mesh;
         if (mesh) {
@@ -333,12 +362,16 @@ export class FractalEngine {
     }
 
     dispose() {
-        if (this.state.model) {
-            this.state.model = null;
-            this.callbacks.onModelAvailable?.(null!);
-        }
+        this.isDisposed = true;
+        this.loadGeneration += 1;
+        this.loadAbortController?.abort();
+        this.loadAbortController = null;
+        this.detachEvents();
+        this.setOrbitControlsEnabled(true);
+        this.disposeModel();
         this.disposeSelection();
-        this.simulationBox.mesh = null;
+        this.disposeSimulationBox();
+        this.materialPipeline.dispose();
     }
 
     isSelected() {
@@ -506,10 +539,17 @@ export class FractalEngine {
 
     private disposeSelection() {
         if (this.selectionOverlay.group) {
+            this.selectionOverlay.group.removeFromParent();
             this.selectionOverlay.group.visible = false;
+            disposeObject3DResources(this.selectionOverlay.group);
+            this.selectionOverlay.group = null;
         }
         if (this.selectionOverlay.base) {
+            this.selectionOverlay.base.removeFromParent();
             this.selectionOverlay.base.visible = false;
+            this.selectionOverlay.base.geometry.dispose();
+            disposeMaterialResources(this.selectionOverlay.base.material);
+            this.selectionOverlay.base = null;
         }
     }
 
@@ -525,7 +565,7 @@ export class FractalEngine {
             0
         );
 
-        this.raycaster.setFromCamera({ x: mouse.x, y: mouse.y }, this.surface.camera as any);
+        this.raycaster.setFromCamera(new THREE.Vector2(mouse.x, mouse.y), this.surface.camera as any);
         const simHits = this.raycaster.intersectObject(simBox, false);
 
         if (event.button === 0 && simHits.length > 0) {
@@ -576,7 +616,7 @@ export class FractalEngine {
         const ndcX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         const ndcY = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-        this.raycaster.setFromCamera({ x: ndcX, y: ndcY }, this.surface.camera as any);
+        this.raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), this.surface.camera as any);
         const simHits = this.raycaster.intersectObject(simBox, false);
 
         const wasHovered = this.state.isHovered;
@@ -618,14 +658,7 @@ export class FractalEngine {
             }
         }
 
-        if (isCtrl) {
-            switch (event.code) {
-                case 'Equal':
-                case 'NumpadAdd': event.preventDefault(); event.stopImmediatePropagation(); this.scale(0.1); this.surface.invalidate(); return;
-                case 'Minus':
-                case 'NumpadSubtract': event.preventDefault(); event.stopImmediatePropagation(); this.scale(-0.1); this.surface.invalidate(); return;
-            }
-        }
+        // CTRL+/- is handled globally by use-keyboard-shortcuts for point size control.
 
         switch (event.code) {
             case 'ArrowUp': event.preventDefault(); event.stopImmediatePropagation(); this.rotate(-Math.PI / 24, 0, 0); this.surface.invalidate(); return;
@@ -647,6 +680,62 @@ export class FractalEngine {
         }
     }
 
+    private disposeModel() {
+        if (!this.state.model) {
+            this.state.mesh = null;
+            this.state.bounds = null;
+            this.state.selected = null;
+            this.state.dragging = false;
+            this.state.isHovered = false;
+            this.state.isSelectedPersistent = false;
+            this.state.targetPosition = null;
+            this.state.targetRotation = null;
+            return;
+        }
+
+        this.state.model.removeFromParent();
+        disposeObject3DResources(this.state.model);
+        this.state.model = null;
+        this.state.mesh = null;
+        this.state.bounds = null;
+        this.state.selected = null;
+        this.state.dragging = false;
+        this.state.isHovered = false;
+        this.state.isSelectedPersistent = false;
+        this.state.targetPosition = null;
+        this.state.targetRotation = null;
+    }
+
+    private disposeSimulationBox() {
+        if (!this.simulationBox.mesh) {
+            this.simulationBox.baseSize = null;
+            this.simulationBox.size = null;
+            this.simulationBox.sizeAnimActive = false;
+            this.simulationBox.sizeAnimFrom = null;
+            this.simulationBox.sizeAnimTo = null;
+            this.simulationBox.external = false;
+            return;
+        }
+
+        if (!this.simulationBox.external) {
+            this.disposeSimulationBoxMesh(this.simulationBox.mesh);
+        }
+
+        this.simulationBox.mesh = null;
+        this.simulationBox.baseSize = null;
+        this.simulationBox.size = null;
+        this.simulationBox.sizeAnimActive = false;
+        this.simulationBox.sizeAnimFrom = null;
+        this.simulationBox.sizeAnimTo = null;
+        this.simulationBox.external = false;
+    }
+
+    private disposeSimulationBoxMesh(mesh: THREE.Mesh) {
+        mesh.removeFromParent();
+        mesh.geometry.dispose();
+        disposeMaterialResources(mesh.material);
+    }
+
     private rotate(dx: number, dy: number, dz: number) {
         if (!this.state.selected) return;
         const r = this.state.currentRotation.clone();
@@ -657,10 +746,4 @@ export class FractalEngine {
         this.state.lastInteractionTime = Date.now();
     }
 
-    private scale(delta: number) {
-        if (!this.state.selected) return;
-        const newScale = Math.max(0.1, Math.min(5.0, this.state.targetScale + delta));
-        this.state.targetScale = newScale;
-        this.state.lastInteractionTime = Date.now();
-    }
 }

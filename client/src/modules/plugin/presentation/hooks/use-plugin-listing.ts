@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri';
 import usePluginListingStore from '../stores/use-plugin-listing-store';
@@ -13,7 +13,7 @@ import type { ExportType } from '@/shared/domain/export/types';
 import { sileo } from 'sileo';
 import ApiError from '@/shared/errors/ApiError';
 import type { ListingRow } from '../../domain/entities';
-import formatSnakeCaseToTitle from '../utils/format-snake-case';
+import formatSnakeCaseToTitle from '../utilities/format-snake-case';
 
 export const SUB_LISTING_MODAL_ID = 'sub-listing-modal';
 
@@ -221,6 +221,12 @@ const usePluginListing = ({
     }, [handleDelete, handleViewSubListing, navigate, subListingNames]);
 
     const isEnabled = !!(pluginId && (exposureName || exposureId) && (trajectoryId || teamId));
+
+    useEffect(() => {
+        return () => {
+            reset();
+        };
+    }, [reset]);
 
     return {
         columns,

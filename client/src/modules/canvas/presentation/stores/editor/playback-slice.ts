@@ -5,39 +5,79 @@ const DEFAULT_PLAY_SPEED = 1;
 const MIN_PLAY_SPEED = 0.1;
 const MAX_PLAY_SPEED = 10;
 
-const initialState: PlaybackState = {
+const createInitialState = (): PlaybackState => ({
     isPlaying: false,
     playSpeed: DEFAULT_PLAY_SPEED,
     currentTimestep: undefined,
-} as PlaybackState & { isPreloading?: boolean; didPreload?: boolean; preloadProgress?: number };
-
-let _rafId: number | null = null;
-let _lastFrameTime: number = 0;
-
-export const createPlaybackSlice: StateCreator<any, [], [], PlaybackStore> = (set, get) => ({
-    ...initialState,
     isPreloading: false,
     didPreload: false,
     preloadProgress: 0,
+    downlinkMbps: null
+});
+
+let _rafId: number | null = null;
+let _lastFrameTime: number = 0;
+let _playbackGeneration = 0;
+let _preloadAbortController: AbortController | null = null;
+
+const clearPlaybackFrame = () => {
+    if (_rafId !== null) {
+        cancelAnimationFrame(_rafId);
+        _rafId = null;
+    }
+
+    _lastFrameTime = 0;
+};
+
+const cancelPreloading = () => {
+    if (_preloadAbortController) {
+        _preloadAbortController.abort();
+        _preloadAbortController = null;
+    }
+};
+
+const advancePlaybackGeneration = () => {
+    _playbackGeneration += 1;
+    return _playbackGeneration;
+};
+
+const isAbortError = (error: unknown) => {
+    return error instanceof Error && error.name === 'AbortError';
+};
+
+export const createPlaybackSlice: StateCreator<any, [], [], PlaybackStore> = (set, get) => ({
+    ...createInitialState(),
 
     stopPlayback() {
-        if (_rafId !== null) {
-            cancelAnimationFrame(_rafId);
-            _rafId = null;
-        }
-        set({ isPlaying: false });
+        clearPlaybackFrame();
+        cancelPreloading();
+        advancePlaybackGeneration();
+        set({
+            isPlaying: false,
+            isPreloading: false,
+            preloadProgress: 0,
+            downlinkMbps: null
+        });
     },
 
     togglePlay() {
-        const { isPlaying, didPreload } = get();
-        if (isPlaying) {
+        const { isPlaying, isPreloading, didPreload } = get();
+        if (isPlaying || isPreloading) {
             get().stopPlayback();
         } else {
             const { timesteps } = get().timestepData;
             if (!timesteps.length) return;
+
+            const playbackGeneration = advancePlaybackGeneration();
+
             (async () => {
+                let shouldMarkPreloadComplete = didPreload;
+
                 if (!didPreload) {
+                    const preloadAbortController = new AbortController();
+                    _preloadAbortController = preloadAbortController;
                     set({ isPreloading: true, preloadProgress: 0 });
+
                     try {
                         const frameCount = timesteps.length;
                         const maxFramesToPreload = frameCount > 100 ? 100 : undefined;
@@ -47,16 +87,41 @@ export const createPlaybackSlice: StateCreator<any, [], [], PlaybackStore> = (se
 
                         await get().loadModels(
                             true,
-                            (p: number, m: any) => {
-                                const mbps = m?.bps != null ? (m.bps * 8) / 1_000_000 : null;
-                                set({ preloadProgress: p, downlinkMbps: mbps });
+                            (progress: number, metrics?: { bps: number }) => {
+                                if (_playbackGeneration !== playbackGeneration) {
+                                    return;
+                                }
+
+                                const mbps = metrics?.bps != null ? (metrics.bps * 8) / 1_000_000 : null;
+                                set({ preloadProgress: progress, downlinkMbps: mbps });
                             },
                             maxFramesToPreload,
-                            currentFrameIndex
+                            currentFrameIndex,
+                            preloadAbortController.signal
                         );
-                    } catch { } finally {
-                        set({ isPreloading: false, didPreload: true });
+                        shouldMarkPreloadComplete = true;
+                    } catch (error) {
+                        if (isAbortError(error)) {
+                            return;
+                        }
+                    } finally {
+                        if (_preloadAbortController === preloadAbortController) {
+                            _preloadAbortController = null;
+                        }
+
+                        if (_playbackGeneration !== playbackGeneration) {
+                            return;
+                        }
+
+                        set({
+                            isPreloading: false,
+                            didPreload: shouldMarkPreloadComplete
+                        });
                     }
+                }
+
+                if (_playbackGeneration !== playbackGeneration) {
+                    return;
                 }
 
                 set({ isPlaying: true });
@@ -68,6 +133,11 @@ export const createPlaybackSlice: StateCreator<any, [], [], PlaybackStore> = (se
                 _lastFrameTime = 0;
 
                 const tick = (timestamp: number) => {
+                    if (_playbackGeneration !== playbackGeneration) {
+                        _rafId = null;
+                        return;
+                    }
+
                     if (!get().isPlaying) {
                         _rafId = null;
                         return;
@@ -146,16 +216,9 @@ export const createPlaybackSlice: StateCreator<any, [], [], PlaybackStore> = (se
     },
 
     resetPlayback() {
-        if (_rafId !== null) {
-            cancelAnimationFrame(_rafId);
-            _rafId = null;
-        }
-        get().stopPlayback();
-        set({
-            ...initialState,
-            isPreloading: false,
-            didPreload: false,
-            preloadProgress: 0
-        });
+        clearPlaybackFrame();
+        cancelPreloading();
+        advancePlaybackGeneration();
+        set(createInitialState());
     }
 });

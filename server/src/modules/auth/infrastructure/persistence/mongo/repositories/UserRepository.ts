@@ -55,8 +55,16 @@ export default class UserRepository
     }
 
     async updateLastLogin(id: string): Promise<void> {
+        const now = new Date();
         await this.updateById(id, {
-            lastLoginAt: new Date()
+            lastLoginAt: now,
+            lastSeenAt: now
+        });
+    }
+
+    async updateLastSeen(id: string, timestamp: Date = new Date()): Promise<void> {
+        await this.updateById(id, {
+            lastSeenAt: timestamp
         });
     }
 

@@ -3,7 +3,7 @@ import useSearchParamsState from '@/shared/presentation/hooks/use-search-params'
 import { IoExitOutline } from 'react-icons/io5';
 import Select, { type SelectOption } from '@/shared/presentation/components/Select';
 import IconButton from '@/shared/presentation/components/IconButton';
-import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import { resetTeamScopedApplicationState, useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-services';
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
@@ -25,6 +25,7 @@ const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
     const handleTeamChange = useCallback((teamId: string) => {
         if (selectedTeam?._id === teamId) return;
 
+        resetTeamScopedApplicationState();
         const teamStore = useTeamStore.getState();
         teamStore.selectTeamById(teamId);
         hydrateTeamAccess(teamId);
@@ -48,6 +49,7 @@ const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
 
             if (currentSelected?._id === teamId && remainingTeams.length > 0) {
                 const newTeamId = remainingTeams[0]._id;
+                resetTeamScopedApplicationState();
                 state.selectTeamById(newTeamId);
                 hydrateTeamAccess(newTeamId);
                 updateSearchParams({ team: newTeamId }, { replace: true });

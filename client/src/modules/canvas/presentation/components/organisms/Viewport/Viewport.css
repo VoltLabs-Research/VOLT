@@ -24,6 +24,7 @@
 .canvas-viewport-loading {
     background: var(--color-overlay);
     z-index: 2;
+    pointer-events: none;
 }
 
 .canvas-viewport-gradient {

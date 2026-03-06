@@ -23,6 +23,12 @@ const PluginBuilderPage = () => {
         }
     }, [pluginId, loadPlugin, clearWorkflow]);
 
+    useEffect(() => {
+        return () => {
+            clearWorkflow();
+        };
+    }, [clearWorkflow]);
+
     if (accessDenied) {
         return <AccessDenied description={accessDeniedMessage} />;
     }

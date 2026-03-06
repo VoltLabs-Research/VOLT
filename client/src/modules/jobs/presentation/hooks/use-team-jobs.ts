@@ -4,18 +4,16 @@ import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store'
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 import { applyJobUpdate } from '@/modules/jobs/presentation/utilities/job-group-updates';
 import type { Job, TrajectoryJobGroup } from '@/modules/jobs/domain/entities/Job';
-import type ISocketService from '@/modules/socket/domain/port/ISocketService';
 
 type JobUpdateEvent = Job & { type?: string; sessionId?: string };
 
-let socketServiceRef: ISocketService | null = null;
-let isSocketInitialized = false;
-let pendingTeamSubscription: { teamId: string; previousTeamId?: string | null } | null = null;
-
 const useTeamJobs = () => {
     const currentTeam = useTeamStore((state) => state.selectedTeam);
+    const currentTeamId = currentTeam?._id ?? null;
     const socketService = useSocket();
     const previousTeamIdRef = useRef<string | null>(null);
+    const socketServiceRef = useRef(socketService);
+    const pendingTeamSubscriptionRef = useRef<{ teamId: string; previousTeamId?: string } | null>(null);
 
     const groups = useTeamJobsStore((state) => state.groups);
     const isConnected = useTeamJobsStore((state) => state.isConnected);
@@ -26,24 +24,36 @@ const useTeamJobs = () => {
     const setExpiredSessions = useTeamJobsStore((state) => state.setExpiredSessions);
     const setCurrentTeamId = useTeamJobsStore((state) => state.setCurrentTeamId);
     const removeTrajectoryGroup = useTeamJobsStore((state) => state.removeTrajectoryGroup);
+    const reset = useTeamJobsStore((state) => state.reset);
 
     const handleConnect = useCallback((connected: boolean) => {
         setConnected(connected);
-        if (!connected) return;
-        if (!socketServiceRef) return;
 
-        if (pendingTeamSubscription) {
-            socketServiceRef.subscribeToTeam(
-                pendingTeamSubscription.teamId,
-                pendingTeamSubscription.previousTeamId || undefined
+        if (!connected) {
+            setLoading(false);
+            return;
+        }
+
+        const activeSocketService = socketServiceRef.current;
+
+        if (!activeSocketService) {
+            return;
+        }
+
+        if (pendingTeamSubscriptionRef.current) {
+            activeSocketService.subscribeToTeam(
+                pendingTeamSubscriptionRef.current.teamId,
+                pendingTeamSubscriptionRef.current.previousTeamId
             );
-            pendingTeamSubscription = null;
+            pendingTeamSubscriptionRef.current = null;
             return;
         }
 
         const teamId = useTeamJobsStore.getState().currentTeamId;
-        if (teamId) socketServiceRef.subscribeToTeam(teamId);
-    }, [setConnected]);
+        if (teamId) {
+            activeSocketService.subscribeToTeam(teamId);
+        }
+    }, [setConnected, setLoading]);
 
     const handleTeamJobs = useCallback((incomingGroups: TrajectoryJobGroup[]) => {
         setGroups(incomingGroups);
@@ -64,68 +74,84 @@ const useTeamJobs = () => {
         setGroups(updatedGroups);
     }, [setExpiredSessions, setGroups]);
 
-    const initializeSocket = useCallback(() => {
-        if (!socketServiceRef) return;
-        if (isSocketInitialized) {
-            if (!socketServiceRef.isConnected()) {
-                socketServiceRef.connect().catch(() => setLoading(false));
-            } else {
-                setConnected(true);
-            }
+    const handleInitialJobsEvent = useCallback((payload: unknown) => {
+        handleTeamJobs(payload as TrajectoryJobGroup[]);
+    }, [handleTeamJobs]);
+
+    const handleJobUpdateEvent = useCallback((payload: unknown) => {
+        handleJobUpdate(payload as JobUpdateEvent);
+    }, [handleJobUpdate]);
+
+    const subscribeToTeam = useCallback((teamId: string, previousTeamId?: string | null) => {
+        const activeSocketService = socketServiceRef.current;
+
+        if (!activeSocketService) {
             return;
         }
 
-        socketServiceRef.onConnectionChange(handleConnect);
-        socketServiceRef.on('team.jobs.initial', handleTeamJobs);
-        socketServiceRef.on('team.job.updated', handleJobUpdate);
-        isSocketInitialized = true;
+        const currentStoreTeamId = useTeamJobsStore.getState().currentTeamId;
 
-        if (!socketServiceRef.isConnected()) {
-            socketServiceRef.connect().catch(() => setLoading(false));
-        } else {
-            setConnected(true);
+        if (currentStoreTeamId === teamId) {
+            return;
         }
-    }, [handleConnect, handleJobUpdate, handleTeamJobs, setConnected, setLoading]);
 
-    const subscribeToTeam = useCallback((teamId: string, previousTeamId?: string | null) => {
-        if (!socketServiceRef) return;
-        const { currentTeamId } = useTeamJobsStore.getState();
-        if (currentTeamId === teamId) return;
-        initializeSocket();
+        const resolvedPreviousTeamId = previousTeamId ?? currentStoreTeamId ?? undefined;
         setCurrentTeamId(teamId);
         setGroups([]);
         setExpiredSessions(new Set());
         setLoading(true);
-        pendingTeamSubscription = { teamId, previousTeamId: previousTeamId || currentTeamId || undefined };
-        if (socketServiceRef.isConnected()) {
-            socketServiceRef.subscribeToTeam(teamId, previousTeamId || currentTeamId || undefined);
-            pendingTeamSubscription = null;
-        }
-    }, [initializeSocket, setCurrentTeamId, setGroups, setExpiredSessions, setLoading]);
+        pendingTeamSubscriptionRef.current = { teamId, previousTeamId: resolvedPreviousTeamId };
 
-    const unsubscribeFromTeam = useCallback(() => {
-        pendingTeamSubscription = null;
-        setCurrentTeamId(null);
-        setGroups([]);
-        setExpiredSessions(new Set());
-        setLoading(true);
-    }, [setCurrentTeamId, setGroups, setExpiredSessions, setLoading]);
-
-    useEffect(() => {
-        if (!socketService) return;
-        socketServiceRef = socketService;
-        initializeSocket();
-    }, [socketService, initializeSocket]);
-
-    useEffect(() => {
-        if (currentTeam?._id) {
-            subscribeToTeam(currentTeam._id, previousTeamIdRef.current);
-            previousTeamIdRef.current = currentTeam._id;
+        if (activeSocketService.isConnected()) {
+            activeSocketService.subscribeToTeam(teamId, resolvedPreviousTeamId);
+            pendingTeamSubscriptionRef.current = null;
             return;
         }
 
-        unsubscribeFromTeam();
-    }, [currentTeam?._id, subscribeToTeam, unsubscribeFromTeam]);
+        activeSocketService.connect().catch(() => {
+            if (pendingTeamSubscriptionRef.current?.teamId === teamId) {
+                pendingTeamSubscriptionRef.current = null;
+            }
+            setLoading(false);
+        });
+    }, [setCurrentTeamId, setExpiredSessions, setGroups, setLoading]);
+
+    const clearTeamJobs = useCallback(() => {
+        pendingTeamSubscriptionRef.current = null;
+        previousTeamIdRef.current = null;
+        reset();
+    }, [reset]);
+
+    useEffect(() => {
+        socketServiceRef.current = socketService;
+
+        const unsubscribeFromConnectionChanges = socketService.onConnectionChange(handleConnect);
+        const unsubscribeFromInitialJobs = socketService.on('team.jobs.initial', handleInitialJobsEvent);
+        const unsubscribeFromJobUpdates = socketService.on('team.job.updated', handleJobUpdateEvent);
+
+        handleConnect(socketService.isConnected());
+
+        if (!socketService.isConnected()) {
+            socketService.connect().catch(() => setLoading(false));
+        }
+
+        return () => {
+            unsubscribeFromConnectionChanges();
+            unsubscribeFromInitialJobs();
+            unsubscribeFromJobUpdates();
+            clearTeamJobs();
+        };
+    }, [clearTeamJobs, handleConnect, handleInitialJobsEvent, handleJobUpdateEvent, setLoading, socketService]);
+
+    useEffect(() => {
+        if (currentTeamId) {
+            subscribeToTeam(currentTeamId, previousTeamIdRef.current);
+            previousTeamIdRef.current = currentTeamId;
+            return;
+        }
+
+        clearTeamJobs();
+    }, [clearTeamJobs, currentTeamId, subscribeToTeam]);
 
     return {
         groups,

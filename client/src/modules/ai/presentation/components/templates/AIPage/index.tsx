@@ -16,6 +16,52 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 import './AIPage.css';
 
+const PENDING_AI_MESSAGE_STORAGE_KEY = 'volt.ai.pending-message';
+
+interface PendingAIMessage {
+    text: string;
+    teamId?: string;
+    conversationId?: string;
+}
+
+const readPendingAIMessage = (): PendingAIMessage | null => {
+    const storedValue = window.sessionStorage.getItem(PENDING_AI_MESSAGE_STORAGE_KEY);
+
+    if (!storedValue) {
+        return null;
+    }
+
+    try {
+        const parsedValue = JSON.parse(storedValue) as Partial<PendingAIMessage>;
+
+        if (typeof parsedValue.text !== 'string' || !parsedValue.text.trim()) {
+            window.sessionStorage.removeItem(PENDING_AI_MESSAGE_STORAGE_KEY);
+            return null;
+        }
+
+        return {
+            text: parsedValue.text,
+            teamId: typeof parsedValue.teamId === 'string' ? parsedValue.teamId : undefined,
+            conversationId: typeof parsedValue.conversationId === 'string' ? parsedValue.conversationId : undefined
+        };
+    } catch {
+        window.sessionStorage.removeItem(PENDING_AI_MESSAGE_STORAGE_KEY);
+        return null;
+    }
+};
+
+const persistPendingAIMessage = (pendingMessage: PendingAIMessage | null): void => {
+    if (!pendingMessage) {
+        window.sessionStorage.removeItem(PENDING_AI_MESSAGE_STORAGE_KEY);
+        return;
+    }
+
+    window.sessionStorage.setItem(
+        PENDING_AI_MESSAGE_STORAGE_KEY,
+        JSON.stringify(pendingMessage)
+    );
+};
+
 const AIPage = () => {
     const navigate = useNavigate();
     const { conversationId } = useParams<{ conversationId?: string }>();
@@ -58,6 +104,7 @@ const AIPage = () => {
         handleSendMessage,
         loadConversationMessages
     } = useAIPage(conversationId);
+    const selectedTeamId = selectedTeam?._id;
 
     const canCreate = usePermission(['ai-conversation:create']);
     const canUpdate = usePermission(['ai-conversation:update']);
@@ -118,13 +165,37 @@ const AIPage = () => {
         try {
             if (!conversationId) {
                 const firstWords = draftToSend.trim().split(/\s+/).slice(0, 6).join(' ');
-                const title = firstWords.length > 40 ? firstWords.slice(0, 40) + '…' : firstWords;
+                let title = firstWords;
+
+                if (firstWords.length > 40) {
+                    title = firstWords.slice(0, 40) + '…';
+                }
+
                 pendingMessageRef.current = draftToSend;
-                await handleCreateConversation(title);
+                persistPendingAIMessage({
+                    text: draftToSend,
+                    teamId: selectedTeamId
+                });
+
+                const conversation = await handleCreateConversation(title);
+
+                persistPendingAIMessage({
+                    text: draftToSend,
+                    teamId: selectedTeamId,
+                    conversationId: conversation._id
+                });
+                return;
             }
 
             await handleSendMessage(draftToSend);
+            persistPendingAIMessage(null);
         } catch {
+            pendingMessageRef.current = draftToSend;
+            persistPendingAIMessage({
+                text: draftToSend,
+                teamId: selectedTeamId,
+                conversationId
+            });
             setMessageDraft(draftToSend);
         }
     };
@@ -136,12 +207,66 @@ const AIPage = () => {
     // updates with the new conversationId. Once useAIPage is ready to send
     // (canSendMessage becomes true), flush the pending message.
     useEffect(() => {
-        if (!conversationId || !canSendMessage || !pendingMessageRef.current) return;
+        const storedPendingMessage = readPendingAIMessage();
 
-        const text = pendingMessageRef.current;
+        if (
+            storedPendingMessage?.teamId
+            && selectedTeamId
+            && storedPendingMessage.teamId !== selectedTeamId
+        ) {
+            persistPendingAIMessage(null);
+            return;
+        }
+
+        if (!conversationId || !canSendMessage) {
+            return;
+        }
+
+        let text = pendingMessageRef.current;
+
+        if (!text && storedPendingMessage?.conversationId === conversationId) {
+            text = storedPendingMessage.text;
+        }
+
+        if (!text) {
+            return;
+        }
+
         pendingMessageRef.current = null;
-        handleSendMessage(text).catch(() => setMessageDraft(text));
-    }, [conversationId, canSendMessage, handleSendMessage]);
+        persistPendingAIMessage(null);
+        handleSendMessage(text).catch(() => {
+            pendingMessageRef.current = text;
+            persistPendingAIMessage({
+                text,
+                teamId: selectedTeamId,
+                conversationId
+            });
+            setMessageDraft(text);
+        });
+    }, [canSendMessage, conversationId, handleSendMessage, selectedTeamId]);
+
+    useEffect(() => {
+        const storedPendingMessage = readPendingAIMessage();
+
+        if (!storedPendingMessage) {
+            return;
+        }
+
+        if (
+            storedPendingMessage.teamId
+            && selectedTeamId
+            && storedPendingMessage.teamId !== selectedTeamId
+        ) {
+            persistPendingAIMessage(null);
+            return;
+        }
+
+        if (conversationId || messageDraft.trim()) {
+            return;
+        }
+
+        setMessageDraft(storedPendingMessage.text);
+    }, [conversationId, messageDraft, selectedTeamId]);
 
     if (accessDenied) {
         return <AccessDenied description={accessDeniedMessage} />;

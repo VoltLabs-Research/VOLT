@@ -10,6 +10,7 @@ import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import useFractalSceneConfig from '@/modules/canvas/presentation/hooks/use-fractal-scene-config';
 import type { FractalSceneRef } from '@/modules/fractal/presentation/components/organisms/FractalScene';
 import useCanvasCoordinator from '../../../hooks/use-canvas-coordinator';
+import useCanvasCleanup from '../../../hooks/use-canvas-cleanup';
 import useCanvasPresence from '../../../hooks/use-canvas-presence';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import useKeyboardShortcuts from '../../../hooks/use-keyboard-shortcuts';
@@ -40,6 +41,7 @@ const CanvasPage = () => {
     const { trajectoryId: rawTrajectoryId } = useParams<{ trajectoryId?: string }>();
     const trajectoryId = rawTrajectoryId ?? '';
 
+    useCanvasCleanup();
     const { trajectory, currentTimestep, isLoading: trajectoryLoading } = useCanvasCoordinator({ trajectoryId });
     const { canvasUsers } = useCanvasPresence({ trajectoryId, enabled: !!trajectoryId });
 
@@ -48,7 +50,6 @@ const CanvasPage = () => {
 
     useEffect(() => {
         setCurrentScope('canvas');
-        return () => setCurrentScope('global');
     }, [setCurrentScope]);
 
     const { isModelLoading, didPreload, isPlaying } = useEditorStore(useShallow((s) => ({
@@ -73,13 +74,6 @@ const CanvasPage = () => {
     const { downloadListing, downloadAnalysisListings, isDownloading } = useDownloadPluginListing();
     const { statusMap } = useAnalysisStatus({ trajectoryId: trajectory?._id, enabled: !!trajectory?._id });
     const [scriptingJupyterUrl, setScriptingJupyterUrl] = useState<string | null>(null);
-
-    useEffect(() => {
-        return () => {
-            useEditorStore.getState().resetModel();
-            useEditorStore.getState().resetPlayback();
-        };
-    }, []);
 
     const hasFrames = !!(trajectory?.frames && trajectory.frames.length > 0);
     const showLoading = useMemo(() =>

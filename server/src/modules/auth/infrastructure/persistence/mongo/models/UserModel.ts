@@ -36,6 +36,10 @@ const UserSchema: Schema<UserDocument> = new Schema({
         required: true,
         default: Date.now
     },
+    lastSeenAt: {
+        type: Date,
+        default: Date.now
+    },
     firstName: {
         type: String,
         minlength: [4, ValidationCodes.USER_FIRST_NAME_MINLEN],

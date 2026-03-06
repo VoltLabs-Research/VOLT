@@ -40,6 +40,7 @@ export default class SocketIOAdapter implements ISocketService{
         }
 
         this.clearReconnectTimer();
+        this.cleanupSocket();
         this.connecting = true;
         this.manualDisconnect = false;
 
@@ -73,10 +74,10 @@ export default class SocketIOAdapter implements ISocketService{
     }
 
     disconnect(): void{
-        if(!this.socket) return;
         this.manualDisconnect = true;
+        this.connecting = false;
         this.clearReconnectTimer();
-        this.socket.disconnect();
+        this.cleanupSocket();
         this.notifyConnectionListeners(false);
     }
 
@@ -177,6 +178,20 @@ export default class SocketIOAdapter implements ISocketService{
         this.socket.emit('subscribe_to_team', { teamId, previousTeamId });
     }
 
+    unsubscribeFromTeam(teamId?: string): void{
+        const targetTeamId = teamId ?? this.currentTeamId;
+
+        if(targetTeamId === this.currentTeamId){
+            this.currentTeamId = null;
+        }
+
+        if(!targetTeamId || !this.socket?.connected){
+            return;
+        }
+
+        this.socket.emit('leave_team', { teamId: targetTeamId });
+    }
+
     private handleConnect(): void{
         this.connectionAttempts = 0;
         this.connecting = false;
@@ -227,6 +242,16 @@ export default class SocketIOAdapter implements ISocketService{
             clearTimeout(this.reconnectTimer);
             this.reconnectTimer = null;
         }
+    }
+
+    private cleanupSocket(): void{
+        if(!this.socket){
+            return;
+        }
+
+        this.socket.removeAllListeners();
+        this.socket.disconnect();
+        this.socket = null;
     }
 
     private resubscribeToEvents(): void{

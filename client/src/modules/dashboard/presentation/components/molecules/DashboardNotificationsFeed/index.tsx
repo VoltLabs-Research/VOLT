@@ -5,7 +5,6 @@ import { Bell } from 'lucide-react';
 import { Skeleton } from '@mui/material';
 import { formatDistanceToNow } from 'date-fns';
 import useNotificationData from '@/modules/notification/presentation/hooks/use-notification-data';
-import useNotificationSocket from '@/modules/notification/presentation/hooks/use-notification-socket';
 import { useNotificationStore } from '@/modules/notification/presentation/stores/use-notification-store';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
@@ -19,8 +18,6 @@ const DashboardNotificationsFeed = () => {
     const { fetchNotifications, isLoading } = useNotificationData();
     const notifications = useNotificationStore((state) => state.notifications);
     const unreadCount = useNotificationStore((state) => state.unreadCount);
-
-    useNotificationSocket();
 
     useEffect(() => {
         fetchNotifications(1);

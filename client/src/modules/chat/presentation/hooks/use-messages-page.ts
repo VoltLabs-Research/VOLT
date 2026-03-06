@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { useTeamMemberStore } from '@/modules/team/presentation/stores/use-team-member-store';
@@ -36,12 +36,15 @@ const useMessagesPage = (chatId?: string) => {
     const currentPage = useChatMessageStore((state) => state.page);
     const typingUsers = useChatPresenceStore((state) => state.typingUsers);
     const userPresence = useChatPresenceStore((state) => state.userPresence);
+    const resetPresenceStore = useChatPresenceStore((state) => state.reset);
 
     // Domain hooks
     const chatData = useChatData();
     const messageActions = useMessageActions(chatId);
     const groupActions = useGroupActions();
     const { handleTyping } = useTypingIndicator(chatId);
+    const previousTeamIdRef = useRef<string | undefined>(selectedTeam?._id);
+    const { fetchChats, resetState, selectChat, loadMoreMessages } = chatData;
 
     useChatSocket(chatId);
 
@@ -65,16 +68,40 @@ const useMessagesPage = (chatId?: string) => {
 
     // Effects
     useEffect(() => {
-        chatData.fetchChats();
-    }, [chatData.fetchChats]);
+        fetchChats();
+    }, [fetchChats]);
 
     useEffect(() => {
         if (selectedTeam?._id) fetchMembers(selectedTeam._id);
     }, [selectedTeam?._id, fetchMembers]);
 
     useEffect(() => {
-        if (chatId) chatData.selectChat(chatId);
-    }, [chatId, chatData.selectChat]);
+        const previousTeamId = previousTeamIdRef.current;
+        const nextTeamId = selectedTeam?._id;
+
+        if (previousTeamId === nextTeamId) {
+            return;
+        }
+
+        previousTeamIdRef.current = nextTeamId;
+        resetState();
+        resetPresenceStore();
+
+        if (nextTeamId) {
+            fetchChats();
+        }
+    }, [fetchChats, resetPresenceStore, resetState, selectedTeam?._id]);
+
+    useEffect(() => {
+        if (chatId) selectChat(chatId);
+    }, [chatId, selectChat]);
+
+    useEffect(() => {
+        return () => {
+            resetState();
+            resetPresenceStore();
+        };
+    }, [resetPresenceStore, resetState]);
 
     // Handlers
     const handleStartChat = useCallback(async (memberId: string) => {
@@ -83,9 +110,9 @@ const useMessagesPage = (chatId?: string) => {
 
     const handleLoadMore = useCallback(() => {
         if (chatId && hasMoreMessages && !isMessagesLoading) {
-            chatData.loadMoreMessages(chatId, currentPage);
+            loadMoreMessages(chatId, currentPage);
         }
-    }, [chatId, hasMoreMessages, isMessagesLoading, chatData.loadMoreMessages, currentPage]);
+    }, [chatId, currentPage, hasMoreMessages, isMessagesLoading, loadMoreMessages]);
 
     const handleCreateGroup = useCallback(async (name: string, description: string, memberIds: string[]) => {
         if (!selectedTeam) return;

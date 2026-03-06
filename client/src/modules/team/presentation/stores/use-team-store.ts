@@ -3,7 +3,12 @@ import { container } from 'tsyringe';
 import type { Team } from '@/modules/team/domain/entities';
 import type ITeamStorage from '@/modules/team/domain/port/ITeamStorage';
 import { TEAM_TOKENS } from '@/modules/team/infrastructure/di/tokens';
+import { useTeamInvitationStore } from '@/modules/team/presentation/stores/use-team-invitation-store';
+import { useTeamMemberStore } from '@/modules/team/presentation/stores/use-team-member-store';
+import { useTeamPresenceStore } from '@/modules/team/presentation/stores/use-team-presence-store';
+import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
 import { createBaseSlice, BASE_SLICE_INITIAL_STATE, type BaseSlice } from '@/shared/presentation/stores/create-base-store-slice';
+import { runManualAppCleanup } from '@/shared/utils/app-cleanup-registry';
 
 interface TeamStore extends BaseSlice {
     teams: Team[];
@@ -105,3 +110,44 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
 
     reset: () => set(initialState)
 }));
+
+export const resetTeamDependentStores = (): void => {
+    useTeamMemberStore.getState().reset();
+    useTeamRoleStore.getState().reset();
+    useTeamInvitationStore.getState().reset();
+    useTeamPresenceStore.getState().reset();
+};
+
+const getCurrentPathname = (): string | null => {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    return window.location.pathname;
+};
+
+export const resetTeamScopedApplicationState = (): void => {
+    const currentPathname = getCurrentPathname();
+    runManualAppCleanup(currentPathname, currentPathname);
+    resetTeamDependentStores();
+};
+
+export const resetTeamSessionState = (): void => {
+    const currentPathname = getCurrentPathname();
+    runManualAppCleanup(currentPathname, null);
+    const teamStorage = container.resolve<ITeamStorage>(TEAM_TOKENS.TeamStorage);
+    const teamState = useTeamStore.getState();
+    const teamIds = new Set(teamState.teams.map((team) => team._id));
+
+    if (teamState.selectedTeam?._id) {
+        teamIds.add(teamState.selectedTeam._id);
+    }
+
+    teamIds.forEach((teamId) => {
+        teamStorage.clearTeamPermissions(teamId);
+    });
+
+    teamStorage.clearSelectedTeamId();
+    useTeamStore.getState().reset();
+    resetTeamDependentStores();
+};

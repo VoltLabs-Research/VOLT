@@ -1,48 +1,141 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { http } from '@/app/di';
+import { disposeObject3DResources } from './resource-disposal';
 
 export class AssetLoader {
-    private static cache = new Map<string, THREE.Group>();
+    private static cache = new Map<string, ArrayBuffer>();
 
-    async load(url: string, onProgress?: (progress: number) => void): Promise<THREE.Group> {
+    private static createAbortError() {
+        const error = new Error('Asset loading was aborted');
+        error.name = 'AbortError';
+        return error;
+    }
+
+    private static createGlbLoader() {
+        const gltfLoader = new GLTFLoader();
+
+        try {
+            const dracoLoader = new DRACOLoader();
+            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+            gltfLoader.setDRACOLoader(dracoLoader);
+            gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+        } catch {
+        }
+
+        return gltfLoader;
+    }
+
+    static clearCache() {
+        AssetLoader.cache.clear();
+    }
+
+    async load(
+        url: string,
+        onProgress?: (progress: number) => void,
+        signal?: AbortSignal
+    ): Promise<THREE.Group> {
+        if (signal?.aborted) {
+            throw AssetLoader.createAbortError();
+        }
+
+        const arrayBuffer = await this.getArrayBuffer(url, onProgress, signal);
+
+        if (signal?.aborted) {
+            throw AssetLoader.createAbortError();
+        }
+
+        return this.parse(arrayBuffer, signal);
+    }
+
+    private async getArrayBuffer(
+        url: string,
+        onProgress?: (progress: number) => void,
+        signal?: AbortSignal
+    ) {
         if (AssetLoader.cache.has(url)) {
             onProgress?.(1);
-            return AssetLoader.cache.get(url)!.clone();
+            return AssetLoader.cache.get(url)!;
         }
 
         const blob = await http.request<Blob>({
             method: 'GET',
             url,
+            signal,
             responseType: 'blob'
         });
+
+        if (signal?.aborted) {
+            throw AssetLoader.createAbortError();
+        }
 
         onProgress?.(1);
 
         const arrayBuffer = await blob.arrayBuffer();
 
+        if (signal?.aborted) {
+            throw AssetLoader.createAbortError();
+        }
+
+        AssetLoader.cache.set(url, arrayBuffer);
+        return arrayBuffer;
+    }
+
+    private parse(arrayBuffer: ArrayBuffer, signal?: AbortSignal): Promise<THREE.Group> {
         return new Promise<THREE.Group>((resolve, reject) => {
-            const gltfLoader = new GLTFLoader();
-            try {
-                const dracoLoader = new DRACOLoader();
-                dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
-                gltfLoader.setDRACOLoader(dracoLoader);
-                gltfLoader.setMeshoptDecoder(MeshoptDecoder);
-            } catch {
+            const gltfLoader = AssetLoader.createGlbLoader();
+            let settled = false;
+            const handleAbort = () => {
+                rejectAbort();
+            };
+
+            const rejectAbort = () => {
+                if (settled) {
+                    return;
+                }
+
+                settled = true;
+                signal?.removeEventListener('abort', handleAbort);
+                reject(AssetLoader.createAbortError());
+            };
+
+            if (signal?.aborted) {
+                rejectAbort();
+                return;
             }
+
+            signal?.addEventListener('abort', handleAbort, { once: true });
 
             gltfLoader.parse(
                 arrayBuffer,
                 '',
-                (gltf: any) => {
-                    const scene = gltf.scene as THREE.Group;
-                    AssetLoader.cache.set(url, scene);
-                    resolve(scene.clone());
+                (gltf: GLTF) => {
+                    if (settled) {
+                        disposeObject3DResources(gltf.scene);
+                        return;
+                    }
+
+                    settled = true;
+                    signal?.removeEventListener('abort', handleAbort);
+
+                    if (signal?.aborted) {
+                        disposeObject3DResources(gltf.scene);
+                        reject(AssetLoader.createAbortError());
+                        return;
+                    }
+
+                    resolve(gltf.scene);
                 },
-                (err: any) => {
-                    reject(err instanceof Error ? err : new Error(String(err)));
+                (error: unknown) => {
+                    if (settled) {
+                        return;
+                    }
+
+                    settled = true;
+                    signal?.removeEventListener('abort', handleAbort);
+                    reject(error instanceof Error ? error : new Error(String(error)));
                 }
             );
         });

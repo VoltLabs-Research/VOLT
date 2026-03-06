@@ -3,7 +3,7 @@ import type { ModelStore, ModelState, SceneObjectType, ModelData } from '@/modul
 import type { ModelWorldBounds } from '@/modules/fractal/presentation/types/configuration';
 import { isSameScene } from '@/modules/canvas/presentation/utilities/scene-identity';
 
-const initialState: ModelState = {
+const createInitialState = (): ModelState => ({
     activeModel: null,
     activeScene: { sceneType: 'trajectory', source: 'default' },
     activeScenes: [{ sceneType: 'trajectory', source: 'default' }],
@@ -11,10 +11,10 @@ const initialState: ModelState = {
     pointSizeMultiplier: 1.0,
     sceneOpacities: {},
     modelWorldBounds: null
-};
+});
 
 export const createModelSlice: StateCreator<any, [], [], ModelStore> = (set, get) => ({
-    ...initialState,
+    ...createInitialState(),
 
     setActiveScene(scene: SceneObjectType) {
         set({
@@ -74,12 +74,7 @@ export const createModelSlice: StateCreator<any, [], [], ModelStore> = (set, get
     },
 
     resetModel() {
-        set({
-            activeModel: null,
-            isModelLoading: false,
-            pointSizeMultiplier: 1.0,
-            modelWorldBounds: null
-        });
+        set(createInitialState());
     },
 
     setPointSizeMultiplier(multiplier: number) {

@@ -1,4 +1,5 @@
 import { useMemo, useCallback, useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import useSocketEvent from '@/modules/socket/presentation/hooks/use-socket-event';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 import { useClusterStore } from '../stores/use-cluster-store';
@@ -16,14 +17,38 @@ const useClusterMetrics = () => {
         setClusters,
         setSelectedClusterId,
         setConnected,
-        setHistory
-    } = useClusterStore();
+        setHistory,
+        resetHistory
+    } = useClusterStore(useShallow((state) => ({
+        clusters: state.clusters,
+        selectedClusterId: state.selectedClusterId,
+        isConnected: state.isConnected,
+        isHistoryLoaded: state.isHistoryLoaded,
+        history: state.history,
+        setClusters: state.setClusters,
+        setSelectedClusterId: state.setSelectedClusterId,
+        setConnected: state.setConnected,
+        setHistory: state.setHistory,
+        resetHistory: state.resetHistory
+    })));
 
     useEffect(() => {
-        const unsubscribe = socketService.onConnectionChange(setConnected);
-        setConnected(socketService.isConnected());
+        resetHistory();
+    }, [resetHistory]);
+
+    useEffect(() => {
+        const handleConnectionChange = (connected: boolean) => {
+            setConnected(connected);
+
+            if (!connected) {
+                resetHistory();
+            }
+        };
+
+        const unsubscribe = socketService.onConnectionChange(handleConnectionChange);
+        handleConnectionChange(socketService.isConnected());
         return unsubscribe;
-    }, [socketService, setConnected]);
+    }, [resetHistory, setConnected, socketService]);
 
     useSocketEvent<ClusterMetrics[]>(
         SOCKET_EVENTS.metricsAll,

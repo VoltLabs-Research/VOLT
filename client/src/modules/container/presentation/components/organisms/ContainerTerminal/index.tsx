@@ -22,58 +22,65 @@ interface ContainerTerminalProps {
     } | null;
 };
 
-const connectionState: Record<string, {
-    count: number;
+interface TerminalConnectionState {
     isAttached: boolean;
     detachTimer: ReturnType<typeof setTimeout> | null;
-}> = {};
+}
 
 export const ContainerTerminal = ({ container, onClose, embedded = false, appendOutput = null }: ContainerTerminalProps) => {
     const terminalRef = useRef<TerminalHandle>(null);
     const isAttachedRef = useRef(false);
     const socketService = useSocket();
+    const connectionStateRef = useRef<TerminalConnectionState>({
+        isAttached: false,
+        detachTimer: null
+    });
 
     useEffect(() => {
-        const id = container._id;
-        if(!connectionState[id]){
-            connectionState[id] = { count: 0, isAttached: false, detachTimer: null };
-        }
-        const state = connectionState[id];
+        const connectionState = connectionStateRef.current;
 
-        if(state.detachTimer){
-            clearTimeout(state.detachTimer);
-            state.detachTimer = null;
+        if (connectionState.detachTimer) {
+            clearTimeout(connectionState.detachTimer);
+            connectionState.detachTimer = null;
         }
 
-        state.count++;
-        socketService.connect();
+        void socketService.connect().catch(() => undefined);
 
         return () => {
-            state.count--;
-            if(state.count === 0){
-                state.detachTimer = setTimeout(() => {
-                    if(state.count === 0){
-                        socketService.emit('container:terminal:detach');
-                        state.isAttached = false;
-                        isAttachedRef.current = false;
-                        delete connectionState[id];
-                    }
-                }, 100);
+            if (connectionState.detachTimer) {
+                clearTimeout(connectionState.detachTimer);
             }
+
+            connectionState.detachTimer = setTimeout(() => {
+                if (!connectionState.isAttached) {
+                    connectionState.detachTimer = null;
+                    return;
+                }
+
+                void socketService.emit('container:terminal:detach').catch(() => undefined);
+                connectionState.isAttached = false;
+                isAttachedRef.current = false;
+                connectionState.detachTimer = null;
+            }, 100);
         };
     }, [container._id, socketService]);
 
     useEffect(() => {
         const id = container._id;
-        const state = connectionState[id];
+        const connectionState = connectionStateRef.current;
 
         const attach = () => {
-            if(isAttachedRef.current || state.isAttached) return;
-            if(socketService.isConnected()){
-                socketService.emit('container:terminal:attach', { containerId: id });
-                state.isAttached = true;
-                isAttachedRef.current = true;
+            if (isAttachedRef.current || connectionState.isAttached) {
+                return;
             }
+
+            if (!socketService.isConnected()) {
+                return;
+            }
+
+            void socketService.emit('container:terminal:attach', { containerId: id }).catch(() => undefined);
+            connectionState.isAttached = true;
+            isAttachedRef.current = true;
         };
 
         const handleData = (data: string) => {
@@ -91,7 +98,9 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
             if(connected && !isAttachedRef.current) attach();
         });
 
-        if(socketService.isConnected()) attach();
+        if(socketService.isConnected()) {
+            attach();
+        }
 
         return () => {
             unsubData();
@@ -101,7 +110,7 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
     }, [container._id, socketService]);
 
     const handleTerminalData = (data: string) => {
-        socketService.emit('container:terminal:input', data);
+        void socketService.emit('container:terminal:input', data).catch(() => undefined);
     };
 
     useEffect(() => {
