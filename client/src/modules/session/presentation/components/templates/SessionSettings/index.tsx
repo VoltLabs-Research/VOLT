@@ -10,7 +10,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import SettingsPage from '@/modules/auth/presentation/components/templates/Settings/SettingsPage';
 import SettingsSection from '@/modules/auth/presentation/components/atoms/SettingsSection';
 import SettingsSectionHeader from '@/modules/auth/presentation/components/molecules/SettingsSectionHeader';
-import useSessionUseCases from '@/modules/session/presentation/hooks/use-session-use-cases';
+import useSessionUseCases from '@/modules/session/presentation/hooks/use-session-repository';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import { Session, SessionActivityType } from '@/modules/session/domain/entities/Session';

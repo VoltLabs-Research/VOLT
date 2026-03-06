@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import type { Plugin } from '../../domain/entities';
-import usePluginUseCases from './use-plugin-use-cases';
+import usePluginUseCases from './use-plugin-services';
 import usePluginStore from '../stores/use-plugin-store';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 

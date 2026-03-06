@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
-import { canAccessTeamPermissions } from '@/modules/team/presentation/utils/permission-evaluator';
+import { canAccessTeamPermissions } from '@/modules/team/presentation/utilities/permission-evaluator';
 
 type PermissionMode = 'any' | 'all';
 

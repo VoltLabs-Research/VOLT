@@ -3,7 +3,7 @@ import { INodeHandler, ExecutionContext, NodeOutputSchema, T } from '@modules/pl
 import { SYS_BUCKETS } from '@core/config/minio';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IStorageService } from '@shared/domain/port/IStorageService';
-import pLimit from '@shared/infrastructure/utilities/p-limit';
+import pLimit from 'p-limit';
 import readExposurePayload from '@modules/plugin/infrastructure/utilities/read-exposure-payload';
 import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 

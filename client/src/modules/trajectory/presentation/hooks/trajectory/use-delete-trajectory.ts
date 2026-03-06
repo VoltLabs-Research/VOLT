@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import useTrajectoryStore from '../../stores/use-trajectory-store';
-import useTrajectoryUseCases from './use-trajectory-use-cases';
+import useTrajectoryUseCases from './use-trajectory-services';
 
 const useDeleteTrajectory = () => {
     const { deleteTrajectoryUseCase } = useTrajectoryUseCases();

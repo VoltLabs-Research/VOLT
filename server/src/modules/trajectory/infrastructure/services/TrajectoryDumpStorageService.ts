@@ -8,7 +8,7 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { Readable } from 'node:stream';
 import { createReadStream, createWriteStream } from 'node:fs';
 import logger from '@shared/infrastructure/logger';
-import pLimit from '@shared/infrastructure/utilities/p-limit';
+import pLimit from 'p-limit';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import useTrajectoryUseCases from './use-trajectory-use-cases';
+import useTrajectoryUseCases from './use-trajectory-services';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 

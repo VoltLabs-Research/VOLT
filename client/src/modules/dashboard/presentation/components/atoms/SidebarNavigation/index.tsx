@@ -17,8 +17,8 @@ import TeamSelector from '@/modules/team/presentation/components/atoms/TeamSelec
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
 import { usePluginCatalog } from '@/modules/plugin/presentation/hooks';
-import { getListingRelevantExposures } from '@/modules/plugin/presentation/utils/listing-exposures';
-import { canAccessTeamPermissions } from '@/modules/team/presentation/utils/permission-evaluator';
+import { getListingRelevantExposures } from '@/modules/plugin/presentation/utilities/listing-exposures';
+import { canAccessTeamPermissions } from '@/modules/team/presentation/utilities/permission-evaluator';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 import ApiError from '@/shared/errors/ApiError';

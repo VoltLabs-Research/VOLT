@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { sileo } from 'sileo';
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
-import useTeamRoleUseCases from '@/modules/team/presentation/hooks/team-role/use-team-role-use-cases';
+import useTeamRoleUseCases from '@/modules/team/presentation/hooks/team-role/use-team-role-repository';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 
 const useTeamRoleData = () => {

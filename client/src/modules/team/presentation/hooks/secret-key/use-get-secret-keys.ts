@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import useSecretKeyUseCases from './use-secret-key-use-cases';
+import useSecretKeyUseCases from './use-secret-key-repository';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 

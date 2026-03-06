@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import useAnalysisStore from '../stores/use-analysis-store';
-import useAnalysisUseCases from './use-analysis-use-cases';
+import useAnalysisUseCases from './use-analysis-services';
 
 const useDeleteAnalysis = () => {
     const { deleteAnalysisUseCase } = useAnalysisUseCases();

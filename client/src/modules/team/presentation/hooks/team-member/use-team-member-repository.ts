@@ -1,12 +1,11 @@
-import { useMemo } from 'react';
-import { container } from 'tsyringe';
+import useResolve from '@/shared/presentation/hooks/use-resolve';
 import { TEAM_TOKENS } from '@/modules/team/infrastructure/di/tokens';
 import type ITeamMemberRepository from '@/modules/team/domain/port/ITeamMemberRepository';
 
 const useTeamMemberUseCases = () => {
-    return useMemo(() => ({
-        teamMemberRepository: container.resolve<ITeamMemberRepository>(TEAM_TOKENS.TeamMemberRepository)
-    }), []);
+    return {
+        teamMemberRepository: useResolve<ITeamMemberRepository>(TEAM_TOKENS.TeamMemberRepository)
+    };
 };
 
 export default useTeamMemberUseCases;

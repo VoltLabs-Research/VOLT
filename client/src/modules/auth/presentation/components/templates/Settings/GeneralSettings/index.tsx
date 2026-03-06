@@ -9,7 +9,7 @@ import DangerZone from '@/shared/presentation/components/DangerZone';
 import { buildFileFormData } from '@/shared/utils/file';
 import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
 import { useCurrentUser } from '@/modules/auth/presentation/hooks/use-current-user';
-import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
+import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-services';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { ProfileForm as ProfileFormType } from '@/modules/auth/presentation/components/organisms/ProfileForm/validation-schema';
 import { Trash2 } from 'lucide-react';

@@ -10,8 +10,8 @@ import RoleEditorModal, { openRoleEditorModal } from '../../organisms/RoleEditor
 import type { RoleEditorPayload } from '../../organisms/RoleEditorModal';
 import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
-import useTeamRoleUseCases from '@/modules/team/presentation/hooks/team-role/use-team-role-use-cases';
-import useSystemUseCases from '@/modules/system/presentation/hooks/use-system-use-cases';
+import useTeamRoleUseCases from '@/modules/team/presentation/hooks/team-role/use-team-role-repository';
+import useSystemUseCases from '@/modules/system/presentation/hooks/use-system-repository';
 import usePermission from '@/shared/presentation/hooks/use-permission';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';

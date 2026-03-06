@@ -16,8 +16,8 @@ import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-ro
 import { useCurrentUser } from '@/modules/auth/presentation/hooks/use-current-user';
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
 import useTeamRoleData from '@/modules/team/presentation/hooks/team-role/use-team-role-data';
-import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
-import useTeamMemberUseCases from '@/modules/team/presentation/hooks/team-member/use-team-member-use-cases';
+import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-services';
+import useTeamMemberUseCases from '@/modules/team/presentation/hooks/team-member/use-team-member-repository';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { GetTeamMembersParams } from '@/modules/team/domain/port/ITeamMemberRepository';
@@ -25,7 +25,7 @@ import type { TeamMember } from '@/modules/team/domain/entities/TeamMember';
 import useDailyActivityData from '@/modules/daily-activity/presentation/hooks/use-daily-activity-data';
 import ActivityHeatmap from '@/modules/daily-activity/presentation/components/molecules/ActivityHeatmap';
 import { useTeamPresenceStore } from '@/modules/team/presentation/stores/use-team-presence-store';
-import { canAccessTeamPermissions } from '@/modules/team/presentation/utils/permission-evaluator';
+import { canAccessTeamPermissions } from '@/modules/team/presentation/utilities/permission-evaluator';
 import ApiError from '@/shared/errors/ApiError';
 import './MyTeam.css';
 

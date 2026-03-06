@@ -9,7 +9,7 @@ import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepo
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
 import { SYS_BUCKETS } from '@core/config/minio';
-import { RuntimeError } from '@core/exceptions/RuntimeError';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 
 interface StorageFileRef {
@@ -161,11 +161,11 @@ export default class GetPluginExposureExportController{
             const { teamId, analysisId } = req.params;
             const analysis = await this.analysisRepository.findById(String(analysisId));
             if (!analysis) {
-                throw new RuntimeError(ErrorCodes.ANALYSIS_NOT_FOUND, 404);
+                throw new ApplicationError(ErrorCodes.ANALYSIS_NOT_FOUND, ErrorCodes.ANALYSIS_NOT_FOUND, 404);
             }
 
             if (String(analysis.props.team) !== String(teamId)) {
-                throw new RuntimeError(ErrorCodes.ANALYSIS_NOT_FOUND, 404);
+                throw new ApplicationError(ErrorCodes.ANALYSIS_NOT_FOUND, ErrorCodes.ANALYSIS_NOT_FOUND, 404);
             }
 
             const pluginId = String(analysis.props.plugin);
@@ -178,7 +178,7 @@ export default class GetPluginExposureExportController{
             const groupedFiles = await this.collectFilesByTimestep(trajectoryId, String(analysisId));
             const timesteps = Array.from(groupedFiles.keys()).sort((a, b) => a - b);
             if (timesteps.length === 0) {
-                throw new RuntimeError(ErrorCodes.FILE_NOT_FOUND, 404);
+                throw new ApplicationError(ErrorCodes.FILE_NOT_FOUND, ErrorCodes.FILE_NOT_FOUND, 404);
             }
 
             const bundleName = `analysis-${analysisId}-plugin-${pluginName}.zip`;

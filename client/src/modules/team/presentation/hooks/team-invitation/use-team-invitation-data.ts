@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { sileo } from 'sileo';
 import { useTeamInvitationStore } from '@/modules/team/presentation/stores/use-team-invitation-store';
-import useTeamInvitationUseCases from '@/modules/team/presentation/hooks/team-invitation/use-team-invitation-use-cases';
+import useTeamInvitationUseCases from '@/modules/team/presentation/hooks/team-invitation/use-team-invitation-repository';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 
 const useTeamInvitationData = () => {

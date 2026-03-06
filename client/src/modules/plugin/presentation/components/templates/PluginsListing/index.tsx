@@ -13,7 +13,7 @@ import type { GetPluginsInputDTO } from '@/modules/plugin/application/dtos';
 import type { Plugin } from '../../../../domain/entities';
 import { PluginStatus } from '../../../../domain/entities/Workflow';
 import type { MenuOption } from '@/shared/presentation/components/DocumentListingTable';
-import { dateColumn } from '@/shared/presentation/utils/column-presets';
+import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import './PluginsListing.css';
 
 const LIST_SYNC = createListSyncConfig('plugin');

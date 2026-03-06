@@ -4,7 +4,7 @@ import { GoArrowRight } from 'react-icons/go';
 import { FlaskConical } from 'lucide-react';
 import { Skeleton } from '@mui/material';
 import { formatDistanceToNow } from 'date-fns';
-import useAnalysisUseCases from '@/modules/analysis/presentation/hooks/use-analysis-use-cases';
+import useAnalysisUseCases from '@/modules/analysis/presentation/hooks/use-analysis-services';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';

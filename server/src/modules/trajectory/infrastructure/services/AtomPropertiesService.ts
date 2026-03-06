@@ -9,7 +9,7 @@ import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/ITrajectoryDumpStorageService';
 import { decodeMultiStream } from '@shared/infrastructure/utilities/msgpack';
 import { SYS_BUCKETS } from '@core/config/minio';
-import { RuntimeError } from '@core/exceptions/RuntimeError';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import nativeStats from '@modules/trajectory/infrastructure/native/NativeStats';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
@@ -74,7 +74,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             .filter((node: Record<string, unknown>) => node.type === WorkflowNodeType.Exposure)
             .find((node: Record<string, unknown>) => String(node.id) === String(exposureId));
 
-        if (!exposureNode) throw new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404);
+        if (!exposureNode) throw new ApplicationError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404);
 
         const exposureName: string = typeof exposureNode?.data?.exposure?.name === 'string'
             ? exposureNode.data.exposure.name.trim()
@@ -350,7 +350,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             const idMap = this.toFloat32ByAtomId(modifierData, expression.property);
 
             const dumpFilePath = await this.dumpStorage.getDump(trajectoryId, timestep);
-            if (!dumpFilePath) throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            if (!dumpFilePath) throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
 
             const parsed = await TrajectoryParserFactory.parse(dumpFilePath, { includeIds: true, properties: [] });
 
@@ -367,7 +367,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             }
         } else {
             const dumpFilePath = await this.dumpStorage.getDump(trajectoryId, timestep);
-            if (!dumpFilePath) throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            if (!dumpFilePath) throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
 
             const lowerProp = expression.property.toLowerCase();
             const isStandard = ['type', 'id', 'x', 'y', 'z'].includes(lowerProp);
@@ -456,10 +456,10 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
     private async getAnalysisAndPlugin(analysisId: string): Promise<{ analysis: Analysis; plugin: Plugin }> {
         const analysis = await this.analysisRepository.findById(analysisId);
-        if (!analysis) throw new RuntimeError(ErrorCodes.ANALYSIS_NOT_FOUND, 404);
+        if (!analysis) throw new ApplicationError(ErrorCodes.ANALYSIS_NOT_FOUND, ErrorCodes.ANALYSIS_NOT_FOUND, 404);
 
         const plugin = await this.pluginRepository.findOne({ _id: analysis.props.plugin });
-        if (!plugin) throw new RuntimeError(ErrorCodes.PLUGIN_NOT_FOUND, 404);
+        if (!plugin) throw new ApplicationError(ErrorCodes.PLUGIN_NOT_FOUND, ErrorCodes.PLUGIN_NOT_FOUND, 404);
 
         return { analysis, plugin };
     }

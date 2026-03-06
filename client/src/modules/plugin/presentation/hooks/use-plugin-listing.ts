@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri';
 import usePluginListingStore from '../stores/use-plugin-listing-store';
-import usePluginUseCases from './use-plugin-use-cases';
+import usePluginUseCases from './use-plugin-services';
 import useDeleteAnalysis from '@/modules/analysis/presentation/hooks/use-delete-analysis';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';

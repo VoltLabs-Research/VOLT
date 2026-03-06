@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import usePluginListingStore from '@/modules/plugin/presentation/stores/use-plugin-listing-store';
-import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
+import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-services';
 import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/presentation/components/organisms/PluginCompactTable';
 import Modal from '@/shared/presentation/components/Modal';
 import { SUB_LISTING_MODAL_ID } from '../../../hooks/use-plugin-listing';
-import formatSnakeCaseToTitle from '@/modules/plugin/presentation/utils/format-snake-case';
+import formatSnakeCaseToTitle from '@/modules/plugin/presentation/utilities/format-snake-case';
 
 const SUB_LISTING_MODAL_PAGE_SIZE = 50;
 

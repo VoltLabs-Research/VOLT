@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
-import { canAccessTeamPermissions } from '@/modules/team/presentation/utils/permission-evaluator';
+import { canAccessTeamPermissions } from '@/modules/team/presentation/utilities/permission-evaluator';
 import { confirm, confirmDelete } from './use-confirm';
 import type { MenuOption } from '../components/DocumentListingTable';
 

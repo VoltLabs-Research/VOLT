@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import useDailyActivityUseCases from './use-daily-activity-use-cases';
+import useDailyActivityUseCases from './use-daily-activity-repository';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type { DailyActivity } from '@/modules/daily-activity/domain/entities';
 

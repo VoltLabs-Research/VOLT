@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import useTrajectoryUseCases from './use-trajectory-use-cases';
+import useTrajectoryUseCases from './use-trajectory-services';
 
 interface UseTrajectoryPreviewParams{
     trajectoryId: string;

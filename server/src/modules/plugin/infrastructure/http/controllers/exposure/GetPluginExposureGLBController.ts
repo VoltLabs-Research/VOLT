@@ -5,7 +5,7 @@ import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
-import { RuntimeError } from '@core/exceptions/RuntimeError';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
@@ -31,7 +31,7 @@ export default class GetPluginExposureGLBController{
             } as any);
 
             if (!artifact) {
-                throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+                throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
             }
 
             const objectName = artifact.props.objectName;

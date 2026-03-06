@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { injectable, inject } from 'tsyringe';
-import { RuntimeError } from '@core/exceptions/RuntimeError';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import type { IContainerService } from '@modules/container/domain/port/IContainerService';
@@ -130,7 +130,7 @@ export class JupyterService{
         const { start, end } = this.runtime.jupyter.hostPortRange;
         const hostPort = await this.containerService.findAvailableHostPort(start, end);
         if(!hostPort){
-            throw new RuntimeError(ErrorCodes.DOCKER_CREATE_ERROR, 500);
+            throw new ApplicationError(ErrorCodes.DOCKER_CREATE_ERROR, ErrorCodes.DOCKER_CREATE_ERROR, 500);
         }
 
         const created = await this.createContainerUseCase.execute({
@@ -151,7 +151,7 @@ export class JupyterService{
         });
 
         if(!created.success){
-            throw new RuntimeError(ErrorCodes.DOCKER_CREATE_ERROR, 500);
+            throw new ApplicationError(ErrorCodes.DOCKER_CREATE_ERROR, ErrorCodes.DOCKER_CREATE_ERROR, 500);
         }
 
         return {
@@ -163,7 +163,7 @@ export class JupyterService{
     private async startServer(containerId: string): Promise<void>{
         return new Promise<void>((resolve, reject) => {
             const timer = setTimeout(() => {
-                reject(new RuntimeError(ErrorCodes.DOCKER_EXEC_ERROR, 504));
+                reject(new ApplicationError(ErrorCodes.DOCKER_EXEC_ERROR, ErrorCodes.DOCKER_EXEC_ERROR, 504));
             }, this.runtime.execTimeoutMs);
 
             this.containerService.exec(containerId, ['/bin/sh', '-lc', this.getStartCommand()])
@@ -173,7 +173,7 @@ export class JupyterService{
                 })
                 .catch(() => {
                     clearTimeout(timer);
-                    reject(new RuntimeError(ErrorCodes.DOCKER_EXEC_ERROR, 500));
+                    reject(new ApplicationError(ErrorCodes.DOCKER_EXEC_ERROR, ErrorCodes.DOCKER_EXEC_ERROR, 500));
                 });
         });
     }
@@ -218,7 +218,7 @@ export class JupyterService{
     public resolveDefaultNotebookTemplateContent(context: { trajectoryId: string }): string {
         const serverDomain = process.env.SERVER_ENDPOINT;
         if (!serverDomain) {
-            throw new RuntimeError(ErrorCodes.RESOURCE_LOAD_ERROR, 500);
+            throw new ApplicationError(ErrorCodes.RESOURCE_LOAD_ERROR, ErrorCodes.RESOURCE_LOAD_ERROR, 500);
         }
 
         return fs.readFileSync(DEFAULT_NOTEBOOK_TEMPLATE_PATH, 'utf8')

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
+import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-services';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { ExportType } from '@/shared/domain/export/types';

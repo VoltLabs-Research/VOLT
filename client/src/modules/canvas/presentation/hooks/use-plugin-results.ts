@@ -5,9 +5,9 @@ import useCanvasUrlState from './use-canvas-url-state';
 import { usePluginStore } from '@/modules/plugin';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
-import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
+import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-services';
 import { triggerBrowserDownload } from '@/shared/utils/file';
-import { getListingRelevantExposures } from '@/modules/plugin/presentation/utils/listing-exposures';
+import { getListingRelevantExposures } from '@/modules/plugin/presentation/utilities/listing-exposures';
 import ApiError from '@/shared/errors/ApiError';
 
 interface UsePluginResultsOptions {

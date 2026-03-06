@@ -3,7 +3,6 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { RuntimeError } from '@core/exceptions/RuntimeError';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 import type ScriptingNotebook from '@modules/scripting/domain/entities/ScriptingNotebook';
@@ -90,7 +89,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             } as any);
 
             if (!notebook) {
-                throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
+                throw new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, ErrorCodes.RESOURCE_NOT_FOUND, 404);
             }
 
             const currentTrajectoryIds = Array.isArray(notebook.props.trajectories)
@@ -145,10 +144,6 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
     private mapError(error: unknown): Result<CreateScriptingJupyterSessionOutputDTO, ApplicationError> {
         if (error instanceof ApplicationError) {
             return Result.fail(error);
-        }
-
-        if (error instanceof RuntimeError) {
-            return Result.fail(new ApplicationError(error.code, error.message, error.statusCode, error.isOperational));
         }
 
         if (error instanceof Error) {

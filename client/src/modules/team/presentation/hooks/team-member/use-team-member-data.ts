@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { sileo } from 'sileo';
 import { useTeamMemberStore } from '@/modules/team/presentation/stores/use-team-member-store';
-import useTeamMemberUseCases from '@/modules/team/presentation/hooks/team-member/use-team-member-use-cases';
+import useTeamMemberUseCases from '@/modules/team/presentation/hooks/team-member/use-team-member-repository';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 
 const useTeamMemberData = () => {

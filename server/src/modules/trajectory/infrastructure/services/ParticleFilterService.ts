@@ -8,7 +8,7 @@ import { IParticleFilterService } from '@modules/trajectory/domain/port/IParticl
 import { IAtomPropertiesService, FilterExpression } from '@modules/trajectory/domain/port/IAtomPropertiesService';
 import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 import { SYS_BUCKETS } from '@core/config/minio';
-import { RuntimeError } from '@core/exceptions/RuntimeError';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
 import nativeExporter from '@modules/trajectory/infrastructure/native/NativeExporter';
@@ -44,7 +44,7 @@ export default class ParticleFilterService implements IParticleFilterService {
         const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
         const dumpPath = await this.dumpStorage.getDump(trajectoryId, String(timestep));
         if (!dumpPath) {
-            throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
         }
 
         const parsed = await TrajectoryParserFactory.parse(dumpPath, { properties: [] });
@@ -89,7 +89,7 @@ export default class ParticleFilterService implements IParticleFilterService {
 
         const dumpPath = await this.dumpStorage.getDump(trajectoryId, String(timestep));
         if (!dumpPath) {
-            throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
         }
 
         const parsed = await TrajectoryParserFactory.parse(dumpPath, { properties: [] });
@@ -144,7 +144,7 @@ export default class ParticleFilterService implements IParticleFilterService {
 
         const dumpPath = await this.dumpStorage.getDump(trajectoryId, String(timestep));
         if (!dumpPath) {
-            throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
         }
 
         const parsed = await TrajectoryParserFactory.parse(dumpPath);
@@ -241,7 +241,7 @@ export default class ParticleFilterService implements IParticleFilterService {
         const objectName = `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${formattedValue}-${actionPart}.glb`;
 
         if (!await this.storageService.exists(SYS_BUCKETS.MODELS, objectName)) {
-            throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
         }
 
         return this.storageService.getStream(SYS_BUCKETS.MODELS, objectName);

@@ -3,7 +3,7 @@ import Modal, { closeModal, openModal } from '@/shared/presentation/components/M
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import { useKeyboardShortcutsStore, type Shortcut } from '../../../stores/use-keyboard-shortcuts-store';
-import formatKeyName from '../../../utils/format-key-name';
+import formatKeyName from '../../../utilities/format-key-name';
 import './KeyboardShortcutsPanel.css';
 
 const CATEGORY_ORDER = ['playback', 'view', 'navigation', 'general'];

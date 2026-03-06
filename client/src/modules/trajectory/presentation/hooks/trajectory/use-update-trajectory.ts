@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import useTrajectoryStore from '../../stores/use-trajectory-store';
-import useTrajectoryUseCases from './use-trajectory-use-cases';
+import useTrajectoryUseCases from './use-trajectory-services';
 import { Trajectory } from '@/modules/trajectory/domain/entities';
 import { sileo } from 'sileo';
 import ApiError from '@/shared/errors/ApiError';

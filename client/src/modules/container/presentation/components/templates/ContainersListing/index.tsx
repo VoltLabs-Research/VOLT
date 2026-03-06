@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Play, Square, Box, RotateCcw } from 'lucide-react';
 import { RiTerminalLine } from 'react-icons/ri';
 import { formatDistanceToNow } from 'date-fns';
-import useContainerUseCases from '../../../hooks/use-container-use-cases';
+import useContainerUseCases from '../../../hooks/use-container-repository';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
 import { showPromise } from '@/shared/presentation/hooks/toast';

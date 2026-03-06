@@ -3,7 +3,7 @@ import Modal, { closeModal } from '@/shared/presentation/components/Modal';
 import Button from '@/shared/presentation/components/Button';
 import useForm from '@/shared/presentation/hooks/use-form';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import useSSHUseCases from '@/modules/ssh/presentation/hooks/use-ssh-use-cases';
+import useSSHUseCases from '@/modules/ssh/presentation/hooks/use-ssh-repository';
 import SSHConnectionForm from '@/modules/ssh/presentation/components/molecules/SSHConnectionForm';
 import SSHConnectionTestButton from '@/modules/ssh/presentation/components/atoms/SSHConnectionTestButton';
 import { SSHConnectionFormData, defaultValues, createSSHConnectionSchema } from './validation-schema';

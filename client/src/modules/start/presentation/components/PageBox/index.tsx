@@ -3,7 +3,7 @@ import type { AccessedPage } from '@/shared/presentation/stores/use-accessed-pag
 import { useAccessedPagesStore } from '@/shared/presentation/stores/use-accessed-pages-store';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { fadeToBlack } from '@/shared/presentation/utils/page-transition';
+import { fadeToBlack } from '@/shared/presentation/utilities/page-transition';
 
 const IFRAME_W = 1280;
 const IFRAME_H = 800;

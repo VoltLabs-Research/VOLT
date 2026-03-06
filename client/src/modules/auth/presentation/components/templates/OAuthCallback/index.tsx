@@ -6,7 +6,7 @@ import Loader from '@/shared/presentation/components/Loader';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
+import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-services';
 import { useAuthStore } from '../../../stores/use-auth-store';
 import { sileo } from 'sileo';
 import './OAuthCallback.css';

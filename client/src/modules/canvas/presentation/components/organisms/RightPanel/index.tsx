@@ -3,7 +3,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Wrench, Monitor } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
-import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
+import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-services';
 import { usePluginCatalog } from '@/modules/plugin/presentation/hooks';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import {

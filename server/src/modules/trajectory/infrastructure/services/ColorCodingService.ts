@@ -9,7 +9,7 @@ import { IAtomPropertiesService } from '@modules/trajectory/domain/port/IAtomPro
 import { IAtomisticExporter } from '@modules/trajectory/domain/port/exporters/AtomisticExporter';
 import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 import { SYS_BUCKETS } from '@core/config/minio';
-import { RuntimeError } from '@core/exceptions/RuntimeError';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
 import { formatValueForPath } from '@shared/infrastructure/utilities/format-value';
@@ -44,7 +44,7 @@ export default class ColorCodingService implements IColorCodingService {
         const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
         const dumpPath = await this.dumpStorage.getDump(trajectoryId, String(timestep));
         if (!dumpPath) {
-            throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
         }
 
         const parsed = await TrajectoryParserFactory.parse(dumpPath, { properties: [] });
@@ -74,7 +74,7 @@ export default class ColorCodingService implements IColorCodingService {
 
         if (type === 'modifier') {
             if (!exposureId || !normalizedAnalysisId) {
-                throw new RuntimeError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400);
+                throw new ApplicationError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400);
             }
 
             const modifierData = await this.atomProps.getModifierAnalysis(
@@ -93,7 +93,7 @@ export default class ColorCodingService implements IColorCodingService {
         } else {
             const dumpPath = await this.dumpStorage.getDump(String(trajectoryId), String(timestep));
             if (!dumpPath) {
-                throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+                throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
             }
 
             const parsed = await TrajectoryParserFactory.parse(dumpPath, { properties: [property] });
@@ -171,7 +171,7 @@ export default class ColorCodingService implements IColorCodingService {
 
         const dumpPath = await this.dumpStorage.getDump(String(trajectoryId), String(timestep));
         if (!dumpPath) {
-            throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
         }
 
         let externalValues: Float32Array | undefined;
@@ -239,7 +239,7 @@ export default class ColorCodingService implements IColorCodingService {
             `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${formattedStart}-${formattedEnd}/${gradient}.glb`;
 
         if (!await this.storageService.exists(SYS_BUCKETS.MODELS, objectName)) {
-            throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
         }
 
         return this.storageService.getStream(SYS_BUCKETS.MODELS, objectName);

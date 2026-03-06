@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import useTeamJobsStore from '@/modules/jobs/presentation/stores/use-team-jobs-store';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
-import { applyJobUpdate } from '@/modules/jobs/presentation/utils/job-group-updates';
+import { applyJobUpdate } from '@/modules/jobs/presentation/utilities/job-group-updates';
 import type { Job, TrajectoryJobGroup } from '@/modules/jobs/domain/entities/Job';
 import type ISocketService from '@/modules/socket/domain/port/ISocketService';
 

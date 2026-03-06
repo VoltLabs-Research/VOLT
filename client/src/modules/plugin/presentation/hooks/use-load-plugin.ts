@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import usePluginUseCases from './use-plugin-use-cases';
+import usePluginUseCases from './use-plugin-services';
 import usePluginBuilderStore from '../stores/use-plugin-builder-store';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 

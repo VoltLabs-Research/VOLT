@@ -5,7 +5,7 @@ import FormField from '@/shared/presentation/components/FormField';
 import Button from '@/shared/presentation/components/Button';
 import { usePluginStore } from '@/modules/plugin';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
-import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
+import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-services';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
