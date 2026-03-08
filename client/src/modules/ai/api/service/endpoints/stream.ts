@@ -7,9 +7,11 @@ import type { CreateConversationStreamTransportParams } from '../../dtos/create-
 const endpoints = {
     createStreamTransport: custom<CreateConversationStreamTransportParams, ChatTransport<UIMessage>>(
         (_ctx, { teamId, conversationId, getModelSelection }) => {
-            const api = teamId && conversationId
-                ? `${import.meta.env.VITE_API_URL}/api/ai/conversations/${teamId}/${conversationId}/messages/stream`
-                : '/api/ai/conversations/invalid/invalid/messages/stream';
+            if (!teamId || !conversationId) {
+                throw new Error('teamId and conversationId are required to create a stream transport');
+            }
+
+            const api = `${import.meta.env.VITE_API_URL}/api/ai/conversations/${teamId}/${conversationId}/messages/stream`;
 
             return new DefaultChatTransport({
                 api,

@@ -11,7 +11,7 @@ const endpoints = {
         '/:invitationId', { client: 'invitations' }
     ),
     getPending: get<GetPendingInvitationsInputDTO, TeamInvitation[]>(
-        '/:teamId/invitations/pending', {
+        '/:teamId/invitations?status=pending', {
             client: 'team',
             map: (result) => {
                 const page = result as PaginatedResponse<TeamInvitation>;
@@ -20,7 +20,7 @@ const endpoints = {
         }
     ),
     send: post<SendInvitationInputDTO, void>(
-        '/:teamId/invitations/invite', { client: 'team', unwrap: 'void' }
+        '/:teamId/invitations', { client: 'team', unwrap: 'void' }
     ),
     cancel: del<CancelInvitationInputDTO>(
         '/:teamId/invitations/:invitationId', { client: 'team' }

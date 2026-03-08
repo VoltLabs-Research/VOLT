@@ -15,10 +15,10 @@ const endpoints = {
         omit: ['teamId'],
         unwrap: { field: 'container' }
     }),
-    update: patch<UpdateContainerParams, Container | null>('/containerId', {
+    update: patch<UpdateContainerParams, Container | null>('/:containerId', {
         unwrap: { field: 'container' }
     }),
-    delete: del<{ containerId: string }>('/containerId')
+    delete: del<{ containerId: string }>('/:containerId')
 };
 
 export default endpoints;

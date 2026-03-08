@@ -6,15 +6,15 @@ import controllers from '@modules/jobs/infrastructure/http/controllers';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/trajectory-jobs/:teamId',
+    basePath: '/api/jobs/:teamId',
     router,
     resource: Resource.TRAJECTORY
 };
 
 const jobsRateLimit = createStandardRateLimiter(5);
 
-router.post('/clear-history', jobsRateLimit, controllers.clearHistory.handle);
-router.post('/remove-running', jobsRateLimit, controllers.removeRunningJobs.handle);
-router.post('/retry-failed', jobsRateLimit, controllers.retryFailedJobs.handle);
+router.delete('/history', jobsRateLimit, controllers.clearHistory.handle);
+router.delete('/running', jobsRateLimit, controllers.removeRunningJobs.handle);
+router.post('/failed/retries', jobsRateLimit, controllers.retryFailedJobs.handle);
 
 export default module;

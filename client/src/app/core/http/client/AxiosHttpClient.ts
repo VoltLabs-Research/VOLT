@@ -8,6 +8,7 @@ export interface AxiosHttpClientOpts{
     getToken: () => string | null;
 };
 
+// TODO: ???
 const getHttpFallbackCode = (status: number): string => {
     if(status === 400) return 'Http::400';
     if(status === 401) return 'Http::401';

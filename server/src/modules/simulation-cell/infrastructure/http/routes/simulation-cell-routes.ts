@@ -20,7 +20,7 @@ const getSimulationCellByTrajectoryController = container.resolve<InstanceType<t
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/simulation-cell/:teamId',
+    basePath: '/api/simulation-cells/:teamId',
     router,
     resource: Resource.SIMULATION_CELL
 };
@@ -30,7 +30,7 @@ const generalRateLimit = createGeneralRateLimiter(60);
 router.use(generalRateLimit);
 
 router.get('/', listSimulationCellsByTeamIdController.handle);
-router.get('/by-trajectory/:trajectoryId', getSimulationCellByTrajectoryController.handle);
+router.get('/trajectories/:trajectoryId', getSimulationCellByTrajectoryController.handle);
 router.get('/:simulationCellId', getSimulationCellByIdController.handle);
 
 export default module;

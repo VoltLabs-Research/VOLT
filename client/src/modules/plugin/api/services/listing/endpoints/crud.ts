@@ -24,7 +24,7 @@ const requireExposureSelector = (params: { exposureId?: string; exposureName?: s
 };
 
 const endpoints = {
-    getListing: get<GetPluginListingInputDTO, GetPluginListingOutputDTO>('/:pluginId', {
+    getListing: get<GetPluginListingInputDTO, GetPluginListingOutputDTO>('/:pluginId/listings', {
         unwrap: 'raw',
         omit: ['pluginId'],
         validate: (params) => requireExposureSelector(params, 'Exposure::IdRequired'),
@@ -48,7 +48,7 @@ const endpoints = {
         }
     }),
     getSubListing: get<GetSubListingInputDTO, GetSubListingOutputDTO>(
-        '/listing/analysis/:analysisId/sub-listing/:exposureId/:timestep/:subListingName'
+        '/listings/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName'
     )
 };
 

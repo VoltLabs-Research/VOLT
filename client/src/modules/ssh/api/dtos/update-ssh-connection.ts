@@ -9,7 +9,7 @@ export interface UpdateSSHConnectionParams {
 };
 
 export interface UpdateSSHConnectionInputDTO {
-    connectionId: string;
+    sshConnectionId: string;
     name?: string;
     host?: string;
     port?: number;

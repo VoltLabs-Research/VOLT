@@ -6,7 +6,7 @@ import controllers from '@modules/container/infrastructure/http/controllers';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/container/:teamId',
+    basePath: '/api/containers/:teamId',
     router,
     resource: Resource.CONTAINER
 };
@@ -27,6 +27,6 @@ router.route('/:containerId')
 router.get('/:containerId/files', controllers.getFilesById.handle);
 router.get('/:containerId/processes', controllers.getProcessesById.handle);
 router.get('/:containerId/stats', controllers.getStatsById.handle);
-router.get('/:containerId/file', controllers.readFileById.handle);
+router.get('/:containerId/files/content', controllers.readFileById.handle);
 
 export default module;

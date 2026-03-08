@@ -6,10 +6,10 @@ import ApiError from '@/shared/errors/ApiError';
 const useRetryFailedFrames = () => {
     const mutation = useRetryFailedFramesMutation();
 
-    const retryFailedFrames = useCallback(async (_id: string) => {
+    const retryFailedFrames = useCallback(async (analysisId: string) => {
         try {
             return await showPromise(
-                mutation.mutateAsync({ _id }),
+                mutation.mutateAsync({ analysisId }),
                 {
                     loading: { title: 'Retrying failed frames...' },
                     success: (result) => ({

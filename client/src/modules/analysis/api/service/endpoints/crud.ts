@@ -9,7 +9,7 @@ const endpoints = {
     getByTrajectoryId: paginated<GetAnalysesByTrajectoryParams, PaginatedResponse<Analysis>>(
         '/trajectory/:trajectoryId'
     ),
-    delete: del<{ _id: string }>('/:_id')
+    delete: del<{ analysisId: string }>('/:analysisId')
 };
 
 export default endpoints;

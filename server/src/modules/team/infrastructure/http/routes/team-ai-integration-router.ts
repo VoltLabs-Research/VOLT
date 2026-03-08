@@ -7,7 +7,7 @@ import controllers from '@modules/team/infrastructure/http/controllers/ai-integr
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/team/:teamId/ai-integrations',
+    basePath: '/api/teams/:teamId/ai-integrations',
     router,
     resource: Resource.TEAM
 };
@@ -15,7 +15,7 @@ const module: HttpModule = {
 const createIntegrationRateLimit = createStandardRateLimiter(5);
 
 router.get('/models', controllers.listModels.handle);
-router.post('/discover-models', teamAIIntegrationValidation.discoverModels, controllers.discoverModels.handle);
+router.post('/model-discovery', teamAIIntegrationValidation.discoverModels, controllers.discoverModels.handle);
 
 router.route('/')
     .get(controllers.listByTeamId.handle);

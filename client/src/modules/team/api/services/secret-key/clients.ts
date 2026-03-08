@@ -1,6 +1,6 @@
 const clients = {
     default: {
-        basePath: '/team'
+        basePath: '/teams'
     }
 };
 

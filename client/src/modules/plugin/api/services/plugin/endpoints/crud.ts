@@ -15,7 +15,7 @@ const endpoints = {
         unwrap: { field: 'plugin' }
     }),
     update: patch<UpdatePluginInputDTO, Plugin>('/:_id'),
-    clone: post<ClonePluginInputDTO, Plugin>('/:pluginId/clone', {
+    clone: post<ClonePluginInputDTO, Plugin>('/:pluginId/clones', {
         unwrap: { field: 'plugin' }
     }),
     delete: del<DeletePluginInputDTO>('/:_id')

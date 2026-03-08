@@ -1,7 +1,7 @@
 import type { SSHFileEntry } from '@/modules/ssh/api/entities/ssh-connection';
 
 export interface ListSSHFilesParams {
-    connectionId: string;
+    sshConnectionId: string;
     path?: string;
 };
 

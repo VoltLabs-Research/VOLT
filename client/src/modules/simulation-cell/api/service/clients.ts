@@ -1,6 +1,6 @@
 const clients = {
     default: {
-        basePath: '/simulation-cell',
+        basePath: '/simulation-cells',
         useRBAC: true
     }
 };

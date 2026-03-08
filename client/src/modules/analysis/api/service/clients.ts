@@ -1,6 +1,6 @@
 const clients = {
     default: {
-        basePath: '/analysis',
+        basePath: '/analyses',
         useRBAC: true
     }
 };

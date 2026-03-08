@@ -6,7 +6,7 @@ import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/daily-activity/:teamId',
+    basePath: '/api/daily-activities/:teamId',
     router,
     resource: Resource.DAILY_ACTIVITY
 };

@@ -10,7 +10,7 @@ const endpoints = {
     listByTeamId: paginated<GetSecretKeysInputDTO, PaginatedResponse<SecretKey>>('/:teamId/secret-keys'),
     create: post<CreateSecretKeyInputDTO, CreateSecretKeyResponse>('/:teamId/secret-keys'),
     revokeById: patch<RevokeSecretKeyInputDTO, void>(
-        '/:teamId/secret-keys/:secretKeyId/revoke', { unwrap: 'void' }
+        '/:teamId/secret-keys/:secretKeyId', { unwrap: 'void' }
     ),
     deleteById: del<DeleteSecretKeyInputDTO>('/:teamId/secret-keys/:secretKeyId')
 };

@@ -18,7 +18,7 @@ const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
     const path = searchParams.get('path') || '.';
 
     const connectionQuery = sshConnectionByIdQuery(
-        { connectionId: connectionId || '' },
+        { sshConnectionId: connectionId || '' },
         { enabled: !!connectionId }
     );
 
@@ -39,7 +39,7 @@ const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
 
     const filesQuery = sshFilesQuery(
         {
-            connectionId: connectionId || '',
+            sshConnectionId: connectionId || '',
             path
         },
         { enabled: !!connectionId && !!connection }

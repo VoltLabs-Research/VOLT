@@ -37,7 +37,7 @@ export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingN
                 teamId: input.teamId
             }));
 
-            return Result.ok({ message: 'Notebook deleted successfully' });
+            return Result.ok(null);
         } catch (error) {
             if (error instanceof ApplicationError) {
                 return Result.fail(error);

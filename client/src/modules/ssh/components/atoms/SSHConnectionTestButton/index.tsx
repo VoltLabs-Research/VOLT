@@ -23,7 +23,7 @@ const SSHConnectionTestButton = ({ connectionId, disabled }: SSHConnectionTestBu
     const handleTest = async () => {
         setTestResult(null);
         try {
-            const result = await showPromise(testConnection.mutateAsync({ connectionId }), {
+            const result = await showPromise(testConnection.mutateAsync({ sshConnectionId: connectionId }), {
                 loading: { title: 'Testing connection...' },
                 success: { title: 'Connection successful!' },
                 error: { title: 'Connection failed' }

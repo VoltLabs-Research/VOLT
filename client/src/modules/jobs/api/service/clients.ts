@@ -1,6 +1,6 @@
 const clients = {
     default: {
-        basePath: '/trajectory-jobs',
+        basePath: '/jobs',
         useRBAC: true
     }
 };

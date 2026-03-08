@@ -6,14 +6,14 @@ import type { GetColorCodingStatsInputDTO, ColorCodingStats } from '../../../dto
 const endpoints = {
     getProperties: get<GetColorCodingPropertiesInputDTO, ColorCodingProperties>(
         ({ trajectoryId, analysisId }) => analysisId
-            ? `/properties/${trajectoryId}/${analysisId}`
-            : `/properties/${trajectoryId}`,
+            ? `/${trajectoryId}/properties/${analysisId}`
+            : `/${trajectoryId}/properties`,
         { query: ({ timestep }) => ({ timestep }) }
     ),
     getStats: get<GetColorCodingStatsInputDTO, ColorCodingStats>(
         ({ trajectoryId, analysisId }) => analysisId
-            ? `/stats/${trajectoryId}/${analysisId}`
-            : `/stats/${trajectoryId}`,
+            ? `/${trajectoryId}/stats/${analysisId}`
+            : `/${trajectoryId}/stats`,
         { omit: ['trajectoryId', 'analysisId'] }
     ),
     apply: post<ApplyColorCodingInputDTO, void>(

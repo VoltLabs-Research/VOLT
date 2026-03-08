@@ -1,6 +1,6 @@
 const clients = {
     default: {
-        basePath: '/trajectory',
+        basePath: '/trajectories',
         useRBAC: true
     }
 };

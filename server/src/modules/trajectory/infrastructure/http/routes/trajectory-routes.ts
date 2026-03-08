@@ -8,7 +8,7 @@ import controllers from '@modules/trajectory/infrastructure/http/controllers/tra
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/trajectory/:teamId',
+    basePath: '/api/trajectories/:teamId',
     router,
     resource: Resource.TRAJECTORY
 };
@@ -28,7 +28,7 @@ router.get('/:trajectoryId/download', trajectoryValidation.downloadTrajectory, c
 router.get('/:trajectoryId/atoms', trajectoryValidation.getAtoms, controllers.getAtoms.handle);
 router.get('/:trajectoryId/atoms/:analysisId', trajectoryValidation.getAtomsByAnalysis, controllers.getAtoms.handle);
 router.get('/:trajectoryId/scene-artifacts', trajectoryValidation.getSceneArtifacts, controllers.getSceneArtifacts.handle);
-router.get('/:trajectoryId/:timestep/:analysisId', trajectoryValidation.getGLB, controllers.getGLB.handle);
+router.get('/:trajectoryId/glb/:timestep/:analysisId', trajectoryValidation.getGLB, controllers.getGLB.handle);
 
 router.route('/:trajectoryId')
     .get(trajectoryValidation.getById, controllers.getById.handle)

@@ -11,6 +11,7 @@ export enum Resource {
     TEAM_SECRET_KEY = 'team-secret-key',
     TEAM = 'team',
     TRAJECTORY = 'trajectory',
+    RASTER = 'raster',
     SIMULATION_CELL = 'simulation-cell',
     AI_CONVERSATION = 'ai-conversation'
 };

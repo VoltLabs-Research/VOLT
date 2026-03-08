@@ -1,6 +1,6 @@
 const clients = {
     default: {
-        basePath: '/color-coding',
+        basePath: '/color-codings',
         useRBAC: true
     }
 };

@@ -16,9 +16,9 @@ import { UploadBinaryUseCase } from '@modules/plugin/application/use-cases/plugi
 import { ValidateWorkflowUseCase } from '@modules/plugin/application/use-cases/plugin/ValidateWorkflowUseCase';
 
 const ClonePluginController = createController(ClonePluginUseCase, HttpStatus.Created);
-const CreatePluginController = createController(CreatePluginUseCase);
-const DeleteBinaryController = createController(DeleteBinaryUseCase);
-const DeletePluginByIdController = createController(DeletePluginByIdUseCase);
+const CreatePluginController = createController(CreatePluginUseCase, HttpStatus.Created);
+const DeleteBinaryController = createController(DeleteBinaryUseCase, HttpStatus.NoContent);
+const DeletePluginByIdController = createController(DeletePluginByIdUseCase, HttpStatus.NoContent);
 const ExecutePluginController = createController(ExecutePluginUseCase);
 const ExportPluginController = createStreamController(ExportPluginUseCase, {
     getHeaders: (resultValue) => resultValue.headers,
@@ -28,7 +28,7 @@ const ExportPluginController = createStreamController(ExportPluginUseCase, {
 });
 const GetNodeSchemasController = createController(GetNodeSchemasUseCase);
 const GetPluginByIdController = createController(GetPluginByIdUseCase);
-const ImportPluginController = createController(ImportPluginUseCase);
+const ImportPluginController = createController(ImportPluginUseCase, HttpStatus.Created);
 const ListPluginsController = createController(ListPluginsUseCase);
 const UpdatePluginByIdController = createController(UpdatePluginByIdUseCase);
 const UploadBinaryController = createController(UploadBinaryUseCase);

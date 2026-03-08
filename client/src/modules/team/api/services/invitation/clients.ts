@@ -1,10 +1,10 @@
 const clients = {
     team: {
-        basePath: '/team',
+        basePath: '/teams',
         useRBAC: false
     },
     invitations: {
-        basePath: '/team/invitations',
+        basePath: '/teams/invitations',
         useRBAC: false
     }
 };

@@ -7,7 +7,7 @@ import type { GetSimulationCellByTrajectoryParams } from '../../dtos/get-simulat
 const endpoints = {
     getAll: paginated<GetSimulationCellsParams | undefined, PaginatedResponse<SimulationCell>>('/'),
     getByTrajectory: get<GetSimulationCellByTrajectoryParams, SimulationCell | null>(
-        '/by-trajectory/:trajectoryId', {
+        '/trajectories/:trajectoryId', {
             query: ({ timestep }) => timestep === undefined ? undefined : { timestep }
         }
     )

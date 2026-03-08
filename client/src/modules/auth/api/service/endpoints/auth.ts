@@ -5,11 +5,11 @@ import type { SignUpInputDTO, SignUpOutputDTO } from '../../dtos/sign-up';
 import type { CheckEmailOutputDTO } from '../../dtos/check-email';
 
 const endpoints = {
-    signIn: post<SignInInputDTO, SignInOutputDTO>('/sign-in'),
-    signUp: post<SignUpInputDTO, SignUpOutputDTO>('/sign-up', {
+    signIn: post<SignInInputDTO, SignInOutputDTO>('/sessions'),
+    signUp: post<SignUpInputDTO, SignUpOutputDTO>('/users', {
         omit: ['passwordConfirm']
     }),
-    checkEmail: post<{ email: string }, CheckEmailOutputDTO>('/check-email'),
+    checkEmail: get<{ email: string }, CheckEmailOutputDTO>('/emails/:email/availability'),
     getGuestIdentity: get<{ seed: string }, GuestIdentity>('/guest-identity')
 };
 

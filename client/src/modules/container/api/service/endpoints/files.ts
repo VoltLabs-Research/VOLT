@@ -6,7 +6,7 @@ const endpoints = {
     getFiles: get<GetContainerFilesInputDTO, GetContainerFilesOutputDTO>('/:containerId/files', {
         query: ({ path }) => path ? { path } : undefined
     }),
-    readFile: get<ReadContainerFileInputDTO, ReadContainerFileOutputDTO>('/:containerId/file', {
+    readFile: get<ReadContainerFileInputDTO, ReadContainerFileOutputDTO>('/:containerId/files/content', {
         query: ({ path }) => ({ path })
     })
 };

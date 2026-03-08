@@ -1,7 +1,7 @@
 import type { SSHConnection } from '../entities/ssh-connection';
 
 export interface DeleteSSHConnectionInputDTO {
-    connectionId: string;
+    sshConnectionId: string;
 };
 
 export type DeleteSSHConnectionOutputDTO = SSHConnection;

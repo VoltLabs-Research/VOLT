@@ -8,7 +8,7 @@ import controllers from '@modules/team/infrastructure/http/controllers/team';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/team',
+    basePath: '/api/teams',
     router,
     resource: Resource.TEAM,
     teamScope: 'param'
@@ -31,7 +31,7 @@ router.route('/:teamId')
     .patch(teamValidation.update, controllers.updateById.handle)
     .delete(deleteTeamRateLimit, controllers.deleteById.handle);
 
-router.post('/:teamId/members/remove', removeMemberRateLimit, teamValidation.removeMember, controllers.removeUserFromTeam.handle);
-router.get('/:teamId/can-invite', controllers.checkInvitePermission.handle);
+router.delete('/:teamId/members/:userId', removeMemberRateLimit, teamValidation.removeMember, controllers.removeUserFromTeam.handle);
+router.get('/:teamId/invite-permission', controllers.checkInvitePermission.handle);
 
 export default module;

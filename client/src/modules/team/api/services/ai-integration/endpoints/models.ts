@@ -7,7 +7,7 @@ const endpoints = {
         '/:teamId/ai-integrations/models'
     ),
     discoverModels: post<DiscoverTeamAIProviderModelsInputDTO, DiscoverTeamAIProviderModelsOutputDTO>(
-        '/:teamId/ai-integrations/discover-models'
+        '/:teamId/ai-integrations/model-discovery'
     )
 };
 

@@ -3,6 +3,4 @@ export interface DeleteScriptingNotebookInputDTO {
     teamId: string;
 }
 
-export interface DeleteScriptingNotebookOutputDTO {
-    message: string;
-}
+export type DeleteScriptingNotebookOutputDTO = null;

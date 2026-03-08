@@ -7,7 +7,7 @@ import controllers from '@modules/team/infrastructure/http/controllers/secret-ke
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/team/:teamId/secret-keys',
+    basePath: '/api/teams/:teamId/secret-keys',
     router,
     resource: Resource.TEAM_SECRET_KEY
 };
@@ -21,7 +21,7 @@ router.route('/')
     .get(controllers.listByTeamId.handle)
     .post(createSecretKeyRateLimit, teamSecretKeyValidation.create, controllers.create.handle);
 
-router.patch('/:secretKeyId/revoke', controllers.revokeById.handle);
+router.patch('/:secretKeyId', controllers.revokeById.handle);
 router.delete('/:secretKeyId', controllers.deleteById.handle);
 
 export default module;
