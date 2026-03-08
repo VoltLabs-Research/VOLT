@@ -1,22 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { sileo } from 'sileo';
-import type { IArgumentDefinition } from '@/modules/plugin/api/entities/workflow';
-import type { ModifierOption } from '../modifiers/registry';
 
-export type ExecState = 'idle' | 'loading' | 'success' | 'error';
+import type { ModifierOption } from '../utilities/modifier-registry';
+import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
+
+export enum ExecState {
+    Idle = 'idle',
+    Loading = 'loading',
+    Success = 'success',
+    Error = 'error'
+};
+
+interface ExecutePluginArgs {
+    pluginId: string;
+    trajectoryId: string;
+    config: Record<string, unknown>;
+    timestep?: number;
+};
 
 interface UsePluginExecutionArgs {
     trajectoryId?: string;
     currentTimestep?: number;
     getPluginArguments: (pluginId: string) => IArgumentDefinition[];
-    executePlugin: (args: {
-        pluginId: string;
-        trajectoryId: string;
-        config: Record<string, unknown>;
-        timestep?: number;
-    }) => Promise<unknown>;
+    executePlugin: (args: ExecutePluginArgs) => Promise<unknown>;
     pluginConfigs?: Record<string, Record<string, unknown>>;
-}
+};
 
 const usePluginExecution = ({
     trajectoryId,
@@ -29,7 +37,7 @@ const usePluginExecution = ({
     const successTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
     useEffect(() => () => {
-        successTimers.current.forEach((t) => clearTimeout(t));
+        successTimers.current.forEach(clearTimeout);
     }, []);
 
     const clearExecStateLater = useCallback((modId: string) => {
@@ -48,19 +56,28 @@ const usePluginExecution = ({
         if (!option.isPlugin || !option.pluginModifierId || !trajectoryId) return;
 
         const modId = option.modifierId;
-        setExecStates((prev) => new Map(prev).set(modId, 'loading'));
+        setExecStates((prev) => new Map(prev).set(modId, ExecState.Loading));
 
         const existing = successTimers.current.get(modId);
-        if (existing) clearTimeout(existing);
+        if (existing) {
+            clearTimeout(existing);
+        }
 
         try {
             const args = getPluginArguments(option.pluginModifierId);
             const userConfig = pluginConfigs?.[option.pluginModifierId] || {};
             const config: Record<string, unknown> = {};
+
             args.forEach((arg) => {
                 const override = userConfig[arg.argument];
-                const val = override !== undefined ? override : (arg.value ?? arg.default);
-                if (val !== undefined) config[arg.argument] = val;
+                let value = arg.value ?? arg.default;
+                if (override !== undefined) {
+                    value = override;
+                }
+
+                if (value !== undefined) {
+                    config[arg.argument] = value;
+                }
             });
 
             await executePlugin({
@@ -70,11 +87,11 @@ const usePluginExecution = ({
                 timestep: currentTimestep
             });
 
-            setExecStates((prev) => new Map(prev).set(modId, 'success'));
+            setExecStates((prev) => new Map(prev).set(modId, ExecState.Success));
             clearExecStateLater(modId);
         } catch {
             sileo.error({ title: 'Plugin execution failed' });
-            setExecStates((prev) => new Map(prev).set(modId, 'error'));
+            setExecStates((prev) => new Map(prev).set(modId, ExecState.Error));
             clearExecStateLater(modId);
         }
     }, [trajectoryId, currentTimestep, getPluginArguments, executePlugin, pluginConfigs, clearExecStateLater]);

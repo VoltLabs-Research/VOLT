@@ -1,22 +1,25 @@
+import { computeDifferingConfigFields } from '../utilities/canvas-sidebar-scene';
+import { isSameScene } from '../utilities/scene-identity';
+import { normalizeCanvasAnalysisStatus } from '../utilities/analysis-status';
+import { DEFAULT_ENTRY } from './use-exposure-manager';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+import useAnalysisStatus from './use-analysis-status';
+import useCanvasUrlState from './use-canvas-url-state';
+import useExposureManager from './use-exposure-manager';
+
+import { useAnalysesByTrajectoryQuery, analysisQuery } from '@/modules/analysis/hooks/queries';
+import { upsertAnalysisCaches, updateAnalysisStatusCaches } from '@/modules/analysis/services/cache';
+import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
+import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-
-import useCanvasUrlState from './use-canvas-url-state';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { useAnalysesByTrajectoryQuery, analysisQuery } from '@/modules/analysis/hooks/queries';
-import { upsertAnalysisCaches, updateAnalysisStatusCaches } from '@/modules/analysis/hooks/socket-queries';
-import useSocket from '@/modules/socket/hooks/use-socket';
-import useAnalysisStatus, { normalizeAnalysisStatus } from './use-analysis-status';
-import useExposureManager, { type ExposureEntry, DEFAULT_ENTRY } from './use-exposure-manager';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import { SOCKET_TEAM_EVENTS } from '@/modules/socket/api/entities/socket-constants';
 
+import type { ExposureEntry } from './use-exposure-manager';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { SceneObjectType } from '@/modules/fractal/api/entities/fractal';
+import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-import { computeDifferingConfigFields } from '../utilities/canvas-sidebar-scene.ts';
-import { isSameScene } from '../utilities/scene-identity';
 
 export interface AnalysisSectionData {
     analysis: Analysis;
@@ -25,15 +28,14 @@ export interface AnalysisSectionData {
     entry: ExposureEntry;
     isCurrentAnalysis: boolean;
     config: Record<string, unknown>;
-}
+};
 
 interface UseCanvasSidebarSceneProps {
     trajectory?: Trajectory | null;
     trajectoryId?: string;
-}
+};
 
 const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: UseCanvasSidebarSceneProps) => {
-    const socketService = useSocket();
     const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
 
     const trajectoryId = propTrajectoryId || trajectory?._id;
@@ -68,7 +70,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
     const bootstrapLoading = analysesQuery.isLoading;
 
-    const analyses = analysesQuery.data?.data ?? [];
+    const analyses = ((analysesQuery.data as { data?: Analysis[] } | undefined)?.data ?? []);
 
     useEffect(() => {
         if (analysesQuery.error) {
@@ -85,65 +87,52 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
     const deleteAnalysisMutation = analysisQuery.useDeleteMutation();
 
-    useEffect(() => {
-        if (!trajectoryId) return;
-
-        const handleAnalysisCreated = (...args: unknown[]) => {
-            const data = args[0] as Record<string, unknown>;
-            if (data.trajectoryId !== trajectoryId) return;
-
-            const newAnalysis = {
-                _id: data.analysisId,
-                plugin: data.pluginId,
-                pluginDisplayName: data.pluginDisplayName,
-                config: data.config,
-                trajectory: {
-                    _id: String(data.trajectoryId || ''),
-                    name: trajectory?.name ?? ''
-                },
-                totalFrames: data.totalFrames,
-                completedFrames: data.completedFrames,
-                status: data.status,
-                createdAt: data.createdAt,
-                updatedAt: data.createdAt
-            } as unknown as Analysis;
-
-            upsertAnalysisCaches(newAnalysis);
-            void analysisQuery.cache.invalidate();
-        };
-
-        const unsubscribe = socketService.on('analysis.created', handleAnalysisCreated);
-        return () => { unsubscribe(); };
-    }, [trajectory?.name, trajectoryId, socketService]);
-
-    useEffect(() => {
-        if (!trajectoryId) {
+    const handleAnalysisCreated = useCallback((data: Record<string, unknown>) => {
+        if (!trajectoryId || data.trajectoryId !== trajectoryId) {
             return;
         }
 
-        const handleJobUpdated = (payload: unknown) => {
-            const update = payload as Record<string, unknown>;
-            if (update.trajectoryId !== trajectoryId || !update.analysisId) {
-                return;
-            }
+        const newAnalysis = {
+            _id: data.analysisId,
+            plugin: data.pluginId,
+            pluginDisplayName: data.pluginDisplayName,
+            config: data.config,
+            trajectory: {
+                _id: String(data.trajectoryId || ''),
+                name: trajectory?.name ?? ''
+            },
+            totalFrames: data.totalFrames,
+            completedFrames: data.completedFrames,
+            status: data.status,
+            createdAt: data.createdAt,
+            updatedAt: data.createdAt
+        } as unknown as Analysis;
 
-            const normalizedStatus = normalizeAnalysisStatus(update.status as string | undefined);
-            if (!normalizedStatus) {
-                return;
-            }
+        upsertAnalysisCaches(newAnalysis);
+        void analysisQuery.cache.invalidate();
+    }, [trajectory?.name, trajectoryId]);
 
-            updateAnalysisStatusCaches({
-                analysisId: String(update.analysisId),
-                trajectoryId,
-                status: normalizedStatus,
-                completedFrames: typeof update.completedFrames === 'number' ? update.completedFrames : undefined,
-                totalFrames: typeof update.totalFrames === 'number' ? update.totalFrames : undefined
-            });
-        };
+    const handleJobUpdated = useCallback((update: Record<string, unknown>) => {
+        if (!trajectoryId || update.trajectoryId !== trajectoryId || !update.analysisId) {
+            return;
+        }
 
-        const unsubscribe = socketService.on(SOCKET_TEAM_EVENTS.JOB_UPDATED, handleJobUpdated);
-        return () => { unsubscribe(); };
-    }, [trajectoryId, socketService]);
+        const normalizedStatus = normalizeCanvasAnalysisStatus(update.status as string | undefined);
+        if (!normalizedStatus) {
+            return;
+        }
+
+        updateAnalysisStatusCaches({
+            analysisId: String(update.analysisId),
+            trajectoryId,
+            status: normalizedStatus,
+            completedFrames: typeof update.completedFrames === 'number' ? update.completedFrames : undefined,
+            totalFrames: typeof update.totalFrames === 'number' ? update.totalFrames : undefined
+        });
+    }, [trajectoryId]);
+
+    useSocketEvent<Record<string, unknown>>('analysis.created', handleAnalysisCreated, { enabled: !!trajectoryId });
+    useSocketEvent<Record<string, unknown>>(SOCKET_TEAM_EVENTS.JOB_UPDATED, handleJobUpdated, { enabled: !!trajectoryId });
 
     useEffect(() => {
         if (!analysisConfigId) return;
@@ -156,7 +145,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
     useEffect(() => {
         if (!analysisConfigId || analyses.length === 0) return;
-        const analysis = analyses.find((x) => x._id === analysisConfigId);
+        const analysis = analyses.find((x: Analysis) => x._id === analysisConfigId);
         if (!analysis) return;
         loadExposuresForAnalysis(analysis._id);
     }, [analysisConfigId, analyses, loadExposuresForAnalysis]);
@@ -164,7 +153,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     useEffect(() => {
         if (analyses.length === 0) return;
         expandedSections.forEach((analysisId) => {
-            const analysis = analyses.find((x) => x._id === analysisId);
+            const analysis = analyses.find((x: Analysis) => x._id === analysisId);
             if (!analysis) return;
             const entry = getEntry(analysisId);
             if (entry.state === 'idle' || entry.state === 'error') {
@@ -227,7 +216,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     const allAnalysisSections = useMemo((): AnalysisSectionData[] => {
         if (analyses.length === 0) return [];
 
-        return analyses.map((analysis) => {
+        return analyses.map((analysis: Analysis) => {
             const entry = exposureEntries.get(analysis._id) ?? DEFAULT_ENTRY;
 
             return {

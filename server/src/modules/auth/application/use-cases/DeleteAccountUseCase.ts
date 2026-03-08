@@ -1,14 +1,14 @@
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { DeleteAccountInputDTO, DeleteAccountOutputDTO } from '@modules/auth/application/dtos/DeleteAccountDTO';
-import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { injectable, inject } from 'tsyringe';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
 import UserDeletedEvent from '@modules/auth/domain/events/UserDeletedEvent';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject, injectable } from 'tsyringe';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
+import type { IEventBus } from '@shared/application/events/IEventBus';
 
 @injectable()
 export default class DeleteAccountUseCase implements IUseCase<DeleteAccountInputDTO, DeleteAccountOutputDTO, ApplicationError>{
@@ -17,7 +17,7 @@ export default class DeleteAccountUseCase implements IUseCase<DeleteAccountInput
         private readonly userRepository: IUserRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
-    ){}
+    ) {}
 
     async execute(input: DeleteAccountInputDTO): Promise<Result<DeleteAccountOutputDTO, ApplicationError>>{
         const user = await this.userRepository.findById(input.userId);

@@ -1,9 +1,9 @@
 import { get } from '@/app/core/http/utilities/create-service';
-import type { TeamUsageMetrics, KeyUsageMetrics } from '@/modules/team/api/entities/secret-key-metrics';
-import type { GetSecretKeyTeamMetricsInputDTO } from '../../../dtos/get-secret-key-team-metrics';
-import type { GetSecretKeyUsageInputDTO } from '../../../dtos/get-secret-key-usage';
+import type { TeamUsageMetrics, KeyUsageMetrics } from '@/modules/team/api/entities/secret-key/secret-key-metrics';
+import type { GetSecretKeyTeamMetricsInputDTO } from '../../../dtos/secret-key/get-secret-key-team-metrics';
+import type { GetSecretKeyUsageInputDTO } from '../../../dtos/secret-key/get-secret-key-usage';
 
-const endpoints = {
+export default {
     getTeamMetrics: get<GetSecretKeyTeamMetricsInputDTO, TeamUsageMetrics>(
         '/:teamId/secret-keys/metrics'
     ),
@@ -11,5 +11,3 @@ const endpoints = {
         '/:teamId/secret-keys/:secretKeyId/usage'
     )
 };
-
-export default endpoints;

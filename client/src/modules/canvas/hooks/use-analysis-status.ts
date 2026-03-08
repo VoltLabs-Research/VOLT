@@ -1,56 +1,45 @@
-import { useMemo, useCallback } from 'react';
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
+import { useCallback, useMemo } from 'react';
+import { AnalysisStatus, isCanvasAnalysisInProgress } from '../utilities/analysis-status';
 
-export type AnalysisStatus = 'pending' | 'running' | 'completed' | 'failed';
-
-interface StatusEntry {
-    status: AnalysisStatus;
-    trajectoryId?: string;
-}
-
-export const normalizeAnalysisStatus = (status: string | undefined): AnalysisStatus | undefined => {
-    if (status === 'pending' || status === 'running' || status === 'completed' || status === 'failed') {
-        return status;
-    }
-    return undefined;
-};
+import type { Analysis } from '@/modules/analysis/api/entities/analysis';
+import type { CanvasAnalysisStatusEntry } from '../utilities/analysis-status';
 
 interface UseAnalysisStatusProps {
     trajectoryId?: string;
     enabled?: boolean;
-}
+};
 
 const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusProps) => {
     const analysesQuery = useAnalysesByTrajectoryQuery(
-        { trajectoryId: trajectoryId ?? '', page: 1, limit: 100 },
+        {
+            trajectoryId: trajectoryId ?? '',
+            page: 1,
+            limit: 100
+        },
         { enabled: enabled && !!trajectoryId }
     );
+    const analyses = ((analysesQuery.data as { data?: Analysis[] } | undefined)?.data ?? []);
 
     const statusMap = useMemo(() => {
-        const next = new Map<string, StatusEntry>();
+        const next = new Map<string, CanvasAnalysisStatusEntry>();
 
-        for (const analysis of analysesQuery.data?.data ?? []) {
-            const normalizedStatus = normalizeAnalysisStatus(analysis.status);
-            if (!normalizedStatus) {
-                continue;
-            }
-
+        for (const analysis of analyses) {
             next.set(analysis._id, {
-                status: normalizedStatus,
+                status: analysis.status as AnalysisStatus,
                 trajectoryId: analysis.trajectory?._id ?? trajectoryId
             });
         }
 
         return next;
-    }, [analysesQuery.data?.data, trajectoryId]);
+    }, [analyses, trajectoryId]);
 
     const getAnalysisStatus = useCallback((analysisId: string): AnalysisStatus | undefined => {
         return statusMap.get(analysisId)?.status;
     }, [statusMap]);
 
     const isAnalysisInProgress = useCallback((analysisId: string): boolean => {
-        const status = statusMap.get(analysisId)?.status;
-        return status === 'running' || status === 'pending';
+        return isCanvasAnalysisInProgress(statusMap.get(analysisId)?.status);
     }, [statusMap]);
 
     return {

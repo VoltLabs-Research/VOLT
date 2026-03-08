@@ -1,5 +1,5 @@
 import { TeamScopedInputDTO } from '@modules/team/application/dtos/common';
-import { TeamAIProvider } from '@modules/team/domain/entities/TeamAIIntegration';
+import { TeamAIProvider } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
 
 export type GetTeamAIIntegrationsInputDTO = TeamScopedInputDTO;
 
@@ -16,9 +16,9 @@ export interface TeamAIIntegrationItemDTO {
     createdBy?: string;
     createdAt: Date;
     updatedAt: Date;
-}
+};
 
 export interface GetTeamAIIntegrationsOutputDTO {
     teamId: string;
     integrations: TeamAIIntegrationItemDTO[];
-}
+};

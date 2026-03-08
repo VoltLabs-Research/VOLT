@@ -1,6 +1,7 @@
-import SimulationCell, { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
 import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMapper';
-import { SimulationCellDocument } from '@modules/simulation-cell/infrastructure/persistence/mongo/models/SimulationCellModel';
+import SimulationCell from '@modules/simulation-cell/domain/entities/SimulationCell';
+import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
+import type { SimulationCellDocument } from '@modules/simulation-cell/infrastructure/persistence/mongo/models/SimulationCellModel';
 
 class SimulationCellMapper extends BaseMapper<SimulationCell, SimulationCellProps, SimulationCellDocument> {
     constructor() {
@@ -9,6 +10,6 @@ class SimulationCellMapper extends BaseMapper<SimulationCell, SimulationCellProp
             'trajectory'
         ]);
     }
-}
+};
 
 export default new SimulationCellMapper();

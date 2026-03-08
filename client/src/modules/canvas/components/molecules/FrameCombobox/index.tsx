@@ -1,25 +1,15 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
-import {
-    useFloating,
-    useDismiss,
-    useInteractions,
-    FloatingPortal,
-    offset,
-    flip,
-    shift,
-    size,
-    autoUpdate
-} from '@floating-ui/react';
+import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
+import { autoUpdate, flip, FloatingPortal, offset, shift, size, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import SearchInput from '@/shared/presentation/components/SearchInput';
-import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 
 interface FrameComboboxProps {
     value: number;
     options: number[];
     onChange: (value: number) => void;
     title?: string;
-}
+};
 
 const FrameCombobox = ({ value, options, onChange, title }: FrameComboboxProps) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -55,10 +45,14 @@ const FrameCombobox = ({ value, options, onChange, title }: FrameComboboxProps) 
     const dismiss = useDismiss(context);
     const { getReferenceProps, getFloatingProps } = useInteractions([dismiss]);
 
+    const selectInput = () => {
+        inputRef.current?.select();
+    };
+
     const open = useCallback(() => {
         setQuery('');
         setIsOpen(true);
-        requestAnimationFrame(() => inputRef.current?.select());
+        requestAnimationFrame(selectInput);
     }, []);
 
     const close = useCallback(() => {
@@ -80,6 +74,7 @@ const FrameCombobox = ({ value, options, onChange, title }: FrameComboboxProps) 
             close();
             return;
         }
+
         if (e.key === 'Enter') {
             const exact = options.find((ts) => String(ts) === query);
             if (exact !== undefined) {
@@ -90,15 +85,25 @@ const FrameCombobox = ({ value, options, onChange, title }: FrameComboboxProps) 
         }
     }, [close, options, query, filtered, handleSelect]);
 
+    let displayValue = String(value ?? '');
+    if (isOpen) {
+        displayValue = query;
+    }
+
+    const createMouseDownHandler = (ts: number) => (e: React.MouseEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        handleSelect(ts);
+    };
+
     return (
         <>
             <Container ref={refs.setReference} title={title} {...getReferenceProps()}>
                 <SearchInput
-                    variant='small'
+                    variant="small"
                     ref={inputRef}
-                    containerClassName='form-field-canvas-field'
-                    className='form-field-canvas-input--compact'
-                    value={isOpen ? query : String(value ?? '')}
+                    containerClassName="form-field-canvas-field"
+                    className="form-field-canvas-input--compact"
+                    value={displayValue}
                     onChange={handleInputChange}
                     onFocus={open}
                     onKeyDown={handleKeyDown}
@@ -119,10 +124,7 @@ const FrameCombobox = ({ value, options, onChange, title }: FrameComboboxProps) 
                             <Container
                                 key={ts}
                                 className={`form-field-canvas-option cursor-pointer${ts === value ? ' is-selected' : ''}`}
-                                onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    handleSelect(ts);
-                                }}
+                                onMouseDown={createMouseDownHandler(ts)}
                             >
                                 {ts}
                             </Container>

@@ -1,21 +1,26 @@
-import { useParams, useNavigate, Outlet } from 'react-router-dom';
+import ContainerDetailsSkeleton from '../../atoms/ContainerDetailsSkeleton';
+import ContainerSidebar from '../../molecules/ContainerSidebar';
+import { ContainerAction } from '../../../api/dtos/update-container';
 import useContainerStats from '../../../hooks/use-container-stats';
 import { containerQuery, useContainerByIdQuery } from '../../../hooks/queries';
+import { useParams, useNavigate, Outlet } from 'react-router-dom';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import Container from '@/shared/presentation/components/Container';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import ContainerSidebar from '../../molecules/ContainerSidebar';
-import ContainerDetailsSkeleton from '../../atoms/ContainerDetailsSkeleton';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import type { EnvVariable } from '@/modules/container/api/entities/env-variable';
 import type { PortMapping } from '@/modules/container/api/entities/port-mapping';
 import type { ContainerDetailsContext } from '../../../hooks/use-container-details-context';
 import './ContainerDetailsLayout.css';
 
+interface ContainerDetailsRouteParams extends Record<string, string | undefined> {
+    id: string;
+};
+
 const ContainerDetailsLayout = () => {
-    const { id } = useParams<{ id: string }>();
+    const { id } = useParams<ContainerDetailsRouteParams>();
     const navigate = useNavigate();
 
     const updateContainerMutation = containerQuery.useUpdateMutation();
@@ -42,7 +47,7 @@ const ContainerDetailsLayout = () => {
         }
     }
 
-    const handleAction = async (action: 'start' | 'stop' | 'restart' | 'delete') => {
+    const handleAction = async (action: ContainerAction | 'delete') => {
         if(!container || !id) return;
 
         try{

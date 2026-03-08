@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { temporal } from 'zundo';
+import { createConfigurationSlice } from '../configuration-slice';
 import { createCameraSlice } from './camera-slice';
+import { createEffectsSlice } from './effects-slice';
 import { createLightsSlice } from './lights-slice';
 import { createModelSlice } from './model-slice';
 import { createOrbitControlsSlice } from './orbit-controls-slice';
@@ -8,11 +8,11 @@ import { createPerformanceSlice } from './performance-slice';
 import { createPlaybackSlice } from './playback-slice';
 import { createRendererSlice } from './renderer-slice';
 import { createTimestepSlice } from './timesteps-slice';
-import { createConfigurationSlice } from '../configuration-slice';
-import { createEffectsSlice } from './effects-slice';
 import { createVisualSettingsSlice } from './visual-settings-slice';
 
-export type { EditorStore } from './types';
+import { temporal } from 'zundo';
+import { create } from 'zustand';
+
 import type { EditorStore } from './types';
 
 const UNDO_HISTORY_LIMIT = 50;

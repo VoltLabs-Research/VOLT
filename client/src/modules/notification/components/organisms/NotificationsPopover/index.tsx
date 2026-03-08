@@ -1,10 +1,10 @@
-import { IoNotificationsOutline } from 'react-icons/io5';
-import Popover from '@/shared/presentation/components/Popover';
-import Container from '@/shared/presentation/components/Container';
-import IconButton from '@/shared/presentation/components/IconButton';
 import NotificationBadge from '../../atoms/NotificationBadge';
 import NotificationList from '../../molecules/NotificationList';
 import useNotificationData from '../../../hooks/use-notification-data';
+import { IoNotificationsOutline } from 'react-icons/io5';
+import Container from '@/shared/presentation/components/Container';
+import IconButton from '@/shared/presentation/components/IconButton';
+import Popover from '@/shared/presentation/components/Popover';
 import './NotificationsPopover.css';
 
 const NotificationsPopover = () => {

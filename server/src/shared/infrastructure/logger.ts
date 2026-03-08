@@ -1,6 +1,26 @@
 import pino from 'pino';
 
-const level = (process.env.LOG_LEVEL as pino.LevelWithSilent | undefined) ?? 'debug';
+const LOG_LEVELS: pino.LevelWithSilent[] = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'];
+
+const isLogLevel = (value: string): value is pino.LevelWithSilent => {
+    return LOG_LEVELS.some((level) => level === value);
+};
+
+const resolveLogLevel = (): pino.LevelWithSilent => {
+    const logLevel = process.env.LOG_LEVEL;
+
+    if (!logLevel) {
+        return 'debug';
+    }
+
+    if (isLogLevel(logLevel)) {
+        return logLevel;
+    }
+
+    return 'debug';
+};
+
+const level = resolveLogLevel();
 const isProd = process.env.NODE_ENV === 'production';
 
 const logger = pino(

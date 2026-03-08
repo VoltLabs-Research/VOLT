@@ -1,8 +1,11 @@
-import { container, type InjectionToken } from 'tsyringe';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
+import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IEventBus } from '@shared/application/events/IEventBus';
+import type { IEventHandler } from '@shared/application/events/IEventHandler';
+import { container } from 'tsyringe';
+import type { InjectionToken } from 'tsyringe';
 
-type HandlerToken = InjectionToken<any>;
+type HandlerToken = InjectionToken<IEventHandler<IDomainEvent>>;
 
 export async function registerSubscribers(
     subscriptions: Record<string, HandlerToken>

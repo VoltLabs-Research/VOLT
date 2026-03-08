@@ -1,5 +1,11 @@
-const getNestedValue = (obj: any, path: string): any => {
-    return path.split('.').reduce((acc, key) => acc?.[key], obj);
-}
+const getNestedValue = (obj: unknown, path: string): unknown => {
+    return path.split('.').reduce<unknown>((accumulator, key) => {
+        if (typeof accumulator !== 'object' || accumulator === null) {
+            return undefined;
+        }
+
+        return Reflect.get(accumulator, key);
+    }, obj);
+};
 
 export default getNestedValue;

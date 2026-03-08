@@ -1,11 +1,12 @@
-import { injectable, inject } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
-import { IColorCodingService } from '@modules/trajectory/domain/port/IColorCodingService';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { CreateColoredModelInputDTO, CreateColoredModelOutputDTO } from '@modules/trajectory/application/dtos/color-coding';
+import { IColorCodingService } from '@modules/trajectory/domain/port/color-coding/IColorCodingService';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { CreateColoredModelInputDTO, CreateColoredModelOutputDTO } from '@modules/trajectory/application/dtos/color-coding';
+
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export class CreateColoredModelUseCase implements IUseCase<CreateColoredModelInputDTO, CreateColoredModelOutputDTO, ApplicationError> {
@@ -30,4 +31,4 @@ export class CreateColoredModelUseCase implements IUseCase<CreateColoredModelInp
 
         return Result.ok(null);
     }
-}
+};

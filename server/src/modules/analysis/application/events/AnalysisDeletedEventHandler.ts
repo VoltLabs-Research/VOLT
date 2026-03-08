@@ -1,14 +1,14 @@
-import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@shared/application/events/IEventHandler';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
-import { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
-import { ISubListingRowRepository } from '@modules/plugin/domain/port/ISubListingRowRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
+import { inject, injectable } from 'tsyringe';
+import type { IEventHandler } from '@shared/application/events/IEventHandler';
+import type { IListingRowRepository } from '@modules/plugin/domain/port/listing-row/IListingRowRepository';
+import type { ISubListingRowRepository } from '@modules/plugin/domain/port/listing-row/ISubListingRowRepository';
+import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 
 @injectable()
-export default class AnalysisDeletedEventHandler implements IEventHandler<AnalysisDeletedEvent>{
+export default class AnalysisDeletedEventHandler implements IEventHandler<AnalysisDeletedEvent> {
     constructor(
         @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
         private readonly sceneArtifactRepository: ISceneArtifactRepository,
@@ -18,7 +18,7 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
 
         @inject(PLUGIN_TOKENS.SubListingRowRepository)
         private readonly subListingRowRepository: ISubListingRowRepository
-    ){}
+    ) {}
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {
         const { analysisId } = event.payload;
@@ -30,4 +30,4 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
             this.subListingRowRepository.deleteMany(query)
         ]);
     }
-}
+};

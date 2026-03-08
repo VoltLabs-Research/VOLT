@@ -1,6 +1,17 @@
 import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
+import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import DailyActivity, { ActivityType, DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
-import type { PersistedDailyActivity } from '@modules/daily-activity/domain/types/PersistedDailyActivity';
+
+export interface DailyActivityUserSummary {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+}
+
+export type DailyActivityRecord = PersistedOutput<Omit<DailyActivityProps, 'user'>> & {
+    user: string | DailyActivityUserSummary;
+};
 
 export interface IDailyActivityRepository extends IBaseRepository<DailyActivity, DailyActivityProps>{
     /**
@@ -19,7 +30,7 @@ export interface IDailyActivityRepository extends IBaseRepository<DailyActivity,
     findActivityByTeamId(
         teamId: string,
         range: number
-    ): Promise<PersistedDailyActivity[]>;
+    ): Promise<DailyActivityRecord[]>;
 
     updateOnlineMinutes(
         teamId: string,

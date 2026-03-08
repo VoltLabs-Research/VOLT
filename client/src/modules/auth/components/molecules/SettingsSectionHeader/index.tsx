@@ -1,9 +1,9 @@
-import React from 'react';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import { cn } from '@/shared/utils';
 import './SettingsSectionHeader.css';
+import { cn } from '@/shared/utils';
+import Container from '@/shared/presentation/components/Container';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Title from '@/shared/presentation/components/Title';
+import type { ReactNode } from 'react';
 
 export interface SettingsSectionHeaderProps {
     /**
@@ -19,20 +19,20 @@ export interface SettingsSectionHeaderProps {
     /**
      * Optional action button or element (e.g., Button, Link)
      */
-    action?: React.ReactNode;
+    action?: ReactNode;
 
     /**
      * Additional CSS classes
      */
     className?: string;
-}
+};
 
-const SettingsSectionHeader: React.FC<SettingsSectionHeaderProps> = ({
+const SettingsSectionHeader = ({
     title,
     description,
     action,
     className = ''
-}) => {
+}: SettingsSectionHeaderProps) => {
     const classes = cn('settings-section-header', 'd-flex', 'items-start', 'content-between', 'gap-1', className);
 
     return (

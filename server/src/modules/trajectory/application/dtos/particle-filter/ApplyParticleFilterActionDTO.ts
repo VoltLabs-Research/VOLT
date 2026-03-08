@@ -7,10 +7,10 @@ export interface ApplyParticleFilterActionInputDTO {
     property: string;
     operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
     value: number;
-}
+};
 
 export interface ApplyParticleFilterActionOutputDTO {
     fileId: string;
     atomsResult: number;
     action: string;
-}
+};

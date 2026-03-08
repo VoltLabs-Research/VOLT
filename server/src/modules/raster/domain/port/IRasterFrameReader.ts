@@ -6,8 +6,8 @@ export interface RasterFrameResult {
     contentType: string;
     cacheControl?: string;
     filename?: string;
-}
+};
 
 export interface IRasterFrameReader {
     getRasterFramePNG(trajectoryId: string, timestep: number): Promise<RasterFrameResult>;
-}
+};

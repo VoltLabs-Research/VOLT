@@ -1,6 +1,3 @@
-import { container } from 'tsyringe';
-import { createController, createStreamController } from '@shared/infrastructure/http/controllers/createController';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { ClonePluginUseCase } from '@modules/plugin/application/use-cases/plugin/ClonePluginUseCase';
 import { CreatePluginUseCase } from '@modules/plugin/application/use-cases/plugin/CreatePluginUseCase';
 import { DeleteBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/DeleteBinaryUseCase';
@@ -14,6 +11,10 @@ import { ListPluginsUseCase } from '@modules/plugin/application/use-cases/plugin
 import { UpdatePluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/UpdatePluginByIdUseCase';
 import { UploadBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/UploadBinaryUseCase';
 import { ValidateWorkflowUseCase } from '@modules/plugin/application/use-cases/plugin/ValidateWorkflowUseCase';
+
+import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
+import { createController, createStreamController } from '@shared/infrastructure/http/controllers/createController';
+import { container } from 'tsyringe';
 
 const ClonePluginController = createController(ClonePluginUseCase, HttpStatus.Created);
 const CreatePluginController = createController(CreatePluginUseCase, HttpStatus.Created);

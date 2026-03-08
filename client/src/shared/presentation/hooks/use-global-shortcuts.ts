@@ -1,5 +1,5 @@
-import { useNavigate, useLocation } from 'react-router-dom';
 import useAppHotkeys from './use-app-hotkeys';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const useGlobalShortcuts = () => {
     const navigate = useNavigate();

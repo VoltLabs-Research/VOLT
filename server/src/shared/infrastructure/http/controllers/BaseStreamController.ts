@@ -1,32 +1,29 @@
-import type { Response } from 'express';
-import type { Readable } from 'node:stream';
-import type {
-    IUseCase,
-    UseCaseOutput
-} from '@shared/application/IUseCase';
 import { BaseController } from '@shared/infrastructure/http/controllers/BaseController';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
+import type { Response } from 'express';
+import type { Readable } from 'node:stream';
+import type { IUseCase, UseCaseOutput } from '@shared/application/IUseCase';
 
 export interface StreamableOutput {
     stream: Readable;
-}
+};
 
 export abstract class BaseStreamController<
     TUseCase extends IUseCase<unknown, StreamableOutput, unknown>
 > extends BaseController<TUseCase> {
-    protected async prepareOutput(_resultValue: UseCaseOutput<TUseCase>): Promise<void> {
+    protected async prepareOutput(_resultValue: StreamableOutput): Promise<void> {
         return;
     }
 
-    protected getHeaders(_resultValue: UseCaseOutput<TUseCase>): Record<string, string> {
+    protected getHeaders(_resultValue: StreamableOutput): Record<string, string> {
         return {
             'Content-Type': 'application/octet-stream',
             'Cache-Control': 'public, max-age=31536000'
         };
     }
 
-    protected override async handleSuccess(res: Response, output: UseCaseOutput<TUseCase>): Promise<void> {
+    protected override async handleSuccess(res: Response, output: StreamableOutput): Promise<void> {
         await this.prepareOutput(output);
 
         const headers = this.getHeaders(output);
@@ -38,7 +35,7 @@ export abstract class BaseStreamController<
             output.stream.destroy();
         });
 
-        output.stream.on('error', (error) => {
+        output.stream.on('error', (error: unknown) => {
             logger.error(error);
 
             if (!res.headersSent) {
@@ -51,4 +48,4 @@ export abstract class BaseStreamController<
 
         output.stream.pipe(res);
     }
-}
+};

@@ -1,13 +1,15 @@
-import { useEffect } from 'react';
-import useSocket from '@/modules/socket/hooks/use-socket';
 import { NOTIFICATION_SOCKET_EVENTS } from '../api/entities/notification-constants';
-import type { Notification } from '../api/entities/notification';
 import { prependNotificationToInfiniteCache } from './queries';
+import { useEffect } from 'react';
+import useSocket from '@/modules/socket/core/hooks/use-socket';
+import type { Notification } from '../api/entities/notification';
 
-const subscriptionRegistry = new Map<string, {
+interface NotificationSubscription {
     references: number;
     unsubscribe: () => void;
-}>();
+};
+
+const subscriptionRegistry = new Map<string, NotificationSubscription>();
 
 const getSubscriptionKey = (teamId: string, limit: number): string => {
     return `${teamId}:${limit}`;
@@ -35,11 +37,13 @@ const useNotificationSocket = (teamId?: string, limit = 20): void => {
             };
         }
 
-        const unsubscribe = socketService.on(
+        const handleNotification = (notification: Notification): void => {
+            prependNotificationToInfiniteCache({ teamId, limit }, notification);
+        };
+
+        const unsubscribe = socketService.on<[Notification]>(
             NOTIFICATION_SOCKET_EVENTS.RECEIVED,
-            ((notification: Notification) => {
-                prependNotificationToInfiniteCache({ teamId, limit }, notification);
-            }) as (...args: unknown[]) => void
+            handleNotification
         );
 
         subscriptionRegistry.set(subscriptionKey, {

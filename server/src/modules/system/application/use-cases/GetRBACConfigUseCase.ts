@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { GetRBACConfigOutputDTO } from '@modules/system/application/dtos/GetRBACConfigDTO';
+import { GetRBACConfigOutputDTO } from '@modules/system/application/dtos';
 import { Resource } from '@core/constants/resources';
 import { Action } from '@core/constants/permissions';
 

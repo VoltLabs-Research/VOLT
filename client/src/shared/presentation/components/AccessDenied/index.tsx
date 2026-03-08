@@ -1,9 +1,9 @@
-import React from 'react';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import './AccessDenied.css';
 import { ShieldOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import Container from '@/shared/presentation/components/Container';
-import Button from '@/shared/presentation/components/Button';
-import './AccessDenied.css';
+import React from 'react';
 
 interface AccessDeniedProps {
     title?: string;

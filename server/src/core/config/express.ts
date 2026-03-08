@@ -1,9 +1,9 @@
-import express from 'express';
-import helmet from 'helmet';
-import compression from 'compression';
-import cors from 'cors';
 import './env';
 import logger from '@shared/infrastructure/logger';
+import compression from 'compression';
+import cors from 'cors';
+import express from 'express';
+import helmet from 'helmet';
 
 const app = express();
 
@@ -14,12 +14,9 @@ const corsOptions = {
     origin: function (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
         if (!origin) return callback(null, true);
 
-        let allowedOrigins: string[];
-        if (process.env.NODE_ENV === 'production') {
-            allowedOrigins = [process.env.CLIENT_HOST as string];
-        } else {
-            allowedOrigins = [process.env.CLIENT_DEV_HOST as string];
-        }
+        const allowedOrigins = process.env.NODE_ENV === 'production'
+            ? [process.env.CLIENT_HOST]
+            : [process.env.CLIENT_DEV_HOST];
 
         if (allowedOrigins.includes(origin)) {
             callback(null, true);

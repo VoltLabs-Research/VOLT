@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { IoCloseOutline } from 'react-icons/io5';
+import Brand from '@/modules/dashboard/components/atoms/Brand';
+import SidebarFooterNavigation from '@/modules/dashboard/components/atoms/SidebarFooterNavigation';
+import SidebarNavigation from '@/modules/dashboard/components/atoms/SidebarNavigation';
+import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import UserMenuPopover from '@/modules/auth/components/molecules/UserMenuPopover';
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
-import Brand from '@/modules/dashboard/components/atoms/Brand';
-import SidebarNavigation from '@/modules/dashboard/components/atoms/SidebarNavigation';
-import SidebarFooterNavigation from '@/modules/dashboard/components/atoms/SidebarFooterNavigation';
-import UserMenuPopover from '@/modules/auth/components/molecules/UserMenuPopover';
-import { sileo } from 'sileo';
 import './DashboardSidebar.css';
+import { useState } from 'react';
+import { IoCloseOutline } from 'react-icons/io5';
+import { useNavigate } from 'react-router-dom';
+import { sileo } from 'sileo';
 
 interface DashboardSidebarProps {
     sidebarOpen: boolean;
@@ -24,12 +24,12 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
     const [isSigningOut, setIsSigningOut] = useState(false);
     
     const handleSignOut = () => {
-        try{
+        try {
             setIsSigningOut(true);
             useAuthStore.getState().signOut();
-        }catch{
+        } catch {
             sileo.error({ title: 'Sign out failed', description: 'Please try again.' });
-        }finally{
+        } finally {
             setIsSigningOut(false);
         }
     };
@@ -53,14 +53,14 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
                 setSidebarOpen={setSidebarOpen}
                 collapsed={collapsed}
             />
-           
+
             <Container className='sidebar-footer'>
                 <SidebarFooterNavigation
                     setSettingsExpanded={setSettingsExpanded}
                     settingsExpanded={settingsExpanded}
                     collapsed={collapsed}
                 />
-               
+
                 <UserMenuPopover
                     onSettingsClick={handleSettingsClick}
                     onSignOut={handleSignOut}

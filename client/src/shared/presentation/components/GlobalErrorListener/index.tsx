@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { buildErrorPath, shouldIgnoreError, isErrorPage } from '@/shared/utils';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
+import { useCallback, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 /**
  * Mounted inside the Router so it can use `useNavigate`.

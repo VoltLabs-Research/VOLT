@@ -1,12 +1,12 @@
-import { useCallback, useMemo } from 'react';
 import { openModal, resetModal } from '@/shared/presentation/components/Modal';
+import { useCallback, useMemo } from 'react';
 
 interface UseModalFormOptions {
     modalId: string;
     reset?: () => void;
     onAfterClose?: () => void;
     resetDelay?: number;
-}
+};
 
 const useModalForm = ({
     modalId,

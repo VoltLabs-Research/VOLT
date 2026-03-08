@@ -1,9 +1,17 @@
 import type * as THREE from 'three';
-import { FractalEngine, type FractalParams } from '@/modules/fractal/services/fractal-engine';
-import type IFractalAssetLoader from '@/modules/fractal/api/entities/fractal';
-import type { BoundsInfo } from '@/modules/fractal/core/model-transform';
-import type { ModelLoadingState } from '@/modules/fractal/api/entities/fractal';
-import { FractalAssetLoader } from '@/modules/fractal/services/asset-loader';
+import { FractalAssetLoader } from '@/modules/fractal/api/service/asset-loader';
+import { FractalEngine } from '@/modules/fractal/services/fractal-engine';
+import type IFractalAssetLoader from '@/modules/fractal/api/entities/asset-loader';
+import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
+import type { ModelLoadingState } from '@/modules/fractal/api/entities/model';
+import type { FractalParams } from '@/modules/fractal/services/fractal-engine';
+
+interface FractalSurface {
+    scene: THREE.Scene;
+    camera: THREE.Camera;
+    gl: THREE.WebGLRenderer;
+    invalidate: () => void;
+};
 
 export type FractalEngineCallbacks = {
     onModelLoaded?: (bounds: BoundsInfo) => void;
@@ -15,28 +23,18 @@ const assetLoader: IFractalAssetLoader = new FractalAssetLoader();
 
 export default class FractalEngineFactory {
     create(
-        surface: {
-            scene: THREE.Scene;
-            camera: THREE.Camera;
-            gl: THREE.WebGLRenderer;
-            invalidate: () => void;
-        },
+        surface: FractalSurface,
         params: FractalParams,
         callbacks: FractalEngineCallbacks = {}
     ): FractalEngine {
         return new FractalEngine(surface, params, assetLoader, callbacks);
     }
-}
+};
 
 const engineFactory = new FractalEngineFactory();
 
 export const createFractalEngine = (
-    surface: {
-        scene: THREE.Scene;
-        camera: THREE.Camera;
-        gl: THREE.WebGLRenderer;
-        invalidate: () => void;
-    },
+    surface: FractalSurface,
     params: FractalParams,
     callbacks: FractalEngineCallbacks = {}
 ): FractalEngine => {

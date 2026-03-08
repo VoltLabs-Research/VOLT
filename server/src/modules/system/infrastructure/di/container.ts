@@ -1,6 +1,5 @@
 import { container } from 'tsyringe';
 import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
-import SystemMetricsSocketOrchestrator from '@modules/system/application/services/SystemMetricsSocketOrchestrator';
 import MetricsCollectorService from '@modules/system/infrastructure/services/MetricsCollectorService';
 import CpuMetricsCollector from '@modules/system/infrastructure/services/CpuMetricsCollector';
 import MemoryMetricsCollector from '@modules/system/infrastructure/services/MemoryMetricsCollector';
@@ -11,6 +10,7 @@ import ServiceHealthPinger from '@modules/system/infrastructure/services/Service
 import ClusterMetricsAggregator from '@modules/system/infrastructure/services/ClusterMetricsAggregator';
 import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
 import SystemSocketModule from '@modules/system/infrastructure/socket/SystemSocketModule';
+import SystemMetricsSocketOrchestrator from '@modules/system/infrastructure/socket/SystemMetricsSocketOrchestrator';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 
 export const registerSystemDependencies = (): void => {

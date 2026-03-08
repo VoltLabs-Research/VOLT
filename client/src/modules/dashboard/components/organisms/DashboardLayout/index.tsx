@@ -1,14 +1,24 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { sileo } from 'sileo';
-import Container from '@/shared/presentation/components/Container';
-import DashboardSidebar from '@/modules/dashboard/components/organisms/DashboardSidebar';
 import DashboardHeader from '@/modules/dashboard/components/molecules/DashboardHeader';
-import TeamCreatorModal from '@/modules/team/components/organisms/TeamCreatorModal';
+import DashboardSidebar from '@/modules/dashboard/components/organisms/DashboardSidebar';
+import { TeamCreatorModal } from '@/modules/team/components/organisms/TeamCreatorModal';
+import Container from '@/shared/presentation/components/Container';
 import PageTransition from '@/shared/presentation/components/PageTransition';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useGlobalSocketCacheSync from '@/shared/presentation/hooks/use-global-socket-cache-sync';
 import './DashboardLayout.css';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { sileo } from 'sileo';
+
+interface DashboardLocationState {
+    fromNotFound?: boolean;
+};
+
+const isDashboardLocationState = (state: unknown): state is DashboardLocationState => {
+    return typeof state === 'object'
+        && state !== null
+        && 'fromNotFound' in state;
+};
 
 const SIDEBAR_COLLAPSED_KEY = 'volt:sidebar-collapsed';
 
@@ -19,6 +29,7 @@ const DashboardLayout = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const collapsedBeforeOverride = useRef<boolean | null>(null);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
     });
@@ -34,8 +45,6 @@ const DashboardLayout = () => {
     // Allow other modules (e.g. AI spreadsheet panel) to programmatically
     // collapse / restore the sidebar via custom DOM events.
     useEffect(() => {
-        const collapsedBeforeOverride = { current: null as boolean | null };
-
         const handleRequestCollapse = () => {
             setSidebarCollapsed((prev) => {
                 if (!prev) {
@@ -66,8 +75,10 @@ const DashboardLayout = () => {
     }, []);
 
     useEffect(() => {
-        const state = location.state as { fromNotFound?: boolean } | null;
-        if (state?.fromNotFound) {
+        const state = location.state;
+        const fromNotFound = isDashboardLocationState(state) && state.fromNotFound === true;
+
+        if (fromNotFound) {
             sileo.info({
                 title: 'Page not found',
                 description: 'The page you are looking for does not exist. You have been redirected to the dashboard.'

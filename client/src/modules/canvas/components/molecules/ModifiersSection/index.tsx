@@ -1,10 +1,12 @@
-import type React from 'react';
-import Container from '@/shared/presentation/components/Container';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
-import EmptyState from '@/shared/presentation/components/EmptyState';
 import ModifierAction from '../../atoms/ModifierAction';
-import type { ModifierOption } from '../../../modifiers/registry';
+
+import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import Container from '@/shared/presentation/components/Container';
+import EmptyState from '@/shared/presentation/components/EmptyState';
+
 import type { ExecState } from '../../../hooks/use-plugin-execution';
+import type { ModifierOption } from '../../../utilities/modifier-registry';
+import type React from 'react';
 
 const SKELETON_ROWS = 5;
 
@@ -18,7 +20,7 @@ interface ModifierItemProps {
     onToggleOpen: (id: string) => void;
     onAction: () => void;
     renderModifierConfig: (option: ModifierOption, active: boolean) => React.ReactNode;
-}
+};
 
 const ModifierItem = ({
     option,
@@ -72,7 +74,7 @@ interface ModifiersSectionProps {
     hasContent: (option: ModifierOption) => boolean;
     onAction: (option: ModifierOption) => void;
     renderModifierConfig: (option: ModifierOption, active: boolean) => React.ReactNode;
-}
+};
 
 const ModifiersSection = ({
     pluginLoading,

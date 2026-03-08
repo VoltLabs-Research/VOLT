@@ -1,11 +1,20 @@
-import { Result } from '@shared/domain/port/Result';
-import { IUseCase } from '@shared/application/IUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { injectable, inject } from 'tsyringe';
-import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTeamIdDTO';
-import AnalysisPluginDisplayNameService from '@modules/analysis/application/services/AnalysisPluginDisplayNameService';
+import AnalysisPluginDisplayNameService, { extractPluginId } from '@modules/analysis/services/AnalysisPluginDisplayNameService';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { Result } from '@shared/domain/port/Result';
+import { inject, injectable } from 'tsyringe';
+import type { IUseCase } from '@shared/application/IUseCase';
+import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+
+interface TeamAnalysesFilter extends Partial<AnalysisProps> {
+    team: string;
+};
+
+interface AnalysisSort extends Record<string, 1 | -1> {
+    createdAt: -1;
+};
 
 @injectable()
 export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO, ApplicationError> {
@@ -15,12 +24,19 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
 
         @inject(AnalysisPluginDisplayNameService)
         private readonly pluginDisplayNameService: AnalysisPluginDisplayNameService
-    ){}
+    ) {}
 
     async execute(input: GetAnalysesByTeamIdInputDTO): Promise<Result<GetAnalysesByTeamIdOutputDTO, ApplicationError>> {
         const { teamId } = input;
+        const filter: TeamAnalysesFilter = {
+            team: teamId
+        };
+        const sort: AnalysisSort = {
+            createdAt: -1
+        };
+
         const results = await this.analysisRepo.findAll({
-            filter: { team: teamId },
+            filter,
             populate: [
                 {
                     path: 'trajectory',
@@ -30,7 +46,7 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
                     path: 'plugin'
                 }
             ],
-            sort: { createdAt: -1 },
+            sort,
             limit: input.limit,
             page: input.page
         });
@@ -38,10 +54,8 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
         const data = await Promise.all(results.data.map(async (analysis) => {
             const props = { ...analysis.props };
             const pluginValue = props.plugin;
-            const pluginId = typeof pluginValue === 'string'
-                ? pluginValue
-                : String((pluginValue as Record<string, unknown>)?._id || '');
-            const pluginDisplayName = await this.pluginDisplayNameService.resolveModifierName(pluginValue as string | Record<string, unknown>);
+            const pluginId = extractPluginId(pluginValue);
+            const pluginDisplayName = await this.pluginDisplayNameService.resolveModifierName(pluginValue);
 
             return {
                 ...props,
@@ -56,4 +70,4 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
             data
         });
     }
-}
+};

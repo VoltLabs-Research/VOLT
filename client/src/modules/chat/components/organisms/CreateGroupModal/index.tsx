@@ -1,13 +1,13 @@
+import TeamMemberList from '../../molecules/TeamMemberList';
 import { useState } from 'react';
-import type { User } from '@/modules/auth/api/entities/user';
-import Modal from '@/shared/presentation/components/Modal';
 import Button from '@/shared/presentation/components/Button';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Container from '@/shared/presentation/components/Container';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import Modal from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
 import { toggleSelection } from '@/shared/utils/selection';
-import { TeamMemberList } from '../../molecules';
+import type { User } from '@/modules/auth/api/entities/user';
 
 interface CreateGroupModalProps {
     teamMembers: User[];
@@ -29,7 +29,6 @@ const CreateGroupModal = ({ teamMembers, currentUserId, onCreateGroup }: CreateG
         if (!groupName.trim() || selectedMembers.length === 0) return;
 
         await onCreateGroup(groupName.trim(), groupDescription.trim(), selectedMembers);
-        // Reset form
         setGroupName('');
         setGroupDescription('');
         setSelectedMembers([]);

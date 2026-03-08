@@ -23,12 +23,12 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
-import type { ModelLoadingState, UseGlbSceneParams } from '@/modules/fractal/types';
 import useThrottledCallback from '@/shared/presentation/hooks/use-throttled-callback';
-import { type FractalParams } from '@/modules/fractal/services/fractal-engine';
 import useModelInteraction from '@/modules/fractal/hooks/use-model-interaction';
-import type { BoundsInfo } from '@/modules/fractal/core/model-transform';
 import { createFractalEngine } from '@/modules/fractal/services/fractal-engine-factory';
+import type { ModelLoadingState, UseGlbSceneParams } from '@/modules/fractal/types';
+import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
+import type { FractalParams } from '@/modules/fractal/services/fractal-engine';
 
 function extractEngineParams(params: UseGlbSceneParams): FractalParams {
     return {
@@ -77,7 +77,12 @@ export default function useGlbScene(params: UseGlbSceneParams) {
     useEffect(() => {
         const engineParams = extractEngineParams(params);
         engineRef.current = createFractalEngine(
-            { scene, camera, gl, invalidate },
+            {
+                scene,
+                camera,
+                gl,
+                invalidate
+            },
             engineParams,
             {
                 onModelLoaded: (bounds) => {

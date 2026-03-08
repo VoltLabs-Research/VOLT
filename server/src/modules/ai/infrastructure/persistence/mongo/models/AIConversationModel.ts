@@ -1,10 +1,14 @@
-import mongoose, { Schema, Model, Document } from 'mongoose';
-import { AIConversationProps } from '@modules/ai/domain/entities/AIConversation';
-import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import type { AIConversationProps } from '@modules/ai/domain/entities/AIConversation';
+import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import mongoose, { Document, Model, Schema } from 'mongoose';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 
-type AIConversationRelations = 'userId' | 'teamId';
-export interface AIConversationDocument extends Persistable<AIConversationProps, AIConversationRelations>, Document { }
+export enum AIConversationRelation {
+    UserId = 'userId',
+    TeamId = 'teamId'
+};
+
+export interface AIConversationDocument extends Persistable<AIConversationProps, AIConversationRelation>, Document {}
 
 const AIConversationSchema: Schema<AIConversationDocument> = new Schema({
     userId: {
@@ -42,8 +46,16 @@ const AIConversationSchema: Schema<AIConversationDocument> = new Schema({
     timestamps: true
 });
 
-AIConversationSchema.index({ teamId: 1, userId: 1, lastMessageAt: -1 });
-AIConversationSchema.index({ teamId: 1, userId: 1, updatedAt: -1 });
+AIConversationSchema.index({
+    teamId: 1,
+    userId: 1,
+    lastMessageAt: -1
+});
+AIConversationSchema.index({
+    teamId: 1,
+    userId: 1,
+    updatedAt: -1
+});
 
 const AIConversationModel: Model<AIConversationDocument> = mongoose.model<AIConversationDocument>('AIConversation', AIConversationSchema);
 

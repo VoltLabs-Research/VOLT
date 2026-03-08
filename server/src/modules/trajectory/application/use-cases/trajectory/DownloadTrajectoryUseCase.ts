@@ -1,15 +1,14 @@
-import { injectable, inject } from 'tsyringe';
-import type { IUseCase } from '@shared/application/IUseCase';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
-import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/ITrajectoryDumpStorageService';
-import { ErrorCodes } from '@core/constants/error-codes';
-import type {
-    DownloadTrajectoryInputDTO,
-    DownloadTrajectoryOutputDTO
-} from '@modules/trajectory/application/dtos/trajectory/DownloadTrajectoryDTO';
+
+import { injectable, inject } from 'tsyringe';
+
+import type { DownloadTrajectoryInputDTO, DownloadTrajectoryOutputDTO } from '@modules/trajectory/application/dtos/trajectory/DownloadTrajectoryDTO';
+import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
 
 @injectable()
 export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTrajectoryInputDTO, DownloadTrajectoryOutputDTO, ApplicationError> {
@@ -51,4 +50,4 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
 
         return Result.ok({ stream, filename });
     }
-}
+};

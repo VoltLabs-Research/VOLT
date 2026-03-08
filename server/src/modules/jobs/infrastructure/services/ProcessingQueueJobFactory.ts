@@ -1,6 +1,8 @@
-import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
+import { JobStatus } from '@modules/jobs/domain/entities/Job';
+import { hasJobProps } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
-import { ProcessingQueueSessionRecord, hasJobProps } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
+import Job from '@modules/jobs/domain/entities/Job';
+import type { ProcessingQueueSessionRecord } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
 
 export default class ProcessingQueueJobFactory {
     constructor(private readonly queueName: string) {}
@@ -12,11 +14,16 @@ export default class ProcessingQueueJobFactory {
             throw new Error(`[${this.queueName}] Invalid job payload while creating session data`);
         }
 
+        let metadata = {};
+        if (isRecord(firstJob.props.metadata)) {
+            metadata = { ...firstJob.props.metadata };
+        }
+
         return {
             sessionId,
             startTime: sessionStartTime,
             totalJobs: jobs.length,
-            metadata: isRecord(firstJob.props.metadata) ? { ...firstJob.props.metadata } : {},
+            metadata,
             teamId: firstJob.props.teamId,
             queueType: firstJob.props.queueType,
             status: 'active'
@@ -30,6 +37,20 @@ export default class ProcessingQueueJobFactory {
             }
 
             const jobData = job.props;
+            let progress = jobData.progress || 0;
+            if (resetProgress) {
+                progress = 0;
+            }
+
+            let metadata = {};
+            if (isRecord(jobData.metadata)) {
+                metadata = { ...jobData.metadata };
+            }
+
+            let createdAt = jobData.createdAt || sessionTime;
+            if (resetProgress) {
+                createdAt = sessionTime;
+            }
 
             return Job.create({
                 jobId: jobData.jobId,
@@ -38,11 +59,11 @@ export default class ProcessingQueueJobFactory {
                 status: JobStatus.Queued,
                 sessionId,
                 message: jobData.message,
-                progress: resetProgress ? 0 : (jobData.progress || 0),
-                metadata: isRecord(jobData.metadata) ? { ...jobData.metadata } : {},
-                createdAt: resetProgress ? sessionTime : (jobData.createdAt || sessionTime),
+                progress,
+                metadata,
+                createdAt,
                 updatedAt: sessionTime
             });
         });
     }
-}
+};

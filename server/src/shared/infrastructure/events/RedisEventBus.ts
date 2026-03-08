@@ -1,10 +1,10 @@
-import { Redis } from 'ioredis';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { IEventHandler } from '@shared/application/events/IEventHandler';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject, singleton } from 'tsyringe';
 import logger from '@shared/infrastructure/logger';
+import { Redis } from 'ioredis';
+import { inject, singleton } from 'tsyringe';
+import type { IEventBus } from '@shared/application/events/IEventBus';
+import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
 @singleton()
 export default class RedisEventBus implements IEventBus{

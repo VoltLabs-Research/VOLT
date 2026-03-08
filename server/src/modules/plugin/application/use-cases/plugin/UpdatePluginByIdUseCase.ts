@@ -1,17 +1,18 @@
-import { injectable, inject } from 'tsyringe';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { UpdatePluginByIdInputDTO, UpdatePluginByIdOutputDTO } from '@modules/plugin/application/dtos/plugin/UpdatePluginByIdDTO';
+import { mapPluginToPersistedDTO } from '@modules/plugin/application/mappers/plugin/mapPluginToPersistedDTO';
+import { PluginProps, PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
+import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
+import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
+import { IWorkflowValidatorService } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
+import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
+import WorkflowProjectionService from '@modules/plugin/domain/services/plugin/WorkflowProjectionService';
+
+import { ErrorCodes } from '@core/constants/error-codes';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { UpdatePluginByIdInputDTO, UpdatePluginByIdOutputDTO } from '@modules/plugin/application/dtos/plugin/UpdatePluginByIdDTO';
-import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
-import { PluginProps, PluginStatus } from '@modules/plugin/domain/entities/Plugin';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
-import { IWorkflowValidatorService } from '@modules/plugin/domain/port/IWorkflowValidatorService';
-import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import { injectable, inject } from 'tsyringe';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
-import { mapPluginToPersistedDTO } from '@modules/plugin/application/use-cases/plugin/mapPluginToPersistedDTO';
-import WorkflowProjectionService from '@modules/plugin/domain/services/WorkflowProjectionService';
 
 
 @injectable()
@@ -90,4 +91,4 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
 
         return Result.ok(mapPluginToPersistedDTO(updatedPlugin));
     }
-}
+};

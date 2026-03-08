@@ -5,9 +5,9 @@ export interface DownloadTrajectoryInputDTO {
     teamId: string;
     userId: string;
     name?: string;
-}
+};
 
 export interface DownloadTrajectoryOutputDTO {
     stream: Readable;
     filename: string;
-}
+};

@@ -1,0 +1,18 @@
+export type FilterAction = 'delete' | 'highlight';
+
+export interface ApplyFilterInputDTO {
+    trajectoryId: string;
+    analysisId?: string;
+    timestep: number;
+    property: string;
+    operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
+    value: number;
+    exposureId?: string;
+    action: FilterAction;
+};
+
+export interface ApplyFilterOutputDTO {
+    fileId: string;
+    atomsResult: number;
+    action: string;
+};

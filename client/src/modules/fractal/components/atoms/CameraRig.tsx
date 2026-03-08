@@ -1,12 +1,18 @@
-import React, { useEffect } from 'react';
 import { PerspectiveCamera, OrthographicCamera } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
-import { PerspectiveCamera as ThreePerspective } from 'three';
-import type { CameraSettingsState } from '@/modules/fractal/types/stores/editor/visual-types';
+import { useEffect } from 'react';
+import type { PerspectiveCamera as ThreePerspective } from 'three';
+import type { OrbitControlsHandle } from '@/modules/fractal/types';
+import { CameraType } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { CameraSettingsState } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { FC, RefObject } from 'react';
 
-type Props = { orbitRef?: React.RefObject<any>; camera: CameraSettingsState };
+interface CameraRigProps {
+    orbitRef?: RefObject<OrbitControlsHandle | null>;
+    camera: CameraSettingsState;
+};
 
-const CameraRig: React.FC<Props> = ({ orbitRef, camera }) => {
+const CameraRig: FC<CameraRigProps> = ({ orbitRef, camera }) => {
     const type = camera.type;
     const position = camera.position;
     const up = camera.up;
@@ -38,7 +44,7 @@ const CameraRig: React.FC<Props> = ({ orbitRef, camera }) => {
         oNear, oFar, oZoom
     ]);
 
-    if (type === 'orthographic') {
+    if (type === CameraType.Orthographic) {
         return (
             <OrthographicCamera
                 key='ortho'
@@ -65,8 +71,7 @@ const CameraRig: React.FC<Props> = ({ orbitRef, camera }) => {
             near={pNear}
             far={pFar}
             zoom={pZoom}
-            onUpdate={(c) => {
-                const cam = c as ThreePerspective;
+            onUpdate={(cam: ThreePerspective) => {
                 cam.focus = pFocus;
                 cam.filmGauge = pFilmGauge;
                 cam.filmOffset = pFilmOffset;

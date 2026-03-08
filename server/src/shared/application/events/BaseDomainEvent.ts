@@ -1,5 +1,5 @@
-import { v4 } from 'uuid';
 import { IDomainEvent } from './IDomainEvent';
+import { v4 } from 'uuid';
 
 export abstract class BaseDomainEvent<T> implements IDomainEvent {
     readonly occurredOn = new Date();
@@ -9,4 +9,4 @@ export abstract class BaseDomainEvent<T> implements IDomainEvent {
         public readonly name: string,
         public readonly payload: T
     ) {}
-}
+};

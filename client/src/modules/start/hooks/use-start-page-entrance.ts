@@ -1,4 +1,5 @@
-import { useEffect, type RefObject } from 'react';
+import { useEffect } from 'react';
+import type { RefObject } from 'react';
 
 export const useStartPageEntrance = (
     wrapperRef: RefObject<HTMLDivElement | null>,
@@ -34,7 +35,7 @@ export const useStartPageEntrance = (
         });
 
         return () => {
-            timeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
+            timeouts.forEach(window.clearTimeout);
         };
     }, [pageCount, wrapperRef]);
 };

@@ -1,26 +1,43 @@
-import React, { useState } from 'react';
-import { MdContentCopy, MdCheck } from 'react-icons/md';
-import Modal from '@/shared/presentation/components/Modal';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import Modal from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import useCreateSecretKey from '@/modules/team/hooks/secret-key/use-create-secret-key';
+import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
+import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
+import ApiError from '@/shared/errors/ApiError';
 import useModalForm from '@/shared/presentation/hooks/use-modal-form';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { MdCheck, MdContentCopy } from 'react-icons/md';
 import { sileo } from 'sileo';
-import useCreateSecretKey from '@/modules/team/hooks/secret-key/use-create-secret-key';
-import useTeamRoleData from '@/modules/team/hooks/team-role/use-team-role-data';
-import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import ApiError from '@/shared/errors/ApiError';
+import { useState } from 'react';
 import './SecretKeyCreationModal.css';
 
 export const SECRET_KEY_CREATION_MODAL_ID = 'secret-key-creation-modal';
 
 interface SecretKeyCreationModalProps {
     onCreated?: (secretKey: string) => void;
-}
+};
 
-const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreated }) => {
+interface SecretKeyFormErrors {
+    name?: string;
+    roleId?: string;
+};
+
+interface PromiseToastOptions {
+    loading: { title: string };
+    success: { title: string };
+    error: { title: string };
+};
+
+const SECRET_KEY_CREATION_TOAST_OPTIONS: PromiseToastOptions = {
+    loading: { title: 'Creating secret key...' },
+    success: { title: 'Secret key created successfully' },
+    error: { title: 'Failed to create secret key' }
+};
+
+export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProps) => {
     const selectedTeam = useSelectedTeam();
     const { roles } = useTeamRoleData({ teamId: selectedTeam?._id });
     const { create: createSecretKey, isPending: isCreating } = useCreateSecretKey();
@@ -30,7 +47,7 @@ const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreat
 
     const [name, setName] = useState('');
     const [roleId, setRoleId] = useState('');
-    const [errors, setErrors] = useState<{ name?: string; roleId?: string }>({});
+    const [errors, setErrors] = useState<SecretKeyFormErrors>({});
 
     const resetState = () => {
         setGeneratedKey(null);
@@ -59,7 +76,7 @@ const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreat
     };
 
     const handleSubmit = async () => {
-        const newErrors: { name?: string; roleId?: string } = {};
+        const newErrors: SecretKeyFormErrors = {};
         if (!name.trim()) newErrors.name = 'Name is required';
         if (!roleId) newErrors.roleId = 'Role is required';
 
@@ -71,11 +88,7 @@ const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreat
         try {
             const response = await showPromise(
                 createSecretKey(name, roleId),
-                {
-                    loading: { title: 'Creating secret key...' },
-                    success: { title: 'Secret key created successfully' },
-                    error: { title: 'Failed to create secret key' }
-                }
+                SECRET_KEY_CREATION_TOAST_OPTIONS
             );
             if (response?.secretKey) {
                 setGeneratedKey(response.secretKey);
@@ -169,5 +182,3 @@ const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreat
         </Modal>
     );
 };
-
-export default SecretKeyCreationModal;

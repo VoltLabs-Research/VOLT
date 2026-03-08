@@ -1,8 +1,11 @@
-import { ChatMessageMetadata, ChatMessageProps, ChatMessageType } from '@modules/chat/domain/entities/ChatMessage';
+import { ChatMessageType } from '@modules/chat/domain/entities/chat-message/ChatMessage';
+import type { ChatMessageMetadata, ChatMessageProps } from '@modules/chat/domain/entities/chat-message/ChatMessage';
 
-export type PersistedChatMessageDTO = ChatMessageProps & { _id: string };
+export interface PersistedChatMessageDTO extends ChatMessageProps {
+    _id: string;
+};
 
-export interface SendChatMessageInputDTO{
+export interface SendChatMessageInputDTO {
     userId: string;
     chatId: string;
     content: string;
@@ -10,6 +13,4 @@ export interface SendChatMessageInputDTO{
     metadata?: ChatMessageMetadata;
 };
 
-export interface SendChatMessageOutputDTO extends ChatMessageProps{
-    _id: string;
-}
+export interface SendChatMessageOutputDTO extends PersistedChatMessageDTO {};

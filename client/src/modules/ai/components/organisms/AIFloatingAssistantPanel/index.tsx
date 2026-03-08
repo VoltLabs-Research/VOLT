@@ -1,22 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { IoAddOutline, IoCloseOutline, IoExpandOutline, IoSparklesOutline } from 'react-icons/io5';
-import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
 import AIComposer from '@/modules/ai/components/organisms/AIComposer';
 import AIConversationThread from '@/modules/ai/components/organisms/AIConversationThread';
 import useAIPage from '@/modules/ai/hooks/use-ai-page';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { type SelectOption } from '@/shared/presentation/components/Select';
 import Tooltip from '@/shared/presentation/components/Tooltip';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { IoAddOutline, IoCloseOutline, IoExpandOutline, IoSparklesOutline } from 'react-icons/io5';
+import { useNavigate } from 'react-router-dom';
+import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
+import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { ReactNode } from 'react';
 import './AIFloatingAssistantPanel.css';
 
 interface AIFloatingAssistantPanelContentProps {
     onClose: () => void;
-}
+};
 
 const AIFloatingAssistantPanelContent = ({ onClose }: AIFloatingAssistantPanelContentProps) => {
     const navigate = useNavigate();
@@ -62,15 +63,20 @@ const AIFloatingAssistantPanelContent = ({ onClose }: AIFloatingAssistantPanelCo
         });
     }, [conversationId, handleSendMessage]);
 
-    const modelOptions: SelectOption[] = useMemo(() => (
-        availableModelsForProvider.map((model) => ({
-            value: `${model.provider}::${model.id}`,
-            title: model.name,
-            description: model.description
-                ? `${model.providerName} · ${model.description}`
-                : model.providerName
-        }))
-    ), [availableModelsForProvider]);
+    const modelOptions: SelectOption[] = useMemo(() => {
+        return availableModelsForProvider.map((model) => {
+            let description = model.providerName;
+            if (model.description) {
+                description = `${model.providerName} · ${model.description}`;
+            }
+
+            return {
+                value: `${model.provider}::${model.id}`,
+                title: model.name,
+                description
+            };
+        });
+    }, [availableModelsForProvider]);
 
     const handleSend = async () => {
         const draftToSend = messageDraft;
@@ -105,9 +111,95 @@ const AIFloatingAssistantPanelContent = ({ onClose }: AIFloatingAssistantPanelCo
     };
 
     const openAIPage = () => {
-        navigate(conversationId ? `/dashboard/ai/${conversationId}` : '/dashboard/ai');
+        let targetPath = '/dashboard/ai';
+        if (conversationId) {
+            targetPath = `/dashboard/ai/${conversationId}`;
+        }
+
+        navigate(targetPath);
         onClose();
     };
+
+    const handleRetry = () => {
+        if (conversationId) {
+            loadConversationMessages(conversationId).catch(console.warn);
+        }
+    };
+
+    let starterInput: ReactNode = null;
+    if (shouldRenderStarterInput) {
+        starterInput = (
+            <AIComposer
+                value={messageDraft}
+                modelOptions={modelOptions}
+                selectedModel={selectedModel}
+                onChange={setMessageDraft}
+                onModelChange={setSelectedModel}
+                onSend={handleSend}
+                disabled={!canSendMessage || isProviderCatalogLoading || noProviderConfigured}
+                isSending={isSendingMessage}
+                error={sendMessageError}
+            />
+        );
+    }
+
+    let content: ReactNode = (
+        <>
+            <AIConversationThread
+                conversationId={conversationId}
+                messages={messages}
+                isLoading={isMessagesLoading}
+                isResponding={isSendingMessage}
+                error={messagesError}
+                onOpenTableArtifact={handleOpenTabularArtifact}
+                addToolApprovalResponse={addToolApprovalResponse}
+                starterInput={starterInput}
+                onRetry={handleRetry}
+            />
+
+            {!shouldRenderStarterInput && (
+                <AIComposer
+                    value={messageDraft}
+                    modelOptions={modelOptions}
+                    selectedModel={selectedModel}
+                    onChange={setMessageDraft}
+                    onModelChange={setSelectedModel}
+                    onSend={handleSend}
+                    disabled={!canSendMessage || isProviderCatalogLoading || noProviderConfigured}
+                    isSending={isSendingMessage}
+                    error={sendMessageError}
+                />
+            )}
+        </>
+    );
+
+    if (accessDenied) {
+        content = (
+            <Container className='d-flex flex-center flex-1'>
+                <AccessDenied description={accessDeniedMessage} showBack={false} />
+            </Container>
+        );
+    } else if (!selectedTeam?._id) {
+        content = (
+            <Container className='d-flex flex-center flex-1'>
+                <EmptyState
+                    title='No team selected'
+                    description='Select a team to use the AI assistant.'
+                />
+            </Container>
+        );
+    } else if (noProviderConfigured) {
+        content = (
+            <Container className='d-flex flex-center flex-1'>
+                <EmptyState
+                    title='No AI provider configured'
+                    description='Enable at least one provider with a valid API key in team integrations.'
+                    buttonText='Open integrations'
+                    buttonOnClick={() => navigate('/dashboard/settings/integrations')}
+                />
+            </Container>
+        );
+    }
 
     return (
         <Container className='ai-floating-assistant glass-bg p-fixed bottom-1 right-1 z-20 d-flex column'>
@@ -148,92 +240,36 @@ const AIFloatingAssistantPanelContent = ({ onClose }: AIFloatingAssistantPanelCo
                 </Container>
             )}
 
-            {accessDenied ? (
-                <Container className='d-flex flex-center flex-1'>
-                    <AccessDenied description={accessDeniedMessage} showBack={false} />
-                </Container>
-            ) : !selectedTeam?._id ? (
-                <Container className='d-flex flex-center flex-1'>
-                    <EmptyState
-                        title='No team selected'
-                        description='Select a team to use the AI assistant.'
-                    />
-                </Container>
-            ) : noProviderConfigured ? (
-                <Container className='d-flex flex-center flex-1'>
-                    <EmptyState
-                        title='No AI provider configured'
-                        description='Enable at least one provider with a valid API key in team integrations.'
-                        buttonText='Open integrations'
-                        buttonOnClick={() => navigate('/dashboard/settings/integrations')}
-                    />
-                </Container>
-            ) : (
-                <>
-                    <AIConversationThread
-                        conversationId={conversationId}
-                        messages={messages}
-                        isLoading={isMessagesLoading}
-                        isResponding={isSendingMessage}
-                        error={messagesError}
-                        onOpenTableArtifact={handleOpenTabularArtifact}
-                        addToolApprovalResponse={addToolApprovalResponse}
-                        starterInput={shouldRenderStarterInput ? (
-                            <AIComposer
-                                value={messageDraft}
-                                modelOptions={modelOptions}
-                                selectedModel={selectedModel}
-                                onChange={setMessageDraft}
-                                onModelChange={setSelectedModel}
-                                onSend={handleSend}
-                                disabled={!canSendMessage || isProviderCatalogLoading || noProviderConfigured}
-                                isSending={isSendingMessage}
-                                error={sendMessageError}
-                            />
-                        ) : null}
-                        onRetry={() => {
-                            if (conversationId) {
-                                loadConversationMessages(conversationId).catch(console.warn);
-                            }
-                        }}
-                    />
-
-                    {!shouldRenderStarterInput && (
-                        <AIComposer
-                            value={messageDraft}
-                            modelOptions={modelOptions}
-                            selectedModel={selectedModel}
-                            onChange={setMessageDraft}
-                            onModelChange={setSelectedModel}
-                            onSend={handleSend}
-                            disabled={!canSendMessage || isProviderCatalogLoading || noProviderConfigured}
-                            isSending={isSendingMessage}
-                            error={sendMessageError}
-                        />
-                    )}
-                </>
-            )}
+            {content}
         </Container>
     );
 };
 
 const AIFloatingAssistantPanel = () => {
     const [isOpen, setIsOpen] = useState(false);
+    let triggerClassName = 'dashboard-ai-trigger';
+
+    if (isOpen) {
+        triggerClassName = 'dashboard-ai-trigger is-active';
+    }
+
+    let panelContent: ReactNode = null;
+    if (isOpen) {
+        panelContent = <AIFloatingAssistantPanelContent onClose={() => setIsOpen(false)} />;
+    }
 
     return (
         <>
             <Tooltip content='Volt AI' placement='bottom'>
                 <IconButton
-                    className={`dashboard-ai-trigger ${isOpen ? 'is-active' : ''}`}
+                    className={triggerClassName}
                     onClick={() => setIsOpen((current) => !current)}
                 >
                     <IoSparklesOutline size={18} />
                 </IconButton>
             </Tooltip>
 
-            {isOpen ? (
-                <AIFloatingAssistantPanelContent onClose={() => setIsOpen(false)} />
-            ) : null}
+            {panelContent}
         </>
     );
 };

@@ -1,34 +1,24 @@
-const ERROR_CODE_PATTERN = /^[A-Za-z][A-Za-z0-9]*(?:(?:::|:)[A-Za-z][A-Za-z0-9]*)+$/;
+interface ServerErrorCodeContainer {
+    code?: string;
+    message?: string;
+    error?: string | ServerErrorCodeContainer;
+    data?: string | ServerErrorCodeContainer;
+    details?: string | ServerErrorCodeContainer;
+};
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
+const isServerErrorCodeContainer = (value: unknown): value is ServerErrorCodeContainer => {
     return typeof value === 'object' && value !== null;
 };
 
-const normalizeCandidateCode = (value: unknown): string | undefined => {
-    if(typeof value !== 'string') return undefined;
-
-    const trimmedValue = value.trim();
-    if(!trimmedValue) return undefined;
-
-    if(ERROR_CODE_PATTERN.test(trimmedValue)){
-        return trimmedValue;
-    }
-
-    return undefined;
-};
-
 const extractCandidateCode = (candidate: unknown): string | undefined => {
-    const directCode = normalizeCandidateCode(candidate);
-    if(directCode){
-        return directCode;
-    }
+    if(typeof candidate === 'string') return candidate;
 
-    if(!isRecord(candidate)) return undefined;
+    if(!isServerErrorCodeContainer(candidate)) return undefined;
 
-    return normalizeCandidateCode(candidate.code) ?? normalizeCandidateCode(candidate.message);
+    return candidate.code ?? candidate.message;
 };
 
-const extractNestedCode = (data: Record<string, unknown>): string | undefined => {
+const extractNestedCode = (data: ServerErrorCodeContainer): string | undefined => {
     const nestedCandidates = [
         data.error,
         data.data,
@@ -45,17 +35,12 @@ const extractNestedCode = (data: Record<string, unknown>): string | undefined =>
     return undefined;
 };
 
-const extractServerCode = (data: unknown): string | undefined => {
-    const directCode = normalizeCandidateCode(data);
-    if(directCode){
-        return directCode;
-    }
+export default function extractServerCode(data: unknown): string | undefined {
+    if(typeof data === 'string') return data;
 
-    if(!isRecord(data)) return undefined;
+    if(!isServerErrorCodeContainer(data)) return undefined;
 
-    return normalizeCandidateCode(data.code)
-        ?? normalizeCandidateCode(data.message)
+    return data.code
+        ?? data.message
         ?? extractNestedCode(data);
-};
-
-export default extractServerCode;
+}

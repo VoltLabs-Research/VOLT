@@ -1,11 +1,14 @@
-import IORedis from 'ioredis';
 import {
-    ProcessingQueueSessionRecord,
     SESSION_TTL_SECONDS,
-    SessionDrainResult,
     SessionFailureSummaryRecord
 } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+import { isErrorCode } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
+import IORedis from 'ioredis';
+import type { ProcessingQueueSessionRecord, SessionDrainResult } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
 import type { WorkerFailureEnvelope } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
+
+type SessionEvalResponse = [number, string, string];
 
 export default class ProcessingQueueSessionStore {
     constructor(private readonly redis: IORedis) {}
@@ -40,8 +43,8 @@ export default class ProcessingQueueSessionStore {
         let failedJobs = 0;
         if (currentFailureSummary) {
             try {
-                const parsedFailureSummary = JSON.parse(currentFailureSummary) as SessionFailureSummaryRecord;
-                if (typeof parsedFailureSummary.failedJobs === 'number') {
+                const parsedFailureSummary = this.parseSessionFailureSummary(currentFailureSummary);
+                if (parsedFailureSummary) {
                     failedJobs = parsedFailureSummary.failedJobs;
                 }
             } catch {
@@ -81,14 +84,15 @@ export default class ProcessingQueueSessionStore {
             return {0, '', ''}
         `;
 
-        const [shouldComplete, sessionDataRaw, failureSummaryRaw] = await this.redis.eval(
+        const evalResponse = this.getSessionEvalResponse(await this.redis.eval(
             luaScript,
             3,
             this.remainingKey(sessionId),
             this.sessionKey(sessionId),
             this.failureSummaryKey(sessionId),
             SESSION_TTL_SECONDS
-        ) as [number, string, string];
+        ));
+        const [shouldComplete, sessionDataRaw, failureSummaryRaw] = evalResponse;
 
         if (shouldComplete !== 1) {
             return { completed: false };
@@ -102,9 +106,17 @@ export default class ProcessingQueueSessionStore {
         }
 
         try {
+            const sessionData = this.parseSessionRecord(sessionDataRaw);
+            if (!sessionData) {
+                return {
+                    completed: true,
+                    missingSessionData: true
+                };
+            }
+
             return {
                 completed: true,
-                sessionData: JSON.parse(sessionDataRaw) as ProcessingQueueSessionRecord,
+                sessionData,
                 failureSummary: this.parseSessionFailureSummary(failureSummaryRaw)
             };
         } catch {
@@ -115,23 +127,93 @@ export default class ProcessingQueueSessionStore {
         }
     }
 
+    private getSessionEvalResponse(value: unknown): SessionEvalResponse {
+        if (!Array.isArray(value) || value.length !== 3) {
+            throw new Error('Invalid Redis session drain response');
+        }
+
+        const [shouldComplete, sessionDataRaw, failureSummaryRaw] = value;
+        if (typeof shouldComplete !== 'number' || typeof sessionDataRaw !== 'string' || typeof failureSummaryRaw !== 'string') {
+            throw new Error('Invalid Redis session drain response');
+        }
+
+        return [shouldComplete, sessionDataRaw, failureSummaryRaw];
+    }
+
+    private parseSessionRecord(rawValue: string): ProcessingQueueSessionRecord | undefined {
+        const parsedValue = JSON.parse(rawValue);
+        if (!isRecord(parsedValue)) {
+            return undefined;
+        }
+
+        if (
+            typeof parsedValue.sessionId !== 'string'
+            || (typeof parsedValue.startTime !== 'string' && !(parsedValue.startTime instanceof Date))
+            || typeof parsedValue.totalJobs !== 'number'
+            || typeof parsedValue.teamId !== 'string'
+            || typeof parsedValue.queueType !== 'string'
+            || parsedValue.status !== 'active'
+        ) {
+            return undefined;
+        }
+
+        let metadata: Record<string, unknown> = {};
+        if (isRecord(parsedValue.metadata)) {
+            metadata = parsedValue.metadata;
+        }
+
+        return {
+            sessionId: parsedValue.sessionId,
+            startTime: parsedValue.startTime,
+            totalJobs: parsedValue.totalJobs,
+            metadata,
+            teamId: parsedValue.teamId,
+            queueType: parsedValue.queueType,
+            status: parsedValue.status
+        };
+    }
+
+    private parseWorkerFailureEnvelope(value: unknown): WorkerFailureEnvelope | undefined {
+        if (!isRecord(value) || !isErrorCode(value.code)) {
+            return undefined;
+        }
+
+        let message = value.code;
+        if (isErrorCode(value.message)) {
+            message = value.message;
+        }
+
+        let details: string | undefined;
+        if (typeof value.details === 'string') {
+            details = value.details;
+        }
+
+        return {
+            code: value.code,
+            message,
+            details
+        };
+    }
+
     private parseSessionFailureSummary(rawValue: string | null): SessionFailureSummaryRecord | undefined {
         if (!rawValue) {
             return undefined;
         }
 
         try {
-            const parsedValue = JSON.parse(rawValue) as SessionFailureSummaryRecord;
-            if (typeof parsedValue.failedJobs !== 'number') {
+            const parsedValue = JSON.parse(rawValue);
+            if (!isRecord(parsedValue) || typeof parsedValue.failedJobs !== 'number') {
                 return undefined;
             }
 
+            const lastFailure = this.parseWorkerFailureEnvelope(parsedValue.lastFailure);
+
             return {
                 failedJobs: parsedValue.failedJobs,
-                lastFailure: parsedValue.lastFailure
+                lastFailure
             };
         } catch {
             return undefined;
         }
     }
-}
+};

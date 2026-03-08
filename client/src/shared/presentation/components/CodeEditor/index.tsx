@@ -1,8 +1,8 @@
-import type { ChangeEvent } from 'react';
-import { useCallback } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import './CodeEditor.css';
+import { useCallback } from 'react';
+import type { ChangeEvent } from 'react';
 
 export interface CodeEditorProps {
     value: string;

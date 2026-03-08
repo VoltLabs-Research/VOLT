@@ -1,6 +1,6 @@
-import React from 'react';
 import { cn } from '@/shared/utils';
 import './StatusDot.css';
+import React from 'react';
 
 interface StatusDotProps{
     isOnline: boolean;

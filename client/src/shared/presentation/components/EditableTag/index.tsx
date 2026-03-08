@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect, forwardRef } from 'react';
 import composeRefs from '@/shared/presentation/utils/compose-refs';
 import './EditableTag.css';
+import { useState, useRef, useEffect, forwardRef } from 'react';
+import React from 'react';
 
 interface EditableTagProps{
     as: keyof React.JSX.IntrinsicElements;

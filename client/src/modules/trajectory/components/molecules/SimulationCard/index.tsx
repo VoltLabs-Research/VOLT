@@ -1,24 +1,24 @@
+import { getStageMessage, isProcessingStatus } from '@/modules/trajectory/api/entities/trajectory';
+import useTrajectoryPreview from '@/modules/trajectory/hooks/trajectory/use-trajectory-preview';
+import SimulationCardFooter from '../../atoms/SimulationCardFooter';
+import SimulationCardHeader from '../../atoms/SimulationCardHeader';
+import SimulationCardUsers from '../../atoms/SimulationCardUsers';
+import { cn } from '@/shared/utils';
+import { PiAtomThin } from 'react-icons/pi';
 import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PiAtomThin } from 'react-icons/pi';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-import { getStageMessage, isProcessingStatus } from '@/modules/trajectory/api/entities/trajectory-constants';
-import useTrajectoryPreview from '@/modules/trajectory/hooks/use-trajectory-preview';
-import SimulationCardHeader from '../../atoms/SimulationCardHeader';
-import SimulationCardFooter from '../../atoms/SimulationCardFooter';
-import SimulationCardUsers from '../../atoms/SimulationCardUsers';
 import Container from '@/shared/presentation/components/Container';
-import { cn } from '@/shared/utils';
 import './SimulationCard.css';
 
-interface SimulationCardProps{
+interface SimulationCardProps {
     trajectory: Trajectory;
     isSelected: boolean;
     onSelect: (_id: string) => void;
     onDelete?: (_id: string) => void;
 };
 
-const SimulationCard = ({ trajectory, isSelected, onSelect, onDelete }: SimulationCardProps) => {
+export default function SimulationCard({ trajectory, isSelected, onSelect, onDelete }: SimulationCardProps) {
     const navigate = useNavigate();
 
     const { previewBlobUrl, isLoading: previewLoading, error: previewError, retry: retryPreview } = useTrajectoryPreview({
@@ -46,9 +46,9 @@ const SimulationCard = ({ trajectory, isSelected, onSelect, onDelete }: Simulati
             return;
         }
 
-        if(e.metaKey || e.ctrlKey){
+        if (e.metaKey || e.ctrlKey) {
             onSelect(trajectory._id);
-        }else{
+        } else {
             navigate(`/canvas/${trajectory._id}/`);
         }
     }, [navigate, onSelect, trajectory._id]);
@@ -69,7 +69,7 @@ const SimulationCard = ({ trajectory, isSelected, onSelect, onDelete }: Simulati
                         className='w-max h-max cover-image'
                         src={previewBlobUrl}
                         alt={`Preview of ${trajectory.name}`}
-                        onError={() => retryPreview()}
+                        onError={retryPreview}
                     />
                 )}
             </Container>
@@ -90,6 +90,4 @@ const SimulationCard = ({ trajectory, isSelected, onSelect, onDelete }: Simulati
             <SimulationCardUsers trajectoryId={trajectory._id} />
         </Container>
     );
-};
-
-export default SimulationCard;
+}

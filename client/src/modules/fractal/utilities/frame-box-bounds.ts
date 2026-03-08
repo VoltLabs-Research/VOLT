@@ -1,6 +1,5 @@
 import type { BoxBounds } from '@/modules/fractal/types';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-import type { TimestepInfo } from '@/modules/trajectory/api/entities/timestep-info';
+import type { TimestepInfo, Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { SimulationCell } from '@/modules/simulation-cell/api/entities/simulation-cell';
 
 const getSimulationCellBoxBounds = (simulationCell?: SimulationCell): BoxBounds | undefined => {

@@ -1,8 +1,8 @@
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 import type { Container } from '@/modules/container/api/entities/container';
-import type { Plugin } from '@/modules/plugin/api/entities/plugin';
-import type { Team } from '@/modules/team/api/entities/team';
+import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
+import type { Team } from '@/modules/team/api/entities/team/team';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 
 export interface GlobalSearchInputDTO {

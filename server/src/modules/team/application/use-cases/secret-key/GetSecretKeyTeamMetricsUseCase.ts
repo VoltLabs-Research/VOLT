@@ -1,20 +1,37 @@
-import { injectable, inject } from 'tsyringe';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { GetSecretKeyTeamMetricsInputDTO, GetSecretKeyTeamMetricsOutputDTO, getSecretKeyTeamMetricsInputSchema } from '@modules/team/application/dtos/secret-key/GetSecretKeyTeamMetricsDTO';
+import SecretKeyUsageMetricsMapper from '@modules/team/application/services/secret-key/SecretKeyUsageMetricsMapper';
+import { resolveSecretKeyValidationErrorCode } from '@modules/team/application/use-cases/secret-key/resolve-secret-key-validation-error-code';
+import { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
+import { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/secret-key/ISecretKeyUsageLogRepository';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { ISecretKeyRepository } from '@modules/team/domain/port/ISecretKeyRepository';
-import { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/ISecretKeyUsageLogRepository';
-import SecretKeyUsageMetricsMapper from '@modules/team/application/services/SecretKeyUsageMetricsMapper';
-import {
-    GetSecretKeyTeamMetricsInputDTO,
-    GetSecretKeyTeamMetricsOutputDTO,
-    getSecretKeyTeamMetricsInputSchema
-} from '@modules/team/application/dtos/secret-key/GetSecretKeyTeamMetricsDTO';
-import { resolveSecretKeyValidationErrorCode } from '@modules/team/application/use-cases/secret-key/resolve-secret-key-validation-error-code';
+import { injectable, inject } from 'tsyringe';
 
 const MAX_KEYS_PER_TEAM = 500;
+
+interface SecretKeyTeamFilter {
+    team: string;
+};
+
+interface SecretKeyRolePopulate {
+    path: 'role';
+    select: ['name'];
+};
+
+interface EnrichedSecretKeyMetric {
+    secretKeyId: string;
+    name: string;
+    keyPrefix: string;
+    roleName: string;
+    isActive: boolean;
+    totalRequests: number;
+    successRequests: number;
+    avgResponseTime: number;
+    lastRequestAt: Date | null;
+};
 
 @injectable()
 export default class GetSecretKeyTeamMetricsUseCase
@@ -50,11 +67,16 @@ export default class GetSecretKeyTeamMetricsUseCase
         const metrics = this.metricsMapper.toTeamMetrics(
             await this.usageLogRepo.getTeamUsageAnalytics(teamId, days)
         );
+        const filter: SecretKeyTeamFilter = { team: teamId };
+        const populate: SecretKeyRolePopulate = {
+            path: 'role',
+            select: ['name']
+        };
 
         const keysResult = await this.secretKeyRepo.findAll({
-            filter: { team: teamId },
+            filter,
             limit: MAX_KEYS_PER_TEAM,
-            populate: { path: 'role', select: ['name'] }
+            populate
         });
 
         const allKeys = keysResult.data;
@@ -64,7 +86,7 @@ export default class GetSecretKeyTeamMetricsUseCase
 
         const usageMap = new Map(metrics.perKey.map(pk => [pk.secretKeyId, pk]));
 
-        const enrichedPerKey = allKeys.map(key => {
+        const toEnrichedSecretKeyMetric = (key: typeof allKeys[number]): EnrichedSecretKeyMetric => {
             const usage = usageMap.get(key._id);
             return {
                 secretKeyId: key._id,
@@ -77,7 +99,9 @@ export default class GetSecretKeyTeamMetricsUseCase
                 avgResponseTime: usage?.avgResponseTime || 0,
                 lastRequestAt: usage?.lastRequestAt || key.props.lastUsedAt || null
             };
-        });
+        };
+
+        const enrichedPerKey = allKeys.map(toEnrichedSecretKeyMetric);
 
         enrichedPerKey.sort((a, b) => b.totalRequests - a.totalRequests);
 
@@ -89,4 +113,4 @@ export default class GetSecretKeyTeamMetricsUseCase
             perKey: enrichedPerKey
         });
     }
-}
+};

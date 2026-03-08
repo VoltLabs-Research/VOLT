@@ -1,5 +1,6 @@
-import type { RefObject } from 'react';
 import Container from '@/shared/presentation/components/Container';
+
+import type { RefObject } from 'react';
 
 interface TimelineRulerProps {
     rulerRef: RefObject<HTMLDivElement | null>;
@@ -11,7 +12,7 @@ interface TimelineRulerProps {
     onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
     onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void;
     onWheel: (event: React.WheelEvent<HTMLDivElement>) => void;
-}
+};
 
 const TimelineRuler = ({
     rulerRef,

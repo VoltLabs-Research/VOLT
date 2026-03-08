@@ -2,7 +2,7 @@ import { useOutletContext } from 'react-router-dom';
 import type { Container } from '../api/entities/container';
 import type { EnvVariable } from '../api/entities/env-variable';
 import type { PortMapping } from '../api/entities/port-mapping';
-import type { ContainerStatsViewData } from '../api/entities/container-stats-view';
+import type { ContainerStatsViewData } from '../services/container-stats-view';
 
 export interface ContainerDetailsContext {
     container: Container;

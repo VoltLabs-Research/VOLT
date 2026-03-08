@@ -16,7 +16,7 @@ import {
 import { createMutation, buildKeys } from '@/shared/infrastructure/query';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import pluginService from '../../api/services/plugin';
-import type { Plugin } from '../../api/entities/plugin';
+import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 import type { ClonePluginInputDTO } from '../../api/dtos/plugin/clone-plugin';
 import type { DeletePluginInputDTO } from '../../api/dtos/plugin/delete-plugin';
 import type { ExecutePluginInputDTO, ExecutePluginOutputDTO } from '../../api/dtos/plugin/execute-plugin';

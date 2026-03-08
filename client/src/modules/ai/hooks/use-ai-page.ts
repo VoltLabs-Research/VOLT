@@ -1,15 +1,15 @@
-import { useRef } from 'react';
-import { useSelectedTeam, useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-import useAIModelSelection from '@/modules/ai/hooks/use-ai-model-selection';
+import useAIChatStream from '@/modules/ai/hooks/use-ai-chat-stream';
 import useAIConversationMessages from '@/modules/ai/hooks/use-ai-conversation-messages';
 import useAIConversations from '@/modules/ai/hooks/use-ai-conversations';
-import useAIChatStream from '@/modules/ai/hooks/use-ai-chat-stream';
+import useAIModelSelection from '@/modules/ai/hooks/use-ai-model-selection';
+import { useSelectedTeam, useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import { useRef } from 'react';
 
 interface UseAIPageOptions {
     navigateOnConversationChange?: boolean;
     onConversationChange?: (conversationId?: string) => void;
-}
+};
 
 const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
     const selectedTeam = useSelectedTeam();

@@ -1,10 +1,10 @@
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import './SidebarExpandableSection.css';
+import '@/shared/presentation/components/SidebarSubItems/SidebarSubItems.css';
 import { useEffect, useState, forwardRef } from 'react';
 import { IoChevronDown } from 'react-icons/io5';
 import type { IconType } from 'react-icons';
-import Container from '@/shared/presentation/components/Container';
-import Button from '@/shared/presentation/components/Button';
-import '@/shared/presentation/components/SidebarSubItems/SidebarSubItems.css';
-import './SidebarExpandableSection.css';
 
 export interface SubItem {
     label: string;
@@ -117,7 +117,7 @@ SidebarExpandableSection.displayName = 'SidebarExpandableSection';
 interface NestedSubItemsProps {
     item: SubItem;
     childSelected: boolean;
-}
+};
 
 const NestedSubItems = ({ item, childSelected }: NestedSubItemsProps) => {
     const [expanded, setExpanded] = useState(childSelected);

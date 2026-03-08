@@ -1,27 +1,32 @@
-import React from 'react';
-import { format } from 'date-fns';
 import Button from '@/shared/presentation/components/Button';
 import SettingsRow from '@/modules/auth/components/molecules/SettingsRow';
-import { PasswordInfo } from '@/modules/auth/components/organisms/PasswordChangeForm/validation-schema';
-import { Lock, ChevronDown, ChevronUp } from 'lucide-react';
+import { format } from 'date-fns';
+import { ChevronDown, ChevronUp, Lock } from 'lucide-react';
+import type { PasswordInfo } from '@/modules/auth/components/organisms/PasswordChangeForm/validation-schema';
 
 interface PasswordStatusRowProps {
     passwordInfo: PasswordInfo | null;
     isFormOpen: boolean;
     onToggleForm: () => void;
-}
+};
 
-const PasswordStatusRow: React.FC<PasswordStatusRowProps> = ({
+const PasswordStatusRow = ({
     passwordInfo,
     isFormOpen,
     onToggleForm
-}) => {
+}: PasswordStatusRowProps) => {
     let description = 'No password set (OAuth only)';
+    let rightIcon = <ChevronDown size={16} />;
+
     if (passwordInfo?.hasPassword) {
         description = 'Password configured';
         if (passwordInfo.lastChanged) {
             description = `Last changed: ${format(new Date(passwordInfo.lastChanged), 'MMMM d, yyyy')}`;
         }
+    }
+
+    if (isFormOpen) {
+        rightIcon = <ChevronUp size={16} />;
     }
 
     return (
@@ -33,7 +38,7 @@ const PasswordStatusRow: React.FC<PasswordStatusRowProps> = ({
                 <Button
                     variant="soft"
                     size="sm"
-                    rightIcon={isFormOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    rightIcon={rightIcon}
                     onClick={onToggleForm}
                 >
                     {passwordInfo?.hasPassword ? 'Change' : 'Set Password'}

@@ -1,4 +1,5 @@
-import { FrameJobGroupStatus, JobStatus, type Job, type TrajectoryJobGroup } from '../api/entities/job';
+import { FrameJobGroupStatus, JobStatus } from '../api/entities/job';
+import type { Job, TrajectoryJobGroup } from '../api/entities/job';
 
 export const computeGroupStatus = (jobs: Job[]): FrameJobGroupStatus => {
     const hasRunning = jobs.some((job) => job.status === JobStatus.Running);
@@ -44,19 +45,33 @@ export const applyJobUpdate = (
         if (index !== trajIndex) return group;
 
         const frameIndex = group.frameGroups.findIndex((frame) => frame.timestep === updatedJob.timestep);
-        const newFrameGroups = frameIndex === -1
-            ? [{
+        let newFrameGroups = group.frameGroups;
+
+        if (frameIndex === -1) {
+            newFrameGroups = [{
                 timestep: updatedJob.timestep,
                 jobs: [updatedJob],
                 overallStatus: computeGroupStatus([updatedJob])
-            }, ...group.frameGroups]
-            : group.frameGroups.map((frame, framePosition) => {
+            }, ...group.frameGroups];
+        } else {
+            newFrameGroups = group.frameGroups.map((frame, framePosition) => {
                 if (framePosition !== frameIndex) return frame;
 
                 const jobIndex = frame.jobs.findIndex((job) => job.jobId === updatedJob.jobId);
-                const newJobs = jobIndex >= 0
-                    ? frame.jobs.map((job, jobPosition) => (jobPosition === jobIndex ? { ...job, ...updatedJob } : job))
-                    : [updatedJob, ...frame.jobs];
+                let newJobs = [updatedJob, ...frame.jobs];
+
+                if (jobIndex >= 0) {
+                    newJobs = frame.jobs.map((job, jobPosition) => {
+                        if (jobPosition === jobIndex) {
+                            return {
+                                ...job,
+                                ...updatedJob
+                            };
+                        }
+
+                        return job;
+                    });
+                }
 
                 return {
                     ...frame,
@@ -64,6 +79,7 @@ export const applyJobUpdate = (
                     overallStatus: computeGroupStatus(newJobs)
                 };
             });
+        }
 
         const allJobs = newFrameGroups.flatMap((frame) => frame.jobs);
         const overallStatus = computeGroupStatus(allJobs);

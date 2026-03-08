@@ -1,26 +1,27 @@
-import React from 'react';
+import './ThemeCard.css';
+import { cn } from '@/shared/utils';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import { Check } from 'lucide-react';
-import { cn } from '@/shared/utils';
-import './ThemeCard.css';
+import type { ReactNode } from 'react';
 
 interface ThemeCardProps {
     theme: 'light' | 'dark';
     label: string;
-    icon: React.ReactNode;
+    icon: ReactNode;
     previewClassName: string;
     isSelected: boolean;
     onClick: () => void;
-}
+};
 
-const ThemeCard: React.FC<ThemeCardProps> = ({
+const ThemeCard = ({
+    theme: _theme,
     label,
     icon,
     previewClassName,
     isSelected,
     onClick
-}) => {
+}: ThemeCardProps) => {
     const cardClasses = cn(
         'theme-card',
         'transition-normal',

@@ -1,16 +1,16 @@
-import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { DeleteContainerInputDTO, DeleteContainerOutputDTO } from '@modules/container/application/dtos/DeleteContainerDTO';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { ContainerOwnershipService } from '@modules/container/services/ContainerOwnershipService';
+import ContainerDeletedEvent from '@modules/container/domain/events/ContainerDeletedEvent';
 import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { IContainerService } from '@modules/container/domain/port/IContainerService';
 import { IDockerNetworkRepository } from '@modules/container/domain/port/IDockerNetworkRepository';
 import { IDockerVolumeRepository } from '@modules/container/domain/port/IDockerVolumeRepository';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
-import ContainerDeletedEvent from '@modules/container/domain/events/ContainerDeletedEvent';
-import { ContainerOwnershipService } from '@modules/container/application/services/ContainerOwnershipService';
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class DeleteContainerUseCase implements IUseCase<DeleteContainerInputDTO, DeleteContainerOutputDTO> {
@@ -21,7 +21,7 @@ export class DeleteContainerUseCase implements IUseCase<DeleteContainerInputDTO,
         @inject(CONTAINER_TOKENS.DockerVolumeRepository) private volumeRepository: IDockerVolumeRepository,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus,
         @inject(ContainerOwnershipService) private ownershipService: ContainerOwnershipService
-    ){}
+    ) {}
 
     async execute(input: DeleteContainerInputDTO): Promise<Result<DeleteContainerOutputDTO>> {
         const container = await this.ownershipService.getOwnedByTeam(input.containerId, input.teamId);
@@ -53,4 +53,4 @@ export class DeleteContainerUseCase implements IUseCase<DeleteContainerInputDTO,
 
         return Result.ok({ message: 'Container deleted successfully' });
     }
-}
+};

@@ -2,16 +2,18 @@ export interface PopulatePath {
     path: string;
     select?: string[];
     populate?: PopulatePath | PopulatePath[];
-}
+};
 
 export interface FindOptions<T> {
-    filter?: Partial<T>;
+    filter?: RepositoryFilter<T>;
     populate?: string | string[] | PopulatePath | PopulatePath[];
     select?: string[];
     sort?: Record<string, 1 | -1>;
     limit?: number;
     skip?: number;
 };
+
+export type RepositoryFilter<T> = Partial<T> | Record<string, unknown>;
 
 export interface PaginatedResult<T> {
     data: T[];
@@ -27,7 +29,14 @@ export interface PaginationOptions {
     limit?: number;
 };
 
-export type ExportType = 'json' | 'csv';
+export enum ExportType {
+    Json = 'json',
+    Csv = 'csv'
+};
+
+export interface EntityIdFilter {
+    _id: string;
+};
 
 export interface IBaseRepository<T, TProps> {
     /**
@@ -42,7 +51,7 @@ export interface IBaseRepository<T, TProps> {
      * Find a single entity matching the filter.
      */
     findOne(
-        filter: Partial<TProps>,
+        filter: RepositoryFilter<TProps>,
         options?: Pick<FindOptions<TProps>, 'populate' | 'select'>
     ): Promise<T | null>;
 
@@ -74,7 +83,7 @@ export interface IBaseRepository<T, TProps> {
      * Update first entity matching the filter.
      */
     updateMany(
-        filter: Partial<TProps>,
+        filter: RepositoryFilter<TProps>,
         data: Partial<TProps>
     ): Promise<number>;
 
@@ -88,12 +97,12 @@ export interface IBaseRepository<T, TProps> {
     /**
      * Delete all entities matching filter.
      */
-    deleteMany(filter: Partial<TProps>): Promise<number>;
+    deleteMany(filter: RepositoryFilter<TProps>): Promise<number>;
 
     /**
      * Count entities matching fiter.
      */
-    count(filter?: Partial<TProps>): Promise<number>;
+    count(filter?: RepositoryFilter<TProps>): Promise<number>;
 
     countGroupedBy(
         field: string,
@@ -103,5 +112,5 @@ export interface IBaseRepository<T, TProps> {
     /**
      * Check if any entity matches the filter.
      */
-    exists(filter: Partial<TProps> | { _id: string }): Promise<boolean>;
+    exists(filter: RepositoryFilter<TProps> | EntityIdFilter): Promise<boolean>;
 };

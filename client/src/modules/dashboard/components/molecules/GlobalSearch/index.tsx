@@ -1,35 +1,59 @@
-import React from 'react';
-import { TbObjectScan, TbCube3dSphere } from 'react-icons/tb';
-import { IoCubeOutline, IoPeopleOutline } from 'react-icons/io5';
+import './GlobalSearch.css';
+import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
+import useDashboardGlobalSearch from '@/modules/dashboard/hooks/use-dashboard-global-search';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import EmptyState from '@/shared/presentation/components/EmptyState';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import SearchInput from '@/shared/presentation/components/SearchInput';
+import { FloatingPortal } from '@floating-ui/react';
 import { CiChat1 } from 'react-icons/ci';
 import { GoWorkflow } from 'react-icons/go';
-import { FloatingPortal } from '@floating-ui/react';
-import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
+import { IoCubeOutline, IoPeopleOutline } from 'react-icons/io5';
+import { TbCube3dSphere, TbObjectScan } from 'react-icons/tb';
 import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/dtos/global-search';
-import useDashboardGlobalSearch from '@/modules/dashboard/hooks/use-dashboard-global-search';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import SearchInput from '@/shared/presentation/components/SearchInput';
-import Button from '@/shared/presentation/components/Button';
-import './GlobalSearch.css';
+import type { ReactNode } from 'react';
 
 type SectionConfig = {
     key: GlobalSearchSectionKey;
-    icon: React.ReactNode;
+    icon: ReactNode;
     title: string;
 };
 
 const SECTIONS: SectionConfig[] = [
-    { key: 'analyses', icon: <GoWorkflow />, title: 'Analyses' },
-    { key: 'trajectories', icon: <TbObjectScan />, title: 'Trajectories' },
-    { key: 'containers', icon: <IoCubeOutline />, title: 'Containers' },
-    { key: 'plugins', icon: <TbCube3dSphere />, title: 'Plugins' },
-    { key: 'teams', icon: <IoPeopleOutline />, title: 'Teams' },
-    { key: 'chats', icon: <CiChat1 />, title: 'Chats' }
+    {
+        key: 'analyses',
+        icon: <GoWorkflow />,
+        title: 'Analyses'
+    },
+    {
+        key: 'trajectories',
+        icon: <TbObjectScan />,
+        title: 'Trajectories'
+    },
+    {
+        key: 'containers',
+        icon: <IoCubeOutline />,
+        title: 'Containers'
+    },
+    {
+        key: 'plugins',
+        icon: <TbCube3dSphere />,
+        title: 'Plugins'
+    },
+    {
+        key: 'teams',
+        icon: <IoPeopleOutline />,
+        title: 'Teams'
+    },
+    {
+        key: 'chats',
+        icon: <CiChat1 />,
+        title: 'Chats'
+    }
 ];
 
-const GlobalSearch: React.FC = () => {
+const GlobalSearch = () => {
     const {
         refs,
         floatingStyles,

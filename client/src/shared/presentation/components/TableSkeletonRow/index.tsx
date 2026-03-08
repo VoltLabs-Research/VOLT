@@ -1,20 +1,20 @@
-import { Skeleton } from '@mui/material';
 import Container from '@/shared/presentation/components/Container';
+import { Skeleton } from '@mui/material';
 import type { ColumnConfig } from '../DocumentListingTable';
 
-interface TableSkeletonRowProps {
-    columns: ColumnConfig[];
+interface TableSkeletonRowProps<TRow = unknown> {
+    columns: ColumnConfig<TRow>[];
     columnWidths?: number[];
     useFlexDistribution?: boolean;
     columnGap?: number;
 };
 
-const TableSkeletonRow: React.FC<TableSkeletonRowProps> = ({ 
+const TableSkeletonRow = <TRow,>({ 
     columns, 
     columnWidths, 
     useFlexDistribution = false,
     columnGap = 16
-}) => {
+}: TableSkeletonRowProps<TRow>) => {
     return (
         <Container
             className='document-listing-table-row-container skeleton-row d-flex f-shrink-0'

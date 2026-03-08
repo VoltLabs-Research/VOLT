@@ -1,16 +1,18 @@
+import type { ReactNode } from 'react';
 import { useState, useMemo } from 'react';
 import { IoPersonAddOutline, IoPeopleOutline } from 'react-icons/io5';
-import type { Chat } from '@/modules/chat/api/entities/chat';
-import type { User } from '@/modules/auth/api/entities/user';
-import { ChatListItem, TeamMemberList } from '../../molecules';
-import { ChatListSkeleton } from '../../atoms';
+import EmptyState from '@/shared/presentation/components/EmptyState';
+import ChatListSkeleton from '../../atoms/ChatListSkeleton';
+import ChatListItem from '../../molecules/ChatListItem';
+import TeamMemberList from '../../molecules/TeamMemberList';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import IconButton from '@/shared/presentation/components/IconButton';
-import Tooltip from '@/shared/presentation/components/Tooltip';
-import EmptyState from '@/shared/presentation/components/EmptyState';
 import SearchInput from '@/shared/presentation/components/SearchInput';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import { matchesQuery } from '@/shared/utils/matches-query';
+import type { User } from '@/modules/auth/api/entities/user';
+import type { Chat } from '@/modules/chat/api/entities/chat';
 import './ChatSidebar.css';
 
 interface ChatSidebarProps {
@@ -34,6 +36,7 @@ const ChatSidebar = ({
 }: ChatSidebarProps) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showTeamMembers, setShowTeamMembers] = useState(false);
+    let chatListContent: ReactNode;
 
     const filteredChats = useMemo(() => {
         return chats.filter((chat) => {
@@ -52,9 +55,29 @@ const ChatSidebar = ({
         setShowTeamMembers(false);
     };
 
+    if (isLoading) {
+        chatListContent = <ChatListSkeleton count={5} />;
+    } else if (filteredChats.length === 0) {
+        chatListContent = (
+            <EmptyState
+                title='No conversations'
+                description={searchQuery ? 'No matches found' : 'Start a chat with a team member!'}
+            />
+        );
+    } else {
+        chatListContent = filteredChats.map((chat) => (
+            <ChatListItem
+                key={chat._id}
+                chat={chat}
+                currentUserId={currentUserId}
+                isActive={chat._id === currentChatId}
+                onClick={() => onSelectChat(chat._id)}
+            />
+        ));
+    }
+
     return (
         <Container className='d-flex column h-max chat-sidebar'>
-            {/* Header */}
             <Container className='d-flex column gap-075 chat-sidebar-header'>
                 <Container className='d-flex items-center content-between'>
                     <Paragraph className='font-size-5 font-weight-6 color-primary'>Messages</Paragraph>
@@ -81,7 +104,6 @@ const ChatSidebar = ({
                     </Container>
                 </Container>
 
-                {/* Search */}
                 <SearchInput
                     placeholder='Search conversations...'
                     value={searchQuery}
@@ -89,7 +111,6 @@ const ChatSidebar = ({
                 />
             </Container>
 
-            {/* Team Members Section */}
             {showTeamMembers && (
                 <Container className='d-flex column p-1'>
                     <Paragraph className='font-size-2 font-weight-6 color-secondary chat-sidebar-section-title'>
@@ -104,26 +125,8 @@ const ChatSidebar = ({
                 </Container>
             )}
 
-            {/* Chat List */}
             <Container className='d-flex column flex-1 y-auto chat-sidebar-list'>
-                {isLoading ? (
-                    <ChatListSkeleton count={5} />
-                ) : filteredChats.length === 0 ? (
-                    <EmptyState
-                        title='No conversations'
-                        description={searchQuery ? 'No matches found' : 'Start a chat with a team member!'}
-                    />
-                ) : (
-                    filteredChats.map((chat) => (
-                        <ChatListItem
-                            key={chat._id}
-                            chat={chat}
-                            currentUserId={currentUserId}
-                            isActive={chat._id === currentChatId}
-                            onClick={() => onSelectChat(chat._id)}
-                        />
-                    ))
-                )}
+                {chatListContent}
             </Container>
         </Container>
     );

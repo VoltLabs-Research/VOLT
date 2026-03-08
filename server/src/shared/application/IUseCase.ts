@@ -1,6 +1,6 @@
 import type { Result } from '@shared/domain/port/Result';
 
-export interface IUseCase<TInput, TOutput, TError = Error>{
+export interface IUseCase<TInput, TOutput, TError = Error> {
     execute(input: TInput): Promise<Result<TOutput, TError>>;
 };
 

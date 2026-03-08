@@ -1,13 +1,14 @@
-import type { ComponentType } from 'react';
 import { Clock, Play, Check } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
+
+import type { ComponentType } from 'react';
 
 interface StatusCountsProps {
     queued: number;
     running: number;
     completed: number;
-}
+};
 
 const ICON_STYLE = { width: 10, height: 10 };
 

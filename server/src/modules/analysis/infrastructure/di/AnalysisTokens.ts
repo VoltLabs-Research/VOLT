@@ -1,1 +1,4 @@
-export { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
+export const ANALYSIS_TOKENS = Object.freeze({
+    AnalysisRepository: Symbol.for('AnalysisRepository'),
+    AnalysisTeamJobsQueryService: Symbol.for('AnalysisTeamJobsQueryService')
+});

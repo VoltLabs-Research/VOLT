@@ -1,11 +1,11 @@
-import { container } from 'tsyringe';
 import CreateSecretKeyController from './CreateSecretKeyController';
-import GetCurrentSecretKeyController from './GetCurrentSecretKeyController';
-import ListSecretKeysByTeamIdController from './ListSecretKeysByTeamIdController';
-import RevokeSecretKeyByIdController from './RevokeSecretKeyByIdController';
 import DeleteSecretKeyByIdController from './DeleteSecretKeyByIdController';
+import GetCurrentSecretKeyController from './GetCurrentSecretKeyController';
 import GetSecretKeyTeamMetricsController from './GetSecretKeyTeamMetricsController';
 import GetSecretKeyUsageController from './GetSecretKeyUsageController';
+import ListSecretKeysByTeamIdController from './ListSecretKeysByTeamIdController';
+import RevokeSecretKeyByIdController from './RevokeSecretKeyByIdController';
+import { container } from 'tsyringe';
 
 export default {
     create: container.resolve(CreateSecretKeyController),

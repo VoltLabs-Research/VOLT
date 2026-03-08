@@ -1,6 +1,6 @@
+import ApiError from '@/shared/errors/ApiError';
 import { sileo } from 'sileo';
 import type { SileoOptions, SileoPosition } from 'sileo';
-import ApiError from '@/shared/errors/ApiError';
 
 /**
  * SileoPromiseOptions is declared in sileo's types but not included
@@ -12,13 +12,13 @@ interface SileoPromiseOptions<T = unknown> {
     error: SileoOptions | ((err: unknown) => SileoOptions);
     action?: SileoOptions | ((data: T) => SileoOptions);
     position?: SileoPosition;
-}
+};
 
 interface ToastPromiseOptions<T = unknown> {
     loading: SileoOptions;
     success: SileoOptions | ((data: T) => SileoOptions);
     error: SileoOptions;
-}
+};
 
 const DEFAULT_ERROR_DESCRIPTION = 'Please try again later.';
 

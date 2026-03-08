@@ -1,14 +1,14 @@
+import { LeaveGroupInputDTO } from '@modules/chat/application/dtos/chat/LeaveGroupDTO';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { resolveGroupChat } from '@modules/chat/application/services/chat/resolveGroupChat';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
-import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { LeaveGroupInputDTO } from '@modules/chat/application/dtos/chat/LeaveGroupDTO';
-import { resolveGroupChat } from '@modules/chat/application/helpers/resolveGroupChat';
-import { ErrorCodes } from '@core/constants/error-codes';
+import { inject, injectable } from 'tsyringe';
+import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
+import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 
 @injectable()
 export class LeaveGroupUseCase implements IUseCase<LeaveGroupInputDTO, null, ApplicationError> {

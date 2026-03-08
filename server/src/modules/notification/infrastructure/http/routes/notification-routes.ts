@@ -1,9 +1,9 @@
-import { Router } from 'express';
+import { notificationValidation } from '@modules/notification/infrastructure/http/validation/notification-schemas';
+import controllers from '@modules/notification/infrastructure/http/controllers';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import { createGeneralRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
-import controllers from '@modules/notification/infrastructure/http/controllers';
-import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
-import { notificationValidation } from '@modules/notification/infrastructure/http/validation/notification-schemas';
+import { Router } from 'express';
+import type { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {

@@ -1,5 +1,5 @@
-import { X } from 'lucide-react';
 import Button from '@/shared/presentation/components/Button';
+import { X } from 'lucide-react';
 
 interface CloseButtonProps {
     onClick?: () => void;

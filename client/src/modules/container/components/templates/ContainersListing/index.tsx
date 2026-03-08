@@ -1,19 +1,25 @@
+import ContainerTerminal from '../../organisms/ContainerTerminal';
+import { ContainerAction } from '../../../api/dtos/update-container';
+import { containerQuery } from '../../../hooks/queries';
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play, Square, Box, RotateCcw } from 'lucide-react';
 import { RiTerminalLine } from 'react-icons/ri';
 import { formatDistanceToNow } from 'date-fns';
-import { containerQuery } from '../../../hooks/queries';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
-import DocumentListing, { type ColumnConfig, type SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-import ContainerTerminal from '../../organisms/ContainerTerminal';
+import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
+
+const isContainerEntity = (value: unknown): value is ContainerEntity => {
+    return typeof value === 'object' && value !== null && 'containerId' in value && 'name' in value;
+};
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'container.created', queryKeys: [containerQuery.QUERY_KEYS.lists()] },
@@ -38,15 +44,18 @@ const COLUMNS: ColumnConfig[] = [
         title: 'Name',
         sortable: true,
         render: (value, row) => {
-            const container = row as ContainerEntity;
+            if (!isContainerEntity(row)) {
+                return null;
+            }
+
             return (
                 <Container className='d-flex items-center gap-075'>
                     <Container className='d-flex flex-center color-primary'>
                         <Box size={16} />
                     </Container>
                     <Container className='d-flex column gap-025 overflow-hidden'>
-                        <span className='font-weight-6 color-primary'>{value as string}</span>
-                        <span className='font-size-1 color-muted'>{container.containerId.substring(0, 12)}</span>
+                        <span className='font-weight-6 color-primary'>{String(value)}</span>
+                        <span className='font-size-1 color-muted'>{row.containerId.substring(0, 12)}</span>
                     </Container>
                 </Container>
             );
@@ -61,26 +70,34 @@ const COLUMNS: ColumnConfig[] = [
             const statusLower = String(value).toLowerCase();
             return <StatusBadge status={STATUS_MAP[statusLower]} />;
         },
-        skeleton: { variant: 'rounded', width: 80, height: 24 }
+        skeleton: {
+            variant: 'rounded',
+            width: 80,
+            height: 24
+        }
     },
     {
         key: 'image',
         title: 'Image',
         sortable: true,
-        render: (value) => <span className='font-size-2 color-secondary'>{value as string}</span>,
+        render: (value) => <span className='font-size-2 color-secondary'>{String(value)}</span>,
         skeleton: { variant: 'text', width: 150 }
     },
     {
         key: 'internalIp',
         title: 'Internal IP',
-        render: (value) => <span className='font-size-2 color-secondary font-family-mono'>{value as string}</span>,
+        render: (value) => <span className='font-size-2 color-secondary font-family-mono'>{String(value)}</span>,
         skeleton: { variant: 'text', width: 120 }
     },
     {
         key: 'ports',
         title: 'Ports',
         render: (_, row) => {
-            const port = (row as ContainerEntity).ports?.[0];
+            if (!isContainerEntity(row)) {
+                return null;
+            }
+
+            const port = row.ports?.[0];
             if(!port){
                 return <span className='font-size-2 color-muted'>No ports</span>;
             }
@@ -96,11 +113,15 @@ const COLUMNS: ColumnConfig[] = [
         key: 'createdAt',
         title: 'Created',
         sortable: true,
-        render: (value) => (
-            <span className='font-size-2 color-muted' title={new Date(value as string).toLocaleString()}>
-                {formatDistanceToNow(new Date(value as string), { addSuffix: true })}
-            </span>
-        ),
+        render: (value) => {
+            const createdAt = String(value);
+
+            return (
+                <span className='font-size-2 color-muted' title={new Date(createdAt).toLocaleString()}>
+                    {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
+                </span>
+            );
+        },
         skeleton: { variant: 'text', width: 90 }
     }
 ];
@@ -121,7 +142,7 @@ const ContainersListing = () => {
         });
     }, []);
 
-    const controlContainer = useCallback(async (containerId: string, action: 'start' | 'stop' | 'restart') => {
+    const controlContainer = useCallback(async (containerId: string, action: ContainerAction) => {
         await updateContainerMutation.mutateAsync({ id: containerId, params: { action } });
     }, [updateContainerMutation]);
 
@@ -154,7 +175,7 @@ const ContainersListing = () => {
                 handler: async ({ item: container }) => {
                     if(container.status === 'running') return;
                     await showPromise(
-                        controlContainer(container._id, 'start'),
+                        controlContainer(container._id, ContainerAction.Start),
                         {
                             loading: { title: 'Starting container...' },
                             success: { title: 'Container started successfully' },
@@ -170,7 +191,7 @@ const ContainersListing = () => {
                 handler: async ({ item: container }) => {
                     if(container.status !== 'running') return;
                     await showPromise(
-                        controlContainer(container._id, 'stop'),
+                        controlContainer(container._id, ContainerAction.Stop),
                         {
                             loading: { title: 'Stopping container...' },
                             success: { title: 'Container stopped successfully' },
@@ -185,7 +206,7 @@ const ContainersListing = () => {
                 icon: () => <RotateCcw size={16} />,
                 handler: async ({ item: container }) => {
                     await showPromise(
-                        controlContainer(container._id, 'restart'),
+                        controlContainer(container._id, ContainerAction.Restart),
                         {
                             loading: { title: 'Restarting container...' },
                             success: { title: 'Container restarted successfully' },
@@ -207,15 +228,26 @@ const ContainersListing = () => {
                         }
                     );
                 },
-                confirm: ({ selectedItems }) => (
-                    selectedItems.length === 1
-                        ? `Delete container "${selectedItems[0].name}"? This action cannot be undone.`
-                        : `Delete ${selectedItems.length} containers? This action cannot be undone.`
-                ),
+                confirm: ({ selectedItems }) => {
+                    let message = `Delete ${selectedItems.length} containers? This action cannot be undone.`;
+                    if (selectedItems.length === 1) {
+                        message = `Delete container "${selectedItems[0].name}"? This action cannot be undone.`;
+                    }
+
+                    return message;
+                },
                 requiredPermission: 'container:delete'
             }
         }
     });
+
+    let createNew;
+    if (canCreate) {
+        createNew = {
+            buttonTitle: 'New Container',
+            onCreate: () => navigate('/dashboard/containers/new')
+        };
+    }
 
     const getDynamicMenuOptions = useCallback((item: ContainerEntity, selectedContainers: ContainerEntity[]) => {
         const options = getMenuOptions(item, selectedContainers);
@@ -229,17 +261,14 @@ const ContainersListing = () => {
 
     return (
         <>
-                <DocumentListing<ContainerEntity>
-                    title='Containers'
-                    queryKey={containerQuery.QUERY_KEYS.lists()}
-                    columns={COLUMNS}
+            <DocumentListing<ContainerEntity>
+                title='Containers'
+                queryKey={containerQuery.QUERY_KEYS.lists()}
+                columns={COLUMNS}
                 fetchData={fetchData}
                 getMenuOptions={getDynamicMenuOptions}
                 emptyMessage='No containers found. Create one to get started.'
-                createNew={canCreate ? {
-                    buttonTitle: 'New Container',
-                    onCreate: () => navigate('/dashboard/containers/new')
-                } : undefined}
+                createNew={createNew}
                 socketInvalidation={SOCKET_INVALIDATION}
             />
 

@@ -2,9 +2,8 @@ import os from 'os';
 import { inject, injectable } from 'tsyringe';
 import type { IMetricsService } from '@modules/system/domain/port/IMetricsService';
 import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
-import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
+import type { SystemMetrics, SystemStatus } from '@modules/system/domain/value-objects/SystemMetrics';
 import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
-import type { ServerStatus } from './metricsTypes';
 import CpuMetricsCollector from './CpuMetricsCollector';
 import MemoryMetricsCollector from './MemoryMetricsCollector';
 import DiskMetricsCollector from './DiskMetricsCollector';
@@ -34,7 +33,7 @@ export default class MetricsCollector implements IMetricsService {
         private readonly clusterAggregator: ClusterMetricsAggregator
     ) {}
 
-    private determineStatus(cpuUsage: number, memoryUsage: number, diskUsage: number): ServerStatus {
+    private determineStatus(cpuUsage: number, memoryUsage: number, diskUsage: number): SystemStatus {
         if (cpuUsage >= 90 || memoryUsage >= 90 || diskUsage >= 90) return 'Critical';
         if (cpuUsage >= 75 || memoryUsage >= 75 || diskUsage >= 85) return 'Warning';
         return 'Healthy';

@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+export interface SignInForm {
+    email: string;
+    fullName: string;
+    password: string;
+    passwordConfirm: string;
+};
+
 export const signInSchema = z.object({
     email: z
         .string()
@@ -18,5 +25,3 @@ export const signInSchema = z.object({
     message: 'Passwords do not match',
     path: ['passwordConfirm']
 });
-
-export type SignInForm = z.infer<typeof signInSchema>;

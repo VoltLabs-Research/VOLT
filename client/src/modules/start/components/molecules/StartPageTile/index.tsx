@@ -1,12 +1,13 @@
-import type { AccessedPage } from '../../../stores/use-start-accessed-pages-store';
-import { X } from 'lucide-react';
 import { useStartPageTile } from '../../../hooks/use-start-page-tile';
+import './StartPageTile.css';
+import { X } from 'lucide-react';
+import type { AccessedPage } from '../../../stores/use-start-accessed-pages-store';
 
 interface StartPageTileProps {
     page: AccessedPage;
-}
+};
 
-const StartPageTile = ({ page }: StartPageTileProps) => {
+export default function StartPageTile({ page }: StartPageTileProps) {
     const {
         tileRef,
         iframeScale,
@@ -60,6 +61,4 @@ const StartPageTile = ({ page }: StartPageTileProps) => {
             </button>
         </div>
     );
-};
-
-export default StartPageTile;
+}

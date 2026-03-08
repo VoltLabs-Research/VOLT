@@ -1,8 +1,9 @@
+import { ChatMessageType } from '@/modules/chat/api/entities/message';
 import { formatDistanceToNow } from 'date-fns';
-import type { ChatMessage } from '@/modules/chat/api/entities/chat-message';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import FileAttachment from '@/shared/presentation/components/FileAttachment';
+import type { ChatMessage } from '@/modules/chat/api/entities/message';
 import './SharedFilesList.css';
 
 interface SharedFilesListProps {
@@ -11,7 +12,7 @@ interface SharedFilesListProps {
 
 const SharedFilesList = ({ messages }: SharedFilesListProps) => {
     const fileMessages = messages.filter(
-        (m) => m.messageType === 'file' && m.metadata && !m.deleted
+        (message) => message.messageType === ChatMessageType.File && message.metadata && !message.deleted
     );
 
     if (fileMessages.length === 0) {

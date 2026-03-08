@@ -1,29 +1,32 @@
-import { inject } from 'tsyringe';
-import { ConnectionOptions, Job as BullJob, JobProgress } from 'bullmq';
-import IORedis from 'ioredis';
-import os from 'node:os';
-import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
-import JobSession from '@modules/jobs/domain/entities/JobSession';
-import { IJobQueueService, QueueOptions } from '@modules/jobs/domain/port/IJobQueueService';
-import { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
+import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
-import ProcessingQueueEventPublisher from '@modules/jobs/infrastructure/services/ProcessingQueueEventPublisher';
-import ProcessingQueueJobFactory from '@modules/jobs/infrastructure/services/ProcessingQueueJobFactory';
-import ProcessingQueueRuntime, { QueueBulkJob } from '@modules/jobs/infrastructure/services/ProcessingQueueRuntime';
-import ProcessingQueueSessionCompletionService from '@modules/jobs/infrastructure/services/ProcessingQueueSessionCompletionService';
-import ProcessingQueueSessionStore from '@modules/jobs/infrastructure/services/ProcessingQueueSessionStore';
-import ProcessingQueueStatusProjectionService from '@modules/jobs/infrastructure/services/ProcessingQueueStatusProjectionService';
-import { QueueJobData, hasJobProps, JOB_STATUS_KEY_PREFIX } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
+import { JOB_STATUS_KEY_PREFIX, hasJobProps } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { IEventBus } from '@shared/application/events/IEventBus';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import {
     WorkerFailureError,
     getWorkerFailureErrorMessage,
     normalizeWorkerFailureEnvelope
 } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+import Job from '@modules/jobs/domain/entities/Job';
+import JobSession from '@modules/jobs/domain/entities/JobSession';
+import ProcessingQueueEventPublisher from '@modules/jobs/infrastructure/services/ProcessingQueueEventPublisher';
+import ProcessingQueueJobFactory from '@modules/jobs/infrastructure/services/ProcessingQueueJobFactory';
+import ProcessingQueueRuntime from '@modules/jobs/infrastructure/services/ProcessingQueueRuntime';
+import ProcessingQueueSessionCompletionService from '@modules/jobs/infrastructure/services/ProcessingQueueSessionCompletionService';
+import ProcessingQueueSessionStore from '@modules/jobs/infrastructure/services/ProcessingQueueSessionStore';
+import ProcessingQueueStatusProjectionService from '@modules/jobs/infrastructure/services/ProcessingQueueStatusProjectionService';
+import { inject } from 'tsyringe';
+import IORedis from 'ioredis';
+import os from 'node:os';
+import logger from '@shared/infrastructure/logger';
+import type { IJobQueueService, QueueOptions } from '@modules/jobs/domain/port/IJobQueueService';
+import type { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
+import type { QueueBulkJob } from '@modules/jobs/infrastructure/services/ProcessingQueueRuntime';
+import type { QueueJobData } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
+import type { IEventBus } from '@shared/application/events/IEventBus';
+import type { ConnectionOptions, Job as BullJob, JobProgress } from 'bullmq';
 
 export default abstract class BaseProcessingQueue<T extends Job = Job> implements IJobQueueService {
     protected readonly queueName: string;
@@ -88,10 +91,10 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
                 connection: this.connection
             },
             {
-                onActive: (bullJob) => this.onJobActive(bullJob),
-                onProgress: (bullJob, progress) => this.onJobProgress(bullJob, progress),
-                onCompleted: (bullJob) => this.onJobCompleted(bullJob),
-                onFailed: (bullJob, error) => this.onJobFailed(bullJob, error)
+                onActive: this.onJobActive.bind(this),
+                onProgress: this.onJobProgress.bind(this),
+                onCompleted: this.onJobCompleted.bind(this),
+                onFailed: this.onJobFailed.bind(this)
             }
         );
     }
@@ -113,8 +116,12 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
     }
 
     public async addJobs(jobs: T[]): Promise<void> {
+        await this.addJobsWithSession(jobs);
+    }
+
+    protected async addJobsWithSession(jobs: T[]): Promise<{ sessionId: string }> {
         if (jobs.length === 0) {
-            return;
+            return { sessionId: JobSession.generateSessionId() };
         }
 
         const sessionId = JobSession.generateSessionId();
@@ -124,6 +131,8 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
 
         await this.sessionStore.persistSession(sessionData);
         await this.enqueueJobs(jobsWithSession, sessionId);
+
+        return { sessionId };
     }
 
     public async retryFailedJobs(jobs: T[]): Promise<number> {
@@ -231,7 +240,7 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
 
         const bullJobs: QueueBulkJob[] = jobs.map((job) => ({
             name: this.queueName,
-            data: job.props as unknown as QueueJobData,
+            data: job.props,
             opts: {
                 jobId: job.props.jobId
             }
@@ -241,7 +250,7 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
         await this.runtime.addBulk(bullJobs);
 
         await Promise.all(jobs.map((job) =>
-            this.updateJobStatus(job.props.jobId, JobStatus.Queued, job.props as unknown as QueueJobData)
+            this.updateJobStatus(job.props.jobId, JobStatus.Queued, job.props)
         ));
 
         await this.eventPublisher.publishJobsAdded(firstJob, sessionId, jobs.length);
@@ -264,12 +273,24 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
 
     private async onJobProgress(bullJob: BullJob, progress: JobProgress): Promise<void> {
         const jobData = this.asQueueJobData(bullJob.data);
-        const progressValue = typeof progress === 'number'
-            ? progress
-            : Number((isRecord(progress) ? progress.progress : 0) || 0);
-        const progressMessage = isRecord(progress) && typeof progress.message === 'string'
-            ? progress.message
-            : undefined;
+        let progressValue = 0;
+        if (typeof progress === 'number') {
+            progressValue = progress;
+        } else {
+            let progressSource: number | string = 0;
+            if (isRecord(progress)) {
+                if (typeof progress.progress === 'number' || typeof progress.progress === 'string') {
+                    progressSource = progress.progress;
+                }
+            }
+
+            progressValue = Number(progressSource || 0);
+        }
+
+        let progressMessage: string | undefined;
+        if (isRecord(progress) && typeof progress.message === 'string') {
+            progressMessage = progress.message;
+        }
 
         await this.updateJobStatus(String(jobData.jobId), JobStatus.Running, {
             ...jobData,
@@ -337,6 +358,11 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
     }
 
     private asQueueJobData(value: unknown): QueueJobData {
-        return isRecord(value) ? value : {};
+        let jobData: QueueJobData = {};
+        if (isRecord(value)) {
+            jobData = value;
+        }
+
+        return jobData;
     }
-}
+};

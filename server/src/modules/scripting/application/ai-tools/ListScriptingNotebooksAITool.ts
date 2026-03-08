@@ -1,8 +1,8 @@
-import { injectable, inject } from 'tsyringe';
-import { z } from 'zod';
 import { AITool } from '@shared/application/ai/AITool';
-import type { AIToolScope } from '@modules/ai/application/services/AIToolService';
 import { ListScriptingNotebooksUseCase } from '@modules/scripting/application/use-cases/ListScriptingNotebooksUseCase';
+import { inject, injectable } from 'tsyringe';
+import { z } from 'zod';
+import type { AIToolScope } from '@modules/ai/services/AIToolService';
 
 @injectable()
 export class ListScriptingNotebooksAITool extends AITool {
@@ -23,16 +23,26 @@ export class ListScriptingNotebooksAITool extends AITool {
             page: 1,
             limit: 100
         });
+
         if (!result.success) throw result.error;
+
         return {
             summary: `Found ${result.value.data.length} notebooks.`,
-            data: result.value.data.map((nb) => ({
-                notebookId: nb._id,
-                title: nb.title,
-                trajectories: Array.isArray(nb.trajectories) ? nb.trajectories.length : 0,
-                lastOpenedAt: nb.lastOpenedAt ?? null,
-                createdAt: nb.createdAt ?? null
-            }))
+            data: result.value.data.map((nb) => {
+                let trajectories = 0;
+
+                if (Array.isArray(nb.trajectories)) {
+                    trajectories = nb.trajectories.length;
+                }
+
+                return {
+                    notebookId: nb._id,
+                    title: nb.title,
+                    trajectories,
+                    lastOpenedAt: nb.lastOpenedAt ?? null,
+                    createdAt: nb.createdAt ?? null
+                };
+            })
         };
     }
-}
+};

@@ -1,22 +1,25 @@
-import { useParams } from 'react-router-dom';
-import { LuFolder, LuFile } from 'react-icons/lu';
-import { formatDistanceToNow } from 'date-fns';
-import useSSHFileExplorer from '@/modules/ssh/hooks/use-ssh-file-explorer';
-import FileExplorer from '@/shared/presentation/components/FileExplorer';
-import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileExplorerRow';
+import { FileEntryType } from '@/modules/ssh/api/entities/ssh-connection';
+import { formatSize } from '@/shared/utils/format';
+import SSHBreadcrumbs from '@/modules/ssh/components/atoms/SSHBreadcrumbs';
 import SSHExplorerHeaderLeft from '@/modules/ssh/components/atoms/SSHExplorerHeaderLeft';
 import SSHExplorerHeaderRight from '@/modules/ssh/components/atoms/SSHExplorerHeaderRight';
-import SSHBreadcrumbs from '@/modules/ssh/components/atoms/SSHBreadcrumbs';
+import useSSHFileExplorer from '@/modules/ssh/hooks/use-ssh-file-explorer';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import { formatSize } from '@/shared/utils/format';
+import FileExplorer from '@/shared/presentation/components/FileExplorer';
+import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileExplorerRow';
+import { formatDistanceToNow } from 'date-fns';
+import { LuFile, LuFolder } from 'react-icons/lu';
+import { useParams } from 'react-router-dom';
 import type { SSHFileEntry } from '@/modules/ssh/api/entities/ssh-connection';
 
 interface SSHFileExplorerPageProps {
     connectionId?: string;
 };
 
+type SSHFileExplorerRouteParams = Record<'connectionId', string>;
+
 const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorerPageProps) => {
-    const params = useParams<{ connectionId: string }>();
+    const params = useParams<SSHFileExplorerRouteParams>();
     const connectionId = propConnectionId || params.connectionId;
 
     const {
@@ -35,7 +38,7 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
         refresh
     } = useSSHFileExplorer({ connectionId });
 
-    if(accessDenied){
+    if (accessDenied) {
         return <AccessDenied description={accessDeniedMessage} />;
     }
 
@@ -44,7 +47,7 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
     };
 
     const handleEntryDoubleClick = (entry: SSHFileEntry) => {
-        if (entry.type === 'dir') {
+        if (entry.type === FileEntryType.Dir) {
             navigateTo(entry.relPath);
         }
     };
@@ -79,9 +82,9 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
             {entries.map((entry) => (
                 <FileExplorerRow
                     key={entry.name}
-                    icon={entry.type === 'dir' ? <LuFolder /> : <LuFile />}
+                    icon={entry.type === FileEntryType.Dir ? <LuFolder /> : <LuFile />}
                     name={entry.name}
-                    type={entry.type === 'dir' ? 'Folder' : 'File'}
+                    type={entry.type === FileEntryType.Dir ? 'Folder' : 'File'}
                     size={entry.size !== undefined ? formatSize(entry.size) : undefined}
                     date={entry.mtime ? formatDistanceToNow(new Date(entry.mtime), { addSuffix: true }) : undefined}
                     isSelected={selectedPath === entry.relPath}

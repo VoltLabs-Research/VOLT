@@ -8,10 +8,10 @@ export interface NotificationCreatedPayload {
     read: boolean;
     link?: string;
     createdAt: Date;
-}
+};
 
 export default class NotificationCreatedEvent extends BaseDomainEvent<NotificationCreatedPayload> {
     constructor(payload: NotificationCreatedPayload) {
         super('notification.created', payload);
     }
-}
+};

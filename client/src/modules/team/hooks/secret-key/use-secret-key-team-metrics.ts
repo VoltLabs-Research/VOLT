@@ -3,7 +3,7 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 
 const POLL_INTERVAL = 60_000;
 
-const useSecretKeyTeamMetrics = (days: number = 30) => {
+export default function useSecretKeyTeamMetrics(days: number = 30) {
     const selectedTeamId = useSelectedTeamId();
 
     const isEnabled = !!selectedTeamId;
@@ -25,6 +25,4 @@ const useSecretKeyTeamMetrics = (days: number = 30) => {
         error: query.error,
         refetch: query.refetch
     };
-};
-
-export default useSecretKeyTeamMetrics;
+}

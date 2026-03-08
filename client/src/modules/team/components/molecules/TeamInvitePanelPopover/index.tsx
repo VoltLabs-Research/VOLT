@@ -1,10 +1,10 @@
-import { GoPersonAdd } from 'react-icons/go';
-import Popover from '@/shared/presentation/components/Popover';
-import IconButton from '@/shared/presentation/components/IconButton';
-import TeamInvitePanel from '@/modules/team/components/organisms/TeamInvitePanel';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
+import IconButton from '@/shared/presentation/components/IconButton';
+import Popover from '@/shared/presentation/components/Popover';
+import { TeamInvitePanel } from '@/modules/team/components/organisms/TeamInvitePanel';
+import { GoPersonAdd } from 'react-icons/go';
 
-const TeamInvitePanelPopover = () => {
+export const TeamInvitePanelPopover = () => {
     const selectedTeam = useSelectedTeam();
     
     return (
@@ -24,5 +24,3 @@ const TeamInvitePanelPopover = () => {
         </Popover>
     );
 };
-
-export default TeamInvitePanelPopover;

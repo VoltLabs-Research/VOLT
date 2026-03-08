@@ -1,18 +1,12 @@
+import type { ReactNode } from 'react';
+import { getOtherParticipant } from '@/modules/chat/utilities/chat/chat-display';
 import { IoPeopleOutline } from 'react-icons/io5';
-import type { Chat } from '@/modules/chat/api/entities/chat';
-import Avatar from '@/shared/presentation/components/Avatar';
 import { cn } from '@/shared/utils';
-import { getOtherParticipant } from '@/modules/chat/utilities';
+import Avatar from '@/shared/presentation/components/Avatar';
+import type { Chat } from '@/modules/chat/api/entities/chat';
 import './ChatAvatar.css';
 
-const GROUP_ICON_SIZES = {
-    xs: 14,
-    sm: 18,
-    md: 24,
-    lg: 32
-} as const;
-
-type AvatarSize = keyof typeof GROUP_ICON_SIZES;
+type AvatarSize = 'xs' | 'sm' | 'md' | 'lg';
 
 interface ChatAvatarProps {
     chat: Chat;
@@ -21,7 +15,14 @@ interface ChatAvatarProps {
     showStatus?: boolean;
     isOnline?: boolean;
     className?: string;
-}
+};
+
+const GROUP_ICON_SIZES: Record<AvatarSize, number> = {
+    xs: 14,
+    sm: 18,
+    md: 24,
+    lg: 32
+};
 
 const ChatAvatar = ({ 
     chat, 
@@ -33,11 +34,16 @@ const ChatAvatar = ({
 }: ChatAvatarProps) => {
     const otherParticipant = getOtherParticipant(chat, currentUserId);
     const iconSize = GROUP_ICON_SIZES[size];
+    let icon: ReactNode;
+
+    if (chat.isGroup) {
+        icon = <IoPeopleOutline size={iconSize} />;
+    }
     
     return (
         <Avatar
             user={chat.isGroup ? undefined : otherParticipant}
-            icon={chat.isGroup ? <IoPeopleOutline size={iconSize} /> : undefined}
+            icon={icon}
             size={size}
             showStatus={showStatus}
             isOnline={isOnline}

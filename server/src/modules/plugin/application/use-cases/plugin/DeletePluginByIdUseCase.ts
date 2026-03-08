@@ -1,15 +1,16 @@
-import { injectable, inject } from 'tsyringe';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { DeletePluginByIdInputDTO } from '@modules/plugin/application/dtos/plugin/DeletePluginByIdDTO';
+import { IPluginBinaryCacheService } from '@modules/plugin/domain/port/plugin/IPluginBinaryCacheService';
+import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
+import PluginDeletedEvent from '@modules/plugin/domain/events/PluginDeletedEvent';
+
+import { ErrorCodes } from '@core/constants/error-codes';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { DeletePluginByIdInputDTO } from '@modules/plugin/application/dtos/plugin/DeletePluginByIdDTO';
-import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
-import { IPluginBinaryCacheService } from '@modules/plugin/domain/port/IPluginBinaryCacheService';
-import { IEventBus } from '@shared/application/events/IEventBus';
+import { injectable, inject } from 'tsyringe';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
-import PluginDeletedEvent from '@modules/plugin/domain/events/PluginDeletedEvent';
 
 @injectable()
 export class DeletePluginByIdUseCase implements IUseCase<DeletePluginByIdInputDTO, null, ApplicationError> {
@@ -46,4 +47,4 @@ export class DeletePluginByIdUseCase implements IUseCase<DeletePluginByIdInputDT
 
         return Result.ok(null);
     }
-}
+};

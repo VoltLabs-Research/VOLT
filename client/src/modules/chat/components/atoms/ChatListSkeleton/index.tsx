@@ -1,5 +1,5 @@
-import Container from '@/shared/presentation/components/Container';
 import './ChatListSkeleton.css';
+import Container from '@/shared/presentation/components/Container';
 
 interface ChatListSkeletonProps {
     count?: number;

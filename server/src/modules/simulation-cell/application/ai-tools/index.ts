@@ -1,1 +1,1 @@
-export * from './ListSimulationCellsAITool';
+export { ListSimulationCellsAITool } from './ListSimulationCellsAITool';

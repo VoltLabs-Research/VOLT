@@ -1,14 +1,13 @@
-import React from 'react';
-import { MessageCircle, UserMinus } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import type { TeamMember } from '@/modules/team/api/entities/member/team-member';
+import Avatar from '@/shared/presentation/components/Avatar';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
-import Avatar from '@/shared/presentation/components/Avatar';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
-import type { TeamMember } from '@/modules/team/api/entities/team-member';
+import { formatDistanceToNow } from 'date-fns';
+import { MessageCircle, UserMinus } from 'lucide-react';
 import './MemberRow.css';
 
 interface MemberRowProps {
@@ -20,14 +19,14 @@ interface MemberRowProps {
     onMessage?: () => void;
 };
 
-const MemberRow: React.FC<MemberRowProps> = ({
+export const MemberRow = ({
     member,
     isCurrentUser,
     isOwner,
     canRemove,
     onRemove,
     onMessage
-}) => {
+}: MemberRowProps) => {
     const handleRemove = () => {
         const memberName = `${member.user.firstName} ${member.user.lastName}`;
         if(!confirm(`Are you sure you want to remove ${memberName} from this team? This action cannot be undone.`)) return;
@@ -101,5 +100,3 @@ const MemberRow: React.FC<MemberRowProps> = ({
         </Popover>
     );
 };
-
-export default MemberRow;

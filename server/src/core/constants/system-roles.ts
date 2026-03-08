@@ -1,5 +1,8 @@
-import { RBACResource, Action } from './permissions';
+import { Action } from './permissions';
 import { Resource } from './resources';
+import type { RBACResource } from './permissions';
+
+const createReadonlyMap = <T extends Record<string, string>>(value: T): Readonly<T> => Object.freeze(value);
 
 const allActionsFor = (resource: RBACResource): string[] =>
     Object.values(Action).map(action => `${resource}:${action}`);
@@ -13,14 +16,14 @@ const crudFor = (resource: RBACResource): string[] => [
     `${resource}:${Action.DELETE}`
 ];
 
-export const SystemRoleNames = {
+export const SystemRoleNames = createReadonlyMap({
     OWNER: 'Owner',
     ADMIN: 'Admin',
     MEMBER: 'Member',
     VIEWER: 'Viewer'
-} as const;
+});
 
-export const SystemRoles = {
+export const SystemRoles = Object.freeze({
     [SystemRoleNames.OWNER]: {
         name: SystemRoleNames.OWNER,
         permissions: ['*'],
@@ -76,4 +79,4 @@ export const SystemRoles = {
         ],
         isSystem: true
     }
-} as const;
+});

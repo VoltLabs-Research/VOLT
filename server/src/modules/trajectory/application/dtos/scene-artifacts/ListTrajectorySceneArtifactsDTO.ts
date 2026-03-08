@@ -1,4 +1,4 @@
-import type { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/SceneArtifact';
+import type { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 
 export interface ListTrajectorySceneArtifactsInputDTO {
     trajectoryId: string;
@@ -8,4 +8,4 @@ export interface ListTrajectorySceneArtifactsInputDTO {
     timestep?: number;
     page?: number;
     limit?: number;
-}
+};

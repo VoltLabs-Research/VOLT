@@ -1,12 +1,24 @@
 import { get, post, del } from '@/app/core/http/utilities/create-service';
-import type { TeamInvitation } from '../../../entities/team-invitation';
-import type { GetInvitationDetailsInputDTO } from '../../../dtos/get-invitation-details';
-import type { GetPendingInvitationsInputDTO } from '../../../dtos/get-pending-invitations';
-import type { SendInvitationInputDTO } from '../../../dtos/send-invitation';
-import type { CancelInvitationInputDTO } from '../../../dtos/cancel-invitation';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { TeamInvitation } from '../../../entities/invitation/team-invitation';
+import type { GetInvitationDetailsInputDTO } from '../../../dtos/invitation/get-invitation-details';
+import type { GetPendingInvitationsInputDTO } from '../../../dtos/invitation/get-pending-invitations';
+import type { SendInvitationInputDTO } from '../../../dtos/invitation/send-invitation';
+import type { CancelInvitationInputDTO } from '../../../dtos/invitation/cancel-invitation';
 
-const endpoints = {
+interface PendingInvitationsPage extends PaginatedResponse<TeamInvitation> {
+    data: TeamInvitation[];
+};
+
+const isPendingInvitationsPage = (value: unknown): value is PendingInvitationsPage => {
+    if (typeof value !== 'object' || value === null || !('data' in value)) {
+        return false;
+    }
+
+    return Array.isArray(value.data);
+};
+
+export default {
     getDetails: get<GetInvitationDetailsInputDTO, TeamInvitation>(
         '/:invitationId', { client: 'invitations' }
     ),
@@ -14,8 +26,11 @@ const endpoints = {
         '/:teamId/invitations?status=pending', {
             client: 'team',
             map: (result) => {
-                const page = result as PaginatedResponse<TeamInvitation>;
-                return page.data;
+                if (!isPendingInvitationsPage(result)) {
+                    throw new Error('Invalid pending invitations response');
+                }
+
+                return result.data;
             }
         }
     ),
@@ -26,5 +41,3 @@ const endpoints = {
         '/:teamId/invitations/:invitationId', { client: 'team' }
     )
 };
-
-export default endpoints;

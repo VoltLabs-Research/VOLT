@@ -1,16 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { IoWarningOutline } from 'react-icons/io5';
-import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import Title from '@/shared/presentation/components/Title';
 import WarningZone from '@/shared/presentation/components/WarningZone';
-import type { TeamRole } from '@/modules/team/api/entities/team-role';
-import type { RBACResource, RBACAction } from '@/modules/system/api/entities/rbac';
+import type { TeamRole } from '@/modules/team/api/entities/role/team-role';
+import type { RBACAction, RBACResource } from '@/modules/system/api/entities/rbac';
+import { IoWarningOutline } from 'react-icons/io5';
+import { Fragment } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import './RoleEditorModal.css';
-
-const MODAL_ID = 'role-editor-modal';
 
 export type { RBACResource, RBACAction };
 
@@ -19,7 +18,7 @@ export interface RoleEditorPayload {
     permissions: string[];
 };
 
-interface RoleEditorModalProps {
+export interface RoleEditorModalProps {
     role?: TeamRole | null;
     resources: RBACResource[];
     actions: RBACAction[];
@@ -27,13 +26,15 @@ interface RoleEditorModalProps {
     isSaving?: boolean;
 };
 
-const RoleEditorModal: React.FC<RoleEditorModalProps> = ({
+const MODAL_ID = 'role-editor-modal';
+
+export const RoleEditorModal = ({
     role,
     resources,
     actions,
     onSave,
     isSaving = false
-}) => {
+}: RoleEditorModalProps) => {
     const [name, setName] = useState('');
     const [permissions, setPermissions] = useState<Set<string>>(new Set());
 
@@ -77,14 +78,14 @@ const RoleEditorModal: React.FC<RoleEditorModalProps> = ({
         if(isSystemRole) return;
 
         const resourcePermissions = actions.map((action) => getPermission(resourceKey, action.key));
-        const allChecked = resourcePermissions.every((permission) => permissions.has(permission));
+        const allChecked = resourcePermissions.every(permissions.has, permissions);
 
         setPermissions((prev) => {
             const next = new Set(prev);
             if(allChecked){
-                resourcePermissions.forEach((permission) => next.delete(permission));
+                resourcePermissions.forEach(next.delete, next);
             }else{
-                resourcePermissions.forEach((permission) => next.add(permission));
+                resourcePermissions.forEach(next.add, next);
             }
             return next;
         });
@@ -162,7 +163,7 @@ const RoleEditorModal: React.FC<RoleEditorModalProps> = ({
                         ))}
 
                         {resources.map(resource => (
-                            <React.Fragment key={resource.key}>
+                            <Fragment key={resource.key}>
                                 <Container
                                     className='role-editor-grid-resource font-size-2 font-weight-5 color-primary'
                                     onClick={() => !isSystemRole && handleToggleResourceAll(resource.key)}
@@ -182,7 +183,7 @@ const RoleEditorModal: React.FC<RoleEditorModalProps> = ({
                                         />
                                     </Container>
                                 ))}
-                            </React.Fragment>
+                            </Fragment>
                         ))}
                     </Container>
                 </Container>
@@ -190,8 +191,6 @@ const RoleEditorModal: React.FC<RoleEditorModalProps> = ({
         </Modal>
     );
 };
-
-export default RoleEditorModal;
 
 export const openRoleEditorModal = () => {
     openModal(MODAL_ID);

@@ -1,9 +1,8 @@
-import React from 'react';
-import { format } from 'date-fns';
+import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import Button from '@/shared/presentation/components/Button';
 import { getInitialsFromEmail, getAvatarColorFromString } from '@/shared/utils/user';
+import { format } from 'date-fns';
 import './InvitationRow.css';
 
 interface InvitationRowProps {
@@ -13,12 +12,12 @@ interface InvitationRowProps {
     isLoading?: boolean;
 };
 
-const InvitationRow: React.FC<InvitationRowProps> = ({
+export const InvitationRow = ({
     email,
     createdAt,
     onCancel,
     isLoading = false
-}) => {
+}: InvitationRowProps) => {
     return (
         <Container className='invitation-row list-item-hoverable radius-sm d-flex items-center content-between gap-075'>
             <Container className='d-flex items-center gap-075 flex-1'>
@@ -49,5 +48,3 @@ const InvitationRow: React.FC<InvitationRowProps> = ({
         </Container>
     );
 };
-
-export default InvitationRow;

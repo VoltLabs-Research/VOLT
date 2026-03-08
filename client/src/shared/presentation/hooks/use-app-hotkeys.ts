@@ -1,9 +1,10 @@
-import { useHotkeys, type Options } from 'react-hotkeys-hook';
+import { useHotkeys } from 'react-hotkeys-hook';
+import type { Options } from 'react-hotkeys-hook';
 
 interface AppHotkeyOptions extends Omit<Options, 'enabled'> {
     enabled?: boolean;
     enableOnFormTags?: boolean;
-}
+};
 
 const useAppHotkeys = <T extends HTMLElement = HTMLElement>(
     keys: string,

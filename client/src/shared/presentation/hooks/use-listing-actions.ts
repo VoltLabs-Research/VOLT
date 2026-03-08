@@ -1,8 +1,8 @@
+import { confirm, confirmDelete } from './use-confirm';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useCallback } from 'react';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import { confirm, confirmDelete } from './use-confirm';
 
 type IconType = React.ComponentType<{ size?: number | string; className?: string }>;
 

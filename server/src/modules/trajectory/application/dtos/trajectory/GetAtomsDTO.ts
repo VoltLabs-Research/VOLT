@@ -5,7 +5,7 @@ export interface GetAtomsInputDTO {
     exposureId?: string;
     page?: number;
     limit?: number;
-}
+};
 
 export interface AtomRecord {
     id: number;
@@ -14,4 +14,4 @@ export interface AtomRecord {
     y: number;
     z: number;
     [property: string]: unknown;
-}
+};

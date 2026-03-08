@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
 import './WireframeBackground.css';
+import { useEffect, useRef } from 'react';
 
 const WireframeBackground = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);

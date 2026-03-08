@@ -1,7 +1,7 @@
-import { LuArrowLeft, LuArrowUp } from 'react-icons/lu';
 import Button from '@/shared/presentation/components/Button';
-import Tooltip from '@/shared/presentation/components/Tooltip';
 import Title from '@/shared/presentation/components/Title';
+import Tooltip from '@/shared/presentation/components/Tooltip';
+import { LuArrowLeft, LuArrowUp } from 'react-icons/lu';
 
 interface SSHExplorerHeaderLeftProps {
     connectionName: string | undefined;

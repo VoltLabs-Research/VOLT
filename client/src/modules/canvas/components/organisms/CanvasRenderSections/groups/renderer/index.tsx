@@ -1,11 +1,14 @@
-import { useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { MdTune } from 'react-icons/md';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import Container from '@/shared/presentation/components/Container';
 import { checkbox, selectField } from '../../../../molecules/CanvasRenderConfigHelpers';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+
+import { useMemo } from 'react';
+import { MdTune } from 'react-icons/md';
+import { useShallow } from 'zustand/react/shallow';
+import Container from '@/shared/presentation/components/Container';
+import { ShadowType, ToneMappingMode } from '@/modules/fractal/stores/contracts/editor/performance-types';
+import { isEnumValue } from '../../utilities';
+
 import type { RenderGroup } from '../../types';
-import type { ToneMappingMode, ShadowType } from '@/modules/fractal/types/stores/editor/performance-types';
 
 const useRendererGroup = (): RenderGroup => {
     const { runtime, setRuntime } = useEditorStore(useShallow((s) => s.rendererSettings));
@@ -16,14 +19,18 @@ const useRendererGroup = (): RenderGroup => {
             rows: [],
             extras: (
                 <Container className="canvas-render-grid">
-                    {selectField('toneMapping', runtime.toneMapping, (v) => setRuntime({ toneMapping: v as ToneMappingMode }), 'Tone Mapping', [
-                        { title: 'None', value: 'None' },
-                        { title: 'Linear', value: 'Linear' },
-                        { title: 'Reinhard', value: 'Reinhard' },
-                        { title: 'Cineon', value: 'Cineon' },
-                        { title: 'ACES Filmic', value: 'ACESFilmic' },
-                        { title: 'AgX', value: 'AgX' },
-                        { title: 'Neutral', value: 'Neutral' }
+                    {selectField('toneMapping', runtime.toneMapping, (value) => {
+                        if (isEnumValue(value, ToneMappingMode)) {
+                            setRuntime({ toneMapping: value });
+                        }
+                    }, 'Tone Mapping', [
+                        { title: 'None', value: ToneMappingMode.None },
+                        { title: 'Linear', value: ToneMappingMode.Linear },
+                        { title: 'Reinhard', value: ToneMappingMode.Reinhard },
+                        { title: 'Cineon', value: ToneMappingMode.Cineon },
+                        { title: 'ACES Filmic', value: ToneMappingMode.ACESFilmic },
+                        { title: 'AgX', value: ToneMappingMode.AgX },
+                        { title: 'Neutral', value: ToneMappingMode.Neutral }
                     ])}
                 </Container>
             )
@@ -35,11 +42,15 @@ const useRendererGroup = (): RenderGroup => {
             extras: (
                 <Container className="canvas-render-grid">
                     {checkbox('shadowEnabled', 'Enable Shadows', runtime.shadowEnabled, (v) => setRuntime({ shadowEnabled: v }))}
-                    {selectField('shadowType', runtime.shadowType, (v) => setRuntime({ shadowType: v as ShadowType }), 'Shadow Type', [
-                        { title: 'Basic', value: 'Basic' },
-                        { title: 'PCF', value: 'PCF' },
-                        { title: 'PCF Soft', value: 'PCFSoft' },
-                        { title: 'VSM', value: 'VSM' }
+                    {selectField('shadowType', runtime.shadowType, (value) => {
+                        if (isEnumValue(value, ShadowType)) {
+                            setRuntime({ shadowType: value });
+                        }
+                    }, 'Shadow Type', [
+                        { title: 'Basic', value: ShadowType.Basic },
+                        { title: 'PCF', value: ShadowType.PCF },
+                        { title: 'PCF Soft', value: ShadowType.PCFSoft },
+                        { title: 'VSM', value: ShadowType.VSM }
                     ])}
                 </Container>
             )

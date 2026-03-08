@@ -1,16 +1,18 @@
-import { useMemo, useState } from 'react';
-import { CiChat1 } from 'react-icons/ci';
-import { IoPencilOutline, IoTrashOutline } from 'react-icons/io5';
-import { formatDistanceToNow } from 'date-fns';
-import type { AIConversation } from '@/modules/ai/api/entities/ai-conversation';
+import { matchesQuery } from '@/shared/utils/matches-query';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import SearchInput from '@/shared/presentation/components/SearchInput';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
-import { matchesQuery } from '@/shared/utils/matches-query';
 import Tooltip from '@/shared/presentation/components/Tooltip';
+import { formatDistanceToNow } from 'date-fns';
+import { useMemo, useState } from 'react';
+import { CiChat1 } from 'react-icons/ci';
+import { IoPencilOutline, IoTrashOutline } from 'react-icons/io5';
+import type { AIConversation } from '@/modules/ai/api/entities/ai-conversation';
+import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
+import './AIConversationSidebar.css';
 
 interface AIConversationSidebarProps {
     conversations: AIConversation[];
@@ -24,7 +26,7 @@ interface AIConversationSidebarProps {
     onSelectConversation: (conversationId: string) => void;
     onDeleteConversation: (conversationId: string) => Promise<void>;
     onRenameConversation: (conversationId: string, title: string) => Promise<void>;
-}
+};
 
 const AIConversationSidebar = ({
     conversations,
@@ -76,6 +78,137 @@ const AIConversationSidebar = ({
         await onDeleteConversation(conversationId);
     };
 
+    const handleFinishEditing = () => finishEditing().catch(console.warn);
+
+    const handleEditingKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            finishEditing().catch(console.warn);
+        }
+
+        if (event.key === 'Escape') {
+            setEditingConversationId(null);
+            setDraftTitle('');
+        }
+    };
+
+    const createRenameClickHandler = (conversation: AIConversation) => (event: MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        beginEditing(conversation);
+    };
+
+    const createDeleteClickHandler = (conversationId: string) => (event: MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        handleDeleteConversation(conversationId).catch(console.warn);
+    };
+
+    const renderConversationTitle = (conversation: AIConversation) => {
+        let content: ReactNode = (
+            <Paragraph className='font-size-2 font-weight-5 color-primary ai-conversation-title'>
+                {conversation.title || 'Untitled conversation'}
+            </Paragraph>
+        );
+
+        if (editingConversationId === conversation._id) {
+            content = (
+                <input
+                    className='ai-conversation-title-input'
+                    value={draftTitle}
+                    autoFocus
+                    onChange={(event) => setDraftTitle(event.target.value)}
+                    onBlur={handleFinishEditing}
+                    onKeyDown={handleEditingKeyDown}
+                    onClick={(event: MouseEvent<HTMLElement>) => event.stopPropagation()}
+                />
+            );
+        }
+
+        return content;
+    };
+
+    const renderConversationItem = (conversation: AIConversation) => {
+        const isActive = conversation._id === activeConversationId;
+        let itemClassName = 'd-flex column gap-025 ai-conversation-item cursor-pointer';
+        if (isActive) {
+            itemClassName = 'd-flex column gap-025 ai-conversation-item cursor-pointer is-active';
+        }
+
+        let renameTooltip = 'You do not have permission to rename conversations.';
+        if (canUpdate) {
+            renameTooltip = 'Rename conversation';
+        }
+
+        let deleteTooltip = 'You do not have permission to delete conversations.';
+        if (canDelete) {
+            deleteTooltip = 'Delete conversation';
+        }
+
+        return (
+            <Container
+                key={conversation._id}
+                className={itemClassName}
+                onClick={() => onSelectConversation(conversation._id)}
+            >
+                <Container className='d-flex items-center content-between gap-05'>
+                    {renderConversationTitle(conversation)}
+
+                    <Container className='d-flex items-center gap-025 ai-conversation-item-actions'>
+                        <Tooltip content={renameTooltip}>
+                            <IconButton
+                                size='sm'
+                                variant='ghost'
+                                disabled={!canUpdate}
+                                onClick={createRenameClickHandler(conversation)}
+                            >
+                                <IoPencilOutline size={14} />
+                            </IconButton>
+                        </Tooltip>
+
+                        <Tooltip content={deleteTooltip}>
+                            <IconButton
+                                size='sm'
+                                variant='ghost'
+                                disabled={!canDelete}
+                                onClick={createDeleteClickHandler(conversation._id)}
+                            >
+                                <IoTrashOutline size={14} />
+                            </IconButton>
+                        </Tooltip>
+                    </Container>
+                </Container>
+
+                <Paragraph className='font-size-1 color-muted'>
+                    {formatDistanceToNow(new Date(conversation.lastMessageAt || conversation.updatedAt), { addSuffix: true })}
+                </Paragraph>
+            </Container>
+        );
+    };
+
+    let listContent: ReactNode = filteredConversations.map(renderConversationItem);
+
+    if (isLoading) {
+        listContent = Array.from({ length: 6 }).map((_, index) => (
+            <Container key={index} className='ai-conversation-item-skeleton' />
+        ));
+    } else if (filteredConversations.length === 0) {
+        let description = 'Create a new chat to get started.';
+        if (query) {
+            description = 'No matching conversations found.';
+        }
+
+        listContent = (
+            <EmptyState
+                title='No conversations yet'
+                description={description}
+            />
+        );
+    }
+
+    let createConversationClick = undefined;
+    if (canCreate) {
+        createConversationClick = onCreateConversation;
+    }
+
     return (
         <Container className='d-flex column h-max ai-conversation-sidebar'>
             <Container className='d-flex column gap-075 ai-conversation-sidebar-header'>
@@ -92,7 +225,7 @@ const AIConversationSidebar = ({
                     <SidebarNavItem
                         label='Chat'
                         icon={CiChat1}
-                        onClick={canCreate ? onCreateConversation : undefined}
+                        onClick={createConversationClick}
                         disabled={!canCreate}
                     />
                 </Tooltip>
@@ -103,90 +236,7 @@ const AIConversationSidebar = ({
             </Container>
 
             <Container className='d-flex column flex-1 y-auto ai-conversation-sidebar-list'>
-                {isLoading ? (
-                    Array.from({ length: 6 }).map((_, index) => (
-                        <Container key={index} className='ai-conversation-item-skeleton' />
-                    ))
-                ) : filteredConversations.length === 0 ? (
-                    <EmptyState
-                        title='No conversations yet'
-                        description={query ? 'No matching conversations found.' : 'Create a new chat to get started.'}
-                    />
-                ) : (
-                    filteredConversations.map((conversation) => {
-                        const isActive = conversation._id === activeConversationId;
-
-                        return (
-                            <Container
-                                key={conversation._id}
-                                className={`d-flex column gap-025 ai-conversation-item cursor-pointer ${isActive ? 'is-active' : ''}`}
-                                onClick={() => onSelectConversation(conversation._id)}
-                            >
-                                <Container className='d-flex items-center content-between gap-05'>
-                                    {editingConversationId === conversation._id ? (
-                                        <input
-                                            className='ai-conversation-title-input'
-                                            value={draftTitle}
-                                            autoFocus
-                                            onChange={(event) => setDraftTitle(event.target.value)}
-                                            onBlur={() => finishEditing().catch(console.warn)}
-                                            onKeyDown={(event) => {
-                                                if (event.key === 'Enter') {
-                                                    event.preventDefault();
-                                                    finishEditing().catch(console.warn);
-                                                }
-
-                                                if (event.key === 'Escape') {
-                                                    setEditingConversationId(null);
-                                                    setDraftTitle('');
-                                                }
-                                            }}
-                                            onClick={(event) => event.stopPropagation()}
-                                        />
-                                    ) : (
-                                        <Paragraph className='font-size-2 font-weight-5 color-primary ai-conversation-title'>
-                                            {conversation.title || 'Untitled conversation'}
-                                        </Paragraph>
-                                    )}
-
-                                    <Container className='d-flex items-center gap-025 ai-conversation-item-actions'>
-                                        <Tooltip content={canUpdate ? 'Rename conversation' : 'You do not have permission to rename conversations.'}>
-                                            <IconButton
-                                                size='sm'
-                                                variant='ghost'
-                                                disabled={!canUpdate}
-                                                onClick={(event) => {
-                                                    event.stopPropagation();
-                                                    beginEditing(conversation);
-                                                }}
-                                            >
-                                                <IoPencilOutline size={14} />
-                                            </IconButton>
-                                        </Tooltip>
-
-                                        <Tooltip content={canDelete ? 'Delete conversation' : 'You do not have permission to delete conversations.'}>
-                                            <IconButton
-                                                size='sm'
-                                                variant='ghost'
-                                                disabled={!canDelete}
-                                                onClick={(event) => {
-                                                    event.stopPropagation();
-                                                    handleDeleteConversation(conversation._id).catch(console.warn);
-                                                }}
-                                            >
-                                                <IoTrashOutline size={14} />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </Container>
-                                </Container>
-
-                                <Paragraph className='font-size-1 color-muted'>
-                                    {formatDistanceToNow(new Date(conversation.lastMessageAt || conversation.updatedAt), { addSuffix: true })}
-                                </Paragraph>
-                            </Container>
-                        );
-                    })
-                )}
+                {listContent}
             </Container>
         </Container>
     );

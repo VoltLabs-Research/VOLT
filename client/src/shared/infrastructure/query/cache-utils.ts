@@ -1,14 +1,10 @@
-import type { InfiniteData, QueryKey } from '@tanstack/react-query';
-import type { PaginatedResponse, PaginationMeta } from '@/shared/domain/pagination';
 import queryClient from './query-client';
+import type { PaginatedResponse, PaginationMeta } from '@/shared/domain/pagination';
+import type { InfiniteData, QueryKey } from '@tanstack/react-query';
 
 interface WithId {
     _id: string;
-}
-
-// ---------------------------------------------------------------------------
-// Paginated page helpers
-// ---------------------------------------------------------------------------
+};
 
 /**
  * Upsert an entity into a flat PaginatedResponse.
@@ -52,10 +48,6 @@ export const patchPaginatedPage = <T extends WithId>(
         (current) => (current ? updater(current) : current)
     );
 };
-
-// ---------------------------------------------------------------------------
-// Infinite query helpers
-// ---------------------------------------------------------------------------
 
 /**
  * Apply an updater to every page inside all infinite queries matching a key prefix.
@@ -102,10 +94,6 @@ export const prependToFirstInfinitePage = <T extends WithId>(
     );
 };
 
-// ---------------------------------------------------------------------------
-// Batch invalidation
-// ---------------------------------------------------------------------------
-
 /**
  * Invalidate multiple query key prefixes in parallel.
  */
@@ -115,9 +103,7 @@ export const batchInvalidateQueries = (keys: QueryKey[]): Promise<void[]> => {
     );
 };
 
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
+/** Internal pagination helpers. */
 
 const adjustPagination = (meta: PaginationMeta, delta: number): PaginationMeta => {
     const total = Math.max(0, meta.total + delta);

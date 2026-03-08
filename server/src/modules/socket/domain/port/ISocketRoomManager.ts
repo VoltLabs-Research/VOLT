@@ -16,18 +16,6 @@ export interface PresenceUser {
  * Port interface for managing socket rooms.
  */
 export interface ISocketRoomManager {
-    setServer(
-        socket: any
-    ): void;
-
-    registerSocket(
-        socket: any
-    ): void;
-
-    unregisterSocket(
-        socketId: string
-    ): void;
-
     /**
      * Add a socket to a room.
      * @param socketId - Socket identifier

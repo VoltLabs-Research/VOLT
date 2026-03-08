@@ -2,7 +2,7 @@ interface ListingDisplayState {
     hasNoData: boolean;
     isInitialLoading: boolean;
     shouldShowEmptyState: boolean;
-}
+};
 
 const getListingDisplayState = (dataLength: number, isLoading: boolean): ListingDisplayState => {
     const hasNoData = dataLength === 0;

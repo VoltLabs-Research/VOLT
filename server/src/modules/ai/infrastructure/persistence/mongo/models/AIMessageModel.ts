@@ -1,9 +1,11 @@
-import mongoose, { Schema, Model, Document } from 'mongoose';
-import { AIMessageProps } from '@modules/ai/domain/entities/AIMessage';
-import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import type { AIMessageProps } from '@modules/ai/domain/entities/AIMessage';
+import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import mongoose, { Document, Model, Schema } from 'mongoose';
+import { AIMessageRole } from '@modules/ai/domain/entities/AIMessage';
 
-type AIMessageRelations = 'conversationId';
-export interface AIMessageDocument extends Persistable<AIMessageProps, AIMessageRelations>, Document {}
+type AIMessageRelation = 'conversationId';
+
+export interface AIMessageDocument extends Persistable<AIMessageProps, AIMessageRelation>, Document {}
 
 const AIMessageSchema: Schema<AIMessageDocument> = new Schema({
     conversationId: {
@@ -14,7 +16,7 @@ const AIMessageSchema: Schema<AIMessageDocument> = new Schema({
     },
     role: {
         type: String,
-        enum: ['user', 'assistant'],
+        enum: [AIMessageRole.User, AIMessageRole.Assistant],
         required: true
     },
     parts: {

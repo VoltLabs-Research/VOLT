@@ -1,114 +1,142 @@
-/**
- * Service factory with automatic path/body/query splitting.
- *
- * Convention:
- *  - Every method receives a FLAT params object.
- *  - Path params (`:key` in the template) are auto-extracted.
- *  - Remaining params go to body (POST/PATCH) or query (GET/DELETE) automatically.
- *  - Defaults: unwrap 'data' for get/post/patch, 'void' for del, 'paginated' for paginated.
- *  - Override body/query/unwrap via opts when the default doesn't fit.
- */
 import { createApiClient } from '@/app/core/http/utilities/create-client';
-import type { HttpMethod } from '@/app/core/http/client/HttpClient';
+import type { HttpMethod, HttpProgressEvent } from '@/app/core/http/client/HttpClient';
 import type VoltClient from '@/app/core/http/client/VoltClient';
 import type { RequestArgs } from '@/app/core/http/client/VoltClient';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 type UnknownRecord = Record<string, unknown>;
 type ResponseType = NonNullable<RequestArgs['responseType']>;
-type ProgressEvent = { loaded: number; total?: number };
-type PathLike<P> = string | ((params: P) => string);
+type Op = 'get' | 'post' | 'patch' | 'delete' | 'getPaginated' | 'request';
+type BivariantCallback<TArgs extends unknown[], TResult> = {
+    bivarianceHack(...args: TArgs): TResult;
+}['bivarianceHack'];
+type PathLike<P> = string | BivariantCallback<[params: P], string>;
 
 export type EmptyParams = Record<string, never>;
 export type UnwrapMode = 'data' | 'raw' | 'void' | 'paginated' | { field: string };
 
-// ─── Client Config ───────────────────────────────────────────────────────────
-
 export interface ClientDescriptor<P = unknown> {
     basePath: string;
     useRBAC?: boolean;
-    getTeamId?: (params: P) => string | null | undefined;
-}
+    getTeamId?(params: P): string | null | undefined;
+};
 
 export interface ServiceExecutionContext {
     clients: Record<string, VoltClient>;
-    getClient: (name?: string) => VoltClient;
-}
+    getClient(name?: string): VoltClient;
+};
 
-// ─── Method Options (escape hatches for non-standard cases) ──────────────────
-
-export interface MethodOpts<P, R> {
+export interface MethodOpts<P, R, TRaw = unknown> {
     client?: string;
     unwrap?: UnwrapMode;
     omit?: readonly (keyof P)[];
-    body?: (params: P) => unknown;
-    query?: (params: P) => object | undefined;
-    headers?: Record<string, string> | ((params: P) => Record<string, string> | undefined);
+    body?: BivariantCallback<[params: P], unknown>;
+    query?: BivariantCallback<[params: P], UnknownRecord | undefined>;
+    headers?: Record<string, string> | BivariantCallback<[params: P], Record<string, string> | undefined>;
     responseType?: ResponseType;
-    onUploadProgress?: (params: P) => ((event: ProgressEvent) => void) | undefined;
-    map?: (result: unknown, params: P) => R;
-    validate?: (params: P) => void;
-}
+    onUploadProgress?: BivariantCallback<[params: P], ((event: HttpProgressEvent) => void) | undefined>;
+    map?: BivariantCallback<[result: TRaw, params: P], R>;
+    validate?: BivariantCallback<[params: P], void>;
+};
 
-// ─── Internal Descriptor ─────────────────────────────────────────────────────
-
-type Op = 'get' | 'post' | 'patch' | 'delete' | 'getPaginated' | 'request';
-
-interface Descriptor<P = any, R = any> {
+interface Descriptor<P = unknown, R = unknown, TRaw = unknown> {
     kind: 'standard' | 'custom';
     op?: Op;
     httpMethod?: HttpMethod;
     path?: PathLike<P>;
-    opts?: MethodOpts<P, R>;
-    run?: (ctx: ServiceExecutionContext, params: P) => Promise<R> | R;
-}
+    opts?: MethodOpts<P, R, TRaw>;
+    run?: BivariantCallback<[ctx: ServiceExecutionContext, params: P], Promise<R> | R>;
+};
 
-type Methods = Record<string, Descriptor>;
+type AnyDescriptor = Descriptor<unknown, unknown, unknown>;
 
-export type BuiltService<T extends Methods> = {
-    [K in keyof T]: T[K] extends Descriptor<infer P, infer R>
+interface SingleClientConfig {
+    basePath: string;
+    useRBAC?: boolean;
+};
+
+interface MultiClientConfig {
+    clients: Record<string, ClientDescriptor>;
+};
+
+interface ResponseEnvelope {
+    data?: unknown;
+};
+
+export type BuiltService<T extends Record<string, unknown>> = {
+    [K in keyof T]: T[K] extends Descriptor<infer P, infer R, unknown>
         ? (params: P) => Promise<R>
         : never;
 };
 
-// ─── Service Config ──────────────────────────────────────────────────────────
+type ServiceConfig = string | SingleClientConfig | MultiClientConfig;
 
-type ServiceConfig =
-    | string
-    | { basePath: string; useRBAC?: boolean }
-    | { clients: Record<string, ClientDescriptor<any>> };
+const isUnknownRecord = (value: unknown): value is UnknownRecord => {
+    return typeof value === 'object' && value !== null;
+};
 
-// ─── Utilities ───────────────────────────────────────────────────────────────
+const isDescriptor = (value: unknown): value is AnyDescriptor => {
+    return isUnknownRecord(value)
+        && 'kind' in value
+        && (value.kind === 'standard' || value.kind === 'custom');
+};
+
+const hasEnvelope = (value: unknown): value is ResponseEnvelope => {
+    return isUnknownRecord(value);
+};
+
+const toUnknownRecord = (value: unknown): UnknownRecord => {
+    if (isUnknownRecord(value)) {
+        return value;
+    }
+
+    return {};
+};
+
+const toTypedResult = <T>(value: unknown): T => value as T;
+
+const createDefaultClients = (basePath: string): Record<string, ClientDescriptor> => {
+    return {
+        default: {
+            basePath
+        }
+    };
+};
 
 const buildPath = (template: string, params: UnknownRecord): string =>
     template.replace(/:(\w+)/g, (_, key) => {
-        const val = params[key];
-        if (val == null) throw new Error(`Missing path param: ${key}`);
-        return String(val);
+        const value = params[key];
+        if (value == null) throw new Error(`Missing path param: ${key}`);
+        return String(value);
     });
 
 const pathParamNames = (template: string): Set<string> => {
     const names = new Set<string>();
-    for (const [, name] of template.matchAll(/:(\w+)/g)) names.add(name);
+    for (const [, name] of template.matchAll(/:(\w+)/g)) {
+        names.add(name);
+    }
     return names;
 };
 
 const stripKeys = (obj: UnknownRecord, keys: Iterable<string | number | symbol>): UnknownRecord => {
     const exclude = new Set<string | number | symbol>(keys);
-    const out: UnknownRecord = {};
-    for (const [k, v] of Object.entries(obj)) {
-        if (!exclude.has(k) && v !== undefined) out[k] = v;
+    const output: UnknownRecord = {};
+
+    for (const [key, value] of Object.entries(obj)) {
+        if (!exclude.has(key) && value !== undefined) {
+            output[key] = value;
+        }
     }
-    return out;
+
+    return output;
 };
 
 const unwrapResponse = (raw: unknown, mode: UnwrapMode): unknown => {
     if (mode === 'raw' || mode === 'paginated') return raw;
     if (mode === 'void') return undefined;
-    const res = raw as { data?: unknown };
-    if (mode === 'data') return res.data;
-    return (res.data as UnknownRecord)?.[mode.field];
+    if (!hasEnvelope(raw)) return undefined;
+    if (mode === 'data') return raw.data;
+    if (!isUnknownRecord(raw.data)) return undefined;
+    return raw.data[mode.field];
 };
 
 const DEFAULT_UNWRAP: Record<Op, UnwrapMode> = {
@@ -117,95 +145,105 @@ const DEFAULT_UNWRAP: Record<Op, UnwrapMode> = {
     patch: 'data',
     delete: 'void',
     getPaginated: 'paginated',
-    request: 'data',
+    request: 'data'
 };
 
 const OP_TO_HTTP: Record<string, HttpMethod> = {
     get: 'GET',
     post: 'POST',
     patch: 'PATCH',
-    delete: 'DELETE',
+    delete: 'DELETE'
 };
 
-// ─── Client Resolution ───────────────────────────────────────────────────────
-
-const normalizeConfig = (cfg: ServiceConfig): Record<string, ClientDescriptor<any>> => {
-    if (typeof cfg === 'string') return { default: { basePath: cfg } };
-    if ('clients' in cfg) return cfg.clients;
-    return { default: cfg };
-};
-
-const firstClientName = (clients: Record<string, ClientDescriptor<any>>): string => {
+const firstClientName = (clients: Record<string, ClientDescriptor>): string => {
     if ('default' in clients) return 'default';
+
     const name = Object.keys(clients)[0];
     if (!name) throw new Error('createService: at least one client is required');
+
     return name;
 };
 
-// ─── Core Execution ──────────────────────────────────────────────────────────
-
-const execute = async <P, R>(client: VoltClient, desc: Descriptor<P, R>, params: P): Promise<R> => {
+const execute = async <P, R, TRaw>(client: VoltClient, desc: Descriptor<P, R, TRaw>, params: P): Promise<R> => {
     const opts = desc.opts ?? {};
     const op = desc.op!;
-    const raw = (params ?? {}) as UnknownRecord;
+    const raw = toUnknownRecord(params);
 
     opts.validate?.(params);
 
-    // Resolve path
     const pathDef = desc.path ?? '/';
     const isTemplate = typeof pathDef === 'string';
     const path = isTemplate ? buildPath(pathDef, raw) : pathDef(params);
 
-    // Auto-split remaining params
     const extracted = isTemplate ? pathParamNames(pathDef) : new Set<string>();
     let remaining = stripKeys(raw, extracted);
-    if (opts.omit) remaining = stripKeys(remaining, opts.omit);
+    if (opts.omit) {
+        remaining = stripKeys(remaining, opts.omit);
+    }
     const hasRemaining = Object.keys(remaining).length > 0;
 
-    // Resolve request parts
     const isBodyOp = op === 'post' || op === 'patch';
     const body = opts.body ? opts.body(params) : (isBodyOp && hasRemaining ? remaining : undefined);
-    const query = opts.query
-        ? (opts.query(params) as UnknownRecord | undefined)
-        : (!isBodyOp && hasRemaining ? remaining : undefined);
+    const query = opts.query ? opts.query(params) : (!isBodyOp && hasRemaining ? remaining : undefined);
     const headers = typeof opts.headers === 'function' ? opts.headers(params) : opts.headers;
     const uploadProgress = opts.onUploadProgress?.(params);
-    const resType = opts.responseType;
+    const responseType = opts.responseType;
 
-    // Dispatch
     let result: unknown;
-    const needsRaw = !!(headers || resType || uploadProgress) || (op === 'delete' && body != null);
+    const needsRaw = Boolean(headers || responseType || uploadProgress) || (op === 'delete' && body != null);
 
     if (op === 'getPaginated') {
         result = await client.getPaginated(path, query);
     } else if (op === 'request') {
         result = await client.request(desc.httpMethod!, path, {
-            query, body, headers, responseType: resType, onUploadProgress: uploadProgress,
+            query,
+            body,
+            headers,
+            responseType,
+            onUploadProgress: uploadProgress
         });
     } else if (needsRaw) {
         result = await client.request(OP_TO_HTTP[op], path, {
-            query, body, headers, responseType: resType, onUploadProgress: uploadProgress,
+            query,
+            body,
+            headers,
+            responseType,
+            onUploadProgress: uploadProgress
         });
     } else {
         switch (op) {
-            case 'get': result = await client.get(path, query); break;
-            case 'post': result = await client.post(path, body); break;
-            case 'patch': result = await client.patch(path, body); break;
-            case 'delete': result = await client.delete(path, query); break;
+            case 'get':
+                result = await client.get(path, query);
+                break;
+            case 'post':
+                result = await client.post(path, body);
+                break;
+            case 'patch':
+                result = await client.patch(path, body);
+                break;
+            case 'delete':
+                result = await client.delete(path, query);
+                break;
         }
     }
 
-    // Unwrap + map
     const unwrap = opts.unwrap ?? DEFAULT_UNWRAP[op];
     const unwrapped = unwrapResponse(result, unwrap);
-    return opts.map ? opts.map(unwrapped, params) : unwrapped as R;
+
+    if (opts.map) {
+        return opts.map(unwrapped as TRaw, params);
+    }
+
+    return toTypedResult<R>(unwrapped);
 };
 
-// ─── createService ───────────────────────────────────────────────────────────
-
-export const createService = <T extends Methods>(config: ServiceConfig, methods: T): BuiltService<T> => {
-    const clientDescs = normalizeConfig(config);
-    const defName = firstClientName(clientDescs);
+export const createService = <const T extends Record<string, unknown>>(config: ServiceConfig, methods: T): BuiltService<T> => {
+    const clientDescs = typeof config === 'string'
+        ? createDefaultClients(config)
+        : 'clients' in config
+            ? config.clients
+            : createDefaultClients(config.basePath);
+    const defaultClientName = firstClientName(clientDescs);
     const cache = new Map<string, VoltClient>();
 
     const resolve = (name: string, params: unknown): VoltClient => {
@@ -215,31 +253,45 @@ export const createService = <T extends Methods>(config: ServiceConfig, methods:
         if (desc.getTeamId) {
             return createApiClient(desc.basePath, {
                 useRBAC: desc.useRBAC,
-                getTeamId: () => desc.getTeamId?.(params) ?? null,
+                getTeamId: () => desc.getTeamId?.(params) ?? null
             });
         }
 
         let client = cache.get(name);
         if (!client) {
-            client = createApiClient(desc.basePath, { useRBAC: desc.useRBAC });
+            client = createApiClient(desc.basePath, {
+                useRBAC: desc.useRBAC
+            });
             cache.set(name, client);
         }
+
         return client;
     };
 
-    const svc = {} as BuiltService<T>;
+    const service = Object.create(null) as BuiltService<T>;
+    const mutableService = service as Record<string, (params: unknown) => Promise<unknown>>;
 
-    for (const [name, desc] of Object.entries(methods)) {
-        (svc as any)[name] = async (params: any) => {
-            const clientName = desc.opts?.client ?? defName;
+    for (const [name, value] of Object.entries(methods)) {
+        if (!isDescriptor(value)) {
+            continue;
+        }
+
+        const desc = value;
+        mutableService[name] = async (params: unknown) => {
+            const clientName = desc.opts?.client ?? defaultClientName;
 
             if (desc.kind === 'custom') {
                 desc.opts?.validate?.(params);
+
                 const clients = Object.fromEntries(
-                    Object.keys(clientDescs).map((n) => [n, resolve(n, params)])
+                    Object.keys(clientDescs).map((clientKey) => [clientKey, resolve(clientKey, params)])
                 );
+
                 return desc.run!(
-                    { clients, getClient: (n?: string) => resolve(n ?? clientName, params) },
+                    {
+                        clients,
+                        getClient: (requestedName?: string) => resolve(requestedName ?? clientName, params)
+                    },
                     params
                 );
             }
@@ -248,44 +300,91 @@ export const createService = <T extends Methods>(config: ServiceConfig, methods:
         };
     }
 
-    return svc;
+    return service;
 };
 
-// ─── Method Helpers ──────────────────────────────────────────────────────────
+export const get = <P, R, TRaw = unknown>(path: PathLike<P>, opts?: MethodOpts<P, R, TRaw>): Descriptor<P, R, TRaw> => {
+    return {
+        kind: 'standard',
+        op: 'get',
+        path,
+        opts
+    };
+};
 
-export const get = <P, R>(path: PathLike<P>, opts?: MethodOpts<P, R>): Descriptor<P, R> =>
-    ({ kind: 'standard', op: 'get', path, opts });
+export const post = <P, R, TRaw = unknown>(path: PathLike<P>, opts?: MethodOpts<P, R, TRaw>): Descriptor<P, R, TRaw> => {
+    return {
+        kind: 'standard',
+        op: 'post',
+        path,
+        opts
+    };
+};
 
-export const post = <P, R>(path: PathLike<P>, opts?: MethodOpts<P, R>): Descriptor<P, R> =>
-    ({ kind: 'standard', op: 'post', path, opts });
+export const patch = <P, R, TRaw = unknown>(path: PathLike<P>, opts?: MethodOpts<P, R, TRaw>): Descriptor<P, R, TRaw> => {
+    return {
+        kind: 'standard',
+        op: 'patch',
+        path,
+        opts
+    };
+};
 
-export const patch = <P, R>(path: PathLike<P>, opts?: MethodOpts<P, R>): Descriptor<P, R> =>
-    ({ kind: 'standard', op: 'patch', path, opts });
+export const del = <P, R = void, TRaw = unknown>(path: PathLike<P>, opts?: MethodOpts<P, R, TRaw>): Descriptor<P, R, TRaw> => {
+    return {
+        kind: 'standard',
+        op: 'delete',
+        path,
+        opts
+    };
+};
 
-export const del = <P, R = void>(path: PathLike<P>, opts?: MethodOpts<P, R>): Descriptor<P, R> =>
-    ({ kind: 'standard', op: 'delete', path, opts });
+export const paginated = <P, R, TRaw = unknown>(path: PathLike<P>, opts?: MethodOpts<P, R, TRaw>): Descriptor<P, R, TRaw> => {
+    return {
+        kind: 'standard',
+        op: 'getPaginated',
+        path,
+        opts
+    };
+};
 
-export const paginated = <P, R>(path: PathLike<P>, opts?: MethodOpts<P, R>): Descriptor<P, R> =>
-    ({ kind: 'standard', op: 'getPaginated', path, opts });
-
-export const request = <P, R>(method: HttpMethod, path: PathLike<P>, opts?: MethodOpts<P, R>): Descriptor<P, R> =>
-    ({ kind: 'standard', op: 'request', httpMethod: method, path, opts });
-
-export const download = <P>(
-    method: HttpMethod,
-    path: PathLike<P>,
-    opts?: Omit<MethodOpts<P, Blob>, 'unwrap' | 'responseType'>
-): Descriptor<P, Blob> =>
-    ({
+export const request = <P, R, TRaw = unknown>(method: HttpMethod, path: PathLike<P>, opts?: MethodOpts<P, R, TRaw>): Descriptor<P, R, TRaw> => {
+    return {
         kind: 'standard',
         op: 'request',
         httpMethod: method,
         path,
-        opts: { ...opts, responseType: 'blob', unwrap: 'raw' } as MethodOpts<P, Blob>,
-    });
+        opts
+    };
+};
+
+export const download = <P>(
+    method: HttpMethod,
+    path: PathLike<P>,
+    opts?: Omit<MethodOpts<P, Blob, Blob>, 'unwrap' | 'responseType'>
+): Descriptor<P, Blob, Blob> => {
+    const downloadOpts: MethodOpts<P, Blob, Blob> = {
+        ...opts,
+        responseType: 'blob',
+        unwrap: 'raw'
+    };
+
+    return {
+        kind: 'standard',
+        op: 'request',
+        httpMethod: method,
+        path,
+        opts: downloadOpts
+    };
+};
 
 export const custom = <P, R>(
     run: (ctx: ServiceExecutionContext, params: P) => Promise<R> | R,
     opts?: Pick<MethodOpts<P, R>, 'validate'>
-): Descriptor<P, R> =>
-    ({ kind: 'custom', run, opts });
+): Descriptor<P, R> => {
+    return {
+        kind: 'custom',
+        run,
+        opts
+    };
+};

@@ -1,13 +1,12 @@
-import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
-import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { GetSimulationCellByIdInputDTO } from '@modules/simulation-cell/application/dtos/GetSimulationCellByIdDTO';
-import type { GetSimulationCellByIdOutputDTO } from '@modules/simulation-cell/application/dtos/GetSimulationCellByIdDTO';
+import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { Result } from '@shared/domain/port/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { injectable, inject } from 'tsyringe';
+import type { GetSimulationCellByIdInputDTO, GetSimulationCellByIdOutputDTO } from '@modules/simulation-cell/application/dtos/GetSimulationCellByIdDTO';
+import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
 
 @injectable()
 export default class GetSimulationCellByIdUseCase implements IUseCase<GetSimulationCellByIdInputDTO, GetSimulationCellByIdOutputDTO, ApplicationError> {
@@ -26,6 +25,7 @@ export default class GetSimulationCellByIdUseCase implements IUseCase<GetSimulat
                 'SimulationCell not found'
             ));
         }
+
         return Result.ok(toPersistedOutput(entity));
     }
-}
+};

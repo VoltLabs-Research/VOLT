@@ -1,17 +1,26 @@
-import React, { useEffect, useMemo, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Color, DirectionalLight, DirectionalLightHelper, HemisphereLight, HemisphereLightHelper, PointLight, PointLightHelper, RectAreaLight, SpotLight, SpotLightHelper } from 'three';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
-import type { LightsState } from '@/modules/fractal/types/stores/editor/visual-types';
+import { useEffect, useMemo, useRef } from 'react';
+import type { LightsState } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { FC } from 'react';
 
-export type LightingPreset = 'trajectory' | 'defect' | 'custom';
+export enum LightingPreset {
+    Trajectory = 'trajectory',
+    Defect = 'defect',
+    Custom = 'custom'
+};
 
 interface DynamicLightsProps {
     settings?: LightsState;
     preset?: LightingPreset;
-}
+};
 
-const TrajectoryPreset: React.FC = () => {
+interface CustomLightsProps {
+    settings: LightsState;
+};
+
+const TrajectoryPreset: FC = () => {
     const directionalLightRef = useRef<DirectionalLight>(null);
 
     useEffect(() => {
@@ -49,7 +58,7 @@ const TrajectoryPreset: React.FC = () => {
     );
 };
 
-const DefectPreset: React.FC = () => {
+const DefectPreset: FC = () => {
     const directionalLightRef = useRef<DirectionalLight>(null);
 
     useEffect(() => {
@@ -83,11 +92,7 @@ const DefectPreset: React.FC = () => {
     );
 };
 
-interface CustomLightsProps {
-    settings: LightsState;
-}
-
-const CustomLights: React.FC<CustomLightsProps> = ({ settings }) => {
+const CustomLights: FC<CustomLightsProps> = ({ settings }) => {
     const st = settings;
     const dirLightRef = useRef<DirectionalLight>(null);
     const dirHelperRef = useRef<DirectionalLightHelper | null>(null);
@@ -197,30 +202,30 @@ const CustomLights: React.FC<CustomLightsProps> = ({ settings }) => {
 
     const dir = useMemo(() => ({
         color: new Color(st.directional.color),
-        position: st.directional.position as [number, number, number]
+        position: st.directional.position
     }), [st.directional.color, st.directional.position]);
 
     const point = useMemo(() => ({
         color: new Color(st.point.color),
-        position: st.point.position as [number, number, number]
+        position: st.point.position
     }), [st.point.color, st.point.position]);
 
     const spot = useMemo(() => ({
         color: new Color(st.spot.color),
-        position: st.spot.position as [number, number, number],
-        target: st.spot.target as [number, number, number]
+        position: st.spot.position,
+        target: st.spot.target
     }), [st.spot.color, st.spot.position, st.spot.target]);
 
     const hemi = useMemo(() => ({
         sky: new Color(st.hemisphere.skyColor),
         ground: new Color(st.hemisphere.groundColor),
-        position: st.hemisphere.position as [number, number, number]
+        position: st.hemisphere.position
     }), [st.hemisphere.skyColor, st.hemisphere.groundColor, st.hemisphere.position]);
 
     const rect = useMemo(() => ({
         color: new Color(st.rectArea.color),
-        position: st.rectArea.position as [number, number, number],
-        lookAt: st.rectArea.lookAt as [number, number, number]
+        position: st.rectArea.position,
+        lookAt: st.rectArea.lookAt
     }), [st.rectArea.color, st.rectArea.position, st.rectArea.lookAt]);
 
     return (
@@ -281,11 +286,11 @@ const CustomLights: React.FC<CustomLightsProps> = ({ settings }) => {
     );
 };
 
-const DynamicLights: React.FC<DynamicLightsProps> = ({ settings, preset }) => {
-    if (preset === 'trajectory') {
+const DynamicLights: FC<DynamicLightsProps> = ({ settings, preset }) => {
+    if (preset === LightingPreset.Trajectory) {
         return <TrajectoryPreset />;
     }
-    if (preset === 'defect') {
+    if (preset === LightingPreset.Defect) {
         return <DefectPreset />;
     }
     if (!settings) {

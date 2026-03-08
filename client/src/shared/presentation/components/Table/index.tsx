@@ -1,5 +1,5 @@
-import { Skeleton } from '@mui/material';
 import './Table.css';
+import { Skeleton } from '@mui/material';
 
 export interface Column<T> {
     key: string;

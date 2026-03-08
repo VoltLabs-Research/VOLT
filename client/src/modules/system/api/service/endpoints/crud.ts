@@ -1,8 +1,7 @@
-import { get, type EmptyParams } from '@/app/core/http/utilities/create-service';
-import type { RBACConfig } from '../../entities/rbac';
+import { get } from '@/app/core/http/utilities/create-service';
+import type { EmptyParams } from '@/app/core/http/utilities/create-service';
+import type { GetRBACConfigOutputDTO } from '../../dtos/get-rbac-config';
 
-const endpoints = {
-    getRBACConfig: get<EmptyParams, RBACConfig>('/rbac')
+export default {
+    getRBACConfig: get<EmptyParams, GetRBACConfigOutputDTO>('/rbac')
 };
-
-export default endpoints;

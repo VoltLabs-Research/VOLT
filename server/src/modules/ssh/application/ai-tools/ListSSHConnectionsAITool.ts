@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 import { AITool } from '@shared/application/ai/AITool';
-import type { AIToolScope } from '@modules/ai/application/services/AIToolService';
+import type { AIToolScope } from '@modules/ai/services/AIToolService';
 import { GetSSHConnectionsByTeamIdUseCase } from '@modules/ssh/application/use-cases/GetSSHConnectionsByTeamIdUseCase';
 
 @injectable()

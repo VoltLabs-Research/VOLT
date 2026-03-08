@@ -1,10 +1,14 @@
-import { injectable, inject } from 'tsyringe';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { inject, injectable } from 'tsyringe';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import type { DeleteAnalysisByIdInputDTO } from '@modules/analysis/application/dtos/DeleteAnalysisByIdDTO';
+
+interface DeleteAnalysisByIdOutputDTO {
+    success: boolean;
+};
 
 @injectable()
 export default class DeleteAnalysisByIdUseCase {
@@ -13,7 +17,7 @@ export default class DeleteAnalysisByIdUseCase {
         private readonly repository: IAnalysisRepository
     ) {}
 
-    async execute(input: DeleteAnalysisByIdInputDTO): Promise<Result<{ success: boolean }, ApplicationError>> {
+    async execute(input: DeleteAnalysisByIdInputDTO): Promise<Result<DeleteAnalysisByIdOutputDTO, ApplicationError>> {
         const analysis = await this.repository.findById(input.analysisId);
 
         if (!analysis) {
@@ -39,6 +43,8 @@ export default class DeleteAnalysisByIdUseCase {
             ));
         }
 
-        return Result.ok({ success: true });
+        return Result.ok({
+            success: true
+        });
     }
-}
+};

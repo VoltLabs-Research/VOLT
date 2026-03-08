@@ -1,24 +1,25 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { RiWifiLine, RiEditLine } from 'react-icons/ri';
-import { LuFolderOpen } from 'react-icons/lu';
-import { formatDistanceToNow } from 'date-fns';
-import DocumentListing, { type ColumnConfig, type SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import {
+    sshConnectionsQuery,
+    sshConnectionsQueryKey,
+    useDeleteSSHConnectionMutation,
+    useTestSSHConnectionMutation
+} from '@/modules/ssh/hooks/queries';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useModalForm from '@/shared/presentation/hooks/use-modal-form';
 import usePermission from '@/shared/presentation/hooks/use-permission';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-import {
-    useTestSSHConnectionMutation,
-    useDeleteSSHConnectionMutation,
-    sshConnectionsQuery,
-    sshConnectionsQueryKey
-} from '@/modules/ssh/hooks/queries';
 import SSHConnectionModal, { SSH_CONNECTION_MODAL_ID } from '../../molecules/SSHConnectionModal';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { SSHConnection } from '@/modules/ssh/api/entities/ssh-connection';
+import { formatDistanceToNow } from 'date-fns';
+import { LuFolderOpen } from 'react-icons/lu';
+import { RiEditLine, RiWifiLine } from 'react-icons/ri';
+import { useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
 import type { GetSSHConnectionsInputDTO } from '@/modules/ssh/api/dtos/get-ssh-connections';
+import type { SSHConnection } from '@/modules/ssh/api/entities/ssh-connection';
+import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'ssh-connection.created', queryKeys: [sshConnectionsQueryKey()] },
@@ -54,11 +55,15 @@ const SSHConnectionsPage = () => {
                 testConnectionMutation.mutateAsync({ sshConnectionId: connection._id }),
                 {
                     loading: { title: `Testing connection to "${connection.name}"...` },
-                    success: (data) => ({
-                        title: data.valid
-                            ? `Connection to "${connection.name}" successful!`
-                            : (data.error || 'Unknown error')
-                    }),
+                    success: (data) => {
+                        let title = data.error || 'Unknown error';
+
+                        if (data.valid) {
+                            title = `Connection to "${connection.name}" successful!`;
+                        }
+
+                        return { title };
+                    },
                     error: { title: 'Connection test failed' }
                 }
             );
@@ -69,7 +74,7 @@ const SSHConnectionsPage = () => {
     const handleEditConnection = (connection: SSHConnection) => {
         setEditingConnection(connection);
         setModalMode('edit');
-        window.setTimeout(() => sshModal.open(), 0);
+        window.setTimeout(sshModal.open, 0);
     };
 
     const handleDeleteConnection = async (connection: SSHConnection) => {
@@ -86,7 +91,17 @@ const SSHConnectionsPage = () => {
     const handleCreateNew = () => {
         setEditingConnection(null);
         setModalMode('create');
-        window.setTimeout(() => sshModal.open(), 0);
+        window.setTimeout(sshModal.open, 0);
+    };
+
+    const getDeleteConfirmation = ({ selectedItems }: { selectedItems: SSHConnection[] }) => {
+        let message = `Delete ${selectedItems.length} connections? This action cannot be undone.`;
+
+        if (selectedItems.length === 1) {
+            message = `Delete connection "${selectedItems[0].name}"? This action cannot be undone.`;
+        }
+
+        return message;
     };
 
     const { getMenuOptions } = useListingActions<SSHConnection>({
@@ -111,11 +126,7 @@ const SSHConnectionsPage = () => {
             },
             delete: {
                 handler: ({ item }) => handleDeleteConnection(item),
-                confirm: ({ selectedItems }) => (
-                    selectedItems.length === 1
-                        ? `Delete connection "${selectedItems[0].name}"? This action cannot be undone.`
-                        : `Delete ${selectedItems.length} connections? This action cannot be undone.`
-                ),
+                confirm: getDeleteConfirmation,
                 variant: 'danger',
                 requiredPermission: 'ssh-connection:delete'
             }
@@ -151,10 +162,18 @@ const SSHConnectionsPage = () => {
             key: 'createdAt',
             title: 'Created',
             sortable: true,
-            render: (value) => formatDistanceToNow(new Date(value as string), { addSuffix: true }),
+            render: (value) => formatDistanceToNow(new Date(String(value)), { addSuffix: true }),
             skeleton: { variant: 'text', width: 80 }
         }
     ], []);
+
+    let createNew;
+    if (canCreate) {
+        createNew = {
+            buttonTitle: 'Add Connection',
+            onCreate: handleCreateNew
+        };
+    }
 
     return (
         <>
@@ -166,10 +185,7 @@ const SSHConnectionsPage = () => {
                 defaultLimit={20}
                 getMenuOptions={getMenuOptions}
                 emptyMessage='No SSH connections found. Create one to get started.'
-                createNew={canCreate ? {
-                    buttonTitle: 'Add Connection',
-                    onCreate: handleCreateNew
-                } : undefined}
+                createNew={createNew}
                 socketInvalidation={SOCKET_INVALIDATION}
             />
             <SSHConnectionModal

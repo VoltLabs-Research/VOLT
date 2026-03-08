@@ -1,7 +1,7 @@
-import { injectable, inject } from 'tsyringe';
-import { DeleteManyOnTeamDeletedHandler } from '@shared/application/events/DeleteManyOnTeamDeletedHandler';
-import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { DeleteManyOnTeamDeletedHandler } from '@shared/application/events/DeleteManyOnTeamDeletedHandler';
+import { inject, injectable } from 'tsyringe';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 
 @injectable()
 export default class TeamDeletedEventHandler extends DeleteManyOnTeamDeletedHandler {
@@ -11,4 +11,4 @@ export default class TeamDeletedEventHandler extends DeleteManyOnTeamDeletedHand
     ) {
         super();
     }
-}
+};

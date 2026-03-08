@@ -1,9 +1,9 @@
-import { Skeleton } from '@mui/material';
 import Container from '@/shared/presentation/components/Container';
+import { Skeleton } from '@mui/material';
 
 interface FileRowSkeletonProps {
     className?: string;
-}
+};
 
 const FileRowSkeleton: React.FC<FileRowSkeletonProps> = ({ className = 'file-explorer-row' }) => (
     <Container className={className}>

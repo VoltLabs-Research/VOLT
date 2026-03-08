@@ -1,23 +1,41 @@
 import * as THREE from 'three';
+import type { BoxBounds, Pos3D, ModelLoadingState } from '@/modules/fractal/api/entities/model';
 import { Plane } from 'three';
-import { MaterialPipeline } from '@/modules/fractal/core/material-pipeline';
-import { ModelTransform, type BoundsInfo } from '@/modules/fractal/core/model-transform';
-import { disposeObject3DResources } from '@/modules/fractal/core/resource-disposal';
-import type IFractalAssetLoader from '@/modules/fractal/api/entities/fractal';
-import type { ModelLoadingState } from '@/modules/fractal/api/entities/fractal';
+import { MaterialPipeline } from '@/modules/fractal/services/material-pipeline';
+import { disposeObject3DResources } from '@/modules/fractal/utilities/resource-disposal';
+import type IFractalAssetLoader from '@/modules/fractal/api/entities/asset-loader';
+import { ModelTransform } from '@/modules/fractal/utilities/model-transform';
+import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
+
+interface FractalSurface {
+    scene: THREE.Scene;
+    camera: THREE.Camera;
+    gl: THREE.WebGLRenderer;
+    invalidate: () => void;
+};
+
+interface FractalEngineState {
+    model: THREE.Group | null;
+    mesh: THREE.Mesh | THREE.Points | null;
+    bounds: BoundsInfo | null;
+    lastLoadedUrl: string | null;
+    isLoading: boolean;
+    loadProgress: number;
+    loadError: string | null;
+};
 
 export type FractalParams = {
     url?: string | null;
     sliceClippingPlanes: Plane[];
-    position: { x: number; y: number; z: number };
-    rotation: { x: number; y: number; z: number };
+    position: Pos3D;
+    rotation: Pos3D;
     scale: number;
     updateThrottle: number;
     disableAutoTransform?: boolean;
     useFixedReference?: boolean;
     onEmptyData?: () => void;
     sceneKey?: string;
-    boxBounds?: { xlo: number; xhi: number; ylo: number; yhi: number; zlo: number; zhi: number };
+    boxBounds?: BoxBounds;
 };
 
 type EngineCallbacks = {
@@ -27,14 +45,14 @@ type EngineCallbacks = {
 };
 
 export class FractalEngine {
-    private state = {
-        model: null as THREE.Group | null,
-        mesh: null as THREE.Mesh | THREE.Points | null,
-        bounds: null as BoundsInfo | null,
-        lastLoadedUrl: null as string | null,
+    private state: FractalEngineState = {
+        model: null,
+        mesh: null,
+        bounds: null,
+        lastLoadedUrl: null,
         isLoading: false,
         loadProgress: 0,
-        loadError: null as string | null
+        loadError: null
     };
 
     private params: FractalParams;
@@ -49,12 +67,7 @@ export class FractalEngine {
     private static readonly MAX_LOAD_RETRIES = 3;
 
     constructor(
-        private surface: {
-            scene: THREE.Scene;
-            camera: THREE.Camera;
-            gl: THREE.WebGLRenderer;
-            invalidate: () => void;
-        },
+        private surface: FractalSurface,
         params: FractalParams,
         private assetLoader: IFractalAssetLoader,
         callbacks: EngineCallbacks = {}
@@ -103,13 +116,21 @@ export class FractalEngine {
         this.state.isLoading = true;
         this.state.loadProgress = 0;
         this.state.loadError = null;
-        this.callbacks.onLoadingState?.({ isLoading: true, progress: 0, error: null });
+        this.callbacks.onLoadingState?.({
+            isLoading: true,
+            progress: 0,
+            error: null
+        });
 
         try {
             const loadedModel = await this.assetLoader.load(url, (progress) => {
                 const pct = Math.round(progress * 100);
                 this.state.loadProgress = pct;
-                this.callbacks.onLoadingState?.({ isLoading: true, progress: pct, error: null });
+                this.callbacks.onLoadingState?.({
+                    isLoading: true,
+                    progress: pct,
+                    error: null
+                });
             }, this.loadAbortController.signal);
 
             if (this.isDisposed || currentLoadGeneration !== this.loadGeneration) {
@@ -149,17 +170,32 @@ export class FractalEngine {
 
             this.callbacks.onModelLoaded?.(bounds);
             this.callbacks.onModelAvailable?.(loadedModel);
-            this.callbacks.onLoadingState?.({ isLoading: false, progress: 100, error: null });
+            this.callbacks.onLoadingState?.({
+                isLoading: false,
+                progress: 100,
+                error: null
+            });
         } catch (error: unknown) {
             if (error instanceof Error && error.name === 'AbortError') {
-                this.callbacks.onLoadingState?.({ isLoading: false, progress: 0, error: null });
+                this.callbacks.onLoadingState?.({
+                    isLoading: false,
+                    progress: 0,
+                    error: null
+                });
                 return;
             }
 
             this.consecutiveLoadFailures += 1;
-            const message = error instanceof Error ? error.message : String(error);
+            let message = String(error);
+            if (error instanceof Error) {
+                message = error.message;
+            }
             this.state.loadError = message;
-            this.callbacks.onLoadingState?.({ isLoading: false, progress: 0, error: message });
+            this.callbacks.onLoadingState?.({
+                isLoading: false,
+                progress: 0,
+                error: message
+            });
         } finally {
             this.loadAbortController = null;
             this.state.isLoading = false;
@@ -204,7 +240,11 @@ export class FractalEngine {
         const mesh = this.state.mesh;
         if (!mesh || !(mesh instanceof THREE.Points) || !mesh.material) return;
 
-        const mat = mesh.material as THREE.ShaderMaterial;
+        const mat = mesh.material;
+        if (!(mat instanceof THREE.ShaderMaterial)) {
+            return;
+        }
+
         const baseScale = mat.userData.basePointScale;
         if (typeof baseScale !== 'number') return;
 
@@ -217,12 +257,25 @@ export class FractalEngine {
         const opacity = sceneOpacities[sceneKey] ?? 1.0;
         this.state.model.traverse((child) => {
             if (child instanceof THREE.Points && child.material) {
-                const mat = child.material as THREE.ShaderMaterial;
+                const mat = child.material;
+                if (!(mat instanceof THREE.ShaderMaterial)) {
+                    return;
+                }
+
                 if (mat.uniforms?.opacity) {
                     mat.uniforms.opacity.value = opacity;
                 }
             } else if (child instanceof THREE.Mesh && child.material) {
-                const mat = child.material as THREE.Material;
+                const mat = child.material;
+                if (Array.isArray(mat)) {
+                    mat.forEach((material) => {
+                        material.transparent = opacity < 1.0;
+                        material.opacity = opacity;
+                        material.needsUpdate = true;
+                    });
+                    return;
+                }
+
                 mat.transparent = opacity < 1.0;
                 mat.opacity = opacity;
                 mat.needsUpdate = true;
@@ -236,7 +289,11 @@ export class FractalEngine {
         this.loadGeneration += 1;
         this.loadAbortController?.abort();
         this.loadAbortController = null;
-        this.callbacks.onLoadingState?.({ isLoading: false, progress: 0, error: null });
+        this.callbacks.onLoadingState?.({
+            isLoading: false,
+            progress: 0,
+            error: null
+        });
         this.callbacks.onModelAvailable?.(null);
         this.disposeModel();
         this.materialPipeline.dispose();
@@ -248,13 +305,19 @@ export class FractalEngine {
 
     private applyClippingToModel(root: THREE.Object3D, planes: Plane[]) {
         root.traverse((obj) => {
-            const meshOrPoints = obj as THREE.Mesh | THREE.Points;
+            if (!(obj instanceof THREE.Mesh || obj instanceof THREE.Points)) {
+                return;
+            }
+
+            const meshOrPoints = obj;
             if (!meshOrPoints.material) return;
-            const mats = Array.isArray(meshOrPoints.material)
-                ? meshOrPoints.material
-                : [meshOrPoints.material];
+            let mats: THREE.Material[] = [meshOrPoints.material];
+            if (Array.isArray(meshOrPoints.material)) {
+                mats = meshOrPoints.material;
+            }
+
             mats.forEach((material: THREE.Material) => {
-                (material as THREE.MeshStandardMaterial).clippingPlanes = planes;
+                material.clippingPlanes = planes;
                 material.needsUpdate = true;
             });
         });
@@ -274,4 +337,4 @@ export class FractalEngine {
         this.state.mesh = null;
         this.state.bounds = null;
     }
-}
+};

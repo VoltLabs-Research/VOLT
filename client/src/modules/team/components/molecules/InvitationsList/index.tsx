@@ -1,9 +1,8 @@
-import React from 'react';
+import { InvitationRow } from '../InvitationRow';
 import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import InvitationRow from '../InvitationRow';
 import EmptyState from '@/shared/presentation/components/EmptyState';
-import type { TeamInvitation } from '@/modules/team/api/entities/team-invitation';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import type { TeamInvitation } from '@/modules/team/api/entities/invitation/team-invitation';
 import './InvitationsList.css';
 
 interface InvitationsListProps {
@@ -13,12 +12,12 @@ interface InvitationsListProps {
     onCancelInvitation: (id: string) => void;
 };
 
-const InvitationsList: React.FC<InvitationsListProps> = ({
+export const InvitationsList = ({
     invitations,
     isLoading,
     cancelingId,
     onCancelInvitation
-}) => {
+}: InvitationsListProps) => {
     const safeInvitations = Array.isArray(invitations) ? invitations : [];
 
     if(isLoading) {
@@ -57,5 +56,3 @@ const InvitationsList: React.FC<InvitationsListProps> = ({
         </Container>
     );
 };
-
-export default InvitationsList;

@@ -1,7 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { trajectoryMetricsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
+import { useDashboardMetricsQuery } from '@/modules/dashboard/hooks/queries';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-import type { DashboardMetrics, DashboardCard } from '@/modules/dashboard/api/entities/dashboard';
+import { useEffect, useMemo, useState } from 'react';
+import type { DashboardCard, DashboardMetrics } from '@/modules/dashboard/api/entities/dashboard';
+
+interface DashboardYDomain {
+    min: number;
+    max: number;
+};
 
 const ROTATION_INTERVAL_MS = 5000;
 
@@ -12,7 +17,14 @@ const abbreviateNumber = (value: number): string => {
     return String(value);
 };
 
-const calculateYDomain = (values: number[]): { min: number; max: number } => {
+const calculateYDomain = (values: number[]): DashboardYDomain => {
+    if (values.length === 0) {
+        return {
+            min: 0,
+            max: 1
+        };
+    }
+
     const min = Math.min(...values);
     const max = Math.max(...values);
     const padding = (max - min) * 0.1 || 1;
@@ -29,7 +41,12 @@ const buildCard = (
     defaultUrl?: string
 ): DashboardCard => {
     const meta = data.meta?.[key];
-    const series = (data.weekly[key] as number[]) || [];
+    let series: number[] = [];
+    const weeklySeries = data.weekly[key];
+    if (Array.isArray(weeklySeries) && weeklySeries.every((value) => typeof value === 'number')) {
+        series = weeklySeries;
+    }
+
     const total = data.totals[key] || 0;
 
     return {
@@ -54,7 +71,7 @@ export const useDashboardMetrics = (teamId?: string) => {
     const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
     const [rotationIndex, setRotationIndex] = useState(0);
 
-    const metricsQuery = trajectoryMetricsQuery(undefined, {
+    const metricsQuery = useDashboardMetricsQuery(undefined, {
         enabled: !!teamId
     });
 

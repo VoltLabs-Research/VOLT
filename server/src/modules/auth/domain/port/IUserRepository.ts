@@ -1,5 +1,10 @@
-import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
-import User, { UserProps } from '@modules/auth/domain/entities/User';
+import User from '@modules/auth/domain/entities/User';
+import type { UserProps } from '@modules/auth/domain/entities/User';
+import type { IBaseRepository } from '@shared/domain/port/IBaseRepository';
+
+export interface UserWithPassword extends User {
+    password: string;
+};
 
 export interface IUserRepository extends IBaseRepository<User, UserProps>{
     /**
@@ -7,7 +12,7 @@ export interface IUserRepository extends IBaseRepository<User, UserProps>{
      */
     findByIdWithPassword(
         userId: string
-    ): Promise<(User & { password: string }) | null>;
+    ): Promise<UserWithPassword | null>;
 
     /**
      * Delete the specified team from the user.
@@ -32,7 +37,7 @@ export interface IUserRepository extends IBaseRepository<User, UserProps>{
      */
     findByEmailWithPassword(
         email: string
-    ): Promise<(User & { password: string }) | null>;
+    ): Promise<UserWithPassword | null>;
 
     /**
      * Check if email exists.

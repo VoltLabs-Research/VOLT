@@ -1,5 +1,5 @@
-import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
+import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
+import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
 export interface ListSimulationCellsByTeamIdInputDTO {
     teamId: string;
@@ -7,10 +7,11 @@ export interface ListSimulationCellsByTeamIdInputDTO {
     limit?: number;
     trajectoryId?: string;
     timestep?: number;
-}
+};
 
 export interface ListSimulationCellsByTeamIdItemDTO extends SimulationCellProps {
     _id: string;
-}
+};
 
-export interface ListSimulationCellsByTeamIdOutputDTO extends PaginatedResult<ListSimulationCellsByTeamIdItemDTO> { }
+export interface ListSimulationCellsByTeamIdOutputDTO extends PaginatedResult<ListSimulationCellsByTeamIdItemDTO> {
+};

@@ -1,5 +1,6 @@
-import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
-import { WorkflowProps } from '@modules/plugin/domain/entities/workflow/Workflow';
+import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
+import { WorkflowProps } from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
+
 import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin/PersistedPluginDTO';
 
 export interface UpdatePluginByIdInputDTO {
@@ -10,6 +11,6 @@ export interface UpdatePluginByIdInputDTO {
      * in the workflow are saved as-is. When false (default), binary fields are 
      * preserved from the current DB state to prevent accidental overwrites. */
     _allowBinaryFieldUpdate?: boolean;
-}
+};
 
-export interface UpdatePluginByIdOutputDTO extends PersistedPluginDTO { }
+export interface UpdatePluginByIdOutputDTO extends PersistedPluginDTO { };

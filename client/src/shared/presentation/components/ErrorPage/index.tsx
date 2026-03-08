@@ -1,10 +1,10 @@
+import { SOURCE_LABELS } from '@/shared/utils';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import './ErrorPage.css';
+import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
-import Container from '@/shared/presentation/components/Container';
-import Button from '@/shared/presentation/components/Button';
-import { SOURCE_LABELS } from '@/shared/utils';
-import './ErrorPage.css';
 
 const ErrorPage = () => {
     const [params] = useSearchParams();

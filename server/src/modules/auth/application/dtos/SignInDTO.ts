@@ -1,4 +1,4 @@
-import { PersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
+import type { PersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
 
 export interface SignInInputDTO{
     email: string;

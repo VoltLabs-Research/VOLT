@@ -1,38 +1,6 @@
-*.lammpstrj
-venv/
-dislocations.json
-
-OLD/
-
-AUDIT.md
-CLEAN_ARCHITECTURE_AUDIT_PLAN.md
-CLIENT_STATE_AUDIT.md
-
 .ai-guidelines/
-
 .opencode/
-
-__pycache__
-
-build-release/
-
-/opendxa/dependencies/*
-
-!/opendxa/dependencies/ptm/
-!/opendxa/dependencies/ptm/**
-!/opendxa/dependencies/geogram/
-!/opendxa/dependencies/geogram/**
-!/opendxa/dependencies/fast_float/
-!/opendxa/dependencies/fast_float/**
-!/opendxa/dependencies/mwm_csp/**
-!/opendxa/dependencies/mwm_csp/
-debug-data/
-
-client/wasm/zstd/dependencies
-
 server/storage/
-
-build-debug/
 
 # Logs
 logs
@@ -52,10 +20,6 @@ dist-ssr
 *.local
 *.vtk
 
-debug.analysis*
-
-execution_sandboxes/
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -66,6 +30,7 @@ execution_sandboxes/
 *.njsproj
 *.sln
 *.sw?
+*.tsbuildinfo
 
 reports/
 fix.md

@@ -1,9 +1,9 @@
+import { TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { TrajectoryProps } from '@modules/trajectory/domain/entities/Trajectory';
 
 export interface TrajectoryPersistedDTO extends TrajectoryProps {
     _id: string;
-}
+};
 
 export interface GetTrajectoriesByTeamIdInputDTO {
     teamId: string;

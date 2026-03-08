@@ -1,14 +1,14 @@
-import React from 'react';
+import './SettingsRow.css';
+import { cn } from '@/shared/utils';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { cn } from '@/shared/utils';
-import './SettingsRow.css';
+import type { ReactNode } from 'react';
 
 export interface SettingsRowProps {
     /**
      * Left icon or content
      */
-    icon?: React.ReactNode;
+    icon?: ReactNode;
 
     /**
      * Row title
@@ -23,7 +23,7 @@ export interface SettingsRowProps {
     /**
      * Right content (button, badge, toggle, etc.)
      */
-    rightContent?: React.ReactNode;
+    rightContent?: ReactNode;
 
     /**
      * Click handler (makes row interactive)
@@ -34,16 +34,16 @@ export interface SettingsRowProps {
      * Additional CSS classes
      */
     className?: string;
-}
+};
 
-const SettingsRow: React.FC<SettingsRowProps> = ({
+const SettingsRow = ({
     icon,
     title,
     description,
     rightContent,
     onClick,
     className = ''
-}) => {
+}: SettingsRowProps) => {
     const classes = cn(
         'settings-row',
         'd-flex',

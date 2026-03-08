@@ -1,12 +1,17 @@
 import { get, download } from '@/app/core/http/utilities/create-service';
 import { base64ToBlob } from '@/shared/utils/file';
-import type { GetPreviewInputDTO, GetPreviewOutputDTO } from '../../../dtos/get-preview';
-import type { DownloadTrajectoryInputDTO } from '../../../dtos/download-trajectory';
-import type { GetAtomsInputDTO, GetAtomsOutputDTO } from '../../../dtos/get-atoms';
+import type {
+    AtomData,
+    DownloadTrajectoryInputDTO,
+    GetAtomsInputDTO,
+    GetAtomsOutputDTO,
+    GetPreviewInputDTO,
+    GetPreviewOutputDTO
+} from '../../../dtos/trajectory';
 
 interface AtomsApiResponse {
     status: 'success';
-    data: any[];
+    data: AtomData[];
     pagination: {
         page: number;
         limit: number;
@@ -17,28 +22,26 @@ interface AtomsApiResponse {
     _meta?: {
         properties: string[];
     };
-}
+};
 
-const endpoints = {
-    getPreview: get<GetPreviewInputDTO, GetPreviewOutputDTO>('/:trajectoryId/preview', {
+export default {
+    getPreview: get<GetPreviewInputDTO, GetPreviewOutputDTO, string>('/:trajectoryId/preview', {
         omit: ['version'],
-        map: (result) => ({ blob: base64ToBlob(result as string) })
+        map: (result) => ({ blob: base64ToBlob(result) })
     }),
     download: download<DownloadTrajectoryInputDTO>('GET', '/:trajectoryId/download', {
         query: ({ filename }) => filename ? { name: filename } : {}
     }),
-    getAtoms: get<GetAtomsInputDTO, GetAtomsOutputDTO>(
+    getAtoms: get<GetAtomsInputDTO, GetAtomsOutputDTO, AtomsApiResponse>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/atoms/${analysisId}`
             : `/${trajectoryId}/atoms`,
         {
             omit: ['trajectoryId', 'analysisId'],
             unwrap: 'raw',
-            map: (result) => {
-                const response = result as AtomsApiResponse;
-
+            map: (response) => {
                 return {
-                    status: 'success' as const,
+                    status: 'success',
                     data: response.data,
                     pagination: response.pagination,
                     _meta: {
@@ -49,5 +52,3 @@ const endpoints = {
         }
     )
 };
-
-export default endpoints;

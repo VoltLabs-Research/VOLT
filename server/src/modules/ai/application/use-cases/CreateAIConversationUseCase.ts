@@ -1,15 +1,15 @@
-import { injectable, inject } from 'tsyringe';
+import type { AIConversationProps } from '@modules/ai/domain/entities/AIConversation';
+import type { AIMessageProps } from '@modules/ai/domain/entities/AIMessage';
+import { AIMessageRole } from '@modules/ai/domain/entities/AIMessage';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
+import { Result } from '@shared/domain/port/Result';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
 import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
-import AIMessageDTOMapper from '@modules/ai/application/services/AIMessageDTOMapper';
-import {
-    CreateAIConversationInputDTO,
-    CreateAIConversationOutputDTO
-} from '@modules/ai/application/dtos/CreateAIConversationDTO';
+import AIMessageDTOMapper from '@modules/ai/services/AIMessageDTOMapper';
+import { CreateAIConversationInputDTO, CreateAIConversationOutputDTO } from '@modules/ai/application/dtos/CreateAIConversationDTO';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class CreateAIConversationUseCase implements IUseCase<CreateAIConversationInputDTO, CreateAIConversationOutputDTO, ApplicationError> {
@@ -36,7 +36,7 @@ export default class CreateAIConversationUseCase implements IUseCase<CreateAICon
         }
 
         const now = new Date();
-        const conversation = await this.conversationRepository.create({
+        const conversationData: Partial<AIConversationProps> = {
             teamId: input.teamId,
             userId: input.userId,
             title,
@@ -46,19 +46,25 @@ export default class CreateAIConversationUseCase implements IUseCase<CreateAICon
                 : (input.lastMessageAt ? new Date(input.lastMessageAt) : null),
             lastProvider: input.lastProvider || null,
             lastModel: input.lastModel || null
-        } as any);
+        };
+        const conversation = await this.conversationRepository.create(conversationData);
 
         const userMessage = normalizedMessage
             ? await this.messageRepository.create({
                 conversationId: conversation._id,
-                role: 'user',
-                parts: [{ type: 'text', text: normalizedMessage }],
+                role: AIMessageRole.User,
+                parts: [
+                    {
+                        type: 'text',
+                        text: normalizedMessage
+                    }
+                ],
                 content: normalizedMessage,
                 modelInfo: null,
                 tokenUsage: null,
                 createdAt: now,
                 updatedAt: now
-            } as any)
+            } satisfies Partial<AIMessageProps>)
             : null;
 
         return Result.ok({
@@ -71,4 +77,4 @@ export default class CreateAIConversationUseCase implements IUseCase<CreateAICon
                 : undefined
         });
     }
-}
+};

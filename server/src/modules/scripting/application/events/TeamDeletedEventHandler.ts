@@ -1,6 +1,6 @@
-import { injectable, inject } from 'tsyringe';
+import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import { DeleteManyOnTeamDeletedHandler } from '@shared/application/events/DeleteManyOnTeamDeletedHandler';
-import { SCRIPTING_TOKENS } from '@modules/scripting/application/di/ScriptingTokens';
+import { inject, injectable } from 'tsyringe';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 
 @injectable()

@@ -1,6 +1,6 @@
-import { ChatProps } from '@modules/chat/domain/entities/Chat';
+import type { PersistedChatDTO } from '@modules/chat/domain/port/chat/IChatRepository';
 
-export interface CreateGroupChatInputDTO{
+export interface CreateGroupChatInputDTO {
     userId: string;
     teamId: string;
     groupName: string;
@@ -8,6 +8,4 @@ export interface CreateGroupChatInputDTO{
     participantIds: string[];
 };
 
-export interface CreateGroupChatOutputDTO extends ChatProps{
-    _id: string;
-}
+export interface CreateGroupChatOutputDTO extends PersistedChatDTO {};

@@ -1,18 +1,19 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { JobStatus, type Job } from '../api/entities/job';
-import useGetTrajectoryById from '@/modules/trajectory/hooks/use-get-trajectory-by-id';
+import { JobStatus } from '../api/entities/job';
 import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
+import useGetTrajectoryById from '@/modules/trajectory/hooks/trajectory/use-get-trajectory-by-id';
+import { useCallback, useEffect, useRef } from 'react';
+import type { Job } from '../api/entities/job';
 
 interface UseJobsAutoSelectAnalysisArgs {
     trajectoryId?: string;
     jobs: Job[];
     setCurrentTimestep: (timestep: number) => void;
-}
+};
 
 interface PendingSelection {
     analysisId: string;
     timestep?: number;
-}
+};
 
 const getAnalysisIdFromJob = (job: Job): string | undefined => {
     if (job.analysisId) return job.analysisId;
@@ -104,7 +105,8 @@ const useJobsAutoSelectAnalysis = ({
                 pendingSelectionRef.current = selection;
 
                 if (!applySelection(selection)) {
-                    void refreshTrajectory();
+                    refreshTrajectory().catch(() => {
+                    });
                 }
 
                 break;
@@ -127,7 +129,8 @@ const useJobsAutoSelectAnalysis = ({
     }, [applySelection, trajectory]);
 
     useEffect(() => {
-        void attemptAutoSelect();
+        attemptAutoSelect().catch(() => {
+        });
     }, [attemptAutoSelect]);
 
     return { resetTracking };

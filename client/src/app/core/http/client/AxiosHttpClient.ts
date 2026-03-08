@@ -1,14 +1,19 @@
-import axios, { AxiosError, AxiosInstance } from 'axios';
-import { HttpClient, HttpRequest } from '@/app/core/http/client/HttpClient';
+import { HttpClient } from '@/app/core/http/client/HttpClient';
 import ApiError from '@/shared/errors/ApiError';
 import extractServerCode from '../errors/extract-server-code';
+import axios from 'axios';
+import type { HttpQuery, HttpRequest } from '@/app/core/http/client/HttpClient';
+import type { AxiosInstance } from 'axios';
+
+interface JsonRequestHeaders extends Record<string, string> {
+    'Content-Type': 'application/json';
+};
 
 export interface AxiosHttpClientOpts{
     baseUrl: string;
     getToken: () => string | null;
 };
 
-// TODO: ???
 const getHttpFallbackCode = (status: number): string => {
     if(status === 400) return 'Http::400';
     if(status === 401) return 'Http::401';
@@ -24,7 +29,11 @@ const getHttpFallbackCode = (status: number): string => {
     return 'Internal::Server::Error';
 };
 
-const toParams = (query?: Record<string, any>) => {
+const jsonRequestHeaders: JsonRequestHeaders = {
+    'Content-Type': 'application/json'
+};
+
+const toParams = (query?: HttpQuery) => {
     if(!query) return undefined;
 
     const params = new URLSearchParams();
@@ -49,7 +58,7 @@ export default class AxiosHttpClient implements HttpClient{
     ){
         this.api = axios.create({
             baseURL: opts.baseUrl,
-            headers: { 'Content-Type': 'application/json' }
+            headers: jsonRequestHeaders
         });
 
         // Send auth token
@@ -65,16 +74,22 @@ export default class AxiosHttpClient implements HttpClient{
         });
     }
     
-    private toApiError(error: AxiosError): ApiError{
+    private toApiError(error: unknown): ApiError{
         if(error instanceof ApiError) return error;
 
-        if(axios.isCancel(error) || error?.code === 'ERR_CANCELED') throw error;
+        if(axios.isCancel(error)) throw error;
 
-        if(error?.code === 'ECONNABORTED'){
+        if(!axios.isAxiosError(error)){
+            return new ApiError('Internal::Server::Error', undefined, error);
+        }
+
+        if(error.code === 'ERR_CANCELED') throw error;
+
+        if(error.code === 'ECONNABORTED'){
             return new ApiError('Network::Timeout', undefined, error);
         }
 
-        if(!error?.response){
+        if(!error.response){
             return new ApiError("Network::ConnectionError", undefined, error);
         }
 
@@ -97,7 +112,7 @@ export default class AxiosHttpClient implements HttpClient{
                 onUploadProgress: req.onUploadProgress
             });
             return res.data;
-        }catch(error: any){
+        }catch(error: unknown){
             throw this.toApiError(error);
         }
     }

@@ -1,11 +1,13 @@
+import type { ReactNode } from 'react';
+import { ChatMessageType } from '@/modules/chat/api/entities/message';
+import ReactionsDisplay from '../../atoms/ReactionsDisplay';
+import { cn } from '@/shared/utils';
 import { formatDistanceToNow } from 'date-fns';
-import type { ChatMessage } from '@/modules/chat/api/entities/chat-message';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Avatar from '@/shared/presentation/components/Avatar';
 import FileAttachment from '@/shared/presentation/components/FileAttachment';
-import { cn } from '@/shared/utils';
-import { ReactionsDisplay } from '../../atoms';
+import type { ChatMessage } from '@/modules/chat/api/entities/message';
 import './MessageBubble.css';
 
 interface MessageBubbleProps {
@@ -14,7 +16,7 @@ interface MessageBubbleProps {
     isGroupChat?: boolean;
     currentUserId?: string;
     onToggleReaction?: (emoji: string) => void;
-    children?: React.ReactNode;
+    children?: ReactNode;
 };
 
 const MessageBubble = ({
@@ -26,8 +28,36 @@ const MessageBubble = ({
     children
 }: MessageBubbleProps) => {
     const showAvatar = isGroupChat && !isOwn;
-    const isFile = message.messageType === 'file';
+    const isFile = message.messageType === ChatMessageType.File;
     const isDeleted = message.deleted;
+    const handleToggleReaction = onToggleReaction ?? (() => undefined);
+    let messageContent: ReactNode;
+
+    if (isDeleted) {
+        messageContent = (
+            <Paragraph className='message-bubble-text font-size-2-5 color-muted' style={{ fontStyle: 'italic' }}>
+                This message was deleted
+            </Paragraph>
+        );
+    } else if (isFile) {
+        messageContent = (
+            <FileAttachment
+                fileName={message.metadata?.fileName}
+                fileSize={message.metadata?.fileSize}
+                fileUrl={message.metadata?.fileUrl}
+                fileType={message.metadata?.fileType}
+                showDownload={!!message.metadata?.fileUrl}
+                variant='compact'
+                className='message-bubble-file'
+            />
+        );
+    } else {
+        messageContent = (
+            <Paragraph className='message-bubble-text font-size-2-5'>
+                {message.content}
+            </Paragraph>
+        );
+    }
 
     return (
         <Container className={cn(
@@ -48,27 +78,8 @@ const MessageBubble = ({
                 )}
 
                 <Container className='message-bubble-content p-075 p-relative'>
-                    {isDeleted ? (
-                        <Paragraph className='message-bubble-text font-size-2-5 color-muted' style={{ fontStyle: 'italic' }}>
-                            This message was deleted
-                        </Paragraph>
-                    ) : isFile ? (
-                        <FileAttachment
-                            fileName={message.metadata?.fileName}
-                            fileSize={message.metadata?.fileSize}
-                            fileUrl={message.metadata?.fileUrl}
-                            fileType={message.metadata?.fileType}
-                            showDownload={!!message.metadata?.fileUrl}
-                            variant='compact'
-                            className='message-bubble-file'
-                        />
-                    ) : (
-                        <Paragraph className='message-bubble-text font-size-2-5'>
-                            {message.content}
-                        </Paragraph>
-                    )}
+                    {messageContent}
 
-                    {/* Message controls slot */}
                     {!isDeleted && children}
                 </Container>
 
@@ -83,7 +94,7 @@ const MessageBubble = ({
                     <ReactionsDisplay
                         reactions={message.reactions}
                         currentUserId={currentUserId}
-                        onToggle={onToggleReaction || (() => {})}
+                        onToggle={handleToggleReaction}
                     />
                 )}
             </Container>

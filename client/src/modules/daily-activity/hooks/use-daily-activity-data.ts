@@ -1,12 +1,12 @@
-import { useEffect } from 'react';
 import { dailyActivityQuery } from './queries';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-
-const DEFAULT_RANGE = 365;
+import { useEffect } from 'react';
 
 interface UseDailyActivityDataOptions {
     range?: number;
-}
+};
+
+const DEFAULT_RANGE = 365;
 
 const useDailyActivityData = (options?: UseDailyActivityDataOptions) => {
     const range = options?.range ?? DEFAULT_RANGE;

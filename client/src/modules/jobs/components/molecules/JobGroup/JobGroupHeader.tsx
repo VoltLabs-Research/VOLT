@@ -1,19 +1,19 @@
-import { forwardRef } from 'react';
-import { motion } from 'framer-motion';
-import { IoChevronForward } from 'react-icons/io5';
-import { formatDistanceToNow } from 'date-fns';
-import type { TrajectoryJobGroup } from '@/modules/jobs/api/entities/job';
 import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
+import Title from '@/shared/presentation/components/Title';
+import { formatDistanceToNow } from 'date-fns';
+import { motion } from 'framer-motion';
+import { IoChevronForward } from 'react-icons/io5';
+import { forwardRef } from 'react';
+import type { TrajectoryJobGroup } from '@/modules/jobs/api/entities/job';
 
 interface JobGroupHeaderProps {
     group: TrajectoryJobGroup;
     statusClassName: string;
     isExpanded: boolean;
     onToggle: () => void;
-}
+};
 
 const JobGroupHeader = forwardRef<HTMLDivElement, JobGroupHeaderProps>(({
     group,

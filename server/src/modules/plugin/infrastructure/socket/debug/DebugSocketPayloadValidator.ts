@@ -1,5 +1,6 @@
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+
 import type { DebugStartPayload } from './DebugSocketPayloads';
 
 export const validateDebugStartPayload = (payload: DebugStartPayload): ApplicationError | null => {

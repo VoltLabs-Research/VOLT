@@ -1,16 +1,27 @@
+import ChatInput from '../ChatInput';
+import { EDIT_MESSAGE_MODAL_ID } from '../../molecules/EditMessageModal';
+import EditMessageModal from '../../molecules/EditMessageModal';
+import ChatHeader from '../../molecules/ChatHeader';
+import MessageBubble from '../../molecules/MessageBubble';
+import MessageControls from '../../molecules/MessageControls';
+import MessageList from '../../molecules/MessageList';
+import TypingIndicator from '../../atoms/TypingIndicator';
+import { PresenceStatus } from '@/modules/chat/api/entities/shared/chat-events';
 import { useState, useCallback } from 'react';
 import { IoChatbubblesOutline } from 'react-icons/io5';
-import type { Chat } from '@/modules/chat/api/entities/chat';
-import type { ChatMessage } from '@/modules/chat/api/entities/chat-message';
-import type { TypingUser, PresenceStatus } from '@/modules/chat/api/entities/chat-events';
-import { ChatHeader, MessageList, MessageBubble, MessageControls, EditMessageModal, EDIT_MESSAGE_MODAL_ID } from '../../molecules';
-import { TypingIndicator } from '../../atoms';
-import ChatInput from '../ChatInput';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import { openModal } from '@/shared/presentation/components/Modal';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
+import type { Chat } from '@/modules/chat/api/entities/chat';
+import type { ChatMessage } from '@/modules/chat/api/entities/message';
+import type { TypingUser } from '@/modules/chat/api/entities/shared/chat-events';
 import './ChatArea.css';
+
+interface EditingMessage {
+    _id: string;
+    content: string;
+};
 
 interface ChatAreaProps {
     chat: Chat | null;
@@ -35,7 +46,7 @@ const ChatArea = ({
     messages,
     typingUsers,
     currentUserId,
-    presence = 'unknown',
+    presence = PresenceStatus.Unknown,
     isLoading = false,
     hasMore,
     onLoadMore,
@@ -47,7 +58,7 @@ const ChatArea = ({
     onToggleReaction,
     onInfoClick
 }: ChatAreaProps) => {
-    const [editingMessage, setEditingMessage] = useState<{ _id: string; content: string } | null>(null);
+    const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
 
     const handleEditClick = useCallback((message: ChatMessage) => {
         setEditingMessage({ _id: message._id, content: message.content });
@@ -80,6 +91,25 @@ const ChatArea = ({
         );
     }
 
+    const renderMessage = (message: ChatMessage) => (
+        <MessageBubble
+            key={message._id}
+            message={message}
+            isOwn={message.sender._id === currentUserId}
+            isGroupChat={chat.isGroup}
+            currentUserId={currentUserId}
+            onToggleReaction={(emoji: string) => onToggleReaction(message._id, emoji)}
+        >
+            <MessageControls
+                messageId={message._id}
+                isOwn={message.sender._id === currentUserId}
+                onReact={(emoji: string) => onToggleReaction(message._id, emoji)}
+                onEdit={() => handleEditClick(message)}
+                onDelete={() => handleDeleteClick(message._id)}
+            />
+        </MessageBubble>
+    );
+
     return (
         <Container className='d-flex column h-max chat-area'>
             <ChatHeader
@@ -94,24 +124,7 @@ const ChatArea = ({
                 isLoading={isLoading}
                 hasMore={hasMore}
                 onLoadMore={onLoadMore}
-                renderMessage={(message: ChatMessage) => (
-                    <MessageBubble
-                        key={message._id}
-                        message={message}
-                        isOwn={message.sender._id === currentUserId}
-                        isGroupChat={chat.isGroup}
-                        currentUserId={currentUserId}
-                        onToggleReaction={(emoji: string) => onToggleReaction(message._id, emoji)}
-                    >
-                        <MessageControls
-                            messageId={message._id}
-                            isOwn={message.sender._id === currentUserId}
-                            onReact={(emoji: string) => onToggleReaction(message._id, emoji)}
-                            onEdit={() => handleEditClick(message)}
-                            onDelete={() => handleDeleteClick(message._id)}
-                        />
-                    </MessageBubble>
-                )}
+                renderMessage={renderMessage}
             />
 
             <TypingIndicator users={typingUsers} />

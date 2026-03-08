@@ -1,7 +1,7 @@
-import { RefreshCw } from 'lucide-react';
 import Button from '@/shared/presentation/components/Button';
-import Tooltip from '@/shared/presentation/components/Tooltip';
 import Loader from '@/shared/presentation/components/Loader';
+import Tooltip from '@/shared/presentation/components/Tooltip';
+import { RefreshCw } from 'lucide-react';
 
 interface RefreshButtonProps {
     onClick?: () => void;

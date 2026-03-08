@@ -1,6 +1,6 @@
-import type { StateCreator } from 'zustand';
-import type { PlaybackState, PlaybackStore } from '@/modules/fractal/types/stores/editor/scene-types';
 import type { EditorStore } from './types';
+import type { PlaybackState, PlaybackStore } from '@/modules/fractal/stores/contracts/editor/scene-types';
+import type { StateCreator } from 'zustand';
 
 const DEFAULT_PLAY_SPEED = 1;
 const MIN_PLAY_SPEED = 0.1;

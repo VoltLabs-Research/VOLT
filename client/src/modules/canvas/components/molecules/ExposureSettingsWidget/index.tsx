@@ -1,11 +1,14 @@
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
+import useSceneInteraction from '../../../hooks/use-scene-interaction';
+
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
-import useSceneInteraction from '../../../hooks/use-scene-interaction';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import type { SceneObjectType } from '@/modules/fractal/api/entities/fractal';
+
+import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
+
 import './ExposureSettingsWidget.css';
 
 const getSceneKey = (scene: SceneObjectType): string => {

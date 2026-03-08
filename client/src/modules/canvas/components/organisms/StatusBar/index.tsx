@@ -1,6 +1,8 @@
-import Container from '@/shared/presentation/components/Container';
 import { formatSize } from '@/shared/utils/format';
+import Container from '@/shared/presentation/components/Container';
+
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+
 import './StatusBar.css';
 
 type StatusItem = [label: string, value: string | number];
@@ -8,7 +10,7 @@ type StatusItem = [label: string, value: string | number];
 interface StatusBarProps {
     trajectory: Trajectory;
     currentTimestep: number;
-}
+};
 
 const StatusGroup = ({ items }: { items: StatusItem[] }) => (
     <Container className="canvas-status-group d-flex items-center gap-05">

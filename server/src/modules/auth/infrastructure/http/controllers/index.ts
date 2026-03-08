@@ -1,4 +1,3 @@
-import { container } from 'tsyringe';
 import CheckEmailController from '@modules/auth/infrastructure/http/controllers/CheckEmailController';
 import DeleteMyAccountController from '@modules/auth/infrastructure/http/controllers/DeleteMyAccountController';
 import GetGuestIdentityController from '@modules/auth/infrastructure/http/controllers/GetGuestIdentityController';
@@ -9,6 +8,7 @@ import SignInController from '@modules/auth/infrastructure/http/controllers/Sign
 import SignUpController from '@modules/auth/infrastructure/http/controllers/SignUpController';
 import UpdateMyAccountController from '@modules/auth/infrastructure/http/controllers/UpdateMyAccountController';
 import UpdatePasswordController from '@modules/auth/infrastructure/http/controllers/UpdatePasswordController';
+import { container } from 'tsyringe';
 
 export default {
     checkEmail: container.resolve(CheckEmailController),

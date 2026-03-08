@@ -1,5 +1,5 @@
-import type { SceneObjectType } from '@/modules/fractal/api/entities/fractal';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifact';
+import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
+import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
 
 interface MaybeScene {
     sceneType?: string;
@@ -13,7 +13,7 @@ interface MaybeScene {
     startValue?: string;
     endValue?: string;
     gradient?: string;
-}
+};
 
 const normalizeString = (value: unknown): string => {
     if (value === undefined || value === null) return '';

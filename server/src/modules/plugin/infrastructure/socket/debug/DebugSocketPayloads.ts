@@ -5,7 +5,7 @@ export interface DebugStartPayload {
     trajectoryId: string;
     timestep: number;
     config: Record<string, unknown>;
-}
+};
 
 export interface DebugSocketErrorPayload {
     sessionId?: string;
@@ -13,7 +13,7 @@ export interface DebugSocketErrorPayload {
     code: ErrorCode;
     message: ErrorCode;
     details?: string;
-}
+};
 
 export interface DebugNodeErrorPayload {
     sessionId: string;
@@ -23,4 +23,4 @@ export interface DebugNodeErrorPayload {
     code: ErrorCode;
     details?: string;
     stack?: string;
-}
+};

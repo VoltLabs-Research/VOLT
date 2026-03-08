@@ -1,19 +1,21 @@
-import type { Response } from 'express';
-import { ErrorCodes } from '@core/constants/error-codes';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import type { Result } from '@shared/domain/port/Result';
-import type { UseCaseError, UseCaseInput, UseCaseInstance, UseCaseOutput } from '@shared/application/IUseCase';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import logger from '@shared/infrastructure/logger';
+import { validateRequest, ValidationTarget } from '@shared/infrastructure/http/middleware/validation';
+import { ErrorCodes } from '@core/constants/error-codes';
+import type { Response } from 'express';
+import type { Result } from '@shared/domain/port/Result';
+import type { IUseCase, UseCaseError, UseCaseInput, UseCaseInstance, UseCaseOutput } from '@shared/application/IUseCase';
+import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import type { RequestValidationState, ValidationSchemaInput, ValidatedRequest } from '@shared/infrastructure/http/middleware/validation';
-import { validateRequest } from '@shared/infrastructure/http/middleware/validation';
 
 export interface ControllerError {
     message: string;
     statusCode: number;
     code?: string;
-}
+};
+
+type ValidatedAuthenticatedRequest = AuthenticatedRequest & ValidatedRequest;
 
 export abstract class BaseController<TUseCase extends UseCaseInstance> {
     constructor(
@@ -28,7 +30,7 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
     }
 
     protected getValidatedRequestData(req: AuthenticatedRequest): RequestValidationState {
-        const validatedRequest = req as AuthenticatedRequest & ValidatedRequest;
+        const validatedRequest: ValidatedAuthenticatedRequest = req;
         return validatedRequest.validated ?? {};
     }
 
@@ -44,9 +46,9 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
         }
 
         const validationResult = validateRequest(
-            req as AuthenticatedRequest & ValidatedRequest,
+            req,
             validationSchema,
-            'body',
+            ValidationTarget.Body,
             this.getRequestValidationContext(req)
         );
 
@@ -70,9 +72,9 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
         BaseResponse.error(res, 'Internal Server Error', HttpStatus.InternalServerError, ErrorCodes.INTERNAL_SERVER_ERROR);
     }
 
-    protected async executeUseCase(req: AuthenticatedRequest): Promise<Result<UseCaseOutput<TUseCase>, UseCaseError<TUseCase>>> {
+    protected executeUseCase(req: AuthenticatedRequest): Promise<Result<UseCaseOutput<TUseCase>, UseCaseError<TUseCase>>> {
         const dto = this.getParams(req);
-        return this.useCase.execute(dto) as Promise<Result<UseCaseOutput<TUseCase>, UseCaseError<TUseCase>>>;
+        return (this.useCase as IUseCase<UseCaseInput<TUseCase>, UseCaseOutput<TUseCase>, UseCaseError<TUseCase>>).execute(dto);
     }
 
     protected handleSuccess(res: Response, value: UseCaseOutput<TUseCase>): void | Promise<void> {

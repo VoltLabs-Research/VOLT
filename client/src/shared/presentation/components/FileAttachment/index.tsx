@@ -1,10 +1,10 @@
-import { IoDocumentOutline, IoDownloadOutline, IoImageOutline } from 'react-icons/io5';
+import { cn } from '@/shared/utils/cn';
+import { formatSize } from '@/shared/utils/format';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import { formatSize } from '@/shared/utils/format';
-import { cn } from '@/shared/utils/cn';
 import './FileAttachment.css';
+import { IoDocumentOutline, IoDownloadOutline, IoImageOutline } from 'react-icons/io5';
 
 type FileAttachmentVariant = 'compact' | 'detailed';
 
@@ -48,7 +48,7 @@ interface FileAttachmentProps {
     variant?: FileAttachmentVariant;
     timestamp?: string;
     className?: string;
-}
+};
 
 const FileAttachment = ({
     fileName = 'File',

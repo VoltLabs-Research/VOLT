@@ -1,12 +1,12 @@
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { simulationCellByTrajectoryQuery } from './queries';
 import type { SimulationCell } from '../api/entities/simulation-cell';
+import ApiError from '@/shared/errors/ApiError';
 
 interface UseSimulationCellParams {
     trajectoryId?: string;
     timestep?: number;
     enabled?: boolean;
-}
+};
 
 interface UseSimulationCellResult {
     simulationCell: SimulationCell | null;
@@ -16,11 +16,10 @@ interface UseSimulationCellResult {
     accessDenied: boolean;
     accessDeniedMessage: string | undefined;
     refetch: () => Promise<void>;
-}
+};
 
 const useSimulationCell = (params: UseSimulationCellParams = {}): UseSimulationCellResult => {
     const { trajectoryId, timestep, enabled = true } = params;
-    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
 
     const shouldFetch = enabled && Boolean(trajectoryId);
 
@@ -37,7 +36,7 @@ const useSimulationCell = (params: UseSimulationCellParams = {}): UseSimulationC
         {
             enabled: shouldFetch,
             retry: (failureCount, error) => {
-                if (checkRBACError(error)) {
+                if (ApiError.isRBACError(error)) {
                     return false;
                 }
 
@@ -47,9 +46,13 @@ const useSimulationCell = (params: UseSimulationCellParams = {}): UseSimulationC
     );
 
     const simulationCell = data ?? null;
+    const accessDenied = ApiError.isRBACError(queryError);
+    const accessDeniedMessage = accessDenied && queryError instanceof ApiError
+        ? queryError.getFriendlyMessage()
+        : undefined;
 
     let errorMessage: string | null = null;
-    if (queryError && !checkRBACError(queryError)) {
+    if (queryError && !accessDenied) {
         errorMessage = queryError.message || 'Failed to fetch simulation cell';
     }
 

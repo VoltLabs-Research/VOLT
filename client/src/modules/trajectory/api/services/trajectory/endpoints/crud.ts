@@ -1,17 +1,28 @@
 import { paginated, get, patch, del, request } from '@/app/core/http/utilities/create-service';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { Trajectory } from '../../../entities/trajectory';
-import type { CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO } from '../../../dtos/create-trajectory';
-import type { GetTrajectoriesInputDTO } from '../../../dtos/get-trajectories';
-import type { UpdateTrajectoryInputDTO } from '../../../dtos/update-trajectory';
-import type { DeleteTrajectoryInputDTO } from '../../../dtos/delete-trajectory';
+import type {
+    CreateTrajectoryInputDTO,
+    CreateTrajectoryOutputDTO,
+    DeleteTrajectoryInputDTO,
+    GetTrajectoriesInputDTO,
+    UpdateTrajectoryInputDTO
+} from '../../../dtos/trajectory';
 
-const endpoints = {
+interface GetTrajectoryByIdParams {
+    trajectoryId: string;
+};
+
+const MULTIPART_FORM_HEADERS: Record<string, string> = {
+    'Content-Type': 'multipart/form-data'
+};
+
+export default {
     getAll: paginated<GetTrajectoriesInputDTO, PaginatedResponse<Trajectory>>('/'),
-    getById: get<{ trajectoryId: string }, Trajectory>('/:trajectoryId'),
-    create: request<CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO>('POST', '/', {
+    getById: get<GetTrajectoryByIdParams, Trajectory>('/:trajectoryId'),
+    create: request<CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO, Trajectory>('POST', '/', {
         body: ({ formData }) => formData,
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: MULTIPART_FORM_HEADERS,
         onUploadProgress: ({ onProgress }) => onProgress
             ? (e) => {
                 if (e.total) {
@@ -19,10 +30,8 @@ const endpoints = {
                 }
             }
             : undefined,
-        map: (result) => ({ trajectory: result as Trajectory })
+        map: (trajectory) => trajectory
     }),
     update: patch<UpdateTrajectoryInputDTO, Trajectory>('/:trajectoryId'),
     delete: del<DeleteTrajectoryInputDTO>('/:trajectoryId')
 };
-
-export default endpoints;

@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Color } from 'three';
-import type { EnvironmentConfigState } from '@/modules/fractal/types/stores/editor/visual-types';
+import type { EnvironmentConfigState } from '@/modules/fractal/stores/contracts/editor/visual-types';
 
 interface DynamicBackgroundProps {
     settings: EnvironmentConfigState;
-}
+};
 
 const DynamicBackground = ({ settings }: DynamicBackgroundProps) => {
     const { scene } = useThree();

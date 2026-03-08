@@ -1,6 +1,6 @@
-import React, { ReactNode } from 'react';
-import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import type { ReactNode } from 'react';
 
 interface PanelAction {
     label: string;
@@ -13,7 +13,7 @@ interface PanelFooterProps {
     actions?: PanelAction[];
 };
 
-const PanelFooter: React.FC<PanelFooterProps> = ({ actions }) => {
+export const PanelFooter = ({ actions }: PanelFooterProps) => {
     if(!actions || actions.length === 0) return null;
 
     return (
@@ -34,5 +34,3 @@ const PanelFooter: React.FC<PanelFooterProps> = ({ actions }) => {
         </Container>
     );
 };
-
-export default PanelFooter;

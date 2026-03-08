@@ -1,10 +1,9 @@
-import type {
-    SliceAxis,
-    ModelWorldBounds,
-    SlicePlaneConfig
-} from '@/modules/fractal/api/entities/fractal';
+import { SliceAxis } from '@/modules/fractal/api/entities/scene';
+import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { SlicePlaneConfig } from '@/modules/fractal/api/entities/scene';
 
-export type { SliceAxis, ModelWorldBounds, SlicePlaneConfig };
+export { SliceAxis };
+export type { ModelWorldBounds, SlicePlaneConfig };
 
 export interface ConfigurationState {
     slicePlaneConfig: SlicePlaneConfig;

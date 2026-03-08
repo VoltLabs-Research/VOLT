@@ -1,0 +1,14 @@
+import { TrajectoryDocument } from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryModel';
+import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMapper';
+import Trajectory, { TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+
+class TrajectoryMapper extends BaseMapper<Trajectory, TrajectoryProps, TrajectoryDocument>{
+    constructor(){
+        super(Trajectory, [
+            'createdBy',
+            'team'
+        ]);
+    }
+};
+
+export default new TrajectoryMapper();

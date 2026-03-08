@@ -1,7 +1,7 @@
 import { useDeleteSecretKeyMutation } from '@/modules/team/hooks/secret-key/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 
-const useDeleteSecretKey = () => {
+export default function useDeleteSecretKey() {
     const selectedTeamId = useSelectedTeamId();
     const deleteSecretKey = useDeleteSecretKeyMutation();
 
@@ -14,6 +14,4 @@ const useDeleteSecretKey = () => {
     };
 
     return handleDelete;
-};
-
-export default useDeleteSecretKey;
+}

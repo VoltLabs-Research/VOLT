@@ -4,7 +4,13 @@ import type { ReadContainerFileInputDTO, ReadContainerFileOutputDTO } from '../.
 
 const endpoints = {
     getFiles: get<GetContainerFilesInputDTO, GetContainerFilesOutputDTO>('/:containerId/files', {
-        query: ({ path }) => path ? { path } : undefined
+        query: ({ path }) => {
+            let query: { path: string } | undefined;
+            if (path) {
+                query = { path };
+            }
+            return query;
+        }
     }),
     readFile: get<ReadContainerFileInputDTO, ReadContainerFileOutputDTO>('/:containerId/files/content', {
         query: ({ path }) => ({ path })

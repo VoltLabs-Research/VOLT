@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Fog } from 'three';
-import type { EnvironmentConfigState } from '@/modules/fractal/types/stores/editor/visual-types';
+import type { EnvironmentConfigState } from '@/modules/fractal/stores/contracts/editor/visual-types';
 
 interface DynamicEnvironmentProps {
     settings: EnvironmentConfigState;
-}
+};
 
 const DynamicEnvironment = ({ settings }: DynamicEnvironmentProps) => {
     const { scene, gl } = useThree();

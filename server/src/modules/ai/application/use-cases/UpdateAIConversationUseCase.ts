@@ -1,14 +1,18 @@
-import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
+import type { AIConversationProps } from '@modules/ai/domain/entities/AIConversation';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import { IUseCase } from '@shared/application/IUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { Result } from '@shared/domain/port/Result';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
-import {
-    UpdateAIConversationInputDTO,
-    UpdateAIConversationOutputDTO
-} from '@modules/ai/application/dtos/UpdateAIConversationDTO';
+import { UpdateAIConversationInputDTO, UpdateAIConversationOutputDTO } from '@modules/ai/application/dtos/UpdateAIConversationDTO';
+import { inject, injectable } from 'tsyringe';
+
+interface UpdateAIConversationLookup {
+    _id: string;
+    teamId: string;
+    userId: string;
+};
 
 @injectable()
 export default class UpdateAIConversationUseCase implements IUseCase<UpdateAIConversationInputDTO, UpdateAIConversationOutputDTO, ApplicationError> {
@@ -22,7 +26,7 @@ export default class UpdateAIConversationUseCase implements IUseCase<UpdateAICon
             _id: input.conversationId,
             teamId: input.teamId,
             userId: input.userId
-        } as any);
+        } as UpdateAIConversationLookup);
 
         if (!conversation) {
             return Result.fail(ApplicationError.notFound(
@@ -31,7 +35,7 @@ export default class UpdateAIConversationUseCase implements IUseCase<UpdateAICon
             ));
         }
 
-        const updateData: any = {};
+        const updateData: Partial<AIConversationProps> = {};
         if (typeof input.title !== 'undefined') updateData.title = input.title.trim();
         if (typeof input.isArchived !== 'undefined') updateData.isArchived = input.isArchived;
         if (typeof input.lastProvider !== 'undefined') updateData.lastProvider = input.lastProvider;
@@ -54,4 +58,4 @@ export default class UpdateAIConversationUseCase implements IUseCase<UpdateAICon
             ...updatedConversation.props
         });
     }
-}
+};

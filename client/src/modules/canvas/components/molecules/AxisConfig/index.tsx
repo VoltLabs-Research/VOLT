@@ -1,6 +1,6 @@
 import Container from '@/shared/presentation/components/Container';
 import Slider from '@/shared/presentation/components/Slider';
-import type { SliceAxis } from '@/modules/fractal/types/configuration';
+import { SliceAxis } from '@/modules/fractal/types/configuration';
 
 interface AxisConfigProps {
     axis: SliceAxis;
@@ -8,7 +8,7 @@ interface AxisConfigProps {
     angle: number;
     onPositionChange: (axis: SliceAxis, value: number) => void;
     onAngleChange: (axis: SliceAxis, value: number) => void;
-}
+};
 
 const AxisConfig = ({
     axis,
@@ -19,7 +19,7 @@ const AxisConfig = ({
 }: AxisConfigProps) => {
     const sliders: { key: string; label: string; min: number; max: number; step: number; value: number; onChange: (value: number) => void; format: string; visible?: boolean }[] = [
         { key: 'position', label: 'Position', min: 0, max: 1, step: 0.01, value: position, onChange: (v) => onPositionChange(axis, v), format: `${(position * 100).toFixed(0)}%` },
-        { key: 'angle', label: 'Angle', min: -90, max: 90, step: 1, value: angle, onChange: (v) => onAngleChange(axis, v), format: `${angle.toFixed(0)}\u00B0`, visible: axis !== 'x' }
+        { key: 'angle', label: 'Angle', min: -90, max: 90, step: 1, value: angle, onChange: (v) => onAngleChange(axis, v), format: `${angle.toFixed(0)} deg`, visible: axis !== SliceAxis.X }
     ];
 
     return (

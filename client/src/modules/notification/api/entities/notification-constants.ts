@@ -1,3 +1,3 @@
-export const NOTIFICATION_SOCKET_EVENTS = {
-    RECEIVED: 'notification'
-} as const;
+export enum NOTIFICATION_SOCKET_EVENTS {
+    RECEIVED = 'notification'
+};

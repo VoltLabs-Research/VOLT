@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
 import { useTeamPermissionsQuery } from '@/modules/team/hooks/team/queries';
-import { getScopedPermissions, isPermissionScopeReady, canAccessByPermissions, type PermissionMode } from '@/modules/team/utilities/permission-evaluator';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { canAccessByPermissions, getScopedPermissions, isPermissionScopeReady } from '@/modules/team/utilities/team/permission-evaluator';
+import type { PermissionMode } from '@/modules/team/utilities/team/permission-evaluator';
+import { useMemo } from 'react';
 
-const useTeamPermissions = () => {
+export default function useTeamPermissions() {
     const selectedTeamId = useSelectedTeamId();
 
     const permissionsQuery = useTeamPermissionsQuery(selectedTeamId ?? '', {
@@ -35,6 +36,4 @@ const useTeamPermissions = () => {
         }),
         canAccess
     };
-};
-
-export default useTeamPermissions;
+}

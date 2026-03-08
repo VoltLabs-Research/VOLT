@@ -1,4 +1,5 @@
 import { z } from 'zod/v4';
+import { AIConversationMessageRole } from '@modules/ai/domain/contracts/AIConversationMessage';
 
 export const aiMessagePartSchema = z.object({
     type: z.string().min(1)
@@ -6,7 +7,7 @@ export const aiMessagePartSchema = z.object({
 
 export const aiConversationMessageSchema = z.object({
     id: z.string().min(1),
-    role: z.enum(['user', 'assistant', 'system']),
+    role: z.enum(AIConversationMessageRole),
     parts: z.array(aiMessagePartSchema).min(1)
 }).strict();
 

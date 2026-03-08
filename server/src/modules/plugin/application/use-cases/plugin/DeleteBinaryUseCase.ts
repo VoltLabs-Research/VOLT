@@ -1,10 +1,11 @@
-import { inject, injectable } from 'tsyringe';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { DeleteBinaryInputDTO } from '@modules/plugin/application/dtos/plugin/DeleteBinaryDTO';
+import { IPluginStorageService } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
+
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { DeleteBinaryInputDTO } from '@modules/plugin/application/dtos/plugin/DeleteBinaryDTO';
+import { inject, injectable } from 'tsyringe';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IPluginStorageService } from '@modules/plugin/domain/port/IPluginStorageService';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
 
 @injectable()
 export class DeleteBinaryUseCase implements IUseCase<DeleteBinaryInputDTO, null, ApplicationError> {
@@ -17,4 +18,4 @@ export class DeleteBinaryUseCase implements IUseCase<DeleteBinaryInputDTO, null,
         await this.storageService.deleteBinary(input.pluginId);
         return Result.ok(null);
     }
-}
+};

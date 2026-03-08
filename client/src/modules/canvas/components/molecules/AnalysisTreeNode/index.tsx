@@ -1,16 +1,19 @@
 import { ChevronDown, ChevronRight, FlaskConical, Atom } from 'lucide-react';
-import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import Tooltip from '@/shared/presentation/components/Tooltip';
+import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../../utilities/analysis-status';
+
 import type { AnalysisSectionData } from '../../../hooks/use-canvas-sidebar-scene';
+import type { CanvasAnalysisStatus } from '../../../utilities/analysis-status';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { SceneObjectType } from '@/modules/fractal/api/entities/fractal';
+import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 
 interface AnalysisTreeNodeProps {
     section: AnalysisSectionData;
-    effectiveStatus?: string;
+    effectiveStatus?: CanvasAnalysisStatus;
     isExpanded: boolean;
     onToggle: (id: string) => void;
     onSelectScene: (scene: SceneObjectType, analysis?: Analysis) => void;
@@ -26,7 +29,7 @@ interface AnalysisTreeNodeProps {
         trajectoryId?: string;
         exposureName?: string;
     }) => void;
-}
+};
 
 const AnalysisTreeNode = ({
     section,
@@ -44,8 +47,10 @@ const AnalysisTreeNode = ({
     const { analysis, pluginDisplayName, entry, isCurrentAnalysis } = section;
     const hasExposures = entry.state === 'loaded' && entry.exposures.length > 0;
     const isLoading = entry.state === 'loading';
-    const isAnalysisInProgress = effectiveStatus === 'running' || effectiveStatus === 'pending';
-    const canDownloadAnalysis = effectiveStatus === 'completed' || analysis.status === 'completed';
+    const fallbackStatus = normalizeCanvasAnalysisStatus(analysis.status);
+    const resolvedStatus = effectiveStatus ?? fallbackStatus;
+    const isAnalysisInProgress = isCanvasAnalysisInProgress(resolvedStatus);
+    const canDownloadAnalysis = resolvedStatus === CanvasAnalysisStatusEnum.Completed;
 
     const handleSelectAnalysis = () => {
         if (isAnalysisInProgress) {
@@ -107,8 +112,8 @@ const AnalysisTreeNode = ({
                 {pluginDisplayName}
             </span>
             <span className="flex-1" />
-            {effectiveStatus && effectiveStatus !== 'idle' && (
-                <span className={`canvas-tree-status-dot canvas-tree-status-dot--${effectiveStatus} font-size-05`}>
+            {resolvedStatus && (
+                <span className={`canvas-tree-status-dot canvas-tree-status-dot--${resolvedStatus} font-size-05`}>
                     ●
                 </span>
             )}

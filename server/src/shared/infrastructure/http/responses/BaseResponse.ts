@@ -1,8 +1,8 @@
-import type { Response } from 'express';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { asRecord } from '@shared/infrastructure/utilities/type-guards';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
+import { asRecord } from '@shared/infrastructure/utilities/type-guards';
+import type { Response } from 'express';
+import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
 const getErrorMessage = (message: string | undefined, statusCode: number, code?: string): string => {
     if (statusCode >= HttpStatus.InternalServerError && code === ErrorCodes.INTERNAL_SERVER_ERROR) {

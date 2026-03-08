@@ -1,20 +1,19 @@
-import React from 'react';
-import { Copy, BookOpen } from 'lucide-react';
+import { InvitationEmailInput } from '../../molecules/InvitationEmailInput';
+import { InvitationsList } from '../../molecules/InvitationsList';
+import { PanelFooter } from '../../molecules/PanelFooter';
+import { PanelHeader } from '../../molecules/PanelHeader';
 import Container from '@/shared/presentation/components/Container';
-import PanelHeader from '../../molecules/PanelHeader';
-import PanelFooter from '../../molecules/PanelFooter';
-import InvitationEmailInput from '../../molecules/InvitationEmailInput';
-import InvitationsList from '../../molecules/InvitationsList';
-import useInvitePanel from '@/modules/team/hooks/team-invitation/use-invite-panel';
+import useInvitePanel from '@/modules/team/hooks/invitation/use-invite-panel';
+import { BookOpen, Copy } from 'lucide-react';
 import './TeamInvitePanel.css';
 
 interface TeamInvitePanelProps {
     onClose?: () => void;
 };
 
-const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
+export const TeamInvitePanel = ({
     onClose
-}) => {
+}: TeamInvitePanelProps) => {
     const {
         emailField,
         handleSubmit,
@@ -39,9 +38,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
             <Container className='team-invite-content d-flex column flex-1 y-auto'>
                 <InvitationEmailInput
                     value={emailField.value}
-                    onChange={(event) => {
-                        emailField.onChange(event as React.ChangeEvent<HTMLInputElement>);
-                    }}
+                    onChange={emailField.onChange}
                     onBlur={emailField.onBlur}
                     onSubmit={handleSubmit}
                     error={emailField.error}
@@ -73,5 +70,3 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         </Container>
     );
 };
-
-export default TeamInvitePanel;

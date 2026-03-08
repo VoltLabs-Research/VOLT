@@ -1,20 +1,34 @@
-import { useMemo, useCallback } from 'react';
-import { IoExitOutline } from 'react-icons/io5';
-import Select, { type SelectOption } from '@/shared/presentation/components/Select';
-import IconButton from '@/shared/presentation/components/IconButton';
-import { resetTeamScopedApplicationState, useTeamStore } from '@/modules/team/stores/use-team-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import useTeamData from '@/modules/team/hooks/team/use-team-data';
-import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useLeaveTeamMutation } from '@/modules/team/hooks/team/queries';
+import { resetTeamScopedApplicationState, useTeamStore } from '@/modules/team/stores/team/use-team-store';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import ApiError from '@/shared/errors/ApiError';
+import IconButton from '@/shared/presentation/components/IconButton';
+import Select from '@/shared/presentation/components/Select';
+import { IoExitOutline } from 'react-icons/io5';
+import { useCallback, useMemo } from 'react';
+import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { MouseEvent } from 'react';
 import './TeamSelector.css';
 
 interface TeamSelectorProps {
     className?: string;
 };
 
-const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
+interface PromiseToastOptions {
+    loading: { title: string };
+    success: { title: string };
+    error: { title: string };
+};
+
+const LEAVE_TEAM_TOAST_OPTIONS: PromiseToastOptions = {
+    loading: { title: 'Leaving team...' },
+    success: { title: 'Left team successfully' },
+    error: { title: 'Failed to leave team' }
+};
+
+export default function TeamSelector({ className = '' }: TeamSelectorProps) {
     const { teams } = useTeamData();
     const selectedTeamId = useSelectedTeamId();
     const leaveTeamMutation = useLeaveTeamMutation();
@@ -26,16 +40,12 @@ const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
         useTeamStore.getState().setSelectedTeamId(teamId);
     }, [selectedTeamId]);
 
-    const handleLeaveTeam = useCallback(async (e: React.MouseEvent, teamId: string) => {
-        e.preventDefault();
-        e.stopPropagation();
+    const handleLeaveTeam = useCallback(async (event: MouseEvent, teamId: string) => {
+        event.preventDefault();
+        event.stopPropagation();
 
         try {
-            await showPromise(leaveTeamMutation.mutateAsync({ teamId }), {
-                loading: { title: 'Leaving team...' },
-                success: { title: 'Left team successfully' },
-                error: { title: 'Failed to leave team' }
-            });
+            await showPromise(leaveTeamMutation.mutateAsync({ teamId }), LEAVE_TEAM_TOAST_OPTIONS);
 
             const state = useTeamStore.getState();
             const currentSelectedTeamId = state.selectedTeamId;
@@ -87,5 +97,3 @@ const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
         />
     );
 };
-
-export default TeamSelector;

@@ -1,9 +1,9 @@
+import { useMarkAllReadMutation, useNotificationsInfiniteQuery } from './queries';
+import useNotificationSocket from './use-notification-socket';
 import { useCallback, useMemo } from 'react';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { sileo } from 'sileo';
 import type { Notification } from '../api/entities/notification';
-import { useMarkAllReadMutation, useNotificationsInfiniteQuery } from './queries';
-import useNotificationSocket from './use-notification-socket';
 
 const DEFAULT_LIMIT = 20;
 

@@ -2,27 +2,48 @@ import { buildKeys, createInfiniteQuery, createMutation } from '@/shared/infrast
 import messageService from '../../api/services/message';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { ChatMessage } from '../../api/entities/chat-message';
-import type { GetChatMessagesInputDTO } from '../../api/dtos/get-chat-messages';
-import type { SendMessageInputDTO } from '../../api/dtos/send-message';
-import type { SendFileMessageInputDTO } from '../../api/dtos/send-file-message';
-import type { EditMessageInputDTO } from '../../api/dtos/edit-message';
-import type { DeleteMessageInputDTO } from '../../api/dtos/delete-message';
-import type { ToggleReactionInputDTO } from '../../api/dtos/toggle-reaction';
+import type { ChatMessage } from '../../api/entities/message';
+import type {
+    DeleteMessageInputDTO,
+    EditMessageInputDTO,
+    GetChatMessagesInputDTO,
+    SendFileMessageInputDTO,
+    SendMessageInputDTO,
+    ToggleReactionInputDTO
+} from '../../api/dtos/message';
 
 const DEFAULT_MESSAGES_LIMIT = 50;
 
-const KEYS = buildKeys<{
+interface InfiniteMessagesParams {
+    chatId: string;
+};
+
+type MessageQueryKeyMap = {
     messages: GetChatMessagesInputDTO;
-    infiniteMessages: { chatId: string };
-}>('chat');
+    infiniteMessages: InfiniteMessagesParams;
+};
+
+interface MarkAsReadParams {
+    chatId: string;
+};
+
+interface UseChatMessagesInfiniteQueryParams {
+    chatId: string;
+    limit?: number;
+};
+
+interface UseChatMessagesInfiniteQueryOptions {
+    enabled?: boolean;
+};
+
+const KEYS = buildKeys<MessageQueryKeyMap>('chat');
 
 export const MESSAGE_QUERY_KEYS = {
     messages: KEYS.messages,
     infiniteMessages: KEYS.infiniteMessages
-} as const;
+};
 
-export const useMarkAsReadMutation = createMutation<void, { chatId: string }>(messageService.markAsRead);
+export const useMarkAsReadMutation = createMutation<void, MarkAsReadParams>(messageService.markAsRead);
 export const useSendMessageMutation = createMutation<ChatMessage, SendMessageInputDTO>(messageService.sendMessage);
 export const useSendFileMutation = createMutation<ChatMessage, SendFileMessageInputDTO>(messageService.sendFileMessage);
 export const useEditMessageMutation = createMutation<ChatMessage, EditMessageInputDTO>(messageService.editMessage);
@@ -36,11 +57,19 @@ export const buildChatMessagesQueryParams = (
     chatId: string,
     page: number,
     limit: number = DEFAULT_MESSAGES_LIMIT
-): GetChatMessagesInputDTO => ({ chatId, page, limit });
+): GetChatMessagesInputDTO => ({
+    chatId,
+    page,
+    limit
+});
 
 export const buildChatMessagesQueryOptions = (params: GetChatMessagesInputDTO) => ({
     queryKey: getChatMessagesQueryKey(params),
-    queryFn: () => messageService.getMessages({ chatId: params.chatId, page: params.page, limit: params.limit })
+    queryFn: () => messageService.getMessages({
+        chatId: params.chatId,
+        page: params.page,
+        limit: params.limit
+    })
 });
 
 const chatMessages = createInfiniteQuery(
@@ -50,8 +79,8 @@ const chatMessages = createInfiniteQuery(
 );
 
 export const useChatMessagesInfiniteQuery = (
-    params: { chatId: string; limit?: number },
-    options?: { enabled?: boolean }
+    params: UseChatMessagesInfiniteQueryParams,
+    options?: UseChatMessagesInfiniteQueryOptions
 ) => {
     return chatMessages({ chatId: params.chatId }, {
         enabled: options?.enabled
@@ -89,14 +118,16 @@ export const addMessageToCache = (queryClient: QueryClient, chatId: string | nul
 
             return {
                 ...current,
-                pages: current.pages.map((page, index) => (
-                    index === lastPageIndex
-                        ? {
+                pages: current.pages.map((page, index) => {
+                    if (index === lastPageIndex) {
+                        return {
                             ...page,
                             data: sortMessagesByCreatedAt([...page.data, message])
-                        }
-                        : page
-                )),
+                        };
+                    }
+
+                    return page;
+                }),
                 pageParams: current.pageParams
             };
         }
@@ -120,7 +151,13 @@ export const updateMessageInCache = (
                 ...current,
                 pages: current.pages.map((page) => ({
                     ...page,
-                    data: page.data.map((message) => message._id === messageId ? { ...message, ...updates } : message)
+                    data: page.data.map((message) => {
+                        if (message._id === messageId) {
+                            return { ...message, ...updates };
+                        }
+
+                        return message;
+                    })
                 })),
                 pageParams: current.pageParams
             };

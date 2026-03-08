@@ -1,16 +1,20 @@
-import { useCallback } from 'react';
-import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useClearJobHistoryMutation, useRemoveRunningJobsMutation, useRetryFailedJobsMutation } from './queries';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { useCallback } from 'react';
 
 const useJobGroupActions = () => {
     const clearHistoryMutation = useClearJobHistoryMutation();
     const removeRunningJobsMutation = useRemoveRunningJobsMutation();
     const retryFailedJobsMutation = useRetryFailedJobsMutation();
 
-    const loadingAction = clearHistoryMutation.isPending ? 'clear'
-        : removeRunningJobsMutation.isPending ? 'remove'
-        : retryFailedJobsMutation.isPending ? 'retry'
-        : null;
+    let loadingAction: 'clear' | 'remove' | 'retry' | null = null;
+    if (clearHistoryMutation.isPending) {
+        loadingAction = 'clear';
+    } else if (removeRunningJobsMutation.isPending) {
+        loadingAction = 'remove';
+    } else if (retryFailedJobsMutation.isPending) {
+        loadingAction = 'retry';
+    }
 
     const handleClearHistory = useCallback(async () => {
         await showPromise(
@@ -30,11 +34,14 @@ const useJobGroupActions = () => {
             removeRunningJobsMutation.mutateAsync(),
             {
                 loading: { title: 'Removing running jobs...' },
-                success: (data) => ({
-                    title: data.deletedJobs === 0
-                        ? 'No running jobs found'
-                        : `Removed ${data.deletedJobs} running jobs`
-                }),
+                success: (data) => {
+                    let title = `Removed ${data.deletedJobs} running jobs`;
+                    if (data.deletedJobs === 0) {
+                        title = 'No running jobs found';
+                    }
+
+                    return { title };
+                },
                 error: { title: 'Failed to remove running jobs' }
             }
         );
@@ -45,11 +52,14 @@ const useJobGroupActions = () => {
             retryFailedJobsMutation.mutateAsync(),
             {
                 loading: { title: 'Retrying failed jobs...' },
-                success: (data) => ({
-                    title: data.retriedFrames === 0
-                        ? 'No failed frames found to retry'
-                        : `Queued ${data.retriedFrames} failed frames for retry`
-                }),
+                success: (data) => {
+                    let title = `Queued ${data.retriedFrames} failed frames for retry`;
+                    if (data.retriedFrames === 0) {
+                        title = 'No failed frames found to retry';
+                    }
+
+                    return { title };
+                },
                 error: { title: 'Failed to retry failed jobs' }
             }
         );

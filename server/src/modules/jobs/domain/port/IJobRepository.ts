@@ -4,4 +4,4 @@ export interface IJobRepository {
     getTeamJobIds(teamId: string): Promise<string[]>;
     getJobStatus(statusKey: string): Promise<Record<string, unknown> | null>;
     getJobStatuses(statusKeys: string[]): Promise<Array<Record<string, unknown> | null>>;
-}
+};

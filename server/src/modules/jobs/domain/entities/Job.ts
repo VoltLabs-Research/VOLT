@@ -1,17 +1,10 @@
+import { asRecord } from '@shared/infrastructure/utilities/type-guards';
 import { v4 } from 'uuid';
 
-export enum JobStatus{
-    Queued = 'queued',
-    Running = 'running',
-    Completed = 'completed',
-    Failed = 'failed'
-};
+export type JobMetadataValue = unknown;
+export type JobMetadata = unknown;
 
-export interface JobMetadata{
-    [key: string]: any;
-};
-
-export interface JobData{
+export interface JobData {
     jobId: string;
     teamId: string;
     sessionId?: string;
@@ -29,12 +22,19 @@ export interface JobData{
     updatedAt: Date;
 };
 
-export default class Job{
+export enum JobStatus {
+    Queued = 'queued',
+    Running = 'running',
+    Completed = 'completed',
+    Failed = 'failed'
+};
+
+export default class Job {
     constructor(
         public props: JobData
-    ){}
+    ) {}
 
-    static create(data: Partial<JobData>): Job{
+    static create(data: Partial<JobData>): Job {
         return new Job({
             jobId: data.jobId || v4(),
             teamId: data.teamId!,
@@ -51,35 +51,37 @@ export default class Job{
             updatedAt: data.updatedAt || new Date(),
             progress: data.progress,
             workerId: data.workerId
-        }); 
+        });
     }
 
-    getMetadata<T = any>(key: string): T | undefined{
-        return this.props.metadata?.[key];
+    getMetadata(key: string): JobMetadataValue | undefined {
+        return asRecord(this.props.metadata)?.[key];
     }
 
-    setMetadata(key: string, value: any): void{
-        if(!this.props.metadata){
-            this.props.metadata = {};
+    setMetadata(key: string, value: JobMetadataValue): void {
+        let metadata = asRecord(this.props.metadata);
+        if (!metadata) {
+            metadata = {};
+            this.props.metadata = metadata;
         }
 
-        this.props.metadata[key] = value;
+        metadata[key] = value;
     }
 
-    markAsRunning(workerId: number): void{
+    markAsRunning(workerId: number): void {
         this.props.status = JobStatus.Running;
         this.props.workerId = workerId;
         this.props.updatedAt = new Date();
         this.props.startTime = new Date();
     }
 
-    markAsCompleted(): void{
+    markAsCompleted(): void {
         this.props.status = JobStatus.Completed;
         this.props.completedAt = new Date();
         this.props.updatedAt = new Date();
     }
 
-    markAsFailed(error: string){
+    markAsFailed(error: string): void {
         this.props.status = JobStatus.Failed;
         this.props.error = error;
         this.props.completedAt = new Date();

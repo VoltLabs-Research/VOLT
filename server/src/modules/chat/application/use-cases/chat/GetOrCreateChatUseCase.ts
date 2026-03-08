@@ -1,12 +1,12 @@
-import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
+import { GetOrCreateChatInputDTO, GetOrCreateChatOutputDTO } from '@modules/chat/application/dtos/chat/GetOrCreateChatDTO';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { toPersistedChatOutput } from '@modules/chat/domain/services/toPersistedChatOutput';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IUseCase } from '@shared/application/IUseCase';
-import { GetOrCreateChatInputDTO, GetOrCreateChatOutputDTO } from '@modules/chat/application/dtos/chat/GetOrCreateChatDTO';
-import { injectable, inject } from 'tsyringe';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { toPersistedChatOutput } from '@modules/chat/application/helpers/toPersistedChatOutput';
-import { ErrorCodes } from '@core/constants/error-codes';
+import { inject, injectable } from 'tsyringe';
+import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
 
 @injectable()
 export class GetOrCreateChatUseCase implements IUseCase<GetOrCreateChatInputDTO, GetOrCreateChatOutputDTO, ApplicationError> {

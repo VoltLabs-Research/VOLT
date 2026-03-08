@@ -1,15 +1,36 @@
-import { motion } from 'framer-motion';
-import Avatar from '@/shared/presentation/components/Avatar';
 import type { User } from '@/modules/auth/api/entities/user';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import { motion } from 'framer-motion';
+import Avatar from '@/shared/presentation/components/Avatar';
 import './SimulationCardHeader.css';
+import type { Variants } from 'framer-motion';
 
-interface SimulationCardHeaderProps{
-    user?: User | null
+interface SimulationCardHeaderProps {
+    user?: User | null;
 };
 
-const SimulationCardHeader = ({ user }: SimulationCardHeaderProps) => {
-    if(!user?.firstName) return null;
+const HEADER_VARIANTS: Variants = {
+    normal: { background: 'rgba(18, 18, 18, 0)' },
+    hover: { background: 'rgba(18, 18, 18, 0.45)' }
+};
+
+const HEADER_PADDING_VARIANTS: Variants = {
+    normal: { padding: 0 },
+    hover: { padding: '0.3rem 0.5rem' }
+};
+
+const HEADER_AVATAR_VARIANTS: Variants = {
+    normal: { scale: 0.8, opacity: 0.9 },
+    hover: { scale: 1, opacity: 1 }
+};
+
+const HEADER_CONTENT_VARIANTS: Variants = {
+    normal: { width: 0, opacity: 0, marginLeft: 0, scale: 0.8 },
+    hover: { width: 'auto', opacity: 1, marginLeft: '0.75rem', scale: 1 }
+};
+
+export default function SimulationCardHeader({ user }: SimulationCardHeaderProps) {
+    if (!user?.firstName) return null;
 
     return (
         <motion.div
@@ -17,36 +38,24 @@ const SimulationCardHeader = ({ user }: SimulationCardHeaderProps) => {
             initial={false}
             whileHover='hover'
             animate='normal'
-            variants={{
-                normal: { background: 'rgba(18, 18, 18, 0)' },
-                hover: { background: 'rgba(18, 18, 18, 0.45)' }
-            }}
+            variants={HEADER_VARIANTS}
             transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
         >
             <motion.div
                 className='d-flex items-center p-relative'
-                variants={{
-                    normal: { padding: 0 },
-                    hover: { padding: '0.3rem 0.5rem' }
-                }}
+                variants={HEADER_PADDING_VARIANTS}
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             >
                 <motion.div
                     className='header-avatar-wrapper'
-                    variants={{
-                        normal: { scale: 0.8, opacity: 0.9 },
-                        hover: { scale: 1, opacity: 1 }
-                    }}
+                    variants={HEADER_AVATAR_VARIANTS}
                     transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                 >
                     <Avatar user={user} size='sm' />
                 </motion.div>
                 <motion.div
                     className='d-flex column content-center overflow-hidden'
-                    variants={{
-                        normal: { width: 0, opacity: 0, marginLeft: 0, scale: 0.8 },
-                        hover: { width: 'auto', opacity: 1, marginLeft: '0.75rem', scale: 1 }
-                    }}
+                    variants={HEADER_CONTENT_VARIANTS}
                     transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                 >
                     <Paragraph className='font-size-1 font-weight-5 color-secondary'>Uploaded by</Paragraph>
@@ -57,6 +66,4 @@ const SimulationCardHeader = ({ user }: SimulationCardHeaderProps) => {
             </motion.div>
         </motion.div>
     );
-};
-
-export default SimulationCardHeader;
+}

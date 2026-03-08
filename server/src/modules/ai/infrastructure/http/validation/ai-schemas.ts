@@ -1,7 +1,8 @@
 import { z } from 'zod/v4';
+import { AIConversationMessageRole } from '@modules/ai/domain/contracts/AIConversationMessage';
 import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
-import { AI_PROVIDERS } from '@modules/ai/domain/constants/AIProviders';
 import { aiConversationMessagesSchema } from './ai-message-schemas';
+import { AIProvider } from '@modules/ai/domain/contracts/AIProviders';
 
 const createConversationSchema = z.object({
     title: z.string().trim().min(1).max(200).optional(),
@@ -11,19 +12,19 @@ const createConversationSchema = z.object({
 const sendMessageSchema = z.object({
     message: z.string().trim().min(1).optional(),
     messages: aiConversationMessagesSchema.optional(),
-    provider: z.enum(AI_PROVIDERS).optional(),
+    provider: z.enum(AIProvider).optional(),
     model: z.string().trim().min(1).optional()
 }).strict();
 
 const streamMessageSchema = z.object({
     messages: aiConversationMessagesSchema,
-    provider: z.enum(AI_PROVIDERS).optional(),
+    provider: z.enum(AIProvider).optional(),
     model: z.string().trim().min(1).optional(),
     title: z.string().trim().min(1).max(200).optional()
 }).strict().superRefine((value, context) => {
     const lastUserMessage = [...value.messages]
         .reverse()
-        .find((message) => message.role === 'user');
+        .find((message) => message.role === AIConversationMessageRole.User);
 
     if (!lastUserMessage) {
         context.addIssue({

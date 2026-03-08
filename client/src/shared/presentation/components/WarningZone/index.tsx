@@ -1,5 +1,5 @@
-import React from 'react';
 import Container from '@/shared/presentation/components/Container';
+import React from 'react';
 
 interface WarningZoneProps {
     icon?: React.ReactNode;

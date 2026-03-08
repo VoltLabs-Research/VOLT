@@ -1,13 +1,13 @@
+import { PresenceStatus } from '@/modules/chat/api/entities/shared/chat-events';
+import { getChatDisplayName, getChatStatusText } from '@/modules/chat/utilities/chat/chat-display';
+import ChatAvatar from '../../atoms/ChatAvatar';
 import { IoInformationCircleOutline } from 'react-icons/io5';
-import type { Chat } from '@/modules/chat/api/entities/chat';
-import type { PresenceStatus } from '@/modules/chat/api/entities/chat-events';
+import IconButton from '@/shared/presentation/components/IconButton';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import StatusDot from '@/shared/presentation/components/StatusDot';
-import IconButton from '@/shared/presentation/components/IconButton';
-import Tooltip from '@/shared/presentation/components/Tooltip';
-import { ChatAvatar } from '../../atoms';
-import { getChatDisplayName, getChatStatusText } from '@/modules/chat/utilities';
+import type { Chat } from '@/modules/chat/api/entities/chat';
 import './ChatHeader.css';
 
 interface ChatHeaderProps {
@@ -17,7 +17,7 @@ interface ChatHeaderProps {
     onInfoClick?: () => void;
 };
 
-const ChatHeader = ({ chat, currentUserId, presence = 'unknown', onInfoClick }: ChatHeaderProps) => {
+const ChatHeader = ({ chat, currentUserId, presence = PresenceStatus.Unknown, onInfoClick }: ChatHeaderProps) => {
     const displayName = getChatDisplayName(chat, currentUserId);
     const statusText = getChatStatusText(chat, presence);
 
@@ -33,7 +33,7 @@ const ChatHeader = ({ chat, currentUserId, presence = 'unknown', onInfoClick }: 
                     {statusText && (
                         <Container className='d-flex items-center gap-05 chat-header-status'>
                             {!chat.isGroup && (
-                                <StatusDot isOnline={presence === 'online'} />
+                                <StatusDot isOnline={presence === PresenceStatus.Online} />
                             )}
                             <Paragraph className='color-muted'>{statusText}</Paragraph>
                         </Container>

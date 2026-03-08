@@ -1,11 +1,12 @@
-import type { StateCreator } from 'zustand';
-import type { OrbitControlsState, OrbitControlsStore } from '@/modules/fractal/types/stores/editor/visual-types';
-import type { EditorStore } from './types';
 import { resetSectionState, setSectionFieldState, mergeSectionState } from './store-section';
+
+import type { EditorStore } from './types';
+import type { OrbitControlsState, OrbitControlsStore } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { StateCreator } from 'zustand';
 
 export interface OrbitControlsSlice {
     orbitControls: OrbitControlsStore;
-}
+};
 
 const INITIAL: OrbitControlsState = {
     enabled: true,

@@ -1,4 +1,4 @@
-import { PersistedChatDTO } from '@modules/chat/domain/port/IChatRepository';
+import { PersistedChatDTO } from '@modules/chat/domain/port/chat/IChatRepository';
 
 export interface GetUserChatsInputDTO{
     userId: string;

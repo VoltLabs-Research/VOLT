@@ -1,11 +1,11 @@
-import type { Chat } from '@/modules/chat/api/entities/chat';
-import type { User } from '@/modules/auth/api/entities/user';
+import { getMemberRole } from '@/modules/chat/utilities/chat/chat-display';
+import TeamMemberList from '../../../molecules/TeamMemberList';
+import { MemberListItem } from '../../../molecules';
+import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import Button from '@/shared/presentation/components/Button';
-import { MemberListItem } from '@/modules/team/components/molecules';
-import { TeamMemberList } from '../../../molecules';
-import { getMemberRole } from '@/modules/chat/utilities';
+import type { User } from '@/modules/auth/api/entities/user';
+import type { Chat } from '@/modules/chat/api/entities/chat';
 
 interface MembersTabProps {
     chat: Chat;

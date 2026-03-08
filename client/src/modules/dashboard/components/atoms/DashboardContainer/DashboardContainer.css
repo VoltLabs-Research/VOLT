@@ -1,9 +1,0 @@
-.dashboard-container:has(.chat-main-container) {
-    padding: .5rem;
-}
-
-.dashboard-container {
-    padding-top: unset !important;
-}
-
-

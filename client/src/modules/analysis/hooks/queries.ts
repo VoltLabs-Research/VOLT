@@ -1,18 +1,20 @@
-import { buildKeys, createMutation, createQuery, createPaginatedQuery } from '@/shared/infrastructure/query/create-paginated-query';
-import { patchPaginatedPage, removeEntityFromList } from '@/shared/infrastructure/query/cache-utils';
-import { patchTrajectoryDetailCaches } from '@/modules/trajectory/hooks/trajectory/queries';
 import service from '../api/service';
+import { patchTrajectoryDetailCaches } from '@/modules/trajectory/shared/cache';
+import { patchPaginatedPage, removeEntityFromList } from '@/shared/infrastructure/query/cache-utils';
+import { buildKeys, createMutation, createPaginatedQuery, createQuery } from '@/shared/infrastructure/query/create-paginated-query';
 import type { Analysis } from '../api/entities/analysis';
 import type { GetAnalysesParams } from '../api/dtos/get-analyses';
 import type { GetAnalysesByTrajectoryParams } from '../api/dtos/get-analyses-by-trajectory';
-import type { RetryFailedFramesResponse } from '../api/dtos/retry-failed-frames';
+import type { RetryFailedFramesParams, RetryFailedFramesResponse } from '../api/dtos/retry-failed-frames';
+
+type AnalysisQueryKeys = Record<string, unknown> & {
+    detail: string;
+    byTrajectory: GetAnalysesByTrajectoryParams;
+};
 
 const BASE_KEY = 'analysis';
 
-export const KEYS = buildKeys<{
-    detail: string;
-    byTrajectory: GetAnalysesByTrajectoryParams;
-}>(BASE_KEY);
+export const KEYS = buildKeys<AnalysisQueryKeys>(BASE_KEY);
 
 export const analysisQuery = createPaginatedQuery<Analysis, GetAnalysesParams>({
     baseKey: BASE_KEY,
@@ -31,6 +33,6 @@ export const analysisQuery = createPaginatedQuery<Analysis, GetAnalysesParams>({
 });
 
 export const useAnalysesByTrajectoryQuery = createQuery(KEYS.byTrajectory, service.getByTrajectoryId);
-export const useRetryFailedFramesMutation = createMutation<RetryFailedFramesResponse, { analysisId: string }>(
+export const useRetryFailedFramesMutation = createMutation<RetryFailedFramesResponse, RetryFailedFramesParams>(
     service.retryFailedFrames
 );

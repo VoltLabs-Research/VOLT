@@ -1,25 +1,27 @@
-import React, { useState } from 'react';
+import './PasswordChangeForm.css';
+import { passwordChangeSchema } from './validation-schema';
+import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Button from '@/shared/presentation/components/Button';
 import useZodForm from '@/shared/presentation/hooks/use-zod-form';
-import { passwordChangeSchema, type PasswordChangeForm as PasswordChangeFormType, type PasswordInfo } from './validation-schema';
 import { Lock, Key } from 'lucide-react';
-import './PasswordChangeForm.css';
+import { useState } from 'react';
+import type { ChangePasswordInputDTO } from '@/modules/auth/api/dtos/change-password';
+import type { PasswordChangeForm as PasswordChangeFormType, PasswordInfo } from './validation-schema';
 
 interface PasswordChangeFormProps {
     passwordInfo: PasswordInfo | null;
     isOpen: boolean;
-    onSubmit: (data: { passwordCurrent?: string; password: string }) => Promise<void>;
+    onSubmit: (data: ChangePasswordInputDTO) => Promise<void>;
     onCancel: () => void;
-}
+};
 
-const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({
+const PasswordChangeForm = ({
     passwordInfo,
     isOpen,
     onSubmit,
     onCancel
-}) => {
+}: PasswordChangeFormProps) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { control, handleSubmit, reset, setError } = useZodForm<PasswordChangeFormType>({
@@ -43,9 +45,12 @@ const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({
             });
             reset();
         } catch (error: unknown) {
-            const errorMessage = error instanceof Error
-                ? error.message
-                : 'Failed to change password';
+            let errorMessage = 'Failed to change password';
+
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
             setError('confirmPassword', { message: errorMessage });
         } finally {
             setIsSubmitting(false);

@@ -1,5 +1,6 @@
-import { Activity } from 'lucide-react';
 import { useContainerProcessesQuery } from '../../../hooks/queries';
+import './ContainerProcesses.css';
+import { Activity } from 'lucide-react';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
@@ -7,8 +8,8 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import Table, { type Column } from '@/shared/presentation/components/Table';
-import './ContainerProcesses.css';
+import Table from '@/shared/presentation/components/Table';
+import type { Column } from '@/shared/presentation/components/Table';
 
 interface ContainerProcessesProps {
     containerId: string;
@@ -43,13 +44,38 @@ const mapProcess = (p: string[]): ProcessInfo => ({
 });
 
 const COLUMNS: Column<ProcessInfo>[] = [
-    { key: 'PID', header: 'PID', cellClassName: 'font-family-mono' },
-    { key: 'Program', header: 'Program', cellClassName: 'font-weight-5 color-success' },
-    { key: 'Command', header: 'Command', cellClassName: 'font-family-mono color-muted container-processes-command-cell text-truncate' },
-    { key: 'Threads', header: 'Threads', cellClassName: 'font-family-mono' },
+    {
+        key: 'PID',
+        header: 'PID',
+        cellClassName: 'font-family-mono'
+    },
+    {
+        key: 'Program',
+        header: 'Program',
+        cellClassName: 'font-weight-5 color-success'
+    },
+    {
+        key: 'Command',
+        header: 'Command',
+        cellClassName: 'font-family-mono color-muted container-processes-command-cell text-truncate'
+    },
+    {
+        key: 'Threads',
+        header: 'Threads',
+        cellClassName: 'font-family-mono'
+    },
     { key: 'User', header: 'User' },
-    { key: 'MemB', header: 'MemB', cellClassName: 'font-family-mono' },
-    { key: 'Cpu', header: 'Cpu%', cellClassName: 'font-family-mono', render: (row) => `${row.Cpu}%` }
+    {
+        key: 'MemB',
+        header: 'MemB',
+        cellClassName: 'font-family-mono'
+    },
+    {
+        key: 'Cpu',
+        header: 'Cpu%',
+        cellClassName: 'font-family-mono',
+        render: (row) => `${row.Cpu}%`
+    }
 ];
 
 const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {

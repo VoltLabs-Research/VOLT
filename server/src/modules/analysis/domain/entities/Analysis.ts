@@ -1,7 +1,9 @@
+export type AnalysisConfig = Record<string, unknown>;
+
 export interface AnalysisProps {
     plugin: string;
     clusterId: string;
-    config: any;
+    config: AnalysisConfig;
     trajectory: string;
     createdBy: string;
     totalFrames?: number;
@@ -18,7 +20,7 @@ export default class Analysis {
     constructor(
         public readonly _id: string,
         public props: AnalysisProps
-    ){}
+    ) {}
 
     get id(): string {
         return this._id;

@@ -1,12 +1,12 @@
 import { paginated, post, patch, del } from '@/app/core/http/utilities/create-service';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { SecretKey } from '@/modules/team/api/entities/secret-key';
-import type { GetSecretKeysInputDTO } from '../../../dtos/get-secret-keys';
-import type { CreateSecretKeyInputDTO, CreateSecretKeyResponse } from '../../../dtos/create-secret-key';
-import type { RevokeSecretKeyInputDTO } from '../../../dtos/revoke-secret-key';
-import type { DeleteSecretKeyInputDTO } from '../../../dtos/delete-secret-key';
+import type { SecretKey } from '@/modules/team/api/entities/secret-key/secret-key';
+import type { GetSecretKeysInputDTO } from '../../../dtos/secret-key/get-secret-keys';
+import type { CreateSecretKeyInputDTO, CreateSecretKeyResponse } from '../../../dtos/secret-key/create-secret-key';
+import type { RevokeSecretKeyInputDTO } from '../../../dtos/secret-key/revoke-secret-key';
+import type { DeleteSecretKeyInputDTO } from '../../../dtos/secret-key/delete-secret-key';
 
-const endpoints = {
+export default {
     listByTeamId: paginated<GetSecretKeysInputDTO, PaginatedResponse<SecretKey>>('/:teamId/secret-keys'),
     create: post<CreateSecretKeyInputDTO, CreateSecretKeyResponse>('/:teamId/secret-keys'),
     revokeById: patch<RevokeSecretKeyInputDTO, void>(
@@ -14,5 +14,3 @@ const endpoints = {
     ),
     deleteById: del<DeleteSecretKeyInputDTO>('/:teamId/secret-keys/:secretKeyId')
 };
-
-export default endpoints;

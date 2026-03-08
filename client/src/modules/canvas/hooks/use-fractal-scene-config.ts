@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { selectFractalSceneConfig } from '@/modules/canvas/stores/editor/selectors';
+
+import { useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
 
 const useFractalSceneConfig = (): FractalSceneConfig => {

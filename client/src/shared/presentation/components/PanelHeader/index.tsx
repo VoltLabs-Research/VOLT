@@ -1,11 +1,11 @@
-import React from 'react';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
+import { cn } from '@/shared/utils';
 import Button from '@/shared/presentation/components/Button';
 import CloseButton from '@/shared/presentation/components/CloseButton';
-import { cn } from '@/shared/utils';
+import Container from '@/shared/presentation/components/Container';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Title from '@/shared/presentation/components/Title';
 import './PanelHeader.css';
+import React from 'react';
 
 export interface PanelHeaderProps {
     title?: string;
@@ -15,7 +15,7 @@ export interface PanelHeaderProps {
     tabs?: { label: string; active: boolean; disabled?: boolean; onClick?: () => void }[];
     variant?: 'default' | 'compact';
     className?: string;
-}
+};
 
 const PanelHeader: React.FC<PanelHeaderProps> = ({
     title,

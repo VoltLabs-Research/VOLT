@@ -1,15 +1,18 @@
-import { Activity } from 'lucide-react';
-import PanelHeader from '../../atoms/PanelHeader';
-import Container from '@/shared/presentation/components/Container';
-import JobsHistoryViewer from '@/modules/jobs/components/organisms/JobsHistoryViewer';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-import StatusCounts from '../../molecules/StatusCounts';
 import useJobStatusCounts from '../../../hooks/use-job-status-counts';
+import PanelHeader from '../../atoms/PanelHeader';
+import StatusCounts from '../../molecules/StatusCounts';
+
+import { Activity } from 'lucide-react';
+import JobsHistoryViewer from '@/modules/jobs/components/organisms/JobsHistoryViewer';
+import Container from '@/shared/presentation/components/Container';
+
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+
 import './TexturesPanel.css';
 
 interface TexturesPanelProps {
     trajectory: Trajectory | null | undefined;
-}
+};
 
 const TexturesPanel = ({ trajectory }: TexturesPanelProps) => {
     const statusCounts = useJobStatusCounts(trajectory?._id);

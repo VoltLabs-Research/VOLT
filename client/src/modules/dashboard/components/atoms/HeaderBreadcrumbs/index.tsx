@@ -1,8 +1,8 @@
-import Container from '@/shared/presentation/components/Container';
+import './HeaderBreadcrumbs.css';
 import { useMemo } from 'react';
 import { IoChevronForward } from 'react-icons/io5';
 import { useLocation, useNavigate } from 'react-router-dom';
-import './HeaderBreadcrumbs.css';
+import Container from '@/shared/presentation/components/Container';
 
 const HeaderBreadcrumbs = () => {
     const { pathname } = useLocation();
@@ -19,6 +19,15 @@ const HeaderBreadcrumbs = () => {
         return segments;
     }, [pathname]);
 
+    const getBreadcrumbClassName = (index: number, length: number): string => {
+        let className = 'breadcrumb-item breadcrumb-link color-secondary cursor-pointer';
+        if (index === length - 1) {
+            className = 'breadcrumb-item breadcrumb-current color-primary font-weight-5';
+        }
+
+        return className;
+    };
+
     return (
         <nav className='breadcrumb-nav d-flex items-center gap-05 font-size-2'>
             <span
@@ -31,7 +40,7 @@ const HeaderBreadcrumbs = () => {
             {breadcrumbs.map((segment, index, arr) => (
                 <Container key={segment} className='d-flex items-center gap-05'>
                     <IoChevronForward className='breadcrumb-separator color-text-muted' size={14} />
-                    <span className={`breadcrumb-item ${index === arr.length - 1 ? 'breadcrumb-current color-primary font-weight-5' : 'breadcrumb-link color-secondary cursor-pointer'}`}>
+                    <span className={getBreadcrumbClassName(index, arr.length)}>
                         {segment}
                     </span>
                 </Container>

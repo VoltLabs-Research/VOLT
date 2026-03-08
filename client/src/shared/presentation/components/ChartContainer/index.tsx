@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react';
-import type { LucideIcon } from 'lucide-react';
-import { Skeleton } from '@mui/material';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import './ChartContainer.css';
+import { Skeleton } from '@mui/material';
+import type { LucideIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 interface ChartStat {
     label: string;

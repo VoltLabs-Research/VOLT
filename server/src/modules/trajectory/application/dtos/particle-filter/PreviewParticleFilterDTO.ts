@@ -6,9 +6,9 @@ export interface PreviewParticleFilterInputDTO {
     property: string;
     operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
     value: number;
-}
+};
 
 export interface PreviewParticleFilterOutputDTO {
     matchCount: number;
     totalAtoms: number;
-}
+};

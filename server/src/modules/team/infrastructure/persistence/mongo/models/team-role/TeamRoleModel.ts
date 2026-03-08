@@ -1,0 +1,42 @@
+import { TeamRoleProps } from '@modules/team/domain/entities/team-role/TeamRole';
+import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import mongoose, { Schema, Document, Model } from 'mongoose';
+
+type TeamRoleRelations = 'team';
+
+export interface TeamRoleDocument extends Persistable<TeamRoleProps, TeamRoleRelations>, Document{};
+
+const TeamRoleSchema: Schema<TeamRoleDocument> = new Schema({
+    team: {
+        type: Schema.Types.ObjectId,
+        ref: 'Team',
+        required: true,
+        cascade: 'delete'
+    },
+    name: {
+        type: String,
+        required: true
+    },
+    permissions: [{
+        type: String
+    }],
+    isSystem: {
+        type: Boolean,
+        default: false
+    }
+}, {
+    timestamps: true
+});
+
+TeamRoleSchema.index({
+    team: 1,
+    name: 1
+}, { unique: true });
+
+TeamRoleSchema.index({ team: 1, isSystem: 1 });
+
+TeamRoleSchema.index({ name: 'text' });
+
+const TeamRoleModel: Model<TeamRoleDocument> = mongoose.model<TeamRoleDocument>('TeamRole', TeamRoleSchema);
+
+export default TeamRoleModel;

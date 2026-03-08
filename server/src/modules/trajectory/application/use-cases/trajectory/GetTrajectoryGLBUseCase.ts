@@ -1,12 +1,14 @@
-import { injectable, inject } from 'tsyringe';
-import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { SYS_BUCKETS } from '@core/config/minio';
-import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { GetTrajectoryGLBInputDTO, GetTrajectoryGLBOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryGLBDTO';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { Result } from '@shared/domain/port/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+
+import { injectable, inject } from 'tsyringe';
+
+import type { IUseCase } from '@shared/application/IUseCase';
+import type { IStorageService } from '@shared/domain/port/IStorageService';
 
 @injectable()
 export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGLBInputDTO, GetTrajectoryGLBOutputDTO, ApplicationError> {
@@ -29,4 +31,4 @@ export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGL
             return Result.fail(new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'GLB model not found', 404));
         }
     }
-}
+};

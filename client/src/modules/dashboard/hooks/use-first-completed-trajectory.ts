@@ -6,7 +6,7 @@ import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 interface UseFirstCompletedTrajectoryReturn {
     completedTrajectory: Trajectory | null;
     isLoadingTrajectories: boolean;
-}
+};
 
 const useFirstCompletedTrajectory = (): UseFirstCompletedTrajectoryReturn => {
     const selectedTeam = useSelectedTeam();

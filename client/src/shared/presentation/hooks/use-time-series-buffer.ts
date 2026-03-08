@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 
 interface UseTimeSeriesBufferOptions {
     maxPoints: number;
-}
+};
 
 const useTimeSeriesBuffer = <T extends object>(
     options: UseTimeSeriesBufferOptions

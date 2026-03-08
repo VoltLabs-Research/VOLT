@@ -1,11 +1,13 @@
-import type { StateCreator } from 'zustand';
-import type { RendererSettingsStore, RendererSettingsState, RendererCreateState, RendererRuntimeState } from '@/modules/fractal/types/stores/editor/performance-types';
-import type { EditorStore } from './types';
 import { mergeNestedSectionState, resetSectionState } from './store-section';
+
+import type { EditorStore } from './types';
+import { OutputCS, PrecisionType, ShadowType, ToneMappingMode } from '@/modules/fractal/stores/contracts/editor/performance-types';
+import type { RendererSettingsStore, RendererSettingsState, RendererCreateState, RendererRuntimeState } from '@/modules/fractal/stores/contracts/editor/performance-types';
+import type { StateCreator } from 'zustand';
 
 export interface RendererSlice {
     rendererSettings: RendererSettingsStore;
-}
+};
 
 const INITIAL: RendererSettingsState = {
     create: {
@@ -17,15 +19,15 @@ const INITIAL: RendererSettingsState = {
         preserveDrawingBuffer: false,
         premultipliedAlpha: true,
         failIfMajorPerformanceCaveat: false,
-        precision: 'highp'
+        precision: PrecisionType.High
     },
     runtime: {
-        toneMapping: 'None',
+        toneMapping: ToneMappingMode.None,
         toneMappingExposure: 1,
-        outputColorSpace: 'SRGB',
+        outputColorSpace: OutputCS.SRGB,
 
         shadowEnabled: false,
-        shadowType: 'PCF',
+        shadowType: ShadowType.PCF,
         shadowAutoUpdate: true,
 
         localClippingEnabled: false,

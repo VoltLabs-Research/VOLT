@@ -1,10 +1,16 @@
 import { get, post } from '@/app/core/http/utilities/create-service';
-import type { GetFilterPropertiesInputDTO, FilterPropertiesData } from '../../../dtos/get-filter-properties';
-import type { PreviewFilterInputDTO, PreviewFilterOutputDTO } from '../../../dtos/preview-filter';
-import type { ApplyFilterInputDTO, ApplyFilterOutputDTO } from '../../../dtos/apply-filter';
-import type { GetUniqueValuesInputDTO, GetUniqueValuesOutputDTO } from '../../../dtos/get-unique-values';
+import type {
+    ApplyFilterInputDTO,
+    ApplyFilterOutputDTO,
+    FilterPropertiesData,
+    GetFilterPropertiesInputDTO,
+    GetUniqueValuesInputDTO,
+    GetUniqueValuesOutputDTO,
+    PreviewFilterInputDTO,
+    PreviewFilterOutputDTO
+} from '../../../dtos/particle-filter';
 
-const endpoints = {
+export default {
     getProperties: get<GetFilterPropertiesInputDTO, FilterPropertiesData>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/properties/${analysisId}`
@@ -39,5 +45,3 @@ const endpoints = {
         { omit: ['trajectoryId', 'analysisId'] }
     )
 };
-
-export default endpoints;

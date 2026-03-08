@@ -1,7 +1,8 @@
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+
 import { useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import useGetTrajectoryById from '@/modules/trajectory/hooks/use-get-trajectory-by-id';
+import useGetTrajectoryById from '@/modules/trajectory/hooks/trajectory/use-get-trajectory-by-id';
 
 const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     const { trajectory, isLoading, error } = useGetTrajectoryById({

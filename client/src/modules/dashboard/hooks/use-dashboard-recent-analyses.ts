@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
 import { analysisQuery } from '@/modules/analysis/hooks/queries';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import { formatDistanceToNow } from 'date-fns';
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export interface DashboardRecentAnalysisItem {
     id: string;
@@ -11,7 +11,7 @@ export interface DashboardRecentAnalysisItem {
     status: string;
     createdAtLabel: string;
     trajectoryId: string;
-}
+};
 
 export const useDashboardRecentAnalyses = () => {
     const navigate = useNavigate();

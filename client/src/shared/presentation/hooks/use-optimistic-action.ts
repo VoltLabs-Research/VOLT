@@ -3,7 +3,7 @@ import type { MenuOption } from '@/shared/presentation/types/menu';
 
 interface Identifiable {
     _id: string;
-}
+};
 
 interface UseOptimisticActionOptions {
     shouldTrack?: (option: MenuOption) => boolean;

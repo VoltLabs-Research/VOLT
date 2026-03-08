@@ -1,11 +1,11 @@
-import { container } from 'tsyringe';
-import ListAIConversationsController from './ListAIConversationsController';
 import CreateAIConversationController from './CreateAIConversationController';
+import DeleteAIConversationController from './DeleteAIConversationController';
 import ListAIConversationMessagesController from './ListAIConversationMessagesController';
+import ListAIConversationsController from './ListAIConversationsController';
 import SendAIConversationMessageController from './SendAIConversationMessageController';
 import StreamAIConversationMessageController from './StreamAIConversationMessageController';
 import UpdateAIConversationController from './UpdateAIConversationController';
-import DeleteAIConversationController from './DeleteAIConversationController';
+import { container } from 'tsyringe';
 
 export default {
     listConversations: container.resolve(ListAIConversationsController),

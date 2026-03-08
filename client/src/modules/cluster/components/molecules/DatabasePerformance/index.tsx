@@ -1,3 +1,6 @@
+import { CHART_COLORS } from '@/modules/cluster/utilities/chart-colors';
+import ChartContainer from '@/shared/presentation/components/ChartContainer';
+import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
 import { useMemo } from 'react';
 import {
     LineChart,
@@ -10,39 +13,37 @@ import {
 } from 'recharts';
 import { Database } from 'lucide-react';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
-import { CHART_COLORS } from '@/modules/cluster/constants';
-import { clusterHistoryQuery } from '@/modules/cluster/hooks/queries';
-import ChartContainer from '@/shared/presentation/components/ChartContainer';
-import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
 
 interface DataPoint {
     queries: number;
     connections: number;
     latency: number;
     queriesPerSecond?: number;
-}
+};
 
 interface DatabasePerformanceProps {
-    clusterId: string;
+    history: ClusterMetrics[];
     metrics: ClusterMetrics | null;
-}
+};
 
-const DatabasePerformance = ({ clusterId, metrics }: DatabasePerformanceProps) => {
-    const { data: history = [] } = clusterHistoryQuery(clusterId);
+const DatabasePerformance = ({ history, metrics }: DatabasePerformanceProps) => {
     const chartData = useMemo<DataPoint[]>(() => {
         const databaseHistory = history.filter((point) => point.mongodb);
 
         return databaseHistory.map((point, index) => {
             const previousPoint = index > 0 ? databaseHistory[index - 1].mongodb : undefined;
             const currentPoint = point.mongodb!;
+            let queriesPerSecond: number | undefined;
+
+            if (previousPoint) {
+                queriesPerSecond = Math.max(0, currentPoint.queries - previousPoint.queries);
+            }
 
             return {
                 queries: currentPoint.queries,
                 connections: currentPoint.connections,
                 latency: currentPoint.latency,
-                queriesPerSecond: previousPoint
-                    ? Math.max(0, currentPoint.queries - previousPoint.queries)
-                    : undefined
+                queriesPerSecond
             };
         });
     }, [history]);
@@ -51,9 +52,12 @@ const DatabasePerformance = ({ clusterId, metrics }: DatabasePerformanceProps) =
         if (!chartData.length) return { avgQueries: 0, avgLatency: 0 };
 
         const withQps = chartData.filter((point) => point.queriesPerSecond !== undefined);
-        const avgQueries = withQps.length
-            ? Math.round(withQps.reduce((sum, point) => sum + (point.queriesPerSecond ?? 0), 0) / withQps.length)
-            : 0;
+        let avgQueries = 0;
+
+        if (withQps.length) {
+            avgQueries = Math.round(withQps.reduce((sum, point) => sum + (point.queriesPerSecond ?? 0), 0) / withQps.length);
+        }
+
         const avgLatency = Math.round(
             chartData.reduce((sum, point) => sum + point.latency, 0) / chartData.length
         );
@@ -67,9 +71,21 @@ const DatabasePerformance = ({ clusterId, metrics }: DatabasePerformanceProps) =
         return (
             <ChartTooltip
                 items={[
-                    { label: 'Queries', value: payload[0].value, color: CHART_COLORS.blue },
-                    { label: 'Connections', value: payload[1].value, color: CHART_COLORS.green },
-                    { label: 'Latency', value: `${payload[2].value}ms`, color: CHART_COLORS.orange }
+                    {
+                        label: 'Queries',
+                        value: payload[0].value,
+                        color: CHART_COLORS.blue
+                    },
+                    {
+                        label: 'Connections',
+                        value: payload[1].value,
+                        color: CHART_COLORS.green
+                    },
+                    {
+                        label: 'Latency',
+                        value: `${payload[2].value}ms`,
+                        color: CHART_COLORS.orange
+                    }
                 ]}
             />
         );
@@ -87,7 +103,15 @@ const DatabasePerformance = ({ clusterId, metrics }: DatabasePerformanceProps) =
             statsLoading={!metrics}
         >
             <ResponsiveContainer width='100%' height={280}>
-                <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <LineChart
+                    data={chartData}
+                    margin={{
+                        top: 10,
+                        right: 10,
+                        left: 0,
+                        bottom: 0
+                    }}
+                >
                     <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />
                     <YAxis
                         yAxisId='left'

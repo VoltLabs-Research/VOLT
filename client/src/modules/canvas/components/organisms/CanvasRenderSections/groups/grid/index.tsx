@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { IoGridOutline } from 'react-icons/io5';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import Container from '@/shared/presentation/components/Container';
 import { row, PRESETS, checkbox, colorField, gridPosRows, gridRotRows } from '../../../../molecules/CanvasRenderConfigHelpers';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+
+import { useMemo } from 'react';
+import { IoGridOutline } from 'react-icons/io5';
+import { useShallow } from 'zustand/react/shallow';
+import Container from '@/shared/presentation/components/Container';
+
 import type { RenderGroup } from '../../types';
 
 const useGridGroup = (): RenderGroup => {

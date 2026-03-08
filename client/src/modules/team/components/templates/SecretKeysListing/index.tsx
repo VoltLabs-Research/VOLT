@@ -1,23 +1,24 @@
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { PiKeyLight } from 'react-icons/pi';
-import { RiFileCopyLine, RiShieldKeyholeLine, RiBarChartLine, RiLineChartLine } from 'react-icons/ri';
-import { formatDistanceToNow } from 'date-fns';
-import useRevokeSecretKey from '@/modules/team/hooks/secret-key/use-revoke-secret-key';
-import useDeleteSecretKey from '@/modules/team/hooks/secret-key/use-delete-secret-key';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import useSecretKeysListing from '@/modules/team/hooks/secret-key/use-secret-keys-listing';
-import DocumentListing, { type ColumnConfig, type SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { openModal } from '@/shared/presentation/components/Modal';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { SecretKeyCreationModal, SECRET_KEY_CREATION_MODAL_ID } from '../../organisms/SecretKeyCreationModal';
+import useDeleteSecretKey from '@/modules/team/hooks/secret-key/use-delete-secret-key';
+import useRevokeSecretKey from '@/modules/team/hooks/secret-key/use-revoke-secret-key';
+import useSecretKeysListing from '@/modules/team/hooks/secret-key/use-secret-keys-listing';
+import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import { sileo } from 'sileo';
-import SecretKeyCreationModal, { SECRET_KEY_CREATION_MODAL_ID } from '../../organisms/SecretKeyCreationModal';
-import type { SecretKey } from '@/modules/team/api/entities/secret-key';
-import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import Button from '@/shared/presentation/components/Button';
+import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import StatusBadge from '@/shared/presentation/components/StatusBadge';
+import { formatDistanceToNow } from 'date-fns';
+import { PiKeyLight } from 'react-icons/pi';
+import { RiBarChartLine, RiFileCopyLine, RiLineChartLine, RiShieldKeyholeLine } from 'react-icons/ri';
+import { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { sileo } from 'sileo';
+import type { SecretKey } from '@/modules/team/api/entities/secret-key/secret-key';
+import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import './SecretKeysListing.css';
 
 const SECRET_KEYS_QUERY_KEY = ['secret-keys'] as const;
@@ -27,48 +28,72 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'secret-key.deleted', queryKeys: [SECRET_KEYS_QUERY_KEY] }
 ];
 
-const COLUMNS: ColumnConfig[] = [
+interface PromiseToastOptions {
+    loading: { title: string };
+    success: { title: string };
+    error: { title: string };
+};
+
+type SecretKeyColumnSkeleton = NonNullable<ColumnConfig<SecretKey>['skeleton']>;
+
+const NAME_COLUMN_SKELETON: SecretKeyColumnSkeleton = { variant: 'text', width: 120 };
+const PREFIX_COLUMN_SKELETON: SecretKeyColumnSkeleton = { variant: 'text', width: 80 };
+const ROLE_COLUMN_SKELETON: SecretKeyColumnSkeleton = { variant: 'text', width: 100 };
+const STATUS_COLUMN_SKELETON: SecretKeyColumnSkeleton = {
+    variant: 'rounded',
+    width: 70,
+    height: 24
+};
+const DATE_COLUMN_SKELETON: SecretKeyColumnSkeleton = { variant: 'text', width: 90 };
+
+const getDeleteSecretKeyToastOptions = (key: SecretKey): PromiseToastOptions => ({
+    loading: { title: `Deleting "${key.name}"...` },
+    success: { title: `Secret key "${key.name}" deleted` },
+    error: { title: 'Failed to delete secret key' }
+});
+
+const COLUMNS: ColumnConfig<SecretKey>[] = [
     {
         key: 'name',
         title: 'Name',
-        render: (v) => String(v),
-        skeleton: { variant: 'text', width: 120 }
+        render: (_value, key) => String(key.name),
+        skeleton: NAME_COLUMN_SKELETON
     },
     {
         key: 'keyPrefix',
         title: 'Prefix',
-        render: (v) => <span className="secret-keys-listing-prefix-badge">{v as string}...</span>,
-        skeleton: { variant: 'text', width: 80 }
+        render: (_value, key) => <span className='secret-keys-listing-prefix-badge'>{key.keyPrefix}...</span>,
+        skeleton: PREFIX_COLUMN_SKELETON
     },
     {
         key: 'roleName',
         title: 'Role',
-        render: (v) => String(v || 'Unknown Role'),
-        skeleton: { variant: 'text', width: 100 }
+        render: (_value, key) => String(key.roleName || 'Unknown Role'),
+        skeleton: ROLE_COLUMN_SKELETON
     },
     {
         key: 'isActive',
         title: 'Status',
-        render: (v) => (
-            <StatusBadge status={(v as boolean) ? 'active' : 'revoked'} />
+        render: (_value, key) => (
+            <StatusBadge status={key.isActive ? 'active' : 'revoked'} />
         ),
-        skeleton: { variant: 'rounded', width: 70, height: 24 }
+        skeleton: STATUS_COLUMN_SKELETON
     },
     {
         key: 'createdAt',
         title: 'Created At',
-        render: (v) => formatDistanceToNow(new Date(v as string), { addSuffix: true }),
-        skeleton: { variant: 'text', width: 90 }
+        render: (_value, key) => formatDistanceToNow(new Date(key.createdAt), { addSuffix: true }),
+        skeleton: DATE_COLUMN_SKELETON
     },
     {
         key: 'lastUsedAt',
         title: 'Last Used',
-        render: (v) => v ? formatDistanceToNow(new Date(v as string), { addSuffix: true }) : 'Never',
-        skeleton: { variant: 'text', width: 90 }
+        render: (_value, key) => key.lastUsedAt ? formatDistanceToNow(new Date(key.lastUsedAt), { addSuffix: true }) : 'Never',
+        skeleton: DATE_COLUMN_SKELETON
     }
 ];
 
-const SecretKeysListing = () => {
+export default function SecretKeysListing() {
     const navigate = useNavigate();
     const canCreate = usePermission(['team-secret-key:create']);
     const selectedTeam = useSelectedTeam();
@@ -121,11 +146,7 @@ const SecretKeysListing = () => {
             delete: {
                 label: 'Delete',
                 handler: async ({ item: key }) => {
-                    await showPromise(deleteSecretKey(key._id), {
-                        loading: { title: `Deleting "${key.name}"...` },
-                        success: { title: `Secret key "${key.name}" deleted` },
-                        error: { title: 'Failed to delete secret key' }
-                    });
+                    await showPromise(deleteSecretKey(key._id), getDeleteSecretKeyToastOptions(key));
                 },
                 confirm: ({ selectedItems }) => (
                     selectedItems.length === 1
@@ -140,6 +161,10 @@ const SecretKeysListing = () => {
     const handleCreateKey = useCallback(() => {
         openModal(SECRET_KEY_CREATION_MODAL_ID);
     }, []);
+
+    const handleOpenMetrics = useCallback(() => {
+        navigate('/dashboard/secret-keys/metrics');
+    }, [navigate]);
 
     const getRowMenuOptions = useCallback((item: SecretKey, selectedKeys: SecretKey[]) => {
         const options = getMenuOptions(item, selectedKeys);
@@ -174,7 +199,7 @@ const SecretKeysListing = () => {
                     <Button
                         variant='ghost'
                         intent='neutral'
-                        onClick={() => navigate('/dashboard/secret-keys/metrics')}
+                        onClick={handleOpenMetrics}
                         leftIcon={<RiBarChartLine size={18} />}
                     >
                         Metrics
@@ -186,6 +211,4 @@ const SecretKeysListing = () => {
             <SecretKeyCreationModal />
         </>
     );
-};
-
-export default SecretKeysListing;
+}

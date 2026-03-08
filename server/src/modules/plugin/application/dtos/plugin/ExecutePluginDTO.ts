@@ -4,6 +4,6 @@ export interface ExecutePluginInputDTO {
     userId: string;
     teamId: string;
     selectedFrameOnly?: boolean;
-    config: Record<string, any>;
+    config: Record<string, unknown>;
     timestep?: number;
-}
+};

@@ -1,3 +1,5 @@
+import type { EnvVariable } from '@/modules/container/api/entities/env-variable';
+
 export interface ContainerTemplate {
     id: string;
     name: string;
@@ -6,7 +8,7 @@ export interface ContainerTemplate {
     description: string;
     category?: string;
     defaultPort?: number;
-    defaultEnv?: { key: string; value: string }[];
+    defaultEnv?: EnvVariable[];
     defaultCmd?: string[];
     useImageCmd?: boolean;
 };

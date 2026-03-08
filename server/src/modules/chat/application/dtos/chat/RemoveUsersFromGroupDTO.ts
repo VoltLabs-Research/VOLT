@@ -1,11 +1,9 @@
-import { ChatProps } from '@modules/chat/domain/entities/Chat';
+import type { PersistedChatDTO } from '@modules/chat/domain/port/chat/IChatRepository';
 
-export interface RemoveUsersFromGroupInputDTO{
+export interface RemoveUsersFromGroupInputDTO {
     userId: string;
     chatId: string;
     userIds: string[];
 };
 
-export interface RemoveUsersFromGroupOutputDTO extends ChatProps{
-    _id: string;
-}
+export interface RemoveUsersFromGroupOutputDTO extends PersistedChatDTO {};

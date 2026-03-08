@@ -1,40 +1,44 @@
-import { z } from 'zod/v4';
-import type { Request, Response, NextFunction } from 'express';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import type { NextFunction, Request, Response } from 'express';
+import { z } from 'zod/v4';
 
-export type ValidationTarget = 'body' | 'query' | 'params' | 'request';
+export enum ValidationTarget {
+    Body = 'body',
+    Query = 'query',
+    Params = 'params',
+    Request = 'request'
+};
 
-type RequestSectionTarget = Exclude<ValidationTarget, 'request'>;
+export type RequestValidationSchema = Partial<Record<ValidationTarget, z.ZodType<unknown>>>;
+export type ValidationSchemaInput = z.ZodType<unknown> | RequestValidationSchema;
+
+type RequestSectionTarget = Exclude<ValidationTarget, ValidationTarget.Request>;
 
 export interface RequestValidationState {
     body?: unknown;
     query?: unknown;
     params?: unknown;
     request?: unknown;
-}
+};
 
 export interface ValidatedRequest extends Request {
     validated?: RequestValidationState;
-}
-
-export type RequestValidationSchema = Partial<Record<ValidationTarget, z.ZodType<unknown>>>;
-
-type ValidationSchemaInput = z.ZodType<unknown> | RequestValidationSchema;
+};
 
 interface ValidationSuccess {
     success: true;
     data: RequestValidationState;
-}
+};
 
 interface ValidationFailure {
     success: false;
     message: string;
     code: 'Validation::InvalidInput';
-}
+};
 
 type ValidationResult = ValidationSuccess | ValidationFailure;
 
-const REQUEST_SECTION_TARGETS: RequestSectionTarget[] = ['params', 'query', 'body'];
+const REQUEST_SECTION_TARGETS: RequestSectionTarget[] = [ValidationTarget.Params, ValidationTarget.Query, ValidationTarget.Body];
 
 const isZodSchema = (value: unknown): value is z.ZodType<unknown> => {
     if (typeof value !== 'object' || value === null) {
@@ -49,7 +53,7 @@ const getValidationSource = (
     target: ValidationTarget,
     requestContext?: unknown
 ): unknown => {
-    if (target === 'request') {
+    if (target === ValidationTarget.Request) {
         return requestContext ?? {
             body: request.body,
             query: request.query,
@@ -124,7 +128,7 @@ const validateTarget = (
 
     setValidatedSource(request, target, result.data);
 
-    if (target === 'request') {
+    if (target === ValidationTarget.Request) {
         return {
             success: true,
             data: {
@@ -145,10 +149,11 @@ const validateTarget = (
 
 export const createValidationMiddleware = (
     schema: ValidationSchemaInput,
-    target: ValidationTarget = 'body'
+    target: ValidationTarget = ValidationTarget.Body
 ) => {
     return (request: Request, response: Response, next: NextFunction): void => {
-        const validationResult = validateRequest(request as ValidatedRequest, schema, target);
+        const validatedRequest: ValidatedRequest = request;
+        const validationResult = validateRequest(validatedRequest, schema, target);
 
         if (!validationResult.success) {
             BaseResponse.error(
@@ -167,7 +172,7 @@ export const createValidationMiddleware = (
 export const validateRequest = (
     request: ValidatedRequest,
     schema: ValidationSchemaInput,
-    defaultTarget: ValidationTarget = 'body',
+    defaultTarget: ValidationTarget = ValidationTarget.Body,
     requestContext?: unknown
 ): ValidationResult => {
     const schemas = getStructuredSchemas(schema, defaultTarget);
@@ -198,7 +203,7 @@ export const validateRequest = (
         };
     }
 
-    const requestValidationResult = validateTarget(request, 'request', requestSchema, requestContext);
+    const requestValidationResult = validateTarget(request, ValidationTarget.Request, requestSchema, requestContext);
 
     if (!requestValidationResult.success) {
         return requestValidationResult;
@@ -211,5 +216,3 @@ export const validateRequest = (
         data: aggregatedData
     };
 };
-
-export type { ValidationSchemaInput };

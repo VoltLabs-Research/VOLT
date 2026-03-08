@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
-import type { MenuOption } from '@/shared/presentation/types/menu';
-import { sileo } from 'sileo';
 import ApiError from '@/shared/errors/ApiError';
+import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import { useState } from 'react';
+import { sileo } from 'sileo';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 
 interface AsyncMenuItemWrapperProps {
     option: MenuOption;

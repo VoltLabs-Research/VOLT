@@ -1,16 +1,16 @@
-import type { ReactNode } from 'react';
+import AsyncMenuItemWrapper from '@/shared/presentation/components/AsyncMenuItemWrapper';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
-import AsyncMenuItemWrapper from '@/shared/presentation/components/AsyncMenuItemWrapper';
-import type { MenuOption } from '@/shared/presentation/types/menu';
 import './ContextMenuPopover.css';
+import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { ReactNode } from 'react';
 
 interface ContextMenuPopoverProps {
     id: string;
     trigger: ReactNode;
     options?: MenuOption[];
     size?: 'sm' | 'md';
-}
+};
 
 const ContextMenuPopover = ({ id, trigger, options = [], size = 'md' }: ContextMenuPopoverProps) => {
     if (options.length === 0) {

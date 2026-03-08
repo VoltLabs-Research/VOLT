@@ -8,16 +8,17 @@ import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
 import { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import logger from '@shared/infrastructure/logger';
 import { ISocketModule } from '@modules/socket/domain/port/ISocketModule';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import { ITokenService } from '@modules/auth/domain/port/ITokenService';
-import { ISocketMapper } from '@modules/socket/domain/port/ISocketMapper';
+import AuthenticateSocketConnectionUseCase from '@modules/socket/application/use-cases/AuthenticateSocketConnectionUseCase';
 import type { ISocketConnectionData } from '@modules/socket/domain/port/ISocketModule';
+import type { ISocketConnectionMapper } from '@modules/socket/infrastructure/contracts/ISocketConnectionMapper';
+import type { ISocketEmitterRuntime } from '@modules/socket/infrastructure/contracts/ISocketEmitterRuntime';
+import type { ISocketEventRegistryRuntime } from '@modules/socket/infrastructure/contracts/ISocketEventRegistryRuntime';
+import type { ISocketRoomManagerRuntime } from '@modules/socket/infrastructure/contracts/ISocketRoomManagerRuntime';
 
 export interface AuthenticatedSocket extends Socket{
-    user?: any;
+    user?: Awaited<ReturnType<AuthenticateSocketConnectionUseCase['execute']>>;
 };
 
 /**
@@ -50,23 +51,19 @@ export default class SocketGateway{
         @inject(SOCKET_TOKENS.SocketEventRegistry)
         private socketEventRegistry: ISocketEventRegistry,
 
-        @inject(AUTH_TOKENS.UserRepository)
-        private userRepository: IUserRepository,
+        @inject(SOCKET_TOKENS.AuthenticateSocketConnectionUseCase)
+        private authenticateSocketConnectionUseCase: AuthenticateSocketConnectionUseCase,
 
-        @inject(AUTH_TOKENS.TokenService)
-        private tokenService: ITokenService,
-
-        @inject(SOCKET_TOKENS.SocketMapper)
-        private socketMapper: ISocketMapper
+        @inject(SOCKET_TOKENS.SocketConnectionMapper)
+        private socketMapper: ISocketConnectionMapper
     ){}
 
     static inject = [
         SOCKET_TOKENS.SocketEventEmitter,
         SOCKET_TOKENS.SocketRoomManager,
         SOCKET_TOKENS.SocketEventRegistry,
-        AUTH_TOKENS.UserRepository,
-        AUTH_TOKENS.TokenService,
-        SOCKET_TOKENS.SocketMapper
+        SOCKET_TOKENS.AuthenticateSocketConnectionUseCase,
+        SOCKET_TOKENS.SocketConnectionMapper
     ] as const;
 
     /**
@@ -100,8 +97,8 @@ export default class SocketGateway{
             requestsTimeout: 10000
         }));
 
-        this.socketEmitter.setServer(this.io);
-        this.socketRoomManager.setServer(this.io);
+        this.getSocketEmitterRuntime().setServer(this.io);
+        this.getSocketRoomManagerRuntime().setServer(this.io);
 
         // JWT authentication middleware
         this.io.use(async (socket, next) => {
@@ -129,9 +126,9 @@ export default class SocketGateway{
 
         socket.data = (socket.data ?? {}) as ISocketConnectionData;
 
-        this.socketEmitter.registerSocket(socket);
-        this.socketRoomManager.registerSocket(socket);
-        this.socketEventRegistry.registerSocket(socket);
+        this.getSocketEmitterRuntime().registerConnection(socket);
+        this.getSocketRoomManagerRuntime().registerConnection(socket);
+        this.getSocketEventRegistryRuntime().registerConnection(socket);
 
         const connection = this.socketMapper.toDomain(socket);
 
@@ -142,9 +139,9 @@ export default class SocketGateway{
 
         // Disconnect cleanup
         socket.on('disconnect', () => {
-            this.socketEmitter.unregisterSocket(socket.id);
-            this.socketRoomManager.unregisterSocket(socket.id);
-            this.socketEventRegistry.unregisterSocket(socket.id);
+            this.getSocketEmitterRuntime().unregisterConnection(socket.id);
+            this.getSocketRoomManagerRuntime().unregisterConnection(socket.id);
+            this.getSocketEventRegistryRuntime().unregisterConnection(socket.id);
             logger.info(`@socket-gateway - disconnected ${socket.id}`);
         });
     }
@@ -212,30 +209,33 @@ export default class SocketGateway{
                 logger.info(`@socket-gateway - anonymous user connected: ${socket.id}`);
                 return next();
             }
-            
-            const decoded = this.tokenService.verify(token);
-            const user = await this.userRepository.findById(decoded?.id || '');
+
+            const user = await this.authenticateSocketConnectionUseCase.execute(token);
             if(!user){
                 socket.user = null;
                 logger.info(`@socket-gateway - user not found, allowing anonymous: ${socket.id}`);
                 return next();
             }
 
-            // Convert domain entity to socket user formt
-            socket.user = {
-                _id: user.id,
-                firstName: user.props.firstName,
-                lastName: user.props.lastName,
-                email: user.props.email,
-                avatar: user.props.avatar,
-                teams: user.props.teams                
-            };
+            socket.user = user;
 
-            logger.info(`@socket-gateway - authenticated user connected: ${user.props.firstName} ${user.props.lastName} (${socket.id})`);
+            logger.info(`@socket-gateway - authenticated user connected: ${user.firstName} ${user.lastName} (${socket.id})`);
             next();
         }catch(error){
             socket.user = null;
             next();
         }
+    }
+
+    private getSocketEmitterRuntime(): ISocketEmitterRuntime {
+        return this.socketEmitter as ISocketEmitterRuntime;
+    }
+
+    private getSocketRoomManagerRuntime(): ISocketRoomManagerRuntime {
+        return this.socketRoomManager as ISocketRoomManagerRuntime;
+    }
+
+    private getSocketEventRegistryRuntime(): ISocketEventRegistryRuntime {
+        return this.socketEventRegistry as ISocketEventRegistryRuntime;
     }
 };

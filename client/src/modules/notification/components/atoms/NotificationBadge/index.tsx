@@ -1,3 +1,4 @@
+import './NotificationBadge.css';
 import Container from '@/shared/presentation/components/Container';
 
 interface NotificationBadgeProps {

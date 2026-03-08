@@ -1,5 +1,5 @@
-import { z } from 'zod/v4';
 import { createPaginationQuerySchema } from '@shared/infrastructure/http/validation/shared-schemas';
+import { z } from 'zod/v4';
 
 const identifierSchema = z.string().min(1);
 

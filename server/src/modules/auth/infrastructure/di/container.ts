@@ -1,11 +1,11 @@
 import 'reflect-metadata';
-import { container } from 'tsyringe';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
-import AvatarService from '@modules/auth/infrastructure/security/AvatarService';
-import BcryptPasswordHasher from '@modules/auth/infrastructure/security/BcryptPasswordHasher';
-import JwtTokenService from '@modules/auth/infrastructure/security/JwtTokenService';
-import AuthSessionService from '@modules/auth/application/services/AuthSessionService';
+import AuthSessionService from '@modules/auth/services/AuthSessionService';
+import AvatarService from '@modules/auth/services/AvatarService';
+import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
+import JwtTokenService from '@modules/auth/services/JwtTokenService';
+import { container } from 'tsyringe';
 
 export const registerAuthDependencies = () => {
     container.registerSingleton(AUTH_TOKENS.UserRepository, UserRepository);

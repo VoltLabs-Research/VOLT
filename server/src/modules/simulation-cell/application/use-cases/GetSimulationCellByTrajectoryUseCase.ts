@@ -1,21 +1,21 @@
-import { injectable, inject } from 'tsyringe';
-import { Result } from '@shared/domain/port/Result';
-import type ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
 import type {
     GetSimulationCellByTrajectoryInputDTO,
     GetSimulationCellByTrajectoryOutputDTO
 } from '@modules/simulation-cell/application/dtos/GetSimulationCellByTrajectoryDTO';
 import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
+import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
+import type ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 @injectable()
 export default class GetSimulationCellByTrajectoryUseCase {
     constructor(
         @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository)
         private readonly repository: ISimulationCellRepository
-    ){}
+    ) {}
 
     async execute(
         input: GetSimulationCellByTrajectoryInputDTO
@@ -49,6 +49,12 @@ export default class GetSimulationCellByTrajectoryUseCase {
             page: 1
         });
 
-        return Result.ok(fallbackResult.data[0] ? toPersistedOutput(fallbackResult.data[0]) : null);
+        let simulationCell: GetSimulationCellByTrajectoryOutputDTO = null;
+
+        if (fallbackResult.data[0]) {
+            simulationCell = toPersistedOutput(fallbackResult.data[0]);
+        }
+
+        return Result.ok(simulationCell);
     }
-}
+};

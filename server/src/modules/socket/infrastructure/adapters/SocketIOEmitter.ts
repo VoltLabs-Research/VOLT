@@ -2,12 +2,13 @@ import { Server, Socket } from 'socket.io';
 import { injectable } from 'tsyringe';
 import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import logger from '@shared/infrastructure/logger';
+import type { ISocketEmitterRuntime } from '@modules/socket/infrastructure/contracts/ISocketEmitterRuntime';
 
 /**
  * Handles all event emission through the Socket.IO server.
  */
 @injectable()
-export default class SocketIOEmitter implements ISocketEmitter{
+export default class SocketIOEmitter implements ISocketEmitter, ISocketEmitterRuntime{
     private io?: Server;
     private sockets: Map<string, Socket> = new Map();
 
@@ -22,14 +23,22 @@ export default class SocketIOEmitter implements ISocketEmitter{
     /**
      * Register a socket for direct emission.
      */
-    registerSocket(socket: Socket): void{
+    registerConnection(socket: unknown): void{
+        this.registerSocket(socket as Socket);
+    }
+
+    unregisterConnection(socketId: string): void{
+        this.unregisterSocket(socketId);
+    }
+
+    private registerSocket(socket: Socket): void{
         this.sockets.set(socket.id, socket);
     }
 
     /**
      * Unregister a socket when disconnected.
      */
-    unregisterSocket(socketId: string): void{
+    private unregisterSocket(socketId: string): void{
         this.sockets.delete(socketId);
     }
 

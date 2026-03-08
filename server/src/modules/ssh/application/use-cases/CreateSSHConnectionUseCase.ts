@@ -2,7 +2,7 @@ import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { CreateSSHConnectionInputDTO, CreateSSHConnectionOutputDTO } from '@modules/ssh/application/dtos/CreateSSHConnectionDTO';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { ISSHCredentialsCipher } from '@modules/ssh/domain/port/ISSHCredentialsCipher';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -14,15 +14,15 @@ import SSHConnectionCreatedEvent from '@modules/ssh/domain/events/SSHConnectionC
 import {
     resolveSSHPersistenceError,
     toSafeSSHConnectionDTO
-} from './ssh-error-utils';
+} from '@modules/ssh/application/utils/ssh-error-utils';
 
 @injectable()
 export class CreateSSHConnectionUseCase implements IUseCase<CreateSSHConnectionInputDTO, CreateSSHConnectionOutputDTO, ApplicationError> {
     constructor(
-        @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
+        @inject(SSH_TOKENS.SSHConnectionRepository)
         private sshConnectionRepo: ISSHConnectionRepository,
 
-        @inject(SSH_CONN_TOKENS.SSHCredentialsCipher)
+        @inject(SSH_TOKENS.SSHCredentialsCipher)
         private readonly sshCredentialsCipher: ISSHCredentialsCipher,
 
         @inject(SHARED_TOKENS.EventBus)

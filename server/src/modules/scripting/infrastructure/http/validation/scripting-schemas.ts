@@ -1,10 +1,10 @@
-import { z } from 'zod/v4';
 import {
     createPaginationQuerySchema,
     createTeamScopedParamsSchema,
     objectIdSchema,
     teamParamsSchema
 } from '@shared/infrastructure/http/validation/shared-schemas';
+import { z } from 'zod/v4';
 
 const paginationQuerySchema = createPaginationQuerySchema({ maxLimit: 500 });
 

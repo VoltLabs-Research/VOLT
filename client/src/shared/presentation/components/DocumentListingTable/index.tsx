@@ -1,14 +1,15 @@
-import React, { useRef, useMemo, useState, useCallback, useEffect } from 'react';
-import { FileText } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
+import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 import TableRow from '@/shared/presentation/components/TableRow';
 import TableSkeletonRow from '@/shared/presentation/components/TableSkeletonRow';
-import EmptyState from '@/shared/presentation/components/EmptyState';
+import Title from '@/shared/presentation/components/Title';
 import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
-import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
-import type { MenuOption } from '@/shared/presentation/types/menu';
 import './DocumentListingTable.css';
+import { FileText } from 'lucide-react';
+import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
+import React from 'react';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 
 const MIN_COLUMN_WIDTH = 180;
 const MAX_COLUMN_WIDTH = 280;
@@ -16,24 +17,24 @@ const COLUMN_GAP = 16;
 
 export interface Identifiable {
     _id: string;
-}
+};
 
-export interface ColumnConfig {
+export interface ColumnConfig<TRow = unknown> {
     key?: string;
     title?: string;
     path?: string;
     label?: string;
     width?: number;
-    render?: (value: unknown, row?: unknown) => React.ReactNode;
+    render?: (value: unknown, row: TRow) => React.ReactNode;
     skeleton?: { variant: 'text' | 'rounded'; width: number; height?: number };
     sortable?: boolean;
 };
 
 interface DocumentListingTableProps<T extends Identifiable> {
-    columns: ColumnConfig[];
+    columns: ColumnConfig<T>[];
     data: T[];
-    onCellClick?: (col: ColumnConfig) => void;
-    getCellTitle?: (col: ColumnConfig) => React.ReactNode;
+    onCellClick?: (col: ColumnConfig<T>) => void;
+    getCellTitle?: (col: ColumnConfig<T>) => React.ReactNode;
     isLoading?: boolean;
     getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
     emptyMessage?: string;
@@ -46,13 +47,13 @@ interface DocumentListingTableProps<T extends Identifiable> {
     onEmptyButtonClick?: () => void;
 };
 
-const getColumnWidth = (col: ColumnConfig): number => {
+const getColumnWidth = <T,>(col: ColumnConfig<T>): number => {
     if (typeof col.width === 'number' && col.width > 0) return col.width;
     const title = typeof col.title === 'string' ? col.title : col.label;
     const titleLength = typeof title === 'string' ? title.length : 10;
     return Math.max(MIN_COLUMN_WIDTH, Math.min(titleLength * 14, MAX_COLUMN_WIDTH));
 };
-const getColumnTitle = (col: ColumnConfig): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
+const getColumnTitle = <T,>(col: ColumnConfig<T>): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
 
 const DocumentListingTable = <T extends Identifiable>({
     columns,

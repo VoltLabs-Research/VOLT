@@ -7,10 +7,10 @@ interface TeamAIIntegrationMutationPayloadDTO {
     defaultModel?: string;
     enabledModels?: string[];
     metadata?: Record<string, unknown>;
-}
+};
 
-export interface UpdateTeamAIIntegrationInputDTO extends ProviderScopedInputDTO, TeamAIIntegrationMutationPayloadDTO {}
+export interface UpdateTeamAIIntegrationInputDTO extends ProviderScopedInputDTO, TeamAIIntegrationMutationPayloadDTO {};
 
 export interface UpdateTeamAIIntegrationOutputDTO {
     integration: TeamAIIntegrationItemDTO;
-}
+};

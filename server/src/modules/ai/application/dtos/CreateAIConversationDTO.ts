@@ -14,4 +14,4 @@ export interface CreateAIConversationInputDTO {
 export interface CreateAIConversationOutputDTO {
     conversation: AIConversationDTO;
     userMessage?: AIMessageDTO;
-}
+};

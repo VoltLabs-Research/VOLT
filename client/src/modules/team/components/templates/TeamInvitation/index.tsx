@@ -1,27 +1,53 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { CheckCircle, XCircle, Mail, Clock, AlertCircle } from 'lucide-react';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import Button from '@/shared/presentation/components/Button';
-import { useAcceptInvitationMutation, useInvitationDetailsQuery, useRejectInvitationMutation } from '@/modules/team/hooks/team-invitation/queries';
+import { useAcceptInvitationMutation, useInvitationDetailsQuery, useRejectInvitationMutation } from '@/modules/team/hooks/invitation/queries';
+import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import ApiError from '@/shared/errors/ApiError';
-import { useTeamStore } from '@/modules/team/stores/use-team-store';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Title from '@/shared/presentation/components/Title';
+import { AlertCircle, CheckCircle, Clock, Mail, XCircle } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import type { Params } from 'react-router-dom';
 import './TeamInvitation.css';
 
-const TeamInvitationTemplate: React.FC = () => {
-    const { invitationId } = useParams<{ invitationId: string }>();
+interface TeamInvitationRouteParams extends Params {
+    invitationId: string;
+};
+
+interface PromiseToastOptions {
+    loading: { title: string };
+    success: { title: string };
+    error: { title: string };
+};
+
+const ACCEPT_INVITATION_TOAST_OPTIONS: PromiseToastOptions = {
+    loading: { title: 'Accepting invitation...' },
+    success: { title: 'Invitation accepted!' },
+    error: { title: 'Failed to accept invitation' }
+};
+
+const REJECT_INVITATION_TOAST_OPTIONS: PromiseToastOptions = {
+    loading: { title: 'Rejecting invitation...' },
+    success: { title: 'Invitation rejected' },
+    error: { title: 'Failed to reject invitation' }
+};
+
+export default function TeamInvitationTemplate() {
+    const { invitationId } = useParams<TeamInvitationRouteParams>();
     const navigate = useNavigate();
     const [error, setError] = useState<string | null>(null);
     const setSelectedTeamId = useTeamStore((state) => state.setSelectedTeamId);
+    const handleBackToDashboard = () => {
+        navigate('/dashboard');
+    };
 
     const acceptMutation = useAcceptInvitationMutation();
     const rejectMutation = useRejectInvitationMutation();
     const actionLoading = acceptMutation.isPending || rejectMutation.isPending;
 
-    const invitationQuery = useInvitationDetailsQuery(invitationId!, {
+    const invitationQuery = useInvitationDetailsQuery(invitationId ?? '', {
         enabled: !!invitationId,
         retry: false
     });
@@ -41,11 +67,7 @@ const TeamInvitationTemplate: React.FC = () => {
 
         try{
             setSelectedTeamId(invitation.team._id);
-            await showPromise(acceptMutation.mutateAsync({ invitationId, teamId: invitation.team._id }), {
-                loading: { title: 'Accepting invitation...' },
-                success: { title: 'Invitation accepted!' },
-                error: { title: 'Failed to accept invitation' }
-            });
+            await showPromise(acceptMutation.mutateAsync({ invitationId, teamId: invitation.team._id }), ACCEPT_INVITATION_TOAST_OPTIONS);
             setError(null);
             window.location.href = '/dashboard';
         }catch(err: unknown){
@@ -61,11 +83,7 @@ const TeamInvitationTemplate: React.FC = () => {
         if(!invitationId || !invitation) return;
 
         try{
-            await showPromise(rejectMutation.mutateAsync({ invitationId, teamId: invitation.team._id }), {
-                loading: { title: 'Rejecting invitation...' },
-                success: { title: 'Invitation rejected' },
-                error: { title: 'Failed to reject invitation' }
-            });
+            await showPromise(rejectMutation.mutateAsync({ invitationId, teamId: invitation.team._id }), REJECT_INVITATION_TOAST_OPTIONS);
             setError(null);
             window.location.href = '/dashboard';
         }catch(err: unknown){
@@ -101,7 +119,7 @@ const TeamInvitationTemplate: React.FC = () => {
                     <Button
                         variant='solid'
                         intent='brand'
-                        onClick={() => navigate('/dashboard')}
+                        onClick={handleBackToDashboard}
                     >
                         Back to Dashboard
                     </Button>
@@ -127,7 +145,7 @@ const TeamInvitationTemplate: React.FC = () => {
                     <Button
                         variant='solid'
                         intent='brand'
-                        onClick={() => navigate('/dashboard')}
+                        onClick={handleBackToDashboard}
                     >
                         Back to Dashboard
                     </Button>
@@ -214,6 +232,4 @@ const TeamInvitationTemplate: React.FC = () => {
             </Container>
         </Container>
     );
-};
-
-export default TeamInvitationTemplate;
+}

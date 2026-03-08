@@ -1,7 +1,4 @@
-import type {
-    ContainerEnvironmentVariable,
-    ContainerPortMapping
-} from '@modules/container/domain/port/IContainerService';
+import type { ContainerEnvironmentVariable, ContainerPortMapping } from '@modules/container/domain/port/IContainerService';
 
 export interface IContainerProps {
     name: string;
@@ -19,7 +16,7 @@ export interface IContainerProps {
     volume?: string;
     createdAt?: Date;
     updatedAt?: Date;
-}
+};
 
 export class Container implements IContainerProps {
     public name!: string;
@@ -41,7 +38,7 @@ export class Container implements IContainerProps {
     constructor(
         public readonly _id: string,
         props: IContainerProps
-    ){
+    ) {
         Object.assign(this, props);
     }
-}
+};

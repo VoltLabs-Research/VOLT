@@ -1,5 +1,6 @@
-import { ErrorCodes, type ErrorCode } from '@core/constants/error-codes';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+import type { ErrorCode } from '@core/constants/error-codes';
 
 const AVAILABLE_ERROR_CODES = new Set<ErrorCode>(Object.values(ErrorCodes));
 
@@ -7,40 +8,45 @@ export interface WorkerFailureEnvelope {
     code: ErrorCode;
     message: ErrorCode;
     details?: string;
-}
+};
 
 interface WorkerFailureEnvelopeRecord {
     code?: unknown;
     message?: unknown;
     details?: unknown;
-}
+};
 
 export interface NormalizeWorkerFailureEnvelopeOptions {
     failure?: unknown;
     error?: unknown;
     fallbackCode?: ErrorCode;
     fallbackDetails?: string;
-}
+};
 
 export interface CreateWorkerFailureMessageOptions {
     jobId: string;
     failure: WorkerFailureEnvelope;
     metadata?: Record<string, unknown>;
-}
+};
 
 export interface WorkerFailureMessage extends Record<string, unknown> {
     status: 'failed';
     jobId: string;
     error: string;
     failure: WorkerFailureEnvelope;
-}
+};
 
 export const isErrorCode = (value: unknown): value is ErrorCode => {
     if (typeof value !== 'string') {
         return false;
     }
 
-    return AVAILABLE_ERROR_CODES.has(value as ErrorCode);
+    return AVAILABLE_ERROR_CODES.has(value);
+};
+
+interface WorkerFailureEnvelopeInput {
+    code?: ErrorCode;
+    details?: string;
 };
 
 const isWorkerFailureEnvelopeRecord = (value: unknown): value is WorkerFailureEnvelopeRecord => {
@@ -60,10 +66,7 @@ const resolveStringDetails = (value: unknown): string | undefined => {
     return normalizedValue;
 };
 
-export const createWorkerFailureEnvelope = (options?: {
-    code?: ErrorCode;
-    details?: string;
-}): WorkerFailureEnvelope => {
+export const createWorkerFailureEnvelope = (options?: WorkerFailureEnvelopeInput): WorkerFailureEnvelope => {
     const code = options?.code || ErrorCodes.WORKER_FAILURE;
 
     return {
@@ -158,4 +161,4 @@ export class WorkerFailureError extends Error {
         this.name = 'WorkerFailureError';
         this.failure = failure;
     }
-}
+};

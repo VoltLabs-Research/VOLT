@@ -1,5 +1,6 @@
+import { JobStatus } from '../api/entities/job';
 import { useMemo } from 'react';
-import { JobStatus, type TrajectoryJobGroup, type Job } from '../api/entities/job';
+import type { Job, TrajectoryJobGroup } from '../api/entities/job';
 
 interface UseJobsHistoryFiltersArgs {
     groups: TrajectoryJobGroup[];
@@ -8,7 +9,7 @@ interface UseJobsHistoryFiltersArgs {
     isConnected: boolean;
     isLoading: boolean;
     hideAfterComplete: boolean;
-}
+};
 
 const flattenGroups = (groups: TrajectoryJobGroup[]): Job[] => {
     return groups.flatMap((group) => group.frameGroups.flatMap((frame) => frame.jobs));

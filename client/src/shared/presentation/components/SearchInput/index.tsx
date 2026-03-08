@@ -1,8 +1,8 @@
+import { cn } from '@/shared/utils/cn';
+import Container from '@/shared/presentation/components/Container';
+import './SearchInput.css';
 import { forwardRef, InputHTMLAttributes } from 'react';
 import { IoSearchOutline } from 'react-icons/io5';
-import Container from '@/shared/presentation/components/Container';
-import { cn } from '@/shared/utils/cn';
-import './SearchInput.css';
 
 interface SearchInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
     containerClassName?: string;

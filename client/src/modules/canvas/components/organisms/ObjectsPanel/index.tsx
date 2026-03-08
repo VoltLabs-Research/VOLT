@@ -1,17 +1,19 @@
-import { useState } from 'react';
-import { Filter, Layers, Palette, SlidersHorizontal } from 'lucide-react';
-import PanelHeader from '../../atoms/PanelHeader';
-import Container from '@/shared/presentation/components/Container';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
-import IconButton from '@/shared/presentation/components/IconButton';
-import useCanvasSidebarState from '../../../hooks/use-canvas-sidebar-state';
-
-import useAnalysisStatus from '../../../hooks/use-analysis-status';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifact';
-import SceneCollection from '../../molecules/SceneCollection';
-import useSceneArtifacts from '../../../hooks/use-scene-artifacts';
 import { isArtifactSceneActive, toSceneObjectFromArtifact } from '@/modules/canvas/utilities/scene-identity';
+import useAnalysisStatus from '../../../hooks/use-analysis-status';
+import useCanvasSidebarState from '../../../hooks/use-canvas-sidebar-state';
+import useSceneArtifacts from '../../../hooks/use-scene-artifacts';
+import PanelHeader from '../../atoms/PanelHeader';
+import SceneCollection from '../../molecules/SceneCollection';
+
+import { Filter, Layers, Palette, SlidersHorizontal } from 'lucide-react';
+import { useState } from 'react';
+import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import Container from '@/shared/presentation/components/Container';
+import IconButton from '@/shared/presentation/components/IconButton';
+
+import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+
 import './ObjectsPanel.css';
 
 interface ObjectsPanelProps {
@@ -24,7 +26,7 @@ interface ObjectsPanelProps {
         trajectoryId?: string;
         exposureName?: string;
     }) => void;
-}
+};
 
 const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListing }: ObjectsPanelProps) => {
     const [sceneCollectionOpen, setSceneCollectionOpen] = useState(true);
@@ -132,7 +134,7 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
                             No models generated
                         </Container>
                     )}
-                    {colorCodingArtifacts.map((artifact) => (
+                    {colorCodingArtifacts.map((artifact: SceneArtifact) => (
                         <Container
                             key={artifact._id}
                             className={`canvas-tree-item canvas-tree-item--indent font-size-1 color-secondary cursor-pointer u-select-none ${isArtifactActive(artifact) ? 'selected' : ''}`}
@@ -177,7 +179,7 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
                             No models generated
                         </Container>
                     )}
-                    {particleFilterArtifacts.map((artifact) => (
+                    {particleFilterArtifacts.map((artifact: SceneArtifact) => (
                         <Container
                             key={artifact._id}
                             className={`canvas-tree-item canvas-tree-item--indent font-size-1 color-secondary cursor-pointer u-select-none ${isArtifactActive(artifact) ? 'selected' : ''}`}

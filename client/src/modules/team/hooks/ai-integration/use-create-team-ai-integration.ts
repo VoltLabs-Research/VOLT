@@ -1,10 +1,10 @@
-import { useCallback } from 'react';
 import { useCreateTeamAIIntegrationMutation } from '@/modules/team/hooks/ai-integration/queries';
-import type { AIProvider } from '@/modules/ai/api/entities/ai-constants';
-import type { CreateTeamAIIntegrationParams } from '@/modules/team/api/dtos/create-team-ai-integration';
+import type { AIProvider } from '@/modules/ai/api/entities/ai-provider';
+import type { CreateTeamAIIntegrationParams } from '@/modules/team/api/dtos/ai-integration/create-team-ai-integration';
+import { useCallback } from 'react';
 import useRequiredSelectedTeamId from './use-required-selected-team-id';
 
-const useCreateTeamAIIntegration = () => {
+export default function useCreateTeamAIIntegration() {
     const requireSelectedTeamId = useRequiredSelectedTeamId();
     const createMutation = useCreateTeamAIIntegrationMutation();
 
@@ -15,6 +15,4 @@ const useCreateTeamAIIntegration = () => {
             ...data
         });
     }, [requireSelectedTeamId, createMutation]);
-};
-
-export default useCreateTeamAIIntegration;
+}

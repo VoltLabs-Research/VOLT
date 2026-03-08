@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useEffect, useRef } from 'react';
 import useSearchParamsState from './use-search-params';
+import { useCallback, useMemo, useEffect, useRef } from 'react';
 
 interface UseSelectionParamsOptions {
     paramName?: string;

@@ -1,30 +1,16 @@
-import React, { useId, useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import {
-    useFloating,
-    useClick,
-    useDismiss,
-    useRole,
-    useListNavigation,
-    useTypeahead,
-    useInteractions,
-    FloatingPortal,
-    FloatingFocusManager,
-    offset,
-    flip,
-    shift,
-    size,
-    autoUpdate
-} from '@floating-ui/react';
+import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import './Select.css';
+import { useFloating, useClick, useDismiss, useRole, useListNavigation, useTypeahead, useInteractions, FloatingPortal, FloatingFocusManager, offset, flip, shift, size, autoUpdate } from '@floating-ui/react';
+import { useId, useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import React from 'react';
 
 export interface SelectOption {
     value: string;
     title: string;
     description?: string;
-}
+};
 
 export interface SelectProps {
     options: SelectOption[];
@@ -40,7 +26,7 @@ export interface SelectProps {
     isLoading?: boolean;
     onScrollEnd?: () => void;
     renderOptionAction?: (option: SelectOption, isSelected: boolean) => React.ReactNode;
-}
+};
 
 const Select = ({
     options,

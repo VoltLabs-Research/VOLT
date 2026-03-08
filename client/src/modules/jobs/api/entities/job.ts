@@ -1,20 +1,4 @@
-export enum JobStatus{
-    Queued = 'queued',
-    Running = 'running',
-    Completed = 'completed',
-    Failed = 'failed',
-    Retrying = 'retrying',
-    Unknown = 'unknown',
-    QueuedAfterFailure = 'queued_after_failure'
-};
-
-export enum FrameJobGroupStatus{
-    Queued = 'queued',
-    Running = 'running',
-    Completed = 'completed',
-    Failed = 'failed',
-    Partial = 'partial'
-};
+export type JobMetadataValue = boolean | number | string | null | undefined;
 
 export interface Job {
     jobId: string;
@@ -27,7 +11,10 @@ export interface Job {
     queueType?: string;
     name?: string;
     message?: string;
-    [key: string]: any;
+    analysisId?: string;
+    processingTimeMs?: number;
+    error?: string;
+    [key: string]: JobMetadataValue;
 };
 
 export interface FrameJobGroup {
@@ -44,4 +31,22 @@ export interface TrajectoryJobGroup {
     overallStatus: FrameJobGroupStatus;
     completedCount: number;
     totalCount: number;
+};
+
+export enum JobStatus{
+    Queued = 'queued',
+    Running = 'running',
+    Completed = 'completed',
+    Failed = 'failed',
+    Retrying = 'retrying',
+    Unknown = 'unknown',
+    QueuedAfterFailure = 'queued_after_failure'
+};
+
+export enum FrameJobGroupStatus{
+    Queued = 'queued',
+    Running = 'running',
+    Completed = 'completed',
+    Failed = 'failed',
+    Partial = 'partial'
 };

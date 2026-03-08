@@ -1,34 +1,41 @@
-import { useState } from 'react';
-import useZodForm from '@/shared/presentation/hooks/use-zod-form';
-import useStepper from '@/shared/presentation/hooks/use-stepper';
-import Container from '@/shared/presentation/components/Container';
-import Stepper, { StepTitles } from '@/shared/presentation/components/Stepper';
-import WireframeBackground from '../../atoms/WireframeBackground';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import EmailStep from '../../molecules/EmailStep';
-import RegisterStep from '../../molecules/RegisterStep';
-import PasswordStep from '../../molecules/PasswordStep';
-import { signInSchema, type SignInForm } from './validation-schema';
-import { useCheckEmailMutation, useSignInMutation, useSignUpMutation } from '@/modules/auth/hooks/queries';
-import { useNavigate } from 'react-router-dom';
-import { sileo } from 'sileo';
-import ApiError from '@/shared/errors/ApiError';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import './SignIn.css';
+import { signInSchema } from './validation-schema';
+import { useCheckEmailMutation, useSignInMutation, useSignUpMutation } from '@/modules/auth/hooks/queries';
+import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import WireframeBackground from '../../atoms/WireframeBackground';
+import EmailStep from '../../molecules/EmailStep';
+import PasswordStep from '../../molecules/PasswordStep';
+import RegisterStep from '../../molecules/RegisterStep';
+import ApiError from '@/shared/errors/ApiError';
+import Container from '@/shared/presentation/components/Container';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Stepper from '@/shared/presentation/components/Stepper';
+import Title from '@/shared/presentation/components/Title';
+import useStepper from '@/shared/presentation/hooks/use-stepper';
+import useZodForm from '@/shared/presentation/hooks/use-zod-form';
+import { sileo } from 'sileo';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { FormEvent } from 'react';
+import type { StepTitles } from '@/shared/presentation/components/Stepper';
+import type { SignInForm } from './validation-schema';
 
-type Step = 'email' | 'password' | 'register';
+enum SignInStep {
+    Email = 'email',
+    Password = 'password',
+    Register = 'register'
+};
 
-const stepTitles: StepTitles<Step> = {
-    email: {
+const stepTitles: StepTitles<SignInStep> = {
+    [SignInStep.Email]: {
         title: 'Sign In or Join Now!',
         subtitle: 'Login or create your account.'
     },
-    password: {
+    [SignInStep.Password]: {
         title: 'Welcome back',
         subtitle: 'Enter your password to continue.'
     },
-    register: {
+    [SignInStep.Register]: {
         title: 'Create Account',
         subtitle: 'Enter your details to get started.'
     }
@@ -36,7 +43,7 @@ const stepTitles: StepTitles<Step> = {
 
 const SignInTemplate = () => {
     const navigate = useNavigate();
-    const { step, goTo } = useStepper<Step>('email');
+    const { step, goTo } = useStepper<SignInStep>(SignInStep.Email);
     const checkEmail = useCheckEmailMutation();
     const signIn = useSignInMutation();
     const signUp = useSignUpMutation();
@@ -70,10 +77,10 @@ const SignInTemplate = () => {
         try {
             const result = await checkEmail.mutateAsync({ email: values.email });
             if (result.exists) {
-                goTo('password');
+                goTo(SignInStep.Password);
                 return;
             }
-            goTo('register');
+            goTo(SignInStep.Register);
         } catch {
             sileo.error({
                 title: 'Something went wrong',
@@ -100,9 +107,12 @@ const SignInTemplate = () => {
             markAuthenticated(result.token);
             finalizeAuth();
         } catch (err) {
-            const message = err instanceof ApiError
-                ? err.getFriendlyMessage()
-                : 'Please check your credentials and try again.';
+            let message = 'Please check your credentials and try again.';
+
+            if (err instanceof ApiError) {
+                message = err.getFriendlyMessage();
+            }
+
             sileo.error({ title: 'Sign in failed', description: message });
         } finally {
             setIsSubmitting(false);
@@ -132,24 +142,27 @@ const SignInTemplate = () => {
             markAuthenticated(result.token);
             finalizeAuth();
         } catch (err) {
-            const message = err instanceof ApiError
-                ? err.getFriendlyMessage()
-                : 'Please check your details and try again.';
+            let message = 'Please check your details and try again.';
+
+            if (err instanceof ApiError) {
+                message = err.getFriendlyMessage();
+            }
+
             sileo.error({ title: 'Registration failed', description: message });
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleSubmit = async (e?: React.FormEvent) => {
+    const handleSubmit = async (e?: FormEvent) => {
         e?.preventDefault();
 
-        if (step === 'email') {
+        if (step === SignInStep.Email) {
             await handleEmailStep();
             return;
         }
 
-        if (step === 'password') {
+        if (step === SignInStep.Password) {
             await handlePasswordStep();
             return;
         }
@@ -160,11 +173,11 @@ const SignInTemplate = () => {
     const { title, subtitle } = stepTitles[step];
 
     const goBack = () => {
-        goTo('email');
+        goTo(SignInStep.Email);
     };
 
     const steps = [{
-        key: 'email',
+        key: SignInStep.Email,
         content: (
             <EmailStep
                 control={control}
@@ -173,7 +186,7 @@ const SignInTemplate = () => {
                 onOAuth={handleOAuthRedirect} />
         )
     }, {
-        key: 'register',
+        key: SignInStep.Register,
         content: (
             <RegisterStep
                 email={getValues('email')}
@@ -183,7 +196,7 @@ const SignInTemplate = () => {
                 onBack={goBack} />
             )
     }, {
-        key: 'password',
+        key: SignInStep.Password,
         content: (
             <PasswordStep
                 email={getValues('email')}

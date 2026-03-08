@@ -1,24 +1,32 @@
-import React, { useMemo, useRef, useEffect, useState } from 'react';
-import * as THREE from 'three';
 import { DragControls } from '@react-three/drei';
-import { useThree, type ThreeEvent } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import type { BoxBounds } from '@/modules/fractal/types';
 import { getBoxDimensions } from '@/modules/fractal/utilities/box-utils';
+import type { ThreeEvent } from '@react-three/fiber';
+import * as THREE from 'three';
+import { useMemo, useRef, useEffect, useState, forwardRef } from 'react';
+import type { ReactNode, RefObject } from 'react';
+
+interface SimulationCellTransforms {
+    scale: number;
+    position: {
+        x: number;
+        y: number;
+        z: number;
+    };
+    groundOffset?: number;
+};
 
 interface SimulationCellBoxProps {
     boxBounds?: BoxBounds;
-    children?: React.ReactNode;
-    transforms?: {
-        scale: number;
-        position: { x: number; y: number; z: number };
-        groundOffset?: number;
-    };
-    orbitControlsRef?: React.RefObject<{ enabled: boolean } | null>;
+    children?: ReactNode;
+    transforms?: SimulationCellTransforms;
+    orbitControlsRef?: RefObject<{ enabled: boolean } | null>;
     onSelect?: (target: THREE.Group | null) => void;
     onHoverChange?: (hovered: boolean) => void;
-}
+};
 
-const SimulationCellBox = React.forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
+const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     boxBounds,
     children,
     transforms,

@@ -1,18 +1,25 @@
-import { ReactNode } from 'react';
-import { type Control } from 'react-hook-form';
-import { Github, Mail } from 'lucide-react';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import GoogleIcon from '@/shared/presentation/components/icons/GoogleIcon';
 import MicrosoftIcon from '@/shared/presentation/components/icons/MicrosoftIcon';
+import { Github, Mail } from 'lucide-react';
+import type { FormEventHandler, ReactNode } from 'react';
+import type { Control } from 'react-hook-form';
 import type { SignInForm } from '../../templates/SignIn/validation-schema';
 
 interface OAuthProvider {
     key: string;
     label: string;
     icon: ReactNode;
-}
+};
+
+interface EmailStepProps {
+    control: Control<SignInForm>;
+    isLoading: boolean;
+    onSubmit: FormEventHandler<HTMLFormElement>;
+    onOAuth: (provider: string) => void;
+};
 
 const oauthProviders: OAuthProvider[] = [{
     key: 'github',
@@ -27,13 +34,6 @@ const oauthProviders: OAuthProvider[] = [{
     label: 'Microsoft',
     icon: <MicrosoftIcon />
 }];
-
-interface EmailStepProps {
-    control: Control<SignInForm>;
-    isLoading: boolean;
-    onSubmit: React.FormEventHandler<HTMLFormElement>;
-    onOAuth: (provider: string) => void;
-}
 
 const EmailStep = ({ control, isLoading, onSubmit, onOAuth }: EmailStepProps) => (
     <Container className='d-flex column gap-1'>

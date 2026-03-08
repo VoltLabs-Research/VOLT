@@ -1,18 +1,23 @@
-import { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
-import Container from '@/shared/presentation/components/Container';
+import { CORE_TABS } from '../../molecules/TimelineHeader';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { useShallow } from 'zustand/react/shallow';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
-import TimelineHeader, { CORE_TABS, type TimelineTabOption } from '../../molecules/TimelineHeader';
-import TimelineRuler from '../../molecules/TimelineRuler';
-import PluginAtomsTable from '@/modules/plugin/components/organisms/PluginAtomsTable';
-import PluginExposureListingPanel from '@/modules/plugin/components/organisms/PluginExposureListingPanel';
-import PluginSubListingPanel from '@/modules/plugin/components/organisms/PluginSubListingPanel';
 import SimulationCellView from '../../molecules/SimulationCellView';
-import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
+import TimelineHeader from '../../molecules/TimelineHeader';
+import TimelineRuler from '../../molecules/TimelineRuler';
 import useCanvasTimelineTabs from '@/modules/canvas/hooks/use-canvas-timeline-tabs';
+import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
+
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import PluginAtomsTable from '@/modules/plugin/components/listing/organisms/PluginAtomsTable';
+import PluginExposureListingPanel from '@/modules/plugin/components/listing/organisms/PluginExposureListingPanel';
+import PluginSubListingPanel from '@/modules/plugin/components/listing/organisms/PluginSubListingPanel';
+import Container from '@/shared/presentation/components/Container';
+
+import type { TimelineTabOption } from '../../molecules/TimelineHeader';
+import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+
 import './Timeline.css';
 
 interface TimelineProps {
@@ -27,7 +32,7 @@ interface TimelineProps {
         trajectoryId?: string;
         exposureName?: string;
     }) => void;
-}
+};
 
 
 const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExposureListing }: TimelineProps) => {

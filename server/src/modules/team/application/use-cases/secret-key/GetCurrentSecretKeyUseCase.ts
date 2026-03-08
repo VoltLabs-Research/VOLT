@@ -1,14 +1,11 @@
-import { inject, injectable } from 'tsyringe';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { GetCurrentSecretKeyInputDTO, GetCurrentSecretKeyOutputDTO } from '@modules/team/application/dtos/secret-key/GetCurrentSecretKeyDTO';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import type { ISecretKeyRepository } from '@modules/team/domain/port/ISecretKeyRepository';
-import {
-    GetCurrentSecretKeyInputDTO,
-    GetCurrentSecretKeyOutputDTO
-} from '@modules/team/application/dtos/secret-key/GetCurrentSecretKeyDTO';
+import { inject, injectable } from 'tsyringe';
+import type { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
 
 @injectable()
 export default class GetCurrentSecretKeyUseCase implements IUseCase<GetCurrentSecretKeyInputDTO, GetCurrentSecretKeyOutputDTO, ApplicationError> {
@@ -48,4 +45,4 @@ export default class GetCurrentSecretKeyUseCase implements IUseCase<GetCurrentSe
             updatedAt: secretKey.props.updatedAt
         });
     }
-}
+};

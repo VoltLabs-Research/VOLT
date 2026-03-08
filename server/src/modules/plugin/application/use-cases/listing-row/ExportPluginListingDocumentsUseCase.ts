@@ -1,15 +1,18 @@
-import { inject, injectable } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     ExportPluginListingDocumentsInputDTO,
     ExportPluginListingDocumentsOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
-import { IPluginListingExportService } from '@modules/plugin/domain/port/IPluginListingExportService';
-import { toPluginListingOptions } from '@modules/plugin/application/use-cases/listing-row/toPluginListingOptions';
-import type { DownloadStreamOutputDTO } from '@modules/plugin/application/dtos/shared/DownloadStreamOutputDTO';
-import { createSerializedDownloadResponse } from '@modules/plugin/application/helpers/create-download-response';
+import { createSerializedDownloadResponse } from '@modules/plugin/application/helpers/plugin/create-download-response';
+import { toPluginListingOptions } from '@modules/plugin/application/helpers/listing-row/toPluginListingOptions';
+import { IPluginListingExportService } from '@modules/plugin/domain/port/listing-row/IPluginListingExportService';
+
+import { IUseCase } from '@shared/application/IUseCase';
+import { ExportType } from '@shared/domain/port/IBaseRepository';
+import { Result } from '@shared/domain/port/Result';
+import { inject, injectable } from 'tsyringe';
+
+import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
 
 @injectable()
 export class ExportPluginListingDocumentsUseCase implements IUseCase<
@@ -26,7 +29,7 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
             input.pluginId,
             {
                 ...toPluginListingOptions(input),
-                format: input.format ?? 'json'
+                format: input.format ?? ExportType.Json
             }
         );
 
@@ -49,4 +52,4 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
             columns
         }));
     }
-}
+};

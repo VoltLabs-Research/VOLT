@@ -17,11 +17,31 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
     const navigate = useNavigate();
 
     const settingsSubItems = useMemo(() => [
-        { label: 'General', isSelected: pathname === '/dashboard/settings/general', onClick: () => navigate('/dashboard/settings/general') },
-        { label: 'Authentication', isSelected: pathname === '/dashboard/settings/authentication', onClick: () => navigate('/dashboard/settings/authentication') },
-        { label: 'Theme', isSelected: pathname === '/dashboard/settings/theme', onClick: () => navigate('/dashboard/settings/theme') },
-        { label: 'Sessions', isSelected: pathname === '/dashboard/settings/sessions', onClick: () => navigate('/dashboard/settings/sessions') },
-        { label: 'Integrations', isSelected: pathname === '/dashboard/settings/integrations', onClick: () => navigate('/dashboard/settings/integrations') }
+        {
+            label: 'General',
+            isSelected: pathname === '/dashboard/settings/general',
+            onClick: () => navigate('/dashboard/settings/general')
+        },
+        {
+            label: 'Authentication',
+            isSelected: pathname === '/dashboard/settings/authentication',
+            onClick: () => navigate('/dashboard/settings/authentication')
+        },
+        {
+            label: 'Theme',
+            isSelected: pathname === '/dashboard/settings/theme',
+            onClick: () => navigate('/dashboard/settings/theme')
+        },
+        {
+            label: 'Sessions',
+            isSelected: pathname === '/dashboard/settings/sessions',
+            onClick: () => navigate('/dashboard/settings/sessions')
+        },
+        {
+            label: 'Integrations',
+            isSelected: pathname === '/dashboard/settings/integrations',
+            onClick: () => navigate('/dashboard/settings/integrations')
+        }
     ], [pathname, navigate]);
 
     if (collapsed) {

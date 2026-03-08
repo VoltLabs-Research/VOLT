@@ -1,22 +1,27 @@
-import { ErrorCodes } from '@core/constants/error-codes';
-import type { NextFunction, Request, Response } from 'express';
-import { container } from 'tsyringe';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import type { ITokenService } from '@modules/auth/domain/port/ITokenService';
+import { isPopulatedSecretKeyRole } from '@modules/team/domain/entities/secret-key/SecretKey';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import type { PopulatedRole } from '@modules/team/domain/entities/SecretKey';
-import type { ISecretKeyRepository } from '@modules/team/domain/port/ISecretKeyRepository';
-import type { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/ISecretKeyUsageLogRepository';
+import type { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
+import type { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/secret-key/ISecretKeyUsageLogRepository';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
+import { ErrorCodes } from '@core/constants/error-codes';
+import type { NextFunction, Request, Response } from 'express';
+import { container } from 'tsyringe';
+
+export enum AuthenticationType {
+    User = 'user',
+    SecretKey = 'secret-key'
+};
 
 export interface AuthenticatedRequest extends Request {
     user?: Request['user'];
     userId?: string;
     sessionId?: string;
     token?: string;
-    authType?: 'user' | 'secret-key';
+    authType?: AuthenticationType;
     secretKeyId?: string;
     secretKeyTeamId?: string;
     secretKeyRoleId?: string;
@@ -30,8 +35,8 @@ export const protect = async (
     next: NextFunction
 ): Promise<void> => {
     if (
-        (req.authType === 'secret-key' && req.token && req.secretKeyId && req.secretKeyTeamId)
-        || (req.authType === 'user' && req.token && req.userId && req.user)
+        (req.authType === AuthenticationType.SecretKey && req.token && req.secretKeyId && req.secretKeyTeamId)
+        || (req.authType === AuthenticationType.User && req.token && req.userId && req.user)
     ) {
         next();
         return;
@@ -57,12 +62,12 @@ export const protect = async (
             return;
         }
 
-        const role = typeof secretKey.props.role === 'string'
-            ? undefined
-            : secretKey.props.role as PopulatedRole;
+        const role = isPopulatedSecretKeyRole(secretKey.props.role)
+            ? secretKey.props.role
+            : undefined;
         const createdById = secretKey.getCreatedById();
 
-        req.authType = 'secret-key';
+        req.authType = AuthenticationType.SecretKey;
         req.token = token;
         req.secretKeyId = secretKey.id;
         req.secretKeyTeamId = String(secretKey.props.team);
@@ -114,7 +119,7 @@ export const protect = async (
         return;
     }
 
-    req.authType = 'user';
+    req.authType = AuthenticationType.User;
     req.user = user;
     req.userId = user.id;
     req.token = token;

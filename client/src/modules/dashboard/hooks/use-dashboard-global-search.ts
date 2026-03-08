@@ -1,21 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useGlobalSearchQuery } from '@/modules/dashboard/hooks/queries';
+import { EMPTY_GLOBAL_SEARCH_RESULTS } from '@/modules/dashboard/api/dtos/global-search';
 import {
-    useFloating,
-    useDismiss,
-    useInteractions,
-    offset,
+    autoUpdate,
     flip,
+    offset,
     shift,
     size,
-    autoUpdate
+    useDismiss,
+    useFloating,
+    useInteractions
 } from '@floating-ui/react';
-import {
-    EMPTY_GLOBAL_SEARCH_RESULTS,
-    type GlobalSearchOutputDTO,
-    type GlobalSearchSectionKey
-} from '@/modules/dashboard/api/dtos/global-search';
-import { useGlobalSearchQuery } from '@/modules/dashboard/hooks/queries';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { GlobalSearchOutputDTO, GlobalSearchSectionKey } from '@/modules/dashboard/api/dtos/global-search';
 
 const SEARCH_DEBOUNCE_MS = 300;
 const SEARCH_RESULT_LIMIT = 5;
@@ -25,12 +22,12 @@ export interface DashboardGlobalSearchItem {
     title: string;
     subtitle: string;
     path: string;
-}
+};
 
 export interface DashboardGlobalSearchSection {
     key: GlobalSearchSectionKey;
     items: DashboardGlobalSearchItem[];
-}
+};
 
 const formatSearchDate = (value: string): string => {
     const date = new Date(value);

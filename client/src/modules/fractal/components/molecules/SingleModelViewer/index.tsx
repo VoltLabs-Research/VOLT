@@ -1,14 +1,21 @@
-import React, { useMemo } from 'react';
 import useSlicingPlanes from '@/modules/fractal/hooks/use-slicing-planes';
 import useGlbScene from '@/modules/fractal/hooks/use-glb-scene';
 import SimulationCellBox from '@/modules/fractal/components/molecules/SimulationCellBox';
 import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/utilities/box-utils';
-import { getSceneKey, normalizeVec3 } from '@/modules/fractal/utilities/scene-utils';
-import type { BoxBounds, ModelLoadingState } from '@/modules/fractal/types';
+import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
+import { computeGlbUrl } from '@/modules/fractal/api/service/compute-glb-url';
+import { useMemo, useEffect, useCallback, createElement } from 'react';
+import type { BoxBounds, ModelLoadingState, OrbitControlsHandle } from '@/modules/fractal/types';
 import type { SlicePlaneConfig, ModelWorldBounds } from '@/modules/fractal/types/configuration';
-import type { SceneObjectType } from '@/modules/fractal/api/entities/fractal';
-import type { BoundsInfo } from '@/modules/fractal/core/model-transform';
-import { computeGlbUrl } from '@/modules/fractal/services/compute-glb-url';
+import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
+import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
+import type { FC, RefObject } from 'react';
+
+interface OptionalVec3 {
+    x?: number;
+    y?: number;
+    z?: number;
+};
 
 interface SingleModelViewerProps {
     teamId?: string;
@@ -24,11 +31,11 @@ interface SingleModelViewerProps {
     activeModelBounds?: BoundsInfo | null;
     onModelBoundsChanged?: (bounds: BoundsInfo) => void;
     onLoadingStateChanged?: (state: ModelLoadingState) => void;
-    rotation?: { x?: number; y?: number; z?: number };
-    position?: { x?: number; y?: number; z?: number };
+    rotation?: OptionalVec3;
+    position?: OptionalVec3;
     scale?: number;
     autoFit?: boolean;
-    orbitControlsRef?: React.RefObject<{ enabled: boolean } | null>;
+    orbitControlsRef?: RefObject<OrbitControlsHandle | null>;
     enableSlice?: boolean;
     enableInstancing?: boolean;
     updateThrottle?: number;
@@ -36,9 +43,9 @@ interface SingleModelViewerProps {
     onModelLoaded?: (bounds: BoundsInfo) => void;
     onSelect?: () => void;
     isSelected?: boolean;
-}
+};
 
-const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
+const SingleModelViewer: FC<SingleModelViewerProps> = ({
     teamId,
     trajectoryId,
     currentTimestep,
@@ -53,7 +60,11 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
     onModelBoundsChanged,
     onLoadingStateChanged,
     rotation = {},
-    position = { x: 0, y: 0, z: 0 },
+    position = {
+        x: 0,
+        y: 0,
+        z: 0
+    },
     scale = 1,
     autoFit: _autoFit = true,
     orbitControlsRef,
@@ -84,12 +95,20 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         const scaleFactor = cellBoxTransforms.scale;
         const groundZOffset = cellBoxTransforms.groundOffset || 0;
         return {
-            min: { x: boxBounds.xlo * scaleFactor, y: boxBounds.ylo * scaleFactor, z: boxBounds.zlo * scaleFactor + groundZOffset },
-            max: { x: boxBounds.xhi * scaleFactor, y: boxBounds.yhi * scaleFactor, z: boxBounds.zhi * scaleFactor + groundZOffset }
+            min: {
+                x: boxBounds.xlo * scaleFactor,
+                y: boxBounds.ylo * scaleFactor,
+                z: boxBounds.zlo * scaleFactor + groundZOffset
+            },
+            max: {
+                x: boxBounds.xhi * scaleFactor,
+                y: boxBounds.yhi * scaleFactor,
+                z: boxBounds.zhi * scaleFactor + groundZOffset
+            }
         };
     }, [boxBounds, cellBoxTransforms]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         setModelWorldBounds?.(modelWorldBounds);
     }, [modelWorldBounds, setModelWorldBounds]);
 
@@ -106,7 +125,7 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         [teamId, trajectoryId, currentTimestep, analysisId, sceneConfig]
     );
 
-    const handleEmptyData = React.useCallback(async () => {
+    const handleEmptyData = useCallback(async () => {
         return;
     }, []);
 
@@ -115,8 +134,16 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
     const { modelBounds, deselect, model, setSelectedObject, onHoverChange } = useGlbScene({
         url,
         sliceClippingPlanes,
-        position: normalizeVec3(position),
-        rotation: normalizeVec3(rotation),
+        position: {
+            x: position.x ?? 0,
+            y: position.y ?? 0,
+            z: position.z ?? 0
+        },
+        rotation: {
+            x: rotation.x ?? 0,
+            y: rotation.y ?? 0,
+            z: rotation.z ?? 0
+        },
         scale,
         updateThrottle,
         onSelect,
@@ -132,13 +159,13 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         onLoadingStateChanged
     });
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (!isSelected) {
             deselect();
         }
     }, [isSelected, deselect]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (modelBounds && onModelLoaded) {
             onModelLoaded(modelBounds);
         }
@@ -152,7 +179,7 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
             onSelect={setSelectedObject}
             onHoverChange={onHoverChange}
         >
-            {model && React.createElement('primitive', { object: model })}
+            {model && createElement('primitive', { object: model })}
         </SimulationCellBox>
     );
 };

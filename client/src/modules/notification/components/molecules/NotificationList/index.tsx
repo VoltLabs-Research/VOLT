@@ -1,8 +1,9 @@
-import { useRef, useCallback, useEffect } from 'react';
+import './NotificationList.css';
+import NotificationItem from '../NotificationItem';
+import { useCallback, useEffect, useRef } from 'react';
 import { Skeleton } from '@mui/material';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
-import NotificationItem from '../NotificationItem';
 import type { Notification } from '@/modules/notification/api/entities/notification';
 
 interface NotificationListProps {

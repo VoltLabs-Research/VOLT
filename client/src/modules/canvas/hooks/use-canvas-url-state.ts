@@ -4,11 +4,11 @@ import useSelectionParams from '@/shared/presentation/hooks/use-selection-params
 
 interface UpdateOptions {
     replace?: boolean;
-}
+};
 
 interface CanvasUrlStateOptions {
     trajectory?: { analysis?: Array<{ _id?: string }> } | null;
-}
+};
 
 const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
     const { searchParams, updateSearchParams } = useSearchParamsState();

@@ -1,11 +1,11 @@
 declare module 'react-calendar-heatmap' {
-    import type { ComponentType, MouseEvent, ReactElement } from 'react';
+    import type { MouseEvent, ReactElement } from 'react';
 
     export interface HeatmapValue {
         date: string | Date;
         count?: number;
         [key: string]: unknown;
-    }
+    };
 
     export interface CalendarHeatmapProps {
         values: HeatmapValue[];
@@ -29,8 +29,7 @@ declare module 'react-calendar-heatmap' {
             value: HeatmapValue | null,
             index: number
         ) => ReactElement;
-    }
+    };
 
-    const CalendarHeatmap: ComponentType<CalendarHeatmapProps>;
-    export default CalendarHeatmap;
+    export default function CalendarHeatmap(props: CalendarHeatmapProps): ReactElement | null;
 }

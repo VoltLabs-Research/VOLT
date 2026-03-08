@@ -1,13 +1,5 @@
 import type { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 
-export enum SessionActivityType {
-    Login = 'login',
-    Logout = 'logout',
-    FailedLogin = 'failed_login',
-    OAuthLogin = 'oauth_login',
-    PasswordUpdate = 'password_update'
-};
-
 export interface ActiveSession extends BaseEntity {
     user: string;
     token: string;
@@ -28,4 +20,12 @@ export interface LoginActivityEntry extends BaseEntity {
     action: SessionActivityType;
     success: boolean;
     failureReason?: string;
+};
+
+export enum SessionActivityType {
+    Login = 'login',
+    Logout = 'logout',
+    FailedLogin = 'failed_login',
+    OAuthLogin = 'oauth_login',
+    PasswordUpdate = 'password_update'
 };

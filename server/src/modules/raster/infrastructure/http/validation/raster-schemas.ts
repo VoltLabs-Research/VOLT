@@ -1,5 +1,5 @@
-import { z } from 'zod/v4';
 import { createTeamScopedParamsSchema } from '@shared/infrastructure/http/validation/shared-schemas';
+import { z } from 'zod/v4';
 
 const teamTrajectoryParamsSchema = createTeamScopedParamsSchema('trajectoryId');
 

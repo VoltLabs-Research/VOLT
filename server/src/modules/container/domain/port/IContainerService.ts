@@ -1,12 +1,14 @@
+import type Docker from 'dockerode';
+
 export interface ContainerEnvironmentVariable {
     key: string;
     value: string;
-}
+};
 
 export interface ContainerPortMapping {
     private: number;
     public: number;
-}
+};
 
 export interface CreateRuntimeContainerOptions {
     image: string;
@@ -18,15 +20,17 @@ export interface CreateRuntimeContainerOptions {
     binds?: string[];
     groupAdd?: string[];
     cmd?: string[];
-}
+};
 
-export interface ContainerStats {
-    read: string;
-    precpu_stats: any;
-    cpu_stats: any;
-    memory_stats: any;
-    networks: any;
-}
+export interface ContainerResourceReference {
+    id: string;
+    name: string;
+};
+
+export type ContainerProcessInfo = Record<string, unknown>;
+
+export type ContainerStats = Docker.ContainerStats;
+export type RuntimeContainerInfo = Docker.ContainerInspectInfo;
 
 export interface ContainerFileEntry {
     name: string;
@@ -36,12 +40,12 @@ export interface ContainerFileEntry {
     owner: string;
     group: string;
     date: string;
-}
+};
 
 export interface ContainerTerminalSize {
     rows: number;
     cols: number;
-}
+};
 
 export interface ContainerTerminalStream {
     destroyed?: boolean;
@@ -51,19 +55,19 @@ export interface ContainerTerminalStream {
     on(event: 'data', listener: (chunk: Buffer) => void): void;
     on(event: 'end', listener: () => void): void;
     on(event: 'error', listener: (error: Error) => void): void;
-}
+};
 
 export interface ContainerTerminalExec {
     resize(size: ContainerTerminalSize): Promise<void>;
-}
+};
 
 export interface ContainerTerminalAttachment {
     stream: ContainerTerminalStream;
     exec: ContainerTerminalExec;
-}
+};
 
 export interface IContainerService {
-    createContainer(config: CreateRuntimeContainerOptions): Promise<any>;
+    createContainer(config: CreateRuntimeContainerOptions): Promise<RuntimeContainerInfo>;
     startContainer(containerId: string): Promise<void>;
     stopContainer(containerId: string): Promise<void>;
     removeContainer(containerId: string): Promise<void>;
@@ -71,20 +75,21 @@ export interface IContainerService {
     getFiles(containerId: string, path: string): Promise<ContainerFileEntry[]>;
     readFile(containerId: string, path: string): Promise<string>;
     writeFile(containerId: string, path: string, content: string): Promise<void>;
-    getProcesses(containerId: string): Promise<Record<string, unknown>[]>;
+    getProcesses(containerId: string): Promise<ContainerProcessInfo[]>;
     getPublishedPort(containerId: string, privatePort: number): Promise<number | null>;
     findAvailableHostPort(start: number, end: number): Promise<number | null>;
+    resolveDockerSocketGroupAdd(): Promise<string[]>;
     exec(containerId: string, command: string[], stdin?: string): Promise<string>;
     pullImage(imageName: string): Promise<void>;
     ensureImage(imageName: string): Promise<void>;
 
-    createNetwork(name: string): Promise<{ id: string, name: string }>;
+    createNetwork(name: string): Promise<ContainerResourceReference>;
     removeNetwork(networkId: string): Promise<void>;
     connectNetwork(networkId: string, containerId: string): Promise<void>;
 
-    createVolume(name: string): Promise<{ id: string, name: string }>;
+    createVolume(name: string): Promise<ContainerResourceReference>;
     removeVolume(name: string): Promise<void>;
 
     commitContainer(containerId: string, repo: string, tag: string): Promise<void>;
     attachTerminal(containerId: string): Promise<ContainerTerminalAttachment>;
-}
+};

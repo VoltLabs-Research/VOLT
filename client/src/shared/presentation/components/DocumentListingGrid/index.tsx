@@ -1,10 +1,11 @@
-import React, { useRef } from 'react';
-import { FileText } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
+import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
-import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
 import './DocumentListingGrid.css';
+import { FileText } from 'lucide-react';
+import { useRef } from 'react';
+import React from 'react';
 
 interface DocumentListingGridProps<T extends { _id: string }> {
     data: T[];

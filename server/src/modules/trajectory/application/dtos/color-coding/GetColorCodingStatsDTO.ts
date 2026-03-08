@@ -5,9 +5,9 @@ export interface GetColorCodingStatsInputDTO {
     exposureId?: string;
     property: string;
     type: string;
-}
+};
 
 export interface GetColorCodingStatsOutputDTO {
     min: number;
     max: number;
-}
+};

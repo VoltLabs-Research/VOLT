@@ -1,17 +1,23 @@
-import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { UpdateContainerInputDTO, UpdateContainerOutputDTO } from '@modules/container/application/dtos/UpdateContainerDTO';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { ContainerOwnershipService } from '@modules/container/services/ContainerOwnershipService';
 import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { IContainerService } from '@modules/container/domain/port/IContainerService';
 import { IDockerNetworkRepository } from '@modules/container/domain/port/IDockerNetworkRepository';
-import { ContainerOwnershipService } from '@modules/container/application/services/ContainerOwnershipService';
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-import type {
-    ContainerEnvironmentVariable,
-    ContainerPortMapping,
-    CreateRuntimeContainerOptions
-} from '@modules/container/domain/port/IContainerService';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { inject, injectable } from 'tsyringe';
+import type { ContainerEnvironmentVariable, ContainerPortMapping, CreateRuntimeContainerOptions } from '@modules/container/domain/port/IContainerService';
+
+interface ReplacementContainerConfigInput {
+    image: string;
+    name: string;
+    env: ContainerEnvironmentVariable[];
+    ports: ContainerPortMapping[];
+    memoryInMegabytes: number;
+    cpus: number;
+    binds: string[];
+};
 
 @injectable()
 export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO, UpdateContainerOutputDTO> {
@@ -20,17 +26,9 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
         @inject(CONTAINER_TOKENS.ContainerService) private containerService: IContainerService,
         @inject(CONTAINER_TOKENS.DockerNetworkRepository) private networkRepository: IDockerNetworkRepository,
         @inject(ContainerOwnershipService) private ownershipService: ContainerOwnershipService
-    ){}
+    ) {}
 
-    private buildReplacementContainerConfig(input: {
-        image: string;
-        name: string;
-        env: ContainerEnvironmentVariable[];
-        ports: ContainerPortMapping[];
-        memoryInMegabytes: number;
-        cpus: number;
-        binds: string[];
-    }): CreateRuntimeContainerOptions {
+    private buildReplacementContainerConfig(input: ReplacementContainerConfigInput): CreateRuntimeContainerOptions {
         return {
             image: input.image,
             name: `${input.name.replace(/\s+/g, '-')}-${Date.now()}`,
@@ -106,4 +104,4 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
 
         return Result.ok({ container: updated });
     }
-}
+};

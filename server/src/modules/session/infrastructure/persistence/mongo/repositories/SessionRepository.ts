@@ -1,16 +1,12 @@
-import { ISessionRepository, PersistedSessionDTO } from '@modules/session/domain/port/ISessionRepository';
-import Session, { SessionActivityType, SessionProps } from '@modules/session/domain/entities/Session';
-import SessionModel, { SessionDocument } from '@modules/session/infrastructure/persistence/mongo/models/SessionModel';
+import { SessionActivityType } from '@modules/session/domain/entities/Session';
+import type Session from '@modules/session/domain/entities/Session';
 import sessionMapper from '@modules/session/infrastructure/persistence/mongo/mappers/SessionMapper';
-import { injectable } from 'tsyringe';
+import SessionModel from '@modules/session/infrastructure/persistence/mongo/models/SessionModel';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-
-const toPersistedSession = (session: Session): PersistedSessionDTO => {
-    return {
-        _id: session._id,
-        ...session.props
-    };
-};
+import { injectable } from 'tsyringe';
+import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
+import type { SessionProps } from '@modules/session/domain/entities/Session';
+import type { SessionDocument } from '@modules/session/infrastructure/persistence/mongo/models/SessionModel';
 
 @injectable()
 export default class SessionRepository
@@ -21,19 +17,19 @@ export default class SessionRepository
         super(SessionModel, sessionMapper);
     }
 
-    async findActiveByUserId(userId: string): Promise<PersistedSessionDTO[]> {
+    async findActiveByUserId(userId: string): Promise<Session[]> {
         const docs = await SessionModel
             .find({ user: userId, isActive: true })
             .sort({ lastActivity: -1 });
-        return docs.map((doc) => toPersistedSession(this.mapper.toDomain(doc)));
+        return docs.map((doc) => this.mapper.toDomain(doc));
     }
 
-    async findLoginActivity(userId: string, limit: number): Promise<PersistedSessionDTO[]> {
+    async findLoginActivity(userId: string, limit: number): Promise<Session[]> {
         const docs = await SessionModel
             .find({ user: userId })
             .sort({ createdAt: -1 })
             .limit(limit);
-        return docs.map((doc) => toPersistedSession(this.mapper.toDomain(doc)));
+        return docs.map((doc) => this.mapper.toDomain(doc));
     }
 
     async deactivateByToken(token: string): Promise<void> {
@@ -42,7 +38,11 @@ export default class SessionRepository
 
     async deactivateAllExcept(userId: string, currentToken: string): Promise<number> {
         const result = await SessionModel.updateMany(
-            { user: userId, token: { $ne: currentToken }, isActive: true },
+            {
+                user: userId,
+                token: { $ne: currentToken },
+                isActive: true
+            },
             { isActive: false }
         );
 
@@ -81,7 +81,11 @@ export default class SessionRepository
 
     async findByToken(token: string): Promise<Session | null>{
         const doc = await SessionModel.findOne({ token, isActive: true });
-        return doc ? sessionMapper.toDomain(doc) : null;
+        if (!doc) {
+            return null;
+        }
+
+        return sessionMapper.toDomain(doc);
     }
 
     async updateActivity(sessionId: string): Promise<void> {

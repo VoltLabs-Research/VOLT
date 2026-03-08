@@ -1,10 +1,9 @@
+import { closeModal } from '@/shared/presentation/components/Modal';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import Modal, { openModal, closeModal } from '@/shared/presentation/components/Modal';
-import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import Modal from '@/shared/presentation/components/Modal';
 import './EditMessageModal.css';
-
-const MODAL_ID = 'edit-message-modal';
 
 interface EditMessageModalProps {
     messageId: string | null;
@@ -13,25 +12,31 @@ interface EditMessageModalProps {
     onClose: () => void;
 };
 
+export const EDIT_MESSAGE_MODAL_ID = 'edit-message-modal';
+
 const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMessageModalProps) => {
     const [content, setContent] = useState(initialContent);
     const [isLoading, setIsLoading] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+    const focusTextarea = () => {
+        textareaRef.current?.focus();
+        textareaRef.current?.select();
+    };
+
     useEffect(() => {
         setContent(initialContent);
-        // Focus and select text when modal opens
+
         if (initialContent && textareaRef.current) {
             setTimeout(() => {
-                textareaRef.current?.focus();
-                textareaRef.current?.select();
+                focusTextarea();
             }, 100);
         }
     }, [initialContent]);
 
     const handleSave = useCallback(async () => {
         if (!messageId || !content.trim() || content === initialContent) {
-            closeModal(MODAL_ID);
+            closeModal(EDIT_MESSAGE_MODAL_ID);
             onClose();
             return;
         }
@@ -39,7 +44,7 @@ const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMe
         setIsLoading(true);
         try {
             await onSave(messageId, content.trim());
-            closeModal(MODAL_ID);
+            closeModal(EDIT_MESSAGE_MODAL_ID);
             onClose();
         } finally {
             setIsLoading(false);
@@ -47,7 +52,7 @@ const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMe
     }, [messageId, content, initialContent, onSave, onClose]);
 
     const handleCancel = useCallback(() => {
-        closeModal(MODAL_ID);
+        closeModal(EDIT_MESSAGE_MODAL_ID);
         onClose();
     }, [onClose]);
 
@@ -62,7 +67,7 @@ const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMe
 
     return (
         <Modal
-            id={MODAL_ID}
+            id={EDIT_MESSAGE_MODAL_ID}
             title='Edit Message'
             width='400px'
             footer={
@@ -98,5 +103,3 @@ const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMe
 };
 
 export default EditMessageModal;
-
-export { MODAL_ID as EDIT_MESSAGE_MODAL_ID, openModal, closeModal };

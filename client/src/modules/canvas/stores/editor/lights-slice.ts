@@ -1,11 +1,12 @@
-import type { StateCreator } from 'zustand';
-import type { LightsState, LightsStore, LightsGlobal, DirLight, PointLight, SpotLight, HemiLight, RectAreaLightCfg } from '@/modules/fractal/types/stores/editor/visual-types';
-import type { EditorStore } from './types';
 import { mergeNestedSectionState, resetSectionState } from './store-section';
+
+import type { EditorStore } from './types';
+import type { LightsState, LightsStore, LightsGlobal, DirLight, PointLight, SpotLight, HemiLight, RectAreaLightCfg } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { StateCreator } from 'zustand';
 
 export interface LightsSlice {
     lights: LightsStore;
-}
+};
 
 const INITIAL: LightsState = {
     global: { envIntensity: 1, envRotationYaw: 0, envRotationPitch: 0, envBlur: 0 },

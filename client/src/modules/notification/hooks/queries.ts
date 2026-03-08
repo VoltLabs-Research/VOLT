@@ -1,56 +1,54 @@
-import { useMutation, type InfiniteData } from '@tanstack/react-query';
+import service from '../api/service';
+import { useMutation } from '@tanstack/react-query';
 import {
     buildKeys,
     createInfiniteQuery,
-    withSuccess,
-    type MutationOptions,
     patchInfinitePages,
-    prependToFirstInfinitePage
+    prependToFirstInfinitePage,
+    withSuccess
 } from '@/shared/infrastructure/query';
-import service from '../api/service';
-import type { Notification } from '../api/entities/notification';
+import type { InfiniteData } from '@tanstack/react-query';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
-
-const DEFAULT_LIMIT = 20;
+import type { MutationOptions } from '@/shared/infrastructure/query';
+import type { Notification } from '../api/entities/notification';
 
 export interface NotificationQueryParams {
     teamId: string;
-    limit?: number;
-}
+    limit: number;
+};
 
-type NotificationInfiniteData = InfiniteData<PaginatedResponse<Notification>>;
+interface NotificationQueryOptions {
+    enabled?: boolean;
+};
 
-const KEYS = buildKeys<{
+type NotificationQueryKeyMap = Record<string, unknown> & {
     notifications: NotificationQueryParams;
-}>('notifications');
+};
 
-export const normalizeNotificationQueryParams = (
-    params: NotificationQueryParams
-): NotificationQueryParams => ({
-    teamId: params.teamId,
-    limit: params.limit ?? DEFAULT_LIMIT
-});
+type NotificationInfiniteData = InfiniteData<PaginatedResponse<Notification>, number>;
+
+const DEFAULT_LIMIT = 20;
+
+const KEYS = buildKeys<NotificationQueryKeyMap>('notifications');
 
 export const getNotificationsInfiniteQueryKey = (params: NotificationQueryParams) => {
-    return KEYS.notifications(normalizeNotificationQueryParams(params));
+    return KEYS.notifications(params);
 };
 
 const notificationsInfiniteQuery = createInfiniteQuery<NotificationQueryParams, Notification>(
     getNotificationsInfiniteQueryKey,
-    (params, { page, limit }) => service.getAll({
+    (params, { page }) => service.getAll({
         page,
-        limit: params.limit ?? limit
+        limit: params.limit
     }),
     { defaultLimit: DEFAULT_LIMIT }
 );
 
 export const useNotificationsInfiniteQuery = (
     params: NotificationQueryParams,
-    options?: { enabled?: boolean }
+    options?: NotificationQueryOptions
 ) => {
-    const normalizedParams = normalizeNotificationQueryParams(params);
-
-    return notificationsInfiniteQuery(normalizedParams, {
+    return notificationsInfiniteQuery(params, {
         enabled: options?.enabled
     });
 };
@@ -59,28 +57,22 @@ export const setNotificationsInfiniteQueryData = (
     params: NotificationQueryParams,
     updater: (oldData: NotificationInfiniteData | undefined) => NotificationInfiniteData | undefined
 ) => {
-    const normalizedParams = normalizeNotificationQueryParams(params);
-
-    return notificationsInfiniteQuery.setData(normalizedParams, updater);
+    return notificationsInfiniteQuery.setData(params, updater);
 };
 
 export const prependNotificationToInfiniteCache = (
     params: NotificationQueryParams,
     notification: Notification
 ) => {
-    const normalizedParams = normalizeNotificationQueryParams(params);
-
     prependToFirstInfinitePage<Notification>(
-        getNotificationsInfiniteQueryKey(normalizedParams),
+        getNotificationsInfiniteQueryKey(params),
         notification
     );
 };
 
 export const markNotificationsInfiniteCacheAsRead = (params: NotificationQueryParams) => {
-    const normalizedParams = normalizeNotificationQueryParams(params);
-
     patchInfinitePages<Notification>(
-        getNotificationsInfiniteQueryKey(normalizedParams),
+        getNotificationsInfiniteQueryKey(params),
         (page) => ({
             ...page,
             data: page.data.map((notification) => ({ ...notification, read: true }))
@@ -89,14 +81,12 @@ export const markNotificationsInfiniteCacheAsRead = (params: NotificationQueryPa
 };
 
 export const useMarkAllReadMutation = (params: NotificationQueryParams, options?: MutationOptions<void, void>) => {
-    const normalizedParams = normalizeNotificationQueryParams(params);
-
     return useMutation<void, Error, void>({
         ...options,
         mutationFn: () => service.markAllAsRead({}),
         onSuccess: withSuccess(() => {
-            markNotificationsInfiniteCacheAsRead(normalizedParams);
-            void notificationsInfiniteQuery.invalidate(normalizedParams);
+            markNotificationsInfiniteCacheAsRead(params);
+            notificationsInfiniteQuery.invalidate(params);
         }, options)
     });
 };

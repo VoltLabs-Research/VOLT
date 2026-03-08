@@ -1,17 +1,19 @@
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import IconButton from '@/shared/presentation/components/IconButton';
-import Button from '@/shared/presentation/components/Button';
-import Tooltip from '@/shared/presentation/components/Tooltip';
-import PluginExposureTable from '@/modules/plugin/components/organisms/PluginExposureTable';
-import PluginAtomsTable from '@/modules/plugin/components/organisms/PluginAtomsTable';
 import usePluginResults from '../../../hooks/use-plugin-results';
+
+import PluginAtomsTable from '@/modules/plugin/components/listing/organisms/PluginAtomsTable';
+import PluginExposureTable from '@/modules/plugin/components/listing/organisms/PluginExposureTable';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import IconButton from '@/shared/presentation/components/IconButton';
+import Title from '@/shared/presentation/components/Title';
+import Tooltip from '@/shared/presentation/components/Tooltip';
+
 import './PluginResultsViewer.css';
 
 interface PluginResultsViewerProps {
     pluginId: string;
     analysisId: string;
-}
+};
 
 const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps) => {
     const {

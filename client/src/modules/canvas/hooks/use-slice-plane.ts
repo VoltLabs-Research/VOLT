@@ -1,9 +1,11 @@
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+
 import { useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import type { SliceAxis } from '@/modules/fractal/types/configuration';
 
-export const AXES: SliceAxis[] = ['x', 'y', 'z'];
+import { SliceAxis } from '@/modules/fractal/types/configuration';
+
+export const AXES: SliceAxis[] = [SliceAxis.X, SliceAxis.Y, SliceAxis.Z];
 
 export interface UseSlicePlaneReturn {
     slicePlaneConfig: {
@@ -15,7 +17,7 @@ export interface UseSlicePlaneReturn {
     handlePositionChange: (axis: SliceAxis, value: number) => void;
     handleAngleChange: (axis: SliceAxis, value: number) => void;
     isAxisActive: (axis: SliceAxis) => boolean;
-}
+};
 
 const useSlicePlane = (): UseSlicePlaneReturn => {
     const {

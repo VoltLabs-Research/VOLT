@@ -1,13 +1,14 @@
-import type { ReactNode } from 'react';
-import Container from '@/shared/presentation/components/Container';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import useSimulationCell from '@/modules/simulation-cell/hooks/use-simulation-cell';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import Container from '@/shared/presentation/components/Container';
+
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { ReactNode } from 'react';
 
 interface SimulationCellViewProps {
     trajectory: Trajectory | null | undefined;
     currentTimestep: number | undefined;
-}
+};
 
 const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewProps) => {
     const teamId = typeof trajectory?.team === 'object' ? trajectory.team._id : trajectory?.team;

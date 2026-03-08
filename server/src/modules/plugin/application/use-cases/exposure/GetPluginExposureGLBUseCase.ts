@@ -1,21 +1,24 @@
-import { injectable, inject } from 'tsyringe';
-import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
-import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
-import { SYS_BUCKETS } from '@core/config/minio';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
-import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
-import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/SceneArtifact';
 import {
     GetPluginExposureGLBInputDTO,
     GetPluginExposureGLBOutputDTO
 } from '@modules/plugin/application/dtos/exposure/GetPluginExposureGLBDTO';
-import { createStreamResponse } from '@modules/plugin/application/helpers/create-download-response';
+import { createStreamResponse } from '@modules/plugin/application/helpers/plugin/create-download-response';
+
+import { SYS_BUCKETS } from '@core/config/minio';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
+import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
+import type { IStorageService } from '@shared/domain/port/IStorageService';
 
 @injectable()
 export class GetPluginExposureGLBUseCase implements IUseCase<
@@ -54,7 +57,7 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
         const artifactFilter: Partial<SceneArtifactProps> = {
             trajectory: String(input.trajectoryId),
             analysis: String(input.analysisId),
-            sourceType: 'plugin-exposure',
+            sourceType: SceneArtifactSourceType.PluginExposure,
             timestep: Number(input.timestep),
             params: {
                 exposureId: String(input.exposureId)
@@ -86,4 +89,4 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
             cacheControl: 'public, max-age=31536000, immutable'
         }));
     }
-}
+};

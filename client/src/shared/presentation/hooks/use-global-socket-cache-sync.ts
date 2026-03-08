@@ -1,7 +1,7 @@
+import useSocket from '@/modules/socket/core/hooks/use-socket';
+import queryClient from '@/shared/infrastructure/query/query-client';
 import { useEffect } from 'react';
 import type { QueryKey } from '@tanstack/react-query';
-import useSocket from '@/modules/socket/hooks/use-socket';
-import queryClient from '@/shared/infrastructure/query/query-client';
 
 const GLOBAL_SOCKET_CACHE_SYNC_EVENTS: Array<{ event: string; queryKeys: QueryKey[] }> = [
     { event: 'team.created', queryKeys: [['teams']] },

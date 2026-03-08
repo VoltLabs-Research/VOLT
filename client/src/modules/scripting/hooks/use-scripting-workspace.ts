@@ -1,54 +1,21 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { sileo } from 'sileo';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { useCreateScriptingSessionMutation, scriptingNotebooksQuery } from './queries';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { sileo } from 'sileo';
+import {
+    getJupyterStartErrorMessage,
+    pickActiveNotebook,
+    resolveJupyterUrlWithServerIp
+} from '../utilities/workspace';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ScriptingNotebook } from '../api/entities/scripting-notebook';
 
 interface UseScriptingWorkspaceInput {
     trajectoryId: string;
     notebookId?: string;
-}
+};
 
 const WORKSPACE_NOTEBOOKS_FETCH_LIMIT = 500;
-const JUPYTER_START_ERROR_MESSAGE = 'Failed to start Jupyter';
-
-const resolveJupyterUrlWithServerIp = (url: string): string => {
-    try {
-        const parsedUrl = new URL(url);
-        const serverUrl = new URL(import.meta.env.VITE_API_URL);
-        parsedUrl.protocol = serverUrl.protocol;
-        parsedUrl.hostname = serverUrl.hostname;
-        return parsedUrl.toString();
-    } catch {
-        return url;
-    }
-};
-
-const pickActiveNotebook = (notebooks: ScriptingNotebook[], notebookId?: string): ScriptingNotebook | undefined => {
-    if (!notebookId) {
-        return notebooks[0];
-    }
-
-    return notebooks.find((notebook) => notebook._id === notebookId) || notebooks[0];
-};
-
-const getJupyterStartErrorMessage = (error: unknown): string => {
-    if (typeof error === 'object' && error !== null) {
-        const errorRecord = error as Record<string, unknown>;
-        const responseData = errorRecord.response as Record<string, unknown> | undefined;
-        const responseMessage = responseData?.data as Record<string, unknown> | undefined;
-
-        if (typeof responseMessage?.message === 'string' && responseMessage.message.trim().length > 0) {
-            return responseMessage.message;
-        }
-
-        if (typeof errorRecord.message === 'string' && errorRecord.message.trim().length > 0) {
-            return errorRecord.message;
-        }
-    }
-
-    return JUPYTER_START_ERROR_MESSAGE;
-};
 
 const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspaceInput) => {
     const [jupyterUrl, setJupyterUrl] = useState<string | null>(null);
@@ -71,17 +38,17 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         if (!checkRBACError(notebooksQuery.error)) {
             sileo.error({ title: 'Failed to load notebooks' });
         }
-    }, [notebooksQuery.error]);
+    }, [checkRBACError, notebooksQuery.error]);
 
-    const notebooks = notebooksQuery.data?.data || [];
+    const notebooks = ((notebooksQuery.data as PaginatedResponse<ScriptingNotebook> | undefined)?.data) ?? [];
     const activeNotebook = useMemo(
         () => pickActiveNotebook(notebooks, notebookId),
         [notebooks, notebookId]
     );
 
-    const scriptingSessionMutation = useCreateScriptingSessionMutation();
+    const { mutateAsync: createScriptingSession, isPending: isStartingJupyter } = useCreateScriptingSessionMutation();
 
-    const startJupyterSession = async () => {
+    const startJupyterSession = useCallback(async () => {
         if (!trajectoryId) {
             return;
         }
@@ -92,7 +59,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         sileo.info({ title: 'Starting Jupyter session...' });
 
         try {
-            const session = await scriptingSessionMutation.mutateAsync({
+            const session = await createScriptingSession({
                 trajectoryId,
                 notebookId: activeNotebook?._id
             });
@@ -113,7 +80,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                 sileo.error({ title: 'Failed to start Jupyter session' });
             }
         }
-    };
+    }, [activeNotebook?._id, checkRBACError, createScriptingSession, trajectoryId]);
 
     useEffect(() => {
         if (!trajectoryId || notebooksQuery.isLoading) {
@@ -125,11 +92,11 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         }
 
         hasAutoStartedRef.current = true;
-        startJupyterSession();
-    }, [trajectoryId, activeNotebook?._id, startAttempt, notebooksQuery.isLoading]);
+        void startJupyterSession();
+    }, [trajectoryId, startAttempt, notebooksQuery.isLoading, startJupyterSession]);
 
     const retryStartJupyter = () => {
-        if (!trajectoryId || scriptingSessionMutation.isPending) {
+        if (!trajectoryId || isStartingJupyter) {
             return;
         }
 
@@ -139,7 +106,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
     return {
         isLoading: notebooksQuery.isLoading,
         activeNotebook,
-        isStartingJupyter: scriptingSessionMutation.isPending,
+        isStartingJupyter,
         error: jupyterError,
         accessDenied,
         accessDeniedMessage,

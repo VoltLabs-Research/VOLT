@@ -1,17 +1,18 @@
-import { useEffect, type ReactNode } from 'react';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import Button from '@/shared/presentation/components/Button';
-import Loader from '@/shared/presentation/components/Loader';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import useScriptingWorkspace from '@/modules/scripting/hooks/use-scripting-workspace';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import Loader from '@/shared/presentation/components/Loader';
+import Paragraph from '@/shared/presentation/components/Paragraph';
 import './ScriptingWorkspace.css';
+import { useEffect } from 'react';
+import type { ReactNode } from 'react';
 
 interface ScriptingWorkspaceProps {
     trajectoryId: string;
     notebookId?: string;
     onJupyterUrlChange?: (url: string | null) => void;
-}
+};
 
 const renderLoadingState = (message: string) => (
     <Container className="scripting-workspace__empty d-flex column items-center content-center gap-1 flex-1 p-2">

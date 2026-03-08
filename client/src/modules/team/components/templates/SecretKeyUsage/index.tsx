@@ -1,6 +1,16 @@
-import { useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { createTooltipRenderer } from '@/modules/team/components/templates/secret-key/shared/chart-tooltip-renderer';
+import { CHART_COLORS } from '@/modules/team/utilities/secret-key/chart-helpers';
+import useSecretKeyUsage from '@/modules/team/hooks/secret-key/use-secret-key-usage';
+import ChartContainer from '@/shared/presentation/components/ChartContainer';
+import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
+import Container from '@/shared/presentation/components/Container';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Title from '@/shared/presentation/components/Title';
 import { formatDistanceToNow } from 'date-fns';
+import { Skeleton } from '@mui/material';
+import { ArrowLeft, Activity, BarChart3, PieChart as PieChartIcon, List, Clock, Zap, CheckCircle, Hash } from 'lucide-react';
+import { useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
     AreaChart,
     Area,
@@ -15,19 +25,18 @@ import {
     Tooltip,
     ResponsiveContainer
 } from 'recharts';
+import type { Params } from 'react-router-dom';
 import type { TooltipContentProps } from 'recharts';
-import { ArrowLeft, Activity, BarChart3, PieChart as PieChartIcon, List, Clock, Zap, CheckCircle, Hash } from 'lucide-react';
-import { Skeleton } from '@mui/material';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import ChartContainer from '@/shared/presentation/components/ChartContainer';
-import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
-import useSecretKeyUsage from '@/modules/team/hooks/secret-key/use-secret-key-usage';
-import { CHART_COLORS } from '@/modules/team/utilities/chart-helpers';
-import { createTooltipRenderer } from '@/modules/team/utilities/chart-tooltip-renderer';
-import '../SecretKeyShared.css';
+import '../secret-key/shared/SecretKeyShared.css';
 import './SecretKeyUsage.css';
+
+interface SecretKeyUsageRouteParams extends Params {
+    secretKeyId: string;
+};
+
+interface TooltipPayloadRecord {
+    [key: string]: string | number;
+};
 
 const STATUS_COLORS: Record<string, string> = {
     '2xx': 'var(--status-success)',
@@ -56,12 +65,20 @@ const getStatusColorGroup = (code: number): string => {
 const renderAreaTooltip = createTooltipRenderer('date', 'Requests', CHART_COLORS.requests);
 const renderBarTooltip = createTooltipRenderer('endpoint', 'Requests', CHART_COLORS.endpoints);
 
+const isTooltipPayloadRecord = (value: unknown): value is TooltipPayloadRecord => {
+    if (typeof value !== 'object' || value === null) {
+        return false;
+    }
+
+    return Object.values(value).every((entry) => typeof entry === 'string' || typeof entry === 'number');
+};
+
 const renderPieTooltip = ({ active, payload }: TooltipContentProps<string | number, string>) => {
     if (!active || !payload?.length) return null;
 
-    const firstPayload = payload[0]?.payload as Record<string, string | number> | undefined;
+    const firstPayload = payload[0]?.payload;
     const firstValue = payload[0]?.value;
-    if (!firstPayload || (typeof firstValue !== 'string' && typeof firstValue !== 'number')) {
+    if (!isTooltipPayloadRecord(firstPayload) || (typeof firstValue !== 'string' && typeof firstValue !== 'number')) {
         return null;
     }
 
@@ -73,8 +90,8 @@ const renderPieTooltip = ({ active, payload }: TooltipContentProps<string | numb
     );
 };
 
-const SecretKeyUsage = () => {
-    const { secretKeyId } = useParams<{ secretKeyId: string }>();
+export default function SecretKeyUsage() {
+    const { secretKeyId } = useParams<SecretKeyUsageRouteParams>();
     const navigate = useNavigate();
     const { usage, isLoading } = useSecretKeyUsage(secretKeyId);
 
@@ -384,6 +401,4 @@ const SecretKeyUsage = () => {
             </Container>
         </Container>
     );
-};
-
-export default SecretKeyUsage;
+}

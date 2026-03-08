@@ -1,9 +1,11 @@
-import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import User, { UserProps } from '@modules/auth/domain/entities/User';
-import UserModel, { UserDocument } from '@modules/auth/infrastructure/persistence/mongo/models/UserModel';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+import User from '@modules/auth/domain/entities/User';
+import UserModel from '@modules/auth/infrastructure/persistence/mongo/models/UserModel';
 import userMapper from '@modules/auth/infrastructure/persistence/mongo/mappers/UserMapper';
 import { injectable } from 'tsyringe';
-import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+import type { UserProps } from '@modules/auth/domain/entities/User';
+import type { IUserRepository, UserWithPassword } from '@modules/auth/domain/port/IUserRepository';
+import type { UserDocument } from '@modules/auth/infrastructure/persistence/mongo/models/UserModel';
 
 @injectable()
 export default class UserRepository
@@ -19,12 +21,12 @@ export default class UserRepository
         return doc ? userMapper.toDomain(doc) : null;
     }
 
-    async findByEmailWithPassword(email: string): Promise<(User & { password: string; }) | null> {
+    async findByEmailWithPassword(email: string): Promise<UserWithPassword | null> {
         const doc = await UserModel.findOne({ email: email.toLowerCase() }).select('+password');
         return doc ? userMapper.toDomainWithPassword(doc) : null;
     }
 
-    async findByIdWithPassword(userId: string): Promise<(User & { password: string; }) | null> {
+    async findByIdWithPassword(userId: string): Promise<UserWithPassword | null> {
         const doc = await UserModel.findById(userId).select('+password');
         return doc ? userMapper.toDomainWithPassword(doc) : null;
     }

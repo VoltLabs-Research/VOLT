@@ -1,8 +1,8 @@
-export interface RevokeAllSessionsInputDTO{
+export interface RevokeAllSessionsInputDTO {
     userId: string;
     token: string;
 };
 
-export interface RevokeAllSessionsOutputDTO{
+export interface RevokeAllSessionsOutputDTO {
     revokedCount: number;
 };

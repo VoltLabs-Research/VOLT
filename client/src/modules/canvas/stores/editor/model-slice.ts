@@ -1,9 +1,10 @@
-import type { StateCreator } from 'zustand';
-import type { ModelStore, ModelState, SceneObjectType, ModelData } from '@/modules/fractal/types/stores/editor/scene-types';
-import type { ModelWorldBounds } from '@/modules/fractal/types/configuration';
-import type { ModelLoadingState } from '@/modules/fractal/types';
 import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
+
 import type { EditorStore } from './types';
+import type { ModelLoadingState } from '@/modules/fractal/types';
+import type { ModelWorldBounds } from '@/modules/fractal/types/configuration';
+import type { ModelStore, ModelState, SceneObjectType, ModelData } from '@/modules/fractal/stores/contracts/editor/scene-types';
+import type { StateCreator } from 'zustand';
 
 const createInitialState = (): ModelState => ({
     activeModel: null,

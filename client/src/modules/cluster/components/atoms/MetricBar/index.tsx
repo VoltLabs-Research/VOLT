@@ -1,5 +1,5 @@
-import Container from '@/shared/presentation/components/Container';
 import './MetricBar.css';
+import Container from '@/shared/presentation/components/Container';
 
 interface MetricBarProps {
     value: number;
@@ -7,7 +7,7 @@ interface MetricBarProps {
     segments?: number;
     color?: string;
     glow?: string;
-}
+};
 
 const MetricBar = ({
     value,

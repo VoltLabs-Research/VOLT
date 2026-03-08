@@ -1,38 +1,38 @@
-import { useMemo } from 'react';
-import { HiOutlineServerStack } from 'react-icons/hi2';
-import { FlaskConical, Puzzle } from 'lucide-react';
-import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
-import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import useDashboardMetrics from '@/modules/dashboard/hooks/use-dashboard-metrics';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import EmptyState from '@/shared/presentation/components/EmptyState';
+import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
+import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import DashboardOverviewCard from '@/modules/dashboard/components/atoms/DashboardOverviewCard';
 import DashboardOverviewSkeleton from '@/modules/dashboard/components/atoms/DashboardOverviewSkeleton';
-import DashboardTeamTimeline from '@/modules/dashboard/components/molecules/DashboardTeamTimeline';
 import { DashboardQuickActions } from '@/modules/dashboard/components/molecules/DashboardQuickActions';
-import DashboardInAppActivity from '@/modules/dashboard/components/molecules/DashboardInAppActivity';
 import DashboardClusterHealth from '@/modules/dashboard/components/molecules/DashboardClusterHealth';
-import DashboardTeamPresence from '@/modules/dashboard/components/molecules/DashboardTeamPresence';
+import DashboardInAppActivity from '@/modules/dashboard/components/molecules/DashboardInAppActivity';
 import DashboardNotificationsFeed from '@/modules/dashboard/components/molecules/DashboardNotificationsFeed';
 import DashboardPreviewCard from '@/modules/dashboard/components/molecules/DashboardPreviewCard';
 import DashboardRecentAnalyses from '@/modules/dashboard/components/molecules/DashboardRecentAnalyses';
+import DashboardTeamPresence from '@/modules/dashboard/components/molecules/DashboardTeamPresence';
+import DashboardTeamTimeline from '@/modules/dashboard/components/molecules/DashboardTeamTimeline';
+import useDashboardMetrics from '@/modules/dashboard/hooks/use-dashboard-metrics';
 import JobsHistoryViewer from '@/modules/jobs/components/organisms/JobsHistoryViewer';
-import SimulationGrid from '@/modules/trajectory/components/molecules/SimulationGrid';
 import TrajectoryUploaderContainer from '@/modules/trajectory/components/organisms/TrajectoryUploaderContainer';
-import type { DashboardCard } from '@/modules/dashboard/api/entities/dashboard';
-import '../../atoms/DashboardContainer/DashboardContainer.css';
+import SimulationGrid from '@/modules/trajectory/components/molecules/SimulationGrid';
+import Container from '@/shared/presentation/components/Container';
+import EmptyState from '@/shared/presentation/components/EmptyState';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Title from '@/shared/presentation/components/Title';
 import './Dashboard.css';
+import { useMemo } from 'react';
+import { FlaskConical, Puzzle } from 'lucide-react';
+import { HiOutlineServerStack } from 'react-icons/hi2';
+import type { DashboardCard } from '@/modules/dashboard/api/entities/dashboard';
+import type { ReactNode } from 'react';
 
-const CARD_ICONS: Record<string, React.ReactNode> = {
+const CARD_ICONS: Record<string, ReactNode> = {
     trajectories: <HiOutlineServerStack size={16} />,
     analysis: <FlaskConical size={16} strokeWidth={1.8} />
 };
 
-const getCardIcon = (key: string): React.ReactNode => {
+const getCardIcon = (key: string): ReactNode => {
     return CARD_ICONS[key] || <Puzzle size={16} strokeWidth={1.8} />;
 };
 
@@ -63,6 +63,23 @@ const DashboardPage = () => {
             day: 'numeric'
         });
     }, []);
+    let statCards = cards.map((card: DashboardCard, index: number) => (
+        <DashboardOverviewCard
+            key={`${card.key}-${index}`}
+            card={card}
+            icon={getCardIcon(card.key)}
+        />
+    ));
+
+    if (accessDenied) {
+        statCards = [
+            <Container key='denied' className='dashboard-stat-card' style={{ gridColumn: 'span 4' }}>
+                <AccessDenied description={accessDeniedMessage} showBack={false} />
+            </Container>
+        ];
+    } else if (loading) {
+        statCards = [<DashboardOverviewSkeleton key='loading' count={3} />];
+    }
 
     return (
         <TrajectoryUploaderContainer>
@@ -78,21 +95,7 @@ const DashboardPage = () => {
                 </Container>
 
                 {/* Stat overview cards */}
-                {accessDenied ? (
-                    <Container className='dashboard-stat-card' style={{ gridColumn: 'span 4' }}>
-                        <AccessDenied description={accessDeniedMessage} showBack={false} />
-                    </Container>
-                ) : loading ? (
-                    <DashboardOverviewSkeleton count={3} />
-                ) : (
-                    cards.map((card: DashboardCard, index: number) => (
-                        <DashboardOverviewCard
-                            key={`${card.key}-${index}`}
-                            card={card}
-                            icon={getCardIcon(card.key)}
-                        />
-                    ))
-                )}
+                {statCards}
 
                 {/* Spacer card to fill remaining columns when 3 stat cards */}
                 {!loading && cards.length === 3 && (

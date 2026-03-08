@@ -1,7 +1,11 @@
 import type { EnvVariable } from '@/modules/container/api/entities/env-variable';
 import type { PortMapping } from '@/modules/container/api/entities/port-mapping';
 
-export type ContainerAction = 'start' | 'stop' | 'restart';
+export enum ContainerAction {
+    Start = 'start',
+    Stop = 'stop',
+    Restart = 'restart'
+};
 
 export interface UpdateContainerFields {
     action?: ContainerAction;

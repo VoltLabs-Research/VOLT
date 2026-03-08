@@ -2,14 +2,14 @@ import type { ContainerTerminalSize } from '@modules/container/domain/port/ICont
 
 export interface ContainerTerminalAttachPayload {
     containerId: string;
-}
+};
 
 export type ContainerTerminalResizePayload = ContainerTerminalSize;
 
 export interface ContainerTerminalError {
     code: string;
     details?: string;
-}
+};
 
 export interface ITerminalClient {
     joinRoom(room: string): void;
@@ -26,9 +26,9 @@ export interface ITerminalClient {
     offDetach(listener: () => void): void;
     onDisconnect(listener: () => void): void;
     offDisconnect(listener: () => void): void;
-}
+};
 
 export interface ITerminalService {
     attach(client: ITerminalClient, containerId: string): Promise<void>;
     detach(client: ITerminalClient, containerId: string): void;
-}
+};

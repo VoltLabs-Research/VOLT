@@ -1,6 +1,6 @@
-import { Skeleton } from '@mui/material';
+import './DashboardOverviewSkeleton.css';
 import Container from '@/shared/presentation/components/Container';
-import '../DashboardOverviewCard/DashboardOverviewCard.css';
+import { Skeleton } from '@mui/material';
 
 interface DashboardOverviewSkeletonProps {
     count?: number;
@@ -10,7 +10,7 @@ const DashboardOverviewSkeleton = ({ count = 4 }: DashboardOverviewSkeletonProps
     return (
         <>
             {Array.from({ length: count }).map((_, i) => (
-                <Container className='dashboard-stat-card' key={i}>
+                <Container className='dashboard-stat-skeleton' key={i}>
                     <Container className='d-flex column gap-1'>
                         <Container className='d-flex items-center gap-075'>
                             <Skeleton variant='rounded' width={34} height={34} />

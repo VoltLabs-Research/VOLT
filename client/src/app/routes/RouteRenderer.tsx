@@ -1,24 +1,24 @@
-import type { ReactNode } from 'react';
-import { Route } from 'react-router-dom';
 import { routesConfig } from './config';
-import ProtectedRoute from '@/modules/auth/components/atoms/ProtectedRoute';
-import PageTransition from '@/shared/presentation/components/PageTransition';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import type { RouteConfig } from './types';
-import { canAccessByPermissions } from '@/modules/team/utilities/permission-evaluator';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import ProtectedRoute, { RouteMode } from './ProtectedRoute';
+import { canAccessByPermissions } from '@/modules/team/utilities/team/permission-evaluator';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-
-const wrapWithPageTransition = (Component: React.ComponentType) => (
-    <PageTransition>
-        <Component />
-    </PageTransition>
-);
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import PageTransition from '@/shared/presentation/components/PageTransition';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import { Route } from 'react-router-dom';
+import type { ComponentType, ReactNode } from 'react';
+import type { RouteConfig } from './types';
 
 interface RoutePermissionGuardProps {
     route: RouteConfig;
     children: ReactNode;
-}
+};
+
+const wrapWithPageTransition = (Component: ComponentType) => (
+    <PageTransition>
+        <Component />
+    </PageTransition>
+);
 
 const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) => {
     const selectedTeamId = useSelectedTeamId();
@@ -52,7 +52,7 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
 };
 
 const renderRouteWithChildren = (route: RouteConfig, withTransition = true) => {
-    const renderElement = (Component: React.ComponentType) =>
+    const renderElement = (Component: ComponentType) =>
         (
             <RoutePermissionGuard route={route}>
                 {withTransition ? wrapWithPageTransition(Component) : <Component />}
@@ -95,6 +95,8 @@ const renderRouteWithChildren = (route: RouteConfig, withTransition = true) => {
     );
 };
 
+const renderProtectedRoute = (route: RouteConfig) => renderRouteWithChildren(route);
+
 export const renderPublicRoutes = () => {
     return routesConfig.public.map((route: RouteConfig) => (
         <Route
@@ -116,8 +118,8 @@ export const renderProtectedRoutes = () => {
     );
 
     return (
-        <Route element={<ProtectedRoute mode='protected' />}>
-            {nonDashboardRoutes.map((route) => renderRouteWithChildren(route))}
+        <Route element={<ProtectedRoute mode={RouteMode.Protected} />}>
+            {nonDashboardRoutes.map(renderProtectedRoute)}
             {DashboardLayout && (
                 <Route path='/dashboard' element={<DashboardLayout />}>
                     {dashboardRoutes.map((route) => renderRouteWithChildren(route, false))}
@@ -129,7 +131,7 @@ export const renderProtectedRoutes = () => {
 
 export const renderGuestRoutes = () => {
     return (
-        <Route element={<ProtectedRoute mode='guest' />}>
+        <Route element={<ProtectedRoute mode={RouteMode.Guest} />}>
             {routesConfig.guest.map((route: RouteConfig) => (
                 <Route
                     key={route.path}

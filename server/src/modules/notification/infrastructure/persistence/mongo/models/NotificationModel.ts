@@ -1,10 +1,11 @@
-import mongoose, { Schema, Model, Document } from 'mongoose';
-import { NotificationProps } from '@modules/notification/domain/entities/Notification';
-import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { ValidationCodes } from '@core/constants/validation-codes';
+import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import mongoose, { Schema } from 'mongoose';
+import type { Document, Model } from 'mongoose';
+import type { NotificationProps } from '@modules/notification/domain/entities/Notification';
 
 type NotificationRelations = 'recipient';
-export interface NotificationDocument extends Persistable<NotificationProps, NotificationRelations>, Document{}
+export interface NotificationDocument extends Persistable<NotificationProps, NotificationRelations>, Document {};
 
 const NotificationSchema: Schema<NotificationDocument> = new Schema({
     recipient: {

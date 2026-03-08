@@ -1,8 +1,8 @@
-import React from 'react';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Title from '@/shared/presentation/components/Title';
+import React from 'react';
 
 interface DangerZoneProps{
     title: string;
@@ -10,7 +10,7 @@ interface DangerZoneProps{
     actionLabel: string;
     actionIcon?: React.ReactNode;
     onAction: () => void;
-}
+};
 
 const DangerZone: React.FC<DangerZoneProps> = ({
     title,

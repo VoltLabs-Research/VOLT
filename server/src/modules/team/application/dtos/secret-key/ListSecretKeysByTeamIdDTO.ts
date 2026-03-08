@@ -1,7 +1,4 @@
-import {
-    PaginatedOutputDTO,
-    PaginatedTeamScopedInputDTO
-} from '@modules/team/application/dtos/common';
+import { PaginatedOutputDTO, PaginatedTeamScopedInputDTO } from '@modules/team/application/dtos/common';
 
 export type ListSecretKeysByTeamIdInputDTO = PaginatedTeamScopedInputDTO;
 
@@ -16,6 +13,6 @@ export interface SecretKeyListItemDTO {
     lastUsedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
-}
+};
 
 export type ListSecretKeysByTeamIdOutputDTO = PaginatedOutputDTO<SecretKeyListItemDTO>;

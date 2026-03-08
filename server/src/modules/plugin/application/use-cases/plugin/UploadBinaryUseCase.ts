@@ -1,9 +1,10 @@
-import { inject, injectable } from 'tsyringe';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { UploadBinaryInputDTO } from '@modules/plugin/application/dtos/plugin/UploadBinaryDTO';
+import { IPluginStorageService, BinaryUploadResult } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
+
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { UploadBinaryInputDTO } from '@modules/plugin/application/dtos/plugin/UploadBinaryDTO';
-import { IPluginStorageService, BinaryUploadResult } from '@modules/plugin/domain/port/IPluginStorageService';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
+import { inject, injectable } from 'tsyringe';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 @injectable()
@@ -21,4 +22,4 @@ export class UploadBinaryUseCase implements IUseCase<UploadBinaryInputDTO, Binar
 
         return Result.ok(result);
     }
-}
+};

@@ -1,4 +1,4 @@
-import type { DownloadStreamOutputDTO } from '@modules/plugin/application/dtos/shared/DownloadStreamOutputDTO';
+import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
 
 export interface GetPluginExposureGLBInputDTO {
     teamId: string;
@@ -6,6 +6,6 @@ export interface GetPluginExposureGLBInputDTO {
     analysisId: string;
     exposureId: string;
     timestep: string;
-}
+};
 
 export type GetPluginExposureGLBOutputDTO = DownloadStreamOutputDTO;

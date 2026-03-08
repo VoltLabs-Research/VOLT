@@ -1,20 +1,20 @@
-import Container from '@/shared/presentation/components/Container';
 import CpuChart from '../../molecules/CpuChart';
 import MemoryChart from '../../molecules/MemoryChart';
+import Container from '@/shared/presentation/components/Container';
 import NetworkChart from '@/shared/presentation/components/NetworkChart';
 import Title from '@/shared/presentation/components/Title';
 import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
 import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
 import type { EnvVariable } from '@/modules/container/api/entities/env-variable';
 import type { PortMapping } from '@/modules/container/api/entities/port-mapping';
-import type { ContainerStatsViewData } from '@/modules/container/api/entities/container-stats-view';
+import type { ContainerStatsViewData } from '@/modules/container/services/container-stats-view';
 
 interface ContainerOverviewProps {
     container: ContainerEntity;
     stats: ContainerStatsViewData;
     onUpdateEnv: (env: EnvVariable[]) => Promise<void>;
     onUpdatePorts: (ports: PortMapping[]) => Promise<void>;
-}
+};
 
 const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: ContainerOverviewProps) => {
     const isRunning = container.status === 'running';
@@ -68,8 +68,16 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                     title='Port Bindings'
                     items={container.ports || []}
                     fields={[
-                        { key: 'private', placeholder: 'Container Port', type: 'number' },
-                        { key: 'public', placeholder: 'Host Port', type: 'number' }
+                        {
+                            key: 'private',
+                            placeholder: 'Container Port',
+                            type: 'number'
+                        },
+                        {
+                            key: 'public',
+                            placeholder: 'Host Port',
+                            type: 'number'
+                        }
                     ]}
                     emptyMessage='No ports exposed'
                     onSave={onUpdatePorts}

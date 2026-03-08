@@ -1,24 +1,20 @@
-import { useMutation, type QueryClient } from '@tanstack/react-query';
-import {
-    buildKeys,
-    createSocketQuery,
-    type MutationOptions
-} from '@/shared/infrastructure/query';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import { JobStatus } from '../api/entities/job';
+import { computeGroupStatus } from '../utilities/job-group-updates';
+import { TEAM_JOBS_QUERY_KEYS } from '../utilities/query-keys';
 import service from '../api/service';
-import { JobStatus, type FrameJobGroup, type Job, type TrajectoryJobGroup } from '../api/entities/job';
+import { createSocketQuery } from '@/shared/infrastructure/query';
+import queryClient from '@/shared/infrastructure/query/query-client';
+import { useMutation } from '@tanstack/react-query';
 import type { ClearHistoryOutputDTO } from '../api/dtos/clear-history';
+import type { FrameJobGroup, Job, TrajectoryJobGroup } from '../api/entities/job';
 import type { RemoveRunningJobsOutputDTO } from '../api/dtos/remove-running-jobs';
 import type { RetryFailedJobsOutputDTO } from '../api/dtos/retry-failed-jobs';
-import { computeGroupStatus } from '../utilities/job-group-updates';
-
-export const TEAM_JOBS_QUERY_KEYS = buildKeys<{
-    groups: void;
-}>('team-jobs');
+import type { MutationOptions } from '@/shared/infrastructure/query';
+import type { QueryClient } from '@tanstack/react-query';
 
 export interface TeamJobsMutationContext {
     previousGroups: TrajectoryJobGroup[];
-}
+};
 
 const getActiveQueryClient = (client?: QueryClient): QueryClient => client ?? queryClient;
 
@@ -125,9 +121,16 @@ const markFailedJobsForRetry = (groups: TrajectoryJobGroup[]): TrajectoryJobGrou
         ...group,
         frameGroups: group.frameGroups.map((frameGroup) => ({
             ...frameGroup,
-            jobs: frameGroup.jobs.map((job): Job => job.status === JobStatus.Failed
-                ? { ...job, status: JobStatus.QueuedAfterFailure }
-                : job)
+            jobs: frameGroup.jobs.map((job): Job => {
+                if (job.status === JobStatus.Failed) {
+                    return {
+                        ...job,
+                        status: JobStatus.QueuedAfterFailure
+                    };
+                }
+
+                return job;
+            })
         }))
     })));
 };

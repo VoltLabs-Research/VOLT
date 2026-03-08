@@ -1,4 +1,8 @@
-export const ErrorCodes = {
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
+
+const createErrorCodes = <T extends Record<string, string>>(errorCodes: T): Readonly<T> => Object.freeze(errorCodes);
+
+export const ErrorCodes = createErrorCodes({
     INTERNAL_SERVER_ERROR: 'Internal::Server::Error',
     WORKER_FAILURE: 'Worker::Failure',
     WORKER_TIMEOUT: 'Worker::Timeout',
@@ -145,6 +149,8 @@ export const ErrorCodes = {
     AI_INTEGRATION_NOT_CONFIGURED: 'AI::Integration::NotConfigured',
     AI_PROVIDER_UNAVAILABLE: 'AI::Provider::Unavailable',
     OAUTH_STRATEGY_ERROR: 'OAuth::Strategy::Error'
-} as const;
+});
 
-export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
+export const isErrorCode = (value: string): value is ErrorCode => {
+    return Object.values(ErrorCodes).some((errorCode) => errorCode === value);
+};

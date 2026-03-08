@@ -1,27 +1,28 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { IoCloseOutline, IoClipboardOutline, IoCheckmarkOutline } from 'react-icons/io5';
-import { PiFileCsv, PiFileXls } from 'react-icons/pi';
-import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
 import { resolveTabularPayload } from '@/modules/ai/utilities/message-artifacts';
+import { base64ToBlob, triggerBrowserDownload } from '@/shared/utils';
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import * as XLSX from 'xlsx';
-import './AIArtifactSpreadsheetPanel.css';
-import { base64ToBlob, triggerBrowserDownload } from '@/shared/utils';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { IoCheckmarkOutline, IoClipboardOutline, IoCloseOutline } from 'react-icons/io5';
+import { PiFileCsv, PiFileXls } from 'react-icons/pi';
 import { sileo } from 'sileo';
+import * as XLSX from 'xlsx';
+import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
+import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
+import './AIArtifactSpreadsheetPanel.css';
 
 interface AIArtifactSpreadsheetPanelProps {
     artifact: AIMessageArtifact;
     onClose: () => void;
     width?: number;
-}
+};
 
 interface CellAddress {
     row: number;
     col: number;
-}
+};
 
 const stringifyValue = (value: unknown): string => {
     if (value == null) return '';
@@ -36,7 +37,12 @@ const stringifyValue = (value: unknown): string => {
 
 const displayValue = (value: unknown): string => {
     const str = stringifyValue(value);
-    return str === '' ? '\u2014' : str;
+
+    if (str === '') {
+        return '\u2014';
+    }
+
+    return str;
 };
 
 const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpreadsheetPanelProps) => {
@@ -68,7 +74,11 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
             Object.fromEntries(
                 columns.map((col, colIndex) => {
                     const key = cellKey(rowIndex, colIndex);
-                    const value = key in edits ? edits[key] : stringifyValue(row[col]);
+                    let value = stringifyValue(row[col]);
+                    if (key in edits) {
+                        value = edits[key];
+                    }
+
                     return [col, value];
                 })
             )
@@ -115,13 +125,25 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
         setEditBuffer(value);
     }, [editingCell, rows.length, columns.length, commitEdit, getCellValue]);
 
-    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            moveToCell(e.shiftKey ? -1 : 1, 0);
+            let rowDelta = 1;
+
+            if (e.shiftKey) {
+                rowDelta = -1;
+            }
+
+            moveToCell(rowDelta, 0);
         } else if (e.key === 'Tab') {
             e.preventDefault();
-            moveToCell(0, e.shiftKey ? -1 : 1);
+            let colDelta = 1;
+
+            if (e.shiftKey) {
+                colDelta = -1;
+            }
+
+            moveToCell(0, colDelta);
         } else if (e.key === 'Escape') {
             cancelEdit();
         }
@@ -168,10 +190,74 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
 
     if (!table) return null;
 
+    let panelStyle: CSSProperties | undefined;
+    if (width) {
+        panelStyle = {
+            width,
+            flexShrink: 0
+        };
+    }
+
+    let copyIcon: ReactNode = <IoClipboardOutline size={15} />;
+    if (copyFeedback) {
+        copyIcon = <IoCheckmarkOutline size={15} />;
+    }
+
+    let copyTooltip = 'Copy to clipboard';
+    if (copyFeedback) {
+        copyTooltip = 'Copied!';
+    }
+
+    const renderCellContent = (rowIndex: number, colIndex: number, isEditing: boolean) => {
+        let content: ReactNode = (
+            <span className='ai-sheet-cell-value'>
+                {displayValue(getCellValue(rowIndex, colIndex))}
+            </span>
+        );
+
+        if (isEditing) {
+            content = (
+                <input
+                    ref={inputRef}
+                    type='text'
+                    className='ai-sheet-cell-input'
+                    value={editBuffer}
+                    onChange={(event) => setEditBuffer(event.target.value)}
+                    onBlur={commitEdit}
+                    onKeyDown={handleKeyDown}
+                />
+            );
+        }
+
+        return content;
+    };
+
+    const renderRowCell = (rowIndex: number, col: string, colIndex: number) => {
+        const isEditing = editingCell?.row === rowIndex
+            && editingCell?.col === colIndex;
+        const key = cellKey(rowIndex, colIndex);
+        const isEdited = key in edits;
+        let cellClassName = 'ai-sheet-cell';
+
+        if (isEdited) {
+            cellClassName = 'ai-sheet-cell is-edited';
+        }
+
+        return (
+            <td
+                key={col}
+                className={cellClassName}
+                onDoubleClick={() => startEditing(rowIndex, colIndex)}
+            >
+                {renderCellContent(rowIndex, colIndex, isEditing)}
+            </td>
+        );
+    };
+
     return (
         <Container
             className='d-flex column ai-artifact-spreadsheet-panel'
-            style={width ? { width, flexShrink: 0 } : undefined}
+            style={panelStyle}
         >
             <Container className='d-flex items-center content-between gap-05 ai-artifact-spreadsheet-header'>
                 <Container className='d-flex column gap-025' style={{ minWidth: 0 }}>
@@ -190,12 +276,9 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                 </Container>
 
                 <Container className='d-flex items-center gap-025 ai-artifact-spreadsheet-toolbar'>
-                    <Tooltip content={copyFeedback ? 'Copied!' : 'Copy to clipboard'}>
+                    <Tooltip content={copyTooltip}>
                         <IconButton onClick={handleCopyToClipboard} className='ai-sheet-toolbar-btn'>
-                            {copyFeedback
-                                ? <IoCheckmarkOutline size={15} />
-                                : <IoClipboardOutline size={15} />
-                            }
+                            {copyIcon}
                         </IconButton>
                     </Tooltip>
 
@@ -235,36 +318,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                         {rows.map((_, rowIndex) => (
                             <tr key={rowIndex}>
                                 <td className='ai-sheet-row-index-cell'>{rowIndex + 1}</td>
-                                {columns.map((col, colIndex) => {
-                                    const isEditing = editingCell?.row === rowIndex
-                                        && editingCell?.col === colIndex;
-                                    const key = cellKey(rowIndex, colIndex);
-                                    const isEdited = key in edits;
-
-                                    return (
-                                        <td
-                                            key={col}
-                                            className={`ai-sheet-cell${isEdited ? ' is-edited' : ''}`}
-                                            onDoubleClick={() => startEditing(rowIndex, colIndex)}
-                                        >
-                                            {isEditing ? (
-                                                <input
-                                                    ref={inputRef}
-                                                    type='text'
-                                                    className='ai-sheet-cell-input'
-                                                    value={editBuffer}
-                                                    onChange={(e) => setEditBuffer(e.target.value)}
-                                                    onBlur={commitEdit}
-                                                    onKeyDown={handleKeyDown}
-                                                />
-                                            ) : (
-                                                <span className='ai-sheet-cell-value'>
-                                                    {displayValue(getCellValue(rowIndex, colIndex))}
-                                                </span>
-                                            )}
-                                        </td>
-                                    );
-                                })}
+                                {columns.map((col, colIndex) => renderRowCell(rowIndex, col, colIndex))}
                             </tr>
                         ))}
                     </tbody>

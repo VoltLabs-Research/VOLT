@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
 import useAppHotkeys from './use-app-hotkeys';
+import { useMemo } from 'react';
 
 interface ShortcutOptions {
     ctrl?: boolean;
@@ -9,7 +9,7 @@ interface ShortcutOptions {
     preventDefault?: boolean;
     enabled?: boolean;
     enableOnFormTags?: boolean;
-}
+};
 
 const useKeyboardShortcut = (
     key: string,

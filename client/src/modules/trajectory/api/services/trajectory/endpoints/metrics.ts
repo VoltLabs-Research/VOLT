@@ -1,8 +1,7 @@
-import { get, type EmptyParams } from '@/app/core/http/utilities/create-service';
+import { get } from '@/app/core/http/utilities/create-service';
 import type { DashboardMetrics } from '@/modules/dashboard/api/entities/dashboard';
+import type { EmptyParams } from '@/app/core/http/utilities/create-service';
 
-const endpoints = {
+export default {
     getMetrics: get<EmptyParams, DashboardMetrics>('/metrics')
 };
-
-export default endpoints;

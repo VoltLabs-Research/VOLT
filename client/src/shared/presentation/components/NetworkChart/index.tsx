@@ -1,17 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
-import {
-    AreaChart,
-    Area,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    Legend
-} from 'recharts';
-import { Activity } from 'lucide-react';
+import { formatSize } from '@/shared/utils/format';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
-import { formatSize } from '@/shared/utils/format';
+import { Activity } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { AreaChart, Area, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const MAX_HISTORY_POINTS = 60;
 

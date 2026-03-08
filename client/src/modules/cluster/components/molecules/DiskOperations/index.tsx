@@ -1,3 +1,6 @@
+import { CHART_COLORS } from '@/modules/cluster/utilities/chart-colors';
+import ChartContainer from '@/shared/presentation/components/ChartContainer';
+import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
 import { useMemo } from 'react';
 import {
     AreaChart,
@@ -10,24 +13,19 @@ import {
 } from 'recharts';
 import { HardDrive } from 'lucide-react';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
-import { CHART_COLORS } from '@/modules/cluster/constants';
-import { clusterHistoryQuery } from '@/modules/cluster/hooks/queries';
-import ChartContainer from '@/shared/presentation/components/ChartContainer';
-import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
 
 interface DataPoint {
     read: number;
     write: number;
     iops: number;
-}
+};
 
 interface DiskOperationsProps {
-    clusterId: string;
+    history: ClusterMetrics[];
     metrics: ClusterMetrics | null;
-}
+};
 
-const DiskOperations = ({ clusterId, metrics }: DiskOperationsProps) => {
-    const { data: history = [] } = clusterHistoryQuery(clusterId);
+const DiskOperations = ({ history, metrics }: DiskOperationsProps) => {
     const chartData = useMemo<DataPoint[]>(() => {
         return history
             .filter((point) => point.diskOperations)
@@ -71,7 +69,15 @@ const DiskOperations = ({ clusterId, metrics }: DiskOperationsProps) => {
             statsLoading={!metrics}
         >
             <ResponsiveContainer width='100%' height={280}>
-                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <AreaChart
+                    data={chartData}
+                    margin={{
+                        top: 10,
+                        right: 10,
+                        left: 0,
+                        bottom: 0
+                    }}
+                >
                     <defs>
                         <linearGradient id='diskReadGradient' x1='0' y1='0' x2='0' y2='1'>
                             <stop offset='5%' stopColor={CHART_COLORS.read} stopOpacity={0.3} />

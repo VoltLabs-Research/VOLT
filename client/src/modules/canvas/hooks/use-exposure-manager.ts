@@ -1,14 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import useAnalysisStatus from './use-analysis-status';
+import { CanvasAnalysisStatusEnum } from '../utilities/analysis-status';
+
+import {
+    buildSceneArtifactsQueryOptions,
+    SCENE_ARTIFACTS_QUERY_KEYS,
+    useSceneArtifactsQueries
+} from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-import { buildSceneArtifactsQueryOptions, useSceneArtifactsQueries } from '@/modules/trajectory/hooks/scene-artifact/queries';
-import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
-import useAnalysisStatus from './use-analysis-status';
-import type { RenderableExposure } from '@/modules/plugin/hooks/use-plugin-selectors';
+
+import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
+import type { RenderableExposurePayload, ListSceneArtifactsInputDTO } from '@/modules/trajectory/api/dtos/scene-artifacts';
+import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifact';
-import type { RenderableExposurePayload, ListSceneArtifactsInputDTO } from '@/modules/trajectory/api/dtos/list-scene-artifacts';
 
 export type ExposureLoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -16,20 +22,20 @@ export interface ExposureEntry {
     state: ExposureLoadState;
     exposures: RenderableExposure[];
     error?: unknown;
-}
+};
 
 export const DEFAULT_ENTRY: ExposureEntry = { state: 'idle', exposures: [] };
 
 interface UseExposureManagerProps {
     trajectoryId?: string;
-}
+};
 
 interface UseExposureManagerReturn {
     exposureEntries: Map<string, ExposureEntry>;
     getEntry: (analysisId: string) => ExposureEntry;
     loadExposuresForAnalysis: (analysisId: string) => Promise<void>;
     resetEntries: () => void;
-}
+};
 
 const buildParams = (trajectoryId: string, analysisId: string): ListSceneArtifactsInputDTO => ({
     trajectoryId,
@@ -91,7 +97,7 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
             const currentStatus = statusMap.get(analysisId)?.status;
             const previousStatus = prev.get(analysisId);
 
-            if (currentStatus === 'completed' && previousStatus && previousStatus !== 'completed') {
+            if (currentStatus === CanvasAnalysisStatusEnum.Completed && previousStatus && previousStatus !== CanvasAnalysisStatusEnum.Completed) {
                 const params = buildParams(trajectoryId, analysisId);
                 const queryKey = buildSceneArtifactsQueryOptions(params).queryKey;
                 queryClient.invalidateQueries({ queryKey });
@@ -102,10 +108,10 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
         const hasNewCompletion = Array.from(trackedIdsRef.current).some((id) => {
             const cur = statusMap.get(id)?.status;
             const prv = prev.get(id);
-            return cur === 'completed' && prv && prv !== 'completed';
+            return cur === CanvasAnalysisStatusEnum.Completed && prv && prv !== CanvasAnalysisStatusEnum.Completed;
         });
         if (hasNewCompletion) {
-            queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.sceneArtifacts() });
+            queryClient.invalidateQueries({ queryKey: SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts() });
         }
 
         // Snapshot current statuses for next comparison
@@ -129,7 +135,7 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
             } else if (result.isError) {
                 map.set(analysisId, { state: 'error', exposures: [], error: result.error });
             } else if (result.isSuccess) {
-                const exposures = result.data.data as RenderableExposurePayload[];
+                const exposures = ((result.data as { data?: RenderableExposurePayload[] } | undefined)?.data ?? []);
                 map.set(analysisId, {
                     state: 'loaded',
                     exposures: exposures as RenderableExposure[]

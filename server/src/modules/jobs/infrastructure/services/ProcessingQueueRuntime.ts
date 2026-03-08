@@ -1,34 +1,37 @@
-import { ConnectionOptions, Job as BullJob, JobProgress, Queue, Worker } from 'bullmq';
-import logger from '@shared/infrastructure/logger';
 import {
     MAX_RETRIES,
-    QueueJobData,
     RETRY_BACKOFF_MS,
     STATUS_TTL_SECONDS,
     STALLED_INTERVAL_MS
 } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
+import logger from '@shared/infrastructure/logger';
+import { Queue, Worker } from 'bullmq';
+import type { ConnectionOptions, Job as BullJob, JobProgress } from 'bullmq';
+import type { QueueJobData } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
+
+interface QueueBulkJobOptions {
+    jobId: string;
+};
 
 interface ProcessingQueueRuntimeConfig {
     queueName: string;
     workerPath: string;
     maxConcurrentJobs: number;
     connection: ConnectionOptions;
-}
+};
 
 interface ProcessingQueueRuntimeListeners {
     onActive: (bullJob: BullJob) => Promise<void>;
     onProgress: (bullJob: BullJob, progress: JobProgress) => Promise<void>;
     onCompleted: (bullJob: BullJob) => Promise<void>;
     onFailed: (bullJob: BullJob | undefined, error: Error) => Promise<void>;
-}
+};
 
 export interface QueueBulkJob {
     name: string;
     data: QueueJobData;
-    opts: {
-        jobId: string;
-    };
-}
+    opts: QueueBulkJobOptions;
+};
 
 export default class ProcessingQueueRuntime {
     private readonly bullQueue: Queue;
@@ -122,4 +125,4 @@ export default class ProcessingQueueRuntime {
             logger.error(`[${this.config.queueName}] Worker error: ${error.message}`);
         });
     }
-}
+};

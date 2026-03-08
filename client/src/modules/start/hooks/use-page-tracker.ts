@@ -1,51 +1,10 @@
+import { useStartAccessedPagesStore } from '../stores/use-start-accessed-pages-store';
+import { capturePageSnapshot } from '../utilities/page-snapshot';
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { fadeFromBlack } from '@/shared/presentation/utilities/page-transition';
-import { useStartAccessedPagesStore } from '../stores/use-start-accessed-pages-store';
 
 const EXCLUDED_PATHS = ['/start', '/auth/sign-in', '/auth/oauth/callback', '/error'];
-
-const captureHTMLSnapshot = (): string | null => {
-    try {
-        let allCSS = '';
-
-        for (const sheet of Array.from(document.styleSheets)) {
-            try {
-                for (const rule of Array.from(sheet.cssRules)) {
-                    allCSS += rule.cssText + '\n';
-                }
-            } catch {
-                continue;
-            }
-        }
-
-        const rootAttrs = document.documentElement.getAttributeNames()
-            .filter((name) => name !== 'xmlns')
-            .map((name) => `${name}="${(document.documentElement.getAttribute(name) || '').replace(/"/g, '&quot;')}"`)
-            .join(' ');
-
-        const bodyAttrs = document.body.getAttributeNames()
-            .map((name) => `${name}="${(document.body.getAttribute(name) || '').replace(/"/g, '&quot;')}"`)
-            .join(' ');
-
-        const html = `<!DOCTYPE html>
-<html ${rootAttrs}>
-<head>
-<style>
-${allCSS}
-* { pointer-events: none !important; cursor: default !important; user-select: none !important; }
-::-webkit-scrollbar { display: none !important; }
-body { overflow: hidden !important; margin: 0 !important; }
-</style>
-</head>
-<body ${bodyAttrs}>${document.body.innerHTML}</body>
-</html>`;
-
-        return html.replace(/<script[\s\S]*?<\/script>/gi, '');
-    } catch {
-        return null;
-    }
-};
 
 export const usePageTracker = () => {
     const location = useLocation();
@@ -75,7 +34,7 @@ export const usePageTracker = () => {
                 return;
             }
 
-            const snapshot = captureHTMLSnapshot();
+            const snapshot = capturePageSnapshot();
 
             if (!isCancelled && snapshot) {
                 latestSnapshotRef.current = snapshot;

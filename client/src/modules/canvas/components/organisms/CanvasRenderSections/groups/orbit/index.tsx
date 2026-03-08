@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { MdRotateLeft } from 'react-icons/md';
+import { row, PRESETS, checkboxGrid, targetRows } from '../../../../molecules/CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
+
+import { useMemo } from 'react';
+import { MdRotateLeft } from 'react-icons/md';
+import { useShallow } from 'zustand/react/shallow';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
-import { row, PRESETS, checkboxGrid, targetRows } from '../../../../molecules/CanvasRenderConfigHelpers';
+
 import type { RenderGroup } from '../../types';
 
 const useOrbitGroup = (): RenderGroup => {

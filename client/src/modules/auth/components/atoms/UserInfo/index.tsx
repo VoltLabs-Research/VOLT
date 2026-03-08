@@ -1,18 +1,22 @@
-import type { User } from '@/modules/auth/api/entities/user';
+import './UserInfo.css';
+import { cn } from '@/shared/utils';
+import Avatar from '@/shared/presentation/components/Avatar';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import Avatar from '@/shared/presentation/components/Avatar';
-import { cn } from '@/shared/utils';
-import './UserInfo.css';
+import type { User } from '@/modules/auth/api/entities/user';
+import type { ReactNode } from 'react';
 
-type UserInfoVariant = 'default' | 'compact';
+enum UserInfoVariant {
+    Default = 'default',
+    Compact = 'compact'
+};
 
 interface UserInfoProps {
     user: User | null;
     showStatus?: boolean;
     isOnline?: boolean;
     variant?: UserInfoVariant;
-    suffix?: React.ReactNode;
+    suffix?: ReactNode;
     className?: string;
 };
 
@@ -20,7 +24,7 @@ const UserInfo = ({
     user, 
     showStatus = false, 
     isOnline = false, 
-    variant = 'default',
+    variant = UserInfoVariant.Default,
     suffix,
     className 
 }: UserInfoProps) => {

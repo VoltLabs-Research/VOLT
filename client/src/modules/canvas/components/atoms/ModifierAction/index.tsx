@@ -1,6 +1,9 @@
-import { useEffect, useState, type MouseEvent } from 'react';
 import { Play, Square, Check, X, Loader2 } from 'lucide-react';
-import type { ExecState } from '../../../hooks/use-plugin-execution';
+import { useEffect, useState } from 'react';
+
+import { ExecState } from '../../../hooks/use-plugin-execution';
+import type { MouseEvent } from 'react';
+
 import './ModifierAction.css';
 
 const ICON_SIZE = 12;
@@ -16,7 +19,7 @@ interface ModifierActionProps {
     active: boolean;
     forceVisible?: boolean;
     onAction: () => void;
-}
+};
 
 const ModifierAction = ({ execState, isLegacy, active, forceVisible, onAction }: ModifierActionProps) => {
     const [displayState, setDisplayState] = useState<ExecState>(execState);
@@ -27,32 +30,41 @@ const ModifierAction = ({ execState, isLegacy, active, forceVisible, onAction }:
         const ms = AUTO_DISMISS_MS[execState];
         if (!ms) return;
 
-        const timer = setTimeout(() => setDisplayState('idle'), ms);
+        const timer = setTimeout(() => setDisplayState(ExecState.Idle), ms);
         return () => clearTimeout(timer);
     }, [execState]);
 
     const handleClick = (e: MouseEvent) => {
         e.stopPropagation();
-        if (displayState === 'loading') return;
+        if (displayState === ExecState.Loading) return;
         onAction();
     };
 
-    const alwaysVisible = forceVisible || (isLegacy && active) || displayState !== 'idle';
+    const alwaysVisible = forceVisible || (isLegacy && active) || displayState !== ExecState.Idle;
 
-    const stateClass =
-        displayState === 'loading' ? 'modifier-action--loading' :
-        displayState === 'success' ? 'modifier-action--success' :
-        displayState === 'error' ? 'modifier-action--error' :
-        (isLegacy && active) ? 'modifier-action--active' : '';
+    let stateClass = '';
+    if (displayState === ExecState.Loading) {
+        stateClass = 'modifier-action--loading';
+    } else if (displayState === ExecState.Success) {
+        stateClass = 'modifier-action--success';
+    } else if (displayState === ExecState.Error) {
+        stateClass = 'modifier-action--error';
+    } else if (isLegacy && active) {
+        stateClass = 'modifier-action--active';
+    }
 
     const visibilityClass = alwaysVisible ? 'modifier-action--visible' : '';
 
-    const icon =
-        displayState === 'loading' ? <Loader2 size={ICON_SIZE} className="modifier-action-spinner" /> :
-        displayState === 'success' ? <Check size={ICON_SIZE} /> :
-        displayState === 'error' ? <X size={ICON_SIZE} /> :
-        (isLegacy && active) ? <Square size={ICON_SIZE - 2} /> :
-        <Play size={ICON_SIZE} />;
+    let icon = <Play size={ICON_SIZE} />;
+    if (displayState === ExecState.Loading) {
+        icon = <Loader2 size={ICON_SIZE} className="modifier-action-spinner" />;
+    } else if (displayState === ExecState.Success) {
+        icon = <Check size={ICON_SIZE} />;
+    } else if (displayState === ExecState.Error) {
+        icon = <X size={ICON_SIZE} />;
+    } else if (isLegacy && active) {
+        icon = <Square size={ICON_SIZE - 2} />;
+    }
 
     return (
         <span

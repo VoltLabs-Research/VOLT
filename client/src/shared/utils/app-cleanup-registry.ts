@@ -4,7 +4,7 @@ export interface AppCleanupContext {
     reason: AppCleanupReason;
     previousPathname: string | null;
     nextPathname: string | null;
-}
+};
 
 export type AppCleanupHandler = (context: AppCleanupContext) => void;
 

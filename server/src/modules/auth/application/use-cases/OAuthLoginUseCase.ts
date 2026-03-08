@@ -1,14 +1,14 @@
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { OAuthLoginInputDTO, OAuthLoginOutputDTO } from '@modules/auth/application/dtos/OAuthLoginDTO';
-import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import { SessionActivityType } from '@modules/session/domain/entities/Session';
-import { injectable, inject } from 'tsyringe';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import generateRandomName from '@shared/infrastructure/utilities/generate-random-name';
-import AuthSessionService from '@modules/auth/application/services/AuthSessionService';
 import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import AuthSessionService from '@modules/auth/services/AuthSessionService';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { SessionActivityType } from '@modules/session/domain/entities/Session';
+import { Result } from '@shared/domain/port/Result';
+import generateRandomName from '@shared/infrastructure/utilities/generate-random-name';
+import { inject, injectable } from 'tsyringe';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
 
 @injectable()
 export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, OAuthLoginOutputDTO, ApplicationError>{
@@ -17,7 +17,7 @@ export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, O
         private readonly userRepository: IUserRepository,
         @inject(AUTH_TOKENS.AuthSessionService)
         private readonly authSessionService: AuthSessionService
-    ){}
+    ) {}
 
     async execute(input: OAuthLoginInputDTO): Promise<Result<OAuthLoginOutputDTO, ApplicationError>>{
         // Check if user exists with this OAuth provider

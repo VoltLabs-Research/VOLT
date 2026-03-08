@@ -1,14 +1,11 @@
-import { Router } from 'express';
-import avatarUpload from '@modules/auth/infrastructure/http/middlewares/avatar-upload';
-import controllers from '@modules/auth/infrastructure/http/controllers';
-import {
-    createOAuthCallbackMiddleware,
-    createOAuthLoginRoute
-} from '@modules/auth/infrastructure/http/routes/oauth-route-helpers';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import { OAuthProvider } from '@modules/auth/domain/entities/User';
+import { createOAuthCallbackMiddleware, createOAuthLoginRoute } from '@modules/auth/infrastructure/http/oauth/route-helpers';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
 import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
+import avatarUpload from '@modules/auth/infrastructure/http/middlewares/avatar-upload';
+import controllers from '@modules/auth/infrastructure/http/controllers';
+import { Router } from 'express';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {

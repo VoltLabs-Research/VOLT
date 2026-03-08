@@ -1,7 +1,7 @@
 import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { ISSHCredentialsCipher } from '@modules/ssh/domain/port/ISSHCredentialsCipher';
 import { UpdateSSHConnectionByIdInputDTO, UpdateSSHConnectionByIdOutputDTO } from '@modules/ssh/application/dtos/UpdateSSHConnectionByIdDTO';
@@ -12,15 +12,15 @@ import type { SSHConnectionProps } from '@modules/ssh/domain/entities/SSHConnect
 import {
     resolveSSHPersistenceError,
     toSafeSSHConnectionDTO
-} from './ssh-error-utils';
+} from '@modules/ssh/application/utils/ssh-error-utils';
 
 @injectable()
 export class UpdateSSHConnectionByIdUseCase implements IUseCase<UpdateSSHConnectionByIdInputDTO, UpdateSSHConnectionByIdOutputDTO, ApplicationError> {
     constructor(
-        @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
+        @inject(SSH_TOKENS.SSHConnectionRepository)
         private sshConnRepository: ISSHConnectionRepository,
 
-        @inject(SSH_CONN_TOKENS.SSHCredentialsCipher)
+        @inject(SSH_TOKENS.SSHCredentialsCipher)
         private readonly sshCredentialsCipher: ISSHCredentialsCipher
     ){}
 

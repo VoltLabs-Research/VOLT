@@ -3,8 +3,8 @@ import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin
 export interface ClonePluginInputDTO {
     pluginId: string;
     teamId: string;
-}
+};
 
 export interface ClonePluginOutputDTO {
     plugin: PersistedPluginDTO;
-}
+};

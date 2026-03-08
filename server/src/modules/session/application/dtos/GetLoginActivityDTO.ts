@@ -1,11 +1,11 @@
-import type { PersistedSessionDTO } from '@modules/session/domain/port/ISessionRepository';
+import type { PersistedSessionDTO } from '@modules/session/application/dtos/PersistedSessionDTO';
 
-export interface GetLoginActivityInputDTO{
+export interface GetLoginActivityInputDTO {
     userId: string;
     limit?: number;
 };
 
-export interface GetLoginActivityOutputDTO{
+export interface GetLoginActivityOutputDTO {
     activities: PersistedSessionDTO[];
     total: number;
 };

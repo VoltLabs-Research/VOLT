@@ -1,8 +1,8 @@
-import { useCallback } from 'react';
 import { useExportListingMutation, useExportListingByAnalysisMutation } from '@/modules/plugin/hooks/listing/queries';
-import { triggerBrowserDownload } from '@/shared/utils/file';
-import { showPromise } from '@/shared/presentation/hooks/toast';
 import { ExportType } from '@/shared/domain/export/types';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { triggerBrowserDownload } from '@/shared/utils/file';
+import { useCallback } from 'react';
 import ApiError from '@/shared/errors/ApiError';
 
 export interface DownloadPluginListingParams {
@@ -12,12 +12,12 @@ export interface DownloadPluginListingParams {
     trajectoryId?: string;
     exposureName?: string;
     format?: ExportType;
-}
+};
 
 export interface DownloadAnalysisListingParams {
     analysisId: string;
     format?: ExportType;
-}
+};
 
 const useDownloadPluginListing = () => {
     const exportListingMutation = useExportListingMutation();

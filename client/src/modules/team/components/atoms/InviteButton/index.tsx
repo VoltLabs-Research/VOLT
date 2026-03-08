@@ -1,6 +1,5 @@
-import React from 'react';
-import { Check, X } from 'lucide-react';
 import Button from '@/shared/presentation/components/Button';
+import { Check, X } from 'lucide-react';
 
 export type InviteButtonState = 'idle' | 'success' | 'error';
 
@@ -11,12 +10,12 @@ interface InviteButtonProps {
     disabled?: boolean;
 };
 
-const InviteButton: React.FC<InviteButtonProps> = ({
+export const InviteButton = ({
     state,
     isLoading,
     onClick,
     disabled = false
-}) => {
+}: InviteButtonProps) => {
     const getButtonContent = () => {
         switch (state) {
             case 'success':
@@ -52,5 +51,3 @@ const InviteButton: React.FC<InviteButtonProps> = ({
         </Button>
     );
 };
-
-export default InviteButton;

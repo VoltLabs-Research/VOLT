@@ -1,14 +1,8 @@
-import React, { useRef, useMemo } from 'react';
-import {
-    useFloating,
-    offset,
-    flip,
-    shift,
-    autoUpdate,
-    FloatingPortal
-} from '@floating-ui/react';
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import './CursorTooltip.css';
+import { useFloating, offset, flip, shift, autoUpdate, FloatingPortal } from '@floating-ui/react';
+import { useRef, useMemo } from 'react';
+import React from 'react';
 
 interface CursorTooltipProps {
     isOpen: boolean;

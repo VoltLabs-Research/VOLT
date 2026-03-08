@@ -1,13 +1,19 @@
-import mongoose, { Schema, Model, Document, Types } from 'mongoose';
+import { SessionActivityType } from '@modules/session/domain/entities/Session';
 import { ValidationCodes } from '@core/constants/validation-codes';
-import { SessionActivityType, SessionProps } from '@modules/session/domain/entities/Session';
-import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import { Schema, Types } from 'mongoose';
+import mongoose from 'mongoose';
+import type { SessionProps } from '@modules/session/domain/entities/Session';
+import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import type { Document, Model } from 'mongoose';
 
-type SessionPersistenceProps = Omit<Persistable<SessionProps>, 'user'> & {
+interface SessionPersistenceUserProps {
     user: Types.ObjectId | null;
 };
 
-export interface SessionDocument extends SessionPersistenceProps, Document { }
+type SessionPersistenceProps = Omit<Persistable<SessionProps>, 'user'> & SessionPersistenceUserProps;
+
+export interface SessionDocument extends SessionPersistenceProps, Document {
+};
 
 const SessionSchema: Schema<SessionDocument> = new Schema({
     user: {

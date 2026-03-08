@@ -43,7 +43,11 @@ export interface DiskOperationsMetrics {
     speed: number;
 };
 
-export type ClusterStatus = 'Healthy' | 'Warning' | 'Critical';
+export enum ClusterStatus {
+    Healthy = 'Healthy',
+    Warning = 'Warning',
+    Critical = 'Critical'
+};
 
 export interface ClusterMetrics {
     timestamp?: Date | string;
@@ -61,26 +65,4 @@ export interface ClusterMetrics {
     analysisCount?: number;
 };
 
-export interface ClusterHistoryMetric {
-    timestamp?: ClusterMetrics['timestamp'];
-    clusterId?: string;
-    serverId?: ClusterMetrics['serverId'];
-    status: ClusterMetrics['status'];
-    cpu: ClusterMetrics['cpu'];
-    memory: ClusterMetrics['memory'];
-    disk: ClusterMetrics['disk'];
-    network: ClusterMetrics['network'];
-    responseTimes: ClusterMetrics['responseTimes'];
-    mongodb?: ClusterMetrics['mongodb'] | null;
-    diskOperations?: ClusterMetrics['diskOperations'];
-    uptime: ClusterMetrics['uptime'];
-    analysisCount?: ClusterMetrics['analysisCount'];
-};
-
-export interface IClusterMetricsSource {
-    onMetricsAll(callback: (clusters: ClusterMetrics[]) => void): () => void;
-    onMetricsHistory(callback: (history: ClusterHistoryMetric[]) => void): () => void;
-    onConnectionChange(listener: (connected: boolean) => void): () => void;
-    isConnected(): boolean;
-    requestHistory(minutes?: number): Promise<void>;
-};
+export interface ClusterHistoryMetric extends ClusterMetrics {};

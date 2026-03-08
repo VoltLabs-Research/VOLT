@@ -1,15 +1,18 @@
-import type { StateCreator } from 'zustand';
-import { ORTHOGRAPHIC_DEFAULT, PERSPECTIVE_DEFAULT, type CameraSettingsState, type CameraSettingsStore } from '@/modules/fractal/types/stores/editor/visual-types';
-import { deepMerge } from '@/shared/utils/deep-merge';
-import type { EditorStore } from './types';
 import { mergeNestedSectionState, resetSectionState, setSectionFieldState } from './store-section';
+
+import { CameraType, ORTHOGRAPHIC_DEFAULT, PERSPECTIVE_DEFAULT } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import { deepMerge } from '@/shared/utils/deep-merge';
+
+import type { EditorStore } from './types';
+import type { CameraSettingsState, CameraSettingsStore } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { StateCreator } from 'zustand';
 
 export interface CameraSlice {
     camera: CameraSettingsStore;
 };
 
 const INITIAL_STATE: CameraSettingsState = {
-    type: 'perspective',
+    type: CameraType.Perspective,
     position: [8, 8, 6],
     up: [0, 0, 1],
     perspective: PERSPECTIVE_DEFAULT,
@@ -34,8 +37,8 @@ export const createCameraSlice: StateCreator<EditorStore, [], [], CameraSlice> =
             const current = state.camera;
             const next = deepMerge(current, partial as Partial<CameraSettingsStore>);
 
-            if (next.type !== 'perspective' && next.type !== 'orthographic') {
-                next.type = 'perspective';
+            if (next.type !== CameraType.Perspective && next.type !== CameraType.Orthographic) {
+                next.type = CameraType.Perspective;
             }
 
             return {

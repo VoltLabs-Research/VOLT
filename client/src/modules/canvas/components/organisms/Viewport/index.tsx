@@ -1,27 +1,30 @@
-import { useShallow } from 'zustand/react/shallow';
-import { useNavigate } from 'react-router-dom';
-import { Box, Camera, Gauge } from 'lucide-react';
+import { setSceneInteracting } from '../../../hooks/use-scene-interaction';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
+
+import { getFrameBoxBounds, getTrajectoryFrameByTimestep } from '@/modules/fractal/utilities/frame-box-bounds';
+import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { Box, Camera, Gauge } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
+import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
+import TimestepViewer from '@/modules/fractal/components/organisms/TimestepViewer';
+import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
+import EditableTrajectoryName from '@/modules/trajectory/components/atoms/EditableTrajectoryName';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
+import Loader from '@/shared/presentation/components/Loader';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
-import Loader from '@/shared/presentation/components/Loader';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import EditableTrajectoryName from '@/modules/trajectory/components/atoms/EditableTrajectoryName';
-import type { PerformancePreset } from '@/modules/fractal/types/stores/editor/performance-types';
-import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
+import { PerformancePreset } from '@/modules/fractal/stores/contracts/editor/performance-types';
+
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
-import TimestepViewer from '@/modules/fractal/components/organisms/TimestepViewer';
-import { getFrameBoxBounds, getTrajectoryFrameByTimestep } from '@/modules/fractal/utilities/frame-box-bounds';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import usePluginSelectors from '@/modules/plugin/hooks/use-plugin-selectors';
-import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/use-plugin-catalog';
-import { setSceneInteracting } from '../../../hooks/use-scene-interaction';
+
 import './Viewport.css';
 
 interface ViewportProps {
@@ -35,7 +38,7 @@ interface ViewportProps {
     bodyContent?: React.ReactNode;
     hideGradient?: boolean;
     headerActionsBeforePerformance?: React.ReactNode;
-}
+};
 
 const TIMESTEP_VIEWER_DEFAULTS = {
     scale: 1,
@@ -44,11 +47,11 @@ const TIMESTEP_VIEWER_DEFAULTS = {
 } as const;
 
 const PERFORMANCE_PRESETS: { label: string; value: PerformancePreset }[] = [
-    { label: 'Ultra', value: 'ultra' },
-    { label: 'High', value: 'high' },
-    { label: 'Balanced', value: 'balanced' },
-    { label: 'Performance', value: 'performance' },
-    { label: 'Battery', value: 'battery' }
+    { label: 'Ultra', value: PerformancePreset.Ultra },
+    { label: 'High', value: PerformancePreset.High },
+    { label: 'Balanced', value: PerformancePreset.Balanced },
+    { label: 'Performance', value: PerformancePreset.Performance },
+    { label: 'Battery', value: PerformancePreset.Battery }
 ];
 
 const Viewport = ({
@@ -65,6 +68,7 @@ const Viewport = ({
 }: ViewportProps) => {
     const navigate = useNavigate();
     const teamId = useSelectedTeamId() ?? undefined;
+    const captureRequested = useScreenshotStore((s) => s.captureRequested);
     useEnsurePluginCatalogLoaded();
     const { plugins } = usePluginSelectors();
     const {
@@ -73,6 +77,7 @@ const Viewport = ({
         pointSizeMultiplier,
         sceneOpacities,
         activeModelBounds,
+        modelWorldBounds,
         setModelBounds,
         setModelWorldBounds,
         setModelLoadingState,
@@ -84,6 +89,7 @@ const Viewport = ({
         pointSizeMultiplier: s.pointSizeMultiplier,
         sceneOpacities: s.sceneOpacities,
         activeModelBounds: s.activeModel?.modelBounds,
+        modelWorldBounds: s.modelWorldBounds,
         setModelBounds: s.setModelBounds,
         setModelWorldBounds: s.setModelWorldBounds,
         setModelLoadingState: s.setModelLoadingState,
@@ -208,6 +214,9 @@ const Viewport = ({
                             showGrid={showGrid}
                             showGizmo={false}
                             onInteractionChange={setSceneInteracting}
+                            modelWorldBounds={modelWorldBounds}
+                            screenshotCaptureRequested={captureRequested}
+                            onScreenshotCaptureHandled={() => useScreenshotStore.getState().clearCaptureRequest()}
                         >
                             {trajectory?._id && currentTimestep !== undefined && currentFrame && currentFrameBoxBounds && (
                                 <TimestepViewer

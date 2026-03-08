@@ -1,8 +1,8 @@
+import UserCreatedEvent from '@modules/auth/domain/events/UserCreatedEvent';
+import CreateNotificationUseCase from '@modules/notification/application/use-cases/CreateNotificationUseCase';
+import CreateTeamUseCase from '@modules/team/application/use-cases/team/CreateTeamUseCase';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import { injectable, inject, delay } from 'tsyringe';
-import UserCreatedEvent from '@modules/auth/domain/events/UserCreatedEvent';
-import CreateTeamUseCase from '@modules/team/application/use-cases/team/CreateTeamUseCase';
-import CreateNotificationUseCase from '@modules/notification/application/use-cases/CreateNotificationUseCase';
 
 @injectable()
 export default class UserCreatedEventHandler implements IEventHandler<UserCreatedEvent> {

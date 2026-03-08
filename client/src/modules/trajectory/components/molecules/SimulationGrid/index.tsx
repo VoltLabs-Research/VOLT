@@ -1,26 +1,21 @@
-import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
-import { Download, Upload } from 'lucide-react';
-import DocumentListing, { type SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import SimulationCard from '../SimulationCard';
 import SimulationSkeletonCard from '../../atoms/SimulationSkeletonCard';
-import useTrajectoryStore from '@/modules/trajectory/stores/use-trajectory-store';
 import { fetchTrajectories } from '@/modules/trajectory/hooks/trajectory/queries';
-import useDeleteSelectedTrajectories from '@/modules/trajectory/hooks/use-delete-selected-trajectories';
-import useDownloadSamples from '@/modules/trajectory/hooks/use-download-samples';
-import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
-import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
+import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
+import useDeleteSelectedTrajectories from '@/modules/trajectory/hooks/trajectory/use-delete-selected-trajectories';
+import useDownloadSamples from '@/modules/trajectory/hooks/trajectory/use-download-samples';
+import useTrajectoryStore from '@/modules/trajectory/stores/trajectory/use-trajectory-store';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
+import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
+import { Download, Upload } from 'lucide-react';
+import { sileo } from 'sileo';
+import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import { sileo } from 'sileo';
-import type { TrajectoryUploadStatus } from '@/modules/trajectory/stores/use-trajectory-store';
-import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
-
-const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: 'trajectory.created', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid()] },
-    { event: 'trajectory.deleted', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid()] },
-    { event: 'trajectory.updated', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid()] }
-];
+import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
+import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { TrajectoryUploadStatus } from '@/modules/trajectory/stores/trajectory/use-trajectory-store';
 
 interface SimulationGridContext {
     teamId?: string;
@@ -30,10 +25,17 @@ export type SimulationGridItem =
     | { kind: 'upload'; _id: string; progress: number; status: TrajectoryUploadStatus }
     | { kind: 'trajectory'; _id: string; trajectory: Trajectory };
 
-const SimulationGrid = () => {
+const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
+    { event: 'trajectory.created', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid()] },
+    { event: 'trajectory.deleted', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid()] },
+    { event: 'trajectory.updated', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid()] }
+];
+
+export default function SimulationGrid() {
     const activeUploads = useTrajectoryStore((state) => state.activeUploads);
-    
-    const selectedTeam = useSelectedTeam()!;
+
+    const selectedTeam = useSelectedTeam();
+    const selectedTeamId = selectedTeam?._id;
 
     const { selectedIds, isSelected, toggleSelection } = useSelectionParams();
     const deleteSelectedTrajectories = useDeleteSelectedTrajectories();
@@ -84,9 +86,12 @@ const SimulationGrid = () => {
     }, []);
 
     const transformData = useCallback((data: SimulationGridItem[]): SimulationGridItem[] => {
-        const uploadItems: SimulationGridItem[] = Object.entries(activeUploads).map(
-            ([id, upload]) => ({ kind: 'upload', _id: `upload-${id}`, progress: upload.progress, status: upload.status })
-        );
+        const uploadItems: SimulationGridItem[] = Object.entries(activeUploads).map(([id, upload]) => ({
+            kind: 'upload',
+            _id: `upload-${id}`,
+            progress: upload.progress,
+            status: upload.status
+        }));
         return [...uploadItems, ...data];
     }, [activeUploads]);
 
@@ -146,7 +151,8 @@ const SimulationGrid = () => {
             view='grid'
             fetchData={fetchData}
             transformData={transformData}
-            context={{ teamId: selectedTeam._id }}
+            context={selectedTeamId ? { teamId: selectedTeamId } : undefined}
+            enabled={!!selectedTeamId}
             renderGridItem={renderGridItem}
             hideHeader={true}
             hideTabs={true}
@@ -161,6 +167,4 @@ const SimulationGrid = () => {
             socketInvalidation={SOCKET_INVALIDATION}
         />
     );
-};
-
-export default SimulationGrid;
+}

@@ -1,8 +1,8 @@
+import './Terminal.css';
+import 'xterm/css/xterm.css';
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
-import 'xterm/css/xterm.css';
-import './Terminal.css';
 
 export interface TerminalHandle {
     write: (data: string) => void;

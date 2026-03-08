@@ -1,23 +1,24 @@
+import { JobStatus } from '@modules/jobs/domain/entities/Job';
+import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import Job from '@modules/jobs/domain/entities/Job';
+import TeamJobQueryService from '@modules/jobs/infrastructure/services/TeamJobQueryService';
+import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import IORedis from 'ioredis';
-import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
-import type { TeamJobSnapshot } from '@modules/jobs/domain/entities/TeamJobSnapshot';
-import { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
-import { IJobQueueService } from '@modules/jobs/domain/port/IJobQueueService';
-import { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
-import {
+import type { TeamJobSnapshot } from '@modules/jobs/infrastructure/projections/TeamJobSnapshot';
+import type { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
+import type { IJobQueueService } from '@modules/jobs/domain/port/IJobQueueService';
+import type { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
+import type {
     ClearTeamJobsHistoryResult,
     ITeamJobMaintenanceService,
     RemoveTeamRunningJobsResult,
     RetryTeamFailedJobsResult
 } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
-import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
-import TeamJobQueryService from '@modules/jobs/infrastructure/services/TeamJobQueryService';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
 
 const DELETE_BATCH_SIZE = 500;
 
@@ -187,13 +188,13 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
             if (!queue) continue;
 
             const retryJobs: Job[] = jobs.map((job) => Job.create({
-                jobId: job.jobId as string,
-                teamId: job.teamId as string,
+                jobId: job.jobId,
+                teamId: job.teamId,
                 queueType,
                 status: JobStatus.Queued,
-                sessionId: job.sessionId as string,
-                message: job.message as string,
-                metadata: (job.metadata ?? {}) as Record<string, unknown>
+                sessionId: job.sessionId,
+                message: job.message,
+                metadata: job.metadata || {}
             }));
 
             retriedFrames += await queue.retryFailedJobs(retryJobs);
@@ -217,4 +218,4 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
             await pipeline.exec();
         }
     }
-}
+};

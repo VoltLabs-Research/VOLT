@@ -1,18 +1,18 @@
-import { injectable, inject } from 'tsyringe';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import type { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { ErrorCodes } from '@core/constants/error-codes';
+import { injectable, inject } from 'tsyringe';
+import type { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
 
 interface DeleteTeamInvitationByIdInput {
     invitationId: string;
-}
+};
 
 interface DeleteTeamInvitationByIdOutput {
     success: boolean;
-}
+};
 
 @injectable()
 export default class DeleteTeamInvitationByIdUseCase implements IUseCase<DeleteTeamInvitationByIdInput, DeleteTeamInvitationByIdOutput, ApplicationError> {
@@ -31,4 +31,4 @@ export default class DeleteTeamInvitationByIdUseCase implements IUseCase<DeleteT
         }
         return Result.ok({ success: true });
     }
-}
+};

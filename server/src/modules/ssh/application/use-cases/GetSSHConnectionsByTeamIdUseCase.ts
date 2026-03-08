@@ -1,16 +1,16 @@
 import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { GetSSHConnectionsByTeamIdInputDTO, GetSSHConnectionsByTeamIdOutputDTO } from '@modules/ssh/application/dtos/GetSSHConnectionsByTeamIdDTO';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { toSafeSSHConnectionDTO } from './ssh-error-utils';
+import { toSafeSSHConnectionDTO } from '@modules/ssh/application/utils/ssh-error-utils';
 
 @injectable()
 export class GetSSHConnectionsByTeamIdUseCase implements IUseCase<GetSSHConnectionsByTeamIdInputDTO, GetSSHConnectionsByTeamIdOutputDTO, ApplicationError> {
     constructor(
-        @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
+        @inject(SSH_TOKENS.SSHConnectionRepository)
         private sshConnRepository: ISSHConnectionRepository
     ){}
 

@@ -1,7 +1,4 @@
-import {
-    MessageOutputDTO,
-    UserScopedEntityIdInputDTO
-} from '@modules/team/application/dtos/common';
+import { MessageOutputDTO, UserScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
 
 export type TeamInvitationActionInputDTO = UserScopedEntityIdInputDTO<'invitationId'>;
 

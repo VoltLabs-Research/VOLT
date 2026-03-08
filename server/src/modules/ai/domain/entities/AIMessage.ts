@@ -1,6 +1,20 @@
-import type { AIConversationMessageParts } from '@modules/ai/application/contracts/AIConversationMessage';
+import type { AIConversationMessageParts } from '@modules/ai/domain/contracts/AIConversationMessage';
 
-export type AIMessageRole = 'user' | 'assistant';
+export enum AIMessageRole {
+    User = 'user',
+    Assistant = 'assistant'
+};
+
+export interface AIMessageToolCall {
+    toolName: string;
+    input: unknown;
+};
+
+export interface AIMessageToolResult {
+    toolName: string;
+    input: unknown;
+    output: unknown;
+};
 
 /**
  * Represents a single message stored in the database.
@@ -19,30 +33,30 @@ export interface AIMessageProps {
     tokenUsage: AIMessageTokenUsage | null;
     createdAt: Date;
     updatedAt: Date;
-}
+};
 
 export interface AIMessageModelInfo {
     provider: string;
     model: string;
     finishReason: string;
     steps: AIMessageToolStep[];
-}
+};
 
 export interface AIMessageToolStep {
     stepNumber: number;
-    toolCalls: Array<{ toolName: string; input: unknown }>;
-    toolResults: Array<{ toolName: string; input: unknown; output: unknown }>;
-}
+    toolCalls: AIMessageToolCall[];
+    toolResults: AIMessageToolResult[];
+};
 
 export interface AIMessageTokenUsage {
     inputTokens: number;
     outputTokens: number;
     totalTokens: number;
-}
+};
 
 export default class AIMessage {
     constructor(
         public readonly _id: string,
         public readonly props: AIMessageProps
     ) {}
-}
+};

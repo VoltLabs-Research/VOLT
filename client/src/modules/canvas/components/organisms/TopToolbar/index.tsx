@@ -1,18 +1,20 @@
-import { memo, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Container from '@/shared/presentation/components/Container';
-import Avatar from '@/shared/presentation/components/Avatar';
-import Button from '@/shared/presentation/components/Button';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
-import UserMenuPopover from '@/modules/auth/components/molecules/UserMenuPopover';
-import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
+import { buildMenus } from '../../molecules/TopToolbarMenus';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
-import useTrajectoryFilePicker from '@/modules/trajectory/hooks/use-trajectory-file-picker';
 import MenuPopover from '../../molecules/MenuPopover';
-import { buildMenus } from '../../molecules/TopToolbarMenus';
 import WorkspaceTabs from '../../molecules/WorkspaceTabs';
+
+import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
+import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import { memo, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { sileo } from 'sileo';
+import UserMenuPopover from '@/modules/auth/components/molecules/UserMenuPopover';
+import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
+import Avatar from '@/shared/presentation/components/Avatar';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+
 import './TopToolbar.css';
 
 const TopToolbar = () => {

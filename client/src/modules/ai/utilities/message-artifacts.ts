@@ -1,22 +1,26 @@
+import { AIMessageArtifactKind } from '@/modules/ai/api/entities/ai-conversation';
+import { isRecord } from '@/modules/ai/utilities/message-content';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
-import { isRecord } from '@/modules/ai/components/organisms/AIConversationThread/thread-utils';
 
 export interface AITabularArtifactPayload {
     columns: string[];
     rows: Record<string, unknown>[];
-}
+};
 
 export const resolveTabularPayload = (artifact: AIMessageArtifact): AITabularArtifactPayload | null => {
-    if (artifact.kind !== 'table' || !isRecord(artifact.payload)) {
+    if (artifact.kind !== AIMessageArtifactKind.Table || !isRecord(artifact.payload)) {
         return null;
     }
 
-    const columns = Array.isArray(artifact.payload.columns)
-        ? artifact.payload.columns.filter((column): column is string => typeof column === 'string')
-        : [];
-    const rows = Array.isArray(artifact.payload.rows)
-        ? artifact.payload.rows.filter((row): row is Record<string, unknown> => isRecord(row))
-        : [];
+    let columns: string[] = [];
+    if (Array.isArray(artifact.payload.columns)) {
+        columns = artifact.payload.columns.filter((column): column is string => typeof column === 'string');
+    }
+
+    let rows: Record<string, unknown>[] = [];
+    if (Array.isArray(artifact.payload.rows)) {
+        rows = artifact.payload.rows.filter(isRecord);
+    }
 
     if (!columns.length) {
         return null;

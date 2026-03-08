@@ -1,0 +1,9 @@
+import { NativeStats } from '@modules/trajectory/domain/port/trajectory/exporters/INativeStats';
+
+import path from 'path';
+
+// Ensure we point to the correct location of the native module
+const nativePath = path.join(process.cwd(), 'native/build/Release/stats_parser.node');
+const nativeModule: NativeStats = require(nativePath);
+
+export default nativeModule;

@@ -1,7 +1,8 @@
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { createController } from '@shared/infrastructure/http/controllers/createController';
 import GetTrajectoryPreviewUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTrajectoryPreviewUseCase';
+import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+
 import type { UseCaseOutput } from '@shared/application/IUseCase';
 
 type GetTrajectoryPreviewOutput = UseCaseOutput<GetTrajectoryPreviewUseCase>;

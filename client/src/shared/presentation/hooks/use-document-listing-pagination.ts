@@ -1,10 +1,12 @@
-import { useInfiniteQuery, type QueryKey, type InfiniteData } from '@tanstack/react-query';
-import queryClient from '@/shared/infrastructure/query/query-client';
-import { useCallback, useRef, useEffect, useMemo } from 'react';
-import usePaginationParams, { type PaginationParams } from './use-pagination-params';
 import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import { deduplicateById } from '@/shared/domain/utils/deduplicateById';
+import usePaginationParams from './use-pagination-params';
 import ApiError from '@/shared/errors/ApiError';
+import queryClient from '@/shared/infrastructure/query/query-client';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { useCallback, useRef, useEffect, useMemo } from 'react';
+import type { PaginationParams } from './use-pagination-params';
+import type { QueryKey, InfiniteData } from '@tanstack/react-query';
 
 /**
  * Props for useDocumentListingPagination hook.
@@ -31,7 +33,7 @@ export interface UseDocumentListingPaginationReturn<T extends { _id: string }> {
     search: string;
     handleLoadMore: () => void;
     refresh: () => void;
-}
+};
 
 /**
  * Hook to manage pagination logic for DocumentListing component.

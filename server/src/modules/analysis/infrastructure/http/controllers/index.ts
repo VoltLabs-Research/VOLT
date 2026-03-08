@@ -1,9 +1,9 @@
-import { container } from 'tsyringe';
 import DeleteAnalysisByIdController from './DeleteAnalysisByIdController';
 import GetAnalysesByTeamIdController from './GetAnalysesByTeamIdController';
-import GetAnalysisByIdController from './GetAnalysisByIdController';
 import GetAnalysesByTrajectoryIdController from './GetAnalysesByTrajectoryIdController';
+import GetAnalysisByIdController from './GetAnalysisByIdController';
 import RetryFailedFramesController from './RetryFailedFramesController';
+import { container } from 'tsyringe';
 
 export default {
     deleteById: container.resolve(DeleteAnalysisByIdController),

@@ -1,37 +1,32 @@
+import { CONTAINER_TEMPLATES } from '../services/container-templates';
+import { containerQuery } from './queries';
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
-import { containerQuery } from './queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
-import { CONTAINER_TEMPLATES } from '../constants/container-templates';
+import type { Team } from '@/modules/team/api/entities/team/team';
+import type { EnvVariable } from '../api/entities/env-variable';
+import type { PortMapping } from '../api/entities/port-mapping';
 import type { ContainerTemplate } from '../api/entities/container-template';
-import type { Team } from '@/modules/team/api/entities/team';
+
+export type { EnvVariable } from '../api/entities/env-variable';
+export type { PortMapping } from '../api/entities/port-mapping';
 
 const DEFAULT_CPU = 1;
 const DEFAULT_MEMORY = 512;
 
-export interface PortMapping{
-    private: number;
-    public: number;
-}
-
-export interface EnvVariable{
-    key: string;
-    value: string;
-}
-
-export interface ContainerConfig{
+export interface ContainerConfig {
     name: string;
     memory: number;
     cpus: number;
     ports: PortMapping[];
     env: EnvVariable[];
     mountDockerSocket: boolean;
-}
+};
 
-export interface UseCreateContainerFormReturn{
+export interface UseCreateContainerFormReturn {
     config: ContainerConfig;
     selectedTemplate: string | null;
     customImage: string;
@@ -46,7 +41,7 @@ export interface UseCreateContainerFormReturn{
     getSelectedImage: () => string | undefined;
     getSelectedTemplate: () => ContainerTemplate | undefined;
     canProceedToConfig: boolean;
-}
+};
 
 const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormReturn => {
     const navigate = useNavigate();
@@ -81,13 +76,26 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
     const handleTemplateSelect = useCallback((templateId: string) => {
         const template = CONTAINER_TEMPLATES.find((containerTemplate) => containerTemplate.id === templateId);
         if (template) {
+            let ports: PortMapping[] = [];
+            if (template.defaultPort) {
+                ports = [{
+                    private: template.defaultPort,
+                    public: 0
+                }];
+            }
+
+            let env: EnvVariable[] = [];
+            if (template.defaultEnv) {
+                env = [...template.defaultEnv];
+            }
+
             setSelectedTemplate(templateId);
             setCustomImageState('');
             setConfig((prev) => ({
                 ...prev,
                 name: `${template.id}-${Math.floor(Math.random() * 1000)}`,
-                ports: template.defaultPort ? [{ private: template.defaultPort, public: 0 }] : [],
-                env: template.defaultEnv ? [...template.defaultEnv] : [],
+                ports,
+                env,
                 mountDockerSocket: template.id === 'coder'
             }));
             goToConfig();

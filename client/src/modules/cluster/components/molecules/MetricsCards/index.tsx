@@ -1,15 +1,36 @@
+import { formatNetworkSpeedWithUnit } from '@/modules/cluster/utilities/format-network';
+import { ClusterStatus } from '@/modules/cluster/api/entities/cluster-metrics';
+import './MetricsCards.css';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import { Server, Cpu, MemoryStick, Activity, TrendingUp, TrendingDown, MoreVertical } from 'lucide-react';
 import { Skeleton } from '@mui/material';
-import Container from '@/shared/presentation/components/Container';
-import Button from '@/shared/presentation/components/Button';
-import Tooltip from '@/shared/presentation/components/Tooltip';
-import { formatNetworkSpeedWithUnit } from '@/modules/cluster/utilities/format-network';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
-import './MetricsCards.css';
 
 interface MetricsCardsProps {
     metrics: ClusterMetrics | null;
-}
+};
+
+const getStatusLabel = (status: ClusterStatus): string => {
+    if (status === ClusterStatus.Healthy) {
+        return 'Online';
+    }
+
+    if (status === ClusterStatus.Warning) {
+        return 'Warning';
+    }
+
+    return 'Critical';
+};
+
+const renderTrendIcon = (trendUp: boolean) => {
+    if (trendUp) {
+        return <TrendingUp className='metric-card-trend-icon' />;
+    }
+
+    return <TrendingDown className='metric-card-trend-icon' />;
+};
 
 const MetricsCards = ({ metrics }: MetricsCardsProps) => {
     const isLoading = !metrics;
@@ -39,14 +60,17 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
         );
     }
 
-    const cpuUsage = metrics.cpu.coresUsage?.length > 0
-        ? metrics.cpu.coresUsage.reduce((sum, val) => sum + val, 0) / metrics.cpu.coresUsage.length
-        : metrics.cpu.usage;
+    let cpuUsage = metrics.cpu.usage;
+
+    if (metrics.cpu.coresUsage?.length > 0) {
+        cpuUsage = metrics.cpu.coresUsage.reduce((sum, val) => sum + val, 0) / metrics.cpu.coresUsage.length;
+    }
 
     const networkTotal = metrics.network.incoming + metrics.network.outgoing;
     const networkFormatted = formatNetworkSpeedWithUnit(networkTotal);
     const outgoingFormatted = formatNetworkSpeedWithUnit(metrics.network.outgoing);
     const incomingFormatted = formatNetworkSpeedWithUnit(metrics.network.incoming);
+    const statusLabel = getStatusLabel(metrics.status);
 
     const cards = [
         {
@@ -54,8 +78,8 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
             title: 'Active Servers',
             value: '1',
             unit: 'Server',
-            trend: metrics.status === 'Healthy' ? 'Online' : metrics.status === 'Warning' ? 'Warning' : 'Critical',
-            trendUp: metrics.status === 'Healthy',
+            trend: statusLabel,
+            trendUp: metrics.status === ClusterStatus.Healthy,
             subtitle: metrics.status
         },
         {
@@ -121,7 +145,7 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
                                 className='d-flex items-center metric-card-trend font-size-1 gap-025'
                                 style={{ color: card.trendUp ? 'var(--status-success)' : 'var(--status-error)' }}
                             >
-                                {card.trendUp ? <TrendingUp className='metric-card-trend-icon' /> : <TrendingDown className='metric-card-trend-icon' />}
+                                {renderTrendIcon(card.trendUp)}
                                 {card.trend}
                             </span>
                         </Container>

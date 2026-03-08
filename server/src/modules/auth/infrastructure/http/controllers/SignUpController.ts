@@ -1,8 +1,8 @@
 import { createController } from '@shared/infrastructure/http/controllers/createController';
-import SignUpUseCase from '@modules/auth/application/use-cases/SignUpUseCase';
+import { getAuthRequestContext } from '@modules/auth/infrastructure/http/helpers/getAuthRequestContext';
 import { authValidation } from '@modules/auth/infrastructure/http/validation/auth-schemas';
-import { getAuthRequestContext } from '@modules/auth/infrastructure/http/controllers/auth-controller-helpers';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
+import SignUpUseCase from '@modules/auth/application/use-cases/SignUpUseCase';
 
 export default createController(SignUpUseCase, {
     statusCode: HttpStatus.Created,

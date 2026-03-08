@@ -2,32 +2,41 @@ import { Socket } from 'socket.io';
 import { inject, injectable } from 'tsyringe';
 import { ISocketEventRegistry, SocketEventHandler } from '@modules/socket/domain/port/ISocketEventRegistry';
 import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import { ISocketMapper } from '@modules/socket/domain/port/ISocketMapper';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import type { ISocketConnectionMapper } from '@modules/socket/infrastructure/contracts/ISocketConnectionMapper';
+import type { ISocketEventRegistryRuntime } from '@modules/socket/infrastructure/contracts/ISocketEventRegistryRuntime';
 
 /**
  * Handles event registration and provides connection abstraction.
  */
 @injectable()
-export default class SocketIOEventRegistry implements ISocketEventRegistry{
+export default class SocketIOEventRegistry implements ISocketEventRegistry, ISocketEventRegistryRuntime{
     private sockets: Map<string, Socket> = new Map();
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketMapper)
-        private readonly socketMapper: ISocketMapper
+        @inject(SOCKET_TOKENS.SocketConnectionMapper)
+        private readonly socketMapper: ISocketConnectionMapper
     ){}
 
     /**
      * Register a socket for event handling.
      */
-    registerSocket(socket: Socket): void{
+    registerConnection(socket: unknown): void{
+        this.registerSocket(socket as Socket);
+    }
+
+    unregisterConnection(socketId: string): void{
+        this.unregisterSocket(socketId);
+    }
+
+    private registerSocket(socket: Socket): void{
         this.sockets.set(socket.id, socket);
     }
 
     /**
      * Unregister a socket when disconnected.
      */
-    unregisterSocket(socketId: string): void{
+    private unregisterSocket(socketId: string): void{
         this.sockets.delete(socketId);
     }
 

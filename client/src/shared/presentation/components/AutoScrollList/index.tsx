@@ -1,6 +1,6 @@
+import Container from '@/shared/presentation/components/Container';
 import { Fragment, useEffect, useRef } from 'react';
 import type { Key, ReactNode } from 'react';
-import Container from '@/shared/presentation/components/Container';
 
 interface AutoScrollListProps<T> {
     items: T[];
@@ -19,7 +19,7 @@ interface AutoScrollListProps<T> {
     renderAfter?: ReactNode;
     autoScrollDependency?: unknown;
     autoScrollDependencyEnabled?: boolean;
-}
+};
 
 const joinClasses = (...classes: Array<string | undefined | false>) => (
     classes.filter(Boolean).join(' ')

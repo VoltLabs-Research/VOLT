@@ -1,6 +1,6 @@
-import { Skeleton } from '@mui/material';
 import Container from '@/shared/presentation/components/Container';
 import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader';
+import { Skeleton } from '@mui/material';
 
 interface SimulationSkeletonCardProps {
     n?: number;
@@ -8,7 +8,7 @@ interface SimulationSkeletonCardProps {
     status?: 'uploading' | 'processing' | 'waiting_for_jobs' | 'failed';
 };
 
-const SimulationSkeletonCard = ({ n = 1, progress, status }: SimulationSkeletonCardProps) => {
+export default function SimulationSkeletonCard({ n = 1, progress, status }: SimulationSkeletonCardProps) {
     if (progress !== undefined) {
         let message = `Uploading ${Math.round(progress * 100)}%`;
 
@@ -45,6 +45,4 @@ const SimulationSkeletonCard = ({ n = 1, progress, status }: SimulationSkeletonC
             ))}
         </>
     );
-};
-
-export default SimulationSkeletonCard;
+}

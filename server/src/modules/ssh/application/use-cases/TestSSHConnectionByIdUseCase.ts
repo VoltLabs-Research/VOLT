@@ -1,20 +1,20 @@
 import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { TestSSHConnectionByIdInputDTO, TestSSHConnectionByIdOutputDTO } from '@modules/ssh/application/dtos/TestSSHConnectionByIdDTO';
 import { ISSHConnectionService } from '@modules/ssh/domain/port/ISSHConnectionService';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { resolveSSHServiceError } from './ssh-error-utils';
+import { resolveSSHServiceError } from '@modules/ssh/application/utils/ssh-error-utils';
 
 @injectable()
 export class TestSSHConnectionByIdUseCase implements IUseCase<TestSSHConnectionByIdInputDTO, TestSSHConnectionByIdOutputDTO, ApplicationError> {
     constructor(
-        @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
+        @inject(SSH_TOKENS.SSHConnectionRepository)
         private sshConnRepository: ISSHConnectionRepository,
-        @inject(SSH_CONN_TOKENS.SSHConnectionService)
+        @inject(SSH_TOKENS.SSHConnectionService)
         private sshConnService: ISSHConnectionService
     ){}
 

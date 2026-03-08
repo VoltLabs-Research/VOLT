@@ -9,19 +9,19 @@ export interface Shortcut {
     scope?: ShortcutScope;
     category?: string;
     enabled?: boolean;
-}
+};
 
 interface ShortcutTriggered {
     id: string;
     description: string;
-}
+};
 
 interface KeyboardShortcutsState {
     shortcuts: Map<string, Shortcut>;
     showPanel: boolean;
     currentScope: ShortcutScope;
     lastTriggered: ShortcutTriggered | null;
-}
+};
 
 interface KeyboardShortcutsActions {
     togglePanel: () => void;
@@ -30,7 +30,7 @@ interface KeyboardShortcutsActions {
     setLastTriggered: (trigger: ShortcutTriggered | null) => void;
     getShortcutsByCategory: () => Record<string, Shortcut[]>;
     reset: () => void;
-}
+};
 
 const DEFAULT_SHORTCUTS: Shortcut[] = [
     { id: 'play-pause', description: 'Play / Pause', keys: ['space'], scope: 'canvas', category: 'playback' },

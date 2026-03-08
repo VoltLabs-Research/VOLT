@@ -1,6 +1,6 @@
-import React from 'react';
 import { cn } from '@/shared/utils';
 import './StatusBadge.css';
+import React from 'react';
 
 export interface StatusBadgeProps{
     /**

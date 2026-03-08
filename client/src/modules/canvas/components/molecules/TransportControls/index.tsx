@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+
 import { SkipBack, Rewind, Play, FastForward, SkipForward, Pause } from 'lucide-react';
+import { useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { useShallow } from 'zustand/react/shallow';
+
 import './TransportControls.css';
 
 const TransportControls = () => {

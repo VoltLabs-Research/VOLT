@@ -1,13 +1,12 @@
+import type { ScriptingSessionJupyterInfo } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
+
 export interface CreateScriptingJupyterSessionInputDTO {
     teamId: string;
     trajectoryId: string;
     userId?: string;
     notebookId?: string;
-}
+};
 
 export interface CreateScriptingJupyterSessionOutputDTO {
-    jupyter: {
-        url: string;
-        ready: boolean;
-    };
-}
+    jupyter: ScriptingSessionJupyterInfo;
+};

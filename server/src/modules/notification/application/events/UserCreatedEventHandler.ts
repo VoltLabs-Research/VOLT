@@ -1,16 +1,16 @@
-import { IEventHandler } from '@shared/application/events/IEventHandler';
-import { injectable, inject, delay } from 'tsyringe';
-import UserCreatedEvent from '@modules/auth/domain/events/UserCreatedEvent';
-import CreateNotificationUseCase from '@modules/notification/application/use-cases/CreateNotificationUseCase';
+import { CreateNotificationUseCase } from '@modules/notification/application/use-cases';
+import { delay, inject, injectable } from 'tsyringe';
+import type { UserCreatedIntegrationEvent } from '@shared/application/contracts/events/UserCreatedIntegrationEvent';
+import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
 @injectable()
-export default class UserCreatedEventHandler implements IEventHandler<UserCreatedEvent> {
+export default class UserCreatedEventHandler implements IEventHandler<UserCreatedIntegrationEvent> {
     constructor(
         @inject(delay(() => CreateNotificationUseCase))
         private readonly createNotificationUseCase: CreateNotificationUseCase
     ){}
 
-    async handle(event: UserCreatedEvent): Promise<void> {
+    async handle(event: UserCreatedIntegrationEvent): Promise<void> {
         const { id, firstName } = event.payload;
         const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
 
@@ -21,4 +21,4 @@ export default class UserCreatedEventHandler implements IEventHandler<UserCreate
             link: '/dashboard'
         });
     }
-}
+};

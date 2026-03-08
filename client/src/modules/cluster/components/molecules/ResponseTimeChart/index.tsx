@@ -1,3 +1,7 @@
+import { CHART_COLORS } from '@/modules/cluster/utilities/chart-colors';
+import './ResponseTimeChart.css';
+import ChartContainer from '@/shared/presentation/components/ChartContainer';
+import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
 import { useMemo } from 'react';
 import {
     LineChart,
@@ -9,38 +13,51 @@ import {
     Legend
 } from 'recharts';
 import type { ClusterMetrics, ResponseTimes } from '@/modules/cluster/api/entities/cluster-metrics';
-import { CHART_COLORS } from '@/modules/cluster/constants';
-import { clusterHistoryQuery } from '@/modules/cluster/hooks/queries';
-import ChartContainer from '@/shared/presentation/components/ChartContainer';
-import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
 
 interface DataPoint {
     mongodb: number;
     redis: number;
     minio: number;
     self: number;
-}
+};
 
 interface ResponseTimeChartProps {
-    clusterId: string;
+    history: ClusterMetrics[];
     metrics: ClusterMetrics | null;
-}
+};
 
-const CHART_LINES: Array<{
+interface ChartLine {
     dataKey: keyof ResponseTimes;
     name: string;
     color: string;
-}> = [
-    { dataKey: 'mongodb', name: 'MongoDB', color: CHART_COLORS.mongodb },
-    { dataKey: 'redis', name: 'Redis', color: CHART_COLORS.redis },
-    { dataKey: 'minio', name: 'MinIO', color: CHART_COLORS.minio },
-    { dataKey: 'self', name: 'Server', color: CHART_COLORS.server }
+};
+
+const CHART_LINES: ChartLine[] = [
+    {
+        dataKey: 'mongodb',
+        name: 'MongoDB',
+        color: CHART_COLORS.mongodb
+    },
+    {
+        dataKey: 'redis',
+        name: 'Redis',
+        color: CHART_COLORS.redis
+    },
+    {
+        dataKey: 'minio',
+        name: 'MinIO',
+        color: CHART_COLORS.minio
+    },
+    {
+        dataKey: 'self',
+        name: 'Server',
+        color: CHART_COLORS.server
+    }
 ];
 
 const renderIcon = () => <div className='response-chart-bar' />;
 
-const ResponseTimeChart = ({ clusterId, metrics }: ResponseTimeChartProps) => {
-    const { data: history = [] } = clusterHistoryQuery(clusterId);
+const ResponseTimeChart = ({ history, metrics }: ResponseTimeChartProps) => {
     const chartData = useMemo<DataPoint[]>(() => {
         return history.map((point) => ({
             mongodb: point.responseTimes.mongodb,
@@ -87,7 +104,15 @@ const ResponseTimeChart = ({ clusterId, metrics }: ResponseTimeChartProps) => {
             statsLoading={!metrics}
         >
             <ResponsiveContainer width='100%' height={280}>
-                <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <LineChart
+                    data={chartData}
+                    margin={{
+                        top: 10,
+                        right: 10,
+                        left: 0,
+                        bottom: 0
+                    }}
+                >
                     <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />
                     <YAxis
                         stroke='var(--color-text-muted)'

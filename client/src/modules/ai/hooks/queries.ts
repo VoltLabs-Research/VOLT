@@ -1,37 +1,46 @@
-import { useMutation } from '@tanstack/react-query';
-import { buildKeys, createQuery, queryClient, withSuccess, type MutationOptions} from '@/shared/infrastructure/query';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { ChatTransport, UIMessage } from 'ai';
+import { createConversationStreamTransport } from '../services/stream-transport';
 import service from '../api/service';
+import { buildKeys, createQuery, queryClient, withSuccess } from '@/shared/infrastructure/query';
+import { useMutation } from '@tanstack/react-query';
 import type { AIConversation } from '@/modules/ai/api/entities/ai-conversation';
 import type { CreateAIConversationParams, CreateAIConversationResult } from '@/modules/ai/api/dtos/create-ai-conversation';
-import type { CreateConversationStreamTransportParams } from '@/modules/ai/api/dtos/create-conversation-stream-transport';
+import type {
+    CreateConversationStreamTransportParams,
+    CreateConversationStreamTransportResult
+} from '@/modules/ai/api/dtos/create-conversation-stream-transport';
 import type { ListAIConversationMessagesParams } from '@/modules/ai/api/dtos/list-ai-conversation-messages';
 import type { ListAIConversationsParams } from '@/modules/ai/api/dtos/list-ai-conversations';
 import type { UpdateAIConversationParams } from '@/modules/ai/api/dtos/update-ai-conversation';
+import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { MutationOptions } from '@/shared/infrastructure/query';
 
 export interface ConversationsQueryParams {
     teamId: string;
     params?: ListAIConversationsParams;
-}
+};
 
 export interface ConversationMessagesQueryParams {
     teamId: string;
     conversationId: string;
     params?: ListAIConversationMessagesParams;
-}
+};
 
-type DeleteConversationVariables = { conversationId: string };
-type UpdateConversationVariables = { conversationId: string } & UpdateAIConversationParams;
+interface AIQueryKeyMap {
+    conversations: ConversationsQueryParams;
+    messages: ConversationMessagesQueryParams;
+};
+
+interface DeleteConversationVariables {
+    conversationId: string;
+};
+
+type UpdateConversationVariables = DeleteConversationVariables & UpdateAIConversationParams;
 
 export interface ConversationMutationOptions {
     conversationsQueryParams?: ConversationsQueryParams;
-}
+};
 
-const KEYS = buildKeys<{
-    conversations: ConversationsQueryParams;
-    messages: ConversationMessagesQueryParams;
-}>('ai');
+const KEYS = buildKeys<AIQueryKeyMap>('ai');
 
 export const conversationsQuery = createQuery(
     KEYS.conversations,
@@ -59,7 +68,15 @@ const patchConversations = (
 
     queryClient.setQueryData<PaginatedResponse<AIConversation>>(
         KEYS.conversations(queryParams),
-        (current) => (current ? updater(current) : current)
+        (current) => {
+            let nextValue = current;
+
+            if (current) {
+                nextValue = updater(current);
+            }
+
+            return nextValue;
+        }
     );
 };
 
@@ -81,9 +98,7 @@ export const buildConversationMessagesQueryParams = (
     params
 });
 
-export const invalidateConversationMessagesQuery = (params: ConversationMessagesQueryParams) => {
-    return messagesQuery.invalidate(params);
-};
+export const invalidateConversationMessagesQuery = messagesQuery.invalidate;
 
 export const invalidateConversationsQueries = () => {
     return queryClient.invalidateQueries({ queryKey: KEYS.conversations() });
@@ -152,13 +167,23 @@ export const useRenameConversationMutation = (
         ...options,
         mutationFn: service.updateConversation,
         onSuccess: withSuccess((updatedConversation, variables) => {
+            const updatedConversations = (current: PaginatedResponse<AIConversation>) => {
+                const conversations = current.data.map((conversation) => {
+                    if (conversation._id === variables.conversationId) {
+                        return updatedConversation;
+                    }
+
+                    return conversation;
+                });
+
+                return {
+                    ...current,
+                    data: sortConversations(conversations)
+                };
+            };
+
             patchConversations(conversationsQueryParams, (current) => ({
-                ...current,
-                data: sortConversations(current.data.map((conversation) => (
-                    conversation._id === variables.conversationId
-                        ? updatedConversation
-                        : conversation
-                )))
+                ...updatedConversations(current)
             }));
         }, options)
     });
@@ -166,6 +191,6 @@ export const useRenameConversationMutation = (
 
 export const resolveConversationStreamTransport = (
     params: CreateConversationStreamTransportParams
-): ChatTransport<UIMessage> => {
-    return service.createStreamTransport(params) as unknown as ChatTransport<UIMessage>;
+): CreateConversationStreamTransportResult => {
+    return createConversationStreamTransport(params);
 };

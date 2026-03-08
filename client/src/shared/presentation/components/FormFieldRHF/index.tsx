@@ -1,36 +1,29 @@
-import { useEffect, useMemo, useRef, useState, useCallback, type ReactNode, type KeyboardEvent, type ChangeEvent } from 'react';
-import { Controller, type Control, type FieldValues, type Path } from 'react-hook-form';
-import { AlertCircle } from 'lucide-react';
-import {
-    useFloating,
-    useDismiss,
-    useInteractions,
-    FloatingPortal,
-    offset,
-    flip,
-    shift,
-    size,
-    autoUpdate
-} from '@floating-ui/react';
-import Container from '@/shared/presentation/components/Container';
-import Select, { type SelectOption } from '@/shared/presentation/components/Select';
-import LiquidToggle from '@/shared/presentation/components/LiquidToggle';
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import { cn } from '@/shared/utils';
+import Container from '@/shared/presentation/components/Container';
+import LiquidToggle from '@/shared/presentation/components/LiquidToggle';
+import Select from '@/shared/presentation/components/Select';
 import './FormField.css';
+import { useFloating, useDismiss, useInteractions, FloatingPortal, offset, flip, shift, size, autoUpdate } from '@floating-ui/react';
+import { AlertCircle } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { Controller } from 'react-hook-form';
+import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { ReactNode, KeyboardEvent, ChangeEvent } from 'react';
+import type { Control, FieldValues, Path } from 'react-hook-form';
 
 export type { SelectOption };
 
 export interface FormFieldAutocompleteOption {
     value: string;
     label?: string;
-}
+};
 
 export interface FormFieldAutocompleteConfig {
     trigger?: string;
     options: Array<string | number | FormFieldAutocompleteOption>;
     maxItems?: number;
-}
+};
 
 interface SharedFieldProps {
     label?: string;
@@ -50,7 +43,7 @@ interface SharedFieldProps {
     inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
     isLoading?: boolean;
     error?: string;
-}
+};
 
 interface ControlledProps<TForm extends FieldValues> extends SharedFieldProps {
     name: Path<TForm>;
@@ -61,7 +54,7 @@ interface ControlledProps<TForm extends FieldValues> extends SharedFieldProps {
     fieldKey?: never;
     fieldValue?: never;
     onFieldChange?: never;
-}
+};
 
 interface UncontrolledProps extends SharedFieldProps {
     name?: string;
@@ -72,7 +65,7 @@ interface UncontrolledProps extends SharedFieldProps {
     fieldKey?: never;
     fieldValue?: never;
     onFieldChange?: never;
-}
+};
 
 interface CanvasStyleProps extends SharedFieldProps {
     name?: never;
@@ -83,7 +76,7 @@ interface CanvasStyleProps extends SharedFieldProps {
     fieldKey: string;
     fieldValue: string | number | boolean;
     onFieldChange: (key: string, value: string | number | boolean) => void;
-}
+};
 
 type FormFieldRHFProps<TForm extends FieldValues = FieldValues> =
     | ControlledProps<TForm>
@@ -244,7 +237,7 @@ interface ControllerField {
     onBlur: () => void;
     name: string;
     ref: React.Ref<HTMLInputElement>;
-}
+};
 
 interface FieldRendererProps {
     field: ControllerField;
@@ -265,7 +258,7 @@ interface FieldRendererProps {
     autocomplete?: FormFieldAutocompleteConfig;
     inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
     isLoading: boolean;
-}
+};
 
 const FieldRenderer = (props: FieldRendererProps) => {
     const { variant } = props;
@@ -400,7 +393,7 @@ const DefaultRenderer = ({
 
 interface InlineCanvasRendererExplicitProps extends FieldRendererProps {
     variant: 'inline' | 'canvas';
-}
+};
 
 const InlineCanvasRenderer = ({
     field,

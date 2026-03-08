@@ -1,0 +1,13 @@
+.user-badge{
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+}
+
+.user-badge-info{
+    min-width: 0;
+    flex: 1;
+}
+
+.user-badge-email{
+    display: block;
+}

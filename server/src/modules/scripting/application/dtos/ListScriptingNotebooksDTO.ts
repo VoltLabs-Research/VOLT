@@ -6,6 +6,6 @@ export interface ListScriptingNotebooksInputDTO {
     trajectoryId?: string;
     page?: number | string;
     limit?: number | string;
-}
+};
 
-export interface ListScriptingNotebooksOutputDTO extends PaginatedResult<ScriptingNotebookDTO> {}
+export interface ListScriptingNotebooksOutputDTO extends PaginatedResult<ScriptingNotebookDTO> {};

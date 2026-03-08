@@ -1,11 +1,11 @@
-import { IDomainEvent } from './IDomainEvent';
-import { IEventHandler } from './IEventHandler';
+import type { IDomainEvent } from './IDomainEvent';
+import type { IEventHandler } from './IEventHandler';
 
-export interface IEventBus{
+export interface IEventBus {
     publish(event: IDomainEvent): Promise<void>;
 
-    subscribe<T extends IDomainEvent>(
+    subscribe<TPayload, TEvent extends IDomainEvent<TPayload>>(
         eventName: string,
-        handler: IEventHandler<T>
+        handler: IEventHandler<TEvent>
     ): Promise<void>;
 };

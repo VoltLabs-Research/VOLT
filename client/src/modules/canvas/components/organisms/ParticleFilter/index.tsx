@@ -1,27 +1,40 @@
-import useParticleFilter, { OPERATORS, ACTIONS, type FilterOperator, type FilterAction } from '../../../hooks/use-particle-filter';
+import { ACTIONS, OPERATORS } from '../../../hooks/use-particle-filter';
+import useParticleFilter from '../../../hooks/use-particle-filter';
+
 import Button from '@/shared/presentation/components/Button';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Container from '@/shared/presentation/components/Container';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+
+import type { FilterAction, FilterOperator } from '../../../hooks/use-particle-filter';
+
 import './ParticleFilter.css';
+
+interface SelectOption {
+    value: string;
+    title: string;
+};
+
+interface PreviewStatsProps {
+    percentage: string;
+};
+
+interface ErrorMessageProps {
+    error: string;
+};
+
+interface SelectFieldConfig {
+    key: string;
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    options: SelectOption[];
+};
 
 interface ParticleFilterProps {
     trajectoryId?: string;
     analysisId?: string;
     currentTimestep?: number;
-}
-
-const PreviewStats = ({ percentage }: { percentage: string }) => (
-    <Container className="canvas-filter-preview radius-sm d-flex column gap-05">
-        <Container className="d-flex content-between">
-            <span>Selection</span>
-            <span className="color-primary">{percentage}% of total</span>
-        </Container>
-    </Container>
-);
-
-const ErrorMessage = ({ error }: { error: string }) => (
-    <Container className="canvas-filter-error font-size-05">{error}</Container>
-);
+};
 
 interface PreviewResultViewProps {
     percentage: string;
@@ -31,7 +44,37 @@ interface PreviewResultViewProps {
     isApplying: boolean;
     onApply: () => void;
     onCancel: () => void;
-}
+};
+
+interface FilterFormViewProps {
+    property: string;
+    propertyOptions: SelectOption[];
+    onPropertyChange: (value: string) => void;
+    operator: FilterOperator;
+    setOperator: (operator: FilterOperator) => void;
+    value: number;
+    setValue: (value: number) => void;
+    valueSuggestions: number[];
+    onFetchSuggestions: () => void;
+    isLoadingSuggestions: boolean;
+    error: string | null;
+    isLoadingPreview: boolean;
+    canPreview: boolean;
+    onPreview: () => void;
+};
+
+const PreviewStats = ({ percentage }: PreviewStatsProps) => (
+    <Container className="canvas-filter-preview radius-sm d-flex column gap-05">
+        <Container className="d-flex content-between">
+            <span>Selection</span>
+            <span className="color-primary">{percentage}% of total</span>
+        </Container>
+    </Container>
+);
+
+const ErrorMessage = ({ error }: ErrorMessageProps) => (
+    <Container className="canvas-filter-error font-size-05">{error}</Container>
+);
 
 const PreviewResultView = ({
     percentage,
@@ -51,7 +94,7 @@ const PreviewResultView = ({
                 fieldType="select"
                 label="Action"
                 fieldValue={action}
-                onFieldChange={(_, value) => setAction(value as FilterAction)}
+                onFieldChange={(_, value) => setAction(String(value) as FilterAction)}
                 options={ACTIONS}
                 variant="canvas"
             />
@@ -89,23 +132,6 @@ const PreviewResultView = ({
     </Container>
 );
 
-interface FilterFormViewProps {
-    property: string;
-    propertyOptions: { value: string; title: string }[];
-    onPropertyChange: (value: string) => void;
-    operator: FilterOperator;
-    setOperator: (op: FilterOperator) => void;
-    value: number;
-    setValue: (val: number) => void;
-    valueSuggestions: number[];
-    onFetchSuggestions: () => void;
-    isLoadingSuggestions: boolean;
-    error: string | null;
-    isLoadingPreview: boolean;
-    canPreview: boolean;
-    onPreview: () => void;
-}
-
 const FilterFormView = ({
     property,
     propertyOptions,
@@ -122,23 +148,39 @@ const FilterFormView = ({
     canPreview,
     onPreview
 }: FilterFormViewProps) => {
-    const selectFields: { key: string; label: string; value: string; onChange: (v: string) => void; options: { value: string; title: string }[] }[] = [
-        { key: 'property', label: 'Property', value: property, onChange: onPropertyChange, options: propertyOptions },
-        { key: 'operator', label: 'Operator', value: operator, onChange: (v) => setOperator(v as FilterOperator), options: OPERATORS }
+    const handleOperatorChange = (value: string) => {
+        setOperator(value as FilterOperator);
+    };
+
+    const selectFields: SelectFieldConfig[] = [
+        {
+            key: 'property',
+            label: 'Property',
+            value: property,
+            onChange: onPropertyChange,
+            options: propertyOptions
+        },
+        {
+            key: 'operator',
+            label: 'Operator',
+            value: operator,
+            onChange: handleOperatorChange,
+            options: OPERATORS
+        }
     ];
 
     return (
         <Container className="canvas-filter-panel d-flex column gap-05">
             <Container className="d-flex column gap-05">
-                {selectFields.map((f) => (
+                {selectFields.map((field) => (
                     <FormFieldRHF
-                        key={f.key}
-                        fieldKey={f.key}
+                        key={field.key}
+                        fieldKey={field.key}
                         fieldType="select"
-                        label={f.label}
-                        fieldValue={f.value}
-                        onFieldChange={(_, val) => f.onChange(String(val))}
-                        options={f.options}
+                        label={field.label}
+                        fieldValue={field.value}
+                        onFieldChange={(_, value) => field.onChange(String(value))}
+                        options={field.options}
                         variant="canvas"
                     />
                 ))}
@@ -146,7 +188,7 @@ const FilterFormView = ({
                 <FormFieldRHF
                     fieldKey="value"
                     fieldType="input"
-                    onFieldChange={(_, val) => setValue(Number(val))}
+                    onFieldChange={(_, nextValue) => setValue(Number(nextValue))}
                     fieldValue={value}
                     label="Value"
                     suggestions={valueSuggestions}
@@ -200,7 +242,11 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
         isApplying,
         handleApplyAction,
         error
-    } = useParticleFilter({ trajectoryId, analysisId, currentTimestep });
+    } = useParticleFilter({
+        trajectoryId,
+        analysisId,
+        currentTimestep
+    });
 
     if (previewResult) {
         return (

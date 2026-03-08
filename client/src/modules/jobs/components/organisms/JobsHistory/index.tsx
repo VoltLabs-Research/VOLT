@@ -1,11 +1,12 @@
-import { useMemo } from 'react';
-import { Inbox } from 'lucide-react';
 import JobSkeleton from '@/modules/jobs/components/atoms/JobSkeleton';
 import JobGroup from '@/modules/jobs/components/molecules/JobGroup';
-import FrameGroup from '@/modules/jobs/components/molecules/JobGroup/FrameGroup';
+import FrameGroup from '@/modules/jobs/components/molecules/FrameGroup';
 import Container from '@/shared/presentation/components/Container';
-import type { TrajectoryJobGroup as TJG, Job } from '@/modules/jobs/api/entities/job';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import { Inbox } from 'lucide-react';
+import { useMemo } from 'react';
+import type { ReactNode } from 'react';
+import type { TrajectoryJobGroup as TJG, Job } from '@/modules/jobs/api/entities/job';
 
 interface JobsHistoryProps {
     trajectoryId?: string;
@@ -14,7 +15,7 @@ interface JobsHistoryProps {
     isConnected: boolean;
     isLoading: boolean;
     displayMode?: 'full' | 'children-only';
-}
+};
 
 const JobsHistory = ({
     trajectoryId,
@@ -43,34 +44,39 @@ const JobsHistory = ({
     }, [groups, trajectoryId, queueFilter]);
 
     const shouldShowSkeleton = !isConnected || isLoading;
+    let content: ReactNode = filteredGroups.map((group: TJG, index: number) => {
+        if (displayMode === 'children-only') {
+            return group.frameGroups.map((frame) => (
+                <div key={`${group.trajectoryId}-${frame.timestep}`} className='job-group-children'>
+                    <FrameGroup frame={frame} />
+                </div>
+            ));
+        }
+
+        return (
+            <JobGroup
+                key={group.trajectoryId}
+                group={group}
+                defaultExpanded={index === 0}
+            />
+        );
+    });
+
+    if (shouldShowSkeleton) {
+        content = <JobSkeleton />;
+    } else if (filteredGroups.length === 0) {
+        content = (
+            <EmptyState
+                title='No events to display'
+                description='No jobs match the current filters yet.'
+                icon={<Inbox size={24} strokeWidth={1} className='color-muted' />}
+            />
+        );
+    }
 
     return (
         <Container className='d-flex column gap-05 h-max'>
-            {shouldShowSkeleton ? (
-                <JobSkeleton />
-            ) : filteredGroups.length === 0 ? (
-                <EmptyState
-                    title='No events to display'
-                    description='No jobs match the current filters yet.'
-                    icon={<Inbox size={24} strokeWidth={1} className="color-muted" />}
-                />
-            ) : (
-                filteredGroups.map((group: TJG, index: number) =>
-                    displayMode === 'children-only' ? (
-                        group.frameGroups.map((frame) => (
-                            <div key={`${group.trajectoryId}-${frame.timestep}`} className='job-group-children'>
-                                <FrameGroup frame={frame} />
-                            </div>
-                        ))
-                    ) : (
-                        <JobGroup
-                            key={group.trajectoryId}
-                            group={group}
-                            defaultExpanded={index === 0}
-                        />
-                    )
-                )
-            )}
+            {content}
         </Container>
     );
 };

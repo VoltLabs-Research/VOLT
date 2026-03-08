@@ -1,21 +1,33 @@
-import { container } from 'tsyringe';
 import { AI_TOKENS } from './AITokens';
-import AIConversationRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIConversationRepository';
-import AIMessageRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIMessageRepository';
-import AIToolService from '@modules/ai/application/services/AIToolService';
-import AIMessageDTOMapper from '@modules/ai/application/services/AIMessageDTOMapper';
-import AIUIMessageUtils from '@modules/ai/application/services/AIUIMessageUtils';
-import AIResponseMessagePartsMapper from '@modules/ai/application/services/AIResponseMessagePartsMapper';
-import ListAIConversationsUseCase from '@modules/ai/application/use-cases/ListAIConversationsUseCase';
+import AIMessageDTOMapper from '@modules/ai/services/AIMessageDTOMapper';
+import AIResponseMessagePartsMapper from '@modules/ai/services/AIResponseMessagePartsMapper';
+import AIToolService from '@modules/ai/services/AIToolService';
+import AIUIMessageUtils from '@modules/ai/services/AIUIMessageUtils';
 import CreateAIConversationUseCase from '@modules/ai/application/use-cases/CreateAIConversationUseCase';
+import DeleteAIConversationUseCase from '@modules/ai/application/use-cases/DeleteAIConversationUseCase';
 import ListAIConversationMessagesUseCase from '@modules/ai/application/use-cases/ListAIConversationMessagesUseCase';
+import ListAIConversationsUseCase from '@modules/ai/application/use-cases/ListAIConversationsUseCase';
 import SendAIConversationMessageUseCase from '@modules/ai/application/use-cases/SendAIConversationMessageUseCase';
 import UpdateAIConversationUseCase from '@modules/ai/application/use-cases/UpdateAIConversationUseCase';
-import DeleteAIConversationUseCase from '@modules/ai/application/use-cases/DeleteAIConversationUseCase';
-import AISDKChatTransport from '@modules/ai/infrastructure/services/AISDKChatTransport';
-import AIProviderModelDiscoveryAdapter from '@modules/ai/infrastructure/services/AIProviderModelDiscoveryAdapter';
+import AIProviderModelDiscoveryAdapter from '@modules/ai/services/AIProviderModelDiscoveryAdapter';
+import AISDKChatTransport from '@modules/ai/services/AISDKChatTransport';
+import AIConversationRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIConversationRepository';
+import AIMessageRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIMessageRepository';
+import { DeleteConversationAITool } from '@modules/ai/application/ai-tools/DeleteConversationAITool';
+import { ListConversationsAITool } from '@modules/ai/application/ai-tools/ListConversationsAITool';
+import { UpdateConversationAITool } from '@modules/ai/application/ai-tools/UpdateConversationAITool';
+import type { AITool } from '@shared/application/ai/AITool';
+import { container, Lifecycle } from 'tsyringe';
 
-import * as aiModuleTools from '@modules/ai/application/ai-tools/index';
+interface AIToolClassProvider {
+    useClass: new (...args: any[]) => AITool;
+};
+
+const AI_TOOL_CLASSES: AIToolClassProvider[] = [
+    { useClass: ListConversationsAITool },
+    { useClass: DeleteConversationAITool },
+    { useClass: UpdateConversationAITool }
+];
 
 export const registerAIDependencies = () => {
     container.registerSingleton(AI_TOKENS.AIConversationRepository, AIConversationRepository);
@@ -33,7 +45,9 @@ export const registerAIDependencies = () => {
     container.registerSingleton(AI_TOKENS.UpdateAIConversationUseCase, UpdateAIConversationUseCase);
     container.registerSingleton(AI_TOKENS.DeleteAIConversationUseCase, DeleteAIConversationUseCase);
 
-    for (const ToolClass of Object.values(aiModuleTools)) {
-        container.registerSingleton(AI_TOKENS.AITool, ToolClass as any);
+    for (const toolClassProvider of AI_TOOL_CLASSES) {
+        container.register(AI_TOKENS.AITool, { useClass: toolClassProvider.useClass }, {
+            lifecycle: Lifecycle.Singleton
+        });
     }
 };

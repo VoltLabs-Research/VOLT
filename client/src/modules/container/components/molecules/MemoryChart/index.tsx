@@ -1,3 +1,4 @@
+import { formatChartTime } from '../../../utilities/format-chart-time';
 import { useEffect, useMemo } from 'react';
 import {
     AreaChart,
@@ -12,8 +13,7 @@ import { MemoryStick } from 'lucide-react';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
 import useTimeSeriesBuffer from '@/shared/presentation/hooks/use-time-series-buffer';
-import { formatChartTime } from '../../../utilities/format-chart-time';
-import type { MemoryData } from '../../../api/entities/container-stats-view';
+import type { MemoryData } from '../../../services/container-stats-view';
 
 const MAX_HISTORY_POINTS = 60;
 
@@ -26,13 +26,29 @@ interface MemoryChartProps {
     data: MemoryData | null;
     isLoading?: boolean;
     unit?: 'MB' | 'GB';
-}
+};
 
 interface DataPoint {
     time: string;
     used: number;
     free: number;
-}
+};
+
+interface MemoryTooltipEntry {
+    name?: string;
+    value?: number | string;
+    color?: string;
+    payload?: DataPoint;
+};
+
+interface MemoryTooltipContentProps {
+    active?: boolean;
+    payload?: readonly unknown[];
+};
+
+const isMemoryTooltipEntry = (value: unknown): value is MemoryTooltipEntry => {
+    return typeof value === 'object' && value !== null && 'payload' in value;
+};
 
 const MemoryChart = ({ data, isLoading = false, unit = 'GB' }: MemoryChartProps) => {
     const { history, pushPoint } = useTimeSeriesBuffer<DataPoint>({
@@ -53,7 +69,13 @@ const MemoryChart = ({ data, isLoading = false, unit = 'GB' }: MemoryChartProps)
     }, [data, pushPoint]);
 
     const stats = useMemo(() => {
-        if (!history.length) return { peak: 0, avg: 0, total: 0 };
+        if (!history.length) {
+            return {
+                peak: 0,
+                avg: 0,
+                total: 0
+            };
+        }
 
         const usedValues = history.map((d) => d.used);
         return {
@@ -68,24 +90,33 @@ const MemoryChart = ({ data, isLoading = false, unit = 'GB' }: MemoryChartProps)
         return `${value.toFixed(1)} GB`;
     };
 
-    const renderTooltip = ({ active, payload }: Record<string, unknown>) => {
+    const renderTooltip = ({ active, payload }: MemoryTooltipContentProps) => {
         if (!active || !Array.isArray(payload) || payload.length < 1) return null;
+
+        const firstEntry = payload[0];
+        if (!isMemoryTooltipEntry(firstEntry)) {
+            return null;
+        }
+
+        const items = payload.filter(isMemoryTooltipEntry).map((entry) => ({
+            label: String(entry.name ?? ''),
+            value: formatValue(Number(entry.value)),
+            color: String(entry.color ?? '')
+        }));
 
         return (
             <ChartTooltip
-                title={String((payload[0] as Record<string, unknown>).payload
-                    ? String(((payload[0] as Record<string, unknown>).payload as Record<string, unknown>).time ?? '')
-                    : '')}
-                items={payload.map((entry: Record<string, unknown>) => ({
-                    label: String(entry.name ?? ''),
-                    value: formatValue(Number(entry.value)),
-                    color: String(entry.color ?? '')
-                }))}
+                title={String(firstEntry.payload?.time ?? '')}
+                items={items}
             />
         );
     };
 
-    const emptyData: DataPoint[] = [{ time: '', used: 0, free: 0 }];
+    const emptyData: DataPoint[] = [{
+        time: '',
+        used: 0,
+        free: 0
+    }];
 
     return (
         <ChartContainer
@@ -102,7 +133,12 @@ const MemoryChart = ({ data, isLoading = false, unit = 'GB' }: MemoryChartProps)
             <ResponsiveContainer width='100%' height={250}>
                 <AreaChart
                     data={history.length ? history : emptyData}
-                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                    margin={{
+                        top: 10,
+                        right: 10,
+                        left: 0,
+                        bottom: 0
+                    }}
                 >
                     <defs>
                         <linearGradient id='colorMemUsed' x1='0' y1='0' x2='0' y2='1'>
