@@ -4,12 +4,9 @@ import { z } from 'zod';
 import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 import type { UseCaseInstance } from '@shared/application/IUseCase';
 
-interface MutableToolDefinition<TInput extends Record<string, unknown>, TResult, TSchema extends z.ZodType<TInput>> {
-    description: string;
-    inputSchema: TSchema;
-    execute: (params: TInput) => Promise<TResult>;
-    needsApproval?: boolean | ((params: TInput) => boolean | Promise<boolean>);
-};
+type AIToolInput<TInput> = [TInput] extends [never] ? unknown : TInput;
+
+type AIToolNeedsApproval<TInput> = boolean | ((input: AIToolInput<TInput>) => boolean | Promise<boolean>);
 
 export abstract class AITool<
     TInput extends Record<string, unknown> = Record<string, unknown>,
@@ -23,40 +20,45 @@ export abstract class AITool<
 
     protected useCase?: UseCaseInstance;
 
-    protected needsApproval?: boolean | ((params: TInput) => boolean | Promise<boolean>);
+    protected needsApproval?: AIToolNeedsApproval<TInput>;
 
     execute?(params: TInput, scope: AIToolScope): Promise<TResult>;
 
     build(scope: AIToolScope): Record<string, Tool> {
         const customExecute = this.execute;
         const resolvedInputSchema = this.inputSchema ?? this.parameters;
-        const toolDefinition: MutableToolDefinition<TInput, TResult, TSchema> = {
-            description: this.description,
-            inputSchema: resolvedInputSchema,
-            execute: async (params: TInput): Promise<TResult> => {
-                if (customExecute) {
-                    return customExecute.call(this, params, scope);
-                }
-
-                if (this.useCase) {
-                    const result = await this.useCase.execute(Object.assign({}, params, scope));
-                    if (!result.success) {
-                        throw result.error;
-                    }
-
-                    return result.value as TResult;
-                }
-
-                throw new Error(`AI tool "${this.name}" requires an execute method or a use case.`);
+        const execute = async (params: TInput): Promise<TResult> => {
+            if (customExecute) {
+                return customExecute.call(this, params, scope);
             }
+
+            if (this.useCase) {
+                const result = await this.useCase.execute(Object.assign({}, params, scope));
+                if (!result.success) {
+                    throw result.error;
+                }
+
+                return result.value as TResult;
+            }
+
+            throw new Error(`AI tool "${this.name}" requires an execute method or a use case.`);
         };
 
-        if (this.needsApproval !== undefined) {
-            toolDefinition.needsApproval = this.needsApproval;
-        }
+        const toolDefinition = this.needsApproval === undefined
+            ? {
+                description: this.description,
+                inputSchema: resolvedInputSchema,
+                execute
+            }
+            : {
+                description: this.description,
+                inputSchema: resolvedInputSchema,
+                execute,
+                needsApproval: this.needsApproval
+            };
 
         return {
-            [this.name]: tool(toolDefinition as any)
+            [this.name]: tool(toolDefinition as unknown as Tool<TInput, TResult>)
         };
     }
 };

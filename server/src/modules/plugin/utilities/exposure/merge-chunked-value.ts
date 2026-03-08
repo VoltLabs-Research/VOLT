@@ -1,7 +1,9 @@
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+
 /**
  * Merges partial data chunks (arrays or objects) into a single structure.
  */
-const mergeChunkedValue = (target: any, incoming: any): any => {
+const mergeChunkedValue = (target: unknown, incoming: unknown): unknown => {
     if(incoming === null) return target;
     if(target === null) return incoming;
 
@@ -10,14 +12,13 @@ const mergeChunkedValue = (target: any, incoming: any): any => {
         return target;
     }
 
-    if(typeof target === 'object' && typeof incoming === 'object'){
-        for(const key in incoming){
+    if(isRecord(target) && isRecord(incoming)){
+        for(const [key, incomingValue] of Object.entries(incoming)){
             const targetValue = target[key];
-            const incomingValue = incoming[key];
 
             if(Array.isArray(targetValue) && Array.isArray(incomingValue)){
                 targetValue.push(...incomingValue);
-            }else if(typeof targetValue === 'object' && typeof incomingValue === 'object'){
+            }else if(isRecord(targetValue) && isRecord(incomingValue)){
                 target[key] = mergeChunkedValue(targetValue, incomingValue);
             }else{
                 target[key] = incomingValue;

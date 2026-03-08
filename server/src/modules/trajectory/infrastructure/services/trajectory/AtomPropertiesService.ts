@@ -12,6 +12,7 @@ import { getPropertyValues } from '@modules/trajectory/utilities/trajectory/get-
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { decodeMultiStream } from '@shared/infrastructure/utilities/msgpack';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import Analysis from '@modules/analysis/domain/entities/Analysis';
 import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 import mergeChunkedValue from '@modules/plugin/utilities/exposure/merge-chunked-value';
@@ -108,8 +109,11 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         let decoded: Record<string, unknown> | null = null;
 
         for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
-            if (message && typeof message === 'object') {
-                decoded = mergeChunkedValue(decoded, message);
+            if (isRecord(message)) {
+                const mergedPayload = mergeChunkedValue(decoded, message);
+                if (isRecord(mergedPayload)) {
+                    decoded = mergedPayload;
+                }
             }
         }
 
@@ -137,10 +141,9 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         const stream = pluginStream as unknown as AsyncIterable<Uint8Array>;
 
         for await (const message of decodeMultiStream(stream)) {
-            const decoded = message as Record<string, unknown> | null;
-            if (!decoded || typeof decoded !== 'object') continue;
+            if (!isRecord(message)) continue;
 
-            const perAtomData = this.normalizePerAtomProperties(decoded['per-atom-properties']);
+            const perAtomData = this.normalizePerAtomProperties(message['per-atom-properties']);
             if (!perAtomData) continue;
 
             let shouldBreak = false;
@@ -404,8 +407,11 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         let decoded: Record<string, unknown> | null = null;
 
         for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
-            if (message && typeof message === 'object') {
-                decoded = mergeChunkedValue(decoded, message);
+            if (isRecord(message)) {
+                const mergedPayload = mergeChunkedValue(decoded, message);
+                if (isRecord(mergedPayload)) {
+                    decoded = mergedPayload;
+                }
             }
         }
 

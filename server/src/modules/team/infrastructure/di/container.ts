@@ -36,26 +36,24 @@ import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
 import TeamAIIntegrationSecretCipher from '@modules/team/infrastructure/security/ai-integration/TeamAIIntegrationSecretCipher';
 import TeamJobsSocketModule from '@modules/team/socket/team/TeamJobsSocketModule';
 import TeamPresenceSocketModule from '@modules/team/socket/team-member/TeamPresenceSocketModule';
+import type { ClassProvider } from 'tsyringe';
 import { container } from 'tsyringe';
-import type { AITool } from '@shared/application/ai/AITool';
 
-type AIToolConstructor = new (...args: any[]) => AITool<any, unknown, any>;
-
-const TEAM_AI_TOOL_CLASSES: AIToolConstructor[] = [
-    ListTeamMembersAITool,
-    ListTeamRolesAITool,
-    ListPendingInvitationsAITool,
-    ListSecretKeysAITool,
-    CreateTeamRoleAITool,
-    UpdateTeamRoleAITool,
-    DeleteTeamRoleAITool,
-    SendTeamInvitationAITool,
-    DeleteTeamInvitationAITool,
-    RemoveTeamMemberAITool,
-    UpdateTeamMemberAITool,
-    CreateSecretKeyAITool,
-    RevokeSecretKeyAITool,
-    DeleteSecretKeyAITool
+const TEAM_AI_TOOL_CLASSES: ClassProvider<unknown>[] = [
+    { useClass: ListTeamMembersAITool },
+    { useClass: ListTeamRolesAITool },
+    { useClass: ListPendingInvitationsAITool },
+    { useClass: ListSecretKeysAITool },
+    { useClass: CreateTeamRoleAITool },
+    { useClass: UpdateTeamRoleAITool },
+    { useClass: DeleteTeamRoleAITool },
+    { useClass: SendTeamInvitationAITool },
+    { useClass: DeleteTeamInvitationAITool },
+    { useClass: RemoveTeamMemberAITool },
+    { useClass: UpdateTeamMemberAITool },
+    { useClass: CreateSecretKeyAITool },
+    { useClass: RevokeSecretKeyAITool },
+    { useClass: DeleteSecretKeyAITool }
 ];
 
 export const registerTeamDependencies = () => {
@@ -82,7 +80,7 @@ export const registerTeamDependencies = () => {
     container.register(SOCKET_TOKENS.SocketModule, { useToken: TEAM_TOKENS.TeamJobsSocketModule });
     container.register(SOCKET_TOKENS.SocketModule, { useToken: TEAM_TOKENS.TeamPresenceSocketModule });
 
-    for (const ToolClass of TEAM_AI_TOOL_CLASSES) {
-        container.registerSingleton<AITool>(AI_TOKENS.AITool, ToolClass);
+    for (const toolClassProvider of TEAM_AI_TOOL_CLASSES) {
+        container.register(AI_TOKENS.AITool, toolClassProvider);
     }
 };

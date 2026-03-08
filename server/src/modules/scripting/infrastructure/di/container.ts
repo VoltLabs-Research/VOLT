@@ -10,8 +10,10 @@ import { JupyterServerService } from '@modules/scripting/infrastructure/services
 import { JupyterSessionOrchestrator } from '@modules/scripting/infrastructure/services/JupyterSessionOrchestrator';
 import { RedisScriptingSessionLock } from '@modules/scripting/infrastructure/services/RedisScriptingSessionLock';
 import { SCRIPTING_TOKENS } from './ScriptingTokens';
+import type { ClassProvider } from 'tsyringe';
 import { container } from 'tsyringe';
-import type { AITool } from '@shared/application/ai/AITool';
+
+const SCRIPTING_AI_TOOL_CLASSES: ClassProvider<unknown>[] = scriptingAiTools.map((useClass) => ({ useClass }));
 
 export const registerScriptingDependencies = (): void => {
     container.registerSingleton(SCRIPTING_TOKENS.ScriptingNotebookRepository, ScriptingNotebookRepository);
@@ -26,7 +28,7 @@ export const registerScriptingDependencies = (): void => {
     container.registerSingleton(DeleteScriptingNotebookUseCase);
 
     // AI Tools
-    for (const ToolClass of scriptingAiTools) {
-        container.registerSingleton<AITool>(AI_TOKENS.AITool, ToolClass);
+    for (const toolClassProvider of SCRIPTING_AI_TOOL_CLASSES) {
+        container.register(AI_TOKENS.AITool, toolClassProvider);
     }
 };

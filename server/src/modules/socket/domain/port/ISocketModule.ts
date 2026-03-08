@@ -1,3 +1,5 @@
+import type { Socket } from 'socket.io';
+
 export interface ISocketConnectionUser {
     readonly _id: string;
     readonly firstName?: string;
@@ -5,7 +7,7 @@ export interface ISocketConnectionUser {
     readonly email?: string;
     readonly avatar?: string;
     readonly teams?: string[];
-}
+};
 
 export interface ISocketConnectionData {
     currentTeamId?: string;
@@ -18,7 +20,7 @@ export interface ISocketConnection {
     readonly user?: ISocketConnectionUser;
     data: ISocketConnectionData;
     readonly rooms: Set<string>;
-    nativeSocket?: any;
+    nativeSocket?: Socket;
 };
 
 /**

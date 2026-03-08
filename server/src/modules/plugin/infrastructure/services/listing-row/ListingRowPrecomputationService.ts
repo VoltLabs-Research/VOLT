@@ -14,6 +14,7 @@ import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTok
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { decodeMultiStream } from '@shared/infrastructure/utilities/msgpack';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import { injectable, inject } from 'tsyringe';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
@@ -259,8 +260,11 @@ export class ListingRowPrecomputationService {
         let decoded: Record<string, unknown> | null = null;
 
         for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array | Buffer>)) {
-            if (message && typeof message === 'object') {
-                decoded = mergeChunkedValue(decoded, message);
+            if (isRecord(message)) {
+                const mergedPayload = mergeChunkedValue(decoded, message);
+                if (isRecord(mergedPayload)) {
+                    decoded = mergedPayload;
+                }
             }
         }
 

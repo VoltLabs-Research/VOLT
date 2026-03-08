@@ -203,7 +203,7 @@ export default abstract class BaseSocketModule implements ISocketModule{
     /**
      * Wire a subscription pattern with presence for a specific event.
      */
-    protected wirePresenceSubscription<TPayload extends Record<string, any>>(
+    protected wirePresenceSubscription<TPayload extends Record<string, unknown>>(
         connection: ISocketConnection,
         cfg: {
             event: string;
