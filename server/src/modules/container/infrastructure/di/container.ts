@@ -16,14 +16,10 @@ import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/Container
 import { ContainerOwnershipService, DockerContainerService, TerminalService } from '@modules/container/infrastructure/services';
 import { ContainerSocketModule } from '@modules/container/socket';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import type { ClassProvider } from 'tsyringe';
 import { container, Lifecycle } from 'tsyringe';
-import type { AITool } from '@shared/application/ai/AITool';
 
-interface AIToolClassProvider {
-    useClass: new (...args: any[]) => AITool;
-};
-
-const CONTAINER_AI_TOOL_CLASSES: AIToolClassProvider[] = [
+const CONTAINER_AI_TOOL_CLASSES: ClassProvider<unknown>[] = [
     { useClass: CreateContainerAITool },
     { useClass: DeleteContainerAITool },
     { useClass: GetContainerByIdAITool },

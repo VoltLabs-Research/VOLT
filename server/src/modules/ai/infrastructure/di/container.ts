@@ -16,14 +16,10 @@ import AIMessageRepository from '@modules/ai/infrastructure/persistence/mongo/re
 import { DeleteConversationAITool } from '@modules/ai/application/ai-tools/DeleteConversationAITool';
 import { ListConversationsAITool } from '@modules/ai/application/ai-tools/ListConversationsAITool';
 import { UpdateConversationAITool } from '@modules/ai/application/ai-tools/UpdateConversationAITool';
-import type { AITool } from '@shared/application/ai/AITool';
+import type { ClassProvider } from 'tsyringe';
 import { container, Lifecycle } from 'tsyringe';
 
-interface AIToolClassProvider {
-    useClass: new (...args: any[]) => AITool;
-};
-
-const AI_TOOL_CLASSES: AIToolClassProvider[] = [
+const AI_TOOL_CLASSES: ClassProvider<unknown>[] = [
     { useClass: ListConversationsAITool },
     { useClass: DeleteConversationAITool },
     { useClass: UpdateConversationAITool }

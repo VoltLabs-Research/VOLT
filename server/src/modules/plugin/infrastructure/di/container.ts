@@ -46,7 +46,10 @@ import DebugSocketModule from '@modules/plugin/socket/DebugSocketModule';
 
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import type { ClassProvider } from 'tsyringe';
 import { container } from 'tsyringe';
+
+const PLUGIN_AI_TOOL_CLASSES: ClassProvider<unknown>[] = Object.values(pluginAiTools).map((useClass) => ({ useClass }));
 
 export const registerPluginDependencies = (): void => {
     container.registerSingleton(PLUGIN_TOKENS.PluginListingService, PluginListingService);
@@ -99,8 +102,8 @@ export const registerPluginDependencies = (): void => {
     container.registerSingleton(GetPluginExposureGLBUseCase);
     container.registerSingleton(GetPluginExposureExportUseCase);
 
-    for (const ToolClass of Object.values(pluginAiTools)) {
-        container.registerSingleton(AI_TOKENS.AITool, ToolClass as any);
+    for (const toolClassProvider of PLUGIN_AI_TOOL_CLASSES) {
+        container.register(AI_TOKENS.AITool, toolClassProvider);
     }
 };
 

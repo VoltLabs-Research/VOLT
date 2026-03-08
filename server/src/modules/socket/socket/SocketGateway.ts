@@ -17,6 +17,11 @@ import type { ISocketEmitterRuntime } from '@modules/socket/infrastructure/contr
 import type { ISocketEventRegistryRuntime } from '@modules/socket/infrastructure/contracts/ISocketEventRegistryRuntime';
 import type { ISocketRoomManagerRuntime } from '@modules/socket/infrastructure/contracts/ISocketRoomManagerRuntime';
 
+const SOCKET_CORS_ORIGINS = [
+    process.env.CLIENT_DEV_HOST,
+    process.env.CLIENT_HOST
+].filter((origin): origin is string => Boolean(origin));
+
 export interface AuthenticatedSocket extends Socket{
     user?: Awaited<ReturnType<AuthenticateSocketConnectionUseCase['execute']>>;
 };
@@ -33,10 +38,7 @@ export default class SocketGateway{
     private initialized = false;
     private modules: ISocketModule[] = [];
 
-    private corsOrigins: string[] = [
-        process.env.CLIENT_DEV_HOST as string,
-        process.env.CLIENT_HOST as string
-    ];
+    private corsOrigins = SOCKET_CORS_ORIGINS;
 
     private pingTimeout = 60_000;
     private pingInterval = 25_000;
@@ -64,7 +66,7 @@ export default class SocketGateway{
         SOCKET_TOKENS.SocketEventRegistry,
         SOCKET_TOKENS.AuthenticateSocketConnectionUseCase,
         SOCKET_TOKENS.SocketConnectionMapper
-    ] as const;
+    ];
 
     /**
      * Register a feature module (before initialize()).
@@ -152,7 +154,7 @@ export default class SocketGateway{
     async close(): Promise<void>{
         try{
             await Promise.all(this.modules.map((module) => module.onShutdown()));
-        }catch(error: any){
+        }catch(error: unknown){
             logger.error(`@socket-gateway - module shutdown error: ${error}`);
         }
 

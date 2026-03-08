@@ -30,7 +30,10 @@ import TrajectoryBackgroundProcessor from '@modules/trajectory/infrastructure/se
 import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
 import TrajectoryReader from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryReader';
 
+import type { ClassProvider } from 'tsyringe';
 import { container } from 'tsyringe';
+
+const TRAJECTORY_AI_TOOL_CLASSES: ClassProvider<unknown>[] = Object.values(trajectoryAiTools).map((useClass) => ({ useClass }));
 
 export const registerTrajectoryDependencies = (): void => {
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryRepository, TrajectoryRepository);
@@ -76,7 +79,7 @@ export const registerTrajectoryDependencies = (): void => {
     container.registerSingleton(JobStatusChangedEventHandler);
 
     // Register all AI Tools for discovery
-    for (const ToolClass of Object.values(trajectoryAiTools)) {
-        container.registerSingleton(AI_TOKENS.AITool, ToolClass as any);
+    for (const toolClassProvider of TRAJECTORY_AI_TOOL_CLASSES) {
+        container.register(AI_TOKENS.AITool, toolClassProvider);
     }
 };

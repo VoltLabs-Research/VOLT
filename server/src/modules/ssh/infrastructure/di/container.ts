@@ -6,6 +6,9 @@ import SSHImportQueue from '@modules/ssh/queues/SSHImportQueue';
 import SSHCredentialsCipher from '@modules/ssh/infrastructure/services/SSHCredentialsCipher';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import * as sshAiTools from '@modules/ssh/application/ai-tools';
+import type { ClassProvider } from 'tsyringe';
+
+const SSH_AI_TOOL_CLASSES: ClassProvider<unknown>[] = Object.values(sshAiTools).map((useClass) => ({ useClass }));
 
 export const registerSSHDependencies = () => {
     container.registerSingleton(SSH_TOKENS.SSHConnectionRepository, SSHConnectionRepository);
@@ -14,7 +17,7 @@ export const registerSSHDependencies = () => {
     container.registerSingleton(SSH_TOKENS.SSHCredentialsCipher, SSHCredentialsCipher);
 
     // AI Tools
-    for (const ToolClass of Object.values(sshAiTools)) {
-        container.registerSingleton(AI_TOKENS.AITool, ToolClass as any);
+    for (const toolClassProvider of SSH_AI_TOOL_CLASSES) {
+        container.register(AI_TOKENS.AITool, toolClassProvider);
     }
 };
