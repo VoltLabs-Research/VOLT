@@ -1,17 +1,24 @@
+import './DashboardInAppActivity.css';
+import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import Container from '@/shared/presentation/components/Container';
+import Title from '@/shared/presentation/components/Title';
 import { useMemo } from 'react';
 import {
-    RadarChart,
-    Radar,
     PolarGrid,
     PolarAngleAxis,
+    Radar,
+    RadarChart,
     ResponsiveContainer,
     Tooltip
 } from 'recharts';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
-import './DashboardInAppActivity.css';
+import type { TooltipContentProps } from 'recharts';
+
+interface DashboardInAppActivityBucket {
+    minutes: number;
+    actions: number;
+    count: number;
+};
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -19,20 +26,43 @@ const formatMinutes = (minutes: number): string => {
     if (minutes < 60) return `${Math.round(minutes)}m`;
     const hours = Math.floor(minutes / 60);
     const mins = Math.round(minutes % 60);
-    if (hours < 24) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    if (hours < 24) {
+        let formattedHours = `${hours}h`;
+        if (mins > 0) {
+            formattedHours = `${hours}h ${mins}m`;
+        }
+
+        return formattedHours;
+    }
+
     const days = Math.floor(hours / 24);
     const remHours = hours % 24;
-    return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+    let formattedDays = `${days}d`;
+    if (remHours > 0) {
+        formattedDays = `${days}d ${remHours}h`;
+    }
+
+    return formattedDays;
 };
 
-// Map JS getDay() (0=Sun) to Mon-first index (0=Mon)
-const toMondayIndex = (jsDay: number): number => (jsDay === 0 ? 6 : jsDay - 1);
+const toMondayIndex = (jsDay: number): number => {
+    let mondayIndex = jsDay - 1;
+    if (jsDay === 0) {
+        mondayIndex = 6;
+    }
+
+    return mondayIndex;
+};
 
 const DashboardInAppActivity = () => {
     const { activityData, isLoading, accessDenied, accessDeniedMessage } = useDailyActivityData();
 
     const { radarData, totalMinutes, totalActions, peakDay } = useMemo(() => {
-        const buckets = DAY_LABELS.map(() => ({ minutes: 0, actions: 0, count: 0 }));
+        const buckets = DAY_LABELS.map<DashboardInAppActivityBucket>(() => ({
+            minutes: 0,
+            actions: 0,
+            count: 0
+        }));
         let sumMinutes = 0;
         let sumActions = 0;
 
@@ -52,9 +82,21 @@ const DashboardInAppActivity = () => {
 
         const data = DAY_LABELS.map((label, i) => {
             const b = buckets[i];
-            const avgMinutes = b.count > 0 ? Math.round(b.minutes / b.count) : 0;
-            const avgActions = b.count > 0 ? Math.round((b.actions / b.count) * 10) / 10 : 0;
-            return { day: label, minutes: avgMinutes, actions: avgActions };
+            let avgMinutes = 0;
+            if (b.count > 0) {
+                avgMinutes = Math.round(b.minutes / b.count);
+            }
+
+            let avgActions = 0;
+            if (b.count > 0) {
+                avgActions = Math.round((b.actions / b.count) * 10) / 10;
+            }
+
+            return {
+                day: label,
+                minutes: avgMinutes,
+                actions: avgActions
+            };
         });
 
         // Find peak day
@@ -75,21 +117,28 @@ const DashboardInAppActivity = () => {
         };
     }, [activityData]);
 
-    const renderTooltip = ({ active, payload, label }: any) => {
+    const renderTooltip = ({ active, payload, label }: TooltipContentProps<number, string>) => {
         if (!active || !payload?.length) return null;
 
         return (
             <div className='dashboard-chart-tooltip'>
                 <span className='dashboard-chart-tooltip-label'>{label}</span>
-                {payload.map((entry: any, i: number) => (
-                    <div key={i} className='dashboard-chart-tooltip-row'>
-                        <span className='dashboard-chart-tooltip-dot' style={{ background: entry.color }} />
-                        <span className='dashboard-chart-tooltip-name'>{entry.name}</span>
-                        <span className='dashboard-chart-tooltip-value'>
-                            {entry.dataKey === 'minutes' ? formatMinutes(entry.value) : entry.value}
-                        </span>
-                    </div>
-                ))}
+                {payload.map((entry, i: number) => {
+                    let value = entry.value;
+                    if (entry.dataKey === 'minutes' && typeof entry.value === 'number') {
+                        value = formatMinutes(entry.value);
+                    }
+
+                    return (
+                        <div key={i} className='dashboard-chart-tooltip-row'>
+                            <span className='dashboard-chart-tooltip-dot' style={{ background: entry.color }} />
+                            <span className='dashboard-chart-tooltip-name'>{entry.name}</span>
+                            <span className='dashboard-chart-tooltip-value'>
+                                {value}
+                            </span>
+                        </div>
+                    );
+                })}
             </div>
         );
     };
@@ -114,6 +163,50 @@ const DashboardInAppActivity = () => {
     }
 
     const hasData = activityData.length > 0;
+    let chartContent = (
+        <Container className='d-flex flex-center h-max'>
+            <span className='color-muted font-size-2'>No activity yet</span>
+        </Container>
+    );
+
+    if (hasData) {
+        chartContent = (
+            <ResponsiveContainer width='100%' height={250}>
+                <RadarChart
+                    data={radarData}
+                    cx='50%'
+                    cy='50%'
+                    outerRadius='70%'
+                >
+                    <PolarGrid
+                        stroke='var(--color-border-strong)'
+                        strokeDasharray='4 4'
+                    />
+                    <PolarAngleAxis
+                        dataKey='day'
+                        tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
+                    />
+                    <Tooltip content={renderTooltip} />
+                    <Radar
+                        name='Avg. time'
+                        dataKey='minutes'
+                        stroke='var(--accent-blue)'
+                        fill='var(--accent-blue)'
+                        fillOpacity={0.12}
+                        strokeWidth={2}
+                    />
+                    <Radar
+                        name='Avg. actions'
+                        dataKey='actions'
+                        stroke='var(--accent-green)'
+                        fill='var(--accent-green)'
+                        fillOpacity={0.06}
+                        strokeWidth={1.5}
+                    />
+                </RadarChart>
+            </ResponsiveContainer>
+        );
+    }
 
     return (
         <Container className='dashboard-inapp-activity-card'>
@@ -123,46 +216,7 @@ const DashboardInAppActivity = () => {
             </Container>
 
             <Container className='dashboard-inapp-activity-inner'>
-                {hasData ? (
-                    <ResponsiveContainer width='100%' height={250}>
-                        <RadarChart
-                            data={radarData}
-                            cx='50%'
-                            cy='50%'
-                            outerRadius='70%'
-                        >
-                            <PolarGrid
-                                stroke='var(--color-border-strong)'
-                                strokeDasharray='4 4'
-                            />
-                            <PolarAngleAxis
-                                dataKey='day'
-                                tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
-                            />
-                            <Tooltip content={renderTooltip} />
-                            <Radar
-                                name='Avg. time'
-                                dataKey='minutes'
-                                stroke='var(--accent-blue)'
-                                fill='var(--accent-blue)'
-                                fillOpacity={0.12}
-                                strokeWidth={2}
-                            />
-                            <Radar
-                                name='Avg. actions'
-                                dataKey='actions'
-                                stroke='var(--accent-green)'
-                                fill='var(--accent-green)'
-                                fillOpacity={0.06}
-                                strokeWidth={1.5}
-                            />
-                        </RadarChart>
-                    </ResponsiveContainer>
-                ) : (
-                    <Container className='d-flex flex-center h-max'>
-                        <span className='color-muted font-size-2'>No activity yet</span>
-                    </Container>
-                )}
+                {chartContent}
             </Container>
 
             {hasData && (

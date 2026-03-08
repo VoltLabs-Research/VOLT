@@ -1,6 +1,6 @@
-import { singleton } from 'tsyringe';
-import { IQueueRegistry, QueueInfo } from '@modules/jobs/domain/port/IQueueRegistry';
 import logger from '@shared/infrastructure/logger';
+import { singleton } from 'tsyringe';
+import type { IQueueRegistry, QueueInfo } from '@modules/jobs/domain/port/IQueueRegistry';
 
 @singleton()
 export default class QueueRegistry implements IQueueRegistry {
@@ -28,4 +28,4 @@ export default class QueueRegistry implements IQueueRegistry {
     getAllQueues(): QueueInfo[] {
         return Array.from(this.queues.values());
     }
-}
+};

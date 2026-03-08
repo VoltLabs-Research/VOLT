@@ -1,15 +1,16 @@
-import { useMemo } from 'react';
-import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
-import Select, { type SelectOption } from '@/shared/presentation/components/Select';
+import Select from '@/shared/presentation/components/Select';
+import { useMemo } from 'react';
+import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
+import type { SelectOption } from '@/shared/presentation/components/Select';
 
 interface ClusterSelectorProps {
     clusters: ClusterMetrics[];
     selectedClusterId: string;
     onClusterChange: (clusterId: string) => void;
-}
+};
 
 const ClusterSelector = ({ clusters, selectedClusterId, onClusterChange }: ClusterSelectorProps) => {
     const options = useMemo<SelectOption[]>(() => {

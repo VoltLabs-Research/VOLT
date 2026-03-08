@@ -1,16 +1,16 @@
-import { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleRepository';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO } from '@modules/team/application/dtos/team-role/CreateTeamRoleDTO';
-import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import TeamRoleCreatedEvent from '@modules/team/domain/events/TeamRoleCreatedEvent';
 import { createTeamRoleInputSchema } from '@modules/team/application/dtos/team-role/CreateTeamRoleDTO';
-import TeamRole from '@modules/team/domain/entities/TeamRole';
+import TeamRole from '@modules/team/domain/entities/team-role/TeamRole';
+import TeamRoleCreatedEvent from '@modules/team/domain/events/team-role/TeamRoleCreatedEvent';
+import { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO, ApplicationError> {
@@ -48,4 +48,4 @@ export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInp
 
         return Result.ok(toPersistedOutput(newRole));
     }
-}
+};

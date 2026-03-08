@@ -1,15 +1,15 @@
+import { SendChatMessageInputDTO, SendChatMessageOutputDTO } from '@modules/chat/application/dtos/chat-message/SendChatMessageDTO';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { resolveAccessibleChat } from '@modules/chat/application/services/chat/resolveAccessibleChat';
+import { toPersistedChatOutput } from '@modules/chat/domain/services/toPersistedChatOutput';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
-import { SendChatMessageInputDTO, SendChatMessageOutputDTO } from '@modules/chat/application/dtos/chat-message/SendChatMessageDTO';
-import { IChatMessageRepository } from '@modules/chat/domain/port/IChatMessageRepository';
-import { resolveAccessibleChat } from '@modules/chat/application/helpers/resolveAccessibleChat';
-import { toPersistedChatOutput } from '@modules/chat/application/helpers/toPersistedChatOutput';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import type { IChatMessageRepository } from '@modules/chat/domain/port/chat-message/IChatMessageRepository';
+import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
+import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 
 @injectable()
 export class SendChatMessageUseCase implements IUseCase<SendChatMessageInputDTO, SendChatMessageOutputDTO, ApplicationError> {

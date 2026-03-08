@@ -1,9 +1,13 @@
 import { get, post } from '@/app/core/http/utilities/create-service';
-import type { ApplyColorCodingInputDTO } from '../../../dtos/apply-color-coding';
-import type { GetColorCodingPropertiesInputDTO, ColorCodingProperties } from '../../../dtos/get-color-coding-properties';
-import type { GetColorCodingStatsInputDTO, ColorCodingStats } from '../../../dtos/get-color-coding-stats';
+import type {
+    ApplyColorCodingInputDTO,
+    ColorCodingProperties,
+    ColorCodingStats,
+    GetColorCodingPropertiesInputDTO,
+    GetColorCodingStatsInputDTO
+} from '../../../dtos/color-coding';
 
-const endpoints = {
+export default {
     getProperties: get<GetColorCodingPropertiesInputDTO, ColorCodingProperties>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/properties/${analysisId}`
@@ -26,5 +30,3 @@ const endpoints = {
         }
     )
 };
-
-export default endpoints;

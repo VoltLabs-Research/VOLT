@@ -1,21 +1,17 @@
-import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
-import JobCompletedEvent from '@modules/jobs/application/events/JobCompletedEvent';
-import JobFailedEvent from '@modules/jobs/application/events/JobFailedEvent';
-import JobIncrementedEvent from '@modules/jobs/application/events/JobIncrementedEvent';
-import JobProgressEvent from '@modules/jobs/application/events/JobProgressEvent';
-import JobsAddedEvent from '@modules/jobs/application/events/JobsAddedEvent';
-import JobStatusChangedEvent from '@modules/jobs/application/events/JobStatusChangedEvent';
-import SessionCompletedEvent from '@modules/jobs/application/events/SessionCompletedEvent';
-import { IEventBus } from '@shared/application/events/IEventBus';
+import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
-import {
-    QueueJobData,
-    SessionCompletedSnapshot
-} from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
-import {
-    WorkerFailureEnvelope,
-    getWorkerFailureErrorMessage
-} from '@shared/infrastructure/workers/WorkerFailureEnvelope';
+import { getWorkerFailureErrorMessage } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
+import Job from '@modules/jobs/domain/entities/Job';
+import JobCompletedEvent from '@modules/jobs/domain/events/JobCompletedEvent';
+import JobFailedEvent from '@modules/jobs/domain/events/JobFailedEvent';
+import JobIncrementedEvent from '@modules/jobs/domain/events/JobIncrementedEvent';
+import JobProgressEvent from '@modules/jobs/domain/events/JobProgressEvent';
+import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
+import JobsAddedEvent from '@modules/jobs/domain/events/JobsAddedEvent';
+import SessionCompletedEvent from '@modules/jobs/domain/events/SessionCompletedEvent';
+import type { IEventBus } from '@shared/application/events/IEventBus';
+import type { QueueJobData, SessionCompletedSnapshot } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
+import type { WorkerFailureEnvelope } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
 
 export default class ProcessingQueueEventPublisher {
     constructor(
@@ -30,19 +26,24 @@ export default class ProcessingQueueEventPublisher {
                 teamId: job.props.teamId,
                 queueType: job.props.queueType,
                 sessionId,
-                metadata: job.props as unknown as Record<string, unknown>
+                metadata: { ...job.props }
             });
             await this.eventBus.publish(incrementEvent);
         }
     }
 
     async publishJobsAdded(firstJob: Job, sessionId: string, count: number): Promise<void> {
+        let metadata: Record<string, unknown> | undefined;
+        if (isRecord(firstJob.props.metadata)) {
+            metadata = firstJob.props.metadata;
+        }
+
         const addedEvent = new JobsAddedEvent({
             sessionId,
             queueType: this.queueName,
             teamId: firstJob.props.teamId,
             count,
-            metadata: firstJob.props.metadata
+            metadata
         });
 
         await this.eventBus.publish(addedEvent);
@@ -66,13 +67,18 @@ export default class ProcessingQueueEventPublisher {
     }
 
     async publishProgress(jobData: QueueJobData, progress: number, message?: string): Promise<void> {
+        let metadata: Record<string, unknown> | undefined;
+        if (isRecord(jobData.metadata)) {
+            metadata = jobData.metadata;
+        }
+
         const event = new JobProgressEvent({
             jobId: String(jobData.jobId),
             teamId: String(jobData.teamId),
             queueType: this.queueName,
             progress,
             message,
-            metadata: isRecord(jobData.metadata) ? jobData.metadata : undefined
+            metadata
         });
 
         await this.eventBus.publish(event);
@@ -83,7 +89,7 @@ export default class ProcessingQueueEventPublisher {
             jobId: String(jobData.jobId),
             teamId: String(jobData.teamId),
             queueType: this.queueName,
-            metadata: jobData,
+            metadata: { ...jobData },
             completedAt: new Date()
         });
 
@@ -97,7 +103,7 @@ export default class ProcessingQueueEventPublisher {
             queueType: this.queueName,
             error: getWorkerFailureErrorMessage(failure),
             failure,
-            metadata: jobData,
+            metadata: { ...jobData },
             failedAt: new Date()
         });
 
@@ -107,4 +113,4 @@ export default class ProcessingQueueEventPublisher {
     async publishSessionCompleted(snapshot: SessionCompletedSnapshot): Promise<void> {
         await this.eventBus.publish(new SessionCompletedEvent(snapshot));
     }
-}
+};

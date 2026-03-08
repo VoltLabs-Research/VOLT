@@ -1,19 +1,20 @@
+import useCanvasUrlState from './use-canvas-url-state';
+
+import { useExportAnalysisResultsMutation } from '@/modules/plugin/hooks/plugin/queries';
+import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
+import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useMemo, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import useCanvasUrlState from './use-canvas-url-state';
-import usePluginSelectors from '@/modules/plugin/hooks/use-plugin-selectors';
-import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/use-plugin-catalog';
-import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { useExportAnalysisResultsMutation } from '@/modules/plugin/hooks/plugin/queries';
-import { triggerBrowserDownload } from '@/shared/utils/file';
-import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing-exposures';
+import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import ApiError from '@/shared/errors/ApiError';
 
 interface UsePluginResultsOptions {
     pluginId: string;
     analysisId: string;
-}
+};
 
 const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => {
     const { setResultsPluginId } = useCanvasUrlState();

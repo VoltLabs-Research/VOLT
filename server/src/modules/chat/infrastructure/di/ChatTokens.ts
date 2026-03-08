@@ -1,4 +1,4 @@
-export const CHAT_TOKENS = {
+export const CHAT_TOKENS = Object.freeze({
     ChatRepository: Symbol.for('ChatRepository'),
     ChatMessageRepository: Symbol.for('ChatMessageRepository'),
     SendChatMessageUseCase: Symbol.for('SendChatMessageUseCase'),
@@ -6,9 +6,10 @@ export const CHAT_TOKENS = {
     EditMessageUseCase: Symbol.for('EditMessageUseCase'),
     DeleteMessageUseCase: Symbol.for('DeleteMessageUseCase'),
     ToggleMessageReactionUseCase: Symbol.for('ToggleMessageReactionUseCase'),
-    MarkMessagesAsReadUseCase: Symbol.for('MarkMessagesAsReadUseCase'),
+    MarkMessageAsReadUseCase: Symbol.for('MarkMessageAsReadUseCase'),
+    MarkMessagesAsReadUseCase: Symbol.for('MarkMessageAsReadUseCase'),
     ChatSocketModule: Symbol.for('ChatSocketModule'),
     ChatSocketAccessPolicy: Symbol.for('ChatSocketAccessPolicy'),
     ChatSocketEventOrchestrator: Symbol.for('ChatSocketEventOrchestrator'),
     ChatSocketPresenceService: Symbol.for('ChatSocketPresenceService')
-};
+});

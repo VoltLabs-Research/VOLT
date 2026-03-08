@@ -9,7 +9,7 @@ interface UseResizableOptions {
     maxSize?: number;
     growPositive?: boolean;
     onResize?: (size: number) => void;
-}
+};
 
 interface UseResizableReturn {
     size: number;
@@ -18,7 +18,7 @@ interface UseResizableReturn {
     handleProps: {
         onPointerDown: (e: React.PointerEvent) => void;
     };
-}
+};
 
 const useResizable = ({
     direction,

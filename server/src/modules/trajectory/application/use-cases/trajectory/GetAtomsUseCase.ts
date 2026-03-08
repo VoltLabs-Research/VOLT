@@ -1,25 +1,27 @@
-import { injectable, inject } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
-import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/ITrajectoryDumpStorageService';
-import { IAtomPropertiesService } from '@modules/trajectory/domain/port/IAtomPropertiesService';
-import type { ITrajectoryReader } from '@modules/trajectory/domain/port/ITrajectoryReader';
-import type { IUseCase } from '@shared/application/IUseCase';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { GetAtomsInputDTO, AtomRecord } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
+import { IAtomPropertiesService } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
+import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
+
+import { injectable, inject } from 'tsyringe';
+
+import type { ITrajectoryReader } from '@modules/trajectory/domain/port/trajectory/ITrajectoryReader';
+import type { IUseCase } from '@shared/application/IUseCase';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { GetAtomsInputDTO, AtomRecord } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
 
 interface ExposureFetchResult {
     exposureName: string;
     properties: string[];
     data: unknown;
-}
+};
 
 interface PropertyRenameMap {
     original: string;
     display: string;
-}
+};
 
 const buildDumpNotFoundError = (): ApplicationError => {
     return ApplicationError.notFound(
@@ -212,4 +214,4 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
 
         return renameMap;
     }
-}
+};

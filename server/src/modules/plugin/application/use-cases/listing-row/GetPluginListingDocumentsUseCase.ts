@@ -1,10 +1,11 @@
-import { inject, injectable } from 'tsyringe';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { GetPluginListingDocumentsInputDTO, GetPluginListingDocumentsOutputDTO } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
+import { toPluginListingOptions } from '@modules/plugin/application/helpers/listing-row/toPluginListingOptions';
+import { IPluginListingService } from '@modules/plugin/domain/port/listing-row/IPluginListingService';
+
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { GetPluginListingDocumentsInputDTO, GetPluginListingDocumentsOutputDTO } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
-import { IPluginListingService } from '@modules/plugin/domain/port/IPluginListingService';
-import { toPluginListingOptions } from '@modules/plugin/application/use-cases/listing-row/toPluginListingOptions';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class GetPluginListingDocumentsUseCase implements IUseCase<
@@ -28,4 +29,4 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<
 
         return Result.ok(result);
     }
-}
+};

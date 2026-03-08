@@ -1,13 +1,13 @@
-import { useState, useMemo, useEffect } from 'react';
+import { sshConnectionByIdQuery, sshFilesQuery } from './queries';
+import ApiError from '@/shared/errors/ApiError';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { sileo } from 'sileo';
-import { sshConnectionByIdQuery, sshFilesQuery } from './queries';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-import ApiError from '@/shared/errors/ApiError';
 
 interface UseSSHFileExplorerOptions {
     connectionId: string | undefined;
-}
+};
 
 const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -106,7 +106,7 @@ const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
         navigateTo,
         goUp,
         goBack,
-        refresh: () => filesQuery.refetch()
+        refresh: filesQuery.refetch
     };
 };
 

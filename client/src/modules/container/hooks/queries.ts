@@ -1,28 +1,31 @@
-import type { Container } from '../api/entities/container';
-import type { CreateContainerParams } from '../api/dtos/create-container';
-import type { UpdateContainerFields } from '../api/dtos/update-container';
-import type { GetContainersParams } from '../api/dtos/get-containers';
-import type { GetContainerFilesInputDTO } from '../api/dtos/get-container-files';
-import type { ReadContainerFileInputDTO } from '../api/dtos/read-container-file';
-import { createQuery, createPaginatedQuery, buildKeys } from '@/shared/infrastructure/query/create-paginated-query';
 import service from '../api/service';
+import { createQuery, createPaginatedQuery, buildKeys } from '@/shared/infrastructure/query/create-paginated-query';
+import type { CreateContainerParams } from '../api/dtos/create-container';
+import type { GetContainerFilesInputDTO } from '../api/dtos/get-container-files';
+import type { GetContainersParams } from '../api/dtos/get-containers';
+import type { ReadContainerFileInputDTO } from '../api/dtos/read-container-file';
+import type { UpdateContainerFields } from '../api/dtos/update-container';
+import type { Container } from '../api/entities/container';
 
 const BASE_KEY = 'container';
-const KEYS = buildKeys<{
-    detail: string,
-    files: GetContainerFilesInputDTO,
+
+interface ContainerQueryKeys extends Record<string, unknown> {
+    detail: string;
+    files: GetContainerFilesInputDTO;
     fileContent: ReadContainerFileInputDTO;
     processes: string;
     stats: string;
-}>(BASE_KEY);
+};
+
+const KEYS = buildKeys<ContainerQueryKeys>(BASE_KEY);
 
 export const containerQuery = createPaginatedQuery<Container, GetContainersParams, CreateContainerParams, UpdateContainerFields>({
     baseKey: BASE_KEY,
     detailKey: KEYS.detail,
     service: {
-        list: (params) => service.getAll(params),
-        create: (params) => service.create(params),
-        update: (id, params) => service.update({ containerId: id, ...params }) as Promise<Container>,
+        list: service.getAll,
+        create: service.create,
+        update: (id, params) => service.update({ containerId: id, ...params }),
         delete: (id) => service.delete({ containerId: id })
     }
 });

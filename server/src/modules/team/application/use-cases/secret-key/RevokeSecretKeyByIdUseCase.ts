@@ -1,14 +1,11 @@
-import { injectable, inject } from 'tsyringe';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { RevokeSecretKeyByIdInputDTO, RevokeSecretKeyByIdOutputDTO } from '@modules/team/application/dtos/secret-key/RevokeSecretKeyByIdDTO';
+import { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { ISecretKeyRepository } from '@modules/team/domain/port/ISecretKeyRepository';
-import {
-    RevokeSecretKeyByIdInputDTO,
-    RevokeSecretKeyByIdOutputDTO
-} from '@modules/team/application/dtos/secret-key/RevokeSecretKeyByIdDTO';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class RevokeSecretKeyByIdUseCase implements IUseCase<RevokeSecretKeyByIdInputDTO, RevokeSecretKeyByIdOutputDTO, ApplicationError> {
@@ -46,4 +43,4 @@ export default class RevokeSecretKeyByIdUseCase implements IUseCase<RevokeSecret
             updatedAt: updated.props.updatedAt
         });
     }
-}
+};

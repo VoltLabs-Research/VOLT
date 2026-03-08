@@ -1,19 +1,20 @@
-import { injectable, inject } from 'tsyringe';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import { getAIProviderCatalogModels } from '@modules/ai/domain/contracts/AIProviderModels';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import TeamAIIntegrationSecretService from '@modules/team/application/services/ai-integration/TeamAIIntegrationSecretService';
+import TeamAIProviderCatalog from '@modules/team/application/services/ai-integration/TeamAIProviderCatalog';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
-import { getAIProviderCatalogModels } from '@modules/ai/domain/constants/AIProviderModels';
-import type { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ITeamAIIntegrationRepository';
-import TeamAIProviderCatalog from '@modules/team/application/services/TeamAIProviderCatalog';
-import TeamAIIntegrationSecretService from '@modules/team/application/services/TeamAIIntegrationSecretService';
-import type { IAIProviderModelDiscovery } from '@modules/ai/application/ports/IAIProviderModelDiscovery';
-import type {
-    DiscoverTeamAIProviderModelsInputDTO,
-    DiscoverTeamAIProviderModelsOutputDTO
-} from '@modules/team/application/dtos/ai-integration/DiscoverTeamAIProviderModelsDTO';
+import { injectable, inject } from 'tsyringe';
+import type { IAIProviderModelDiscovery } from '@modules/ai/domain/port/IAIProviderModelDiscovery';
+import type { DiscoverTeamAIProviderModelsInputDTO, DiscoverTeamAIProviderModelsOutputDTO } from '@modules/team/application/dtos/ai-integration/DiscoverTeamAIProviderModelsDTO';
+import type { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
+
+interface AIProviderModelIdentifier {
+    id: string;
+};
 
 @injectable()
 export default class DiscoverTeamAIProviderModelsUseCase implements IUseCase<DiscoverTeamAIProviderModelsInputDTO, DiscoverTeamAIProviderModelsOutputDTO> {
@@ -90,7 +91,7 @@ export default class DiscoverTeamAIProviderModelsUseCase implements IUseCase<Dis
 
     private resolveDefaultModel(
         existingDefault: string | undefined,
-        models: Array<{ id: string }>
+        models: AIProviderModelIdentifier[]
     ): string | null {
         if (existingDefault && models.some((model) => model.id === existingDefault)) {
             return existingDefault;
@@ -98,4 +99,4 @@ export default class DiscoverTeamAIProviderModelsUseCase implements IUseCase<Dis
 
         return models[0]?.id || null;
     }
-}
+};

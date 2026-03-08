@@ -1,11 +1,14 @@
-import { useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { MdLightbulb } from 'react-icons/md';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import type { DirLight, PointLight, SpotLight, HemiLight, RectAreaLightCfg } from '@/modules/fractal/types/stores/editor/visual-types';
 import { row, PRESETS, positionRows, vec3Rows, colorExtras } from '../../../../molecules/CanvasRenderConfigHelpers';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+
+import { useMemo } from 'react';
+import { MdLightbulb } from 'react-icons/md';
+import { useShallow } from 'zustand/react/shallow';
+import { updateVec3Value } from '../../utilities';
+
 import type { RenderGroup } from '../../types';
-import type { Vec3 } from '../types/Vec3';
+import type { Vec3 } from '../../utilities';
+import type { DirLight, PointLight, SpotLight, HemiLight, RectAreaLightCfg } from '@/modules/fractal/stores/contracts/editor/visual-types';
 
 const setVec3 = <T extends { position: Vec3 }>(
     setter: (patch: Partial<T>) => void,
@@ -13,9 +16,7 @@ const setVec3 = <T extends { position: Vec3 }>(
     axis: number,
     value: number
 ) => {
-    const next: Vec3 = [...current] as Vec3;
-    next[axis] = value;
-    setter({ position: next } as Partial<T>);
+    setter({ position: updateVec3Value(current, axis, value) } as Partial<T>);
 };
 
 const useLightsGroup = (): RenderGroup => {
@@ -73,9 +74,7 @@ const useLightsGroup = (): RenderGroup => {
                     row(PRESETS.distance, () => st.spot.distance, (v: number) => setSpot({ distance: v })),
                     ...positionRows(() => st.spot.position, (i: number, v: number) => setVec3<SpotLight>(setSpot, st.spot.position, i, v)),
                     ...vec3Rows('Target', () => st.spot.target, (i: number, v: number) => {
-                        const next = [...st.spot.target] as Vec3;
-                        next[i] = v;
-                        setSpot({ target: next });
+                        setSpot({ target: updateVec3Value(st.spot.target, i, v) });
                     })
                 ],
                 extras: colorExtras(
@@ -115,9 +114,7 @@ const useLightsGroup = (): RenderGroup => {
                     row(PRESETS.height, () => st.rectArea.height, (v: number) => setRectArea({ height: v })),
                     ...positionRows(() => st.rectArea.position, (i: number, v: number) => setVec3<RectAreaLightCfg>(setRectArea, st.rectArea.position, i, v)),
                     ...vec3Rows('Look', () => st.rectArea.lookAt, (i: number, v: number) => {
-                        const next = [...st.rectArea.lookAt] as Vec3;
-                        next[i] = v;
-                        setRectArea({ lookAt: next });
+                        setRectArea({ lookAt: updateVec3Value(st.rectArea.lookAt, i, v) });
                     })
                 ],
                 extras: colorExtras(

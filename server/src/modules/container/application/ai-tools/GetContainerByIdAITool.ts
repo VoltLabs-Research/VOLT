@@ -1,7 +1,7 @@
-import { injectable, inject } from 'tsyringe';
-import { z } from 'zod';
-import { AITool } from '@shared/application/ai/AITool';
 import { GetContainerByIdUseCase } from '@modules/container/application/use-cases/GetContainerByIdUseCase';
+import { AITool } from '@shared/application/ai/AITool';
+import { inject, injectable } from 'tsyringe';
+import { z } from 'zod';
 
 @injectable()
 export class GetContainerByIdAITool extends AITool {
@@ -15,4 +15,4 @@ export class GetContainerByIdAITool extends AITool {
     ) {
         super();
     }
-}
+};

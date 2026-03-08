@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useRef, useCallback, useMemo, type ReactNode, type ComponentType } from 'react';
-import { motion } from 'framer-motion';
-import SidebarHeader from '@/shared/presentation/components/SidebarHeader';
-import SidebarBottom from '@/shared/presentation/components/SidebarBottom';
 import Container from '@/shared/presentation/components/Container';
+import SidebarBottom from '@/shared/presentation/components/SidebarBottom';
+import SidebarHeader from '@/shared/presentation/components/SidebarHeader';
 import Title from '@/shared/presentation/components/Title';
-import '@/shared/presentation/components/SidebarTab/SidebarTab.css';
 import './Sidebar.css';
+import '@/shared/presentation/components/SidebarTab/SidebarTab.css';
+import { motion } from 'framer-motion';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import React from 'react';
+import type { ReactNode, ComponentType } from 'react';
 
 const MOBILE_BREAKPOINT = 768;
 

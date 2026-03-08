@@ -1,4 +1,5 @@
 import { createController, createPaginatedController } from '@shared/infrastructure/http/controllers/createController';
+import { GetTeamMetricsResultDTO } from '@modules/trajectory/application/dtos/trajectory/GetTeamMetricsDTO';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import CreateTrajectoryUseCase from '@modules/trajectory/application/use-cases/trajectory/CreateTrajectoryUseCase';
@@ -13,15 +14,15 @@ import { GetAtomsUseCase } from '@modules/trajectory/application/use-cases/traje
 import DownloadSampleSimulationsController from './DownloadSampleSimulationsController';
 import DownloadTrajectoryController from './DownloadTrajectoryController';
 import ListSampleSimulationsUseCase from '@modules/trajectory/application/use-cases/trajectory/ListSampleSimulationsUseCase';
-import GetTrajectorySceneArtifactsController from './GetTrajectorySceneArtifactsController';
-import { presentTeamMetrics } from './presentTeamMetrics';
+import GetTrajectorySceneArtifactsController from '@modules/trajectory/infrastructure/http/controllers/scene-artifacts/GetTrajectorySceneArtifactsController';
+import { presentTeamMetrics } from '@modules/trajectory/infrastructure/http/presenters/trajectory';
 import { container } from 'tsyringe';
 
 const CreateTrajectoryController = createController(CreateTrajectoryUseCase, HttpStatus.Created);
 const DeleteTrajectoryByIdController = createController(DeleteTrajectoryByIdUseCase, HttpStatus.NoContent);
 const GetTeamMetricsController = createController(GetTeamMetricsUseCase, {
     handleSuccess: (res, value) => {
-        BaseResponse.success(res, presentTeamMetrics(value));
+        BaseResponse.success(res, presentTeamMetrics(value as GetTeamMetricsResultDTO));
     }
 });
 const GetTrajectoriesByTeamIdController = createPaginatedController(GetTrajectoriesByTeamIdUseCase);

@@ -1,10 +1,10 @@
 /// <reference types="vite/client" />
 import '@react-three/fiber';
 
-interface ImportMetaEnv{
+interface ImportMetaEnv {
     readonly VITE_API_URL: string;
-}
+};
 
-interface ImportMeta{
+interface ImportMeta {
     readonly env: ImportMetaEnv;
-}
+};

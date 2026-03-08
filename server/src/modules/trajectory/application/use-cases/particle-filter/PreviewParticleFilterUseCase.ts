@@ -1,10 +1,11 @@
-import { injectable, inject } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
-import { IParticleFilterService } from '@modules/trajectory/domain/port/IParticleFilterService';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { PreviewParticleFilterInputDTO, PreviewParticleFilterOutputDTO } from '@modules/trajectory/application/dtos/particle-filter';
+import { IParticleFilterService } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { PreviewParticleFilterInputDTO, PreviewParticleFilterOutputDTO } from '@modules/trajectory/application/dtos/particle-filter';
+
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export class PreviewParticleFilterUseCase implements IUseCase<PreviewParticleFilterInputDTO, PreviewParticleFilterOutputDTO, ApplicationError> {
@@ -28,4 +29,4 @@ export class PreviewParticleFilterUseCase implements IUseCase<PreviewParticleFil
 
         return Result.ok(result);
     }
-}
+};

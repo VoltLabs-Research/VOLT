@@ -1,13 +1,16 @@
-import { useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { MdCameraAlt } from 'react-icons/md';
+import { row, vec3Rows } from '../../../../molecules/CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
-import Select from '@/shared/presentation/components/Select';
+
+import { useMemo } from 'react';
+import { MdCameraAlt } from 'react-icons/md';
+import { useShallow } from 'zustand/react/shallow';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
-import { row, vec3Rows } from '../../../../molecules/CanvasRenderConfigHelpers';
+import Select from '@/shared/presentation/components/Select';
+import { CameraType } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import { updateVec3Value } from '../../utilities';
+
 import type { RenderGroup } from '../../types';
-import type { Vec3 } from '../types/Vec3';
 
 const useCameraGroup = (): RenderGroup => {
     const {
@@ -24,11 +27,15 @@ const useCameraGroup = (): RenderGroup => {
                     <Container className="canvas-render-grid">
                         <Select
                             value={type}
-                            onChange={(v: string) => setType(v as 'perspective' | 'orthographic')}
+                            onChange={(value: string) => {
+                                if (value === CameraType.Perspective || value === CameraType.Orthographic) {
+                                    setType(value);
+                                }
+                            }}
                             placeholder="Projection"
                             options={[
-                                { title: 'Perspective', value: 'perspective' },
-                                { title: 'Orthographic', value: 'orthographic' }
+                                { title: 'Perspective', value: CameraType.Perspective },
+                                { title: 'Orthographic', value: CameraType.Orthographic }
                             ]}
                         />
                         <Button variant="ghost" intent="canvas" shape="rounded" size="sm" className="font-size-05" onClick={reset} style={{ justifySelf: 'start' }}>
@@ -38,7 +45,7 @@ const useCameraGroup = (): RenderGroup => {
                 )
             },
             perspective: {
-                key: 'perspective', title: 'Perspective', enabled: type === 'perspective',
+                key: 'perspective', title: 'Perspective', enabled: type === CameraType.Perspective,
                 rows: [
                     row({ label: 'FOV', min: 10, max: 120, step: 1, decimals: 0 }, () => persp?.fov, (v: number) => setPerspective({ fov: Math.round(v) })),
                     row({ label: 'Near', min: 0.001, max: 10, step: 0.001, decimals: 3 }, () => persp?.near, (v: number) => setPerspective({ near: v })),
@@ -47,7 +54,7 @@ const useCameraGroup = (): RenderGroup => {
                 ]
             },
             orthographic: {
-                key: 'orthographic', title: 'Orthographic', enabled: type === 'orthographic',
+                key: 'orthographic', title: 'Orthographic', enabled: type === CameraType.Orthographic,
                 rows: [
                     row({ label: 'Near', min: 0.001, max: 10, step: 0.001, decimals: 3 }, () => ortho?.near, (v: number) => setOrthographic({ near: v })),
                     row({ label: 'Far', min: 0.01, max: 100000, step: 0.1, decimals: 1 }, () => ortho?.far, (v: number) => setOrthographic({ far: v })),
@@ -58,14 +65,10 @@ const useCameraGroup = (): RenderGroup => {
                 key: 'transform', title: 'Transform', enabled: true,
                 rows: [
                     ...vec3Rows('Pos', () => position, (i: number, v: number) => {
-                        const next = [...position] as Vec3;
-                        next[i] = v;
-                        setPosition(next);
+                        setPosition(updateVec3Value(position, i, v));
                     }, { min: -1000, max: 1000, step: 0.1, decimals: 2 }),
                     ...vec3Rows('Up', () => up, (i: number, v: number) => {
-                        const next = [...up] as Vec3;
-                        next[i] = Math.min(1, Math.max(-1, v));
-                        setUp(next);
+                        setUp(updateVec3Value(up, i, Math.min(1, Math.max(-1, v))));
                     }, { min: -1, max: 1, step: 0.01, decimals: 2 })
                 ]
             }
@@ -76,8 +79,8 @@ const useCameraGroup = (): RenderGroup => {
             icon: <MdCameraAlt size={12} />,
             subsections: [
                 { label: 'Projection', sections: [sections.projection] },
-                { label: 'Perspective', sections: [sections.perspective], visible: type === 'perspective' },
-                { label: 'Orthographic', sections: [sections.orthographic], visible: type === 'orthographic' },
+                { label: 'Perspective', sections: [sections.perspective], visible: type === CameraType.Perspective },
+                { label: 'Orthographic', sections: [sections.orthographic], visible: type === CameraType.Orthographic },
                 { label: 'Position', sections: [sections.transform] }
             ]
         };

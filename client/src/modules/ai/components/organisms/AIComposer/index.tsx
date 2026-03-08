@@ -1,8 +1,11 @@
-import { IoAddOutline, IoArrowUpOutline } from 'react-icons/io5';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import Select, { type SelectOption } from '@/shared/presentation/components/Select';
+import Select from '@/shared/presentation/components/Select';
 import Tooltip from '@/shared/presentation/components/Tooltip';
+import { IoAddOutline, IoArrowUpOutline } from 'react-icons/io5';
+import type { KeyboardEvent } from 'react';
+import type { SelectOption } from '@/shared/presentation/components/Select';
+import './AIComposer.css';
 
 interface AIComposerProps {
     value: string;
@@ -14,7 +17,7 @@ interface AIComposerProps {
     onChange: (message: string) => void;
     onModelChange: (model: string) => void;
     onSend: () => void;
-}
+};
 
 const AIComposer = ({
     value,
@@ -27,6 +30,18 @@ const AIComposer = ({
     onModelChange,
     onSend
 }: AIComposerProps) => {
+    const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            onSend();
+        }
+    };
+
+    let modelPlaceholder = 'No models';
+    if (modelOptions.length) {
+        modelPlaceholder = 'Select model';
+    }
+
     return (
         <Container className='d-flex column gap-05 ai-composer'>
             {error && (
@@ -46,12 +61,7 @@ const AIComposer = ({
                 <input
                     value={value}
                     onChange={(event) => onChange(event.target.value)}
-                    onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                            event.preventDefault();
-                            onSend();
-                        }
-                    }}
+                    onKeyDown={handleInputKeyDown}
                     placeholder='Ask anything'
                     className='ai-composer-input flex-1'
                     disabled={disabled}
@@ -62,7 +72,7 @@ const AIComposer = ({
                     value={selectedModel}
                     onChange={onModelChange}
                     disabled={disabled || modelOptions.length === 0}
-                    placeholder={modelOptions.length ? 'Select model' : 'No models'}
+                    placeholder={modelPlaceholder}
                     className='ai-composer-model-select'
                 />
 

@@ -1,10 +1,11 @@
-import { injectable, inject } from 'tsyringe';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { ListPluginsInputDTO, ListPluginsOutputDTO } from '@modules/plugin/application/dtos/plugin/ListPluginsDTO';
+import { mapPluginToPersistedDTO } from '@modules/plugin/application/mappers/plugin/mapPluginToPersistedDTO';
+import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
+
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { ListPluginsInputDTO, ListPluginsOutputDTO } from '@modules/plugin/application/dtos/plugin/ListPluginsDTO';
-import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
-import { mapPluginToPersistedDTO } from '@modules/plugin/application/use-cases/plugin/mapPluginToPersistedDTO';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPluginsOutputDTO> {
@@ -26,4 +27,4 @@ export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPlu
             data
         });
     }
-}
+};

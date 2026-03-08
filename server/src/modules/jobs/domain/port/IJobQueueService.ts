@@ -5,7 +5,7 @@ export interface QueueOptions {
     workerPath: string;
     maxConcurrentJobs?: number;
     customStatusMapping?: Record<string, string>;
-}
+};
 
 export interface IJobQueueService {
     addJobs(jobs: Job[]): Promise<void>;
@@ -17,4 +17,4 @@ export interface IJobQueueService {
     start(): Promise<void>;
     stop(): Promise<void>;
     abortRunningJobs(jobIds: string[]): Promise<number>;
-}
+};

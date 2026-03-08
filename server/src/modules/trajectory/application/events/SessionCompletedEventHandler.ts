@@ -1,17 +1,18 @@
-import { IEventHandler } from '@shared/application/events/IEventHandler';
-import SessionCompletedEvent from '@modules/jobs/application/events/SessionCompletedEvent';
-import logger from '@shared/infrastructure/logger';
-import { injectable, inject } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
-import { TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
-import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/TrajectoryUpdatedEvent';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
-import { ListingRowPrecomputationService } from '@modules/plugin/infrastructure/services/ListingRowPrecomputationService';
-import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { ListingRowPrecomputationService } from '@modules/plugin/infrastructure/services/listing-row/ListingRowPrecomputationService';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import SessionCompletedEvent from '@modules/jobs/domain/events/SessionCompletedEvent';
+import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
+import logger from '@shared/infrastructure/logger';
+
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class SessionCompletedEventHandler implements IEventHandler<SessionCompletedEvent> {
@@ -109,4 +110,4 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
             );
         }
     }
-}
+};

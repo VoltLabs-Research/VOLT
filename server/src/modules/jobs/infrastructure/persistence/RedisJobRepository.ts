@@ -1,7 +1,7 @@
-import IORedis from 'ioredis';
-import { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
 import { injectable, inject } from 'tsyringe';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import IORedis from 'ioredis';
+import type { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
 
 @injectable()
 export default class RedisJobRepository implements IJobRepository {
@@ -46,10 +46,16 @@ export default class RedisJobRepository implements IJobRepository {
             }
 
             try {
-                return JSON.parse(entry) as Record<string, unknown>;
+                const parsedEntry = JSON.parse(entry);
+
+                if (typeof parsedEntry !== 'object' || parsedEntry === null || Array.isArray(parsedEntry)) {
+                    return null;
+                }
+
+                return parsedEntry;
             } catch {
                 return null;
             }
         });
     }
-}
+};

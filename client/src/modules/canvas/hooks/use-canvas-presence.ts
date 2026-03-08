@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { create } from 'zustand';
-import useSocket from '@/modules/socket/hooks/use-socket';
+import useSocket from '@/modules/socket/core/hooks/use-socket';
 
 export interface CanvasPresenceUser {
     id: string;
@@ -8,17 +8,17 @@ export interface CanvasPresenceUser {
     firstName?: string;
     lastName?: string;
     isAnonymous: boolean;
-}
+};
 
 interface PresenceState {
     canvasUsers: CanvasPresenceUser[];
     rasterUsers: CanvasPresenceUser[];
-}
+};
 
 interface UseCanvasPresenceProps {
     trajectoryId?: string;
     enabled?: boolean;
-}
+};
 
 const usePresenceStore = create<PresenceState>(() => ({
     canvasUsers: [],

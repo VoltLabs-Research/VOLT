@@ -1,8 +1,5 @@
 import { TeamAIIntegrationItemDTO } from '@modules/team/application/dtos/ai-integration/GetTeamAIIntegrationsDTO';
-import {
-    ProviderScopedInputDTO,
-    TeamUserScopedInputDTO
-} from '@modules/team/application/dtos/common';
+import { ProviderScopedInputDTO, TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
 
 interface TeamAIIntegrationMutationPayloadDTO {
     apiKey?: string;
@@ -10,10 +7,10 @@ interface TeamAIIntegrationMutationPayloadDTO {
     defaultModel?: string;
     enabledModels?: string[];
     metadata?: Record<string, unknown>;
-}
+};
 
-export interface CreateTeamAIIntegrationInputDTO extends TeamUserScopedInputDTO, ProviderScopedInputDTO, TeamAIIntegrationMutationPayloadDTO {}
+export interface CreateTeamAIIntegrationInputDTO extends TeamUserScopedInputDTO, ProviderScopedInputDTO, TeamAIIntegrationMutationPayloadDTO {};
 
 export interface CreateTeamAIIntegrationOutputDTO {
     integration: TeamAIIntegrationItemDTO;
-}
+};

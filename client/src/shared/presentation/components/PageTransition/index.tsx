@@ -1,5 +1,6 @@
-import { useRef, useLayoutEffect, type PropsWithChildren } from 'react';
 import './PageTransition.css';
+import { useRef, useLayoutEffect } from 'react';
+import type { PropsWithChildren } from 'react';
 
 /**
  * Page-level enter transition.

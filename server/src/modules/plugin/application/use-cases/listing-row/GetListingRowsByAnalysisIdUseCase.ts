@@ -1,18 +1,28 @@
-import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
-import { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
+import { mapListingRowByAnalysis } from '@modules/plugin/application/mappers/listing-row/mapListingRowByAnalysis';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     GetListingRowsByAnalysisIdInputDTO,
     GetListingRowsByAnalysisIdOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
-import { mapListingRowByAnalysis } from './mapListingRowByAnalysis';
+import { IListingRowRepository } from '@modules/plugin/domain/port/listing-row/IListingRowRepository';
+
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
 
 interface ListingRowsByAnalysisFilter {
     analysis: string;
     team: string;
-}
+};
+
+const buildListingRowsByAnalysisFilter = (
+    input: GetListingRowsByAnalysisIdInputDTO
+): ListingRowsByAnalysisFilter => {
+    return {
+        analysis: input.analysisId,
+        team: input.teamId
+    };
+};
 
 @injectable()
 export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRowsByAnalysisIdInputDTO, GetListingRowsByAnalysisIdOutputDTO> {
@@ -24,12 +34,10 @@ export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRow
         const page = Math.max(1, Number(input.page || 1));
         const limit = Math.min(200, Math.max(1, Number(input.limit || 50)));
         const sortAsc = input.sortAsc ?? false;
+        const filter = buildListingRowsByAnalysisFilter(input);
 
         const result = await this.listingRowRepository.findAll({
-            filter: {
-                analysis: input.analysisId,
-                team: input.teamId
-            } as ListingRowsByAnalysisFilter,
+            filter,
             limit,
             page,
             sort: {
@@ -39,7 +47,7 @@ export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRow
             populate: 'trajectory'
         });
 
-        const data = result.data.map((listingRow) => mapListingRowByAnalysis(listingRow));
+        const data = result.data.map(mapListingRowByAnalysis);
 
         return Result.ok({
             ...result,

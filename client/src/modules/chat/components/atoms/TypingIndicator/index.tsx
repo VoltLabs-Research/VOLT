@@ -1,7 +1,7 @@
-import type { TypingUser } from '@/modules/chat/api/entities/chat-events';
+import './TypingIndicator.css';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import './TypingIndicator.css';
+import type { TypingUser } from '@/modules/chat/api/entities/shared/chat-events';
 
 interface TypingIndicatorProps {
     users: TypingUser[];

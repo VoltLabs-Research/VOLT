@@ -1,6 +1,7 @@
-import React, { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { gsap } from 'gsap';
 import './Slider.css';
+import { gsap } from 'gsap';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React from 'react';
 
 export interface SliderProps {
     min: number;

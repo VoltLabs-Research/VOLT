@@ -6,21 +6,30 @@ import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Slider from '@/shared/presentation/components/Slider';
 import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
 import SettingsSectionHeader from '@/modules/auth/components/molecules/SettingsSectionHeader';
-import type { ContainerConfig, PortMapping, EnvVariable } from '../../../hooks/use-create-container-form';
 import Title from '@/shared/presentation/components/Title';
+import type { Team } from '@/modules/team/api/entities/team/team';
+import type { ContainerConfig, EnvVariable, PortMapping } from '../../../hooks/use-create-container-form';
 
 const MAX_CPU = 8;
 const MAX_MEMORY = 8192;
 
-interface ConfigurationStepProps{
+interface ValueChangeTarget {
+    value: string | boolean;
+};
+
+interface ConfigurationStepProps {
     config: ContainerConfig;
-    teams: { _id: string; name: string }[];
+    teams: Team[];
     selectedTeamId: string | null;
     onConfigChange: <K extends keyof ContainerConfig>(key: K, value: ContainerConfig[K]) => void;
     onTeamChange: (teamId: string | null) => void;
     onBack: () => void;
     onNext: () => void;
-}
+};
+
+const hasValueChangeTarget = (value: unknown): value is ValueChangeTarget => {
+    return typeof value === 'object' && value !== null && 'value' in value;
+};
 
 const ConfigurationStep = ({
     config,
@@ -36,7 +45,7 @@ const ConfigurationStep = ({
             <Title className='font-size-5 font-weight-6'>Configure Container</Title>
             <Container className='create-container-config-grid gap-1-5 mt-1-5'>
                 <Container className='create-container-config-section'>
-                    <SettingsSectionHeader title='Basic Information' className='mb-1 pb-075' />
+                    <SettingsSectionHeader title='Basic Information' description={undefined} action={undefined} className='mb-1 pb-075' />
                     <Container className='create-container-field'>
                         <FormFieldRHF
                             label='Container Name'
@@ -48,7 +57,7 @@ const ConfigurationStep = ({
                 </Container>
 
                 <Container className='create-container-config-section select'>
-                    <SettingsSectionHeader title='Team' className='mb-1 pb-075' />
+                    <SettingsSectionHeader title='Team' description={undefined} action={undefined} className='mb-1 pb-075' />
                     <FormFieldRHF
                         variant='inline'
                         fieldType='select'
@@ -65,7 +74,7 @@ const ConfigurationStep = ({
                 </Container>
 
                 <Container className='create-container-config-section full-width'>
-                    <SettingsSectionHeader title='Resources' className='mb-1 pb-075' />
+                    <SettingsSectionHeader title='Resources' description={undefined} action={undefined} className='mb-1 pb-075' />
                     <Container className='create-container-resource-row radius-sm p-1 mb-075'>
                         <Container className='d-flex content-between items-center create-container-resource-header mb-075'>
                             <span className='d-flex items-center gap-05 font-size-2 font-weight-5 color-secondary'>
@@ -111,8 +120,18 @@ const ConfigurationStep = ({
                         title='Port Mapping'
                         items={config.ports}
                         fields={[
-                            { key: 'private', placeholder: 'Container', type: 'number', label: 'Private' },
-                            { key: 'public', placeholder: 'Auto', type: 'number', label: 'Public' }
+                            {
+                                key: 'private',
+                                placeholder: 'Container',
+                                type: 'number',
+                                label: 'Private'
+                            },
+                            {
+                                key: 'public',
+                                placeholder: 'Auto',
+                                type: 'number',
+                                label: 'Public'
+                            }
                         ]}
                         alwaysEditing
                         showCard={false}
@@ -127,8 +146,18 @@ const ConfigurationStep = ({
                         title='Environment Variables'
                         items={config.env}
                         fields={[
-                            { key: 'key', placeholder: 'KEY', type: 'text', label: 'Key' },
-                            { key: 'value', placeholder: 'VALUE', type: 'text', label: 'Value' }
+                            {
+                                key: 'key',
+                                placeholder: 'KEY',
+                                type: 'text',
+                                label: 'Key'
+                            },
+                            {
+                                key: 'value',
+                                placeholder: 'VALUE',
+                                type: 'text',
+                                label: 'Value'
+                            }
                         ]}
                         alwaysEditing
                         showCard={false}
@@ -146,7 +175,11 @@ const ConfigurationStep = ({
                         name='mountDockerSocket'
                         value={config.mountDockerSocket}
                         onChange={(event) => {
-                            const inputValue = (event.target as HTMLInputElement & { value: string | boolean }).value;
+                            if (!hasValueChangeTarget(event.target)) {
+                                return;
+                            }
+
+                            const inputValue = event.target.value;
                             if (typeof inputValue === 'boolean') {
                                 onConfigChange('mountDockerSocket', inputValue);
                                 return;

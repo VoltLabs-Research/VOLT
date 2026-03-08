@@ -2,30 +2,21 @@ import { buildKeys, createMutation, createQuery } from '@/shared/infrastructure/
 import chatService from '../../api/services/chat';
 import type { QueryClient } from '@tanstack/react-query';
 import type { Chat } from '../../api/entities/chat';
-import type { GetOrCreateChatInputDTO } from '../../api/dtos/get-or-create-chat';
-import type { CreateGroupChatDTO } from '../../api/dtos/create-group-chat';
-import type { AddUsersToGroupInputDTO } from '../../api/dtos/add-users-to-group';
-import type { RemoveUsersFromGroupInputDTO } from '../../api/dtos/remove-users-from-group';
-import type { UpdateGroupInfoInputDTO } from '../../api/dtos/update-group-info';
-import type { UpdateGroupAdminsInputDTO } from '../../api/dtos/update-group-admins';
+import type { GetOrCreateChatInputDTO } from '../../api/dtos/chat';
 
-const KEYS = buildKeys<{
+type ChatQueryKeyMap = {
     chats: void;
     detail: string;
-}>('chat');
+}; 
+
+const KEYS = buildKeys<ChatQueryKeyMap>('chat');
 
 export const CHAT_QUERY_KEYS = {
     chats: KEYS.chats,
     detail: KEYS.detail
-} as const;
+};
 
 export const useGetOrCreateChatMutation = createMutation<Chat, GetOrCreateChatInputDTO>(chatService.getOrCreate);
-export const useCreateGroupMutation = createMutation<Chat, CreateGroupChatDTO>(chatService.createGroup);
-export const useAddUsersToGroupMutation = createMutation<Chat, AddUsersToGroupInputDTO>(chatService.addUsersToGroup);
-export const useRemoveUsersFromGroupMutation = createMutation<Chat, RemoveUsersFromGroupInputDTO>(chatService.removeUsersFromGroup);
-export const useUpdateGroupInfoMutation = createMutation<Chat, UpdateGroupInfoInputDTO>(chatService.updateGroupInfo);
-export const useUpdateGroupAdminsMutation = createMutation<Chat, UpdateGroupAdminsInputDTO>(chatService.updateGroupAdmins);
-export const useLeaveGroupMutation = createMutation<void, { chatId: string }>(chatService.leaveGroup);
 
 export const chatsQuery = createQuery(KEYS.chats, () => chatService.getAll({}));
 
@@ -54,7 +45,13 @@ export const replaceChatInCache = (queryClient: QueryClient, chat: Chat) => {
             return [chat, ...current];
         }
 
-        return current.map((existingChat) => existingChat._id === chat._id ? chat : existingChat);
+        return current.map((existingChat) => {
+            if (existingChat._id === chat._id) {
+                return chat;
+            }
+
+            return existingChat;
+        });
     });
 
     setChatDetailCache(queryClient, chat);
@@ -64,7 +61,13 @@ export const updateChatInCache = (queryClient: QueryClient, chatId: string, upda
     queryClient.setQueryData<Chat[]>(KEYS.chats(), (current) => {
         if (!current) return current;
 
-        return current.map((chat) => chat._id === chatId ? { ...chat, ...updates } : chat);
+        return current.map((chat) => {
+            if (chat._id === chatId) {
+                return { ...chat, ...updates };
+            }
+
+            return chat;
+        });
     });
 
     queryClient.setQueryData<Chat | undefined>(KEYS.detail(chatId), (current) => {

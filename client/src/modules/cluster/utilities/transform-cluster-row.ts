@@ -1,6 +1,7 @@
-import type { ClusterMetrics, ClusterStatus } from '../api/entities/cluster-metrics';
 import { formatNetworkSpeed } from './format-network';
 import { formatUptime } from './format-uptime';
+import { ClusterStatus } from '../api/entities/cluster-metrics';
+import type { ClusterMetrics } from '../api/entities/cluster-metrics';
 
 export interface ServerRow {
     id: string;
@@ -13,12 +14,12 @@ export interface ServerRow {
     network: string;
     uptime: string;
     analysisCount: number;
-}
+};
 
 const STATUS_CLASS_MAP: Record<ClusterStatus, string> = {
-    'Healthy': 'server-table-status-healthy',
-    'Warning': 'server-table-status-warning',
-    'Critical': 'server-table-status-critical'
+    [ClusterStatus.Healthy]: 'server-table-status-healthy',
+    [ClusterStatus.Warning]: 'server-table-status-warning',
+    [ClusterStatus.Critical]: 'server-table-status-critical'
 };
 
 const calculateCpuUsage = (metrics: ClusterMetrics): number => {

@@ -1,5 +1,5 @@
-import Container from '@/shared/presentation/components/Container';
 import './MessageListSkeleton.css';
+import Container from '@/shared/presentation/components/Container';
 
 interface MessageListSkeletonProps {
     count?: number;

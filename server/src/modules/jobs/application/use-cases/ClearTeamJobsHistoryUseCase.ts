@@ -1,13 +1,10 @@
-import { inject, injectable } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
-import {
-    ClearTeamJobsHistoryInputDTO,
-    ClearTeamJobsHistoryOutputDTO,
-} from '@modules/jobs/application/dtos/ClearTeamJobsHistoryDTO';
-import { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
 import BaseTeamJobActionUseCase from '@modules/jobs/application/use-cases/BaseTeamJobActionUseCase';
+import { inject, injectable } from 'tsyringe';
+import type { ClearTeamJobsHistoryInputDTO, ClearTeamJobsHistoryOutputDTO } from '@modules/jobs/application/dtos/ClearTeamJobsHistoryDTO';
+import type { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
+import type { IUseCase } from '@shared/application/IUseCase';
+import type ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 @injectable()
 export default class ClearTeamJobsHistoryUseCase extends BaseTeamJobActionUseCase<
@@ -29,4 +26,4 @@ export default class ClearTeamJobsHistoryUseCase extends BaseTeamJobActionUseCas
             deletedAnalyses: result.deletedAnalyses
         };
     }
-}
+};

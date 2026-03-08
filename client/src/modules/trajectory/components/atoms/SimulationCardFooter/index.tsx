@@ -1,22 +1,22 @@
-import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { PiDotsThreeVerticalBold } from 'react-icons/pi';
-import { RxTrash } from 'react-icons/rx';
-import { HiOutlineViewfinderCircle } from 'react-icons/hi2';
-import { formatDistanceToNow } from 'date-fns';
 import EditableTrajectoryName from '../EditableTrajectoryName';
 import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
+import IconButton from '@/shared/presentation/components/IconButton';
 import Loader from '@/shared/presentation/components/Loader';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Container from '@/shared/presentation/components/Container';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { formatDistanceToNow } from 'date-fns';
+import { HiOutlineViewfinderCircle } from 'react-icons/hi2';
+import { PiDotsThreeVerticalBold } from 'react-icons/pi';
+import { RxTrash } from 'react-icons/rx';
+import { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
-import IconButton from '@/shared/presentation/components/IconButton';
 import './SimulationCardFooter.css';
 
-interface SimulationCardFooterProps{
+interface SimulationCardFooterProps {
     trajectoryId: string;
     name: string;
     updatedAt: string;
@@ -25,14 +25,30 @@ interface SimulationCardFooterProps{
     onDelete?: (_id: string) => void;
 };
 
-const SimulationCardFooter = ({ 
-    trajectoryId, 
-    name, 
-    updatedAt, 
-    isProcessing, 
+interface ToastState {
+    title: string;
+};
+
+interface DeleteTrajectoryToastConfig {
+    loading: ToastState;
+    success: ToastState;
+    error: ToastState;
+};
+
+const DELETE_TRAJECTORY_TOAST: DeleteTrajectoryToastConfig = {
+    loading: { title: 'Deleting trajectory...' },
+    success: { title: 'Trajectory deleted' },
+    error: { title: 'Failed to delete trajectory' }
+};
+
+export default function SimulationCardFooter({
+    trajectoryId,
+    name,
+    updatedAt,
+    isProcessing,
     processingMessage,
     onDelete
-}: SimulationCardFooterProps) => {
+}: SimulationCardFooterProps) {
     const navigate = useNavigate();
     const deleteTrajectoryMutation = trajectoryQuery.useDeleteMutation();
     const { confirm } = useConfirm();
@@ -43,19 +59,15 @@ const SimulationCardFooter = ({
     }, [navigate, trajectoryId]);
 
     const handleDelete = useCallback(async () => {
-        if(!await confirm(`Delete trajectory "${name}"? This action cannot be undone.`)) return;
+        if (!await confirm(`Delete trajectory "${name}"? This action cannot be undone.`)) return;
         setIsDeleting(true);
-        try{
+        try {
             onDelete?.(trajectoryId);
             await showPromise(
                 deleteTrajectoryMutation.mutateAsync(trajectoryId),
-                {
-                    loading: { title: 'Deleting trajectory...' },
-                    success: { title: 'Trajectory deleted' },
-                    error: { title: 'Failed to delete trajectory' }
-                }
+                DELETE_TRAJECTORY_TOAST
             );
-        }finally{
+        } finally {
             setIsDeleting(false);
         }
     }, [deleteTrajectoryMutation, confirm, trajectoryId, name, onDelete]);
@@ -114,6 +126,4 @@ const SimulationCardFooter = ({
             </Popover>
         </Container>
     );
-};
-
-export default SimulationCardFooter;
+}

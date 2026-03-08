@@ -1,18 +1,12 @@
+import { DockerVolumeEntity, DockerVolumeData, IDockerVolumeRepository } from '@modules/container/domain/port/IDockerVolumeRepository';
+import { DockerVolume, IDockerVolume } from '@modules/container/infrastructure/persistence/mongo/models/DockerVolumeModel';
 import { injectable } from 'tsyringe';
-import {
-    IDockerVolumeRepository,
-    DockerVolumeEntity
-} from '@modules/container/domain/port/IDockerVolumeRepository';
-import {
-    DockerVolume,
-    IDockerVolume
-} from '@modules/container/infrastructure/persistence/mongo/models/DockerVolumeModel';
 
 @injectable()
 export class DockerVolumeRepository implements IDockerVolumeRepository {
     async findOrCreateByVolumeId(
         volumeId: string,
-        data: { name: string; driver: string }
+        data: DockerVolumeData
     ): Promise<DockerVolumeEntity> {
         const document = await DockerVolume.findOneAndUpdate(
             { volumeId },
@@ -45,4 +39,4 @@ export class DockerVolumeRepository implements IDockerVolumeRepository {
             updatedAt: document.updatedAt
         };
     }
-}
+};

@@ -1,21 +1,22 @@
-import { Result } from '@shared/domain/port/Result';
-import { IUseCase } from '@shared/application/IUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, TeamMemberStatsProps } from '@modules/team/application/dtos/team-member/ListTeamMembersByTeamIdDTO';
-import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
-import {
-    isPopulatedTeamMemberUser,
-    getTeamMemberUserId
-} from '@modules/team/domain/entities/TeamMember';
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
-import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
 import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
-import TeamPresenceService from '@modules/team/application/services/TeamPresenceService';
+import { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, TeamMemberStatsProps } from '@modules/team/application/dtos/team-member/ListTeamMembersByTeamIdDTO';
+import TeamPresenceService from '@modules/team/application/services/team-member/TeamPresenceService';
+import { isPopulatedTeamMemberUser, getTeamMemberUserId } from '@modules/team/domain/entities/team-member/TeamMember';
+import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
+
+interface TeamMemberFilter {
+    team: string;
+};
 
 @injectable()
 export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, ApplicationError> {
@@ -38,8 +39,10 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
 
     async execute(input: ListTeamMembersByTeamIdInputDTO): Promise<Result<ListTeamMembersByTeamIdOutputDTO, ApplicationError>> {
         const { teamId } = input;
+        const filter: TeamMemberFilter = { team: teamId };
+
         const teamMembers = await this.teamMemberRepository.findAll({
-            filter: { team: teamId },
+            filter,
             populate: [
                 { path: 'role', select: ['name', 'permissions', 'isSystem'] },
                 { path: 'user', select: ['email', 'avatar', 'firstName', 'lastName', 'lastSeenAt', 'createdAt'] }
@@ -104,4 +107,4 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
         });
     }
 
-}
+};

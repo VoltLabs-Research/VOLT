@@ -1,21 +1,29 @@
-import React, { useMemo, useRef, useState, useCallback, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import FractalScenePipeline from '@/modules/fractal/components/organisms/FractalScenePipeline';
+import { useMemo, useRef, useState, useCallback, forwardRef, useImperativeHandle, useEffect } from 'react';
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
+import type { OrbitControlsHandle } from '@/modules/fractal/types';
+import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { ReactNode } from 'react';
 
 export interface FractalSceneRef {
     zoomTo: (zoomPercent: number) => void;
     getCurrentZoom: () => number;
-}
+};
+
+type OrbitControlsSceneProps = Omit<FractalSceneConfig['orbitControls'], 'target'>;
 
 interface FractalSceneProps {
     config: FractalSceneConfig;
-    children?: React.ReactNode;
+    children?: ReactNode;
     showGizmo?: boolean;
-    onControlsRef?: (ref: any) => void;
+    onControlsRef?: (ref: OrbitControlsHandle | null) => void;
     onInteractionChange?: (isInteracting: boolean) => void;
     showGrid?: boolean;
-}
+    modelWorldBounds?: ModelWorldBounds | null;
+    screenshotCaptureRequested?: boolean;
+    onScreenshotCaptureHandled?: () => void;
+};
 
 const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     config,
@@ -23,18 +31,23 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     showGizmo = true,
     onControlsRef,
     onInteractionChange,
-    showGrid
+    showGrid,
+    modelWorldBounds,
+    screenshotCaptureRequested,
+    onScreenshotCaptureHandled
 }, ref) => {
-    const orbitControlsRef = useRef<any>(null);
+    const orbitControlsRef = useRef<OrbitControlsHandle | null>(null);
     const initialDistanceRef = useRef<number | null>(null);
     const [isInteracting, setIsInteracting] = useState(false);
 
-    const dpr = useMemo(() => {
+    const dpr = useMemo<number | [number, number]>(() => {
         if (config.dpr.mode === 'fixed') return config.dpr.fixed;
-        const min = (isInteracting && config.interactionDegradeEnabled)
-            ? Math.min(config.dpr.interactionMin, config.dpr.min)
-            : config.dpr.min;
-        return [min, config.dpr.max] as [number, number];
+        let min = config.dpr.min;
+        if (isInteracting && config.interactionDegradeEnabled) {
+            min = Math.min(config.dpr.interactionMin, config.dpr.min);
+        }
+        const range: [number, number] = [min, config.dpr.max];
+        return range;
     }, [config.dpr, config.interactionDegradeEnabled, isInteracting]);
 
     useEffect(() => {
@@ -109,8 +122,8 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
         powerPreference: config.rendererCreate.powerPreference
     }), [config.rendererCreate]);
 
-    const orbitProps = useMemo(() => {
-        const { target, set, setTarget, reset, ...rest } = config.orbitControls as any;
+    const orbitProps = useMemo<OrbitControlsSceneProps>(() => {
+        const { target, ...rest } = config.orbitControls;
         return rest;
     }, [config.orbitControls]);
     return (
@@ -131,6 +144,9 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
                 orbitProps={orbitProps}
                 showGizmo={showGizmo}
                 showGrid={showGrid}
+                modelWorldBounds={modelWorldBounds}
+                screenshotCaptureRequested={screenshotCaptureRequested}
+                onScreenshotCaptureHandled={onScreenshotCaptureHandled}
                 onControlsRef={onControlsRef}
                 markInteracting={markInteracting}
             >

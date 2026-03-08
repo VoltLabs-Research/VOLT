@@ -1,16 +1,29 @@
-import { Response, NextFunction } from 'express';
-import { container } from 'tsyringe';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
+import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
-import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/TeamMember';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
+import { AuthenticationType } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
+import { container } from 'tsyringe';
+import type { NextFunction, Response } from 'express';
+
+interface TeamMembershipFilter {
+    user: string;
+    team: string;
+};
+
+interface TeamRolePermissionsPopulate {
+    path: 'role';
+    select: ['permissions'];
+};
 
 export const checkTeamMembership = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    const teamId = req.params.teamId;
+    const teamId = Array.isArray(req.params.teamId)
+        ? req.params.teamId[0]
+        : req.params.teamId;
     const userId = req.userId;
 
     logger.debug(`check-team-membership: teamId=${teamId} & userId=${userId}`);
@@ -24,7 +37,7 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
         );
     }
 
-    if (req.authType === 'secret-key') {
+    if (req.authType === AuthenticationType.SecretKey) {
         if (req.secretKeyTeamId !== teamId) {
             return BaseResponse.error(
                 res,
@@ -47,9 +60,17 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
     }
 
     const repository = container.resolve<ITeamMemberRepository>(TEAM_TOKENS.TeamMemberRepository);
+    const filter: TeamMembershipFilter = {
+        user: userId,
+        team: teamId
+    };
+    const populate: TeamRolePermissionsPopulate = {
+        path: 'role',
+        select: ['permissions']
+    };
     const member = await repository.findOne(
-        { user: userId, team: teamId as string },
-        { populate: { path: 'role', select: ['permissions'] } }
+        filter,
+        { populate }
     );
 
     if (!member) {

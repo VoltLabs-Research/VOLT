@@ -1,8 +1,8 @@
-import type { User } from '@/modules/auth/api/entities/user';
 import Avatar from '@/shared/presentation/components/Avatar';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import './AvatarStack.css';
+import type { User } from '@/modules/auth/api/entities/user';
 
 type StackSize = 'xs' | 'sm' | 'md';
 

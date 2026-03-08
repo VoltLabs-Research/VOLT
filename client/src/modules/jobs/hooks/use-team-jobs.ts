@@ -1,26 +1,26 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import useTeamJobsStore from '../stores/use-team-jobs-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import useSocket from '@/modules/socket/hooks/use-socket';
-import useTeamSocketRoom from '@/modules/socket/hooks/use-team-socket-room';
-import { SOCKET_TEAM_EVENTS } from '@/modules/socket/api/entities/socket-constants';
+import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
+import useSocket from '@/modules/socket/core/hooks/use-socket';
+import teamSocketRoomService from '@/modules/socket/team/services/team-socket-room-service';
+import useTeamJobsStore from '../stores/use-team-jobs-store';
 import { applyJobUpdate } from '../utilities/job-group-updates';
-import type { Job, TrajectoryJobGroup } from '../api/entities/job';
 import {
     resetTeamJobsGroupsQueryData,
     setTeamJobsGroupsQueryData,
     updateTeamJobsGroupsQueryData,
     teamJobsGroups
 } from './queries';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef } from 'react';
+import type { Job, TrajectoryJobGroup } from '../api/entities/job';
 
 type JobUpdateEvent = Job & { type?: string; sessionId?: string };
+type TeamJobsEventPayload = TrajectoryJobGroup[];
 
 const useTeamJobs = () => {
     const queryClient = useQueryClient();
     const currentTeamId = useSelectedTeamId();
     const socketService = useSocket();
-    const teamSocketRoom = useTeamSocketRoom();
     const previousTeamIdRef = useRef<string | null>(null);
 
     const isConnected = useTeamJobsStore((state) => state.isConnected);
@@ -64,17 +64,17 @@ const useTeamJobs = () => {
         updateTeamJobsGroupsQueryData((currentGroups) => applyJobUpdate(currentGroups, event), queryClient);
     }, [queryClient, setExpiredSessions]);
 
-    const handleInitialJobsEvent = useCallback((payload: unknown) => {
-        handleTeamJobs(payload as TrajectoryJobGroup[]);
+    const handleInitialJobsEvent = useCallback((payload: TeamJobsEventPayload) => {
+        handleTeamJobs(payload);
     }, [handleTeamJobs]);
 
-    const handleJobUpdateEvent = useCallback((payload: unknown) => {
-        handleJobUpdate(payload as JobUpdateEvent);
+    const handleJobUpdateEvent = useCallback((payload: JobUpdateEvent) => {
+        handleJobUpdate(payload);
     }, [handleJobUpdate]);
 
     const subscribeToTeam = useCallback((teamId: string, previousTeamId?: string | null) => {
         const currentStoreTeamId = useTeamJobsStore.getState().currentTeamId;
-        const roomServiceCurrentTeamId = teamSocketRoom.getCurrentTeamId();
+        const roomServiceCurrentTeamId = teamSocketRoomService.getCurrentTeamId();
 
         if (currentStoreTeamId === teamId && roomServiceCurrentTeamId === teamId) {
             return;
@@ -86,10 +86,10 @@ const useTeamJobs = () => {
         setExpiredSessions(new Set());
         setLoading(true);
 
-        teamSocketRoom.subscribe(teamId, resolvedPreviousTeamId).catch(() => {
+        teamSocketRoomService.subscribe(teamId, resolvedPreviousTeamId).catch(() => {
             setLoading(false);
         });
-    }, [setCurrentTeamId, setExpiredSessions, setGroups, setLoading, teamSocketRoom]);
+    }, [setCurrentTeamId, setExpiredSessions, setGroups, setLoading]);
 
     const clearTeamJobs = useCallback(() => {
         previousTeamIdRef.current = null;

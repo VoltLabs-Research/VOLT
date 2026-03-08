@@ -12,11 +12,16 @@ const useRetryJobAnalysis = () => {
                 mutation.mutateAsync({ analysisId }),
                 {
                     loading: { title: 'Retrying failed frames...' },
-                    success: (result) => ({
-                        title: !result || result.retriedFrames === 0
-                            ? 'No failed frames found to retry'
-                            : `Queued ${result.retriedFrames} failed frame${result.retriedFrames > 1 ? 's' : ''} for retry`
-                    }),
+                    success: (result) => {
+                        let title = 'No failed frames found to retry';
+
+                        if (result && result.retriedFrames !== 0) {
+                            const suffix = result.retriedFrames > 1 ? 's' : '';
+                            title = `Queued ${result.retriedFrames} failed frame${suffix} for retry`;
+                        }
+
+                        return { title };
+                    },
                     error: { title: 'Failed to retry frames' }
                 }
             );

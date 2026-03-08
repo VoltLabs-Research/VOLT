@@ -1,13 +1,13 @@
+import { DeleteMessageInputDTO } from '@modules/chat/application/dtos/chat-message/DeleteMessageDTO';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { IChatMessageRepository } from '@modules/chat/domain/port/IChatMessageRepository';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { DeleteMessageInputDTO } from '@modules/chat/application/dtos/chat-message/DeleteMessageDTO';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import type { IChatMessageRepository } from '@modules/chat/domain/port/chat-message/IChatMessageRepository';
+import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 
 @injectable()
 export class DeleteMessageUseCase implements IUseCase<DeleteMessageInputDTO, null, ApplicationError> {

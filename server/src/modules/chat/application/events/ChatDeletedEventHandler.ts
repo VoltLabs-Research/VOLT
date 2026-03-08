@@ -1,8 +1,8 @@
-import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@shared/application/events/IEventHandler';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { IChatMessageRepository } from '@modules/chat/domain/port/IChatMessageRepository';
 import ChatDeletedEvent from '@modules/chat/domain/events/ChatDeletedEvent';
+import { inject, injectable } from 'tsyringe';
+import type { IEventHandler } from '@shared/application/events/IEventHandler';
+import type { IChatMessageRepository } from '@modules/chat/domain/port/chat-message/IChatMessageRepository';
 
 @injectable()
 export default class ChatDeletedEventHandler implements IEventHandler<ChatDeletedEvent> {

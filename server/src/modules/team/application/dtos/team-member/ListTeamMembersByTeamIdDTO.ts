@@ -1,9 +1,5 @@
-import {
-    PersistedEntityDTO,
-    PaginatedOutputDTO,
-    PaginatedTeamScopedInputDTO
-} from '@modules/team/application/dtos/common';
-import { TeamMemberProps } from '@modules/team/domain/entities/TeamMember';
+import { PersistedEntityDTO, PaginatedOutputDTO, PaginatedTeamScopedInputDTO } from '@modules/team/application/dtos/common';
+import { TeamMemberProps } from '@modules/team/domain/entities/team-member/TeamMember';
 
 export type ListTeamMembersByTeamIdInputDTO = PaginatedTeamScopedInputDTO;
 

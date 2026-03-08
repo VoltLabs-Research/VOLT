@@ -1,11 +1,10 @@
-import React from 'react';
-import Container from '@/shared/presentation/components/Container';
-import ThemeCard from '@/modules/auth/components/molecules/ThemeCard';
-import { useTheme } from '@/shared/presentation/hooks/use-theme';
-import { Sun, Moon } from 'lucide-react';
 import './ThemeSelector.css';
+import { useTheme } from '@/shared/presentation/hooks/use-theme';
+import ThemeCard from '@/modules/auth/components/molecules/ThemeCard';
+import Container from '@/shared/presentation/components/Container';
+import { Sun, Moon } from 'lucide-react';
 
-const ThemeSelector: React.FC = () => {
+const ThemeSelector = () => {
     const { theme, setTheme } = useTheme();
 
     return (

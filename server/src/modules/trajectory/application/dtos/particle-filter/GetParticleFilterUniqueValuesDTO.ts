@@ -5,8 +5,8 @@ export interface GetParticleFilterUniqueValuesInputDTO {
     exposureId?: string;
     property: string;
     maxValues?: number;
-}
+};
 
 export interface GetParticleFilterUniqueValuesOutputDTO {
     values: number[];
-}
+};

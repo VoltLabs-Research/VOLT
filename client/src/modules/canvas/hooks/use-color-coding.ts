@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import useModifierBase, { UseModifierBaseOptions } from './use-modifier-base';
+import { UseModifierBaseOptions } from './use-modifier-base';
+import useModifierBase from './use-modifier-base';
+
 import { useApplyColorCodingMutation, colorCodingStatsQuery } from '@/modules/trajectory/hooks/color-coding/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import ApiError from '@/shared/errors/ApiError';
-import type { ColorCodingScene } from '@/modules/fractal/api/entities/fractal';
+
+import type { ColorCodingScene } from '@/modules/fractal/api/entities/scene';
 
 export const COLOR_GRADIENTS = ['Viridis', 'Plasma', 'BlueRed', 'GrayScale'] as const;
 export type ColorGradient = typeof COLOR_GRADIENTS[number];

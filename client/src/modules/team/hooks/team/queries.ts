@@ -1,18 +1,17 @@
-import { useMutation, useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import queryClient from '@/shared/infrastructure/query/query-client';
-import { buildKeys } from '@/shared/infrastructure/query';
-import type { Team } from '../../api/entities/team';
-import type { CreateTeamInputDTO } from '../../api/dtos/create-team';
-import type { UpdateTeamInputDTO } from '../../api/dtos/update-team';
-import type { DeleteTeamInputDTO } from '../../api/dtos/delete-team';
-import type { LeaveTeamInputDTO } from '../../api/dtos/leave-team';
 import teamService from '../../api/services/team';
+import { buildKeys } from '@/shared/infrastructure/query';
+import type { UseQueryOptions } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import type { Team } from '../../api/entities/team/team';
+import type { CreateTeamInputDTO } from '../../api/dtos/team/create-team';
+import type { UpdateTeamInputDTO } from '../../api/dtos/team/update-team';
+import type { DeleteTeamInputDTO } from '../../api/dtos/team/delete-team';
+import type { LeaveTeamInputDTO } from '../../api/dtos/team/leave-team';
+import queryClient from '@/shared/infrastructure/query/query-client';
 
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
 
-// ---------------------------------------------------------------------------
-// Keys
-// ---------------------------------------------------------------------------
+/** Team query keys. */
 
 const teamKeys = buildKeys<{
     teams: void;
@@ -29,9 +28,7 @@ export const TEAM_QUERY_KEYS = {
     teamPermissions: permissionKeys.teamPermissions
 };
 
-// ---------------------------------------------------------------------------
-// Team-scoped query matching (used for bulk invalidation/removal by teamId)
-// ---------------------------------------------------------------------------
+/** Team-scoped query roots used for bulk cache cleanup. */
 
 const TEAM_SCOPED_QUERY_ROOTS = new Set<string>([
     'team-permissions',
@@ -46,10 +43,18 @@ const TEAM_SCOPED_QUERY_ROOTS = new Set<string>([
     'team-ai-integration-model-discovery'
 ]);
 
+interface TeamScopedValue {
+    teamId?: unknown;
+};
+
+const hasTeamScopedValue = (value: unknown): value is TeamScopedValue => {
+    return typeof value === 'object' && value !== null && 'teamId' in value;
+};
+
 const extractTeamId = (value: unknown): string | null => {
     if (typeof value === 'string') return value;
-    if (value && typeof value === 'object' && 'teamId' in value) {
-        const teamId = (value as { teamId?: unknown }).teamId;
+    if (hasTeamScopedValue(value)) {
+        const teamId = value.teamId;
         return typeof teamId === 'string' ? teamId : null;
     }
     return null;
@@ -69,9 +74,7 @@ const matchesTeamScopedQuery = (queryKey: readonly unknown[], teamId: string) =>
     return getQueryTeamId(queryKey) === teamId;
 };
 
-// ---------------------------------------------------------------------------
-// Cache helpers
-// ---------------------------------------------------------------------------
+/** Team cache helpers. */
 
 const setTeamsQueryData = (updater: (previous?: Team[]) => Team[] | undefined) => {
     queryClient.setQueryData<Team[]>(TEAM_QUERY_KEYS.teams(), updater);
@@ -93,9 +96,7 @@ const removeTeamScopedQueries = (teamId: string) => {
     });
 };
 
-// ---------------------------------------------------------------------------
-// Query hooks
-// ---------------------------------------------------------------------------
+/** Team queries. */
 
 export const useTeamsQuery = (_params?: void, options?: QueryOptions<Team[]>) => {
     return useQuery({
@@ -113,9 +114,7 @@ export const useTeamPermissionsQuery = (teamId: string, options?: QueryOptions<s
     });
 };
 
-// ---------------------------------------------------------------------------
-// Mutation hooks
-// ---------------------------------------------------------------------------
+/** Team mutations. */
 
 export const useCreateTeamMutation = () => {
     return useMutation<Team, Error, CreateTeamInputDTO>({
@@ -149,7 +148,7 @@ export const useDeleteTeamMutation = () => {
                 if (!previous) return previous;
                 return previous.filter((team) => team._id !== teamId);
             });
-            void invalidateTeamScopedQueries(teamId);
+            invalidateTeamScopedQueries(teamId);
         }
     });
 };
@@ -178,7 +177,7 @@ export const useLeaveTeamMutation = () => {
             removeTeamScopedQueries(variables.teamId);
 
             window.setTimeout(() => {
-                void invalidateTeamsQuery();
+                invalidateTeamsQuery();
             }, 1500);
         }
     });

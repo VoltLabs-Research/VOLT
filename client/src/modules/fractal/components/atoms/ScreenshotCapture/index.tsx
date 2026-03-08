@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
-import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
 import { sileo } from 'sileo';
+
+interface ScreenshotCaptureProps {
+    captureRequested: boolean;
+    onCaptureHandled: () => void;
+};
 
 const downloadDataUrl = (dataUrl: string, filename: string) => {
     const link = document.createElement('a');
@@ -13,9 +17,8 @@ const downloadDataUrl = (dataUrl: string, filename: string) => {
     setTimeout(() => document.body.removeChild(link), 100);
 };
 
-const ScreenshotCapture = () => {
+const ScreenshotCapture = ({ captureRequested, onCaptureHandled }: ScreenshotCaptureProps) => {
     const { gl, scene, camera } = useThree();
-    const captureRequested = useScreenshotStore((s) => s.captureRequested);
     const pendingRef = useRef(false);
     const frameSkipRef = useRef(0);
 
@@ -23,11 +26,15 @@ const ScreenshotCapture = () => {
 
     useEffect(() => {
         if (!captureRequested) return;
-        useScreenshotStore.getState().clearCaptureRequest();
+        onCaptureHandled();
         pendingRef.current = true;
         frameSkipRef.current = 2;
-        toastIdRef.current = sileo.show({ type: 'loading', title: 'Capturing...', duration: null });
-    }, [captureRequested]);
+        toastIdRef.current = sileo.show({
+            type: 'loading',
+            title: 'Capturing...',
+            duration: null
+        });
+    }, [captureRequested, onCaptureHandled]);
 
     useFrame(() => {
         if (!pendingRef.current) return;

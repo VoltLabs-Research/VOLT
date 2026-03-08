@@ -1,5 +1,5 @@
-import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
 import { LuPanelRight } from 'react-icons/lu';
 
 interface SidebarHeaderProps {

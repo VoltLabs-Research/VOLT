@@ -1,10 +1,10 @@
+import { SendFileMessageInputDTO, SendFileMessageOutputDTO } from '@modules/chat/application/dtos/chat-message/SendFileMessageDTO';
+import { ChatMessageMetadata, ChatMessageType } from '@modules/chat/domain/entities/chat-message/ChatMessage';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
+import { SendChatMessageUseCase } from './SendChatMessageUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
-import { SendFileMessageInputDTO, SendFileMessageOutputDTO } from '@modules/chat/application/dtos/chat-message/SendFileMessageDTO';
-import { SendChatMessageUseCase } from './SendChatMessageUseCase';
-import { ChatMessageMetadata, ChatMessageType } from '@modules/chat/domain/entities/ChatMessage';
 
 @injectable()
 export class SendFileMessageUseCase implements IUseCase<SendFileMessageInputDTO, SendFileMessageOutputDTO, ApplicationError> {

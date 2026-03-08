@@ -1,17 +1,20 @@
-import { injectable, inject } from 'tsyringe';
-import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
-import type { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
-import type { IPluginExposureExportService } from '@modules/plugin/domain/port/IPluginExposureExportService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     GetPluginExposureExportInputDTO,
     GetPluginExposureExportOutputDTO
 } from '@modules/plugin/application/dtos/exposure/GetPluginExposureExportDTO';
+
+import { ErrorCodes } from '@core/constants/error-codes';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
+
+import type { IPluginExposureExportService } from '@modules/plugin/domain/port/exposure/IPluginExposureExportService';
+import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 
 @injectable()
 export class GetPluginExposureExportUseCase implements IUseCase<
@@ -69,4 +72,4 @@ export class GetPluginExposureExportUseCase implements IUseCase<
             throw error;
         }
     }
-}
+};

@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 
 export interface UseStepperOptions<K extends string>{
     steps: K[];
-}
+};
 
 const useStepper = <K extends string>(initialStep: K, options?: UseStepperOptions<K>) => {
     const [step, setStep] = useState<K>(initialStep);

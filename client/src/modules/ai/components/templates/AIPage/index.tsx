@@ -1,24 +1,30 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
+import AIArtifactSpreadsheetPanel from '@/modules/ai/components/organisms/AIArtifactSpreadsheetPanel';
 import AIComposer from '@/modules/ai/components/organisms/AIComposer';
 import AIConversationSidebar from '@/modules/ai/components/organisms/AIConversationSidebar';
 import AIConversationThread from '@/modules/ai/components/organisms/AIConversationThread';
-import AIArtifactSpreadsheetPanel from '@/modules/ai/components/organisms/AIArtifactSpreadsheetPanel';
 import ResizeHandle from '@/modules/canvas/components/atoms/ResizeHandle';
 import useResizable from '@/modules/canvas/hooks/use-resizable';
 import useAIPage from '@/modules/ai/hooks/use-ai-page';
-import usePermission from '@/shared/presentation/hooks/use-permission';
-import Container from '@/shared/presentation/components/Container';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import usePermission from '@/shared/presentation/hooks/use-permission';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
 import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { ReactNode } from 'react';
+import type { Params } from 'react-router-dom';
 import './AIPage.css';
+
+interface AIPageRouteParams extends Params {
+    conversationId?: string;
+};
 
 const AIPage = () => {
     const navigate = useNavigate();
-    const { conversationId } = useParams<{ conversationId?: string }>();
+    const { conversationId } = useParams<AIPageRouteParams>();
     const [messageDraft, setMessageDraft] = useState('');
     const [openArtifact, setOpenArtifact] = useState<AIMessageArtifact | null>(null);
     const pendingMessageRef = useRef<string | null>(null);
@@ -62,15 +68,20 @@ const AIPage = () => {
     const canUpdate = usePermission(['ai-conversation:update']);
     const canDelete = usePermission(['ai-conversation:delete']);
 
-    const modelOptions: SelectOption[] = useMemo(() => (
-        availableModelsForProvider.map((model) => ({
-            value: `${model.provider}::${model.id}`,
-            title: model.name,
-            description: model.description
-                ? `${model.providerName} · ${model.description}`
-                : model.providerName
-        }))
-    ), [availableModelsForProvider]);
+    const modelOptions: SelectOption[] = useMemo(() => {
+        return availableModelsForProvider.map((model) => {
+            let description = model.providerName;
+            if (model.description) {
+                description = `${model.providerName} · ${model.description}`;
+            }
+
+            return {
+                value: `${model.provider}::${model.id}`,
+                title: model.name,
+                description
+            };
+        });
+    }, [availableModelsForProvider]);
 
     const handleOpenTableArtifact = useCallback((artifact: AIMessageArtifact) => {
         setOpenArtifact(artifact);
@@ -132,6 +143,12 @@ const AIPage = () => {
     const shouldRenderStarterInput = !isMessagesLoading && messages.length === 0;
     const noProviderConfigured = availableModelsForProvider.length === 0 && !isProviderCatalogLoading;
 
+    const handleRetry = () => {
+        if (conversationId) {
+            loadConversationMessages(conversationId).catch(console.warn);
+        }
+    };
+
     useEffect(() => {
         if (!conversationId || !canSendMessage) {
             return;
@@ -152,6 +169,95 @@ const AIPage = () => {
 
     if (accessDenied) {
         return <AccessDenied description={accessDeniedMessage} />;
+    }
+
+    let starterInput: ReactNode = null;
+    if (shouldRenderStarterInput) {
+        starterInput = (
+            <AIComposer
+                value={messageDraft}
+                modelOptions={modelOptions}
+                selectedModel={selectedModel}
+                onChange={setMessageDraft}
+                onModelChange={setSelectedModel}
+                onSend={handleSend}
+                disabled={!canSendMessage || !canCreate || isProviderCatalogLoading || noProviderConfigured}
+                isSending={isSendingMessage}
+                error={sendMessageError}
+            />
+        );
+    }
+
+    let workspaceContent: ReactNode = (
+        <>
+            <Container className='d-flex flex-1 ai-page-workspace'>
+                <Container className='d-flex column flex-1 ai-page-chat-pane'>
+                    <AIConversationThread
+                        conversationId={conversationId}
+                        messages={messages}
+                        isLoading={isMessagesLoading}
+                        isResponding={isSendingMessage}
+                        error={messagesError}
+                        onOpenTableArtifact={handleOpenTableArtifact}
+                        activeTableArtifactId={openArtifact?.id || null}
+                        addToolApprovalResponse={addToolApprovalResponse}
+                        starterInput={starterInput}
+                        onRetry={handleRetry}
+                    />
+
+                    {!shouldRenderStarterInput && (
+                        <AIComposer
+                            value={messageDraft}
+                            modelOptions={modelOptions}
+                            selectedModel={selectedModel}
+                            onChange={setMessageDraft}
+                            onModelChange={setSelectedModel}
+                            onSend={handleSend}
+                            disabled={!canSendMessage || !canCreate || isProviderCatalogLoading || noProviderConfigured}
+                            isSending={isSendingMessage}
+                            error={sendMessageError}
+                        />
+                    )}
+                </Container>
+
+                {openArtifact && (
+                    <>
+                        <ResizeHandle
+                            direction='horizontal'
+                            isDragging={spreadsheetPanel.isDragging}
+                            onPointerDown={spreadsheetPanel.handleProps.onPointerDown}
+                        />
+                        <AIArtifactSpreadsheetPanel
+                            artifact={openArtifact}
+                            onClose={handleCloseArtifactPanel}
+                            width={spreadsheetPanel.size}
+                        />
+                    </>
+                )}
+            </Container>
+        </>
+    );
+
+    if (!selectedTeam?._id) {
+        workspaceContent = (
+            <Container className='d-flex flex-center flex-1'>
+                <EmptyState
+                    title='No team selected'
+                    description='Select a team to start an AI conversation.'
+                />
+            </Container>
+        );
+    } else if (noProviderConfigured) {
+        workspaceContent = (
+            <Container className='d-flex flex-center flex-1'>
+                <EmptyState
+                    title='No AI provider configured'
+                    description='Enable at least one provider with a valid API key in team integrations to start chatting.'
+                    buttonText='Open integrations'
+                    buttonOnClick={() => navigate('/dashboard/settings/integrations')}
+                />
+            </Container>
+        );
     }
 
     return (
@@ -177,87 +283,7 @@ const AIPage = () => {
                     </Container>
                 )}
 
-                {!selectedTeam?._id ? (
-                    <Container className='d-flex flex-center flex-1'>
-                        <EmptyState
-                            title='No team selected'
-                            description='Select a team to start an AI conversation.'
-                        />
-                    </Container>
-                ) : noProviderConfigured ? (
-                    <Container className='d-flex flex-center flex-1'>
-                        <EmptyState
-                            title='No AI provider configured'
-                            description='Enable at least one provider with a valid API key in team integrations to start chatting.'
-                            buttonText='Open integrations'
-                            buttonOnClick={() => navigate('/dashboard/settings/integrations')}
-                        />
-                    </Container>
-                ) : (
-                    <>
-                        <Container className='d-flex flex-1 ai-page-workspace'>
-                            <Container className='d-flex column flex-1 ai-page-chat-pane'>
-                                <AIConversationThread
-                                    conversationId={conversationId}
-                                    messages={messages}
-                                    isLoading={isMessagesLoading}
-                                    isResponding={isSendingMessage}
-                                    error={messagesError}
-                                    onOpenTableArtifact={handleOpenTableArtifact}
-                                    activeTableArtifactId={openArtifact?.id || null}
-                                    addToolApprovalResponse={addToolApprovalResponse}
-                                    starterInput={shouldRenderStarterInput ? (
-                                        <AIComposer
-                                            value={messageDraft}
-                                            modelOptions={modelOptions}
-                                            selectedModel={selectedModel}
-                                            onChange={setMessageDraft}
-                                            onModelChange={setSelectedModel}
-                                            onSend={handleSend}
-                                            disabled={!canSendMessage || !canCreate || isProviderCatalogLoading || noProviderConfigured}
-                                            isSending={isSendingMessage}
-                                            error={sendMessageError}
-                                        />
-                                    ) : null}
-                                    onRetry={() => {
-                                        if (conversationId) {
-                                            loadConversationMessages(conversationId).catch(console.warn);
-                                        }
-                                    }}
-                                />
-
-                                {!shouldRenderStarterInput && (
-                                    <AIComposer
-                                        value={messageDraft}
-                                        modelOptions={modelOptions}
-                                        selectedModel={selectedModel}
-                                        onChange={setMessageDraft}
-                                        onModelChange={setSelectedModel}
-                                        onSend={handleSend}
-                                        disabled={!canSendMessage || !canCreate || isProviderCatalogLoading || noProviderConfigured}
-                                        isSending={isSendingMessage}
-                                        error={sendMessageError}
-                                    />
-                                )}
-                            </Container>
-
-                            {openArtifact && (
-                                <>
-                                    <ResizeHandle
-                                        direction='horizontal'
-                                        isDragging={spreadsheetPanel.isDragging}
-                                        onPointerDown={spreadsheetPanel.handleProps.onPointerDown}
-                                    />
-                                    <AIArtifactSpreadsheetPanel
-                                        artifact={openArtifact}
-                                        onClose={handleCloseArtifactPanel}
-                                        width={spreadsheetPanel.size}
-                                    />
-                                </>
-                            )}
-                        </Container>
-                    </>
-                )}
+                {workspaceContent}
             </Container>
         </Container>
     );

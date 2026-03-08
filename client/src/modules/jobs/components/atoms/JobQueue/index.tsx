@@ -1,19 +1,30 @@
-import { formatDistanceToNow } from 'date-fns';
-import UseAnimations from 'react-useanimations';
-import activity from 'react-useanimations/lib/activity';
-import { IoCheckmark, IoTimeOutline, IoWarningOutline, IoCloseOutline } from 'react-icons/io5';
-import { CiRedo } from 'react-icons/ci';
-import { JobStatus, type Job } from '@/modules/jobs/api/entities/job';
+import { JobStatus } from '@/modules/jobs/api/entities/job';
+import useRetryJobAnalysis from '@/modules/jobs/hooks/use-retry-job-analysis';
 import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
-import { sileo } from 'sileo';
-import useRetryJobAnalysis from '@/modules/jobs/hooks/use-retry-job-analysis';
+import Title from '@/shared/presentation/components/Title';
 import '@/modules/jobs/components/atoms/JobQueue/JobQueue.css';
+import { formatDistanceToNow } from 'date-fns';
+import { sileo } from 'sileo';
+import { CiRedo } from 'react-icons/ci';
+import { IoCheckmark, IoCloseOutline, IoTimeOutline, IoWarningOutline } from 'react-icons/io5';
+import activity from 'react-useanimations/lib/activity';
+import UseAnimations from 'react-useanimations';
+import type { ReactNode } from 'react';
+import type { Job } from '@/modules/jobs/api/entities/job';
 
-const statusConfig = {
+interface JobQueueProps {
+    job: Job;
+    isChild?: boolean;
+};
+
+interface StatusConfigEntry {
+    icon: ReactNode;
+};
+
+const statusConfig: Partial<Record<JobStatus, StatusConfigEntry>> = {
     [JobStatus.Completed]: { icon: <IoCheckmark /> },
     [JobStatus.Running]: { icon: <UseAnimations animation={activity} /> },
     [JobStatus.Queued]: { icon: <IoTimeOutline /> },
@@ -21,7 +32,7 @@ const statusConfig = {
     [JobStatus.QueuedAfterFailure]: { icon: <IoWarningOutline /> },
     [JobStatus.Failed]: { icon: <IoCloseOutline /> },
     [JobStatus.Unknown]: { icon: <IoWarningOutline /> }
-} as const;
+};
 
 const queueTypeNames: Record<string, string> = {
     'trajectory_processing': 'Processing',
@@ -43,8 +54,8 @@ const formatDuration = (ms: number) => {
     return `${(ms / 60000).toFixed(1)}m`;
 };
 
-const JobQueue = ({ job, isChild = false }: { job: Job; isChild?: boolean }) => {
-    if (!(job.status in statusConfig)) return null;
+const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
+    if (!statusConfig[job.status]) return null;
 
     const containerClass = `job-container ${job.status}${isChild ? ' is-child' : ''}`;
     const isFailed = job.status === JobStatus.Failed;

@@ -1,8 +1,24 @@
-import type { AIProvider } from '@/modules/ai/api/entities/ai-constants';
+import type { AIProvider } from '@/modules/ai/api/entities/ai-provider';
 import type { BaseEntity } from '@/shared/domain/entities/BaseEntity';
+import type { UIMessage } from 'ai';
 
-export type AIMessageRole = 'user' | 'assistant';
-export type AIMessageArtifactKind = 'table' | 'chart' | 'image' | 'text' | 'unknown';
+export interface AIConversationMessageArtifacts {
+    items?: AIMessageArtifact[];
+    [key: string]: unknown;
+};
+
+export enum AIMessageRole {
+    User = 'user',
+    Assistant = 'assistant'
+};
+
+export enum AIMessageArtifactKind {
+    Table = 'table',
+    Chart = 'chart',
+    Image = 'image',
+    Text = 'text',
+    Unknown = 'unknown'
+};
 
 export interface AIMessageArtifact {
     id: string;
@@ -28,12 +44,9 @@ export interface AIConversationMessage extends BaseEntity {
     conversationId: string;
     role: AIMessageRole;
     /** UIMessage-compatible parts stored directly from the SDK. */
-    parts: unknown[];
+    parts: UIMessage['parts'];
     content: string;
-    artifacts?: {
-        items?: AIMessageArtifact[];
-        [key: string]: unknown;
-    } | null;
+    artifacts?: AIConversationMessageArtifacts | null;
     modelInfo?: Record<string, unknown> | null;
     tokenUsage?: Record<string, unknown> | null;
 };

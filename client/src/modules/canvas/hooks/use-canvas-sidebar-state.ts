@@ -1,10 +1,11 @@
 import useCanvasSidebarScene from './use-canvas-sidebar-scene';
+
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 
 interface UseCanvasSidebarStateProps {
     trajectory?: Trajectory | null;
     trajectoryId?: string;
-}
+};
 
 const useCanvasSidebarState = ({ trajectory, trajectoryId }: UseCanvasSidebarStateProps) => {
     const state = useCanvasSidebarScene({ trajectory, trajectoryId });

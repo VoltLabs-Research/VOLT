@@ -1,12 +1,14 @@
 import { useMemo } from 'react';
-import Container from '@/shared/presentation/components/Container';
 import AvatarStack from '@/shared/presentation/components/AvatarStack';
+import Container from '@/shared/presentation/components/Container';
+
 import type { CanvasPresenceUser } from '../../../hooks/use-canvas-presence';
+
 import './CanvasPresence.css';
 
 interface CanvasPresenceProps {
     users: CanvasPresenceUser[];
-}
+};
 
 const CanvasPresence = ({ users }: CanvasPresenceProps) => {
     const mapped = useMemo(() => (

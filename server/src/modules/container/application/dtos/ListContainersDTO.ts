@@ -4,6 +4,6 @@ import type { Container } from '@modules/container/domain/entities/Container';
 export interface ListContainersInputDTO extends Partial<PaginationOptions> {
     teamId: string;
     userId: string;
-}
+};
 
-export interface ListContainersOutputDTO extends PaginatedResult<Container> {}
+export interface ListContainersOutputDTO extends PaginatedResult<Container> {};

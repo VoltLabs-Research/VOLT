@@ -1,16 +1,17 @@
-import { useEffect } from 'react';
-import Modal from '@/shared/presentation/components/Modal';
-import Button from '@/shared/presentation/components/Button';
-import useZodForm from '@/shared/presentation/hooks/use-zod-form';
-import useModalForm from '@/shared/presentation/hooks/use-modal-form';
-import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCreateSSHConnectionMutation, useUpdateSSHConnectionMutation } from '@/modules/ssh/hooks/queries';
-import SSHConnectionForm from '@/modules/ssh/components/molecules/SSHConnectionForm';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { createSSHConnectionSchema, defaultValues } from '@/modules/ssh/utilities/ssh-connection-form-schema';
 import SSHConnectionTestButton from '@/modules/ssh/components/atoms/SSHConnectionTestButton';
-import { type SSHConnectionFormData, defaultValues, createSSHConnectionSchema } from './validation-schema';
-import type { SSHConnection } from '@/modules/ssh/api/entities/ssh-connection';
+import SSHConnectionForm from '@/modules/ssh/components/molecules/SSHConnectionForm';
+import Button from '@/shared/presentation/components/Button';
+import Modal from '@/shared/presentation/components/Modal';
+import useModalForm from '@/shared/presentation/hooks/use-modal-form';
+import useZodForm from '@/shared/presentation/hooks/use-zod-form';
+import { useEffect } from 'react';
 import type { CreateSSHConnectionParams } from '@/modules/ssh/api/dtos/create-ssh-connection';
+import type { SSHConnection } from '@/modules/ssh/api/entities/ssh-connection';
 import type { UpdateSSHConnectionParams } from '@/modules/ssh/api/dtos/update-ssh-connection';
+import type { SSHConnectionFormData } from '@/modules/ssh/utilities/ssh-connection-form-schema';
 
 export const SSH_CONNECTION_MODAL_ID = 'ssh-connection-modal';
 
@@ -18,7 +19,7 @@ interface SSHConnectionModalProps {
     connection: SSHConnection | null;
     mode: 'create' | 'edit';
     onSuccess?: () => void;
-}
+};
 
 const SSHConnectionModal = ({ connection, mode, onSuccess }: SSHConnectionModalProps) => {
     const createConnection = useCreateSSHConnectionMutation();

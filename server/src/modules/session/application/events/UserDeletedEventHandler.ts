@@ -1,7 +1,7 @@
-import { injectable, inject } from 'tsyringe';
-import { DeleteManyOnUserDeletedHandler } from '@shared/application/events/DeleteManyOnUserDeletedHandler';
 import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
-import { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
+import { DeleteManyOnUserDeletedHandler } from '@shared/application/events/DeleteManyOnUserDeletedHandler';
+import { inject, injectable } from 'tsyringe';
+import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 
 @injectable()
 export default class UserDeletedEventHandler extends DeleteManyOnUserDeletedHandler {
@@ -11,4 +11,4 @@ export default class UserDeletedEventHandler extends DeleteManyOnUserDeletedHand
     ){
         super();
     }
-}
+};

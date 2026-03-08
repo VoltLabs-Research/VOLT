@@ -504,12 +504,6 @@
     border-top: 1px solid var(--color-border-soft);
 }
 
-/** Settings Page Container **/
-.settings-page-container {
-    max-width: 800px;
-    margin: 0 auto;
-}
-
 /** Mobile **/
 @media (max-width: 768px) {
 

@@ -1,6 +1,6 @@
-import Redis from 'ioredis';
-import logger from '@shared/infrastructure/logger';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
+import logger from '@shared/infrastructure/logger';
+import Redis from 'ioredis';
 
 const getRedisConfig = () => {
     const redisConfig = {

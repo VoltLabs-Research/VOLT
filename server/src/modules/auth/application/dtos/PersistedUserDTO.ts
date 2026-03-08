@@ -1,6 +1,11 @@
-import User, { UserProps } from '@modules/auth/domain/entities/User';
+import User from '@modules/auth/domain/entities/User';
+import type { UserProps } from '@modules/auth/domain/entities/User';
 
-export type PersistedUserDTO = UserProps & { _id: string };
+interface PersistedUserIdentity {
+    _id: string;
+};
+
+export type PersistedUserDTO = UserProps & PersistedUserIdentity;
 
 export const toPersistedUserDTO = (user: User): PersistedUserDTO => {
     return {

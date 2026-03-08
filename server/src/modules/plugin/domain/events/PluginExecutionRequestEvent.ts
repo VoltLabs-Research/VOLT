@@ -7,10 +7,10 @@ export interface PluginExecutionRequestPayload {
     pluginName: string;
     teamId: string;
     trajectoryName: string;
-}
+};
 
 export default class PluginExecutionRequestEvent extends BaseDomainEvent<PluginExecutionRequestPayload> {
     constructor(payload: PluginExecutionRequestPayload) {
         super('PluginExecutionRequest', payload);
     }
-}
+};

@@ -5,7 +5,7 @@ import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter'
 import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
 import type { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
 import type { SubscribeToTeamSocketPayload } from '@modules/socket/domain/contracts/team-subscription';
-import SocketTeamSubscriptionService from '@modules/socket/application/services/SocketTeamSubscriptionService';
+import SocketTeamSubscriptionCoordinator from '@modules/socket/services/team-subscription/SocketTeamSubscriptionCoordinator';
 import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { subscribeToTeamSocketPayloadSchema } from '@modules/socket/infrastructure/validation/team-subscription-schemas';
@@ -19,8 +19,8 @@ export default class TeamSubscriptionSocketModule extends BaseSocketModule {
         @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
         @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
         @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry,
-        @inject(SocketTeamSubscriptionService)
-        private readonly teamSubscriptionService: SocketTeamSubscriptionService
+        @inject(SOCKET_TOKENS.TeamSubscriptionCoordinator)
+        private readonly teamSubscriptionService: SocketTeamSubscriptionCoordinator
     ) {
         super(emitter, roomManager, eventRegistry);
     }

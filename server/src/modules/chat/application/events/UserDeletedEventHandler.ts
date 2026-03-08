@@ -1,7 +1,7 @@
-import { injectable, inject } from 'tsyringe';
-import { DeleteManyOnUserDeletedHandler } from '@shared/application/events/DeleteManyOnUserDeletedHandler';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
+import { inject, injectable } from 'tsyringe';
+import { DeleteManyOnUserDeletedHandler } from '@shared/application/events/DeleteManyOnUserDeletedHandler';
+import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
 
 @injectable()
 export default class UserDeletedEventHandler extends DeleteManyOnUserDeletedHandler {
@@ -11,4 +11,4 @@ export default class UserDeletedEventHandler extends DeleteManyOnUserDeletedHand
     ){
         super();
     }
-}
+};

@@ -1,1 +1,5 @@
-export { SCRIPTING_TOKENS } from '@modules/scripting/application/di/ScriptingTokens';
+export const SCRIPTING_TOKENS = {
+    ScriptingNotebookRepository: Symbol.for('ScriptingNotebookRepository'),
+    ScriptingSessionOrchestrator: Symbol.for('ScriptingSessionOrchestrator'),
+    ScriptingSessionLock: Symbol.for('ScriptingSessionLock')
+};

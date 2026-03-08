@@ -1,4 +1,5 @@
-import { ErrorCodes, type ErrorCode } from '@core/constants/error-codes';
+import { ErrorCodes } from '@core/constants/error-codes';
+import type { ErrorCode } from '@core/constants/error-codes';
 
 export default class ApplicationError extends Error {
     constructor(

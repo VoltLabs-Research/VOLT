@@ -4,12 +4,16 @@ import type { Analysis } from '../../entities/analysis';
 import type { GetAnalysesParams } from '../../dtos/get-analyses';
 import type { GetAnalysesByTrajectoryParams } from '../../dtos/get-analyses-by-trajectory';
 
+interface DeleteAnalysisParams {
+    analysisId: string;
+};
+
 const endpoints = {
     getAll: paginated<GetAnalysesParams, PaginatedResponse<Analysis>>('/'),
     getByTrajectoryId: paginated<GetAnalysesByTrajectoryParams, PaginatedResponse<Analysis>>(
         '/trajectory/:trajectoryId'
     ),
-    delete: del<{ analysisId: string }>('/:analysisId')
+    delete: del<DeleteAnalysisParams>('/:analysisId')
 };
 
 export default endpoints;

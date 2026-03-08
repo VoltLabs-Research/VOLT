@@ -1,21 +1,22 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import type { TrajectoryJobGroup as TrajectoryJobGroupType, FrameJobGroup } from '@/modules/jobs/api/entities/job';
+import { frameGroupStatusClassNames } from '@/modules/jobs/utilities/frame-group-status';
+import useJobGroupActions from '@/modules/jobs/hooks/use-job-group-actions';
+import FrameGroup from '@/modules/jobs/components/molecules/FrameGroup';
 import Container from '@/shared/presentation/components/Container';
-import FrameGroup from './FrameGroup';
 import JobGroupHeader from './JobGroupHeader';
 import JobGroupMenu from './JobGroupMenu';
-import useJobGroupActions from '@/modules/jobs/hooks/use-job-group-actions';
-import { statusConfig } from './status-config';
 import '@/modules/jobs/components/molecules/JobGroup/JobGroup.css';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
+import type { FrameJobGroup, TrajectoryJobGroup as TrajectoryJobGroupType } from '@/modules/jobs/api/entities/job';
 
 interface JobGroupProps {
     group: TrajectoryJobGroupType;
     defaultExpanded?: boolean;
-}
-const JobGroup: React.FC<JobGroupProps> = ({ group, defaultExpanded = false }) => {
+};
+
+const JobGroup = ({ group, defaultExpanded = false }: JobGroupProps) => {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-    const statusClassName = statusConfig[group.overallStatus];
+    const statusClassName = frameGroupStatusClassNames[group.overallStatus];
     const {
         loadingAction,
         handleClearHistory,

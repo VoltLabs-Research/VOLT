@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react';
-import { Plus, Trash2, Settings } from 'lucide-react';
-import Container from '@/shared/presentation/components/Container';
-import Button from '@/shared/presentation/components/Button';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Title from '@/shared/presentation/components/Title';
 import './EditableKeyValueCard.css';
+import { Plus, Trash2, Settings } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export interface FieldConfig {
     key: string;
     placeholder: string;
     type?: 'text' | 'number';
     label?: string;
-}
+};
 
 export interface EditableKeyValueCardProps<T extends Record<string, any>> {
     title?: string;
@@ -27,7 +27,7 @@ export interface EditableKeyValueCardProps<T extends Record<string, any>> {
     showCard?: boolean;
     addButtonPosition?: 'top' | 'bottom';
     className?: string;
-}
+};
 
 const EditableKeyValueCard = <T extends Record<string, any>>({
     title,

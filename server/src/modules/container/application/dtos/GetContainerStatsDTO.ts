@@ -3,7 +3,7 @@ import type { ContainerStats } from '@modules/container/domain/port/IContainerSe
 export interface GetContainerStatsInputDTO {
     teamId: string;
     containerId: string;
-}
+};
 
 export interface GetContainerStatsOutputDTO {
     stats: ContainerStats;
@@ -11,4 +11,4 @@ export interface GetContainerStatsOutputDTO {
         memory: number;
         cpus: number;
     };
-}
+};

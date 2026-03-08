@@ -1,6 +1,6 @@
-import type { ReactNode, MouseEvent } from 'react';
-import Container from '@/shared/presentation/components/Container';
 import { cn } from '@/shared/utils';
+import Container from '@/shared/presentation/components/Container';
+import type { ReactNode, MouseEvent } from 'react';
 
 export interface FileExplorerRowProps {
     icon: ReactNode;

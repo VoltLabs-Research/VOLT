@@ -1,12 +1,20 @@
-import { injectable } from 'tsyringe';
+import { getMinioClient, getMinioConfig } from '@core/config/minio';
+import logger from '@shared/infrastructure/logger';
 import { Client } from 'minio';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
-import { Readable } from 'node:stream';
+import type { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { getMinioClient, getMinioConfig } from '@core/config/minio';
-import { IStorageService, UploadSource, FileMetadata } from '@shared/domain/port/IStorageService';
-import logger from '@shared/infrastructure/logger';
+import { injectable } from 'tsyringe';
+import type { FileMetadata, IStorageService, UploadSource } from '@shared/domain/port/IStorageService';
+
+interface MinioError {
+    code?: string;
+};
+
+const isMinioError = (error: unknown): error is MinioError => {
+    return typeof error === 'object' && error !== null && 'code' in error;
+};
 
 @injectable()
 export default class MinioStorageService implements IStorageService {
@@ -60,8 +68,8 @@ export default class MinioStorageService implements IStorageService {
         try {
             await this.client.statObject(bucket, objectName);
             return true;
-        } catch (error: any) {
-            if (error.code === 'NotFound') return false;
+        } catch (error: unknown) {
+            if (isMinioError(error) && error.code === 'NotFound') return false;
             throw error;
         }
     }

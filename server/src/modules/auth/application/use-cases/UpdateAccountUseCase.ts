@@ -1,13 +1,14 @@
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
+import { UpdateAccountInputDTO, UpdateAccountOutputDTO } from '@modules/auth/application/dtos/UpdateAccountDTO';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import User from '@modules/auth/domain/entities/User';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { UpdateAccountInputDTO, UpdateAccountOutputDTO } from '@modules/auth/application/dtos/UpdateAccountDTO';
-import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import { IAvatarService } from '@modules/auth/domain/port/IAvatarService';
-import { injectable, inject } from 'tsyringe';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import User, { UserProps } from '@modules/auth/domain/entities/User';
+import { Result } from '@shared/domain/port/Result';
+import { inject, injectable } from 'tsyringe';
+import type { UserProps } from '@modules/auth/domain/entities/User';
+import type { IAvatarService } from '@modules/auth/domain/port/IAvatarService';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
 
 @injectable()
 export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInputDTO, UpdateAccountOutputDTO, ApplicationError>{
@@ -16,7 +17,7 @@ export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInput
         private readonly userRepository: IUserRepository,
         @inject(AUTH_TOKENS.AvatarService)
         private readonly avatarService: IAvatarService
-    ){}
+    ) {}
 
     async execute(input: UpdateAccountInputDTO): Promise<Result<UpdateAccountOutputDTO, ApplicationError>>{
         const user = await this.userRepository.findById(input.userId);
@@ -27,9 +28,10 @@ export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInput
             ));
         }
 
-        const normalizedEmail = input.email
-            ? User.normalizeEmail(input.email)
-            : undefined;
+        let normalizedEmail: string | undefined;
+        if (input.email) {
+            normalizedEmail = User.normalizeEmail(input.email);
+        }
 
         if (normalizedEmail && normalizedEmail !== user.props.email) {
             const exists = await this.userRepository.emailExists(normalizedEmail);
@@ -85,4 +87,4 @@ export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInput
             fullName: `${updatedUser.props.firstName} ${updatedUser.props.lastName}`.trim()
         });
     }
-}
+};

@@ -9,7 +9,10 @@ export interface SSHConnection extends BaseEntity {
     user: string;
 };
 
-export type FileEntryType = 'file' | 'dir';
+export enum FileEntryType {
+    File = 'file',
+    Dir = 'dir'
+};
 
 export interface SSHFileEntry {
     type: FileEntryType;

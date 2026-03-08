@@ -1,9 +1,14 @@
-import { useMemo, useEffect } from 'react';
-import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import { useKeyboardShortcutsStore, type Shortcut } from '../../../stores/use-keyboard-shortcuts-store';
+import { useKeyboardShortcutsStore } from '../../../stores/use-keyboard-shortcuts-store';
 import formatKeyName from '../../../utilities/format-key-name';
+
+import { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import { useMemo, useEffect } from 'react';
+import Container from '@/shared/presentation/components/Container';
+import Modal from '@/shared/presentation/components/Modal';
+import Title from '@/shared/presentation/components/Title';
+
+import type { Shortcut } from '../../../stores/use-keyboard-shortcuts-store';
+
 import './KeyboardShortcutsPanel.css';
 
 const CATEGORY_ORDER = ['playback', 'view', 'navigation', 'general'];

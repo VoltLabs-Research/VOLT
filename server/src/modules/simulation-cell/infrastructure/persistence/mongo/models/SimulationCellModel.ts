@@ -1,10 +1,20 @@
+import { teamRefField, trajectoryRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import mongoose, { Schema, Model, Document } from 'mongoose';
-import { SimulationCellProps, SimulationCellDims, SimulationCellGeometry } from '@modules/simulation-cell/domain/entities/SimulationCell';
-import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import type { SimulationCellDims, SimulationCellGeometry, SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
+import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-type SimulationCellRelations = 'team' | 'trajectory';
+export enum SimulationCellRelation {
+    Team = 'team',
+    Trajectory = 'trajectory'
+};
 
-export interface SimulationCellDocument extends Persistable<SimulationCellProps, SimulationCellRelations>, Document { }
+type SimulationCellRelations = SimulationCellRelation.Team | SimulationCellRelation.Trajectory;
+
+export interface SimulationCellDocument extends Persistable<
+    SimulationCellProps,
+    SimulationCellRelations
+>, Document {
+};
 
 const SimulationCellDimsSchema: Schema<SimulationCellDims> = new Schema({
     width: { type: Number, required: true },
@@ -23,24 +33,10 @@ const SimulationCellGeometrySchema: Schema<SimulationCellGeometry> = new Schema(
 }, { _id: false });
 
 const SimulationCellSchema: Schema<SimulationCellDocument> = new Schema({
-    boundingBox: {
-        type: SimulationCellDimsSchema,
-        required: true
-    },
-    geometry: {
-        type: SimulationCellGeometrySchema,
-        required: true
-    },
-    team: {
-        type: Schema.Types.ObjectId,
-        ref: 'Team',
-        required: true
-    },
-    trajectory: {
-        type: Schema.Types.ObjectId,
-        ref: 'Trajectory',
-        required: true
-    },
+    boundingBox: SimulationCellDimsSchema,
+    geometry: SimulationCellGeometrySchema,
+    team: teamRefField(),
+    trajectory: trajectoryRefField(),
     timestep: {
         type: Number,
         required: true

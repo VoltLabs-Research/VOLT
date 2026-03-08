@@ -1,5 +1,5 @@
 import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import type { PersistedNotificationDTO } from '@modules/notification/domain/port/INotificationRepository';
+import type { PersistedNotificationDTO } from './NotificationDTO';
 
 export interface GetMyNotificationsInputDTO{
     userId: string;
@@ -7,4 +7,4 @@ export interface GetMyNotificationsInputDTO{
     limit?: number;
 };
 
-export interface GetMyNotificationsOutputDTO extends PaginatedResult<PersistedNotificationDTO>{}
+export interface GetMyNotificationsOutputDTO extends PaginatedResult<PersistedNotificationDTO> {};

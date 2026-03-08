@@ -1,18 +1,19 @@
-import { type Control } from 'react-hook-form';
-import { ArrowLeft } from 'lucide-react';
+import UserBadge from '../UserBadge';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import UserBadge from '../UserBadge';
+import { ArrowLeft } from 'lucide-react';
+import type { FormEventHandler } from 'react';
+import type { Control } from 'react-hook-form';
 import type { SignInForm } from '../../templates/SignIn/validation-schema';
 
 interface RegisterStepProps {
     email: string;
     control: Control<SignInForm>;
     isLoading: boolean;
-    onSubmit: React.FormEventHandler<HTMLFormElement>;
+    onSubmit: FormEventHandler<HTMLFormElement>;
     onBack: () => void;
-}
+};
 
 const RegisterStep = ({
     email,

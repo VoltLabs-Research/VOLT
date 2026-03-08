@@ -1,12 +1,17 @@
+import useMessagesPage from '../../../hooks/chat/use-messages-page';
+import ChatArea from '../../organisms/ChatArea';
+import ChatSidebar from '../../organisms/ChatSidebar';
+import CreateGroupModal from '../../organisms/CreateGroupModal';
+import GroupManagementModal from '../../organisms/GroupManagementModal';
+import ChatDetailsPanel from '../../molecules/ChatDetailsPanel';
 import { useParams } from 'react-router-dom';
-import useMessagesPage from '../../../hooks/use-messages-page';
-import { ChatSidebar, ChatArea, CreateGroupModal, GroupManagementModal } from '../../organisms';
-import { ChatDetailsPanel } from '../../molecules';
 import Container from '@/shared/presentation/components/Container';
 import './MessagesPage.css';
 
+type MessagesPageRouteParam = 'chatId';
+
 const MessagesPage = () => {
-    const { chatId } = useParams<{ chatId?: string }>();
+    const { chatId } = useParams<MessagesPageRouteParam>();
 
     const {
         currentChat,
@@ -20,7 +25,6 @@ const MessagesPage = () => {
         isMessagesLoading,
         hasMoreMessages,
         showDetails,
-        setShowDetails,
         handleSelectChat,
         handleStartChat,
         handleLoadMore,
@@ -29,6 +33,7 @@ const MessagesPage = () => {
         handleSendFiles,
         handleUpdateGroupInfo,
         handleUpdateAdmins,
+        handleInfoClick,
         sendMessage,
         editMessage,
         deleteMessage,
@@ -64,7 +69,7 @@ const MessagesPage = () => {
                 onEditMessage={editMessage}
                 onDeleteMessage={deleteMessage}
                 onToggleReaction={toggleReaction}
-                onInfoClick={() => setShowDetails(!showDetails)}
+                onInfoClick={handleInfoClick}
             />
 
             {showDetails && (

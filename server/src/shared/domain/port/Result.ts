@@ -6,10 +6,16 @@ export const Result = {
     /**
      * Create a successful result.
      */
-    ok: <T>(value: T): Result<T, never> => ({ success: true, value }),
+    ok: <T>(value: T): Result<T, never> => ({
+        success: true,
+        value
+    }),
     
     /**
      * Create a failed result.
      */
-    fail: <E>(error: E): Result<never, E> => ({ success: false, error }),
+    fail: <E>(error: E): Result<never, E> => ({
+        success: false,
+        error
+    }),
 };

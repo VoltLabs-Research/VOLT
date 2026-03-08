@@ -1,12 +1,12 @@
-import { motion } from 'framer-motion';
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
-import type { MenuOption } from '@/shared/presentation/types/menu';
+import { motion } from 'framer-motion';
 import type { ColumnConfig, Identifiable } from '../DocumentListingTable';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 
 interface TableRowProps<T extends Identifiable> {
     item: T;
-    columns: ColumnConfig[];
+    columns: ColumnConfig<T>[];
     columnWidths: number[];
     getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
     selectedItems: T[];
@@ -31,8 +31,8 @@ const TableRow = <T extends Identifiable>({
 }: TableRowProps<T>) => {
     const menuOptions = getMenuOptions ? getMenuOptions(item, selectedItems) : [];
     const itemRecord = item as Record<string, unknown>;
-    const getColumnKey = (col: ColumnConfig): string => String(col.key ?? col.path ?? '');
-    const getColumnTitle = (col: ColumnConfig): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
+    const getColumnKey = (col: ColumnConfig<T>): string => String(col.key ?? col.path ?? '');
+    const getColumnTitle = (col: ColumnConfig<T>): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
 
     const rowStyle: React.CSSProperties = {
         display: 'flex',

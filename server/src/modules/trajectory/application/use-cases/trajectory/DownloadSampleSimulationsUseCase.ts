@@ -1,12 +1,14 @@
-import { injectable } from 'tsyringe';
-import type { IUseCase } from '@shared/application/IUseCase';
+import { STATIC_ROOT } from '@core/config/paths';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { DownloadSampleSimulationsInputDTO, DownloadSampleSimulationsOutputDTO } from '@modules/trajectory/application/dtos/trajectory/DownloadSampleSimulationsDTO';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import path from 'node:path';
+
+import { injectable } from 'tsyringe';
 import fs from 'node:fs';
-import { STATIC_ROOT } from '@core/config/paths';
-import { DownloadSampleSimulationsInputDTO, DownloadSampleSimulationsOutputDTO } from '@modules/trajectory/application/dtos/trajectory/DownloadSampleSimulationsDTO';
+import path from 'node:path';
+
+import type { IUseCase } from '@shared/application/IUseCase';
 
 const SAMPLES_PATH = path.join(STATIC_ROOT, 'default/simulations');
 
@@ -28,4 +30,4 @@ export default class DownloadSampleSimulationsUseCase implements IUseCase<Downlo
         const stream = fs.createReadStream(filePath);
         return Result.ok({ stream, filename });
     }
-}
+};

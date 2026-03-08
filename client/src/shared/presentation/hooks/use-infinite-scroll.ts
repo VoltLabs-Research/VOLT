@@ -1,11 +1,12 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useRef } from 'react';
+import type { RefObject } from 'react';
 
 interface UseInfiniteScrollOptions {
     rootRef?: RefObject<HTMLElement | null> | null;
     hasMore: boolean;
     isFetchingMore: boolean;
     onLoadMore?: () => void;
-}
+};
 
 const useInfiniteScroll = ({ rootRef, hasMore, isFetchingMore, onLoadMore }: UseInfiniteScrollOptions) => {
     const sentinelRef = useRef<HTMLDivElement | null>(null);

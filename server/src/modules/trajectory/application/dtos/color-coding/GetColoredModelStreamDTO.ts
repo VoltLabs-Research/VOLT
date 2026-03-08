@@ -9,8 +9,8 @@ export interface GetColoredModelStreamInputDTO {
     startValue: number;
     endValue: number;
     gradient: string;
-}
+};
 
 export interface GetColoredModelStreamOutputDTO {
     stream: Readable;
-}
+};

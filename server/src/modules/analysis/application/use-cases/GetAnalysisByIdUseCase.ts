@@ -1,12 +1,10 @@
-import { injectable, inject } from 'tsyringe';
-import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type Analysis from '@modules/analysis/domain/entities/Analysis';
-import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { inject, injectable } from 'tsyringe';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import type { GetAnalysisByIdInputDTO, GetAnalysisByIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysisByIdDTO';
 
 @injectable()
@@ -33,6 +31,6 @@ export default class GetAnalysisByIdUseCase {
             ));
         }
 
-        return Result.ok(toPersistedOutput<AnalysisProps>(analysis as Analysis));
+        return Result.ok(toPersistedOutput(analysis));
     }
-}
+};

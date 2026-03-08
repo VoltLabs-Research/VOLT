@@ -1,27 +1,29 @@
-import { useEffect, useMemo } from 'react';
-import usePluginSelectors from '@/modules/plugin/hooks/use-plugin-selectors';
-import usePluginCatalog, { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/use-plugin-catalog';
 import { usePluginListingSubListingQueries } from '@/modules/plugin/hooks/listing/queries';
-import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing-exposures';
-import formatSnakeCaseToTitle from '@/modules/plugin/utilities/format-snake-case';
-import type { IExposureComputed } from '@/modules/plugin/api/entities/exposure';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifact/queries';
-import type { RenderableExposurePayload } from '@/modules/trajectory/api/dtos/list-scene-artifacts';
-import ApiError from '@/shared/errors/ApiError';
+import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
+import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
+import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifacts/queries';
+import { useEffect, useMemo } from 'react';
 import { sileo } from 'sileo';
+import usePluginCatalog from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
+import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
+import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
+import ApiError from '@/shared/errors/ApiError';
+
+import type { IExposureComputed } from '@/modules/plugin/api/entities/plugin/exposure';
+import type { RenderableExposurePayload } from '@/modules/trajectory/api/dtos/scene-artifacts';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 
 export interface SubListingEntry {
     exposureId: string;
     exposureName: string;
     subListingName: string;
     label: string;
-}
+};
 
 interface UseCanvasTimelineTabsParams {
     trajectory: Trajectory | null | undefined;
     analysisId?: string;
-}
+};
 
 const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabsParams) => {
     const { ensurePluginById } = usePluginCatalog();

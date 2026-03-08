@@ -1,7 +1,4 @@
-import {
-    OperationSuccessDTO,
-    TeamScopedEntityIdInputDTO
-} from '@modules/team/application/dtos/common';
+import { OperationSuccessDTO, TeamScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
 
 export type DeleteTeamRoleByIdInputDTO = TeamScopedEntityIdInputDTO<'roleId'>;
 

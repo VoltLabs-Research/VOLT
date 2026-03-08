@@ -1,40 +1,43 @@
+import { useKeyboardShortcutsStore } from '../../../stores/use-keyboard-shortcuts-store';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+import useAnalysisStatus from '../../../hooks/use-analysis-status';
+import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../../../utilities/analysis-status';
+import useCanvasCleanup from '../../../hooks/use-canvas-cleanup';
+import useCanvasCoordinator from '../../../hooks/use-canvas-coordinator';
+import useCanvasPresence from '../../../hooks/use-canvas-presence';
+import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
+import useDownloadPluginListing from '../../../hooks/use-download-plugin-listing';
+import useKeyboardShortcuts from '../../../hooks/use-keyboard-shortcuts';
+import useResizable from '../../../hooks/use-resizable';
+import CanvasPresence from '../../atoms/CanvasPresence';
+import PreloadingOverlay from '../../atoms/PreloadingOverlay';
+import ResizeHandle from '../../atoms/ResizeHandle';
+import ExposureSettingsWidget from '../../molecules/ExposureSettingsWidget';
+import ShortcutFeedback from '../../molecules/ShortcutFeedback';
+import KeyboardShortcutsPanel from '../../organisms/KeyboardShortcutsPanel';
+import ObjectsPanel from '../../organisms/ObjectsPanel';
+import PluginResultsViewer from '../../organisms/PluginResultsViewer';
+import RightPanel from '../../organisms/RightPanel';
+import StatusBar from '../../organisms/StatusBar';
+import TexturesPanel from '../../organisms/TexturesPanel';
+import Timeline from '../../organisms/Timeline';
+import TopToolbar from '../../organisms/TopToolbar';
+import Viewport from '../../organisms/Viewport';
+import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-config';
+
+import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import { Download, ExternalLink } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
-import { Download, ExternalLink } from 'lucide-react';
-import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
-import Container from '@/shared/presentation/components/Container';
-import Button from '@/shared/presentation/components/Button';
-import Tooltip from '@/shared/presentation/components/Tooltip';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-config';
-import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
-import useCanvasCoordinator from '../../../hooks/use-canvas-coordinator';
-import useCanvasCleanup from '../../../hooks/use-canvas-cleanup';
-import useCanvasPresence from '../../../hooks/use-canvas-presence';
-import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
-import useKeyboardShortcuts from '../../../hooks/use-keyboard-shortcuts';
-import { useKeyboardShortcutsStore } from '../../../stores/use-keyboard-shortcuts-store';
-import useDownloadPluginListing from '../../../hooks/use-download-plugin-listing';
-import useAnalysisStatus from '../../../hooks/use-analysis-status';
-import './CanvasPage.css';
-import ResizeHandle from '../../atoms/ResizeHandle';
-import CanvasPresence from '../../atoms/CanvasPresence';
-import PreloadingOverlay from '../../atoms/PreloadingOverlay';
-import ShortcutFeedback from '../../molecules/ShortcutFeedback';
-import ExposureSettingsWidget from '../../molecules/ExposureSettingsWidget';
-import TopToolbar from '../../organisms/TopToolbar';
-import ObjectsPanel from '../../organisms/ObjectsPanel';
-import TexturesPanel from '../../organisms/TexturesPanel';
-import Viewport from '../../organisms/Viewport';
-import RightPanel from '../../organisms/RightPanel';
-import Timeline from '../../organisms/Timeline';
-import StatusBar from '../../organisms/StatusBar';
-import PluginResultsViewer from '../../organisms/PluginResultsViewer';
-import KeyboardShortcutsPanel from '../../organisms/KeyboardShortcutsPanel';
 import ScriptingWorkspace from '@/modules/scripting/components/organisms/ScriptingWorkspace';
-import useResizable from '../../../hooks/use-resizable';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 
+import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
+
+import './CanvasPage.css';
 
 const CanvasPage = () => {
     usePageTitle('Canvas');
@@ -123,10 +126,11 @@ const CanvasPage = () => {
             return undefined;
         }
 
-        return statusMap.get(analysisId)?.status ?? trajectory?.analysis?.find((analysis) => analysis._id === analysisId)?.status;
+        return statusMap.get(analysisId)?.status
+            ?? normalizeCanvasAnalysisStatus(trajectory?.analysis?.find((analysis) => analysis._id === analysisId)?.status);
     }, [analysisId, statusMap, trajectory?.analysis]);
 
-    const canDownloadAnalysisListing = Boolean(analysisId && selectedAnalysisStatus === 'completed');
+    const canDownloadAnalysisListing = Boolean(analysisId && selectedAnalysisStatus === CanvasAnalysisStatusEnum.Completed);
 
     const handleDownloadAnalysisListing = useCallback((targetAnalysisId?: string) => {
         const resolvedAnalysisId = targetAnalysisId ?? analysisId;

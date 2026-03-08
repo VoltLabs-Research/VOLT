@@ -1,12 +1,12 @@
-import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
-import type { SliceAxis } from '@/modules/fractal/types/configuration';
+import Container from '@/shared/presentation/components/Container';
+import { SliceAxis } from '@/modules/fractal/types/configuration';
 
 interface AxisButtonsProps {
     axes: SliceAxis[];
     isAxisActive: (axis: SliceAxis) => boolean;
     onAxisClick: (axis: SliceAxis) => void;
-}
+};
 
 const AxisButtons = ({ axes, isAxisActive, onAxisClick }: AxisButtonsProps) => (
     <Container className="d-flex gap-05">

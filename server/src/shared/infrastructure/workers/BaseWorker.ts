@@ -2,19 +2,34 @@ import { parentPort } from 'node:worker_threads';
 import { ErrorCodes } from '@core/constants/error-codes';
 import logger from '@shared/infrastructure/logger';
 import mongoConnector from '@shared/infrastructure/utilities/mongo-connector';
-import {
-    createWorkerFailureMessage,
-    normalizeWorkerFailureEnvelope,
-    type WorkerFailureEnvelope
-} from '@shared/infrastructure/workers/WorkerFailureEnvelope';
 import '@core/config/env';
+import { createWorkerFailureMessage, normalizeWorkerFailureEnvelope } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
+import type { WorkerFailureEnvelope } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
 
-type JobWithProps = {
-    props: Record<string, unknown>;
+interface WorkerMessage<TJob> {
+    job: TJob;
 };
 
-const isJobWithProps = (value: unknown): value is JobWithProps => {
-    return typeof value === 'object' && value !== null && 'props' in value;
+type WorkerJobProps = {
+    jobId?: string;
+};
+
+type WorkerLikeJob = {
+    props?: WorkerJobProps;
+};
+
+const getWorkerJobId = (job: unknown): string => {
+    if (typeof job !== 'object' || job === null || !('props' in job)) {
+        return 'unknown';
+    }
+
+    const props = job.props;
+
+    if (typeof props !== 'object' || props === null || !('jobId' in props)) {
+        return 'unknown';
+    }
+
+    return typeof props.jobId === 'string' ? props.jobId : 'unknown';
 };
 
 export default abstract class BaseWorker<TJob> {
@@ -41,20 +56,14 @@ export default abstract class BaseWorker<TJob> {
     }
 
     private listen() {
-        parentPort?.on('message', async (message: { job: TJob }) => {
+        parentPort?.on('message', async (message: WorkerMessage<TJob>) => {
             if (!message?.job) {
                 logger.error(`@worker #${process.pid} - received invalid message payload`);
                 return;
             }
 
-            const normalizedJob = isJobWithProps(message.job)
-                ? message.job
-                : {
-                    props: message.job as Record<string, unknown>
-                };
-
             try {
-                await this.perform(normalizedJob as TJob);
+                await this.perform(message.job);
             } catch (fatalError: unknown) {
                 const failure = normalizeWorkerFailureEnvelope({
                     error: fatalError,
@@ -63,7 +72,7 @@ export default abstract class BaseWorker<TJob> {
 
                 logger.error(`@worker #${process.pid} - fatal unhandled error: ${fatalError}`);
                 parentPort?.postMessage(createWorkerFailureMessage({
-                    jobId: (normalizedJob.props.jobId as string | undefined) || 'unknown',
+                    jobId: getWorkerJobId(message.job),
                     failure
                 }));
             }
@@ -74,12 +83,12 @@ export default abstract class BaseWorker<TJob> {
         try {
             await mongoConnector();
             logger.info(`@worker #${process.pid} - connected to database`);
-        } catch (dbError: any) {
+        } catch (dbError: unknown) {
             logger.error(`@worker #${process.pid} - failed to connect to database: ${dbError}`);
         }
     }
 
-    protected sendMessage(message: any) {
+    protected sendMessage(message: Record<string, unknown>): void {
         parentPort?.postMessage(message);
     }
 
@@ -100,7 +109,7 @@ export default abstract class BaseWorker<TJob> {
      */
     protected abstract perform(job: TJob): Promise<void>;
 
-    public static start<T extends BaseWorker<any>>(WorkerClass: new () => T) {
+    public static start<T extends BaseWorker<unknown>>(WorkerClass: new () => T) {
         const worker = new WorkerClass();
         worker.init().then(() => {
             logger.info(`@worker #${process.pid} - online ${WorkerClass.name} ready`);

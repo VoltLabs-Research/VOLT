@@ -1,13 +1,12 @@
-import { useMutation } from '@tanstack/react-query';
 import {
     batchInvalidateQueries,
     buildKeys,
     createMutation,
     createQuery,
-    type MutationOptions,
     withSuccess
 } from '@/shared/infrastructure/query';
 import service from '../api/service';
+import { useMutation } from '@tanstack/react-query';
 import type { SSHConnection } from '../api/entities/ssh-connection';
 import type { CreateSSHConnectionParams } from '../api/dtos/create-ssh-connection';
 import type { DeleteSSHConnectionInputDTO } from '../api/dtos/delete-ssh-connection';
@@ -16,12 +15,15 @@ import type { GetSSHConnectionsInputDTO } from '../api/dtos/get-ssh-connections'
 import type { ListSSHFilesParams } from '../api/dtos/list-ssh-files';
 import type { TestSSHConnectionInputDTO, TestSSHConnectionResponse } from '../api/dtos/test-ssh-connection';
 import type { UpdateSSHConnectionInputDTO } from '../api/dtos/update-ssh-connection';
+import type { MutationOptions } from '@/shared/infrastructure/query';
 
-const KEYS = buildKeys<{
+interface SSHQueryKeys extends Record<string, unknown> {
     connections: GetSSHConnectionsInputDTO;
     connectionById: GetSSHConnectionByIdInputDTO;
     files: ListSSHFilesParams;
-}>('ssh');
+};
+
+const KEYS = buildKeys<SSHQueryKeys>('ssh');
 
 export const sshConnectionsQueryKey = KEYS.connections;
 
@@ -42,7 +44,7 @@ export const useCreateSSHConnectionMutation = (options?: MutationOptions<SSHConn
         ...options,
         mutationFn: service.createConnection,
         onSuccess: withSuccess(() => {
-            void invalidateSSHConnectionQueries();
+            invalidateSSHConnectionQueries();
         }, options)
     });
 };
@@ -52,7 +54,7 @@ export const useUpdateSSHConnectionMutation = (options?: MutationOptions<SSHConn
         ...options,
         mutationFn: service.updateConnection,
         onSuccess: withSuccess(() => {
-            void invalidateSSHConnectionQueries();
+            invalidateSSHConnectionQueries();
         }, options)
     });
 };
@@ -62,7 +64,7 @@ export const useDeleteSSHConnectionMutation = (options?: MutationOptions<void, D
         ...options,
         mutationFn: service.deleteConnection,
         onSuccess: withSuccess(() => {
-            void invalidateSSHConnectionQueries();
+            invalidateSSHConnectionQueries();
         }, options)
     });
 };

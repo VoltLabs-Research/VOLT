@@ -1,21 +1,22 @@
 import 'reflect-metadata';
 import './core/config/env';
 
-import { initializeRedis, redis } from './core/config/redis';
 import { registerAllDependencies } from './core/bootstrap/register-deps';
 import { initializeMinio } from './core/config/minio';
+import { initializeRedis, redis } from './core/config/redis';
 import { registerAllSubscribers } from './core/events/registerAllSubscribers';
-import { container } from 'tsyringe';
-import logger from './shared/infrastructure/logger';
-import { readNumberEnv } from './shared/infrastructure/utilities/env';
-import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
-import SocketGateway from './modules/socket/infrastructure/gateway/SocketGateway';
 import { SOCKET_TOKENS } from './modules/socket/infrastructure/di/SocketTokens';
-import startQueues from './core/bootstrap/start-queues';
-import app from './core/config/express';
 import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
+import { readNumberEnv } from './shared/infrastructure/utilities/env';
+import app from './core/config/express';
+import startQueues from './core/bootstrap/start-queues';
+import SocketGateway from './modules/socket/infrastructure/gateway/SocketGateway';
+import logger from './shared/infrastructure/logger';
+import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
 import http from 'http';
 import os from 'node:os';
+import { container } from 'tsyringe';
+import type { ISocketModule } from './modules/socket/domain/port/ISocketModule';
 
 const SERVER_PORT = readNumberEnv('SERVER_PORT', 8000);
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
@@ -27,7 +28,7 @@ const shutdown = async () => {
     process.exit(0);
 };
 
-process.on('unhandledRejection', (reason: any) => {
+process.on('unhandledRejection', (reason: unknown) => {
     const message = reason instanceof Error ? reason.stack || reason.message : String(reason);
     logger.error(`@server: unhandled rejection: ${message}`);
 });
@@ -38,6 +39,7 @@ process.on('uncaughtException', (error: Error) => {
 
 const startServer = async () => {
     const { default: mountHttpRoutes } = await import('./core/bootstrap/mount-http-routes');
+    
     const server = http.createServer(app);
     app.use(mountHttpRoutes());
     app.use(httpErrorMiddleware);
@@ -67,7 +69,7 @@ const startServer = async () => {
         await registerAllSubscribers();
 
         const socketGateway = container.resolve<SocketGateway>(SOCKET_TOKENS.SocketGateway);
-        const socketModules = container.resolveAll<any>(SOCKET_TOKENS.SocketModule);
+        const socketModules = container.resolveAll<ISocketModule>(SOCKET_TOKENS.SocketModule);
         for (const module of socketModules) {
             socketGateway.register(module);
         }

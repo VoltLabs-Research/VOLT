@@ -1,9 +1,10 @@
-import { useState, useEffect, type ReactNode, memo } from 'react';
-import { ChevronDown, Trash2, Plus } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
 import IconButton from '@/shared/presentation/components/IconButton';
+import Title from '@/shared/presentation/components/Title';
 import './CollapsibleSection.css';
+import { ChevronDown, Trash2, Plus } from 'lucide-react';
+import { useState, useEffect, memo } from 'react';
+import type { ReactNode } from 'react';
 
 interface CollapsibleSectionProps {
     title: string;

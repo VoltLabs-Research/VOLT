@@ -4,4 +4,4 @@ export interface GetPluginByIdInputDTO{
     pluginId: string;
 };
 
-export interface GetPluginByIdOutputDTO extends PersistedPluginDTO { }
+export interface GetPluginByIdOutputDTO extends PersistedPluginDTO { };

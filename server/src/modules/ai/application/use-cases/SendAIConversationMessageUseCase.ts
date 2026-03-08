@@ -1,24 +1,42 @@
-import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { AIMessageProps } from '@modules/ai/domain/entities/AIMessage';
+import type { TeamMemberProps } from '@modules/team/domain/entities/team-member/TeamMember';
+import { AIConversationMessageRole } from '@modules/ai/domain/contracts/AIConversationMessage';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
 import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
-import type { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
-import AIMessage from '@modules/ai/domain/entities/AIMessage';
-import {
-    SendAIConversationMessageInputDTO,
-    SendAIConversationMessageOutputDTO
-} from '@modules/ai/application/dtos/SendAIConversationMessageDTO';
 import { AIMessageDTO } from '@modules/ai/application/dtos/ListAIConversationMessagesDTO';
-import AIResponseMessagePartsMapper from '@modules/ai/application/services/AIResponseMessagePartsMapper';
-import AIUIMessageUtils from '@modules/ai/application/services/AIUIMessageUtils';
-import AIMessageDTOMapper from '@modules/ai/application/services/AIMessageDTOMapper';
+import { SendAIConversationMessageInputDTO, SendAIConversationMessageOutputDTO } from '@modules/ai/application/dtos/SendAIConversationMessageDTO';
+import AIResponseMessagePartsMapper from '@modules/ai/services/AIResponseMessagePartsMapper';
+import AIUIMessageUtils from '@modules/ai/services/AIUIMessageUtils';
+import AIMessageDTOMapper from '@modules/ai/services/AIMessageDTOMapper';
+import AIMessage, { AIMessageRole } from '@modules/ai/domain/entities/AIMessage';
+import type { AIChatFinishEvent, IAIChatTransport } from '@modules/ai/domain/port/IAIChatTransport';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { IUseCase } from '@shared/application/IUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
-import type { AIChatFinishEvent, IAIChatTransport } from '@modules/ai/application/ports/IAIChatTransport';
+import { inject, injectable } from 'tsyringe';
+
+interface ConversationUpdatePayload {
+    lastMessageAt: Date;
+    lastProvider: string;
+    lastModel: string;
+    title: string;
+};
+
+interface TeamMemberLookupFilter extends Partial<TeamMemberProps> {
+    team: string;
+    user: string;
+};
+
+interface AIConversationLookup {
+    _id: string;
+    teamId: string;
+    userId: string;
+};
 
 @injectable()
 export default class SendAIConversationMessageUseCase implements IUseCase<SendAIConversationMessageInputDTO, SendAIConversationMessageOutputDTO, ApplicationError> {
@@ -58,7 +76,7 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
         const member = await this.teamMemberRepository.findOne({
             team: input.teamId,
             user: input.userId
-        } as any);
+        } satisfies TeamMemberLookupFilter);
 
         if (!member) {
             return Result.fail(ApplicationError.forbidden(
@@ -71,7 +89,7 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
             _id: input.conversationId,
             teamId: input.teamId,
             userId: input.userId
-        } as any);
+        } as AIConversationLookup);
 
         if (!conversation) {
             return Result.fail(ApplicationError.notFound(
@@ -87,14 +105,19 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
             const now = new Date();
             userMessage = await this.messageRepository.create({
                 conversationId: conversation._id,
-                role: 'user',
-                parts: [{ type: 'text', text: userText }],
+                role: AIMessageRole.User,
+                parts: [
+                    {
+                        type: 'text',
+                        text: userText
+                    }
+                ],
                 content: userText,
                 modelInfo: null,
                 tokenUsage: null,
                 createdAt: now,
                 updatedAt: now
-            } as any);
+            } satisfies Partial<AIMessageProps>);
         }
 
         logger.debug(
@@ -120,12 +143,12 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
                 onFinish: async (event) => {
                     try {
                         const persistedAssistantMessage = await this.persistAssistantResponse(conversation._id, event);
-                        const conversationUpdate = {
+                        const conversationUpdate: ConversationUpdatePayload = {
                             lastMessageAt: new Date(),
                             lastProvider: event.provider,
                             lastModel: event.model,
                             title: input.title?.trim() || conversation.props.title
-                        } as any;
+                        };
 
                         await this.conversationRepository.updateById(conversation._id, conversationUpdate);
                         resolveAssistantMessage(persistedAssistantMessage);
@@ -164,7 +187,7 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
         const now = new Date();
         const assistantMessage = await this.messageRepository.create({
             conversationId,
-            role: 'assistant',
+            role: AIMessageRole.Assistant,
             parts: allParts,
             content: textContent,
             modelInfo: {
@@ -180,7 +203,7 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
             },
             createdAt: now,
             updatedAt: now
-        } as any);
+        } satisfies Partial<AIMessageProps>);
 
         return this.toDTO(assistantMessage);
     }
@@ -188,4 +211,4 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
     private toDTO(message: AIMessage): AIMessageDTO {
         return this.messageDTOMapper.toDTO(message);
     }
-}
+};

@@ -1,25 +1,24 @@
-import { Types } from 'mongoose';
-import { inject, singleton } from 'tsyringe';
-import logger from '@shared/infrastructure/logger';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { createSocketErrorEnvelopeFromApplicationError } from '@modules/socket/infrastructure/utilities/socket-error-envelope';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import type { IPluginWorkflowEngine, DebugHooks } from '@modules/plugin/domain/port/IPluginWorkflowEngine';
-import type { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
-import type Plugin from '@modules/plugin/domain/entities/Plugin';
-import DebugSession from '@modules/plugin/infrastructure/services/DebugSession';
-import {
-    type DebugNodeErrorPayload,
-    type DebugSocketErrorPayload,
-    type DebugStartPayload
-} from './DebugSocketPayloads';
 import { validateDebugStartPayload } from './DebugSocketPayloadValidator';
 import { sanitizeDebugOutput } from './sanitize-debug-output';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import DebugSession from '@modules/plugin/infrastructure/services/plugin/DebugSession';
+
+import { ErrorCodes } from '@core/constants/error-codes';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { createSocketErrorEnvelopeFromApplicationError } from '@modules/socket/infrastructure/utilities/socket-error-envelope';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+import { Types } from 'mongoose';
+import { inject, singleton } from 'tsyringe';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import logger from '@shared/infrastructure/logger';
+
+import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+
+import type { DebugNodeErrorPayload, DebugSocketErrorPayload, DebugStartPayload } from './DebugSocketPayloads';
+import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
+import type { IPluginWorkflowEngine, DebugHooks } from '@modules/plugin/domain/port/plugin/IPluginWorkflowEngine';
+import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 
 @singleton()
 export class DebugSocketOrchestrator {
@@ -80,7 +79,7 @@ export class DebugSocketOrchestrator {
                 }
             });
 
-            let iterationItem: Record<string, unknown> | null = null;
+            let iterationItem: Record<string, unknown> | undefined;
             let iterationIndex = 0;
 
             if (planResult && planResult.items.length > 0) {
@@ -89,7 +88,7 @@ export class DebugSocketOrchestrator {
                 );
 
                 iterationIndex = matchIndex >= 0 ? matchIndex : 0;
-                iterationItem = (planResult.items[iterationIndex] as Record<string, unknown>) || null;
+                iterationItem = planResult.items[iterationIndex] as Record<string, unknown> | undefined;
             }
 
             const sessionCreatedPayload = {
@@ -176,7 +175,7 @@ export class DebugSocketOrchestrator {
         session: DebugSession,
         plugin: Plugin,
         payload: DebugStartPayload,
-        iterationItem: Record<string, unknown> | null,
+        iterationItem: Record<string, unknown> | undefined,
         iterationIndex: number,
         teamId: string,
         debugAnalysisId: string
@@ -300,4 +299,4 @@ export class DebugSocketOrchestrator {
 
         this.emitter.emitToSocket(socketId, 'debug:session:error', payload);
     }
-}
+};

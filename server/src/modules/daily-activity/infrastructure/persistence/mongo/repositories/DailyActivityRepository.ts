@@ -1,10 +1,28 @@
-import { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
-import DailyActivity, { ActivityType, DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
-import type { PersistedDailyActivity } from '@modules/daily-activity/domain/types/PersistedDailyActivity';
-import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import DailyActivityModel, { DailyActivityDocument } from '@modules/daily-activity/infrastructure/persistence/mongo/models/DailyActivityModel';
+import { ActivityType } from '@modules/daily-activity/domain/entities/DailyActivity';
 import dailyActitvityMapper from '@modules/daily-activity/infrastructure/persistence/mongo/mappers/DailyActivityMapper';
+import DailyActivityModel from '@modules/daily-activity/infrastructure/persistence/mongo/models/DailyActivityModel';
+import DailyActivity from '@modules/daily-activity/domain/entities/DailyActivity';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import { injectable } from 'tsyringe';
+import type { DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
+import type { DailyActivityRecord, IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
+import type { DailyActivityDocument } from '@modules/daily-activity/infrastructure/persistence/mongo/models/DailyActivityModel';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+
+const toActivityUser = (user: unknown): DailyActivityRecord['user'] => {
+    if (!isRecord(user)) {
+        return String(user);
+    }
+
+    const identifier = user._id;
+
+    return {
+        _id: String(identifier),
+        firstName: typeof user.firstName === 'string' ? user.firstName : '',
+        lastName: typeof user.lastName === 'string' ? user.lastName : '',
+        avatar: typeof user.avatar === 'string' ? user.avatar : undefined
+    };
+};
 
 @injectable()
 export default class DailyActivityRepository
@@ -22,7 +40,11 @@ export default class DailyActivityRepository
         minutes: number
     ): Promise<void> {
         await this.model.updateOne(
-            { team: teamId, user: userId, date },
+            {
+                team: teamId,
+                user: userId,
+                date
+            },
             {
                 $inc: { minutesOnline: minutes },
                 $setOnInsert: { activity: [] }
@@ -31,7 +53,7 @@ export default class DailyActivityRepository
         );
     }
 
-    async findActivityByTeamId(teamId: string, range: number): Promise<PersistedDailyActivity[]> {
+    async findActivityByTeamId(teamId: string, range: number): Promise<DailyActivityRecord[]> {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - range);
         startDate.setHours(0, 0, 0, 0);
@@ -52,7 +74,8 @@ export default class DailyActivityRepository
 
             return {
                 _id: dailyActivity._id,
-                ...dailyActivity.props
+                ...dailyActivity.props,
+                user: toActivityUser(activity.user)
             };
         });
     }
@@ -66,7 +89,11 @@ export default class DailyActivityRepository
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
         await this.model.updateOne(
-            { team: teamId, user: userId, date: startOfDay },
+            {
+                team: teamId,
+                user: userId,
+                date: startOfDay
+            },
             {
                 $push: {
                     activity: {

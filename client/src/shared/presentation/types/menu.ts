@@ -6,4 +6,4 @@ export interface MenuOption {
     onClick: () => void | Promise<void>;
     destructive?: boolean;
     disabled?: boolean;
-}
+};

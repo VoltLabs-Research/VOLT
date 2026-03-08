@@ -1,8 +1,8 @@
 import { patch } from '@/app/core/http/utilities/create-service';
-import type { AcceptInvitationInputDTO } from '../../../dtos/accept-invitation';
-import type { RejectInvitationInputDTO } from '../../../dtos/reject-invitation';
+import type { AcceptInvitationInputDTO } from '../../../dtos/invitation/accept-invitation';
+import type { RejectInvitationInputDTO } from '../../../dtos/invitation/reject-invitation';
 
-const endpoints = {
+export default {
     accept: patch<AcceptInvitationInputDTO, void>(
         '/:invitationId/status', { client: 'invitations', unwrap: 'void' }
     ),
@@ -10,5 +10,3 @@ const endpoints = {
         '/:invitationId/status', { client: 'invitations', unwrap: 'void' }
     )
 };
-
-export default endpoints;

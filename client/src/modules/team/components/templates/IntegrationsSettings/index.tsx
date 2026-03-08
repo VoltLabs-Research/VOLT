@@ -1,47 +1,61 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { IoAddOutline } from 'react-icons/io5';
-import { Settings2, Trash2 } from 'lucide-react';
-import { Skeleton } from '@mui/material';
-import { sileo } from 'sileo';
-import ApiError from '@/shared/errors/ApiError';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import Button from '@/shared/presentation/components/Button';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Select, { type SelectOption } from '@/shared/presentation/components/Select';
-import LiquidToggle from '@/shared/presentation/components/LiquidToggle';
-import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
-import SettingsPage from '@/modules/auth/components/templates/Settings/SettingsPage';
-import SettingsSection from '@/modules/auth/components/atoms/SettingsSection';
-import SettingsSectionHeader from '@/modules/auth/components/molecules/SettingsSectionHeader';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { AI_PROVIDER_CATALOG } from '@/modules/ai/utilities/ai-provider-catalog';
 import {
     AI_INTEGRATION_QUERY_KEYS,
+    useDiscoverTeamAIProviderModelsQuery,
     useTeamAIIntegrationsQuery,
-    useTeamAIIntegrationModelsQuery,
-    useDiscoverTeamAIProviderModelsQuery
+    useTeamAIIntegrationModelsQuery
 } from '@/modules/team/hooks/ai-integration/queries';
-import queryClient from '@/shared/infrastructure/query/query-client';
-import useCreateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-create-team-ai-integration';
-import useUpdateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-update-team-ai-integration';
-import useDeleteTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-delete-team-ai-integration';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import useTeamAIIntegrationsSocketSync from '@/modules/socket/hooks/use-team-ai-integrations-socket-sync';
-import type { AIProvider } from '@/modules/ai/api/entities/ai-constants';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import useCreateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-create-team-ai-integration';
+import useDeleteTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-delete-team-ai-integration';
+import useTeamAIIntegrationsSocketSync from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-socket-sync';
+import useUpdateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-update-team-ai-integration';
+import SettingsSection from '@/modules/auth/components/atoms/SettingsSection';
+import SettingsSectionHeader from '@/modules/auth/components/molecules/SettingsSectionHeader';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import LiquidToggle from '@/shared/presentation/components/LiquidToggle';
+import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Select from '@/shared/presentation/components/Select';
+import SettingsPage from '@/shared/presentation/components/SettingsPage';
+import ApiError from '@/shared/errors/ApiError';
+import queryClient from '@/shared/infrastructure/query/query-client';
+import { Skeleton } from '@mui/material';
+import { Settings2, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { IoAddOutline } from 'react-icons/io5';
+import { sileo } from 'sileo';
+import type { AIProvider } from '@/modules/ai/api/entities/ai-provider';
+import type { CreateTeamAIIntegrationParams } from '@/modules/team/api/dtos/ai-integration/create-team-ai-integration';
+import type { UpdateTeamAIIntegrationParams } from '@/modules/team/api/dtos/ai-integration/update-team-ai-integration';
 import type {
     TeamAIIntegration,
     TeamAIModelMetadata,
     TeamAIProviderModelsCatalog
-} from '@/modules/team/api/entities/team-ai-integration';
-import { AI_PROVIDER_CATALOG } from '@/modules/ai/api/entities/ai-constants';
-import type { CreateTeamAIIntegrationParams } from '@/modules/team/api/dtos/create-team-ai-integration';
-import type { UpdateTeamAIIntegrationParams } from '@/modules/team/api/dtos/update-team-ai-integration';
+} from '@/modules/team/api/entities/ai-integration/team-ai-integration';
+import type { SelectOption } from '@/shared/presentation/components/Select';
 import './IntegrationsSettings.css';
+
+type ModalModelOption = Pick<TeamAIModelMetadata, 'id' | 'name' | 'description'>;
+
+interface TeamAIProviderDiscoveryInput {
+    teamId: string;
+    provider: AIProvider;
+    apiKey?: string;
+    metadata?: Record<string, unknown>;
+};
+
+interface PromiseToastOptions {
+    loading: { title: string };
+    success: { title: string };
+    error: { title: string };
+};
 
 const TEAM_AI_INTEGRATION_MODAL_ID = 'team-ai-integration-modal';
 const OLLAMA_DEFAULT_BASE_URL = 'http://localhost:11434/v1';
-
-type ModalModelOption = Pick<TeamAIModelMetadata, 'id' | 'name' | 'description'>;
 
 const resolveOllamaBaseUrl = (metadata?: Record<string, unknown>): string => {
     if (typeof metadata?.baseUrl === 'string') {
@@ -50,7 +64,39 @@ const resolveOllamaBaseUrl = (metadata?: Record<string, unknown>): string => {
     return OLLAMA_DEFAULT_BASE_URL;
 };
 
-const IntegrationsSettings: React.FC = () => {
+const isAIProvider = (value: string): value is AIProvider => {
+    return Object.values(AI_PROVIDER_CATALOG).some((provider) => provider.id === value);
+};
+
+const getSaveIntegrationToastOptions = (integration?: TeamAIIntegration): PromiseToastOptions => {
+    return {
+        loading: { title: integration ? 'Updating provider...' : 'Creating provider...' },
+        success: { title: integration ? 'Provider configuration updated' : 'Provider configuration created' },
+        error: { title: integration ? 'Failed to update provider' : 'Failed to create provider' }
+    };
+};
+
+const getRemoveIntegrationToastOptions = (integration: TeamAIIntegration): PromiseToastOptions => {
+    return {
+        loading: { title: `Removing ${integration.providerName}...` },
+        success: { title: `${integration.providerName} removed` },
+        error: { title: 'Failed to remove provider' }
+    };
+};
+
+const getDefaultModelPlaceholder = (isDiscoveringModels: boolean, options: SelectOption[]): string => {
+    let placeholder = 'No models available';
+
+    if (isDiscoveringModels) {
+        placeholder = 'Loading models...';
+    } else if (options.length > 0) {
+        placeholder = 'Select model';
+    }
+
+    return placeholder;
+};
+
+export default function IntegrationsSettings() {
     const teamId = useSelectedTeamId() ?? '';
 
     const {
@@ -98,16 +144,18 @@ const IntegrationsSettings: React.FC = () => {
         )
     );
 
+    const discoveryQueryParams: TeamAIProviderDiscoveryInput = {
+        teamId,
+        provider: modalProvider ?? AI_PROVIDER_CATALOG[0].id,
+        apiKey: modalProvider === 'ollama' ? undefined : discoveryApiKey || undefined,
+        metadata: discoveryMetadata
+    };
+
     const {
         data: discoveredModelsData,
         isFetching: isDiscoveringModels
     } = useDiscoverTeamAIProviderModelsQuery(
-        {
-            teamId,
-            provider: (modalProvider ?? 'openai') as AIProvider,
-            apiKey: modalProvider === 'ollama' ? undefined : discoveryApiKey || undefined,
-            metadata: discoveryMetadata
-        },
+        discoveryQueryParams,
         {
             enabled: shouldDiscoverModels
         }
@@ -172,7 +220,7 @@ const IntegrationsSettings: React.FC = () => {
 
     const refreshData = useCallback(() => {
         if (!teamId) return;
-        void Promise.all([
+        Promise.all([
             queryClient.invalidateQueries({ queryKey: AI_INTEGRATION_QUERY_KEYS.teamAIIntegrations(teamId) }),
             queryClient.invalidateQueries({ queryKey: AI_INTEGRATION_QUERY_KEYS.teamAIIntegrationModels(teamId) })
         ]);
@@ -273,7 +321,11 @@ const IntegrationsSettings: React.FC = () => {
     };
 
     const handleModalProviderChange = (provider: string) => {
-        const nextProvider = provider as AIProvider;
+        if (!isAIProvider(provider)) {
+            return;
+        }
+
+        const nextProvider = provider;
         const nextIntegration = integrationsByProvider.get(nextProvider);
         const ollamaBaseUrl = nextProvider === 'ollama'
             ? resolveOllamaBaseUrl(nextIntegration?.metadata)
@@ -299,6 +351,32 @@ const IntegrationsSettings: React.FC = () => {
             return next;
         });
     };
+
+    const renderModelOption = useCallback((model: ModalModelOption) => {
+        const isChecked = modalEnabledModels.has(model.id);
+
+        return (
+            <Container
+                key={model.id}
+                className='integrations-model-item d-flex items-center content-between gap-05'
+            >
+                <Container className='d-flex column' style={{ minWidth: 0 }}>
+                    <Paragraph className='font-size-2 color-primary text-truncate'>
+                        {model.name}
+                    </Paragraph>
+                    {model.description && (
+                        <Paragraph className='font-size-1 color-muted text-truncate'>
+                            {model.description}
+                        </Paragraph>
+                    )}
+                </Container>
+                <LiquidToggle
+                    pressed={isChecked}
+                    onChange={() => handleToggleModel(model.id)}
+                />
+            </Container>
+        );
+    }, [handleToggleModel, modalEnabledModels]);
 
     useEffect(() => {
         if (!modalProvider) {
@@ -380,11 +458,7 @@ const IntegrationsSettings: React.FC = () => {
                 : createTeamAIIntegration(modalProvider, payload);
             await showPromise(
                 action,
-                {
-                    loading: { title: integration ? 'Updating provider...' : 'Creating provider...' },
-                    success: { title: integration ? 'Provider configuration updated' : 'Provider configuration created' },
-                    error: { title: integration ? 'Failed to update provider' : 'Failed to create provider' }
-                }
+                getSaveIntegrationToastOptions(integration)
             );
             closeModal(TEAM_AI_INTEGRATION_MODAL_ID);
             resetModalState();
@@ -410,11 +484,7 @@ const IntegrationsSettings: React.FC = () => {
         try {
             await showPromise(
                 deleteTeamAIIntegration(provider),
-                {
-                    loading: { title: `Removing ${integration.providerName}...` },
-                    success: { title: `${integration.providerName} removed` },
-                    error: { title: 'Failed to remove provider' }
-                }
+                getRemoveIntegrationToastOptions(integration)
             );
             refreshData();
         } catch (error: unknown) {
@@ -588,30 +658,7 @@ const IntegrationsSettings: React.FC = () => {
                                         : `${modalEnabledModels.size} of ${allModalModels.length} models enabled.`}
                                 </Paragraph>
                                 <Container className='integrations-model-checklist'>
-                                    {allModalModels.map((model) => {
-                                        const isChecked = modalEnabledModels.has(model.id);
-                                        return (
-                                            <Container
-                                                key={model.id}
-                                                className='integrations-model-item d-flex items-center content-between gap-05'
-                                            >
-                                                <Container className='d-flex column' style={{ minWidth: 0 }}>
-                                                    <Paragraph className='font-size-2 color-primary text-truncate'>
-                                                        {model.name}
-                                                    </Paragraph>
-                                                    {model.description && (
-                                                        <Paragraph className='font-size-1 color-muted text-truncate'>
-                                                            {model.description}
-                                                        </Paragraph>
-                                                    )}
-                                                </Container>
-                                                <LiquidToggle
-                                                    pressed={isChecked}
-                                                    onChange={() => handleToggleModel(model.id)}
-                                                />
-                                            </Container>
-                                        );
-                                    })}
+                                    {allModalModels.map(renderModelOption)}
                                 </Container>
                             </Container>
                         )}
@@ -626,9 +673,7 @@ const IntegrationsSettings: React.FC = () => {
                                 value={modalDefaultModel}
                                 onChange={setModalDefaultModel}
                                 disabled={isDiscoveringModels || modalModelOptions.length === 0}
-                                placeholder={isDiscoveringModels
-                                    ? 'Loading models...'
-                                    : (modalModelOptions.length ? 'Select model' : 'No models available')}
+                                placeholder={getDefaultModelPlaceholder(isDiscoveringModels, modalModelOptions)}
                             />
                         </Container>
 
@@ -641,6 +686,4 @@ const IntegrationsSettings: React.FC = () => {
             </Modal>
         </SettingsPage>
     );
-};
-
-export default IntegrationsSettings;
+}

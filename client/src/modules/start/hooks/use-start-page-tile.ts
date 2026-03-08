@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useStartAccessedPagesStore } from '../stores/use-start-accessed-pages-store';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fadeToBlack } from '@/shared/presentation/utilities/page-transition';
-import { useStartAccessedPagesStore } from '../stores/use-start-accessed-pages-store';
+import type { MouseEvent } from 'react';
 
 const IFRAME_W = 1280;
 const IFRAME_H = 800;

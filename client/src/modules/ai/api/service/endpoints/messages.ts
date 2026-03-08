@@ -3,7 +3,11 @@ import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { AIConversationMessage } from '../../entities/ai-conversation';
 import type { ListAIConversationMessagesParams } from '../../dtos/list-ai-conversation-messages';
 
-type ListMessagesInput = { conversationId: string } & ListAIConversationMessagesParams;
+interface ConversationMessagePathParams {
+    conversationId: string;
+};
+
+type ListMessagesInput = ConversationMessagePathParams & ListAIConversationMessagesParams;
 
 const endpoints = {
     listMessages: paginated<ListMessagesInput, PaginatedResponse<AIConversationMessage>>('/:conversationId/messages')

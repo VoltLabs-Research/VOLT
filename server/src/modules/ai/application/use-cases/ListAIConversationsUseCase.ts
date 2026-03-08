@@ -1,14 +1,16 @@
-import { injectable, inject } from 'tsyringe';
+import type { AIConversationProps } from '@modules/ai/domain/entities/AIConversation';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
+import { Result } from '@shared/domain/port/Result';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
-import {
-    ListAIConversationsInputDTO,
-    ListAIConversationsOutputDTO,
-    AIConversationDTO
-} from '@modules/ai/application/dtos/ListAIConversationsDTO';
+import { AIConversationDTO, ListAIConversationsInputDTO, ListAIConversationsOutputDTO } from '@modules/ai/application/dtos/ListAIConversationsDTO';
+import { inject, injectable } from 'tsyringe';
+
+interface ListAIConversationsFilter extends Partial<AIConversationProps> {
+    teamId: string;
+    userId: string;
+};
 
 @injectable()
 export default class ListAIConversationsUseCase implements IUseCase<ListAIConversationsInputDTO, ListAIConversationsOutputDTO, ApplicationError> {
@@ -22,7 +24,7 @@ export default class ListAIConversationsUseCase implements IUseCase<ListAIConver
         const limit = Math.max(1, Math.min(200, Number(input.limit || 50)));
         const includeArchived = input.includeArchived === true || input.includeArchived === 'true';
 
-        const filter: any = {
+        const filter: ListAIConversationsFilter = {
             teamId: input.teamId,
             userId: input.userId
         };
@@ -51,4 +53,4 @@ export default class ListAIConversationsUseCase implements IUseCase<ListAIConver
             data
         });
     }
-}
+};

@@ -1,19 +1,24 @@
+import './DashboardTeamPresence.css';
+import useTeamMemberData from '@/modules/team/hooks/member/use-team-member-data';
+import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
+import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
+import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import Avatar from '@/shared/presentation/components/Avatar';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import Title from '@/shared/presentation/components/Title';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@mui/material';
 import { Users } from 'lucide-react';
 import { GoArrowRight } from 'react-icons/go';
-import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import useTeamMemberData from '@/modules/team/hooks/team-member/use-team-member-data';
-import { useTeamPresenceStore } from '@/modules/team/stores/use-team-presence-store';
-import { resolveTeamUserOnline } from '@/modules/team/utilities/presence';
-import Avatar from '@/shared/presentation/components/Avatar';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import Button from '@/shared/presentation/components/Button';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import type { User } from '@/modules/auth/api/entities/user';
-import './DashboardTeamPresence.css';
+
+interface TeamPresenceMember {
+    user: User;
+    memberId: string;
+};
 
 const DashboardTeamPresence = () => {
     const navigate = useNavigate();
@@ -24,12 +29,12 @@ const DashboardTeamPresence = () => {
     const hasPresenceSnapshot = useTeamPresenceStore((s) => s.hasPresenceSnapshot);
 
     const { onlineMembers, offlineMembers } = useMemo(() => {
-        const online: { user: User; memberId: string }[] = [];
-        const offline: { user: User; memberId: string }[] = [];
+        const online: TeamPresenceMember[] = [];
+        const offline: TeamPresenceMember[] = [];
 
         for (const member of members) {
-            const user = member.user as User | undefined;
-            if (!user?._id) continue;
+            const user = member.user;
+            if (!user._id) continue;
 
             if (resolveTeamUserOnline(user, onlineUserIds, hasPresenceSnapshot)) {
                 online.push({ user, memberId: member._id });
@@ -72,6 +77,46 @@ const DashboardTeamPresence = () => {
     }
 
     const allSorted = [...onlineMembers, ...offlineMembers];
+    let membersContent = (
+        <Container className='dashboard-presence-grid'>
+            {allSorted.map(({ user, memberId }) => {
+                const isOnline = resolveTeamUserOnline(user, onlineUserIds, hasPresenceSnapshot);
+                const title = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email;
+                const displayName = user.firstName ?? user.email?.split('@')[0] ?? '?';
+                let nameClassName = 'font-size-1 text-truncate dashboard-presence-name color-muted';
+                if (isOnline) {
+                    nameClassName = 'font-size-1 text-truncate dashboard-presence-name color-primary';
+                }
+
+                return (
+                    <Container
+                        key={memberId}
+                        className='dashboard-presence-member d-flex column items-center gap-025'
+                        title={title}
+                    >
+                        <Avatar
+                            user={user}
+                            size='sm'
+                            showStatus
+                            isOnline={isOnline}
+                        />
+                        <span className={nameClassName}>
+                            {displayName}
+                        </span>
+                    </Container>
+                );
+            })}
+        </Container>
+    );
+
+    if (totalCount === 0) {
+        membersContent = (
+            <Container className='dashboard-presence-empty d-flex flex-center flex-1'>
+                <Users size={20} strokeWidth={1.5} className='color-muted' />
+                <span className='color-muted font-size-2'>No members yet</span>
+            </Container>
+        );
+    }
 
     return (
         <Container className='dashboard-presence-card'>
@@ -88,35 +133,7 @@ const DashboardTeamPresence = () => {
                 </Button>
             </Container>
 
-            {totalCount === 0 ? (
-                <Container className='dashboard-presence-empty d-flex flex-center flex-1'>
-                    <Users size={20} strokeWidth={1.5} className='color-muted' />
-                    <span className='color-muted font-size-2'>No members yet</span>
-                </Container>
-            ) : (
-                <Container className='dashboard-presence-grid'>
-                    {allSorted.map(({ user, memberId }) => {
-                        const isOnline = resolveTeamUserOnline(user, onlineUserIds, hasPresenceSnapshot);
-                        return (
-                            <Container
-                                key={memberId}
-                                className='dashboard-presence-member d-flex column items-center gap-025'
-                                title={`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email}
-                            >
-                                <Avatar
-                                    user={user}
-                                    size='sm'
-                                    showStatus
-                                    isOnline={isOnline}
-                                />
-                                <span className={`font-size-1 text-truncate dashboard-presence-name ${isOnline ? 'color-primary' : 'color-muted'}`}>
-                                    {user.firstName ?? user.email?.split('@')[0] ?? '?'}
-                                </span>
-                            </Container>
-                        );
-                    })}
-                </Container>
-            )}
+            {membersContent}
 
             <Container className='dashboard-presence-footer'>
                 <span className='dashboard-presence-count font-size-1 font-weight-5'>

@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
 import { useKeyboardShortcutsStore } from '../stores/use-keyboard-shortcuts-store';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useScreenshotStore } from '../stores/use-screenshot-store';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
 import useCanvasUrlState from './use-canvas-url-state';
+
+import { useEffect, useRef } from 'react';
 
 const normalizeKey = (key: string): string => {
     const keyMap: Record<string, string> = {

@@ -1,15 +1,16 @@
-import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { Result } from '@shared/domain/port/Result';
+import { inject, injectable } from 'tsyringe';
+import type { IUseCase } from '@shared/application/IUseCase';
 import { CreateAnalysisInputDTO, CreateAnalysisOutputDTO } from '@modules/analysis/application/dtos/CreateAnalysisDTO';
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 
 @injectable()
 export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, CreateAnalysisOutputDTO> {
     constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private analysisRepository: IAnalysisRepository
-    ){}
+        @inject(ANALYSIS_TOKENS.AnalysisRepository)
+        private readonly analysisRepository: IAnalysisRepository
+    ) {}
 
     async execute(input: CreateAnalysisInputDTO): Promise<Result<CreateAnalysisOutputDTO>> {
         const analysis = await this.analysisRepository.create({
@@ -28,9 +29,9 @@ export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, C
                 trajectory: analysis.props.trajectory,
                 plugin: analysis.props.plugin,
                 config: analysis.props.config,
-                status: 'pending', // Initial status
+                status: 'pending',
                 createdAt: new Date()
             }
         });
     }
-}
+};

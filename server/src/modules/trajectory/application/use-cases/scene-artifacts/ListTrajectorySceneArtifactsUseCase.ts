@@ -1,11 +1,13 @@
-import { injectable, inject } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
-import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
-import type { IUseCase } from '@shared/application/IUseCase';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ListTrajectorySceneArtifactsInputDTO } from '@modules/trajectory/application/dtos/scene-artifacts/ListTrajectorySceneArtifactsDTO';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+
+import { injectable, inject } from 'tsyringe';
+
+import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { ListTrajectorySceneArtifactsInputDTO } from '@modules/trajectory/application/dtos/scene-artifacts/ListTrajectorySceneArtifactsDTO';
 
 @injectable()
 export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTrajectorySceneArtifactsInputDTO, PaginatedResult<any>, ApplicationError> {
@@ -107,4 +109,4 @@ export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTraject
             }))
         });
     }
-}
+};

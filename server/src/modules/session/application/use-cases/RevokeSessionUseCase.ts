@@ -1,11 +1,11 @@
-import { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IUseCase } from '@shared/application/IUseCase';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { RevokeSessionInputDTO } from '@modules/session/application/dtos/RevokeSessionDTO';
 import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
-import { injectable, inject } from 'tsyringe';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { Result } from '@shared/domain/port/Result';
+import { inject, injectable } from 'tsyringe';
+import type { RevokeSessionInputDTO } from '@modules/session/application/dtos/RevokeSessionDTO';
+import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
 
 @injectable()
 export default class RevokeSessionUseCase implements IUseCase<RevokeSessionInputDTO, void, ApplicationError>{

@@ -1,10 +1,10 @@
-import { inject, injectable } from 'tsyringe';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import type { TeamJobSnapshot, TeamJobStatus } from '@modules/jobs/domain/entities/TeamJobSnapshot';
-import { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
-import { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
 import logger from '@shared/infrastructure/logger';
+import { inject, injectable } from 'tsyringe';
+import type { TeamJobSnapshot, TeamJobStatus } from '@modules/jobs/infrastructure/projections/TeamJobSnapshot';
+import type { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
+import type { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
 
 @injectable()
 export default class TeamJobQueryService {
@@ -75,4 +75,4 @@ export default class TeamJobQueryService {
             || status === 'retrying'
             || status === 'partial';
     }
-}
+};

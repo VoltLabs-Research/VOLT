@@ -1,11 +1,13 @@
+import AnalysisTreeNode from '../../molecules/AnalysisTreeNode';
+
 import { Atom } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
-import AnalysisTreeNode from '../../molecules/AnalysisTreeNode';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+
 import type { AnalysisSectionData } from '../../../hooks/use-canvas-sidebar-scene';
-import type { SceneObjectType } from '@/modules/fractal/api/entities/fractal';
-import type { AnalysisStatus } from '@/modules/canvas/hooks/use-analysis-status';
+import type { CanvasAnalysisStatusEntry } from '../../../utilities/analysis-status';
+import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 
 interface SceneCollectionProps {
     filteredSections: AnalysisSectionData[];
@@ -18,7 +20,7 @@ interface SceneCollectionProps {
     addScene: (scene: SceneObjectType) => void;
     removeScene: (scene: SceneObjectType) => void;
     totalAnalyses: number;
-    statusMap: Map<string, { status: AnalysisStatus; trajectoryId?: string }>;
+    statusMap: Map<string, CanvasAnalysisStatusEntry>;
     onDeleteAnalysis: (analysisId: string) => Promise<void>;
     onDownloadAnalysis: (analysisId: string) => void | Promise<void>;
     onDownloadExposureListing?: (params: {
@@ -28,7 +30,7 @@ interface SceneCollectionProps {
         trajectoryId?: string;
         exposureName?: string;
     }) => void;
-}
+};
 
 const SceneCollection = ({
     filteredSections,

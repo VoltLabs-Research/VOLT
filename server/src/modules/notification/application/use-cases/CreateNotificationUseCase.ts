@@ -1,13 +1,13 @@
-import { INotificationRepository } from '@modules/notification/domain/port/INotificationRepository';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IUseCase } from '@shared/application/IUseCase';
-import { injectable, inject } from 'tsyringe';
 import { NOTIFICATION_TOKENS } from '@modules/notification/infrastructure/di/NotificationTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import { CreateNotificationInputDTO, CreateNotificationOutputDTO } from '@modules/notification/application/dtos/CreateNotificationDTO';
 import NotificationCreatedEvent from '@modules/notification/domain/events/NotificationCreatedEvent';
+import type { CreateNotificationInputDTO, CreateNotificationOutputDTO } from '@modules/notification/application/dtos';
+import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject, injectable } from 'tsyringe';
+import type { INotificationRepository } from '@modules/notification/domain/port/INotificationRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
+import type { IEventBus } from '@shared/application/events/IEventBus';
+import type ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 @injectable()
 export default class CreateNotificationUseCase implements IUseCase<CreateNotificationInputDTO, CreateNotificationOutputDTO, ApplicationError> {
@@ -47,4 +47,4 @@ export default class CreateNotificationUseCase implements IUseCase<CreateNotific
             ...notification.props
         });
     }
-}
+};

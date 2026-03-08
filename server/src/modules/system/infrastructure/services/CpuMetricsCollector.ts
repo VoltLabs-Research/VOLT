@@ -1,10 +1,10 @@
 import os from 'os';
 import { injectable } from 'tsyringe';
-import type { CPUTimes } from './metricsTypes';
+import type { CpuTimeSnapshot } from '@modules/system/domain/contracts';
 
 @injectable()
 export default class CpuMetricsCollector {
-    private lastCPUTimes: CPUTimes[] | null = null;
+    private lastCPUTimes: CpuTimeSnapshot[] | null = null;
 
     getUsage(): number {
         const cpus = os.cpus();
@@ -27,7 +27,7 @@ export default class CpuMetricsCollector {
     getCoresUsage(): number[] {
         const cpus = os.cpus();
 
-        const currentTimes: CPUTimes[] = cpus.map((cpu) => {
+        const currentTimes: CpuTimeSnapshot[] = cpus.map((cpu) => {
             const times = cpu.times;
             const total = times.user + times.nice + times.sys + times.idle + times.irq;
             return {

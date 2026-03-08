@@ -1,7 +1,8 @@
-import { useNavigate } from 'react-router-dom';
-import Container from '@/shared/presentation/components/Container';
-import Button from '@/shared/presentation/components/Button';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
+
+import { useNavigate } from 'react-router-dom';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
 
 const WorkspaceTabs = () => {
     const navigate = useNavigate();

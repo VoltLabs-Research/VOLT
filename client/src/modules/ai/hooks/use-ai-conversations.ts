@@ -1,7 +1,3 @@
-import { useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { sileo } from 'sileo';
-import { showPromise } from '@/shared/presentation/hooks/toast';
 import {
     buildConversationsQueryParams,
     conversationsQuery,
@@ -10,7 +6,19 @@ import {
     useDeleteConversationMutation,
     useRenameConversationMutation
 } from '@/modules/ai/hooks/queries';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { sileo } from 'sileo';
 import type { AIConversation } from '@/modules/ai/api/entities/ai-conversation';
+import type { CreateAIConversationParams } from '@/modules/ai/api/dtos/create-ai-conversation';
+
+interface UseAIConversationsOptions {
+    navigateOnConversationChange?: boolean;
+    onConversationChange?: (conversationId?: string) => void;
+    onConversationCreated?: () => void;
+    checkRBACError: (error: unknown) => boolean;
+};
 
 const sortConversations = (conversations: AIConversation[]) => {
     return [...conversations].sort((left, right) => {
@@ -19,13 +27,6 @@ const sortConversations = (conversations: AIConversation[]) => {
         return new Date(rightDate).getTime() - new Date(leftDate).getTime();
     });
 };
-
-interface UseAIConversationsOptions {
-    navigateOnConversationChange?: boolean;
-    onConversationChange?: (conversationId?: string) => void;
-    onConversationCreated?: () => void;
-    checkRBACError: (error: unknown) => boolean;
-}
 
 const useAIConversations = (
     teamId: string | null,
@@ -68,9 +69,10 @@ const useAIConversations = (
     });
 
     const isConversationsLoading = conversationsResult.isLoading;
-    const conversationsError = conversationsResult.error
-        ? 'Failed to load conversations. Please try again.'
-        : null;
+    let conversationsError: string | null = null;
+    if (conversationsResult.error) {
+        conversationsError = 'Failed to load conversations. Please try again.';
+    }
 
     const activeConversation = useMemo(
         () => conversations.find((conversation) => conversation._id === conversationId) || null,
@@ -101,7 +103,16 @@ const useAIConversations = (
         try {
             const message = initialTitle?.trim();
             const title = getConversationTitle(message);
-            const result = await createConversationMutationResult.mutateAsync(message ? { title, message } : { title });
+            let params: CreateAIConversationParams = { title };
+
+            if (message) {
+                params = {
+                    title,
+                    message
+                };
+            }
+
+            const result = await createConversationMutationResult.mutateAsync(params);
 
             options.onConversationCreated?.();
             handleConversationChange(result.conversation._id);

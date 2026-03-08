@@ -1,7 +1,7 @@
 import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { DeleteSSHConnectionByIdInputDTO } from '@modules/ssh/application/dtos/DeleteSSHConnectionByIdDTO';
@@ -13,7 +13,7 @@ import SSHConnectionDeletedEvent from '@modules/ssh/domain/events/SSHConnectionD
 @injectable()
 export class DeleteSSHConnectionByIdUseCase implements IUseCase<DeleteSSHConnectionByIdInputDTO, null, ApplicationError> {
     constructor(
-        @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
+        @inject(SSH_TOKENS.SSHConnectionRepository)
         private sshConnRepository: ISSHConnectionRepository,
 
         @inject(SHARED_TOKENS.EventBus)

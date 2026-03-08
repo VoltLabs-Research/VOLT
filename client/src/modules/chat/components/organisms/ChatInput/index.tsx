@@ -1,14 +1,14 @@
-import { useState } from 'react';
 import { IoAttachOutline, IoHappyOutline, IoPaperPlaneOutline, IoDocumentOutline, IoCloseOutline } from 'react-icons/io5';
+import { useState } from 'react';
+import { formatSize } from '@/shared/utils/format';
+import Button from '@/shared/presentation/components/Button';
+import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
+import useFilePreview from '@/shared/presentation/hooks/use-file-preview';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import Popover from '@/shared/presentation/components/Popover';
-import Button from '@/shared/presentation/components/Button';
 import IconButton from '@/shared/presentation/components/IconButton';
-import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
+import Popover from '@/shared/presentation/components/Popover';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import { formatSize } from '@/shared/utils/format';
-import useFilePreview from '@/shared/presentation/hooks/use-file-preview';
 import './ChatInput.css';
 
 interface ChatInputProps {
@@ -53,32 +53,52 @@ const ChatInput = ({ disabled, onTyping, onSendText, onSendFiles }: ChatInputPro
         }
     };
 
+    const handleEmojiSelect = (close: () => void, emoji: string) => {
+        setMessage((prev) => prev + emoji);
+        close();
+    };
+
+    const renderFilePreviewMedia = (index: number) => {
+        const item = previews[index];
+        if (!item) return null;
+
+        if (item.preview) {
+            return <img src={item.preview} alt={item.file.name} className='chat-file-preview-thumbnail f-shrink-0' />;
+        }
+
+        return (
+            <Container className='d-flex flex-center chat-file-preview-icon f-shrink-0'>
+                <IoDocumentOutline size={20} className='color-muted' />
+            </Container>
+        );
+    };
+
+    const renderEmojiPicker = (close: () => void) => (
+        <EmojiPicker onSelect={(emoji: string) => handleEmojiSelect(close, emoji)} />
+    );
+
+    const renderFilePreview = (item: typeof previews[number], index: number) => (
+        <Container key={index} className='d-flex items-center gap-075 chat-file-preview-item'>
+            {renderFilePreviewMedia(index)}
+            <Container className='d-flex column flex-1 overflow-hidden'>
+                <Paragraph className='font-size-2 font-weight-5 color-primary chat-file-preview-name'>
+                    {item.file.name}
+                </Paragraph>
+                <Paragraph className='font-size-1 color-muted'>
+                    {formatSize(item.file.size)}
+                </Paragraph>
+            </Container>
+            <IconButton size='sm' variant='ghost' onClick={() => removeFile(index)}>
+                <IoCloseOutline size={16} />
+            </IconButton>
+        </Container>
+    );
+
     return (
         <form onSubmit={handleSend} className='chat-input-container'>
             {previews.length > 0 && (
                 <Container className='d-flex column gap-05 y-auto chat-file-previews'>
-                    {previews.map((item, index) => (
-                        <Container key={index} className='d-flex items-center gap-075 chat-file-preview-item'>
-                            {item.preview ? (
-                                <img src={item.preview} alt={item.file.name} className='chat-file-preview-thumbnail f-shrink-0' />
-                            ) : (
-                                <Container className='d-flex flex-center chat-file-preview-icon f-shrink-0'>
-                                    <IoDocumentOutline size={20} className='color-muted' />
-                                </Container>
-                            )}
-                            <Container className='d-flex column flex-1 overflow-hidden'>
-                                <Paragraph className='font-size-2 font-weight-5 color-primary chat-file-preview-name'>
-                                    {item.file.name}
-                                </Paragraph>
-                                <Paragraph className='font-size-1 color-muted'>
-                                    {formatSize(item.file.size)}
-                                </Paragraph>
-                            </Container>
-                            <IconButton size='sm' variant='ghost' onClick={() => removeFile(index)}>
-                                <IoCloseOutline size={16} />
-                            </IconButton>
-                        </Container>
-                    ))}
+                    {previews.map(renderFilePreview)}
                 </Container>
             )}
 
@@ -109,14 +129,7 @@ const ChatInput = ({ disabled, onTyping, onSendText, onSendFiles }: ChatInputPro
                         </IconButton>
                     }
                 >
-                    {(close) => (
-                        <EmojiPicker
-                            onSelect={(emoji: string) => {
-                                setMessage((prev) => prev + emoji);
-                                close();
-                            }}
-                        />
-                    )}
+                    {renderEmojiPicker}
                 </Popover>
 
                 <Tooltip content='Send'>

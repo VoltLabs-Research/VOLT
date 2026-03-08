@@ -1,13 +1,14 @@
 import { Readable } from 'node:stream';
 
 export type UploadSource = string | Buffer | Readable;
+export type FileMetadataValue = string | number | boolean | Date | undefined;
 
 export interface FileMetadata {
     size: number;
     mimetype?: string;
     etag?: string;
     lastModified?: Date;
-    [key: string]: any;
+    [key: string]: FileMetadataValue;
 };
 
 export interface IStorageService {

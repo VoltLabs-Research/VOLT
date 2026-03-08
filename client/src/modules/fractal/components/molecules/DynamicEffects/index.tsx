@@ -10,14 +10,14 @@ import {
 } from '@react-three/postprocessing';
 import { useMemo } from 'react';
 import { Vector2 } from 'three';
-import type { EffectsConfigState } from '@/modules/fractal/types/stores/editor/visual-types';
-import type { RenderConfigState } from '@/modules/fractal/types/stores/editor/performance-types';
+import type { EffectsConfigState } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { RenderConfigState } from '@/modules/fractal/stores/contracts/editor/performance-types';
 
 interface DynamicEffectsProps {
     settings: EffectsConfigState;
     isDefectScene?: boolean;
     renderConfig?: RenderConfigState;
-}
+};
 
 const DynamicEffects = ({ settings, isDefectScene, renderConfig }: DynamicEffectsProps) => {
     const {

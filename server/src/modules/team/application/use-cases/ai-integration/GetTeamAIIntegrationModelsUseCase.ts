@@ -1,20 +1,15 @@
-import { injectable, inject } from 'tsyringe';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { GetTeamAIIntegrationModelsInputDTO, GetTeamAIIntegrationModelsOutputDTO, TeamAIModelListItemDTO, TeamAIProviderModelsDTO } from '@modules/team/application/dtos/ai-integration/GetTeamAIIntegrationModelsDTO';
+import TeamAIIntegrationSecretService from '@modules/team/application/services/ai-integration/TeamAIIntegrationSecretService';
+import TeamAIProviderCatalog from '@modules/team/application/services/ai-integration/TeamAIProviderCatalog';
+import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ITeamAIIntegrationRepository';
-import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
-import TeamAIProviderCatalog from '@modules/team/application/services/TeamAIProviderCatalog';
-import TeamAIIntegrationSecretService from '@modules/team/application/services/TeamAIIntegrationSecretService';
-import type { IAIProviderModelDiscovery } from '@modules/ai/application/ports/IAIProviderModelDiscovery';
-import {
-    GetTeamAIIntegrationModelsInputDTO,
-    GetTeamAIIntegrationModelsOutputDTO,
-    TeamAIModelListItemDTO,
-    TeamAIProviderModelsDTO
-} from '@modules/team/application/dtos/ai-integration/GetTeamAIIntegrationModelsDTO';
+import { injectable, inject } from 'tsyringe';
+import type { IAIProviderModelDiscovery } from '@modules/ai/domain/port/IAIProviderModelDiscovery';
 
 @injectable()
 export default class GetTeamAIIntegrationModelsUseCase implements IUseCase<GetTeamAIIntegrationModelsInputDTO, GetTeamAIIntegrationModelsOutputDTO> {
@@ -119,4 +114,4 @@ export default class GetTeamAIIntegrationModelsUseCase implements IUseCase<GetTe
 
         return baseUrl;
     }
-}
+};

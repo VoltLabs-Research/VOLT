@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
-import { RxTrash } from 'react-icons/rx';
-import { CiStop1, CiRedo } from 'react-icons/ci';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import { CiRedo, CiStop1 } from 'react-icons/ci';
+import { RxTrash } from 'react-icons/rx';
+import type { ReactNode } from 'react';
 
 interface JobGroupMenuProps {
     trajectoryId: string;
@@ -11,16 +11,16 @@ interface JobGroupMenuProps {
     onClearHistory: () => void;
     onRemoveRunningJobs: () => void;
     onRetryFailedJobs: () => void;
-}
+};
 
-const JobGroupMenu: React.FC<JobGroupMenuProps> = ({
+const JobGroupMenu = ({
     trajectoryId,
     trigger,
     loadingAction,
     onClearHistory,
     onRemoveRunningJobs,
     onRetryFailedJobs
-}) => {
+}: JobGroupMenuProps) => {
     return (
         <Popover
             id={`job-group-menu-${trajectoryId}`}

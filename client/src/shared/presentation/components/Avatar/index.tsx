@@ -1,11 +1,11 @@
-import type { ReactNode } from 'react';
-import type { User } from '@/modules/auth/api/entities/user';
-import { getInitialsFromUser } from '@/shared/utils/user';
 import { cn } from '@/shared/utils/cn';
+import { getInitialsFromUser } from '@/shared/utils/user';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import StatusDot from '@/shared/presentation/components/StatusDot';
 import './Avatar.css';
+import type { User } from '@/modules/auth/api/entities/user';
+import type { ReactNode } from 'react';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg';
 

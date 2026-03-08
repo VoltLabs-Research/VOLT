@@ -1,18 +1,19 @@
-import { type Control } from 'react-hook-form';
-import { ArrowLeft, Lock } from 'lucide-react';
+import UserBadge from '../UserBadge';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import UserBadge from '../UserBadge';
+import { ArrowLeft, Lock } from 'lucide-react';
+import type { FormEventHandler } from 'react';
+import type { Control } from 'react-hook-form';
 import type { SignInForm } from '../../templates/SignIn/validation-schema';
 
 interface PasswordStepProps {
     email: string;
     control: Control<SignInForm>;
     isLoading: boolean;
-    onSubmit: React.FormEventHandler<HTMLFormElement>;
+    onSubmit: FormEventHandler<HTMLFormElement>;
     onBack: () => void;
-}
+};
 
 const PasswordStep = ({ email, control, isLoading, onSubmit, onBack }: PasswordStepProps) => (
     <Container className='d-flex column gap-1'>

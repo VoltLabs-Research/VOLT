@@ -1,17 +1,20 @@
+import useCameraGroup from './groups/camera';
+import useEffectsGroup from './groups/effects';
+import useEnvironmentGroup from './groups/environment';
+import useGridGroup from './groups/grid';
+import useLightsGroup from './groups/lights';
+import useOrbitGroup from './groups/orbit';
+import usePerformanceGroup from './groups/performance';
+import useRendererGroup from './groups/renderer';
+
 import { memo, useMemo, useState } from 'react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Slider from '@/shared/presentation/components/Slider';
-import useLightsGroup from './groups/lights';
-import useEffectsGroup from './groups/effects';
-import usePerformanceGroup from './groups/performance';
-import useEnvironmentGroup from './groups/environment';
-import useCameraGroup from './groups/camera';
-import useOrbitGroup from './groups/orbit';
-import useRendererGroup from './groups/renderer';
-import useGridGroup from './groups/grid';
+
 import type { RenderGroup } from './types';
+
 import './CanvasRenderSections.css';
 
 const CanvasRenderSections = () => {

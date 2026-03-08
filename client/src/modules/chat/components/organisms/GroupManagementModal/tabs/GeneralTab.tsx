@@ -1,9 +1,9 @@
-import type { Chat } from '@/modules/chat/api/entities/chat';
-import Container from '@/shared/presentation/components/Container';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Button from '@/shared/presentation/components/Button';
 import DangerZone from '@/shared/presentation/components/DangerZone';
 import { IoExitOutline } from 'react-icons/io5';
+import Container from '@/shared/presentation/components/Container';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import type { Chat } from '@/modules/chat/api/entities/chat';
 
 interface GeneralTabProps {
     chat: Chat;

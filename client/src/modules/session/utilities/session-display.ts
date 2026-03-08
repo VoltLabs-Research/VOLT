@@ -1,8 +1,15 @@
-import type { LucideIcon } from 'lucide-react';
-import { Globe, KeyRound, LogIn } from 'lucide-react';
 import { SessionActivityType } from '../api/entities/session';
+import { Globe, KeyRound, LogIn } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-export const parseSessionUserAgent = (userAgent: string): { browser: string; os: string } => {
+interface SessionUserAgentInfo {
+    browser: string;
+    os: string;
+};
+
+const MOBILE_USER_AGENT_PATTERN = /Android|iPhone|iPad|iPod|Mobile/i;
+
+export const parseSessionUserAgent = (userAgent: string): SessionUserAgentInfo => {
     let browser = 'Unknown Browser';
     let os = 'Unknown OS';
 
@@ -22,8 +29,7 @@ export const parseSessionUserAgent = (userAgent: string): { browser: string; os:
     return { browser, os };
 };
 
-export const isMobileUserAgent = (userAgent: string): boolean =>
-    /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
+export const isMobileUserAgent = MOBILE_USER_AGENT_PATTERN.test.bind(MOBILE_USER_AGENT_PATTERN);
 
 export const formatSessionRelativeTime = (dateValue: string): string => {
     const now = Date.now();

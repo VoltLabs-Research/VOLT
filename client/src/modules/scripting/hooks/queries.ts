@@ -1,25 +1,30 @@
-import { useMutation } from '@tanstack/react-query';
+import service from '../api/service';
 import {
     buildKeys,
     createMutation,
     createQuery,
-    type MutationOptions,
     withSuccess
 } from '@/shared/infrastructure/query/create-paginated-query';
 import queryClient from '@/shared/infrastructure/query/query-client';
+import { useMutation } from '@tanstack/react-query';
+import type { MutationOptions } from '@/shared/infrastructure/query/create-paginated-query';
 import type { CreateScriptingSessionParams } from '../api/dtos/create-scripting-session';
 import type { DeleteScriptingNotebookParams } from '../api/dtos/delete-scripting-notebook';
 import type { ListScriptingNotebooksParams } from '../api/dtos/list-scripting-notebooks';
 import type { ScriptingSession } from '../api/entities/scripting-session';
-import service from '../api/service';
 
-const KEYS = buildKeys<{
+interface ScriptingQueryKeys extends Record<string, unknown> {
     notebooks: ListScriptingNotebooksParams;
-}>('scripting');
+};
+
+const KEYS = buildKeys<ScriptingQueryKeys>('scripting');
+const listNotebooks = (params: ListScriptingNotebooksParams) => service.listNotebooks(params);
+const deleteNotebook = (params: DeleteScriptingNotebookParams) => service.deleteNotebook(params);
+const createSession = (params: CreateScriptingSessionParams) => service.createSession(params);
 
 export const scriptingNotebooksQueryKey = KEYS.notebooks;
 
-export const scriptingNotebooksQuery = createQuery(KEYS.notebooks, service.listNotebooks);
+export const scriptingNotebooksQuery = createQuery(KEYS.notebooks, listNotebooks);
 
 
 export const invalidateScriptingNotebooksQuery = () => {
@@ -31,13 +36,13 @@ export const useDeleteScriptingNotebookMutation = (
 ) => {
     return useMutation({
         ...options,
-        mutationFn: service.deleteNotebook,
+        mutationFn: deleteNotebook,
         onSuccess: withSuccess(() => {
-            void invalidateScriptingNotebooksQuery();
+            invalidateScriptingNotebooksQuery();
         }, options)
     });
 };
 
 export const useCreateScriptingSessionMutation = createMutation<ScriptingSession, CreateScriptingSessionParams>(
-    service.createSession
+    createSession
 );

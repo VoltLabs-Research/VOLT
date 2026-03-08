@@ -1,8 +1,16 @@
 import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin/PersistedPluginDTO';
 
-export interface ImportPluginInputDTO {
-    file: any;
-    teamId: string;
-}
+interface ImportPluginFile {
+    buffer: Buffer;
+    originalname?: string;
+    originalName?: string;
+    mimetype?: string;
+    size?: number;
+};
 
-export interface ImportPluginOutputDTO extends PersistedPluginDTO { }
+export interface ImportPluginInputDTO {
+    file: ImportPluginFile;
+    teamId: string;
+};
+
+export interface ImportPluginOutputDTO extends PersistedPluginDTO { };

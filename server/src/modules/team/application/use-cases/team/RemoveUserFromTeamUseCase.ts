@@ -1,15 +1,15 @@
-import { ITeamRepository } from '@modules/team/domain/port/ITeamRepository';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IUseCase } from '@shared/application/IUseCase';
-import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { RemoveUserFromTeamInputDTO } from '@modules/team/application/dtos/team/RemoveUserFromTeamDTO';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
-import TeamMembershipService from '@modules/team/application/services/TeamMembershipService';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { RemoveUserFromTeamInputDTO } from '@modules/team/application/dtos/team/RemoveUserFromTeamDTO';
+import TeamMembershipService from '@modules/team/application/services/team/TeamMembershipService';
+import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class RemoveUserFromTeamUseCase implements IUseCase<RemoveUserFromTeamInputDTO, null, ApplicationError>{

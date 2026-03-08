@@ -1,13 +1,13 @@
-import React from 'react';
-import Container from '@/shared/presentation/components/Container';
 import { cn } from '@/shared/utils';
+import Container from '@/shared/presentation/components/Container';
+import type { ReactNode } from 'react';
 
 export interface SettingsSectionProps {
-    children: React.ReactNode;
+    children: ReactNode;
     className?: string;
-}
+};
 
-const SettingsSection: React.FC<SettingsSectionProps> = ({ children, className = '' }) => {
+const SettingsSection = ({ children, className = '' }: SettingsSectionProps) => {
     const classes = cn(
         'd-flex', 
         'b-soft',

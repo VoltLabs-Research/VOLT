@@ -14,4 +14,4 @@ export const AI_TOKENS = {
     UpdateAIConversationUseCase: Symbol.for('UpdateAIConversationUseCase'),
     DeleteAIConversationUseCase: Symbol.for('DeleteAIConversationUseCase'),
     AITool: Symbol.for('AITool')
-} as const;
+};

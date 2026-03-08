@@ -1,3 +1,4 @@
+import './NotificationItem.css';
 import { useNavigate } from 'react-router-dom';
 import Container from '@/shared/presentation/components/Container';
 import type { Notification } from '@/modules/notification/api/entities/notification';

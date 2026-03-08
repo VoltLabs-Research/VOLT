@@ -1,7 +1,7 @@
-import { useCallback } from 'react';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { useCallback } from 'react';
 
-const useRequiredSelectedTeamId = () => {
+export default function useRequiredSelectedTeamId() {
     const selectedTeamId = useSelectedTeamId();
 
     return useCallback(() => {
@@ -11,6 +11,4 @@ const useRequiredSelectedTeamId = () => {
 
         return selectedTeamId;
     }, [selectedTeamId]);
-};
-
-export default useRequiredSelectedTeamId;
+}

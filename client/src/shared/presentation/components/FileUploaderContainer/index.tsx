@@ -1,10 +1,11 @@
+import { processFileSystemEntry } from '@/shared/utils/file';
+import Container from '@/shared/presentation/components/Container';
+import useDragState from '@/shared/presentation/hooks/use-drag-state';
+import './FileUploaderContainer.css';
 import { useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import useDragState from '@/shared/presentation/hooks/use-drag-state';
-import { processFileSystemEntry, type FileWithPath } from '@/shared/utils/file';
-import Container from '@/shared/presentation/components/Container';
 import { sileo } from 'sileo';
-import './FileUploaderContainer.css';
+import type { FileWithPath } from '@/shared/utils/file';
 
 interface FileUploaderContainerProps {
     children?: React.ReactNode;

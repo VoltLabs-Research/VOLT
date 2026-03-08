@@ -1,8 +1,7 @@
-import React from 'react';
-import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
-import Title from '@/shared/presentation/components/Title';
 import CloseButton from '@/shared/presentation/components/CloseButton';
+import Container from '@/shared/presentation/components/Container';
+import Title from '@/shared/presentation/components/Title';
 
 interface PanelTab {
     label: string;
@@ -17,11 +16,11 @@ interface PanelHeaderProps {
     title?: string;
 };
 
-const PanelHeader: React.FC<PanelHeaderProps> = ({
+export const PanelHeader = ({
     tabs,
     onClose,
     title
-}) => {
+}: PanelHeaderProps) => {
     return (
         <Container className='panel-header-bordered d-flex items-center content-between f-shrink-0'>
             {title ? (
@@ -50,5 +49,3 @@ const PanelHeader: React.FC<PanelHeaderProps> = ({
         </Container>
     );
 };
-
-export default PanelHeader;

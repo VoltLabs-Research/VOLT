@@ -1,17 +1,27 @@
-import type { HydratedDocument } from 'mongoose';
-import type { IMapper } from '@shared/infrastructure/persistence/IMapper';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+import type { IMapper } from '@shared/infrastructure/persistence/IMapper';
+import type { HydratedDocument } from 'mongoose';
 
 interface EntityConstructor<TDomain, TProps> {
     new (_id: string, props: TProps): TDomain;
-}
+};
 
 interface IdentifierValue {
     toString(): string;
-}
+};
+
+interface DomainWithProps<TProps> {
+    props: TProps;
+};
 
 const isIdentifierValue = (value: unknown): value is IdentifierValue => {
     return typeof value === 'object' && value !== null && 'toString' in value;
+};
+
+const hasPropsRecord = <TProps>(
+    value: TProps | Partial<TProps> | DomainWithProps<TProps> | unknown
+): value is DomainWithProps<TProps> => {
+    return isRecord(value) && isRecord(value.props);
 };
 
 const toIdentifier = (value: unknown): string => {
@@ -26,63 +36,65 @@ const toIdentifier = (value: unknown): string => {
     return String(value);
 };
 
-export abstract class MongoBaseMapper<TDomain, TProps, TDocument>
-    implements IMapper<TDomain, TProps, TDocument> {
+export class BaseMapper<
+    TDomain,
+    TProps,
+    TDocument extends object
+> implements IMapper<TDomain, TProps, HydratedDocument<TDocument>> {
 
     constructor(
         private readonly entityClass: EntityConstructor<TDomain, TProps>,
-        private readonly relationKeys: (keyof TProps)[] = []
+        private readonly relationKeys: Array<Extract<keyof TProps, string>> = []
     ){}
 
     toDomain(doc: HydratedDocument<TDocument>): TDomain {
-        const rawProps = doc.toObject({ flattenMaps: true }) as Record<string, unknown>;
-        const props = { ...rawProps };
+        const documentProps = doc.toObject({ flattenMaps: true }) as Record<string, unknown>;
+        const { _id: _ignoredId, __v: _ignoredVersion, ...props } = documentProps;
 
         const _id = doc._id!.toString();
 
         this.relationKeys.forEach((key) => {
-            const value = (doc as unknown as Record<string, unknown>)[key as string];
+            const value = Reflect.get(doc, key);
             if (!value) return;
 
-            if (doc.populated(key as string)) {
+            if (doc.populated(key)) {
                 return;
             }
 
             if (Array.isArray(value)) {
-                props[key as string] = value.map((relationValue) => toIdentifier(relationValue));
+                Reflect.set(props, key, value.map((relationValue: unknown) => toIdentifier(relationValue)));
             } else {
-                props[key as string] = toIdentifier(value);
+                Reflect.set(props, key, toIdentifier(value));
             }
         });
 
-        delete props._id;
-        delete props.__v;
-
-        return new this.entityClass(_id, props as unknown as TProps);
+        return new this.entityClass(_id, props as TProps);
     }
 
-    private getPersistenceSource(domainOrProps: TDomain | TProps): TProps {
-        if (isRecord(domainOrProps) && isRecord(domainOrProps.props)) {
-            return domainOrProps.props as TProps;
+    private getPersistenceSource(domainOrProps: TDomain | TProps | Partial<TProps>): Record<string, unknown> {
+        if (hasPropsRecord<TProps>(domainOrProps)) {
+            return domainOrProps.props as Record<string, unknown>;
         }
 
-        return domainOrProps as TProps;
+        if (isRecord(domainOrProps)) {
+            return domainOrProps;
+        }
+
+        return {};
     }
 
-    toPersistence(domainOrProps: TDomain | TProps): Partial<TDocument> {
+    toPersistence(domainOrProps: TDomain | TProps | Partial<TProps>): Record<string, unknown> {
         const persistenceSource = this.getPersistenceSource(domainOrProps);
-        const persistenceData: Partial<TDocument> = {};
+        const persistenceData: Record<string, unknown> = {};
 
-        Object.keys(persistenceSource as object).forEach((propertyName) => {
+        Object.keys(persistenceSource).forEach((propertyName) => {
             Reflect.set(
                 persistenceData,
                 propertyName,
-                (persistenceSource as Record<string, unknown>)[propertyName]
+                persistenceSource[propertyName]
             );
         });
 
         return persistenceData;
     }
-}
-
-export { MongoBaseMapper as BaseMapper };
+};

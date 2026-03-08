@@ -1,16 +1,16 @@
+import { UpdateGroupInfoInputDTO, UpdateGroupInfoOutputDTO } from '@modules/chat/application/dtos/chat/UpdateGroupInfoDTO';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { resolveGroupChat } from '@modules/chat/application/services/chat/resolveGroupChat';
+import { toPersistedChatOutput } from '@modules/chat/domain/services/toPersistedChatOutput';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
-import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import { UpdateGroupInfoInputDTO, UpdateGroupInfoOutputDTO } from '@modules/chat/application/dtos/chat/UpdateGroupInfoDTO';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { ChatProps } from '@modules/chat/domain/entities/Chat';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { resolveGroupChat } from '@modules/chat/application/helpers/resolveGroupChat';
-import { toPersistedChatOutput } from '@modules/chat/application/helpers/toPersistedChatOutput';
+import { inject, injectable } from 'tsyringe';
+import type { ChatProps } from '@modules/chat/domain/entities/chat/Chat';
+import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
+import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 
 @injectable()
 export class UpdateGroupInfoUseCase implements IUseCase<UpdateGroupInfoInputDTO, UpdateGroupInfoOutputDTO, ApplicationError> {

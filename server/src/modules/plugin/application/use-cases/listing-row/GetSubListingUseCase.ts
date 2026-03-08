@@ -1,13 +1,14 @@
-import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
-import { ISubListingRowRepository } from '@modules/plugin/domain/port/ISubListingRowRepository';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     GetSubListingInputDTO,
     GetSubListingOutputDTO,
     SubListingColumn
 } from '@modules/plugin/application/dtos/listing-row/GetSubListingDTO';
+import { ISubListingRowRepository } from '@modules/plugin/domain/port/listing-row/ISubListingRowRepository';
+
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, GetSubListingOutputDTO> {
@@ -57,4 +58,4 @@ export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, Get
             limit: result.limit
         });
     }
-}
+};

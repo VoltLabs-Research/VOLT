@@ -1,13 +1,13 @@
+import useTrajectoryUpload from '@/modules/trajectory/hooks/trajectory/use-trajectory-upload';
 import { useCallback } from 'react';
 import FileUploaderContainer from '@/shared/presentation/components/FileUploaderContainer';
-import useTrajectoryUpload from '@/modules/trajectory/hooks/use-trajectory-upload';
 import type { FileWithPath } from '@/shared/utils/file';
 
 interface TrajectoryUploaderContainerProps {
     children?: React.ReactNode;
 };
 
-const TrajectoryUploaderContainer: React.FC<TrajectoryUploaderContainerProps> = ({ children }) => {
+export default function TrajectoryUploaderContainer({ children }: TrajectoryUploaderContainerProps) {
     const { uploadTrajectory } = useTrajectoryUpload();
 
     const handleFilesDropped = useCallback((files: FileWithPath[], folderName: string) => {
@@ -19,6 +19,4 @@ const TrajectoryUploaderContainer: React.FC<TrajectoryUploaderContainerProps> = 
             {children}
         </FileUploaderContainer>
     );
-};
-
-export default TrajectoryUploaderContainer;
+}

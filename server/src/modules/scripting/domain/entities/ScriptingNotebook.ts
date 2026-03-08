@@ -8,7 +8,7 @@ export interface ScriptingNotebookProps {
     lastOpenedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
-}
+};
 
 export default class ScriptingNotebook {
     constructor(
@@ -19,4 +19,4 @@ export default class ScriptingNotebook {
     get id(): string {
         return this._id;
     }
-}
+};

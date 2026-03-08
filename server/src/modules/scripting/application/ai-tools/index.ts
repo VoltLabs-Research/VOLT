@@ -1,1 +1,5 @@
-export * from './ListScriptingNotebooksAITool';
+import { ListScriptingNotebooksAITool } from './ListScriptingNotebooksAITool';
+
+export const scriptingAiTools = [
+    ListScriptingNotebooksAITool
+];

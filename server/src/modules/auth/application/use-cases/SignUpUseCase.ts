@@ -1,20 +1,20 @@
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SignUpInputDTO, SignUpOutputDTO } from '@modules/auth/application/dtos/SignUpDTO';
-import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
-import { ErrorCodes } from '@core/constants/error-codes';
-import User, { UserRole } from '@modules/auth/domain/entities/User';
-import { SessionActivityType } from '@modules/session/domain/entities/Session';
-import { injectable, inject } from 'tsyringe';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import UserCreatedEvent from '@modules/auth/domain/events/UserCreatedEvent';
-import { IAvatarService } from '@modules/auth/domain/port/IAvatarService';
-import AuthSessionService from '@modules/auth/application/services/AuthSessionService';
 import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import AuthSessionService from '@modules/auth/services/AuthSessionService';
+import User, { UserRole } from '@modules/auth/domain/entities/User';
+import UserCreatedEvent from '@modules/auth/domain/events/UserCreatedEvent';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { SessionActivityType } from '@modules/session/domain/entities/Session';
+import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject, injectable } from 'tsyringe';
+import type { IAvatarService } from '@modules/auth/domain/port/IAvatarService';
+import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
+import type { IEventBus } from '@shared/application/events/IEventBus';
 
 @injectable()
 export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOutputDTO, ApplicationError> {
@@ -29,7 +29,7 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
         private readonly eventBus: IEventBus,
         @inject(AUTH_TOKENS.AvatarService)
         private readonly avatarService: IAvatarService
-    ){}
+    ) {}
 
     async execute(input: SignUpInputDTO): Promise<Result<SignUpOutputDTO, ApplicationError>> {
         const email = User.normalizeEmail(input.email);

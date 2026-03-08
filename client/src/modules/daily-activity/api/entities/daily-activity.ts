@@ -1,4 +1,8 @@
-export type ActivityType = 'trajectory-upload' | 'trajectory-deletion' | 'analysis-performed';
+export enum ActivityType {
+    TrajectoryUpload = 'trajectory-upload',
+    TrajectoryDeletion = 'trajectory-deletion',
+    AnalysisPerformed = 'analysis-performed'
+};
 
 export interface ActivityItem {
     type: ActivityType;

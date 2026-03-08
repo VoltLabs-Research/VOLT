@@ -1,5 +1,3 @@
-import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import JobsHistory from '@/modules/jobs/components/organisms/JobsHistory';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import useTeamJobs from '@/modules/jobs/hooks/use-team-jobs';
@@ -7,6 +5,10 @@ import useJobsHistoryFilters from '@/modules/jobs/hooks/use-jobs-history-filters
 import useJobsAutoSelectAnalysis from '@/modules/jobs/hooks/use-jobs-auto-select-analysis';
 import useJobsCompletionToast from '@/modules/jobs/hooks/use-jobs-completion-toast';
 import '@/modules/jobs/components/organisms/JobsHistoryViewer/JobsHistoryViewer.css';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect } from 'react';
+import type { ReactNode } from 'react';
+import type { Variants } from 'framer-motion';
 
 interface JobsHistoryViewerProps {
     trajectoryId?: string;
@@ -15,10 +17,17 @@ interface JobsHistoryViewerProps {
     queueFilter?: string;
     variant?: 'floating' | 'embedded';
     displayMode?: 'full' | 'children-only';
-    emptyState?: React.ReactNode;
-}
+    emptyState?: ReactNode;
+};
 
-const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = (props) => {
+type DisplayMode = 'full' | 'children-only';
+type SpringTransitionType = 'spring';
+type ExitEase = [number, number, number, number];
+
+const SPRING_TRANSITION_TYPE: SpringTransitionType = 'spring';
+const PANEL_EXIT_EASE: ExitEase = [0.4, 0, 0.2, 1];
+
+export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
     const {
         trajectoryId,
         hideAfterComplete = true,
@@ -60,19 +69,43 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = (props) => {
         resetTracking();
     }, [hasActiveJobs, resetTracking]);
 
-    const panelVariants = {
-        hidden: { opacity: 0, scale: 0.95, y: 10, filter: 'blur(4px)' },
+    const panelVariants: Variants = {
+        hidden: {
+            opacity: 0,
+            scale: 0.95,
+            y: 10,
+            filter: 'blur(4px)'
+        },
         visible: {
-            opacity: 1, scale: 1, y: 0, filter: 'blur(0px)',
-            transition: { type: 'spring' as const, stiffness: 300, damping: 25, mass: 0.8 }
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            filter: 'blur(0px)',
+            transition: {
+                type: SPRING_TRANSITION_TYPE,
+                stiffness: 300,
+                damping: 25,
+                mass: 0.8
+            }
         },
         exit: {
-            opacity: 0, scale: 0.95, y: 10, filter: 'blur(4px)',
-            transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] as const }
+            opacity: 0,
+            scale: 0.95,
+            y: 10,
+            filter: 'blur(4px)',
+            transition: {
+                duration: 0.4,
+                ease: PANEL_EXIT_EASE
+            }
         }
     };
 
-    const resolvedDisplayMode = displayMode ?? (variant === 'embedded' ? 'children-only' : 'full');
+    let resolvedDisplayMode: DisplayMode = 'full';
+    if (displayMode) {
+        resolvedDisplayMode = displayMode;
+    } else if (variant === 'embedded') {
+        resolvedDisplayMode = 'children-only';
+    }
 
     if (variant === 'embedded') {
         return (
@@ -122,5 +155,4 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = (props) => {
     );
 };
 
-export { JobsHistoryViewer };
 export default JobsHistoryViewer;

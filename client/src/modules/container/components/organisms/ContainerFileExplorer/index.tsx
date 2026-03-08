@@ -1,6 +1,5 @@
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
-import { IoFolderOutline, IoDocumentOutline, IoArrowBack } from 'react-icons/io5';
 import { useContainerFilesQuery, useContainerFileContentQuery } from '../../../hooks/queries';
+import { IoFolderOutline, IoDocumentOutline, IoArrowBack } from 'react-icons/io5';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Tooltip from '@/shared/presentation/components/Tooltip';
@@ -8,6 +7,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
 import FileRowSkeleton from '@/shared/presentation/components/FileExplorer/FileRowSkeleton';
 import ApiError from '@/shared/errors/ApiError';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import './ContainerFileExplorer.css';
 
 interface ContainerFileExplorerProps {
@@ -26,9 +26,14 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     );
     const files = filesResponse?.files ?? [];
 
-    const filePath = viewingFile
-        ? (path === '/' ? `/${viewingFile}` : `${path}/${viewingFile}`)
-        : '';
+    let filePath = '';
+    if (viewingFile) {
+        if (path === '/') {
+            filePath = `/${viewingFile}`;
+        } else {
+            filePath = `${path}/${viewingFile}`;
+        }
+    }
 
     const { data: fileContentResponse, error: fileContentError } = useContainerFileContentQuery(
         { containerId, path: filePath },
@@ -37,7 +42,12 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     const fileContent = fileContentResponse?.content;
 
     const handleNavigate = (folderName: string) => {
-        const newPath = path === '/' ? `/${folderName}` : `${path}/${folderName}`;
+        let newPath = '';
+        if (path === '/') {
+            newPath = `/${folderName}`;
+        } else {
+            newPath = `${path}/${folderName}`;
+        }
         updateSearchParams({ path: newPath });
     };
 
@@ -57,6 +67,23 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
         removeParam('file');
     };
 
+    const handleFileItemClick = (fileName: string, isDirectory: boolean) => {
+        if (isDirectory) {
+            handleNavigate(fileName);
+            return;
+        }
+
+        handleFileClick(fileName);
+    };
+
+    const renderFileIcon = (isDirectory: boolean) => {
+        if (isDirectory) {
+            return <IoFolderOutline />;
+        }
+
+        return <IoDocumentOutline />;
+    };
+
     if(viewingFile && fileContent !== undefined && fileContent !== null){
         return (
             <Container className='d-flex column h-max gap-1'>
@@ -72,11 +99,12 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     }
 
     if (viewingFile && fileContentError) {
-        const message = fileContentError instanceof ApiError
-            ? fileContentError.getFriendlyMessage()
-            : fileContentError instanceof Error
-                ? fileContentError.message
-                : 'Failed to open file';
+        let message = 'Failed to open file';
+        if (fileContentError instanceof ApiError) {
+            message = fileContentError.getFriendlyMessage();
+        } else if (fileContentError instanceof Error) {
+            message = fileContentError.message;
+        }
 
         return (
             <Container className='d-flex column h-max gap-1'>
@@ -88,6 +116,35 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
                 </Container>
                 <Paragraph className='container-file-empty-folder'>{message}</Paragraph>
             </Container>
+        );
+    }
+
+    let filesContent = null;
+    if (isLoading) {
+        filesContent = (
+            <>
+                {Array.from({ length: 8 }).map((_, i) => <FileRowSkeleton key={i} className='container-file-item items-center' />)}
+            </>
+        );
+    } else {
+        filesContent = (
+            <>
+                {files.length === 0 && <Paragraph className='container-file-empty-folder'>Empty folder</Paragraph>}
+                {files.map((file, index) => (
+                    <Container
+                        key={index}
+                        className='container-file-item items-center cursor-pointer'
+                        onClick={() => handleFileItemClick(file.name, file.isDirectory)}
+                    >
+                        <span className='d-flex items-center content-center container-file-icon'>
+                            {renderFileIcon(file.isDirectory)}
+                        </span>
+                        <span className='container-file-name font-weight-5'>{file.name}</span>
+                        <span className='container-file-size'>{file.size}</span>
+                        <span className='container-file-date'>{file.date}</span>
+                    </Container>
+                ))}
+            </>
         );
     }
 
@@ -111,29 +168,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
             </Container>
 
             <Container className='d-flex flex-1 y-scroll column'>
-                {isLoading ? (
-                    <>
-                        {Array.from({ length: 8 }).map((_, i) => <FileRowSkeleton key={i} className='container-file-item items-center' />)}
-                    </>
-                ) : (
-                    <>
-                        {files.length === 0 && <Paragraph className='container-file-empty-folder'>Empty folder</Paragraph>}
-                        {files.map((file, index) => (
-                            <Container
-                                key={index}
-                                className='container-file-item items-center cursor-pointer'
-                                onClick={() => file.isDirectory ? handleNavigate(file.name) : handleFileClick(file.name)}
-                            >
-                                <span className='d-flex items-center content-center container-file-icon'>
-                                    {file.isDirectory ? <IoFolderOutline /> : <IoDocumentOutline />}
-                                </span>
-                                <span className='container-file-name font-weight-5'>{file.name}</span>
-                                <span className='container-file-size'>{file.size}</span>
-                                <span className='container-file-date'>{file.date}</span>
-                            </Container>
-                        ))}
-                    </>
-                )}
+                {filesContent}
             </Container>
         </Container>
     );

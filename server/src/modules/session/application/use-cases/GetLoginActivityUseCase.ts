@@ -1,10 +1,11 @@
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { GetLoginActivityInputDTO, GetLoginActivityOutputDTO } from '@modules/session/application/dtos/GetLoginActivityDTO';
-import { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
-import { injectable, inject } from 'tsyringe';
 import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
+import { Result } from '@shared/domain/port/Result';
+import { inject, injectable } from 'tsyringe';
+import type { GetLoginActivityInputDTO, GetLoginActivityOutputDTO } from '@modules/session/application/dtos/GetLoginActivityDTO';
+import { toPersistedSessionDTO } from '@modules/session/application/dtos/PersistedSessionDTO';
+import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
+import type ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 @injectable()
 export default class GetLoginActivityUseCase implements IUseCase<GetLoginActivityInputDTO, GetLoginActivityOutputDTO, ApplicationError>{
@@ -15,10 +16,11 @@ export default class GetLoginActivityUseCase implements IUseCase<GetLoginActivit
 
     async execute(input: GetLoginActivityInputDTO): Promise<Result<GetLoginActivityOutputDTO, ApplicationError>>{
         const sessions = await this.sessionRepository.findLoginActivity(input.userId, input.limit ?? 20);
+        const activities = sessions.map(toPersistedSessionDTO);
         
         return Result.ok({
-            activities: sessions,
-            total: sessions.length
+            activities,
+            total: activities.length
         });
     }
 };

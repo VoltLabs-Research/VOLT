@@ -1,0 +1,83 @@
+.ai-conversation-sidebar {
+    width: 300px;
+    border-right: 1px solid var(--color-border-soft);
+    overflow: hidden;
+}
+
+.ai-conversation-sidebar-header {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.ai-conversation-sidebar-list {
+    padding: 0.5rem;
+    gap: 0.4rem;
+}
+
+.ai-conversation-item {
+    padding: 0.6rem 0.7rem;
+    border-radius: var(--radius-md);
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.ai-conversation-item:hover,
+.ai-conversation-item.is-active {
+    background: var(--hover-bg);
+}
+
+.ai-conversation-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ai-conversation-item-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.ai-conversation-item:hover .ai-conversation-item-actions,
+.ai-conversation-item.is-active .ai-conversation-item-actions {
+    opacity: 1;
+}
+
+.ai-conversation-title-input {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-sm);
+    padding: 0.3rem 0.45rem;
+    color: var(--color-text-primary);
+}
+
+.ai-conversation-item-skeleton {
+    height: 3rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-surface-1);
+    animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 0.65;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@media (max-width: 1024px) {
+    .ai-conversation-sidebar {
+        width: 270px;
+    }
+}
+
+@media (max-width: 768px) {
+    .ai-conversation-sidebar {
+        width: 100%;
+        max-height: 42vh;
+    }
+}

@@ -1,27 +1,33 @@
-import { Result } from '@shared/domain/port/Result';
-import { IUseCase } from '@shared/application/IUseCase';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
-import { injectable, inject } from 'tsyringe';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ExecutePluginInputDTO } from '@modules/plugin/application/dtos/plugin/ExecutePluginDTO';
-import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
-import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { IPluginWorkflowEngine } from '@modules/plugin/domain/port/IPluginWorkflowEngine';
-import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
+import { IAnalysisJobFactory } from '@modules/plugin/domain/port/plugin/IAnalysisJobFactory';
+import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
+import { IPluginWorkflowEngine } from '@modules/plugin/domain/port/plugin/IPluginWorkflowEngine';
 import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
+import PluginDisplayNameResolver from '@modules/plugin/domain/services/plugin/PluginDisplayNameResolver';
+
+import { ErrorCodes } from '@core/constants/error-codes';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
 import AnalysisCreatedEvent from '@modules/analysis/domain/events/AnalysisCreatedEvent';
-import { IAnalysisJobFactory } from '@modules/plugin/domain/port/IAnalysisJobFactory';
-import type { IAnalysisQueue } from '@modules/plugin/domain/port/IAnalysisQueue';
-import PluginDisplayNameResolver from '@modules/plugin/domain/services/PluginDisplayNameResolver';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+
+import type { IAnalysisQueue } from '@modules/plugin/domain/port/plugin/IAnalysisQueue';
+
+interface ExecutePluginOutputDTO {
+    analysisId: string;
+};
 
 @injectable()
-export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { analysisId: string }, ApplicationError> {
+export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, ExecutePluginOutputDTO, ApplicationError> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository)
         private pluginRepo: IPluginRepository,
@@ -45,7 +51,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { a
         private analysisQueue: IAnalysisQueue
     ){}
 
-    async execute(input: ExecutePluginInputDTO): Promise<Result<{ analysisId: string }, ApplicationError>> {
+    async execute(input: ExecutePluginInputDTO): Promise<Result<ExecutePluginOutputDTO, ApplicationError>> {
         const [trajectory, plugin] = await Promise.all([
             this.trajectoryRepo.findById(input.trajectoryId),
             this.pluginRepo.findById(input.pluginId)

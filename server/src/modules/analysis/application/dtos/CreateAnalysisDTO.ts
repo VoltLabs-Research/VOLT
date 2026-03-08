@@ -1,18 +1,22 @@
+import type { AnalysisConfig } from '@modules/analysis/domain/entities/Analysis';
+
+interface CreateAnalysisOutputAnalysisDTO {
+    _id: string;
+    trajectory: string;
+    plugin: string;
+    config: AnalysisConfig;
+    status: string;
+    createdAt: Date;
+};
+
 export interface CreateAnalysisInputDTO {
     trajectoryId: string;
     pluginId: string;
-    config: any;
+    config: AnalysisConfig;
     userId: string;
     teamId: string;
-}
+};
 
 export interface CreateAnalysisOutputDTO {
-    analysis: {
-        _id: string;
-        trajectory: string;
-        plugin: string;
-        config: any;
-        status: string;
-        createdAt: Date;
-    };
-}
+    analysis: CreateAnalysisOutputAnalysisDTO;
+};

@@ -1,18 +1,31 @@
+import type { ReactNode } from 'react';
 import { useState, useEffect, useMemo } from 'react';
 import { IoSettingsOutline, IoPeopleOutline, IoShieldOutline } from 'react-icons/io5';
-import type { Chat } from '@/modules/chat/api/entities/chat';
-import type { User } from '@/modules/auth/api/entities/user';
-import Modal from '@/shared/presentation/components/Modal';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import Button from '@/shared/presentation/components/Button';
-import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
+import AdminsTab from './tabs/AdminsTab';
+import GeneralTab from './tabs/GeneralTab';
+import MembersTab from './tabs/MembersTab';
 import { cn } from '@/shared/utils';
 import { toggleSelection } from '@/shared/utils/selection';
-import { GeneralTab, MembersTab, AdminsTab } from './tabs';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import Modal from '@/shared/presentation/components/Modal';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
+import type { User } from '@/modules/auth/api/entities/user';
+import type { Chat } from '@/modules/chat/api/entities/chat';
 import './GroupManagementModal.css';
 
-type Tab = 'general' | 'members' | 'admins';
+enum Tab {
+    General = 'general',
+    Members = 'members',
+    Admins = 'admins'
+};
+
+interface GroupManagementTab {
+    id: Tab;
+    label: string;
+    icon: ReactNode;
+};
 
 interface GroupManagementModalProps {
     chat: Chat | null;
@@ -24,10 +37,22 @@ interface GroupManagementModalProps {
     onLeaveGroup: (chatId: string) => Promise<unknown>;
 };
 
-const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'general', label: 'General', icon: <IoSettingsOutline /> },
-    { id: 'members', label: 'Members', icon: <IoPeopleOutline /> },
-    { id: 'admins', label: 'Admins', icon: <IoShieldOutline /> },
+const TABS: GroupManagementTab[] = [
+    {
+        id: Tab.General,
+        label: 'General',
+        icon: <IoSettingsOutline />
+    },
+    {
+        id: Tab.Members,
+        label: 'Members',
+        icon: <IoPeopleOutline />
+    },
+    {
+        id: Tab.Admins,
+        label: 'Admins',
+        icon: <IoShieldOutline />
+    }
 ];
 
 const GroupManagementModal = ({
@@ -39,7 +64,7 @@ const GroupManagementModal = ({
     onUpdateAdmins,
     onLeaveGroup
 }: GroupManagementModalProps) => {
-    const [activeTab, setActiveTab] = useState<Tab>('general');
+    const [activeTab, setActiveTab] = useState<Tab>(Tab.General);
     const [groupName, setGroupName] = useState('');
     const [groupDescription, setGroupDescription] = useState('');
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
@@ -113,7 +138,7 @@ const GroupManagementModal = ({
             </Container>
 
             <Container className='group-management-content'>
-                {activeTab === 'general' && (
+                {activeTab === Tab.General && (
                     <GeneralTab
                         chat={chat}
                         groupName={groupName}
@@ -127,7 +152,7 @@ const GroupManagementModal = ({
                     />
                 )}
 
-                {activeTab === 'members' && (
+                {activeTab === Tab.Members && (
                     <MembersTab
                         chat={chat}
                         availableMembers={availableMembers}
@@ -140,7 +165,7 @@ const GroupManagementModal = ({
                     />
                 )}
 
-                {activeTab === 'admins' && (
+                {activeTab === Tab.Admins && (
                     <AdminsTab
                         chat={chat}
                         isOwner={isOwner}

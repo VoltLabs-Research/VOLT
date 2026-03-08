@@ -4,14 +4,16 @@ export interface SimulationCellDims {
     length: number;
 };
 
+export interface SimulationCellPeriodicBoundaryConditions {
+    x: boolean;
+    y: boolean;
+    z: boolean;
+};
+
 export interface SimulationCellGeometry {
     cell_vectors: number[][];
     cell_origin: number[];
-    periodic_boundary_conditions: {
-        x: boolean;
-        y: boolean;
-        z: boolean;
-    };
+    periodic_boundary_conditions: SimulationCellPeriodicBoundaryConditions;
 };
 
 export interface SimulationCellTrajectoryReference {
@@ -33,7 +35,7 @@ export default class SimulationCell {
     constructor(
         public readonly _id: string,
         public props: SimulationCellProps
-    ){}
+    ) {}
 
     get id(): string {
         return this._id;

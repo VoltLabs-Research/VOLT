@@ -1,18 +1,19 @@
-import { HiOutlineDotsVertical } from 'react-icons/hi';
-import { IoSettingsOutline, IoCloseOutline } from 'react-icons/io5';
+import './UserMenuPopover.css';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import Container from '@/shared/presentation/components/Container';
-import Popover from '@/shared/presentation/components/Popover';
-import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import UserInfo from '@/modules/auth/components/atoms/UserInfo';
 import Avatar from '@/shared/presentation/components/Avatar';
-import './UserMenuPopover.css';
+import Container from '@/shared/presentation/components/Container';
+import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import Popover from '@/shared/presentation/components/Popover';
+import { HiOutlineDotsVertical } from 'react-icons/hi';
+import { IoCloseOutline, IoSettingsOutline } from 'react-icons/io5';
+import type { ReactNode } from 'react';
 
 interface UserMenuPopoverProps {
     onSettingsClick: () => void;
     onSignOut: () => void;
     isSigningOut?: boolean;
-    trigger?: React.ReactNode;
+    trigger?: ReactNode;
     collapsed?: boolean;
 };
 

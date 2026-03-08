@@ -1,18 +1,19 @@
-import { injectable, inject } from 'tsyringe';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { GetSecretKeyUsageInputDTO, GetSecretKeyUsageOutputDTO, getSecretKeyUsageInputSchema } from '@modules/team/application/dtos/secret-key/GetSecretKeyUsageDTO';
+import SecretKeyUsageMetricsMapper from '@modules/team/application/services/secret-key/SecretKeyUsageMetricsMapper';
+import { resolveSecretKeyValidationErrorCode } from '@modules/team/application/use-cases/secret-key/resolve-secret-key-validation-error-code';
+import { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
+import { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/secret-key/ISecretKeyUsageLogRepository';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { ISecretKeyRepository } from '@modules/team/domain/port/ISecretKeyRepository';
-import { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/ISecretKeyUsageLogRepository';
-import SecretKeyUsageMetricsMapper from '@modules/team/application/services/SecretKeyUsageMetricsMapper';
-import { ErrorCodes } from '@core/constants/error-codes';
-import {
-    GetSecretKeyUsageInputDTO,
-    GetSecretKeyUsageOutputDTO,
-    getSecretKeyUsageInputSchema
-} from '@modules/team/application/dtos/secret-key/GetSecretKeyUsageDTO';
-import { resolveSecretKeyValidationErrorCode } from '@modules/team/application/use-cases/secret-key/resolve-secret-key-validation-error-code';
+import { injectable, inject } from 'tsyringe';
+
+interface SecretKeyRolePopulate {
+    path: 'role';
+    select: ['name'];
+};
 
 @injectable()
 export default class GetSecretKeyUsageUseCase
@@ -45,9 +46,12 @@ export default class GetSecretKeyUsageUseCase
             return Result.fail(ApplicationError.badRequest(ErrorCodes.SECRET_KEY_PARAMS_REQUIRED, 'Team ID and Secret Key ID are required'));
         }
 
-        const secretKey = await this.secretKeyRepo.findById(secretKeyId, {
-            populate: { path: 'role', select: ['name'] }
-        });
+        const populate: SecretKeyRolePopulate = {
+            path: 'role',
+            select: ['name']
+        };
+
+        const secretKey = await this.secretKeyRepo.findById(secretKeyId, { populate });
 
         if (!secretKey || String(secretKey.props.team) !== teamId) {
             return Result.fail(ApplicationError.notFound(ErrorCodes.SECRET_KEY_NOT_FOUND, 'Secret key not found'));
@@ -70,4 +74,4 @@ export default class GetSecretKeyUsageUseCase
             ...metrics
         });
     }
-}
+};

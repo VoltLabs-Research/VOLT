@@ -1,18 +1,26 @@
-import { useCallback, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
-import type { ErrorInfo } from 'react';
 import { renderPublicRoutes, renderGuestRoutes, renderProtectedRoutes } from './routes/RouteRenderer';
-import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
-import GlobalErrorListener from '@/shared/presentation/components/GlobalErrorListener';
-import QueryProvider from '@/shared/presentation/components/QueryProvider';
-import { buildErrorPath } from '@/shared/utils';
-import { Toaster } from 'sileo';
 import { useGlobalShortcuts } from '@/shared/presentation/hooks/use-global-shortcuts';
 import { usePageTracker } from '@/modules/start/hooks/use-page-tracker';
 import { useRouteCleanup } from '@/shared/presentation/hooks/use-route-cleanup';
-import { ensureApplicationStoreCleanupsRegistered } from '@/shared/utils/application-store-cleanups';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
+import { ensureApplicationStoreCleanupsRegistered } from '@/shared/utils/application-store-cleanups';
+import { buildErrorPath } from '@/shared/utils';
+import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
+import GlobalErrorListener from '@/shared/presentation/components/GlobalErrorListener';
+import QueryProvider from '@/shared/presentation/components/QueryProvider';
+import { Toaster } from 'sileo';
+import { useCallback, useEffect } from 'react';
+import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import 'sileo/styles.css';
+import type { ErrorInfo } from 'react';
+
+interface NotFoundNavigationState {
+    fromNotFound: boolean;
+};
+
+const NOT_FOUND_NAVIGATION_STATE: NotFoundNavigationState = {
+    fromNotFound: true
+};
 
 ensureApplicationStoreCleanupsRegistered();
 
@@ -20,7 +28,7 @@ const NotFoundRedirect = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        navigate('/dashboard', { replace: true, state: { fromNotFound: true } });
+        navigate('/dashboard', { replace: true, state: NOT_FOUND_NAVIGATION_STATE });
     }, [navigate]);
 
     return null;
@@ -63,7 +71,7 @@ const AppRoutes = () => {
     );
 };
 
-const App = () => {
+export default function App() {
     return (
         <QueryProvider>
             <BrowserRouter>
@@ -78,6 +86,4 @@ const App = () => {
             </BrowserRouter>
         </QueryProvider>
     );
-};
-
-export default App;
+}

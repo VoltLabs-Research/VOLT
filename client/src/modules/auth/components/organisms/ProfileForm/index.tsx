@@ -1,22 +1,24 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import { profileSchema } from './validation-schema';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Loader from '@/shared/presentation/components/Loader';
 import useZodForm from '@/shared/presentation/hooks/use-zod-form';
-import { profileSchema, type ProfileForm as ProfileFormType } from './validation-schema';
 import { sileo } from 'sileo';
+import { useCallback, useEffect, useRef } from 'react';
+import type { ProfileForm as ProfileFormType } from './validation-schema';
 
 interface ProfileFormProps {
     initialValues: ProfileFormType;
     onUpdate: (data: ProfileFormType) => Promise<void>;
-}
+};
 
 const AUTO_SAVE_DELAY = 1000;
+const PROFILE_FORM_FIELDS: Array<keyof ProfileFormType> = ['fullName', 'email'];
 
-const ProfileForm: React.FC<ProfileFormProps> = ({
+const ProfileForm = ({
     initialValues,
     onUpdate
-}) => {
+}: ProfileFormProps) => {
     const { control, watch, getValues, formState, reset } = useZodForm<ProfileFormType>({
         schema: profileSchema,
         defaultValues: initialValues,
@@ -42,8 +44,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
         if (!formState.isValid) return;
 
         const currentValues = getValues();
-        const hasChanged = Object.keys(currentValues).some(
-            (key) => currentValues[key as keyof ProfileFormType] !== initialValuesRef.current[key as keyof ProfileFormType]
+        const hasChanged = PROFILE_FORM_FIELDS.some(
+            (key) => currentValues[key] !== initialValuesRef.current[key]
         );
 
         if (!hasChanged) return;

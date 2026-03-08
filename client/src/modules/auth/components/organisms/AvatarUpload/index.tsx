@@ -1,9 +1,10 @@
-import React, { useRef, useState, useEffect } from 'react';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import { User, Camera } from 'lucide-react';
-import Loader from '@/shared/presentation/components/Loader';
 import './AvatarUpload.css';
+import Container from '@/shared/presentation/components/Container';
+import Loader from '@/shared/presentation/components/Loader';
+import Title from '@/shared/presentation/components/Title';
+import { Camera, User } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 
 interface AvatarUploadProps {
     avatarUrl: string | null;
@@ -11,11 +12,11 @@ interface AvatarUploadProps {
     onUpload: (file: File) => Promise<void>;
 };
 
-const AvatarUpload: React.FC<AvatarUploadProps> = ({
+const AvatarUpload = ({
     avatarUrl,
     isUploading,
     onUpload
-}) => {
+}: AvatarUploadProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(avatarUrl);
 
@@ -27,7 +28,7 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({
         fileInputRef.current?.click();
     };
 
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if(!file){
             return;
@@ -35,7 +36,9 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({
 
         const reader = new FileReader();
         reader.onloadend = () => {
-            setPreview(reader.result as string);
+            if (typeof reader.result === 'string') {
+                setPreview(reader.result);
+            }
         };
         reader.readAsDataURL(file);
 
@@ -46,25 +49,31 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({
         }
     };
 
+    let avatarContent = (
+        <Container className="wh-max d-flex items-center content-center avatar-placeholder">
+            <User size={32} />
+        </Container>
+    );
+
+    if (preview) {
+        avatarContent = <img src={preview} alt="Avatar" className="avatar-image" />;
+    }
+
+    let overlayContent = <Camera size={24} />;
+
+    if (isUploading) {
+        overlayContent = <Loader scale={0.6} isFixed={false} />;
+    }
+
     return (
         <Container className="d-flex items-center gap-1">
             <Container
                 className="avatar-upload radius-full p-relative overflow-hidden cursor-pointer f-shrink-0"
                 onClick={handleAvatarClick}
             >
-                {preview ? (
-                    <img src={preview} alt="Avatar" className="avatar-image" />
-                ) : (
-                    <Container className="wh-max d-flex items-center content-center avatar-placeholder">
-                        <User size={32} />
-                    </Container>
-                )}
+                {avatarContent}
                 <Container className="avatar-overlay p-absolute inset-0 d-flex items-center content-center">
-                    {isUploading ? (
-                        <Loader scale={0.6} isFixed={false} />
-                    ) : (
-                        <Camera size={24} />
-                    )}
+                    {overlayContent}
                 </Container>
             </Container>
 

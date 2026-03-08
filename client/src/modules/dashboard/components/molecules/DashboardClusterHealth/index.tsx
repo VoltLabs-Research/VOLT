@@ -1,19 +1,21 @@
+import './DashboardClusterHealth.css';
+import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import Select from '@/shared/presentation/components/Select';
+import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@mui/material';
 import { Cpu, HardDrive, MemoryStick } from 'lucide-react';
 import { GoArrowRight } from 'react-icons/go';
-import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
-import Container from '@/shared/presentation/components/Container';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
-import Button from '@/shared/presentation/components/Button';
-import Select, { type SelectOption } from '@/shared/presentation/components/Select';
-import './DashboardClusterHealth.css';
+import type { ReactNode } from 'react';
+import type { SelectOption } from '@/shared/presentation/components/Select';
 
 interface GaugeProps {
     label: string;
     percent: number;
-    icon: React.ReactNode;
+    icon: ReactNode;
     detail: string;
 };
 

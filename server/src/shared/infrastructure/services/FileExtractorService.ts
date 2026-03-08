@@ -1,13 +1,13 @@
-import { injectable } from 'tsyringe';
-import { IFileExtractorService, ExtractedFile } from '@shared/domain/port/IFileExtractorService';
-import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
+import { injectable } from 'tsyringe';
 import unzipper from 'unzipper';
+import type { ExtractedFile, IFileExtractorService, UploadedFile } from '@shared/domain/port/IFileExtractorService';
 
 @injectable()
 export default class FileExtractorService implements IFileExtractorService {
-    public async extractFiles(files: any[], workingDir: string): Promise<ExtractedFile[]> {
+    public async extractFiles(files: UploadedFile[], workingDir: string): Promise<ExtractedFile[]> {
         const finalFiles: ExtractedFile[] = [];
 
         for (const file of files) {
@@ -40,7 +40,7 @@ export default class FileExtractorService implements IFileExtractorService {
                     }
 
                     if (!file.path) {
-                        await fs.unlink(zipPath).catch(() => { });
+                        await fs.unlink(zipPath).catch(() => {});
                     }
                 }
             } else {
@@ -49,6 +49,11 @@ export default class FileExtractorService implements IFileExtractorService {
                     await fs.writeFile(tempPath, file.buffer);
                     file.path = tempPath;
                 }
+
+                if (!file.path || !file.originalname) {
+                    continue;
+                }
+
                 finalFiles.push({
                     path: file.path,
                     originalname: file.originalname,
@@ -69,4 +74,4 @@ export default class FileExtractorService implements IFileExtractorService {
         }));
         return Array.prototype.concat(...files);
     }
-}
+};

@@ -5,13 +5,17 @@ import type { CreateAIConversationParams, CreateAIConversationResult } from '../
 import type { ListAIConversationsParams } from '../../dtos/list-ai-conversations';
 import type { UpdateAIConversationParams } from '../../dtos/update-ai-conversation';
 
-type UpdateConversationInput = { conversationId: string } & UpdateAIConversationParams;
+interface ConversationPathParams {
+    conversationId: string;
+};
+
+type UpdateConversationInput = ConversationPathParams & UpdateAIConversationParams;
 
 const endpoints = {
     listConversations: paginated<ListAIConversationsParams | undefined, PaginatedResponse<AIConversation>>('/'),
     createConversation: post<CreateAIConversationParams | undefined, CreateAIConversationResult>('/'),
     updateConversation: patch<UpdateConversationInput, AIConversation>('/:conversationId'),
-    deleteConversation: del<{ conversationId: string }>('/:conversationId')
+    deleteConversation: del<ConversationPathParams>('/:conversationId')
 };
 
 export default endpoints;

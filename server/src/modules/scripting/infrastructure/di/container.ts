@@ -1,16 +1,17 @@
-import { container } from 'tsyringe';
-import { JupyterSessionOrchestrator } from '@modules/scripting/infrastructure/services/JupyterSessionOrchestrator';
-import { JupyterContainerManager } from '@modules/scripting/infrastructure/services/JupyterContainerManager';
-import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
-import { JupyterServerService } from '@modules/scripting/infrastructure/services/JupyterServerService';
-import { RedisScriptingSessionLock } from '@modules/scripting/infrastructure/services/RedisScriptingSessionLock';
-import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
-import { SCRIPTING_TOKENS } from './ScriptingTokens';
+import { scriptingAiTools } from '@modules/scripting/application/ai-tools';
 import { CreateScriptingJupyterSessionUseCase } from '@modules/scripting/application/use-cases/CreateScriptingJupyterSessionUseCase';
-import { ListScriptingNotebooksUseCase } from '@modules/scripting/application/use-cases/ListScriptingNotebooksUseCase';
 import { DeleteScriptingNotebookUseCase } from '@modules/scripting/application/use-cases/DeleteScriptingNotebookUseCase';
+import { ListScriptingNotebooksUseCase } from '@modules/scripting/application/use-cases/ListScriptingNotebooksUseCase';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
-import * as scriptingAiTools from '@modules/scripting/application/ai-tools';
+import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
+import { JupyterContainerManager } from '@modules/scripting/services/JupyterContainerManager';
+import { JupyterNotebookService } from '@modules/scripting/services/JupyterNotebookService';
+import { JupyterServerService } from '@modules/scripting/services/JupyterServerService';
+import { JupyterSessionOrchestrator } from '@modules/scripting/services/JupyterSessionOrchestrator';
+import { RedisScriptingSessionLock } from '@modules/scripting/services/RedisScriptingSessionLock';
+import { SCRIPTING_TOKENS } from './ScriptingTokens';
+import { container } from 'tsyringe';
+import type { AITool } from '@shared/application/ai/AITool';
 
 export const registerScriptingDependencies = (): void => {
     container.registerSingleton(SCRIPTING_TOKENS.ScriptingNotebookRepository, ScriptingNotebookRepository);
@@ -25,7 +26,7 @@ export const registerScriptingDependencies = (): void => {
     container.registerSingleton(DeleteScriptingNotebookUseCase);
 
     // AI Tools
-    for (const ToolClass of Object.values(scriptingAiTools)) {
-        container.registerSingleton(AI_TOKENS.AITool, ToolClass as any);
+    for (const ToolClass of scriptingAiTools) {
+        container.registerSingleton<AITool>(AI_TOKENS.AITool, ToolClass);
     }
 };

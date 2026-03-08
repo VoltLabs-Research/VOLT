@@ -1,11 +1,13 @@
-import { injectable } from 'tsyringe';
-import type { IUseCase } from '@shared/application/IUseCase';
+import { STATIC_ROOT } from '@core/config/paths';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import path from 'node:path';
+
+import { injectable } from 'tsyringe';
 import fs from 'node:fs';
-import { STATIC_ROOT } from '@core/config/paths';
+import path from 'node:path';
+
+import type { IUseCase } from '@shared/application/IUseCase';
 
 const SAMPLES_PATH = path.join(STATIC_ROOT, 'default/simulations');
 
@@ -19,4 +21,4 @@ export default class ListSampleSimulationsUseCase implements IUseCase<void, stri
         const files = fs.readdirSync(SAMPLES_PATH).filter((f) => f.endsWith('.zip'));
         return Result.ok(files);
     }
-}
+};

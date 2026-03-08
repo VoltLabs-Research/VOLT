@@ -1,1 +1,1 @@
-export { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
+export { TEAM_TOKENS } from '@modules/team/di/TeamTokens';

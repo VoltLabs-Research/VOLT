@@ -1,15 +1,14 @@
-import { IoChatbubblesOutline } from 'react-icons/io5';
-import type { Chat } from '@/modules/chat/api/entities/chat';
-import type { ChatMessage } from '@/modules/chat/api/entities/chat-message';
-import type { PresenceStatus } from '@/modules/chat/api/entities/chat-events';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
+import { PresenceStatus } from '@/modules/chat/api/entities/shared/chat-events';
+import { getChatDisplayName, getChatStatusText } from '@/modules/chat/utilities/chat/chat-display';
+import ChatAvatar from '../../atoms/ChatAvatar';
+import SharedFilesList from '../SharedFilesList';
+import { IoChatbubblesOutline, IoPeopleOutline } from 'react-icons/io5';
 import Button from '@/shared/presentation/components/Button';
 import EmptyState from '@/shared/presentation/components/EmptyState';
-import { IoPeopleOutline } from 'react-icons/io5';
-import { ChatAvatar } from '../../atoms';
-import SharedFilesList from '../SharedFilesList';
-import { getChatDisplayName, getChatStatusText } from '@/modules/chat/utilities';
+import Container from '@/shared/presentation/components/Container';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import type { Chat } from '@/modules/chat/api/entities/chat';
+import type { ChatMessage } from '@/modules/chat/api/entities/message';
 import './ChatDetailsPanel.css';
 
 interface ChatDetailsPanelProps {
@@ -23,7 +22,7 @@ const ChatDetailsPanel = ({
     chat,
     messages,
     currentUserId,
-    presence = 'unknown'
+    presence = PresenceStatus.Unknown
 }: ChatDetailsPanelProps) => {
     if (!chat) {
         return (
@@ -54,14 +53,13 @@ const ChatDetailsPanel = ({
             </Container>
 
             <Container className='d-flex column flex-1 y-auto chat-details-content'>
-                {/* Profile section */}
                 <Container className='d-flex column items-center gap-075 text-center chat-details-section'>
                     <ChatAvatar 
                         chat={chat} 
                         currentUserId={currentUserId} 
                         size='lg'
                         showStatus={!chat.isGroup}
-                        isOnline={presence === 'online'}
+                        isOnline={presence === PresenceStatus.Online}
                     />
                     <Paragraph className='font-size-4 font-weight-6 color-primary'>
                         {displayName}
@@ -76,7 +74,6 @@ const ChatDetailsPanel = ({
                     )}
                 </Container>
 
-                {/* Group actions */}
                 {chat.isGroup && (
                     <Container className='chat-details-section'>
                         <Paragraph className='font-size-2 font-weight-6 color-secondary chat-details-section-title d-block'>
@@ -96,7 +93,6 @@ const ChatDetailsPanel = ({
                     </Container>
                 )}
 
-                {/* Shared files */}
                 <Container className='chat-details-section'>
                     <Paragraph className='font-size-2 font-weight-6 color-secondary chat-details-section-title d-block'>
                         Shared Files

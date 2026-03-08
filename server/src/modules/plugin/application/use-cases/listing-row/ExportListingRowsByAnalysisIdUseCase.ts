@@ -1,35 +1,38 @@
-import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
-import { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
-import { ISubListingRowRepository } from '@modules/plugin/domain/port/ISubListingRowRepository';
+import { mapListingRowByAnalysis } from '@modules/plugin/application/mappers/listing-row/mapListingRowByAnalysis';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     ExportListingRowsByAnalysisIdInputDTO,
     ExportListingRowsByAnalysisIdOutputDTO,
     ListingRowByAnalysisData,
     AnalysisSubListingExportData
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
-import { mapListingRowByAnalysis } from './mapListingRowByAnalysis';
-import type { DownloadStreamOutputDTO } from '@modules/plugin/application/dtos/shared/DownloadStreamOutputDTO';
-import type { IListingRowsExportPresenter } from '@modules/plugin/domain/port/IListingRowsExportPresenter';
+import { IListingRowRepository } from '@modules/plugin/domain/port/listing-row/IListingRowRepository';
+import { ISubListingRowRepository } from '@modules/plugin/domain/port/listing-row/ISubListingRowRepository';
+
+import { IUseCase } from '@shared/application/IUseCase';
+import { ExportType } from '@shared/domain/port/IBaseRepository';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
+
+import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
+import type { IListingRowsExportPresenter } from '@modules/plugin/domain/port/listing-row/IListingRowsExportPresenter';
 
 interface ListingAggregation {
     listingId: string;
     listingName: string;
     rows: Record<string, unknown>[];
     dynamicColumns: Set<string>;
-}
+};
 
 interface ListingRowsByAnalysisFilter {
     analysis: string;
     team: string;
-}
+};
 
 interface SubListingRowsByAnalysisFilter {
     analysis: string;
     team: string;
-}
+};
 
 interface SubListingAggregation {
     exposureId: string;
@@ -38,7 +41,36 @@ interface SubListingAggregation {
     timestep: number;
     rows: Record<string, unknown>[];
     dynamicColumns: Set<string>;
-}
+};
+
+interface SubListingExportRowInput {
+    _id: string;
+    plugin: string;
+    trajectory: string;
+    exposureId: string;
+    exposureName: string;
+    timestep: number;
+    subListingName: string;
+    row: Record<string, unknown>;
+};
+
+const buildListingRowsByAnalysisFilter = (
+    input: ExportListingRowsByAnalysisIdInputDTO
+): ListingRowsByAnalysisFilter => {
+    return {
+        analysis: input.analysisId,
+        team: input.teamId
+    };
+};
+
+const buildSubListingRowsByAnalysisFilter = (
+    input: ExportListingRowsByAnalysisIdInputDTO
+): SubListingRowsByAnalysisFilter => {
+    return {
+        analysis: input.analysisId,
+        team: input.teamId
+    };
+};
 
 @injectable()
 export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
@@ -62,9 +94,10 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
             timestep: listingRow.timestep
         };
 
-        const dynamicRow = (listingRow.row && typeof listingRow.row === 'object')
-            ? listingRow.row as Record<string, unknown>
-            : {};
+        let dynamicRow: Record<string, unknown> = {};
+        if (listingRow.row && typeof listingRow.row === 'object') {
+            dynamicRow = listingRow.row;
+        }
 
         for (const [key, value] of Object.entries(dynamicRow)) {
             if (!(key in baseRow)) {
@@ -89,16 +122,7 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
 
     private toSubListingExportRow(
         analysisId: string,
-        row: {
-            _id: string;
-            plugin: string;
-            trajectory: string;
-            exposureId: string;
-            exposureName: string;
-            timestep: number;
-            subListingName: string;
-            row: Record<string, unknown>;
-        }
+        row: SubListingExportRowInput
     ): Record<string, unknown> {
         const baseRow: Record<string, unknown> = {
             _id: row._id,
@@ -111,9 +135,10 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
             subListingName: row.subListingName
         };
 
-        const dynamicRow = row.row && typeof row.row === 'object'
-            ? row.row
-            : {};
+        let dynamicRow: Record<string, unknown> = {};
+        if (row.row && typeof row.row === 'object') {
+            dynamicRow = row.row;
+        }
 
         for (const [key, value] of Object.entries(dynamicRow)) {
             if (!(key in baseRow)) {
@@ -144,13 +169,11 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
         let page = 1;
         let totalPages = 1;
         const listingMap = new Map<string, ListingAggregation>();
+        const filter = buildListingRowsByAnalysisFilter(input);
 
         do {
             const pageResult = await this.listingRowRepository.findAll({
-                filter: {
-                    analysis: input.analysisId,
-                    team: input.teamId
-                } as ListingRowsByAnalysisFilter,
+                filter,
                 limit: pageSize,
                 page,
                 sort: {
@@ -202,11 +225,9 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
     private async collectSubListings(
         input: ExportListingRowsByAnalysisIdInputDTO
     ): Promise<AnalysisSubListingExportData[]> {
+        const filter = buildSubListingRowsByAnalysisFilter(input);
         const rows = await this.subListingRowRepository.export({
-            filter: {
-                analysis: input.analysisId,
-                team: input.teamId
-            } as SubListingRowsByAnalysisFilter,
+            filter,
             sort: {
                 exposureName: 1,
                 subListingName: 1,
@@ -276,7 +297,7 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
     }
 
     async execute(input: ExportListingRowsByAnalysisIdInputDTO): Promise<Result<DownloadStreamOutputDTO>> {
-        const format = input.format ?? 'csv';
+        const format = input.format ?? ExportType.Csv;
         const listings = await this.collectListings(input);
         const subListings = await this.collectSubListings(input);
 
@@ -289,4 +310,4 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
 
         return Result.ok(this.listingRowsExportPresenter.present(payload));
     }
-}
+};

@@ -1,9 +1,11 @@
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+
 import { useShallow } from 'zustand/react/shallow';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+
 import './PreloadingOverlay.css';
 
 const PreloadingOverlay = () => {

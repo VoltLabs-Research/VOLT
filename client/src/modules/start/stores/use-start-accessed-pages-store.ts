@@ -1,34 +1,22 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
-import { del, get, set } from 'idb-keyval';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import startAccessedPagesStorage from '../services/start-accessed-pages-storage';
 
 export interface AccessedPage {
     path: string;
     title: string;
     lastAccessed: number;
     snapshot?: string;
-}
+};
 
 interface StartAccessedPagesState {
     pages: AccessedPage[];
     addPage: (path: string, title: string, snapshot?: string) => void;
     removePage: (path: string) => void;
     clearAll: () => void;
-}
+};
 
 const MAX_PAGES = 15;
-
-const idbStorage: StateStorage = {
-    getItem: async (name: string): Promise<string | null> => {
-        return (await get(name)) || null;
-    },
-    setItem: async (name: string, value: string): Promise<void> => {
-        await set(name, value);
-    },
-    removeItem: async (name: string): Promise<void> => {
-        await del(name);
-    }
-};
 
 export const useStartAccessedPagesStore = create<StartAccessedPagesState>()(
     persist(
@@ -64,7 +52,7 @@ export const useStartAccessedPagesStore = create<StartAccessedPagesState>()(
         }),
         {
             name: 'volt-accessed-pages-idb',
-            storage: createJSONStorage(() => idbStorage)
+            storage: createJSONStorage(() => startAccessedPagesStorage)
         }
     )
 );

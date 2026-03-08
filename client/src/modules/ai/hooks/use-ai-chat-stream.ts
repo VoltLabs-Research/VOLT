@@ -1,23 +1,41 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { isToolUIPart, lastAssistantMessageIsCompleteWithApprovalResponses, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
 import { invalidateConversationsQueries, invalidateConversationMessagesQuery, resolveConversationStreamTransport } from '@/modules/ai/hooks/queries';
 import { useChat } from '@ai-sdk/react';
-import type { UIMessage } from 'ai';
-import type { ConversationMessagesQueryParams } from '@/modules/ai/hooks/queries';
-import type { AIProvider } from '@/modules/ai/api/entities/ai-constants';
-import type { UseQueryResult } from '@tanstack/react-query';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import { isToolUIPart, lastAssistantMessageIsCompleteWithApprovalResponses, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { AIModelSelection } from '@/modules/ai/api/dtos/create-conversation-stream-transport';
 import type { AIConversationMessage } from '@/modules/ai/api/entities/ai-conversation';
+import type { ConversationMessagesQueryParams } from '@/modules/ai/hooks/queries';
+import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { UseQueryResult } from '@tanstack/react-query';
+import type { UIMessage } from 'ai';
+import type { RefObject } from 'react';
 
-const lastAssistantMessageHasProviderExecutedApprovalResponses = ({ messages }: { messages: UIMessage[]; }): boolean => {
+interface ChatMessagesPayload {
+    messages: UIMessage[];
+};
+
+const createDeferredTransport = () => ({
+    sendMessages: async () => {
+        throw new Error('teamId and conversationId are required to send a message');
+    },
+    reconnectToStream: async () => {
+        throw new Error('teamId and conversationId are required to reconnect the stream');
+    }
+});
+
+const lastAssistantMessageHasProviderExecutedApprovalResponses = ({ messages }: ChatMessagesPayload): boolean => {
     const message = messages[messages.length - 1];
     if (!message || message.role !== 'assistant') {
         return false;
     }
 
-    const lastStepStartIndex = message.parts.reduce((lastIndex, part, index) => (
-        part.type === 'step-start' ? index : lastIndex
-    ), -1);
+    const lastStepStartIndex = message.parts.reduce((lastIndex, part, index) => {
+        if (part.type === 'step-start') {
+            return index;
+        }
+
+        return lastIndex;
+    }, -1);
 
     const lastStepToolInvocations = message.parts
         .slice(lastStepStartIndex + 1)
@@ -41,12 +59,12 @@ interface UseAIChatStreamOptions {
     teamId: string | null;
     conversationId?: string;
     canSendMessage: boolean;
-    selectedModelRef: React.RefObject<{ provider?: AIProvider; model?: string }>;
+    selectedModelRef: RefObject<AIModelSelection>;
     conversationMessages: UIMessage[];
     messagesQueryParams?: ConversationMessagesQueryParams;
     messagesResult: UseQueryResult<PaginatedResponse<AIConversationMessage>>;
-    skipNextMessageLoadRef: React.RefObject<boolean>;
-}
+    skipNextMessageLoadRef: RefObject<boolean>;
+};
 
 const useAIChatStream = ({
     teamId,
@@ -62,12 +80,23 @@ const useAIChatStream = ({
     const isMountedRef = useRef(true);
 
     const chatTransport = useMemo(() => {
+        if (!teamId || !conversationId) {
+            return createDeferredTransport();
+        }
+
+        const getModelSelection = () => selectedModelRef.current ?? {};
+
         return resolveConversationStreamTransport({
-            teamId: teamId ?? undefined,
+            teamId,
             conversationId,
-            getModelSelection: () => selectedModelRef.current
+            getModelSelection
         });
-    }, [conversationId, teamId]);
+    }, [conversationId, selectedModelRef, teamId]);
+
+    let chatId = `ai-draft:${teamId || 'none'}`;
+    if (conversationId) {
+        chatId = `ai-conversation:${conversationId}`;
+    }
 
     const {
         messages: streamMessages,
@@ -78,7 +107,7 @@ const useAIChatStream = ({
         addToolApprovalResponse,
         stop
     } = useChat({
-        id: conversationId ? `ai-conversation:${conversationId}` : `ai-draft:${teamId || 'none'}`,
+        id: chatId,
         transport: chatTransport,
         sendAutomaticallyWhen: ({ messages }) => (
             lastAssistantMessageIsCompleteWithToolCalls({ messages })
@@ -164,24 +193,22 @@ const useAIChatStream = ({
         try {
             await sendMessage({ text: normalizedText });
         } catch (error) {
-            const streamFailure = error instanceof Error ? error : new Error('Failed to send message');
+            let streamFailure = new Error('Failed to send message');
+            if (error instanceof Error) {
+                streamFailure = error;
+            }
+
             setSendMessageError(streamFailure.message);
             throw streamFailure;
         }
     }, [canSendMessage, conversationId, isSendingMessage, sendMessage]);
-
-    const handleToolApprovalResponse = useCallback((
-        approvalResponse: { id: string; approved: boolean; reason?: string }
-    ) => {
-        return addToolApprovalResponse(approvalResponse);
-    }, [addToolApprovalResponse]);
 
     return {
         messages: streamMessages,
         isSendingMessage,
         sendMessageError,
         handleSendMessage,
-        addToolApprovalResponse: handleToolApprovalResponse
+        addToolApprovalResponse
     };
 };
 

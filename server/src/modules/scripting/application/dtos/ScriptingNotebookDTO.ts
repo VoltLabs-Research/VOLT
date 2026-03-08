@@ -6,4 +6,4 @@ export interface ScriptingNotebookDTO {
     lastOpenedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
-}
+};

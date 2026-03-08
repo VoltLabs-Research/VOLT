@@ -1,10 +1,5 @@
 import { v4 } from 'uuid';
 
-export enum JobSessionStatus {
-    Active = 'active',
-    Completed = 'completed'
-}
-
 export interface JobSessionData {
     sessionId: string;
     startTime: Date;
@@ -12,16 +7,23 @@ export interface JobSessionData {
     teamId: string;
     status: JobSessionStatus;
     completedAt?: Date;
+};
+
+interface JobSessionCreateData {
+    sessionId: string;
+    teamId: string;
+    totalJobs: number;
+};
+
+export enum JobSessionStatus {
+    Active = 'active',
+    Completed = 'completed'
 }
 
 export default class JobSession {
     constructor(public props: JobSessionData) {}
 
-    static create(data: {
-        sessionId: string;
-        teamId: string;
-        totalJobs: number;
-    }): JobSession {
+    static create(data: JobSessionCreateData): JobSession {
         return new JobSession({
             sessionId: data.sessionId,
             teamId: data.teamId,
@@ -39,4 +41,4 @@ export default class JobSession {
         this.props.status = JobSessionStatus.Completed;
         this.props.completedAt = new Date();
     }
-}
+};

@@ -1,10 +1,12 @@
-import { inject, singleton } from 'tsyringe';
-import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
+import { DebugSocketOrchestrator } from '@modules/plugin/infrastructure/socket/debug/DebugSocketOrchestrator';
+
 import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { DebugSocketOrchestrator } from '@modules/plugin/infrastructure/socket/debug/DebugSocketOrchestrator';
-import type { DebugStartPayload } from '@modules/plugin/infrastructure/socket/debug/DebugSocketPayloads';
+import { inject, singleton } from 'tsyringe';
+import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
 import logger from '@shared/infrastructure/logger';
+
+import type { DebugStartPayload } from '@modules/plugin/infrastructure/socket/debug/DebugSocketPayloads';
 
 @singleton()
 export default class DebugSocketModule extends BaseSocketModule {

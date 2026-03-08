@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { useTeamStore } from '@/modules/team/stores/use-team-store';
 import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
+import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import { useCallback, useEffect, useRef } from 'react';
 
-const useTeamData = () => {
+export default function useTeamData() {
     const setSelectedTeamId = useTeamStore((state) => state.setSelectedTeamId);
     const selectedTeamId = useTeamStore((state) => state.selectedTeamId);
     const hasHydratedSelection = useTeamStore((state) => state.hasHydratedSelection);
@@ -70,6 +70,4 @@ const useTeamData = () => {
         accessDenied,
         accessDeniedMessage
     };
-};
-
-export default useTeamData;
+}

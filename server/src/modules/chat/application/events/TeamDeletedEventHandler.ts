@@ -1,7 +1,7 @@
-import { injectable, inject } from 'tsyringe';
-import { DeleteManyOnTeamDeletedHandler } from '@shared/application/events/DeleteManyOnTeamDeletedHandler';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
+import { inject, injectable } from 'tsyringe';
+import { DeleteManyOnTeamDeletedHandler } from '@shared/application/events/DeleteManyOnTeamDeletedHandler';
+import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
 
 @injectable()
 export default class TeamDeletedEventHandler extends DeleteManyOnTeamDeletedHandler {

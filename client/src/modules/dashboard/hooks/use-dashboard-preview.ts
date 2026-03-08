@@ -1,8 +1,8 @@
+import { getFrameBoxBounds, getTrajectoryFrameByTimestep } from '@/modules/fractal/utilities/frame-box-bounds';
+import useFirstCompletedTrajectory from '@/modules/dashboard/hooks/use-first-completed-trajectory';
+import { useTrajectoryByIdQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getFrameBoxBounds, getTrajectoryFrameByTimestep } from '@/modules/fractal/utilities/frame-box-bounds';
-import { useTrajectoryByIdQuery } from '@/modules/trajectory/hooks/trajectory/queries';
-import useFirstCompletedTrajectory from '@/modules/dashboard/hooks/use-first-completed-trajectory';
 
 export const useDashboardPreview = () => {
     const navigate = useNavigate();
@@ -22,8 +22,12 @@ export const useDashboardPreview = () => {
         }
 
         const timesteps = trajectory.frames.map((frame) => frame.timestep);
+        let firstTimestep: number | undefined;
+        if (timesteps.length > 0) {
+            firstTimestep = Math.min(...timesteps);
+        }
 
-        return timesteps.length > 0 ? Math.min(...timesteps) : undefined;
+        return firstTimestep;
     }, [trajectory]);
 
     const previewFrame = useMemo(
@@ -41,8 +45,15 @@ export const useDashboardPreview = () => {
 
     const atomCount = useMemo(() => previewFrame?.natoms ?? 0, [previewFrame]);
     const hasPreviewData = Boolean(trajectory?._id) && currentTimestep !== undefined;
-    const readyTrajectory = hasPreviewData && !isLoadingPreview ? trajectory : null;
-    const readyTimestep = readyTrajectory ? currentTimestep : undefined;
+    let readyTrajectory = null;
+    if (hasPreviewData && !isLoadingPreview) {
+        readyTrajectory = trajectory;
+    }
+
+    let readyTimestep = undefined;
+    if (readyTrajectory) {
+        readyTimestep = currentTimestep;
+    }
 
     const openCanvas = () => {
         if (trajectory?._id) {

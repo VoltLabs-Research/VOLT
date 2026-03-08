@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { TbCheck, TbX } from 'react-icons/tb';
-import Button from '@/shared/presentation/components/Button';
-import Container from '@/shared/presentation/components/Container';
 import { useTestSSHConnectionMutation } from '@/modules/ssh/hooks/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import ApiError from '@/shared/errors/ApiError';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import { useState } from 'react';
+import { TbCheck, TbX } from 'react-icons/tb';
+import type { ReactNode } from 'react';
 
 interface TestResult {
     valid: boolean;
@@ -19,6 +20,26 @@ interface SSHConnectionTestButtonProps {
 const SSHConnectionTestButton = ({ connectionId, disabled }: SSHConnectionTestButtonProps) => {
     const testConnection = useTestSSHConnectionMutation();
     const [testResult, setTestResult] = useState<TestResult | null>(null);
+    let testResultContent: ReactNode = null;
+
+    if (testResult) {
+        let testResultClassName = 'color-red';
+        let testResultMessage = testResult.error || 'Connection failed';
+        let testResultIcon = <TbX size={16} />;
+
+        if (testResult.valid) {
+            testResultClassName = 'color-green';
+            testResultMessage = 'Connection successful';
+            testResultIcon = <TbCheck size={16} />;
+        }
+
+        testResultContent = (
+            <Container className={`d-flex items-center gap-05 font-size-2 ${testResultClassName}`}>
+                {testResultIcon}
+                <span>{testResultMessage}</span>
+            </Container>
+        );
+    }
 
     const handleTest = async () => {
         setTestResult(null);
@@ -30,7 +51,7 @@ const SSHConnectionTestButton = ({ connectionId, disabled }: SSHConnectionTestBu
             });
             setTestResult(result);
         } catch (err: unknown) {
-            if(ApiError.isRBACError(err)){
+            if (ApiError.isRBACError(err)) {
                 const msg = err instanceof ApiError ? err.getFriendlyMessage() : 'You do not have permission to test this connection';
                 setTestResult({ valid: false, error: msg });
                 return;
@@ -53,21 +74,7 @@ const SSHConnectionTestButton = ({ connectionId, disabled }: SSHConnectionTestBu
             >
                 Test Connection
             </Button>
-            {testResult && (
-                <Container className={`d-flex items-center gap-05 font-size-2 ${testResult.valid ? 'color-green' : 'color-red'}`}>
-                    {testResult.valid ? (
-                        <>
-                            <TbCheck size={16} />
-                            <span>Connection successful</span>
-                        </>
-                    ) : (
-                        <>
-                            <TbX size={16} />
-                            <span>{testResult.error || 'Connection failed'}</span>
-                        </>
-                    )}
-                </Container>
-            )}
+            {testResultContent}
         </Container>
     );
 };

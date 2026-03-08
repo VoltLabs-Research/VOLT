@@ -1,15 +1,15 @@
-import { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleRepository';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { UpdateTeamRoleByIdInputDTO, UpdateTeamRoleByIdOutputDTO } from '@modules/team/application/dtos/team-role/UpdateTeamRoleByIdDTO';
-import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
+import TeamRoleUpdatedEvent from '@modules/team/domain/events/team-role/TeamRoleUpdatedEvent';
+import { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IEventBus } from '@shared/application/events/IEventBus';
-import TeamRoleUpdatedEvent from '@modules/team/domain/events/TeamRoleUpdatedEvent';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class UpdateTeamRoleByIdUseCase implements IUseCase<UpdateTeamRoleByIdInputDTO, UpdateTeamRoleByIdOutputDTO, ApplicationError> {
@@ -60,4 +60,4 @@ export default class UpdateTeamRoleByIdUseCase implements IUseCase<UpdateTeamRol
 
         return Result.ok(toPersistedOutput(teamRole));
     }
-}
+};

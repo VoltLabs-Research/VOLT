@@ -1,8 +1,8 @@
+import TemplateCard from '../../atoms/TemplateCard';
+import { CONTAINER_TEMPLATES } from '../../../services/container-templates';
 import { Server } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
-import TemplateCard from '../../atoms/TemplateCard';
-import { CONTAINER_TEMPLATES } from '../../../constants/container-templates';
 
 interface ImageSelectionStepProps {
     selectedTemplate: string | null;

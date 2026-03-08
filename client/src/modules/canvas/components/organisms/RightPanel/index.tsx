@@ -1,22 +1,24 @@
-import type { ComponentType, ReactNode } from 'react';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { Wrench, Monitor } from 'lucide-react';
-import Container from '@/shared/presentation/components/Container';
-import usePluginSelectors from '@/modules/plugin/hooks/use-plugin-selectors';
-import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/use-plugin-catalog';
-import { useExecutePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
+import { buildCanvasModifierOptions, LEGACY_MODIFIERS } from '../../../utilities/modifier-registry';
+import { ArgumentField } from '../../molecules/ModifierConfig';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
-import {
-    buildCanvasModifierOptions,
-    LEGACY_MODIFIERS,
-    type ModifierOption
-} from '../../../modifiers/registry';
-import CanvasRenderSections from '../CanvasRenderSections';
+import usePluginExecution from '../../../hooks/use-plugin-execution';
+import { ExecState } from '../../../hooks/use-plugin-execution';
+import ModifierConfig from '../../molecules/ModifierConfig';
 import ModifiersSection from '../../molecules/ModifiersSection';
-import ModifierConfig, { ArgumentField } from '../../molecules/ModifierConfig';
+import CanvasRenderSections from '../CanvasRenderSections';
+
+import { useExecutePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
+import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
+import { Wrench, Monitor } from 'lucide-react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
-import usePluginExecution, { type ExecState } from '../../../hooks/use-plugin-execution';
+import Container from '@/shared/presentation/components/Container';
+
+import type { ModifierOption } from '../../../utilities/modifier-registry';
 import type { LegacyActionRef } from '../ColorCoding';
+import type { ComponentType, ReactNode } from 'react';
+
 import './RightPanel.css';
 
 const LEGACY_COMPONENT_MAP = new Map<string, ComponentType<any> | undefined>(
@@ -27,7 +29,7 @@ interface RightPanelProps {
     trajectoryId?: string;
     analysisId?: string;
     currentTimestep?: number;
-}
+};
 
 const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelProps) => {
     const { activeModifiers, toggleModifier, pluginParam } = useCanvasUrlState();
@@ -99,7 +101,7 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
     const getExecState = useCallback((option: ModifierOption): ExecState => {
         return legacyExecStates.get(option.modifierId)
             ?? execStates.get(option.modifierId)
-            ?? 'idle';
+            ?? ExecState.Idle;
     }, [execStates, legacyExecStates]);
 
     const shouldShowAction = useCallback((option: ModifierOption): boolean => {

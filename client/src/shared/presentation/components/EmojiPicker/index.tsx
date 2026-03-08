@@ -1,5 +1,5 @@
-import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
 import './EmojiPicker.css';
 
 const DEFAULT_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏', '💯', '✨', '🙌', '💪'];

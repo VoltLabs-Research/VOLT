@@ -4,6 +4,7 @@ import type { Analysis } from '../entities/analysis';
 export interface GetAnalysesParams {
     page: number;
     limit: number;
+    search?: string;
 };
 
 export type GetAnalysesResponse = PaginatedResponse<Analysis>;

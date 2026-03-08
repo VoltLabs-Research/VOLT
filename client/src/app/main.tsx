@@ -1,23 +1,22 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import '@/shared/presentation/assets/stylesheets/theme.css';
+import '@/shared/presentation/assets/stylesheets/base.css';
+import '@/shared/presentation/assets/stylesheets/general.css';
+import '@/modules/socket/core/services/socket-service';
+import App from './App';
 
 import 'invokers-polyfill';
 
 import { loader } from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
+import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
-import App from './App';
-import '@/shared/presentation/assets/stylesheets/theme.css';
-import '@/shared/presentation/assets/stylesheets/base.css';
-import '@/shared/presentation/assets/stylesheets/general.css';
+import type * as Monaco from 'monaco-editor';
 
-// Socket module initializes eagerly via singleton — import to ensure side-effects run
-import '@/modules/socket/services/socket-service';
 self.MonacoEnvironment = {
     getWorker(_, label) {
         if (label === 'json') {
@@ -36,7 +35,9 @@ self.MonacoEnvironment = {
     },
 };
 
-loader.config({ monaco });
+void import('monaco-editor').then((monaco: typeof Monaco) => {
+    loader.config({ monaco });
+});
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>

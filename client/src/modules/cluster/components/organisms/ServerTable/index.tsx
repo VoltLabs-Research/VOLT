@@ -1,22 +1,28 @@
+import { transformClustersToRows } from '@/modules/cluster/utilities/transform-cluster-row';
+import './ServerTable.css';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import RefreshButton from '@/shared/presentation/components/RefreshButton';
+import Table from '@/shared/presentation/components/Table';
+import Title from '@/shared/presentation/components/Title';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import { useMemo } from 'react';
 import { ChevronDown, Download } from 'lucide-react';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
-import { transformClustersToRows, type ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
-import Container from '@/shared/presentation/components/Container';
-import Button from '@/shared/presentation/components/Button';
-import Tooltip from '@/shared/presentation/components/Tooltip';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import RefreshButton from '@/shared/presentation/components/RefreshButton';
-import Table, { type Column } from '@/shared/presentation/components/Table';
-import './ServerTable.css';
+import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
+import type { Column } from '@/shared/presentation/components/Table';
 
 interface ServerTableProps {
     clusters: ClusterMetrics[];
     selectedClusterId: string;
-}
+};
 
-const MetricBars = ({ percentage }: { percentage: number }) => {
+interface MetricBarsProps {
+    percentage: number;
+};
+
+const MetricBars = ({ percentage }: MetricBarsProps) => {
     const activeBars = Math.floor(percentage / 20);
     
     return (

@@ -1,15 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import './OAuthCallback.css';
+import { fetchCurrentUser } from '@/modules/auth/hooks/queries';
+import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import Container from '@/shared/presentation/components/Container';
+import Loader from '@/shared/presentation/components/Loader';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Title from '@/shared/presentation/components/Title';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle } from 'lucide-react';
-import Loader from '@/shared/presentation/components/Loader';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import { fetchCurrentUser } from '@/modules/auth/hooks/queries';
 import { sileo } from 'sileo';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
-import './OAuthCallback.css';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const OAuthCallbackTemplate = () => {
     const navigate = useNavigate();
@@ -64,7 +64,7 @@ const OAuthCallbackTemplate = () => {
             }
         };
 
-        void handleOAuthCallback();
+        handleOAuthCallback();
 
         return () => {
             isCancelled = true;
@@ -93,7 +93,11 @@ const OAuthCallbackTemplate = () => {
                         <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            transition={{ type: 'spring', stiffness: 200, damping: 10 }}
+                            transition={{
+                                type: 'spring',
+                                stiffness: 200,
+                                damping: 10
+                            }}
                         >
                             <CheckCircle size={48} className='oauth-icon-success' />
                         </motion.div>
@@ -103,7 +107,11 @@ const OAuthCallbackTemplate = () => {
                         <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            transition={{ type: 'spring', stiffness: 200, damping: 10 }}
+                            transition={{
+                                type: 'spring',
+                                stiffness: 200,
+                                damping: 10
+                            }}
                         >
                             <XCircle size={48} className='oauth-icon-error' />
                         </motion.div>

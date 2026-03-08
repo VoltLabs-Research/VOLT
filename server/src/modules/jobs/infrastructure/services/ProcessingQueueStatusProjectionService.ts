@@ -1,12 +1,11 @@
-import IORedis from 'ioredis';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import {
     JOB_STATUS_KEY_PREFIX,
-    QueueJobData,
-    QueueStatusProjectionResult,
     STATUS_TTL_SECONDS
 } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
+import IORedis from 'ioredis';
+import type { QueueJobData, QueueStatusProjectionResult } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
 
 export default class ProcessingQueueStatusProjectionService {
     constructor(
@@ -19,9 +18,14 @@ export default class ProcessingQueueStatusProjectionService {
     }
 
     async project(jobId: string, status: JobStatus, data: QueueJobData): Promise<QueueStatusProjectionResult> {
+        let metadata = {};
+        if (isRecord(data.metadata)) {
+            metadata = data.metadata;
+        }
+
         const statusData = {
             ...data,
-            ...(isRecord(data.metadata) ? data.metadata : {}),
+            ...metadata,
             jobId,
             status,
             timestamp: new Date().toISOString(),
@@ -51,9 +55,14 @@ export default class ProcessingQueueStatusProjectionService {
         }
 
         try {
-            return JSON.parse(data) as Record<string, unknown>;
+            const parsedData = JSON.parse(data);
+            if (!isRecord(parsedData)) {
+                return null;
+            }
+
+            return parsedData;
         } catch {
             return null;
         }
     }
-}
+};

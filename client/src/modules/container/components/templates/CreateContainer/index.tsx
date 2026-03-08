@@ -1,31 +1,49 @@
+import useCreateContainerForm from '../../../hooks/use-create-container-form';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import useStepper from '@/shared/presentation/hooks/use-stepper';
-import useCreateContainerForm from '../../../hooks/use-create-container-form';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Button from '@/shared/presentation/components/Button';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Stepper, { type StepIndicator } from '@/shared/presentation/components/Stepper';
-import Modal, { openModal, closeModal } from '@/shared/presentation/components/Modal';
+import { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import Modal from '@/shared/presentation/components/Modal';
+import Stepper from '@/shared/presentation/components/Stepper';
+import type { StepIndicator } from '@/shared/presentation/components/Stepper';
 import { ImageSelectionStep, ConfigurationStep, ReviewStep } from '../../organisms/CreateContainerSteps';
 import './CreateContainer.css';
 
-type StepKey = 'image' | 'config' | 'review';
+enum StepKey {
+    Image = 'image',
+    Config = 'config',
+    Review = 'review'
+};
 
-const STEP_ORDER: StepKey[] = ['image', 'config', 'review'];
+const STEP_ORDER: StepKey[] = [StepKey.Image, StepKey.Config, StepKey.Review];
 
 const STEP_INDICATORS: StepIndicator<StepKey>[] = [
-    { key: 'image', label: 'Image', description: 'Select template' },
-    { key: 'config', label: 'Configuration', description: 'Resources & Network' },
-    { key: 'review', label: 'Review', description: 'Deploy container' }
+    {
+        key: StepKey.Image,
+        label: 'Image',
+        description: 'Select template'
+    },
+    {
+        key: StepKey.Config,
+        label: 'Configuration',
+        description: 'Resources & Network'
+    },
+    {
+        key: StepKey.Review,
+        label: 'Review',
+        description: 'Deploy container'
+    }
 ];
 
 const CreateContainer = () => {
     const navigate = useNavigate();
-    const { step, goTo } = useStepper<StepKey>('image', { steps: STEP_ORDER });
+    const { step, goTo } = useStepper<StepKey>(StepKey.Image, { steps: STEP_ORDER });
     const [tempCustomImage, setTempCustomImage] = useState('');
 
     const {
@@ -42,23 +60,23 @@ const CreateContainer = () => {
         handleCreate,
         getSelectedImage,
         canProceedToConfig
-    } = useCreateContainerForm(() => goTo('config'));
+    } = useCreateContainerForm(() => goTo(StepKey.Config));
 
     const confirmCustomImage = () => {
-        setCustomImage(tempCustomImage, () => goTo('config'));
+        setCustomImage(tempCustomImage, () => goTo(StepKey.Config));
         closeModal('custom-image-modal');
     };
 
     const canNavigateTo = (key: StepKey): boolean => {
-        if(key === 'image') return true;
-        if(key === 'config') return canProceedToConfig;
-        if(key === 'review') return canProceedToConfig;
+        if(key === StepKey.Image) return true;
+        if(key === StepKey.Config) return canProceedToConfig;
+        if(key === StepKey.Review) return canProceedToConfig;
         return false;
     };
 
     const steps = [
         {
-            key: 'image' as const,
+            key: StepKey.Image,
             content: (
                 <ImageSelectionStep
                     selectedTemplate={selectedTemplate}
@@ -72,7 +90,7 @@ const CreateContainer = () => {
             )
         },
         {
-            key: 'config' as const,
+            key: StepKey.Config,
             content: (
                 <ConfigurationStep
                     config={config}
@@ -80,13 +98,13 @@ const CreateContainer = () => {
                     selectedTeamId={selectedTeamId}
                     onConfigChange={updateConfig}
                     onTeamChange={setSelectedTeamId}
-                    onBack={() => goTo('image')}
-                    onNext={() => goTo('review')}
+                    onBack={() => goTo(StepKey.Image)}
+                    onNext={() => goTo(StepKey.Review)}
                 />
             )
         },
         {
-            key: 'review' as const,
+            key: StepKey.Review,
             content: (
                 <ReviewStep
                     config={config}
@@ -94,7 +112,7 @@ const CreateContainer = () => {
                     selectedTeamId={selectedTeamId}
                     image={getSelectedImage()}
                     isLoading={isLoading}
-                    onBack={() => goTo('config')}
+                    onBack={() => goTo(StepKey.Config)}
                     onCreate={handleCreate}
                 />
             )

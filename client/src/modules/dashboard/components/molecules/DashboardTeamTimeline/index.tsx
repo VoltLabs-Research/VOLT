@@ -1,13 +1,14 @@
+import './DashboardTeamTimeline.css';
+import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import Container from '@/shared/presentation/components/Container';
+import EmptyState from '@/shared/presentation/components/EmptyState';
+import Title from '@/shared/presentation/components/Title';
 import { useMemo } from 'react';
 import { Skeleton } from '@mui/material';
-import { GoUpload, GoTrash, GoBeaker } from 'react-icons/go';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
+import { GoBeaker, GoTrash, GoUpload } from 'react-icons/go';
 import type { ActivityItem, PopulatedUser } from '@/modules/daily-activity/api/entities/daily-activity';
-import './DashboardTeamTimeline.css';
+import type { ReactNode } from 'react';
 
 interface TimelineEntry {
     userName: string;
@@ -16,7 +17,7 @@ interface TimelineEntry {
     timestamp: string;
 };
 
-const ACTIVITY_ICON: Record<ActivityItem['type'], React.ReactNode> = {
+const ACTIVITY_ICON: Record<ActivityItem['type'], ReactNode> = {
     'trajectory-upload': <GoUpload size={14} />,
     'trajectory-deletion': <GoTrash size={14} />,
     'analysis-performed': <GoBeaker size={14} />
@@ -105,6 +106,46 @@ const DashboardTeamTimeline = () => {
     }
 
     const hasData = entries.length > 0;
+    let timelineContent = (
+        <EmptyState
+            icon={<GoBeaker size={20} />}
+            title='No activity this week'
+            description='Team activity from the last 7 days will appear here.'
+            className='flex-1'
+        />
+    );
+
+    if (hasData) {
+        timelineContent = (
+            <>
+                {entries.map((entry, i) => (
+                    <Container key={`${entry.timestamp}-${i}`} className='dashboard-timeline-item'>
+                        <Container className='dashboard-timeline-dot-col'>
+                            <span
+                                className='dashboard-timeline-dot d-flex flex-center radius-md'
+                                style={{ color: ACTIVITY_ACCENT[entry.type] }}
+                            >
+                                {ACTIVITY_ICON[entry.type]}
+                            </span>
+                            {i < entries.length - 1 && <span className='dashboard-timeline-line' />}
+                        </Container>
+                        <Container className='dashboard-timeline-content'>
+                            <span className='font-size-2 color-primary'>
+                                <strong className='font-weight-5' style={{ textTransform: 'capitalize' }}>
+                                    {entry.userName}
+                                </strong>
+                                {' '}
+                                <span className='color-secondary'>{entry.description}</span>
+                            </span>
+                            <span className='font-size-1 color-muted'>
+                                {formatRelativeTime(entry.timestamp)}
+                            </span>
+                        </Container>
+                    </Container>
+                ))}
+            </>
+        );
+    }
 
     return (
         <Container className='dashboard-timeline-card'>
@@ -114,40 +155,7 @@ const DashboardTeamTimeline = () => {
             </Container>
 
             <Container className='dashboard-timeline-list flex-1 min-h-0 y-auto d-flex column'>
-                {hasData ? (
-                    entries.map((entry, i) => (
-                        <Container key={`${entry.timestamp}-${i}`} className='dashboard-timeline-item'>
-                            <Container className='dashboard-timeline-dot-col'>
-                                <span
-                                    className='dashboard-timeline-dot d-flex flex-center radius-md'
-                                    style={{ color: ACTIVITY_ACCENT[entry.type] }}
-                                >
-                                    {ACTIVITY_ICON[entry.type]}
-                                </span>
-                                {i < entries.length - 1 && <span className='dashboard-timeline-line' />}
-                            </Container>
-                            <Container className='dashboard-timeline-content'>
-                                <span className='font-size-2 color-primary'>
-                                    <strong className='font-weight-5' style={{ textTransform: 'capitalize' }}>
-                                        {entry.userName}
-                                    </strong>
-                                    {' '}
-                                    <span className='color-secondary'>{entry.description}</span>
-                                </span>
-                                <span className='font-size-1 color-muted'>
-                                    {formatRelativeTime(entry.timestamp)}
-                                </span>
-                            </Container>
-                        </Container>
-                    ))
-                ) : (
-                    <EmptyState
-                        icon={<GoBeaker size={20} />}
-                        title='No activity this week'
-                        description='Team activity from the last 7 days will appear here.'
-                        className='flex-1'
-                    />
-                )}
+                {timelineContent}
             </Container>
         </Container>
     );

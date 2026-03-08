@@ -2,18 +2,6 @@
  * Port interface for emitting events through sockets.
  */
 export interface ISocketEmitter {
-    setServer(
-        socket: any
-    ): void;
-
-    registerSocket(
-        socket: any
-    ): void;
-
-    unregisterSocket(
-        socketId: string
-    ): void;
-
     /**
      * Emit an event to all sockets in a specific room.
      * @param room - Room identifier

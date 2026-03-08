@@ -1,13 +1,13 @@
-import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
-import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/TeamMember';
-import { Result } from '@shared/domain/port/Result';
+import { Action } from '@core/constants/permissions';
+import { Resource } from '@core/constants/resources';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { CheckInvitePermissionInputDTO, CheckInvitePermissionOutputDTO } from '@modules/team/application/dtos/team/CheckInvitePermissionDTO';
+import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
+import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { Resource } from '@core/constants/resources';
-import { Action } from '@core/constants/permissions';
-import { CheckInvitePermissionInputDTO, CheckInvitePermissionOutputDTO } from '@modules/team/application/dtos/team/CheckInvitePermissionDTO';
 
 @injectable()
 export default class CheckInvitePermissionUseCase implements IUseCase<CheckInvitePermissionInputDTO, CheckInvitePermissionOutputDTO, ApplicationError>{
@@ -35,4 +35,4 @@ export default class CheckInvitePermissionUseCase implements IUseCase<CheckInvit
 
         return Result.ok({ canInvite });
     }
-}
+};

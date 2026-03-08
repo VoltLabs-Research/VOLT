@@ -4,7 +4,7 @@ import { promisify } from 'util';
 import { injectable } from 'tsyringe';
 import logger from '@shared/infrastructure/logger';
 import type { DiskMetrics, DiskOperations } from '@modules/system/domain/value-objects/SystemMetrics';
-import type { DiskIOCheck } from './metricsTypes';
+import type { DiskIOSnapshot } from '@modules/system/domain/contracts';
 
 const execPromise = promisify(exec);
 const BYTES_PER_GB = 1024 ** 3;
@@ -17,7 +17,7 @@ const NVME_DISK_PATTERN = /^nvme\d+n\d+$/;
 
 @injectable()
 export default class DiskMetricsCollector {
-    private lastDiskIO: DiskIOCheck | null = null;
+    private lastDiskIO: DiskIOSnapshot | null = null;
 
     async getUsage(): Promise<DiskMetrics> {
         try {

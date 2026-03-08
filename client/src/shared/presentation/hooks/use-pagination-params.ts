@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
 import useSearchParamsState from './use-search-params';
+import { useCallback } from 'react';
 
 interface UsePaginationParamsOptions {
     defaultPage?: number;

@@ -1,10 +1,15 @@
 import { tool } from 'ai';
 import type { Tool } from 'ai';
 import { z } from 'zod';
-import type { AIToolScope } from '@modules/ai/application/services/AIToolService';
+import type { AIToolScope } from '@modules/ai/services/AIToolService';
 import type { UseCaseInstance } from '@shared/application/IUseCase';
 
-type ToolDefinition = Parameters<typeof tool>[0];
+interface MutableToolDefinition<TInput extends Record<string, unknown>, TResult, TSchema extends z.ZodType<TInput>> {
+    description: string;
+    inputSchema: TSchema;
+    execute: (params: TInput) => Promise<TResult>;
+    needsApproval?: boolean | ((params: TInput) => boolean | Promise<boolean>);
+};
 
 export abstract class AITool<
     TInput extends Record<string, unknown> = Record<string, unknown>,
@@ -25,35 +30,33 @@ export abstract class AITool<
     build(scope: AIToolScope): Record<string, Tool> {
         const customExecute = this.execute;
         const resolvedInputSchema = this.inputSchema ?? this.parameters;
-        const toolDefinition: Record<string, unknown> = {
+        const toolDefinition: MutableToolDefinition<TInput, TResult, TSchema> = {
             description: this.description,
-            inputSchema: resolvedInputSchema
+            inputSchema: resolvedInputSchema,
+            execute: async (params: TInput): Promise<TResult> => {
+                if (customExecute) {
+                    return customExecute.call(this, params, scope);
+                }
+
+                if (this.useCase) {
+                    const result = await this.useCase.execute(Object.assign({}, params, scope));
+                    if (!result.success) {
+                        throw result.error;
+                    }
+
+                    return result.value as TResult;
+                }
+
+                throw new Error(`AI tool "${this.name}" requires an execute method or a use case.`);
+            }
         };
 
         if (this.needsApproval !== undefined) {
-            toolDefinition.needsApproval = this.needsApproval as unknown;
-        }
-
-        if (customExecute) {
-            toolDefinition.execute = async (params: TInput) => {
-                return customExecute.call(this, params, scope);
-            };
-        } else if (this.useCase) {
-            const useCase = this.useCase;
-            toolDefinition.execute = async (params: TInput) => {
-                const result = await useCase.execute(Object.assign({}, params, scope));
-                if (!result.success) {
-                    throw result.error;
-                }
-
-                return result.value;
-            };
-        } else {
-            throw new Error(`AI tool "${this.name}" requires an execute method or a use case.`);
+            toolDefinition.needsApproval = this.needsApproval;
         }
 
         return {
-            [this.name]: tool(toolDefinition as unknown as ToolDefinition)
+            [this.name]: tool(toolDefinition as any)
         };
     }
-}
+};

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { gsap } from 'gsap';
 import '@/shared/presentation/components/LiquidToggle/LiquidToggle.css';
+import { gsap } from 'gsap';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface LiquidToggleProps {
     className?: string;
@@ -8,7 +8,7 @@ interface LiquidToggleProps {
     defaultPressed?: boolean;
     onChange?: (pressed: boolean) => void;
     bounce?: boolean;
-}
+};
 
 const LiquidToggle = ({
     className,

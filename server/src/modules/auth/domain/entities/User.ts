@@ -29,11 +29,16 @@ export interface UserProps{
     oauthId?: string;
 };
 
+export interface SplitFullNameResult {
+    firstName: string;
+    lastName?: string;
+};
+
 export default class User{
     constructor(
         public readonly _id: string,
         public props: UserProps
-    ){}
+    ) {}
 
     public static normalizeEmail(email: string): string {
         return email.trim().toLowerCase();
@@ -43,17 +48,11 @@ export default class User{
         return name.trim().toLowerCase();
     }
 
-    public static splitFullName(fullName: string): {
-        firstName: string;
-        lastName?: string;
-    } {
+    public static splitFullName(fullName: string): SplitFullNameResult {
         const normalizedFullName = fullName.trim().replace(/\s+/g, ' ');
         const [firstName, ...lastNameParts] = normalizedFullName.split(' ');
 
-        const splitName: {
-            firstName: string;
-            lastName?: string;
-        } = {
+        const splitName: SplitFullNameResult = {
             firstName: User.normalizeName(firstName),
         };
 

@@ -1,31 +1,28 @@
-import type { QueryClient } from '@tanstack/react-query';
 import { buildKeys, createSocketQuery } from '@/shared/infrastructure/query';
+import type { QueryClient } from '@tanstack/react-query';
 import type { ClusterHistoryMetric, ClusterMetrics } from '../api/entities/cluster-metrics';
-import { MAX_HISTORY_POINTS } from '../constants';
+import { MAX_HISTORY_POINTS } from '../utilities/history';
 
-export const CLUSTER_QUERY_KEYS = buildKeys<{
+type ClusterQueryKeyMap = {
     metrics: void;
     history: string;
     historyLoaded: string;
-}>('cluster');
+};
+
+export const CLUSTER_QUERY_KEYS = buildKeys<ClusterQueryKeyMap>('cluster');
 
 export const clusterMetricsQuery = createSocketQuery<void, ClusterMetrics[]>(CLUSTER_QUERY_KEYS.metrics, { initialData: [] });
 export const clusterHistoryQuery = createSocketQuery<string, ClusterMetrics[]>(CLUSTER_QUERY_KEYS.history, { initialData: [] });
 export const clusterHistoryLoadedQuery = createSocketQuery<string, boolean>(CLUSTER_QUERY_KEYS.historyLoaded, { initialData: false });
 
-const normalizeHistoryMetric = (
-    metric: ClusterHistoryMetric,
-    fallbackClusterId: string
-): ClusterMetrics => ({
-    ...metric,
-    clusterId: metric.clusterId ?? fallbackClusterId,
-    mongodb: metric.mongodb ?? undefined
-});
-
 const trimHistory = (history: ClusterMetrics[]): ClusterMetrics[] => {
-    return history.length > MAX_HISTORY_POINTS
-        ? history.slice(history.length - MAX_HISTORY_POINTS)
-        : history;
+    let nextHistory = history;
+
+    if (history.length > MAX_HISTORY_POINTS) {
+        nextHistory = history.slice(history.length - MAX_HISTORY_POINTS);
+    }
+
+    return nextHistory;
 };
 
 export const appendClusterHistoryMetric = (
@@ -67,10 +64,7 @@ export const setClusterHistoryQueryData = (
     history: ClusterHistoryMetric[],
     clusterId: string
 ) => {
-    clusterHistoryQuery.set(
-        clusterId,
-        trimHistory(history.map((metric) => normalizeHistoryMetric(metric, clusterId)))
-    );
+    clusterHistoryQuery.set(clusterId, trimHistory(history));
     clusterHistoryLoadedQuery.set(clusterId, true);
 };
 

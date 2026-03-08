@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTeamAIIntegrationModelsQuery, useTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
-import type { AIProvider } from '@/modules/ai/api/entities/ai-constants';
-import type { TeamAIModelListItem, TeamAIProviderModelsCatalog } from '@/modules/team/api/entities/team-ai-integration';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { AIModelSelection } from '@/modules/ai/api/dtos/create-conversation-stream-transport';
+import type { AIProvider } from '@/modules/ai/api/entities/ai-provider';
+import type { TeamAIModelListItem, TeamAIProviderModelsCatalog } from '@/modules/team/api/entities/ai-integration/team-ai-integration';
 
 const createModelSelectionKey = (provider: AIProvider, modelId: string): string => (
     `${provider}::${modelId}`
@@ -9,7 +10,7 @@ const createModelSelectionKey = (provider: AIProvider, modelId: string): string 
 
 const useAIModelSelection = (teamId: string | null) => {
     const [selectedModel, setSelectedModel] = useState<string | null>(null);
-    const selectedModelRef = useRef<{ provider?: AIProvider; model?: string }>({});
+    const selectedModelRef = useRef<AIModelSelection>({});
 
     const teamAIIntegrationsQuery = useTeamAIIntegrationsQuery(teamId ?? '', {
         enabled: Boolean(teamId)
@@ -25,11 +26,12 @@ const useAIModelSelection = (teamId: string | null) => {
         hasApiKey: integration.hasApiKey
     })) ?? [];
 
-    const providerCatalog = teamAIIntegrationModelsQuery.data?.providers as TeamAIProviderModelsCatalog[] ?? [];
+    const providerCatalog: TeamAIProviderModelsCatalog[] = teamAIIntegrationModelsQuery.data?.providers ?? [];
     const isProviderCatalogLoading = teamAIIntegrationsQuery.isLoading || teamAIIntegrationModelsQuery.isLoading;
-    const providerCatalogError = teamAIIntegrationsQuery.error || teamAIIntegrationModelsQuery.error
-        ? 'Failed to load provider catalog.'
-        : null;
+    let providerCatalogError: string | null = null;
+    if (teamAIIntegrationsQuery.error || teamAIIntegrationModelsQuery.error) {
+        providerCatalogError = 'Failed to load provider catalog.';
+    }
 
     const enabledProviders = useMemo(() => {
         return new Set(
@@ -57,8 +59,15 @@ const useAIModelSelection = (teamId: string | null) => {
             ))
             .sort((left, right) => {
                 if (left.isDefault !== right.isDefault) {
-                    return left.isDefault ? -1 : 1;
+                    let sortOrder = 1;
+
+                    if (left.isDefault) {
+                        sortOrder = -1;
+                    }
+
+                    return sortOrder;
                 }
+
                 if (left.providerName !== right.providerName) {
                     return left.providerName.localeCompare(right.providerName);
                 }

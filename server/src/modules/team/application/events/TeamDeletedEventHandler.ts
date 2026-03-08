@@ -1,11 +1,11 @@
-import { injectable, inject } from 'tsyringe';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
-import TeamDeletedEvent from '@modules/team/domain/events/TeamDeletedEvent';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import type { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
-import type { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleRepository';
-import type { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
-import type { ISecretKeyRepository } from '@modules/team/domain/port/ISecretKeyRepository';
+import { injectable, inject } from 'tsyringe';
+import type { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
+import type { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import type { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
 
 @injectable()
 export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent>{

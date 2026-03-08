@@ -1,15 +1,12 @@
-import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
-import type {
-    GetTeamInvitationByIdInputDTO,
-    GetTeamInvitationByIdOutputDTO
-} from '@modules/team/application/dtos/team-invitation/GetTeamInvitationByIdDTO';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
+import type { GetTeamInvitationByIdInputDTO, GetTeamInvitationByIdOutputDTO } from '@modules/team/application/dtos/team-invitation/GetTeamInvitationByIdDTO';
+import type { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
 
 @injectable()
 export default class GetTeamInvitationByIdUseCase implements IUseCase<GetTeamInvitationByIdInputDTO, GetTeamInvitationByIdOutputDTO, ApplicationError> {
@@ -33,4 +30,4 @@ export default class GetTeamInvitationByIdUseCase implements IUseCase<GetTeamInv
         }
         return Result.ok(toPersistedOutput(entity));
     }
-}
+};

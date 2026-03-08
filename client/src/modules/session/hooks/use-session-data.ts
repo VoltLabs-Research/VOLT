@@ -1,14 +1,14 @@
-import { useMemo, useState } from 'react';
-import { closeModal, openModal } from '@/shared/presentation/components/Modal';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import TokenStorage from '@/modules/auth/services/token-storage';
-import type { ActiveSession } from '../api/entities/session';
 import {
     activeSessionsQuery,
     loginActivityQuery,
     useRevokeAllOtherSessionsMutation,
     useRevokeSessionMutation
 } from './queries';
+import TokenStorage from '@/modules/session/services/token-storage';
+import { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { useMemo, useState } from 'react';
+import type { ActiveSession } from '../api/entities/session';
 
 export const REVOKE_MODAL_ID = 'revoke-session-modal';
 export const REVOKE_ALL_MODAL_ID = 'revoke-all-sessions-modal';

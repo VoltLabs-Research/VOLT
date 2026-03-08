@@ -1,7 +1,4 @@
-import { useMemo, useCallback, useEffect, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useClusterStore } from '../stores/use-cluster-store';
-import { observeClusterMetrics, requestClusterHistory } from '../services/cluster-observer';
 import {
     clusterHistoryLoadedQuery,
     clusterHistoryQuery,
@@ -10,6 +7,9 @@ import {
     setClusterHistoryQueryData,
     setClusterMetricsQueryData
 } from './queries';
+import { observeClusterMetrics, requestClusterHistory } from '../api/service';
+import { useQueryClient } from '@tanstack/react-query';
+import { useMemo, useCallback, useEffect, useRef } from 'react';
 
 const useClusterMetrics = () => {
     const queryClient = useQueryClient();

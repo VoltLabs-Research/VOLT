@@ -1,8 +1,8 @@
-import { Router } from 'express';
-import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import { Resource } from '@core/constants/resources';
 import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
+import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import controllers from '@modules/analysis/infrastructure/http/controllers';
+import { Router } from 'express';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {

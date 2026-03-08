@@ -7,8 +7,7 @@ const setRef = <T,>(ref: React.Ref<T> | undefined, value: T | null) => {
     }
 
     if (ref && typeof ref === 'object') {
-        const mutableRef = ref as React.MutableRefObject<T | null>;
-        mutableRef.current = value;
+        Object.assign(ref, { current: value });
     }
 };
 

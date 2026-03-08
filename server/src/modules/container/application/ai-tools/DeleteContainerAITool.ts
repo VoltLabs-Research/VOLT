@@ -1,7 +1,7 @@
-import { injectable, inject } from 'tsyringe';
-import { z } from 'zod';
-import { AITool } from '@shared/application/ai/AITool';
 import { DeleteContainerUseCase } from '@modules/container/application/use-cases/DeleteContainerUseCase';
+import { AITool } from '@shared/application/ai/AITool';
+import { inject, injectable } from 'tsyringe';
+import { z } from 'zod';
 
 @injectable()
 export class DeleteContainerAITool extends AITool {
@@ -16,4 +16,4 @@ export class DeleteContainerAITool extends AITool {
     ) {
         super();
     }
-}
+};

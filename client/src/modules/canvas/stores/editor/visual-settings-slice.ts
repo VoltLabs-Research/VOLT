@@ -1,21 +1,18 @@
-import type { StateCreator } from 'zustand';
-import type { CanvasGridSettingsState, CanvasGridSettingsStore, EnvironmentConfigStore } from '@/modules/fractal/types/stores/editor/visual-types';
-import { ENVIRONMENT_DEFAULT_CONFIG } from '@/modules/fractal/types/stores/editor/visual-types';
-import {
-    GL_DEFAULT_CONFIG,
-    ORBIT_CONTROLS_DEFAULT_CONFIG,
-    SSAO_DEFAULT_CONFIG,
-    type RenderConfigStore,
-    type RenderConfigState
-} from '@/modules/fractal/types/stores/editor/performance-types';
-import type { EditorStore } from './types';
 import { mergeSectionState, resetSectionState, setSectionFieldState } from './store-section';
+
+import { GL_DEFAULT_CONFIG, ORBIT_CONTROLS_DEFAULT_CONFIG, SSAO_DEFAULT_CONFIG } from '@/modules/fractal/stores/contracts/editor/performance-types';
+import { ENVIRONMENT_DEFAULT_CONFIG } from '@/modules/fractal/stores/contracts/editor/visual-types';
+
+import type { EditorStore } from './types';
+import type { RenderConfigStore, RenderConfigState } from '@/modules/fractal/stores/contracts/editor/performance-types';
+import type { CanvasGridSettingsState, CanvasGridSettingsStore, EnvironmentConfigStore } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { StateCreator } from 'zustand';
 
 export interface VisualSettingsSlice {
     grid: CanvasGridSettingsStore;
     environment: EnvironmentConfigStore;
     renderConfig: RenderConfigStore;
-}
+};
 
 const GRID_INITIAL: CanvasGridSettingsState = {
     enabled: false,

@@ -1,18 +1,19 @@
 import { createReadStream } from 'node:fs';
-import type { Readable } from 'node:stream';
-import { Decoder, type DecoderOptions } from '@msgpack/msgpack';
+import { Decoder } from '@msgpack/msgpack';
+import type { DecoderOptions } from '@msgpack/msgpack';
 
 type ChunkLike = Uint8Array | Buffer;
 type MsgpackDecoderOptions = DecoderOptions<unknown>;
+type ChunkStream = AsyncIterable<ChunkLike>;
 
 export async function* decodeMultiStream(
     src: AsyncIterable<ChunkLike>,
     options?: MsgpackDecoderOptions
 ): AsyncIterable<unknown> {
     const decoder = new Decoder<unknown>(options);
-    const byteSrc = (async function* () {
+    const byteSrc: ChunkStream = (async function* () {
         for await (const chunk of src) {
-            yield chunk as Uint8Array;
+            yield chunk;
         }
     })();
 
@@ -25,10 +26,10 @@ export async function* decodeMultiStreamFromFile(
     filePath: string,
     options?: MsgpackDecoderOptions
 ): AsyncIterable<unknown> {
-    const stream = createReadStream(filePath) as unknown as Readable & AsyncIterable<Uint8Array>;
+    const stream = createReadStream(filePath);
     const src = (async function* (): AsyncIterable<ChunkLike> {
         for await (const chunk of stream) {
-            yield chunk as Uint8Array;
+            yield chunk;
         }
     })();
 

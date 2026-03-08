@@ -1,3 +1,6 @@
+import ChartContainer from '@/shared/presentation/components/ChartContainer';
+import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
+import Container from '@/shared/presentation/components/Container';
 import { useMemo } from 'react';
 import {
     LineChart,
@@ -10,19 +13,15 @@ import {
 } from 'recharts';
 import { Cpu } from 'lucide-react';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
-import { clusterHistoryQuery } from '@/modules/cluster/hooks/queries';
-import ChartContainer from '@/shared/presentation/components/ChartContainer';
-import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
-import Container from '@/shared/presentation/components/Container';
 
 interface CpuDistributionProps {
-    clusterId: string;
+    history: ClusterMetrics[];
     metrics: ClusterMetrics | null;
-}
+};
 
 interface DataPoint {
     [key: string]: number;
-}
+};
 
 const BASE_CORE_COLORS = [
     '#0A84FF', '#30D158', '#FF9F0A', '#FF453A',
@@ -34,8 +33,7 @@ const generateCoreColors = (numCores: number): string[] => (
     Array.from({ length: numCores }, (_, i) => BASE_CORE_COLORS[i % BASE_CORE_COLORS.length])
 );
 
-const CpuDistribution = ({ clusterId, metrics }: CpuDistributionProps) => {
-    const { data: history = [] } = clusterHistoryQuery(clusterId);
+const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
     const chartData = useMemo<DataPoint[]>(() => {
         return history.map((point) => {
             const cores: DataPoint = {};
@@ -118,7 +116,15 @@ const CpuDistribution = ({ clusterId, metrics }: CpuDistributionProps) => {
             statsLoading={!metrics}
         >
             <ResponsiveContainer width='100%' height={300}>
-                <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <LineChart
+                    data={chartData}
+                    margin={{
+                        top: 10,
+                        right: 10,
+                        left: 0,
+                        bottom: 0
+                    }}
+                >
                     <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />
                     <YAxis
                         domain={[0, 100]}

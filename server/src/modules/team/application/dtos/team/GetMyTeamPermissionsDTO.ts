@@ -4,4 +4,4 @@ export type GetMyTeamPermissionsInputDTO = TeamUserScopedInputDTO;
 
 export interface GetMyTeamPermissionsOutputDTO {
     permissions: string[];
-}
+};

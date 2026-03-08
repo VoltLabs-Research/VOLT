@@ -1,12 +1,12 @@
+import { ErrorCodes } from '@core/constants/error-codes';
+import { SYS_BUCKETS } from '@core/config/minio';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { Request, Response, NextFunction } from 'express';
 import { container } from 'tsyringe';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IStorageService } from '@shared/domain/port/IStorageService';
-import { ErrorCodes } from '@core/constants/error-codes';
 import { v4 } from 'uuid';
 import path from 'node:path';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { SYS_BUCKETS } from '@core/config/minio';
+import type { IStorageService } from '@shared/domain/port/IStorageService';
 
 const storageService = container.resolve<IStorageService>(SHARED_TOKENS.StorageService);
 

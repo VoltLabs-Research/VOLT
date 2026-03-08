@@ -1,23 +1,15 @@
-import React, { useState, cloneElement, isValidElement, type ReactNode, type ReactElement } from 'react';
-import {
-    useFloating,
-    useHover,
-    useFocus,
-    useDismiss,
-    useRole,
-    useInteractions,
-    FloatingPortal,
-    offset,
-    flip,
-    shift,
-    autoUpdate,
-    type Placement
-} from '@floating-ui/react';
-import composeRefs from '@/shared/presentation/utils/compose-refs';
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
+import composeRefs from '@/shared/presentation/utils/compose-refs';
 import './Tooltip.css';
+import { useFloating, useHover, useFocus, useDismiss, useRole, useInteractions, FloatingPortal, offset, flip, shift, autoUpdate } from '@floating-ui/react';
+import { useState, cloneElement, isValidElement } from 'react';
+import React from 'react';
+import type { Placement } from '@floating-ui/react';
+import type { HTMLAttributes, ReactNode, ReactElement, Ref } from 'react';
 
 export type TooltipPlacement = Placement;
+
+type TooltipTriggerElement = ReactElement<HTMLAttributes<HTMLElement> & { ref?: Ref<HTMLElement> }>;
 
 interface TooltipProps {
     children: ReactNode;
@@ -26,7 +18,7 @@ interface TooltipProps {
     delay?: number;
     disabled?: boolean;
     className?: string;
-}
+};
 
 const Tooltip = ({
     children,
@@ -78,11 +70,12 @@ const Tooltip = ({
         return <>{children}</>;
     }
 
+    const triggerElement = child as TooltipTriggerElement;
     const placementSide = actualPlacement.split('-')[0];
-    const childProps = child.props as Record<string, unknown>;
-    const originalRef = (child as ReactElement & { ref?: React.Ref<HTMLElement> }).ref;
+    const childProps = triggerElement.props;
+    const originalRef = childProps.ref;
 
-    const clonedChild = cloneElement(child as ReactElement<Record<string, unknown>>, {
+    const clonedChild = cloneElement(triggerElement, {
         ref: composeRefs(refs.setReference, originalRef),
         ...getReferenceProps(childProps)
     });

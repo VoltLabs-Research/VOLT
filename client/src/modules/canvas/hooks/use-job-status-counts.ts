@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
-import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import { JobStatus } from '@/modules/jobs/api/entities/job';
+import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
+import { useMemo } from 'react';
 
 const useJobStatusCounts = (trajectoryId?: string) => {
     const { data: groups = [] } = teamJobsGroups();

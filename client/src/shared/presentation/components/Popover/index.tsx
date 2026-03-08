@@ -1,28 +1,24 @@
-import React, { useState, useCallback, useLayoutEffect, useMemo, cloneElement, isValidElement, type ReactNode, type ReactElement, type Ref } from 'react';
-import {
-    useFloating,
-    useClick,
-    useDismiss,
-    useRole,
-    useInteractions,
-    FloatingPortal,
-    FloatingFocusManager,
-    offset,
-    flip,
-    shift,
-    autoUpdate,
-    type Placement,
-    type VirtualElement
-} from '@floating-ui/react';
+import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import Container from '@/shared/presentation/components/Container';
 import composeRefs from '@/shared/presentation/utils/compose-refs';
-import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import './Popover.css';
+import { useFloating, useClick, useDismiss, useRole, useInteractions, FloatingPortal, FloatingFocusManager, offset, flip, shift, autoUpdate } from '@floating-ui/react';
+import { useState, useCallback, useLayoutEffect, useMemo, cloneElement, isValidElement } from 'react';
+import React from 'react';
+import type { Placement, VirtualElement } from '@floating-ui/react';
+import type { HTMLAttributes, ReactNode, ReactElement, Ref } from 'react';
+
+type PopoverTriggerProps = HTMLAttributes<HTMLElement> & {
+    ref?: Ref<HTMLElement>;
+    'data-popover-trigger'?: string;
+};
+
+type PopoverTriggerElement = ReactElement<PopoverTriggerProps>;
 
 interface ContextMenuPosition {
     x: number;
     y: number;
-}
+};
 
 interface PopoverProps {
     id: string;
@@ -33,7 +29,7 @@ interface PopoverProps {
     triggerAction?: 'click' | 'contextmenu';
     onOpenChange?: (isOpen: boolean) => void;
     placement?: Placement;
-}
+};
 
 const Popover: React.FC<PopoverProps> = ({
     id,
@@ -143,10 +139,10 @@ const Popover: React.FC<PopoverProps> = ({
     };
 
     const triggerElement = trigger && isValidElement(trigger)
-        ? cloneElement(trigger as ReactElement<Record<string, unknown>>, {
+        ? cloneElement(trigger as PopoverTriggerElement, {
             ref: composeRefs(
                 refs.setReference,
-                (trigger as ReactElement & { ref?: Ref<HTMLElement> }).ref
+                (trigger as PopoverTriggerElement).props.ref
             ),
             'data-popover-trigger': id,
             ...getReferenceProps({

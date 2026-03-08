@@ -1,3 +1,4 @@
+import { ContainerAction } from '../../../api/dtos/update-container';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft,
@@ -22,15 +23,37 @@ import type { LucideIcon } from 'lucide-react';
 interface ContainerSidebarProps {
     container: ContainerEntity;
     onBack: () => void;
-    onAction: (action: 'start' | 'stop' | 'restart' | 'delete') => void;
+    onAction: (action: ContainerAction | 'delete') => void;
     actionLoading: boolean;
 };
 
-const NAV_ITEMS: { path: string; label: string; icon: LucideIcon }[] = [
-    { path: '', label: 'Overview', icon: Layers },
-    { path: 'processes', label: 'Processes', icon: Activity },
-    { path: 'terminal', label: 'Terminal', icon: Terminal },
-    { path: 'storage', label: 'Files & Storage', icon: Folder }
+interface NavItem {
+    path: string;
+    label: string;
+    icon: LucideIcon;
+};
+
+const NAV_ITEMS: NavItem[] = [
+    {
+        path: '',
+        label: 'Overview',
+        icon: Layers
+    },
+    {
+        path: 'processes',
+        label: 'Processes',
+        icon: Activity
+    },
+    {
+        path: 'terminal',
+        label: 'Terminal',
+        icon: Terminal
+    },
+    {
+        path: 'storage',
+        label: 'Files & Storage',
+        icon: Folder
+    }
 ];
 
 const ContainerSidebar = ({
@@ -45,6 +68,49 @@ const ContainerSidebar = ({
     const canUpdate = usePermission(['container:update']);
 
     const basePath = `/dashboard/containers/${container._id}`;
+    let actionButtons = null;
+
+    if (canUpdate) {
+        if (!isRunning) {
+            actionButtons = (
+                <Button
+                    variant='solid'
+                    intent='success'
+                    block
+                    leftIcon={<Play size={16} />}
+                    onClick={() => onAction(ContainerAction.Start)}
+                    disabled={actionLoading}
+                >
+                    Start Container
+                </Button>
+            );
+        } else {
+            actionButtons = (
+                <>
+                    <Button
+                        variant='outline'
+                        intent='neutral'
+                        block
+                        leftIcon={<RefreshCw size={16} />}
+                        onClick={() => onAction(ContainerAction.Restart)}
+                        disabled={actionLoading}
+                    >
+                        Restart
+                    </Button>
+                    <Button
+                        variant='soft'
+                        intent='danger'
+                        block
+                        leftIcon={<Square size={16} />}
+                        onClick={() => onAction(ContainerAction.Stop)}
+                        disabled={actionLoading}
+                    >
+                        Stop
+                    </Button>
+                </>
+            );
+        }
+    }
 
     const handleNavigate = (path: string) => {
         navigate(`${basePath}/${path}`);
@@ -91,45 +157,7 @@ const ContainerSidebar = ({
             </nav>
 
             <Container className='container-details-actions d-flex column gap-075 p-1-5'>
-                {canUpdate && (
-                    <>
-                        {!isRunning ? (
-                            <Button
-                                variant='solid'
-                                intent='success'
-                                block
-                                leftIcon={<Play size={16} />}
-                                onClick={() => onAction('start')}
-                                disabled={actionLoading}
-                            >
-                                Start Container
-                            </Button>
-                        ) : (
-                            <>
-                                <Button
-                                    variant='outline'
-                                    intent='neutral'
-                                    block
-                                    leftIcon={<RefreshCw size={16} />}
-                                    onClick={() => onAction('restart')}
-                                    disabled={actionLoading}
-                                >
-                                    Restart
-                                </Button>
-                                <Button
-                                    variant='soft'
-                                    intent='danger'
-                                    block
-                                    leftIcon={<Square size={16} />}
-                                    onClick={() => onAction('stop')}
-                                    disabled={actionLoading}
-                                >
-                                    Stop
-                                </Button>
-                            </>
-                        )}
-                    </>
-                )}
+                {actionButtons}
 
                 {container.ports?.[0] && (
                     <a

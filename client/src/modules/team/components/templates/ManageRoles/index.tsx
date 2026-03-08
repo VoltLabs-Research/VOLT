@@ -1,23 +1,24 @@
-import React, { useCallback, useState } from 'react';
-import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
-import { IoShieldCheckmarkOutline } from 'react-icons/io5';
-import { formatDistanceToNow } from 'date-fns';
-import Container from '@/shared/presentation/components/Container';
-import DocumentListing, { type ColumnConfig, type SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
-import RoleEditorModal, { openRoleEditorModal } from '../../organisms/RoleEditorModal';
-import type { RoleEditorPayload } from '../../organisms/RoleEditorModal';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import { useCreateTeamRoleMutation, useDeleteTeamRoleMutation, useUpdateTeamRoleMutation } from '@/modules/team/hooks/team-role/queries';
-import useTeamRolesListing from '@/modules/team/hooks/team-role/use-team-roles-listing';
+import { useCreateTeamRoleMutation, useDeleteTeamRoleMutation, useUpdateTeamRoleMutation } from '@/modules/team/hooks/role/queries';
 import { rbacConfigQuery } from '@/modules/system/hooks/queries';
-import usePermission from '@/shared/presentation/hooks/use-permission';
-import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import { sileo } from 'sileo';
+import { RoleEditorModal, openRoleEditorModal } from '../../organisms/RoleEditorModal';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import ApiError from '@/shared/errors/ApiError';
-import type { TeamRole } from '@/modules/team/api/entities/team-role';
+import Container from '@/shared/presentation/components/Container';
+import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import StatusBadge from '@/shared/presentation/components/StatusBadge';
+import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import usePermission from '@/shared/presentation/hooks/use-permission';
+import useTeamRolesListing from '@/modules/team/hooks/role/use-team-roles-listing';
+import { formatDistanceToNow } from 'date-fns';
+import { IoShieldCheckmarkOutline } from 'react-icons/io5';
+import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
+import { sileo } from 'sileo';
+import { useCallback, useState } from 'react';
+import type { TeamRole } from '@/modules/team/api/entities/role/team-role';
+import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { RoleEditorPayload } from '../../organisms/RoleEditorModal';
 
 const TEAM_ROLES_QUERY_KEY = ['team-roles'] as const;
 
@@ -27,35 +28,58 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'team-role.updated', queryKeys: [TEAM_ROLES_QUERY_KEY] }
 ];
 
-const COLUMNS: ColumnConfig[] = [
+interface PromiseToastOptions {
+    loading: { title: string };
+    success: { title: string };
+    error: { title: string };
+};
+
+const createRoleToastOptions: PromiseToastOptions = {
+    loading: { title: 'Creating role...' },
+    success: { title: 'Role created successfully' },
+    error: { title: 'Failed to create role' }
+};
+
+const updateRoleToastOptions: PromiseToastOptions = {
+    loading: { title: 'Updating role...' },
+    success: { title: 'Role updated successfully' },
+    error: { title: 'Failed to update role' }
+};
+
+const getDeleteRoleToastOptions = (roleName: string): PromiseToastOptions => ({
+    loading: { title: `Deleting "${roleName}"...` },
+    success: { title: `Role "${roleName}" deleted` },
+    error: { title: `Failed to delete "${roleName}"` }
+});
+
+const COLUMNS: ColumnConfig<TeamRole>[] = [
     {
         key: 'name',
         title: 'Role Name',
-        render: (value: unknown) => (
+        render: (_value, role) => (
             <Container className='d-flex items-center gap-1'>
                 <IoShieldCheckmarkOutline size={18} className='color-secondary' />
-                <span className='font-weight-5 color-primary'>{value as string}</span>
+                <span className='font-weight-5 color-primary'>{role.name}</span>
             </Container>
         )
     },
     {
         key: 'isSystem',
         title: 'Type',
-        render: (isSystem: unknown) => (
-            <StatusBadge variant={isSystem ? 'warning' : 'brand'}>
-                {isSystem ? 'System' : 'Custom'}
+        render: (_value, role) => (
+            <StatusBadge variant={role.isSystem ? 'warning' : 'brand'}>
+                {role.isSystem ? 'System' : 'Custom'}
             </StatusBadge>
         )
     },
     {
         key: 'permissions',
         title: 'Permissions',
-        render: (permissions: unknown) => {
-            const perms = permissions as string[];
-            if(perms.includes('*')){
+        render: (_value, role) => {
+            if(role.permissions.includes('*')){
                 return <StatusBadge variant='primary'>All Permissions</StatusBadge>;
             }
-            const count = perms.length;
+            const count = role.permissions.length;
             return (
                 <span className='color-secondary font-size-2'>
                     {count} permission{count !== 1 ? 's' : ''}
@@ -66,15 +90,15 @@ const COLUMNS: ColumnConfig[] = [
     {
         key: 'createdAt',
         title: 'Created',
-        render: (value: unknown) => (
+        render: (_value, role) => (
             <span className='color-secondary font-size-2'>
-                {formatDistanceToNow(new Date(value as string), { addSuffix: true })}
+                {formatDistanceToNow(new Date(role.createdAt), { addSuffix: true })}
             </span>
         )
     }
 ];
 
-const ManageRolesTemplate: React.FC = () => {
+export default function ManageRolesTemplate() {
     const [editingRole, setEditingRole] = useState<TeamRole | null>(null);
 
     const selectedTeam = useSelectedTeam()!;
@@ -100,7 +124,7 @@ const ManageRolesTemplate: React.FC = () => {
 
     const handleOpenEdit = useCallback((role: TeamRole) => {
         setEditingRole(role);
-        setTimeout(() => openRoleEditorModal(), 0);
+        setTimeout(openRoleEditorModal, 0);
     }, []);
 
     const handleSaveRole = useCallback(async (data: RoleEditorPayload) => {
@@ -108,20 +132,12 @@ const ManageRolesTemplate: React.FC = () => {
             if(editingRole){
                 await showPromise(
                     updateRoleMutation.mutateAsync({ teamId: selectedTeam._id, roleId: editingRole._id, ...data }),
-                    {
-                        loading: { title: 'Updating role...' },
-                        success: { title: 'Role updated successfully' },
-                        error: { title: 'Failed to update role' }
-                    }
+                    updateRoleToastOptions
                 );
             }else{
                 await showPromise(
                     createRoleMutation.mutateAsync({ teamId: selectedTeam._id, ...data }),
-                    {
-                        loading: { title: 'Creating role...' },
-                        success: { title: 'Role created successfully' },
-                        error: { title: 'Failed to create role' }
-                    }
+                    createRoleToastOptions
                 );
             }
             setEditingRole(null);
@@ -138,10 +154,13 @@ const ManageRolesTemplate: React.FC = () => {
         const eligibleRoles = rolesToDelete.filter((role) => !role.isSystem);
         if (!eligibleRoles.length) return;
 
+        let confirmationMessage = `Are you sure you want to delete ${eligibleRoles.length} roles?`;
+        if (eligibleRoles.length === 1) {
+            confirmationMessage = `Are you sure you want to delete "${eligibleRoles[0].name}"?`;
+        }
+
         const isConfirmed = await confirm(
-            eligibleRoles.length === 1
-                ? `Are you sure you want to delete "${eligibleRoles[0].name}"?`
-                : `Are you sure you want to delete ${eligibleRoles.length} roles?`
+            confirmationMessage
         );
         if(!isConfirmed) return;
 
@@ -149,11 +168,7 @@ const ManageRolesTemplate: React.FC = () => {
             try{
                 await showPromise(
                     deleteRoleMutation.mutateAsync({ teamId: selectedTeam._id, roleId: role._id }),
-                    {
-                        loading: { title: `Deleting "${role.name}"...` },
-                        success: { title: `Role "${role.name}" deleted` },
-                        error: { title: `Failed to delete "${role.name}"` }
-                    }
+                    getDeleteRoleToastOptions(role.name)
                 );
             }catch{
             }
@@ -238,5 +253,3 @@ const ManageRolesTemplate: React.FC = () => {
         </Container>
     );
 };
-
-export default ManageRolesTemplate;

@@ -1,14 +1,14 @@
+import { MarkMessageAsReadInputDTO } from '@modules/chat/application/dtos/chat-message/MarkMessageAsReadDTO';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { resolveAccessibleChat } from '@modules/chat/application/services/chat/resolveAccessibleChat';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { IChatMessageRepository } from '@modules/chat/domain/port/IChatMessageRepository';
-import { MarkMessageAsReadInputDTO } from '@modules/chat/application/dtos/chat-message/MarkMessageAsReadDTO';
-import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
-import { resolveAccessibleChat } from '@modules/chat/application/helpers/resolveAccessibleChat';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import type { IChatMessageRepository } from '@modules/chat/domain/port/chat-message/IChatMessageRepository';
+import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
+import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 
 @injectable()
 export class MarkMessageAsReadUseCase implements IUseCase<MarkMessageAsReadInputDTO, null, ApplicationError> {

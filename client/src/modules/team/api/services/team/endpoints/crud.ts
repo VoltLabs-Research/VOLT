@@ -1,14 +1,13 @@
-import { get, post, patch, del, type EmptyParams } from '@/app/core/http/utilities/create-service';
-import type { Team } from '../../../entities/team';
-import type { CreateTeamInputDTO } from '../../../dtos/create-team';
-import type { UpdateTeamInputDTO } from '../../../dtos/update-team';
-import type { DeleteTeamInputDTO } from '../../../dtos/delete-team';
+import { get, post, patch, del } from '@/app/core/http/utilities/create-service';
+import type { EmptyParams } from '@/app/core/http/utilities/create-service';
+import type { Team } from '../../../entities/team/team';
+import type { CreateTeamInputDTO } from '../../../dtos/team/create-team';
+import type { UpdateTeamInputDTO } from '../../../dtos/team/update-team';
+import type { DeleteTeamInputDTO } from '../../../dtos/team/delete-team';
 
-const endpoints = {
+export default {
     getAll: get<EmptyParams, Team[]>('/'),
     create: post<CreateTeamInputDTO, Team>('/'),
     update: patch<UpdateTeamInputDTO, Team>('/:teamId'),
     delete: del<DeleteTeamInputDTO>('/:teamId')
 };
-
-export default endpoints;

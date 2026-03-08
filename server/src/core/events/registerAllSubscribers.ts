@@ -13,6 +13,7 @@ import { registerSessionSubscribers } from '@modules/session/infrastructure/even
 import { registerAISubscribers } from '@modules/ai/infrastructure/events/subscribers';
 import { registerRasterSubscribers } from '@modules/raster/infrastructure/events/subscribers';
 import { registerAuthSubscribers } from '@modules/auth/infrastructure/events/subscribers';
+import { registerJobsSubscribers } from '@modules/jobs/infrastructure/events/subscribers';
 import logger from '@shared/infrastructure/logger';
 
 /**
@@ -36,7 +37,8 @@ export const registerAllSubscribers = async (): Promise<void> => {
         registerSimulationCellSubscribers(),
         registerSessionSubscribers(),
         registerAISubscribers(),
-        registerAuthSubscribers()
+        registerAuthSubscribers(),
+        registerJobsSubscribers()
     ]);
 
     logger.info('@event-bus: All event subscribers registered successfully');

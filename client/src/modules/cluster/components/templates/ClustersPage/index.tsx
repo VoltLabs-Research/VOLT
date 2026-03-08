@@ -1,24 +1,22 @@
-import { useMemo } from 'react';
+import './ClustersPage.css';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
-import Container from '@/shared/presentation/components/Container';
-import NetworkChart from '@/shared/presentation/components/NetworkChart';
-
 import ClusterSelector from '@/modules/cluster/components/organisms/ClusterSelector';
-import ServerTable from '@/modules/cluster/components/organisms/ServerTable';
-
-import MetricsCards from '@/modules/cluster/components/molecules/MetricsCards';
-import ResponseTimeChart from '@/modules/cluster/components/molecules/ResponseTimeChart';
-import ResourceUsage from '@/modules/cluster/components/molecules/ResourceUsage';
 import CpuDistribution from '@/modules/cluster/components/molecules/CpuDistribution';
 import DatabasePerformance from '@/modules/cluster/components/molecules/DatabasePerformance';
 import DiskOperations from '@/modules/cluster/components/molecules/DiskOperations';
-
-import './ClustersPage.css';
+import MetricsCards from '@/modules/cluster/components/molecules/MetricsCards';
+import ResourceUsage from '@/modules/cluster/components/molecules/ResourceUsage';
+import ResponseTimeChart from '@/modules/cluster/components/molecules/ResponseTimeChart';
+import ServerTable from '@/modules/cluster/components/organisms/ServerTable';
+import Container from '@/shared/presentation/components/Container';
+import NetworkChart from '@/shared/presentation/components/NetworkChart';
+import { useMemo } from 'react';
 
 const ClustersPage = () => {
     const {
         metrics,
         clusters,
+        history,
         selectedClusterId,
         setSelectedClusterId
     } = useClusterMetrics();
@@ -44,10 +42,10 @@ const ClustersPage = () => {
 
                 <Container className='clusters-grid'>
                      <Container className='clusters-grid-main'>
-                        <ResponseTimeChart clusterId={selectedClusterId} metrics={metrics} />
-                     </Container>
-                     <ResourceUsage metrics={metrics} />
-                </Container>
+                        <ResponseTimeChart history={history} metrics={metrics} />
+                      </Container>
+                      <ResourceUsage metrics={metrics} />
+                 </Container>
 
                 <Container className='clusters-grid'>
                     <Container className='clusters-grid-main'>
@@ -59,12 +57,12 @@ const ClustersPage = () => {
                             height={300}
                         />
                     </Container>
-                    <CpuDistribution clusterId={selectedClusterId} metrics={metrics} />
+                    <CpuDistribution history={history} metrics={metrics} />
                 </Container>
 
                 <Container className='clusters-grid-equal'>
-                    <DatabasePerformance clusterId={selectedClusterId} metrics={metrics} />
-                    <DiskOperations clusterId={selectedClusterId} metrics={metrics} />
+                    <DatabasePerformance history={history} metrics={metrics} />
+                    <DiskOperations history={history} metrics={metrics} />
                 </Container>
 
                 <ServerTable

@@ -1,12 +1,15 @@
-import { useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { MdSpeed } from 'react-icons/md';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import Select from '@/shared/presentation/components/Select';
-import Container from '@/shared/presentation/components/Container';
 import { selectField } from '../../../../molecules/CanvasRenderConfigHelpers';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+
+import { useMemo } from 'react';
+import { MdSpeed } from 'react-icons/md';
+import { useShallow } from 'zustand/react/shallow';
+import Container from '@/shared/presentation/components/Container';
+import Select from '@/shared/presentation/components/Select';
+import { PerformancePreset, PowerPreference } from '@/modules/fractal/stores/contracts/editor/performance-types';
+import { isEnumValue } from '../../utilities';
+
 import type { RenderGroup } from '../../types';
-import type { PerformancePreset } from '@/modules/fractal/types/stores/editor/performance-types';
 
 const usePerformanceGroup = (): RenderGroup => {
     const s = useEditorStore(useShallow((state) => state.performanceSettings));
@@ -24,20 +27,28 @@ const usePerformanceGroup = (): RenderGroup => {
                         <Container className="canvas-render-grid">
                             <Select
                                 value={s.preset}
-                                onChange={(v: string) => s.setPreset(v as PerformancePreset)}
+                                onChange={(value: string) => {
+                                    if (isEnumValue(value, PerformancePreset)) {
+                                        s.setPreset(value);
+                                    }
+                                }}
                                 placeholder="Preset"
                                 options={[
-                                    { title: 'Ultra', value: 'ultra' },
-                                    { title: 'High', value: 'high' },
-                                    { title: 'Balanced', value: 'balanced' },
-                                    { title: 'Performance', value: 'performance' },
-                                    { title: 'Battery Saver', value: 'battery' }
+                                    { title: 'Ultra', value: PerformancePreset.Ultra },
+                                    { title: 'High', value: PerformancePreset.High },
+                                    { title: 'Balanced', value: PerformancePreset.Balanced },
+                                    { title: 'Performance', value: PerformancePreset.Performance },
+                                    { title: 'Battery Saver', value: PerformancePreset.Battery }
                                 ]}
                             />
-                            {selectField('powerPref', s.canvas.powerPreference, (v: string) => s.setCanvas({ powerPreference: v as 'default' | 'high-performance' | 'low-power' }), 'GPU Power', [
-                                { title: 'Default', value: 'default' },
-                                { title: 'High Performance', value: 'high-performance' },
-                                { title: 'Low Power', value: 'low-power' }
+                            {selectField('powerPref', s.canvas.powerPreference, (value: string) => {
+                                if (isEnumValue(value, PowerPreference)) {
+                                    s.setCanvas({ powerPreference: value });
+                                }
+                            }, 'GPU Power', [
+                                { title: 'Default', value: PowerPreference.Default },
+                                { title: 'High Performance', value: PowerPreference.HighPerformance },
+                                { title: 'Low Power', value: PowerPreference.LowPower }
                             ])}
                         </Container>
                     )

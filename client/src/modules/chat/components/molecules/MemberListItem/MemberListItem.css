@@ -1,0 +1,16 @@
+.member-list-item-role {
+    font-size: 0.7rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-xs);
+    background: var(--color-surface-3);
+}
+
+.member-list-item-role.admin {
+    background: var(--accent-blue);
+    color: white;
+}
+
+.member-list-item-role.owner {
+    background: var(--accent-purple);
+    color: white;
+}

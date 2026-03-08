@@ -1,9 +1,9 @@
-import type { StateCreator } from 'zustand';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-import type { TimestepInfo } from '@/modules/trajectory/api/entities/timestep-info';
-import type { TimestepData, TimestepState, TimestepStore, SceneObjectType } from '@/modules/fractal/types/stores/editor/scene-types';
-import { preloadFractalSceneAsset } from '@/modules/fractal/services/preload-scene-asset';
+import { preloadFractalSceneAsset } from '@/modules/fractal/api/service/preload-scene-asset';
+
 import type { EditorStore } from './types';
+import type { TimestepData, TimestepState, TimestepStore, SceneObjectType } from '@/modules/fractal/stores/contracts/editor/scene-types';
+import type { TimestepInfo, Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { StateCreator } from 'zustand';
 
 const initialTimestepData: TimestepData = {
     timesteps: [],
@@ -62,7 +62,7 @@ export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStor
         const { timestepData } = get();
         if (!timestepData.timesteps.length) return {};
 
-        const { useTeamStore } = await import('@/modules/team/stores/use-team-store');
+        const { useTeamStore } = await import('@/modules/team/stores/team/use-team-store');
         const { useEditorStore } = await import('@/modules/canvas/stores/editor');
         const { default: queryClient } = await import('@/shared/infrastructure/query/query-client');
         const { TRAJECTORY_QUERY_KEYS } = await import('@/modules/trajectory/hooks/trajectory/queries');

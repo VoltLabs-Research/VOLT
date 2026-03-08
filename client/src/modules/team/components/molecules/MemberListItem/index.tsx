@@ -1,8 +1,9 @@
 import type { User } from '@/modules/auth/api/entities/user';
+import Avatar from '@/shared/presentation/components/Avatar';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import Avatar from '@/shared/presentation/components/Avatar';
 import { cn } from '@/shared/utils';
+import type { ReactNode } from 'react';
 import './MemberListItem.css';
 
 type MemberRole = 'owner' | 'admin' | 'member';
@@ -10,12 +11,12 @@ type MemberRole = 'owner' | 'admin' | 'member';
 interface MemberListItemProps {
     user: User;
     role?: MemberRole;
-    action?: React.ReactNode;
+    action?: ReactNode;
     onClick?: () => void;
     className?: string;
 };
 
-const MemberListItem = ({ user, role, action, onClick, className }: MemberListItemProps) => {
+export const MemberListItem = ({ user, role, action, onClick, className }: MemberListItemProps) => {
     const fullName = `${user.firstName} ${user.lastName}`;
 
     return (
@@ -38,5 +39,3 @@ const MemberListItem = ({ user, role, action, onClick, className }: MemberListIt
         </Container>
     );
 };
-
-export default MemberListItem;

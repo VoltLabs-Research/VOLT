@@ -1,5 +1,9 @@
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import './AtomTypeBadge.css';
+import StatusBadge from '@/shared/presentation/components/StatusBadge';
+
+interface AtomTypeBadgeProps {
+    type: number | string;
+};
 
 const TYPE_PALETTE = [
     '#1f77b4', 
@@ -31,11 +35,7 @@ const typeToColor = (t: number): string => {
     return `hsl(${hue}deg 60% 55%)`;
 };
 
-interface AtomTypeBadgeProps {
-    type: number | string;
-}
-
-const AtomTypeBadge: React.FC<AtomTypeBadgeProps> = ({ type }) => {
+export default function AtomTypeBadge({ type }: AtomTypeBadgeProps) {
     const typeNumber = typeof type === 'number' ? type : Number(type);
     
     return (
@@ -47,6 +47,4 @@ const AtomTypeBadge: React.FC<AtomTypeBadgeProps> = ({ type }) => {
             {String(type)}
         </StatusBadge>
     );
-};
-
-export default AtomTypeBadge;
+}

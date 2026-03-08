@@ -1,20 +1,20 @@
-import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
-import type { TeamMemberProps } from '@modules/team/domain/entities/TeamMember';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
+import type { TeamMemberProps } from '@modules/team/domain/entities/team-member/TeamMember';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import type { FindOptions } from '@shared/domain/port/IBaseRepository';
+import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 
 interface UpdateTeamMemberByIdInput {
     teamMemberId: string;
     data: Partial<TeamMemberProps>;
     options?: Pick<FindOptions<unknown>, 'populate' | 'select'>;
-}
+};
 
 @injectable()
 export default class UpdateTeamMemberByIdUseCase implements IUseCase<UpdateTeamMemberByIdInput, PersistedOutput<TeamMemberProps>, ApplicationError> {
@@ -33,4 +33,4 @@ export default class UpdateTeamMemberByIdUseCase implements IUseCase<UpdateTeamM
         }
         return Result.ok(toPersistedOutput(entity));
     }
-}
+};

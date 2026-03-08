@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
+import FileRowSkeleton from './FileRowSkeleton';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import FileRowSkeleton from './FileRowSkeleton';
 import './FileExplorer.css';
+import type { ReactNode } from 'react';
 
 export interface FileExplorerProps {
     headerLeft?: ReactNode;

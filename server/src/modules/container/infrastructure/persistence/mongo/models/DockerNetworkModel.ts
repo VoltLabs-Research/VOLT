@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IDockerNetwork extends Document {
     networkId: string;
@@ -6,12 +6,28 @@ export interface IDockerNetwork extends Document {
     driver: string;
     createdAt: Date;
     updatedAt: Date;
-}
+};
+
+const networkIdField = {
+    type: String,
+    required: true,
+    unique: true
+};
+
+const networkNameField = {
+    type: String,
+    required: true
+};
+
+const networkDriverField = {
+    type: String,
+    default: 'bridge'
+};
 
 const DockerNetworkSchema = new Schema<IDockerNetwork>({
-    networkId: { type: String, required: true, unique: true },
-    name: { type: String, required: true },
-    driver: { type: String, default: 'bridge' }
+    networkId: networkIdField,
+    name: networkNameField,
+    driver: networkDriverField
 }, {
     timestamps: true
 });

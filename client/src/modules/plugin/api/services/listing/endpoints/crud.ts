@@ -1,36 +1,42 @@
 import { get } from '@/app/core/http/utilities/create-service';
 import type { PaginationMeta } from '@/shared/domain/pagination';
-import type { ListingRow } from '../../../entities/listing-row';
+import type { ListingRow } from '../../../entities/listing/listing-row';
 import type { GetPluginListingInputDTO, GetPluginListingOutputDTO } from '../../../dtos/listing/get-plugin-listing';
 import type { GetSubListingInputDTO, GetSubListingOutputDTO } from '../../../dtos/listing/get-sub-listing';
 
+interface RawListingData {
+    data: ListingRow[];
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+    _meta?: GetPluginListingOutputDTO['_meta'];
+};
+
+interface ExposureSelectorParams {
+    exposureId?: string;
+    exposureName?: string;
+};
+
 interface RawListingResponse {
     status: string;
-    data: {
-        data: ListingRow[];
-        total: number;
-        page: number;
-        totalPages: number;
-        limit: number;
-        _meta?: GetPluginListingOutputDTO['_meta'];
-    };
+    data: RawListingData;
     pagination?: PaginationMeta;
-}
+};
 
-const requireExposureSelector = (params: { exposureId?: string; exposureName?: string }, message: string) => {
+const requireExposureSelector = (params: ExposureSelectorParams, message: string) => {
     if (!params.exposureId && !params.exposureName) {
         throw new Error(message);
     }
 };
 
 const endpoints = {
-    getListing: get<GetPluginListingInputDTO, GetPluginListingOutputDTO>('/:pluginId/listings', {
+    getListing: get<GetPluginListingInputDTO, GetPluginListingOutputDTO, RawListingResponse>('/:pluginId/listings', {
         unwrap: 'raw',
         omit: ['pluginId'],
         validate: (params) => requireExposureSelector(params, 'Exposure::IdRequired'),
         map: (result) => {
-            const raw = result as RawListingResponse;
-            const inner = raw.data;
+            const inner = result.data;
             const pagination: PaginationMeta = {
                 page: inner.page,
                 limit: inner.limit,

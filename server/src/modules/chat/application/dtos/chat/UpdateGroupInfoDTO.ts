@@ -1,12 +1,10 @@
-import { ChatProps } from '@modules/chat/domain/entities/Chat';
+import type { PersistedChatDTO } from '@modules/chat/domain/port/chat/IChatRepository';
 
-export interface UpdateGroupInfoInputDTO{
+export interface UpdateGroupInfoInputDTO {
     userId: string;
     chatId: string;
     groupName?: string;
     groupDescription?: string;
 };
 
-export interface UpdateGroupInfoOutputDTO extends ChatProps{
-    _id: string;
-}
+export interface UpdateGroupInfoOutputDTO extends PersistedChatDTO {};

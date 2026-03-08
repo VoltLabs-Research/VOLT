@@ -1,7 +1,7 @@
 import { useCreateSecretKeyMutation } from '@/modules/team/hooks/secret-key/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 
-const useCreateSecretKey = () => {
+export default function useCreateSecretKey() {
     const selectedTeamId = useSelectedTeamId();
     const mutation = useCreateSecretKeyMutation();
 
@@ -15,6 +15,4 @@ const useCreateSecretKey = () => {
     };
 
     return { create: handleCreate, isPending: mutation.isPending };
-};
-
-export default useCreateSecretKey;
+}

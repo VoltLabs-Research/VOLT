@@ -1,20 +1,16 @@
-import crypto from 'node:crypto';
-import { injectable, inject } from 'tsyringe';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { CreateSecretKeyInputDTO, CreateSecretKeyOutputDTO, createSecretKeyInputSchema } from '@modules/team/application/dtos/secret-key/CreateSecretKeyDTO';
+import SecretKeyCreatedEvent from '@modules/team/domain/events/secret-key/SecretKeyCreatedEvent';
+import { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
+import { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { ISecretKeyRepository } from '@modules/team/domain/port/ISecretKeyRepository';
-import { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleRepository';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import SecretKeyCreatedEvent from '@modules/team/domain/events/SecretKeyCreatedEvent';
-import {
-    CreateSecretKeyInputDTO,
-    CreateSecretKeyOutputDTO,
-    createSecretKeyInputSchema
-} from '@modules/team/application/dtos/secret-key/CreateSecretKeyDTO';
+import crypto from 'node:crypto';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyInputDTO, CreateSecretKeyOutputDTO, ApplicationError> {
@@ -86,4 +82,4 @@ export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyI
             createdAt: created.props.createdAt
         });
     }
-}
+};

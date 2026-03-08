@@ -1,17 +1,17 @@
 import { Router } from 'express';
+import { Resource } from '@core/constants/resources';
+import { aiConversationValidation } from '@modules/ai/infrastructure/http/validation/ai-schemas';
+import controllers from '@modules/ai/infrastructure/http/controllers';
 import { createBurstRateLimiter, createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
-import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
-import { Resource } from '@core/constants/resources';
-import controllers from '@modules/ai/infrastructure/http/controllers';
-import { aiConversationValidation } from '@modules/ai/infrastructure/http/validation/ai-schemas';
+import { HttpModule, HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/ai/conversations',
     router,
     resource: Resource.AI_CONVERSATION,
-    teamScope: 'param'
+    teamScope: HttpModuleTeamScope.Param
 };
 
 const createConversationLimiter = createStandardRateLimiter(20);

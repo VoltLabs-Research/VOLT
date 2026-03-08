@@ -27,11 +27,11 @@ export interface Subsection {
     icon?: ReactNode;
     sections: SectionDef[];
     visible?: boolean;
-}
+};
 
 export interface RenderGroup {
     id: string;
     title: string;
     icon: ReactNode;
     subsections: Subsection[];
-}
+};

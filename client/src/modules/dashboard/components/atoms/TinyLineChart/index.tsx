@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { alpha } from '@mui/material/styles';
 import { LineChart } from '@mui/x-charts/LineChart';
 
@@ -11,14 +11,14 @@ interface TinyLineChartProps {
     height?: number;
 };
 
-const TinyLineChart: React.FC<TinyLineChartProps> = ({ 
+const TinyLineChart = ({
     lineColor, 
     xLabels, 
     pData, 
     yDomain, 
     width = 300, 
     height = 80 
-}) => {
+}: TinyLineChartProps) => {
     const { labels, data } = useMemo(() => {
         const L = Math.max(xLabels?.length || 0, pData?.length || 0);
         const safeLabels = Array.from({ length: L }, (_, i) => xLabels?.[i] ?? '');
@@ -35,9 +35,27 @@ const TinyLineChart: React.FC<TinyLineChartProps> = ({
         <LineChart
             width={width}
             height={height}
-            series={[{ data, area: true, color: lineColor }]}
-            xAxis={[{ scaleType: 'point', data: labels, position: 'none' }]}
-            yAxis={[{ position: 'none', min: yDomain?.min, max: yDomain?.max }]}
+            series={[
+                {
+                    data,
+                    area: true,
+                    color: lineColor
+                }
+            ]}
+            xAxis={[
+                {
+                    scaleType: 'point',
+                    data: labels,
+                    position: 'none'
+                }
+            ]}
+            yAxis={[
+                {
+                    position: 'none',
+                    min: yDomain?.min,
+                    max: yDomain?.max
+                }
+            ]}
             disableAxisListener
             skipAnimation={false}
             sx={{

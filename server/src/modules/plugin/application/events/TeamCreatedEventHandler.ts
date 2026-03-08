@@ -1,11 +1,13 @@
-import { injectable, inject } from 'tsyringe';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
+
 import { IEventHandler } from '@shared/application/events/IEventHandler';
-import TeamCreatedEvent from '@modules/team/domain/events/TeamCreatedEvent';
-import type { IDefaultPluginBootstrapService } from '@modules/plugin/domain/port/IDefaultPluginBootstrapService';
-import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
+import { injectable, inject } from 'tsyringe';
 import CreateNotificationUseCase from '@modules/notification/application/use-cases/CreateNotificationUseCase';
+import TeamCreatedEvent from '@modules/team/domain/events/team/TeamCreatedEvent';
 import logger from '@shared/infrastructure/logger';
+
+import type { IDefaultPluginBootstrapService } from '@modules/plugin/domain/port/plugin/IDefaultPluginBootstrapService';
 
 @injectable()
 export default class TeamCreatedEventHandler implements IEventHandler<TeamCreatedEvent> {
@@ -43,4 +45,4 @@ export default class TeamCreatedEventHandler implements IEventHandler<TeamCreate
             logger.error(`@team-created-handler: error importing default plugins: ${error}`);
         }
     }
-}
+};

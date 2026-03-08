@@ -1,8 +1,10 @@
-import { useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { MdAutoFixHigh } from 'react-icons/md';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { valueRow, checkbox } from '../../../../molecules/CanvasRenderConfigHelpers';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+
+import { useMemo } from 'react';
+import { MdAutoFixHigh } from 'react-icons/md';
+import { useShallow } from 'zustand/react/shallow';
+
 import type { RenderGroup } from '../../types';
 
 const useEffectsGroup = (): RenderGroup => {

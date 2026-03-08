@@ -1,23 +1,24 @@
-import React, { useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { motion, AnimatePresence } from 'framer-motion';
-import { GoArrowRight } from 'react-icons/go';
-import { PiAtomThin } from 'react-icons/pi';
-import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
-import { DEFAULT_SCENE } from '@/modules/fractal/utilities/scene-utils';
-import SingleModelViewer from '@/modules/fractal/components/molecules/SingleModelViewer';
+import './DashboardPreviewCard.css';
 import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-config';
 import useDashboardPreview from '@/modules/dashboard/hooks/use-dashboard-preview';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { formatNumber } from '@/shared/utils/format';
+import SingleModelViewer from '@/modules/fractal/components/molecules/SingleModelViewer';
+import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
 import Container from '@/shared/presentation/components/Container';
-import Loader from '@/shared/presentation/components/Loader';
 import Button from '@/shared/presentation/components/Button';
 import EmptyState from '@/shared/presentation/components/EmptyState';
-import './DashboardPreviewCard.css';
+import Loader from '@/shared/presentation/components/Loader';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { DEFAULT_SCENE } from '@/modules/fractal/utilities/scene-utils';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { formatNumber } from '@/shared/utils/format';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useMemo } from 'react';
+import { GoArrowRight } from 'react-icons/go';
+import { PiAtomThin } from 'react-icons/pi';
+import { useShallow } from 'zustand/react/shallow';
+import type { CSSProperties } from 'react';
 
-const DashboardPreviewCard: React.FC = () => {
+const DashboardPreviewCard = () => {
     const teamId = useSelectedTeamId();
     const {
         atomCount,
@@ -51,6 +52,12 @@ const DashboardPreviewCard: React.FC = () => {
             enableZoom: false
         }
     }), [sceneConfig]);
+    const overlayStyle: CSSProperties = {
+        position: 'absolute',
+        inset: 0,
+        zIndex: 2,
+        pointerEvents: 'none'
+    };
 
     if (isLoadingTrajectories) {
         return (
@@ -98,7 +105,7 @@ const DashboardPreviewCard: React.FC = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }}
+                        style={overlayStyle}
                     >
                         <Container className='dashboard-preview-overlay' />
 

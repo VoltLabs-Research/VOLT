@@ -3,9 +3,8 @@ import {
     createMutation,
     createQuery
 } from '@/shared/infrastructure/query/create-paginated-query';
+import type { GetFilterPropertiesInputDTO, GetUniqueValuesInputDTO } from '../../api/dtos/particle-filter';
 import particleFilterService from '../../api/services/particle-filter';
-import type { GetFilterPropertiesInputDTO } from '../../api/dtos/get-filter-properties';
-import type { GetUniqueValuesInputDTO } from '../../api/dtos/get-unique-values';
 
 const BASE_KEY = 'trajectory';
 
@@ -15,13 +14,13 @@ const KEYS = buildKeys<{
 }>(BASE_KEY);
 
 export const PARTICLE_FILTER_QUERY_KEYS = {
-    filterProperties: () => KEYS.filterProperties(),
-    uniqueValues: () => KEYS.uniqueValues(),
-    uniqueValuesByParams: (params: GetUniqueValuesInputDTO) => KEYS.uniqueValues(params)
+    filterProperties: KEYS.filterProperties,
+    uniqueValues: KEYS.uniqueValues,
+    uniqueValuesByParams: KEYS.uniqueValues
 } as const;
 
-export const filterPropertiesQuery = createQuery(KEYS.filterProperties, (params) => particleFilterService.getProperties(params));
-export const uniqueValuesQuery = createQuery(KEYS.uniqueValues, (params) => particleFilterService.getUniqueValues(params));
+export const filterPropertiesQuery = createQuery(KEYS.filterProperties, particleFilterService.getProperties);
+export const uniqueValuesQuery = createQuery(KEYS.uniqueValues, particleFilterService.getUniqueValues);
 
 export const buildFilterPropertiesQueryOptions = filterPropertiesQuery.buildOptions;
 export const buildUniqueValuesQueryOptions = uniqueValuesQuery.buildOptions;

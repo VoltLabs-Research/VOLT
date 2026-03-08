@@ -1,7 +1,9 @@
+export type TeamAuthenticationType = 'user' | 'secret-key';
+
 export interface GetCurrentSecretKeyInputDTO {
-    authType?: 'user' | 'secret-key';
+    authType?: TeamAuthenticationType;
     secretKeyId?: string;
-}
+};
 
 export interface GetCurrentSecretKeyOutputDTO {
     _id: string;
@@ -14,4 +16,4 @@ export interface GetCurrentSecretKeyOutputDTO {
     lastUsedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
-}
+};

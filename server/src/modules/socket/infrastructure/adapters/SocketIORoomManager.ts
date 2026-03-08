@@ -3,20 +3,21 @@ import { inject, injectable } from 'tsyringe';
 import { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
 import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import logger from '@shared/infrastructure/logger';
-import { ISocketMapper } from '@modules/socket/domain/port/ISocketMapper';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import type { ISocketConnectionMapper } from '@modules/socket/infrastructure/contracts/ISocketConnectionMapper';
+import type { ISocketRoomManagerRuntime } from '@modules/socket/infrastructure/contracts/ISocketRoomManagerRuntime';
 
 /**
  * Handles room management and presence collection.
  */
 @injectable()
-export default class SocketIORoomManager implements ISocketRoomManager{
+export default class SocketIORoomManager implements ISocketRoomManager, ISocketRoomManagerRuntime{
     private io?: Server;
     private sockets: Map<string, Socket> = new Map();
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketMapper)
-        private readonly socketMapper: ISocketMapper
+        @inject(SOCKET_TOKENS.SocketConnectionMapper)
+        private readonly socketMapper: ISocketConnectionMapper
     ){}
 
     /**
@@ -29,14 +30,22 @@ export default class SocketIORoomManager implements ISocketRoomManager{
     /**
      * Register a socket for room management.
      */
-    registerSocket(socket: Socket): void{
+    registerConnection(socket: unknown): void{
+        this.registerSocket(socket as Socket);
+    }
+
+    unregisterConnection(socketId: string): void{
+        this.unregisterSocket(socketId);
+    }
+
+    private registerSocket(socket: Socket): void{
         this.sockets.set(socket.id, socket);
     }
 
     /**
      * Unregister a socket when disconnected.
      */
-    unregisterSocket(socketId: string): void{
+    private unregisterSocket(socketId: string): void{
         this.sockets.delete(socketId);
     }
 

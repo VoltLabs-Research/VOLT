@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { IoClose } from 'react-icons/io5';
-import useSocket from '@/modules/socket/hooks/use-socket';
+import useSocket from '@/modules/socket/core/hooks/use-socket';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import Terminal, { type TerminalHandle } from '@/shared/presentation/components/Terminal';
 import { sileo } from 'sileo';
+import Terminal from '@/shared/presentation/components/Terminal';
+import type { TerminalHandle } from '@/shared/presentation/components/Terminal';
 import './ContainerTerminal.css';
 
 interface ContainerTerminalProps {
@@ -25,13 +26,17 @@ interface ContainerTerminalProps {
 interface TerminalConnectionState {
     isAttached: boolean;
     detachTimer: ReturnType<typeof setTimeout> | null;
-}
+};
 
 interface ContainerTerminalSocketError {
     code: string;
     message: string;
     details?: string;
-}
+};
+
+const isContainerTerminalSocketError = (value: unknown): value is ContainerTerminalSocketError => {
+    return typeof value === 'object' && value !== null && 'message' in value && 'code' in value;
+};
 
 export const ContainerTerminal = ({ container, onClose, embedded = false, appendOutput = null }: ContainerTerminalProps) => {
     const terminalRef = useRef<TerminalHandle>(null);
@@ -50,7 +55,7 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
             connectionState.detachTimer = null;
         }
 
-        void socketService.connect().catch(() => undefined);
+        socketService.connect().catch(() => undefined);
 
         return () => {
             if (connectionState.detachTimer) {
@@ -63,7 +68,7 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
                     return;
                 }
 
-                void socketService.emit('container:terminal:detach').catch(() => undefined);
+                socketService.emit('container:terminal:detach').catch(() => undefined);
                 connectionState.isAttached = false;
                 isAttachedRef.current = false;
                 connectionState.detachTimer = null;
@@ -84,26 +89,40 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
                 return;
             }
 
-            void socketService.emit('container:terminal:attach', { containerId: id }).catch(() => undefined);
+            socketService.emit('container:terminal:attach', { containerId: id }).catch(() => undefined);
             connectionState.isAttached = true;
             isAttachedRef.current = true;
         };
 
-        const handleData = (data: string) => {
+        const handleData = (...args: unknown[]) => {
+            const [data] = args;
+            if (typeof data !== 'string') {
+                return;
+            }
+
             terminalRef.current?.write(data);
         };
 
-        const handleError = (error: string | ContainerTerminalSocketError) => {
-            const description: string = typeof error === 'string'
-                ? error
-                : (error.details || error.message);
+        const handleError = (...args: unknown[]) => {
+            const [error] = args;
+            let description = 'Terminal error';
+
+            if (typeof error === 'string') {
+                description = error;
+            } else if (isContainerTerminalSocketError(error)) {
+                if (error.details) {
+                    description = error.details;
+                } else {
+                    description = error.message;
+                }
+            }
 
             terminalRef.current?.write(`\r\n\x1b[31mError: ${description}\x1b[0m\r\n`);
             sileo.error({ title: 'Terminal error', description });
         };
 
-        const unsubData = socketService.on('container:terminal:data', handleData as (...args: unknown[]) => void);
-        const unsubError = socketService.on('container:error', handleError as (...args: unknown[]) => void);
+        const unsubData = socketService.on('container:terminal:data', handleData);
+        const unsubError = socketService.on('container:error', handleError);
         const unsubConnection = socketService.onConnectionChange((connected) => {
             if(connected && !isAttachedRef.current) attach();
         });
@@ -120,7 +139,7 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
     }, [container._id, socketService]);
 
     const handleTerminalData = (data: string) => {
-        void socketService.emit('container:terminal:input', data).catch(() => undefined);
+        socketService.emit('container:terminal:input', data).catch(() => undefined);
     };
 
     useEffect(() => {

@@ -1,20 +1,14 @@
-import type { StateCreator } from 'zustand';
-import type { EffectsConfigStore, EffectsConfigState } from '@/modules/fractal/types/stores/editor/visual-types';
-import {
-    SSAO_EFFECT_DEFAULT,
-    BLOOM_EFFECT_DEFAULT,
-    CHROMATIC_ABERRATION_DEFAULT,
-    VIGNETTE_DEFAULT,
-    DEPTH_OF_FIELD_DEFAULT,
-    NOISE_DEFAULT,
-    SEPIA_DEFAULT
-} from '@/modules/fractal/types/stores/editor/visual-types';
-import type { EditorStore } from './types';
 import { mergeNestedSectionState, resetSectionState } from './store-section';
+
+import { SSAO_EFFECT_DEFAULT, BLOOM_EFFECT_DEFAULT, CHROMATIC_ABERRATION_DEFAULT, VIGNETTE_DEFAULT, DEPTH_OF_FIELD_DEFAULT, NOISE_DEFAULT, SEPIA_DEFAULT } from '@/modules/fractal/stores/contracts/editor/visual-types';
+
+import type { EditorStore } from './types';
+import type { EffectsConfigStore, EffectsConfigState } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { StateCreator } from 'zustand';
 
 export interface EffectsSlice {
     effects: EffectsConfigStore;
-}
+};
 
 const initialState: EffectsConfigState = {
     ssao: SSAO_EFFECT_DEFAULT,

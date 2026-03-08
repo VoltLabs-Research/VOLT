@@ -1,9 +1,9 @@
 import { Grid } from '@react-three/drei';
-import type { CanvasGridSettingsState } from '@/modules/fractal/types/stores/editor/visual-types';
+import type { CanvasGridSettingsState } from '@/modules/fractal/stores/contracts/editor/visual-types';
 
 interface CanvasGridProps {
     settings: CanvasGridSettingsState;
-}
+};
 
 const CanvasGrid = ({ settings }: CanvasGridProps) => {
 

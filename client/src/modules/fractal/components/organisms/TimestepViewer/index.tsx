@@ -1,11 +1,23 @@
-import React, { useMemo, forwardRef } from 'react';
 import SingleModelViewer from '@/modules/fractal/components/molecules/SingleModelViewer';
 import { getRenderableScenes } from '@/modules/fractal/utilities/scene-utils';
-import type { BoxBounds, ModelLoadingState } from '@/modules/fractal/types';
+import { useMemo, forwardRef, useState, useCallback } from 'react';
+import type { BoxBounds, ModelLoadingState, OrbitControlsHandle } from '@/modules/fractal/types';
 import type { SlicePlaneConfig } from '@/modules/fractal/types/configuration';
-import type { SceneObjectType } from '@/modules/fractal/api/entities/fractal';
-import type { BoundsInfo } from '@/modules/fractal/core/model-transform';
-import type { ModelWorldBounds } from '@/modules/fractal/api/entities/fractal';
+import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
+import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
+import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { RefObject } from 'react';
+
+interface PluginSceneDescriptor {
+    exposureId: string;
+    exportType?: string;
+};
+
+interface OptionalPosition {
+    x?: number;
+    y?: number;
+    z?: number;
+};
 
 interface TimestepViewerProps {
     teamId?: string;
@@ -13,7 +25,7 @@ interface TimestepViewerProps {
     currentTimestep: number | undefined;
     analysisId?: string;
     activeScenes: SceneObjectType[];
-    pluginScenes: Array<{ exposureId: string; exportType?: string }>;
+    pluginScenes: PluginSceneDescriptor[];
     slicePlaneConfig: SlicePlaneConfig;
     boxBounds: BoxBounds;
     pointSizeMultiplier: number;
@@ -22,21 +34,21 @@ interface TimestepViewerProps {
     activeModelBounds?: BoundsInfo | null;
     onModelBoundsChanged?: (bounds: BoundsInfo) => void;
     onLoadingStateChanged?: (state: ModelLoadingState) => void;
-    rotation?: { x?: number; y?: number; z?: number };
-    position?: { x?: number; y?: number; z?: number };
+    rotation?: OptionalPosition;
+    position?: OptionalPosition;
     scale?: number;
     autoFit?: boolean;
-    orbitControlsRef?: React.RefObject<{ enabled: boolean } | null>;
+    orbitControlsRef?: RefObject<OrbitControlsHandle | null>;
     enableSlice?: boolean;
     enableInstancing?: boolean;
     updateThrottle?: number;
     spacing?: number;
     forceDefaultScene?: boolean;
-}
+};
 
 export interface TimestepViewerRef {
     loadModel: () => void;
-}
+};
 
 const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     teamId,
@@ -54,7 +66,11 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     onModelBoundsChanged,
     onLoadingStateChanged,
     rotation = {},
-    position = { x: 0, y: 0, z: 0 },
+    position = {
+        x: 0,
+        y: 0,
+        z: 0
+    },
     scale = 1,
     autoFit = true,
     orbitControlsRef,
@@ -68,10 +84,10 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         return getRenderableScenes(storeActiveScenes, pluginScenes, forceDefaultScene);
     }, [storeActiveScenes, pluginScenes, forceDefaultScene]);
 
-    const [modelHeights, setModelHeights] = React.useState<Record<number, number>>({});
-    const [selectedModelIndex, setSelectedModelIndex] = React.useState<number | null>(null);
+    const [modelHeights, setModelHeights] = useState<Record<number, number>>({});
+    const [selectedModelIndex, setSelectedModelIndex] = useState<number | null>(null);
 
-    const handleModelLoaded = React.useCallback((index: number, bounds: BoundsInfo) => {
+    const handleModelLoaded = useCallback((index: number, bounds: BoundsInfo) => {
         if (bounds?.size?.y) {
             setModelHeights((prev) => {
                 if (Math.abs(prev[index] - bounds.size.y) < 0.01) return prev;
@@ -80,8 +96,10 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         }
     }, []);
 
-    const scenePositions = useMemo(() => {
-        if (scenesToRender.length === 0) return [] as Array<{ x?: number; y?: number; z?: number }>;
+    const scenePositions = useMemo<OptionalPosition[]>(() => {
+        if (scenesToRender.length === 0) {
+            return [];
+        }
 
         let previousCenter = position.y || 0;
         let previousHalfHeight = 0;
@@ -112,44 +130,71 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         });
     }, [scenesToRender, modelHeights, position, spacing]);
 
+    const renderScene = useCallback((scene: SceneObjectType, index: number) => {
+        const scenePosition = scenePositions[index] || position;
+
+        return (
+            <SingleModelViewer
+                teamId={teamId}
+                key={`${scene.source}-${scene.sceneType}-${'exposureId' in scene ? scene.exposureId : ''}-${index}`}
+                trajectoryId={trajectoryId}
+                currentTimestep={currentTimestep}
+                analysisId={analysisId}
+                sceneConfig={scene}
+                slicePlaneConfig={slicePlaneConfig}
+                boxBounds={boxBounds}
+                pointSizeMultiplier={pointSizeMultiplier}
+                sceneOpacities={sceneOpacities}
+                setModelWorldBounds={setModelWorldBounds}
+                activeModelBounds={activeModelBounds}
+                onModelBoundsChanged={onModelBoundsChanged}
+                onLoadingStateChanged={onLoadingStateChanged}
+                rotation={rotation}
+                position={scenePosition}
+                scale={scale}
+                autoFit={autoFit}
+                orbitControlsRef={orbitControlsRef}
+                enableSlice={enableSlice}
+                enableInstancing={enableInstancing}
+                updateThrottle={updateThrottle}
+                isPrimary={index === scenesToRender.length - 1}
+                onModelLoaded={(bounds) => handleModelLoaded(index, bounds)}
+                onSelect={() => setSelectedModelIndex(index)}
+                isSelected={selectedModelIndex === index}
+            />
+        );
+    }, [
+        activeModelBounds,
+        analysisId,
+        autoFit,
+        boxBounds,
+        currentTimestep,
+        enableInstancing,
+        enableSlice,
+        handleModelLoaded,
+        onLoadingStateChanged,
+        onModelBoundsChanged,
+        orbitControlsRef,
+        pointSizeMultiplier,
+        position,
+        rotation,
+        scale,
+        sceneOpacities,
+        scenePositions,
+        scenesToRender.length,
+        selectedModelIndex,
+        setModelWorldBounds,
+        slicePlaneConfig,
+        teamId,
+        trajectoryId,
+        updateThrottle
+    ]);
+
     if (scenesToRender.length === 0) return null;
 
     return (
         <>
-            {scenesToRender.map((scene, index) => {
-                const scenePosition = scenePositions[index] || position;
-
-                return (
-                    <SingleModelViewer
-                        teamId={teamId}
-                        key={`${scene.source}-${scene.sceneType}-${'exposureId' in scene ? scene.exposureId : ''}-${index}`}
-                        trajectoryId={trajectoryId}
-                        currentTimestep={currentTimestep}
-                        analysisId={analysisId}
-                        sceneConfig={scene}
-                        slicePlaneConfig={slicePlaneConfig}
-                        boxBounds={boxBounds}
-                        pointSizeMultiplier={pointSizeMultiplier}
-                        sceneOpacities={sceneOpacities}
-                        setModelWorldBounds={setModelWorldBounds}
-                        activeModelBounds={activeModelBounds}
-                        onModelBoundsChanged={onModelBoundsChanged}
-                        onLoadingStateChanged={onLoadingStateChanged}
-                        rotation={rotation}
-                        position={scenePosition}
-                        scale={scale}
-                        autoFit={autoFit}
-                        orbitControlsRef={orbitControlsRef}
-                        enableSlice={enableSlice}
-                        enableInstancing={enableInstancing}
-                        updateThrottle={updateThrottle}
-                        isPrimary={index === scenesToRender.length - 1}
-                        onModelLoaded={(bounds) => handleModelLoaded(index, bounds)}
-                        onSelect={() => setSelectedModelIndex(index)}
-                        isSelected={selectedModelIndex === index}
-                    />
-                );
-            })}
+            {scenesToRender.map(renderScene)}
         </>
     );
 });

@@ -1,5 +1,4 @@
-export interface IMapper<TDomain, TProps, TDocument>{
+export interface IMapper<TDomain, TProps, TDocument> {
     toDomain(raw: TDocument): TDomain;
-    toPersistence(domain: TDomain | TProps): Partial<TDocument>;
+    toPersistence(domain: TDomain | TProps | Partial<TProps>): Record<string, unknown>;
 };
-

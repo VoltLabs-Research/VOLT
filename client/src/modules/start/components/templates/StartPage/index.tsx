@@ -1,14 +1,14 @@
-import { useRef } from 'react';
-import UserInfo from '@/modules/auth/components/atoms/UserInfo';
-import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import Button from '@/shared/presentation/components/Button';
-import StartPageTile from '../../molecules/StartPageTile';
 import { useStartAccessedPagesStore } from '../../../stores/use-start-accessed-pages-store';
 import { useStartPageEntrance } from '../../../hooks/use-start-page-entrance';
-import { Trash2 } from 'lucide-react';
+import StartPageTile from '../../molecules/StartPageTile';
 import './StartPage.css';
+import { useRef } from 'react';
+import { Trash2 } from 'lucide-react';
+import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
+import UserInfo from '@/modules/auth/components/atoms/UserInfo';
+import Button from '@/shared/presentation/components/Button';
 
-const StartPage = () => {
+export default function StartPage() {
     const user = useCurrentUser();
     const pages = useStartAccessedPagesStore((state) => state.pages);
     const clearAll = useStartAccessedPagesStore((state) => state.clearAll);
@@ -43,7 +43,7 @@ const StartPage = () => {
 
                 {pages.length === 0 ? (
                     <p className="metro-empty-state">
-                        You have not visited any pages yet. <br />
+                        You have not visited pages yet. <br />
                         As you navigate through the application, your recent pages will appear here.
                     </p>
                 ) : (
@@ -58,6 +58,4 @@ const StartPage = () => {
             </main>
         </div>
     );
-};
-
-export default StartPage;
+}

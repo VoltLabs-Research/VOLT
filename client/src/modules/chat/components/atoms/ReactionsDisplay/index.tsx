@@ -1,7 +1,7 @@
-import type { ChatReaction } from '@/modules/chat/api/entities/chat-message';
+import { cn } from '@/shared/utils';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { cn } from '@/shared/utils';
+import type { ChatReaction } from '@/modules/chat/api/entities/message';
 import './ReactionsDisplay.css';
 
 interface ReactionsDisplayProps {
@@ -17,9 +17,15 @@ const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: Reactions
 
     const hasUserReacted = (reaction: ChatReaction): boolean => {
         if (!currentUserId) return false;
-        return reaction.users.some((u) => 
-            typeof u === 'string' ? u === currentUserId : u._id === currentUserId
-        );
+        return reaction.users.some((user) => {
+            let userId = user;
+
+            if (typeof user !== 'string') {
+                userId = user._id;
+            }
+
+            return userId === currentUserId;
+        });
     };
 
     return (

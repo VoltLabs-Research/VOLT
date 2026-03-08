@@ -1,12 +1,28 @@
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import Analysis, { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
-import AnalysisModel, { AnalysisDocument } from '@modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel';
-import analysisMapper from '@modules/analysis/infrastructure/persistence/mongo/mappers/AnalysisMapper';
-import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import { injectable, inject } from 'tsyringe';
-import { IEventBus } from '@shared/application/events/IEventBus';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+import { inject, injectable } from 'tsyringe';
+import AnalysisModel from '@modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel';
+import Analysis from '@modules/analysis/domain/entities/Analysis';
+import analysisMapper from '@modules/analysis/infrastructure/persistence/mongo/mappers/AnalysisMapper';
+import type { IEventBus } from '@shared/application/events/IEventBus';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
+import type { AnalysisDocument } from '@modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel';
+
+interface CompletedFramesAggregationItem {
+    _id: string | null;
+    count: number;
+};
+
+interface CompletedFramesGroupStage {
+    $group: {
+        _id: string;
+        count: {
+            $sum: string;
+        };
+    };
+};
 
 @injectable()
 export default class AnalysisRepository
@@ -14,9 +30,18 @@ export default class AnalysisRepository
     implements IAnalysisRepository {
 
     async getCompletedFramesByCluster(): Promise<Record<string, number>> {
-        const aggregation = await this.model.aggregate<{ _id: string | null; count: number }>([
-            { $group: { _id: '$clusterId', count: { $sum: '$completedFrames' } } }
-        ]);
+        const pipeline: CompletedFramesGroupStage[] = [
+            {
+                $group: {
+                    _id: '$clusterId',
+                    count: {
+                        $sum: '$completedFrames'
+                    }
+                }
+            }
+        ];
+
+        const aggregation = await this.model.aggregate<CompletedFramesAggregationItem>(pipeline);
 
         return aggregation.reduce<Record<string, number>>((counts, item) => {
             counts[item._id || 'main-cluster'] = item.count || 0;
@@ -45,4 +70,4 @@ export default class AnalysisRepository
 
         return !!result;
     }
-}
+};

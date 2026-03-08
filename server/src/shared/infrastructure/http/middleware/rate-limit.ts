@@ -4,7 +4,7 @@ interface RateLimitOptions {
     windowMs?: number;
     max: number;
     message?: string;
-}
+};
 
 export const STANDARD_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 

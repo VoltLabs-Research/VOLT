@@ -1,9 +1,10 @@
-import { inject, injectable } from 'tsyringe';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { GetNodeSchemasOutputDTO } from '@modules/plugin/application/dtos/plugin/GetNodeSchemasDTO';
+import { INodeRegistry } from '@modules/plugin/domain/port/plugin/INodeRegistry';
+
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { GetNodeSchemasOutputDTO } from '@modules/plugin/application/dtos/plugin/GetNodeSchemasDTO';
-import { INodeRegistry } from '@modules/plugin/domain/port/INodeRegistry';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class GetNodeSchemasUseCase implements IUseCase<void, GetNodeSchemasOutputDTO> {
@@ -17,4 +18,4 @@ export class GetNodeSchemasUseCase implements IUseCase<void, GetNodeSchemasOutpu
             schemas: this.nodeRegistry.getSchemas()
         });
     }
-}
+};

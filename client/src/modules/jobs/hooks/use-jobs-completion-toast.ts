@@ -5,7 +5,7 @@ interface UseJobsCompletionToastArgs {
     trajectoryId?: string;
     hasActiveJobs: boolean;
     allJobsCompleted: boolean;
-}
+};
 
 const useJobsCompletionToast = ({
     trajectoryId,

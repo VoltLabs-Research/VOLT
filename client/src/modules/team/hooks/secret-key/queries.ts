@@ -1,19 +1,47 @@
-import { useMutation, useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import queryClient from '@/shared/infrastructure/query/query-client';
-import { buildKeys } from '@/shared/infrastructure/query';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { SecretKey } from '../../api/entities/secret-key';
-import type { TeamUsageMetrics, KeyUsageMetrics } from '../../api/entities/secret-key-metrics';
-import type { CreateSecretKeyInputDTO, CreateSecretKeyResponse } from '../../api/dtos/create-secret-key';
-import type { DeleteSecretKeyInputDTO } from '../../api/dtos/delete-secret-key';
-import type { RevokeSecretKeyInputDTO } from '../../api/dtos/revoke-secret-key';
 import secretKeyService from '../../api/services/secret-key';
+import { buildKeys } from '@/shared/infrastructure/query';
+import type { UseQueryOptions } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { SecretKey } from '../../api/entities/secret-key/secret-key';
+import type { TeamUsageMetrics, KeyUsageMetrics } from '../../api/entities/secret-key/secret-key-metrics';
+import type { CreateSecretKeyInputDTO, CreateSecretKeyResponse } from '../../api/dtos/secret-key/create-secret-key';
+import type { DeleteSecretKeyInputDTO } from '../../api/dtos/secret-key/delete-secret-key';
+import type { RevokeSecretKeyInputDTO } from '../../api/dtos/secret-key/revoke-secret-key';
+import queryClient from '@/shared/infrastructure/query/query-client';
 
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
 
-// ---------------------------------------------------------------------------
-// Keys
-// ---------------------------------------------------------------------------
+interface SecretKeysQueryParams {
+    teamId: string;
+    page?: number;
+    limit?: number;
+    sort?: string;
+};
+
+interface SecretKeyUsageQueryParams {
+    teamId: string;
+    secretKeyId: string;
+    days?: number;
+};
+
+interface SecretKeyTeamMetricsQueryParams {
+    teamId: string;
+    days?: number;
+};
+
+interface SecretKeyUsageKeyParams {
+    teamId: string;
+    secretKeyId: string;
+    days?: number;
+};
+
+interface SecretKeyTeamMetricsKeyParams {
+    teamId: string;
+    days?: number;
+};
+
+/** Secret key query keys. */
 
 const secretKeyKeys = buildKeys<{
     secretKeys: void;
@@ -22,12 +50,12 @@ const secretKeyKeys = buildKeys<{
 
 const secretKeyUsageKeys = buildKeys<{
     secretKeyUsage: void;
-    secretKeyUsageByParams: { teamId: string; secretKeyId: string; days?: number };
+    secretKeyUsageByParams: SecretKeyUsageKeyParams;
 }>('secret-key-usage');
 
 const secretKeyMetricsKeys = buildKeys<{
     secretKeyTeamMetrics: void;
-    secretKeyTeamMetricsByParams: { teamId: string; days?: number };
+    secretKeyTeamMetricsByParams: SecretKeyTeamMetricsKeyParams;
 }>('secret-key-team-metrics');
 
 export const SECRET_KEY_QUERY_KEYS = {
@@ -37,39 +65,13 @@ export const SECRET_KEY_QUERY_KEYS = {
     secretKeyTeamMetrics: secretKeyMetricsKeys.secretKeyTeamMetrics
 };
 
-// ---------------------------------------------------------------------------
-// Cache helpers
-// ---------------------------------------------------------------------------
+/** Invalidates secret key listing queries for a team. */
 
 const invalidateSecretKeysQuery = (teamId: string) => {
     return queryClient.invalidateQueries({ queryKey: SECRET_KEY_QUERY_KEYS.secretKeysListing(teamId) });
 };
 
-// ---------------------------------------------------------------------------
-// Query param interfaces
-// ---------------------------------------------------------------------------
-
-interface SecretKeysQueryParams {
-    teamId: string;
-    page?: number;
-    limit?: number;
-    sort?: string;
-}
-
-interface SecretKeyUsageQueryParams {
-    teamId: string;
-    secretKeyId: string;
-    days?: number;
-}
-
-interface SecretKeyTeamMetricsQueryParams {
-    teamId: string;
-    days?: number;
-}
-
-// ---------------------------------------------------------------------------
-// Query hooks
-// ---------------------------------------------------------------------------
+/** Secret key queries. */
 
 export const useSecretKeysQuery = (
     params: SecretKeysQueryParams,
@@ -77,14 +79,24 @@ export const useSecretKeysQuery = (
 ) => {
     return useQuery({
         queryKey: SECRET_KEY_QUERY_KEYS.secretKeysListing(params.teamId),
-        queryFn: () => secretKeyService.listByTeamId({ teamId: params.teamId, page: params.page, limit: params.limit, sort: params.sort }),
+        queryFn: () => secretKeyService.listByTeamId({
+            teamId: params.teamId,
+            page: params.page,
+            limit: params.limit,
+            sort: params.sort
+        }),
         ...options
     });
 };
 
 export const buildSecretKeysQueryOptions = (params: SecretKeysQueryParams) => ({
     queryKey: SECRET_KEY_QUERY_KEYS.secretKeysListing(params.teamId),
-    queryFn: () => secretKeyService.listByTeamId({ teamId: params.teamId, page: params.page, limit: params.limit, sort: params.sort })
+    queryFn: () => secretKeyService.listByTeamId({
+        teamId: params.teamId,
+        page: params.page,
+        limit: params.limit,
+        sort: params.sort
+    })
 });
 
 export const fetchSecretKeys = (params: SecretKeysQueryParams) => {
@@ -117,15 +129,13 @@ export const useSecretKeyTeamMetricsQuery = (
     });
 };
 
-// ---------------------------------------------------------------------------
-// Mutation hooks
-// ---------------------------------------------------------------------------
+/** Secret key mutations. */
 
 export const useCreateSecretKeyMutation = () => {
     return useMutation<CreateSecretKeyResponse, Error, CreateSecretKeyInputDTO>({
         mutationFn: secretKeyService.create,
         onSuccess: (_data, variables) => {
-            void invalidateSecretKeysQuery(variables.teamId);
+            invalidateSecretKeysQuery(variables.teamId);
         }
     });
 };
@@ -134,7 +144,7 @@ export const useDeleteSecretKeyMutation = () => {
     return useMutation<void, Error, DeleteSecretKeyInputDTO>({
         mutationFn: secretKeyService.deleteById,
         onSuccess: (_data, variables) => {
-            void invalidateSecretKeysQuery(variables.teamId);
+            invalidateSecretKeysQuery(variables.teamId);
         }
     });
 };
@@ -143,7 +153,7 @@ export const useRevokeSecretKeyMutation = () => {
     return useMutation<void, Error, RevokeSecretKeyInputDTO>({
         mutationFn: secretKeyService.revokeById,
         onSuccess: (_data, variables) => {
-            void invalidateSecretKeysQuery(variables.teamId);
+            invalidateSecretKeysQuery(variables.teamId);
         }
     });
 };

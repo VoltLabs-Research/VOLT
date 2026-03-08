@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
-import Container from '@/shared/presentation/components/Container';
 import { sileo } from 'sileo';
+import Container from '@/shared/presentation/components/Container';
+
 import './GradientPreview.css';
 
 const GRADIENT_CSS: Record<string, string> = {
@@ -14,7 +15,7 @@ interface GradientPreviewProps {
     gradient: string;
     startValue: number;
     endValue: number;
-}
+};
 
 const formatValue = (value: number): string => {
     const absValue = Math.abs(value);

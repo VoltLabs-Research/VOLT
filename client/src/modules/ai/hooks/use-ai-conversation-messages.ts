@@ -1,27 +1,38 @@
-import { useCallback, useMemo } from 'react';
-import type { UIMessage } from 'ai';
 import { buildConversationMessagesQueryParams, invalidateConversationMessagesQuery, messagesQuery } from '@/modules/ai/hooks/queries';
-import type { AIConversationMessage } from '@/modules/ai/api/entities/ai-conversation';
+import { useCallback, useMemo } from 'react';
+import type { AIConversationMessage, AIMessageRole } from '@/modules/ai/api/entities/ai-conversation';
+import type { UIMessage } from 'ai';
+
+const toUIMessageRole = (role: AIMessageRole): UIMessage['role'] => {
+    if (role === 'assistant') {
+        return 'assistant';
+    }
+
+    return 'user';
+};
 
 const toUIMessage = (message: AIConversationMessage): UIMessage => {
-    const parts = Array.isArray(message.parts)
-        ? message.parts as UIMessage['parts']
-        : [];
+    const parts = message.parts;
 
     if (parts.length > 0) {
         return {
             id: message._id,
-            role: message.role as UIMessage['role'],
+            role: toUIMessageRole(message.role),
             parts
         };
     }
 
     const fallbackText = message.content.trim();
+    let fallbackParts: UIMessage['parts'] = [];
+
+    if (fallbackText) {
+        fallbackParts = [{ type: 'text', text: fallbackText }];
+    }
 
     return {
         id: message._id,
-        role: message.role as UIMessage['role'],
-        parts: fallbackText ? [{ type: 'text', text: fallbackText }] : []
+        role: toUIMessageRole(message.role),
+        parts: fallbackParts
     };
 };
 
@@ -48,9 +59,10 @@ const useAIConversationMessages = (teamId: string | null, conversationId?: strin
     }, [messagesResult.data]);
 
     const isMessagesLoading = messagesResult.isLoading;
-    const messagesError = messagesResult.error
-        ? 'Failed to load conversation messages.'
-        : null;
+    let messagesError: string | null = null;
+    if (messagesResult.error) {
+        messagesError = 'Failed to load conversation messages.';
+    }
 
     const loadConversationMessages = useCallback(async (targetConversationId: string) => {
         if (!teamId) {

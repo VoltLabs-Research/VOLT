@@ -4,7 +4,15 @@ import type { GetDailyActivityParams } from '../../dtos/get-daily-activity';
 
 const endpoints = {
     getDailyActivity: get<GetDailyActivityParams | undefined, DailyActivity[]>('/', {
-        query: (params) => params?.range ? { range: params.range } : undefined
+        query: (params) => {
+            let query: Pick<GetDailyActivityParams, 'range'> | undefined;
+
+            if (params?.range) {
+                query = { range: params.range };
+            }
+
+            return query;
+        }
     })
 };
 

@@ -1,13 +1,10 @@
-import { injectable, inject } from 'tsyringe';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { GetTeamAIIntegrationsInputDTO, GetTeamAIIntegrationsOutputDTO } from '@modules/team/application/dtos/ai-integration/GetTeamAIIntegrationsDTO';
+import TeamAIIntegrationSerializer from '@modules/team/application/services/ai-integration/TeamAIIntegrationSerializer';
+import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ITeamAIIntegrationRepository';
-import {
-    GetTeamAIIntegrationsInputDTO,
-    GetTeamAIIntegrationsOutputDTO
-} from '@modules/team/application/dtos/ai-integration/GetTeamAIIntegrationsDTO';
-import TeamAIIntegrationSerializer from '@modules/team/application/services/TeamAIIntegrationSerializer';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class GetTeamAIIntegrationsUseCase implements IUseCase<GetTeamAIIntegrationsInputDTO, GetTeamAIIntegrationsOutputDTO> {
@@ -27,4 +24,4 @@ export default class GetTeamAIIntegrationsUseCase implements IUseCase<GetTeamAII
             integrations: integrations.map((i) => this.integrationSerializer.toDTO(i))
         });
     }
-}
+};

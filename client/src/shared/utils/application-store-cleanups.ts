@@ -1,15 +1,15 @@
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useKeyboardShortcutsStore } from '@/modules/canvas/stores/use-keyboard-shortcuts-store';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
-import { useChatPresenceStore } from '@/modules/chat/stores/use-chat-presence-store';
+import { useChatPresenceStore } from '@/modules/chat/stores/chat/use-chat-presence-store';
 import { useClusterStore } from '@/modules/cluster/stores/use-cluster-store';
-import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
-import usePluginBuilderStore from '@/modules/plugin/stores/use-plugin-builder-store';
-import { usePluginDebugStore } from '@/modules/plugin/stores/use-plugin-debug-store';
-import { useTeamPresenceStore } from '@/modules/team/stores/use-team-presence-store';
-import useTrajectoryStore from '@/modules/trajectory/stores/use-trajectory-store';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
+import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
 import { registerManualAppCleanup, registerSharedAppCleanup } from '@/shared/utils/app-cleanup-registry';
+import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
+import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import useTrajectoryStore from '@/modules/trajectory/stores/trajectory/use-trajectory-store';
+import queryClient from '@/shared/infrastructure/query/query-client';
 
 /**
  * Stores whose lifecycle is managed by WebSocket hooks (cluster metrics,

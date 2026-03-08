@@ -1,11 +1,9 @@
-import { ChatProps } from '@modules/chat/domain/entities/Chat';
+import type { PersistedChatDTO } from '@modules/chat/domain/port/chat/IChatRepository';
 
-export interface GetOrCreateChatInputDTO{
+export interface GetOrCreateChatInputDTO {
     userId: string;
     targetUserId: string;
     teamId: string;
 };
 
-export interface GetOrCreateChatOutputDTO extends ChatProps{
-    _id: string;
-}
+export interface GetOrCreateChatOutputDTO extends PersistedChatDTO {};

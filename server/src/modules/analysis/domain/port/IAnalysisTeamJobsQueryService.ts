@@ -2,7 +2,7 @@ export interface AnalysisJobMetadata {
     analysisId?: string;
     timestep?: number;
     [key: string]: unknown;
-}
+};
 
 export interface AnalysisJobSummary {
     jobId: string;
@@ -14,8 +14,8 @@ export interface AnalysisJobSummary {
     metadata?: AnalysisJobMetadata;
     analysisId?: string;
     timestep?: number;
-}
+};
 
 export interface IAnalysisTeamJobsQueryService {
     getFlatTeamJobs(teamId: string): Promise<AnalysisJobSummary[]>;
-}
+};

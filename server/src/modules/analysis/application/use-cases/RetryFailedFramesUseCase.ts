@@ -1,18 +1,18 @@
-import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
-import { RetryFailedFramesInputDTO, RetryFailedFramesOutputDTO } from '@modules/analysis/application/dtos/RetryFailedFramesDTO';
-import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
-import { IJobQueueService } from '@modules/jobs/domain/port/IJobQueueService';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { Result } from '@shared/domain/port/Result';
+import { RetryFailedFramesInputDTO, RetryFailedFramesOutputDTO } from '@modules/analysis/application/dtos/RetryFailedFramesDTO';
+import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
-import { IAnalysisTeamJobsQueryService } from '@modules/analysis/domain/port/IAnalysisTeamJobsQueryService';
+import { inject, injectable } from 'tsyringe';
+import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
+import type { IUseCase } from '@shared/application/IUseCase';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { IAnalysisTeamJobsQueryService } from '@modules/analysis/domain/port/IAnalysisTeamJobsQueryService';
+import type { IJobQueueService } from '@modules/jobs/domain/port/IJobQueueService';
 
 @injectable()
 export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFramesInputDTO, RetryFailedFramesOutputDTO, ApplicationError> {
@@ -119,13 +119,13 @@ export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFra
             if (!queue) continue;
 
             const retryJobs: Job[] = jobs.map((job) => Job.create({
-                jobId: job.jobId as string,
-                teamId: job.teamId as string,
+                jobId: job.jobId,
+                teamId: job.teamId,
                 queueType,
                 status: JobStatus.Queued,
-                sessionId: job.sessionId as string,
-                message: job.message as string,
-                metadata: job.metadata as Record<string, unknown>
+                sessionId: job.sessionId,
+                message: job.message,
+                metadata: job.metadata
             }));
 
             retriedFrames += await queue.retryFailedJobs(retryJobs);
@@ -140,4 +140,4 @@ export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFra
             failedTimesteps: failedTimesteps.length > 0 ? failedTimesteps : undefined
         });
     }
-}
+};

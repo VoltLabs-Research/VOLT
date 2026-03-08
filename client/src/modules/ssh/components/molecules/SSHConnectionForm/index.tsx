@@ -1,11 +1,11 @@
-import { type Control } from 'react-hook-form';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import type { SSHConnectionFormData } from '@/modules/ssh/components/molecules/SSHConnectionModal/validation-schema';
+import type { Control } from 'react-hook-form';
+import type { SSHConnectionFormData } from '@/modules/ssh/utilities/ssh-connection-form-schema';
 
 interface SSHConnectionFormProps {
     control: Control<SSHConnectionFormData>;
     mode: 'create' | 'edit';
-}
+};
 
 const SSHConnectionForm = ({ control, mode }: SSHConnectionFormProps) => (
     <>

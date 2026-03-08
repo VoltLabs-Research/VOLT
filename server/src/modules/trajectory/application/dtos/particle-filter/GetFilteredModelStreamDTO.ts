@@ -9,8 +9,8 @@ export interface GetFilteredModelStreamInputDTO {
     operator: string;
     value: string | number;
     action?: string;
-}
+};
 
 export interface GetFilteredModelStreamOutputDTO {
     stream: Readable;
-}
+};

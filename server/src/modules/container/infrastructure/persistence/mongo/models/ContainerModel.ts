@@ -1,6 +1,10 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 import { ValidationCodes } from '@core/constants/validation-codes';
+import type { ContainerEnvironmentVariable, ContainerPortMapping } from '@modules/container/domain/port/IContainerService';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
+
+interface ContainerEnvironmentVariableDocument extends ContainerEnvironmentVariable {};
+interface ContainerPortMappingDocument extends ContainerPortMapping {};
 
 export interface IContainer extends Document {
     name: string;
@@ -13,12 +17,42 @@ export interface IContainer extends Document {
     status: string;
     memory: number;
     cpus: number;
-    env: Array<{ key: string; value: string }>;
-    ports: Array<{ private: number; public: number }>;
+    env: ContainerEnvironmentVariableDocument[];
+    ports: ContainerPortMappingDocument[];
     createdBy: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
-}
+};
+
+const internalIpField = {
+    type: String,
+    required: false
+};
+
+const statusField = {
+    type: String,
+    default: 'created'
+};
+
+const memoryField = {
+    type: Number,
+    default: 512
+};
+
+const cpusField = {
+    type: Number,
+    default: 1
+};
+
+const environmentVariableField = {
+    key: String,
+    value: String
+};
+
+const portMappingField = {
+    private: Number,
+    public: Number
+};
 
 const ContainerSchema = new Schema<IContainer>({
     name: {
@@ -36,7 +70,7 @@ const ContainerSchema = new Schema<IContainer>({
         required: [true, ValidationCodes.CONTAINER_ID_REQUIRED],
         unique: true
     },
-    internalIp: { type: String, required: false },
+    internalIp: internalIpField,
     network: {
         type: Schema.Types.ObjectId,
         ref: 'DockerNetwork',
@@ -50,11 +84,11 @@ const ContainerSchema = new Schema<IContainer>({
     team: {
         ...teamRefField(false)
     },
-    status: { type: String, default: 'created' },
-    memory: { type: Number, default: 512 },
-    cpus: { type: Number, default: 1 },
-    env: [{ key: String, value: String }],
-    ports: [{ private: Number, public: Number }],
+    status: statusField,
+    memory: memoryField,
+    cpus: cpusField,
+    env: [environmentVariableField],
+    ports: [portMappingField],
     createdBy: {
         ...userRefField([true, ValidationCodes.CONTAINER_CREATED_BY_REQUIRED])
     }

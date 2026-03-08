@@ -1,4 +1,9 @@
 import type { BoxBounds } from '@/modules/fractal/types';
+import type { TimestepInfo, Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+
+interface TrajectoryWithFrames {
+    frames?: TimestepInfo[];
+};
 
 export interface BoxTransforms {
     scale: number;
@@ -7,16 +12,16 @@ export interface BoxTransforms {
     maxDimension: number;
 };
 
-export const getTrajectoryBoxBounds = (trajectory: any, currentTimestep?: number): BoxBounds | undefined => {
+export const getTrajectoryBoxBounds = (trajectory: Pick<Trajectory, 'frames'> | TrajectoryWithFrames | null | undefined, currentTimestep?: number): BoxBounds | undefined => {
     if (!trajectory || currentTimestep === undefined) return undefined;
-    let frame = trajectory.frames?.find((f: any) => f.timestep === currentTimestep);
+    let frame = trajectory.frames?.find((item: TimestepInfo) => item.timestep === currentTimestep);
 
     if (!frame?.simulationCell) {
-        frame = trajectory.frames?.find((f: any) => f.simulationCell);
+        frame = trajectory.frames?.find((item: TimestepInfo) => item.simulationCell);
     }
 
     if (frame?.simulationCell) {
-        const { geometry, boundingBox } = frame.simulationCell as any;
+        const { geometry, boundingBox } = frame.simulationCell;
         if (geometry?.cell_origin && boundingBox) {
             const [xlo, ylo, zlo] = geometry.cell_origin;
             return {
@@ -49,7 +54,12 @@ export const getBoxDimensions = (boxBounds: BoxBounds): BoxDimensions => {
         y: (boxBounds.ylo + boxBounds.yhi) / 2,
         z: (boxBounds.zlo + boxBounds.zhi) / 2
     };
-    return { width, height, depth, center };
+    return {
+        width,
+        height,
+        depth,
+        center
+    };
 };
 
 export const calculateBoxTransforms = (boxBounds: BoxBounds): BoxTransforms => {
@@ -58,7 +68,10 @@ export const calculateBoxTransforms = (boxBounds: BoxBounds): BoxTransforms => {
     const maxDimension = Math.max(width, height, depth);
 
     const targetSize = 8;
-    const scale = maxDimension > 0 ? targetSize / maxDimension : 1;
+    let scale = 1;
+    if (maxDimension > 0) {
+        scale = targetSize / maxDimension;
+    }
 
     const position = {
         x: -center.x * scale,
@@ -66,7 +79,12 @@ export const calculateBoxTransforms = (boxBounds: BoxBounds): BoxTransforms => {
         z: -center.z * scale
     };
 
-    return { scale, position, center, maxDimension };
+    return {
+        scale,
+        position,
+        center,
+        maxDimension
+    };
 };
 
 export const getGroundOffset = (boxBounds?: BoxBounds, transforms?: BoxTransforms) => {
@@ -79,7 +97,11 @@ export const buildCellBoxTransforms = (transforms?: BoxTransforms, groundOffset 
     if (!transforms) return undefined;
     return {
         scale: transforms.scale,
-        position: { x: 0, y: 0, z: 0 },
+        position: {
+            x: 0,
+            y: 0,
+            z: 0
+        },
         groundOffset
     };
 };

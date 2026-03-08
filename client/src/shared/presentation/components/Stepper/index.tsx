@@ -1,17 +1,17 @@
-import { ReactNode, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import Container from '../Container';
 import './Stepper.css';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ReactNode, useState } from 'react';
 
 export interface Step<K extends string>{
     key: K;
     content: ReactNode;
-}
+};
 
 interface StepTitle{
     title: string;
     subtitle: string;
-}
+};
 
 export type StepTitles<K extends string> = Record<K, StepTitle>;
 
@@ -19,7 +19,7 @@ export interface StepIndicator<K extends string>{
     key: K;
     label: string;
     description?: string;
-}
+};
 
 type Direction = 'forward' | 'backward';
 
@@ -30,7 +30,7 @@ interface StepperProps<K extends string>{
     indicators?: StepIndicator<K>[];
     onStepClick?: (key: K) => void;
     canNavigateTo?: (key: K) => boolean;
-}
+};
 
 const variants = {
     enter: (direction: Direction) => ({

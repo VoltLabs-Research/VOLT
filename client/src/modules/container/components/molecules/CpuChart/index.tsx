@@ -1,3 +1,4 @@
+import { formatChartTime } from '../../../utilities/format-chart-time';
 import { useEffect, useMemo } from 'react';
 import {
     AreaChart,
@@ -11,8 +12,7 @@ import { Cpu } from 'lucide-react';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
 import useTimeSeriesBuffer from '@/shared/presentation/hooks/use-time-series-buffer';
-import { formatChartTime } from '../../../utilities/format-chart-time';
-import type { CpuData } from '../../../api/entities/container-stats-view';
+import type { CpuData } from '../../../services/container-stats-view';
 
 const MAX_HISTORY_POINTS = 60;
 const CHART_COLOR = '#0A84FF';
@@ -20,12 +20,26 @@ const CHART_COLOR = '#0A84FF';
 interface CpuChartProps {
     data: CpuData | null;
     isLoading?: boolean;
-}
+};
 
 interface DataPoint {
     time: string;
     usage: number;
-}
+};
+
+interface CpuTooltipEntry {
+    value?: number | string;
+    payload?: DataPoint;
+};
+
+interface CpuTooltipContentProps {
+    active?: boolean;
+    payload?: readonly unknown[];
+};
+
+const isCpuTooltipEntry = (value: unknown): value is CpuTooltipEntry => {
+    return typeof value === 'object' && value !== null && 'payload' in value;
+};
 
 const CpuChart = ({ data, isLoading = false }: CpuChartProps) => {
     const { history, pushPoint } = useTimeSeriesBuffer<DataPoint>({
@@ -42,7 +56,13 @@ const CpuChart = ({ data, isLoading = false }: CpuChartProps) => {
     }, [data, pushPoint]);
 
     const stats = useMemo(() => {
-        if (!history.length) return { peak: 0, avg: 0, cores: 0 };
+        if (!history.length) {
+            return {
+                peak: 0,
+                avg: 0,
+                cores: 0
+            };
+        }
 
         const usageValues = history.map((d) => d.usage);
         return {
@@ -52,15 +72,17 @@ const CpuChart = ({ data, isLoading = false }: CpuChartProps) => {
         };
     }, [history, data]);
 
-    const renderTooltip = ({ active, payload }: Record<string, unknown>) => {
+    const renderTooltip = ({ active, payload }: CpuTooltipContentProps) => {
         if (!active || !Array.isArray(payload) || payload.length < 1) return null;
 
-        const entry = payload[0] as Record<string, unknown>;
-        const entryPayload = entry.payload as Record<string, unknown>;
+        const entry = payload[0];
+        if (!isCpuTooltipEntry(entry)) {
+            return null;
+        }
 
         return (
             <ChartTooltip
-                title={String(entryPayload.time ?? '')}
+                title={String(entry.payload?.time ?? '')}
                 items={[{
                     label: 'Usage',
                     value: `${Number(entry.value).toFixed(1)}%`,
@@ -87,7 +109,12 @@ const CpuChart = ({ data, isLoading = false }: CpuChartProps) => {
             <ResponsiveContainer width='100%' height={250}>
                 <AreaChart
                     data={history.length ? history : emptyData}
-                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                    margin={{
+                        top: 10,
+                        right: 10,
+                        left: 0,
+                        bottom: 0
+                    }}
                 >
                     <defs>
                         <linearGradient id='colorCpuUsage' x1='0' y1='0' x2='0' y2='1'>

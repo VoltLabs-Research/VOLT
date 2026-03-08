@@ -1,10 +1,10 @@
+import { getChatDisplayName } from '@/modules/chat/utilities/chat/chat-display';
+import ChatAvatar from '../../atoms/ChatAvatar';
+import { cn } from '@/shared/utils';
 import { formatDistanceToNow } from 'date-fns';
-import type { Chat } from '@/modules/chat/api/entities/chat';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { cn } from '@/shared/utils';
-import { ChatAvatar } from '../../atoms';
-import { getChatDisplayName } from '@/modules/chat/utilities';
+import type { Chat } from '@/modules/chat/api/entities/chat';
 import './ChatListItem.css';
 
 interface ChatListItemProps {

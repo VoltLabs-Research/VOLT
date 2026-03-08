@@ -1,14 +1,15 @@
+import './DashboardOverviewCard.css';
+import TinyLineChart from '../TinyLineChart';
+import Container from '@/shared/presentation/components/Container';
 import { useNavigate } from 'react-router';
 import { GoArrowRight } from 'react-icons/go';
-import { FaArrowUpLong, FaArrowDownLong } from 'react-icons/fa6';
-import Container from '@/shared/presentation/components/Container';
-import TinyLineChart from '../TinyLineChart';
+import { FaArrowDownLong, FaArrowUpLong } from 'react-icons/fa6';
 import type { DashboardCard } from '@/modules/dashboard/api/entities/dashboard';
-import './DashboardOverviewCard.css';
+import type { ReactNode } from 'react';
 
 interface DashboardOverviewCardProps {
     card: DashboardCard;
-    icon: React.ReactNode;
+    icon: ReactNode;
 };
 
 const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
@@ -22,9 +23,15 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
         }
     };
 
-    const lineColor = up
-        ? getComputedStyle(document.documentElement).getPropertyValue('--accent-green').trim()
-        : getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim();
+    let lineColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim();
+    if (up) {
+        lineColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-green').trim();
+    }
+
+    let trendIcon = <FaArrowDownLong size={10} />;
+    if (up) {
+        trendIcon = <FaArrowUpLong size={10} />;
+    }
 
     return (
         <Container
@@ -48,7 +55,7 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
                 <Container className='d-flex items-end gap-075'>
                     <span className='dashboard-stat-value'>{card.count}</span>
                     <Container className={`dashboard-stat-trend d-flex items-center gap-025 ${up ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
-                        {up ? <FaArrowUpLong size={10} /> : <FaArrowDownLong size={10} />}
+                        {trendIcon}
                         <span>{Math.abs(card.lastMonthStatus ?? 0)}%</span>
                     </Container>
                 </Container>

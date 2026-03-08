@@ -1,18 +1,12 @@
+import { DockerNetworkEntity, DockerNetworkData, IDockerNetworkRepository } from '@modules/container/domain/port/IDockerNetworkRepository';
+import { DockerNetwork, IDockerNetwork } from '@modules/container/infrastructure/persistence/mongo/models/DockerNetworkModel';
 import { injectable } from 'tsyringe';
-import {
-    IDockerNetworkRepository,
-    DockerNetworkEntity
-} from '@modules/container/domain/port/IDockerNetworkRepository';
-import {
-    DockerNetwork,
-    IDockerNetwork
-} from '@modules/container/infrastructure/persistence/mongo/models/DockerNetworkModel';
 
 @injectable()
 export class DockerNetworkRepository implements IDockerNetworkRepository {
     async findOrCreateByNetworkId(
         networkId: string,
-        data: { name: string; driver: string }
+        data: DockerNetworkData
     ): Promise<DockerNetworkEntity> {
         const document = await DockerNetwork.findOneAndUpdate(
             { networkId },
@@ -45,4 +39,4 @@ export class DockerNetworkRepository implements IDockerNetworkRepository {
             updatedAt: document.updatedAt
         };
     }
-}
+};

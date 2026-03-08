@@ -2,13 +2,15 @@ import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMa
 
 interface EntityConstructor<TDomain, TProps> {
     new (_id: string, props: TProps): TDomain;
-}
+};
 
-export const createMongoMapper = <TDomain, TProps, TDocument>(
+export const createMongoMapper = <
+    TDomain,
+    TProps,
+    TDocument extends object
+>(
     entityClass: EntityConstructor<TDomain, TProps>,
-    relationKeys: (keyof TProps)[] = []
+    relationKeys: Array<Extract<keyof TProps, string>> = []
 ) => {
-    return new (BaseMapper as unknown as {
-        new (entity: EntityConstructor<TDomain, TProps>, keys: (keyof TProps)[]): BaseMapper<TDomain, TProps, TDocument>;
-    })(entityClass, relationKeys);
+    return new BaseMapper<TDomain, TProps, TDocument>(entityClass, relationKeys);
 };

@@ -1,6 +1,7 @@
-import type { IUseCase } from '@shared/application/IUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { Result } from '@shared/domain/port/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+
+import type { IUseCase } from '@shared/application/IUseCase';
 
 type Validator<TInput> = (input: TInput) => ApplicationError | null;
 type Executor<TService, TInput, TOutput> = (service: TService, input: TInput) => Promise<TOutput>;
@@ -36,4 +37,4 @@ export abstract class ValidatedServiceUseCase<TInput, TOutput, TService>
             return Result.fail(ApplicationError.internalServerError('Failed to process trajectory service request'));
         }
     }
-}
+};

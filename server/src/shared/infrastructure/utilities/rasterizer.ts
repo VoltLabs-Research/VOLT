@@ -1,10 +1,16 @@
-import path from 'path';
 import { ErrorCodes } from '@core/constants/error-codes';
 import logger from '@shared/infrastructure/logger';
 import {
     createWorkerFailureEnvelope,
     WorkerFailureError
 } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
+import path from 'path';
+
+interface RasterizerNativeOptions {
+    fov: number;
+    distScale: number;
+    zUp: boolean;
+};
 
 interface Rasterizer {
     rasterize(
@@ -14,11 +20,11 @@ interface Rasterizer {
         height: number,
         az: number,
         el: number,
-        opts: { fov: number, distScale: number, zUp: boolean }
+        opts: RasterizerNativeOptions
     ): boolean;
 };
 
-interface RasterizerOptions {
+export interface RasterizerOptions {
     inputPath?: string;
     width?: number;
     height?: number;
@@ -26,7 +32,12 @@ interface RasterizerOptions {
     az?: number;
     el?: number;
     distScale?: number;
-    up?: 'z' | 'y';
+    up?: RasterUpAxis;
+};
+
+export enum RasterUpAxis {
+    Z = 'z',
+    Y = 'y'
 };
 
 const nativePath = path.resolve(process.cwd(), 'native/build/Release/rasterizer.node');
@@ -64,7 +75,7 @@ const rasterize = (glbPath: string, pngPath: string, options: RasterizerOptions 
     const az = options.az ?? 45;
     const el = options.el ?? 25;
     const distScale = options.distScale ?? 1.0;
-    const zUp = options.up === 'z';
+    const zUp = options.up === RasterUpAxis.Z;
 
     try {
         return rasterizer.rasterize(glbPath, pngPath, width, height, az, el, { fov, distScale, zUp });

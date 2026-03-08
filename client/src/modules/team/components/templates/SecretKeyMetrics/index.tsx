@@ -17,15 +17,15 @@ import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import useSecretKeyTeamMetrics from '@/modules/team/hooks/secret-key/use-secret-key-team-metrics';
-import { CHART_COLORS } from '@/modules/team/utilities/chart-helpers';
-import { createTooltipRenderer } from '@/modules/team/utilities/chart-tooltip-renderer';
-import '../SecretKeyShared.css';
+import { CHART_COLORS } from '@/modules/team/utilities/secret-key/chart-helpers';
+import { createTooltipRenderer } from '@/modules/team/components/templates/secret-key/shared/chart-tooltip-renderer';
+import '../secret-key/shared/SecretKeyShared.css';
 import './SecretKeyMetrics.css';
 
 const renderAreaTooltip = createTooltipRenderer('date', 'Requests', CHART_COLORS.requests);
 const renderBarTooltip = createTooltipRenderer('endpoint', 'Requests', CHART_COLORS.endpoints);
 
-const SecretKeyMetrics = () => {
+export default function SecretKeyMetrics() {
     const { metrics, isLoading } = useSecretKeyTeamMetrics();
 
     const requestsOverTime = useMemo(() => {
@@ -277,6 +277,4 @@ const SecretKeyMetrics = () => {
             </Container>
         </Container>
     );
-};
-
-export default SecretKeyMetrics;
+}

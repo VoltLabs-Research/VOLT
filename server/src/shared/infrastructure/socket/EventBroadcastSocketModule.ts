@@ -1,15 +1,17 @@
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import logger from '@shared/infrastructure/logger';
+import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
 import { inject, singleton } from 'tsyringe';
-import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
 import type { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
-import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { IEventHandler } from '@shared/application/events/IEventHandler';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
+import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import type { IEventBus } from '@shared/application/events/IEventBus';
+import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IEventHandler } from '@shared/application/events/IEventHandler';
+
+type BroadcastableEvent = IDomainEvent<Record<string, unknown>>;
 
 @singleton()
 export default class EventBroadcastSocketModule extends BaseSocketModule {
@@ -62,10 +64,10 @@ export default class EventBroadcastSocketModule extends BaseSocketModule {
 
     onConnection(_connection: ISocketConnection): void {}
 
-    private createGenericBroadcastHandler(): IEventHandler<IDomainEvent> {
+    private createGenericBroadcastHandler(): IEventHandler<BroadcastableEvent> {
         return {
-            handle: async (event: IDomainEvent) => {
-                const eventData = (event as IDomainEvent & { payload?: Record<string, unknown> }).payload;
+            handle: async (event: BroadcastableEvent) => {
+                const eventData = event.payload;
                 const teamId = eventData?.teamId;
 
                 if (!teamId) {
@@ -83,4 +85,4 @@ export default class EventBroadcastSocketModule extends BaseSocketModule {
             }
         };
     }
-}
+};

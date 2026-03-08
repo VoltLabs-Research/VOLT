@@ -1,26 +1,39 @@
-import { container } from 'tsyringe';
+import { CreateContainerAITool } from '@modules/container/application/ai-tools/CreateContainerAITool';
+import { DeleteContainerAITool } from '@modules/container/application/ai-tools/DeleteContainerAITool';
+import { GetContainerByIdAITool } from '@modules/container/application/ai-tools/GetContainerByIdAITool';
+import { GetContainerProcessesAITool } from '@modules/container/application/ai-tools/GetContainerProcessesAITool';
+import { GetContainerStatsAITool } from '@modules/container/application/ai-tools/GetContainerStatsAITool';
+import { ListContainerFilesAITool } from '@modules/container/application/ai-tools/ListContainerFilesAITool';
+import { ListContainersAITool } from '@modules/container/application/ai-tools/ListContainersAITool';
+import { ReadContainerFileAITool } from '@modules/container/application/ai-tools/ReadContainerFileAITool';
+import { UpdateContainerAITool } from '@modules/container/application/ai-tools/UpdateContainerAITool';
+import { CreateContainerUseCase, DeleteContainerUseCase, GetContainerByIdUseCase, GetContainerFilesUseCase, GetContainerProcessesUseCase, GetContainerStatsUseCase, ListContainersUseCase, ReadContainerFileUseCase, UpdateContainerUseCase } from '@modules/container/application/use-cases';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
 import { DockerNetworkRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/DockerNetworkRepository';
 import { DockerVolumeRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/DockerVolumeRepository';
-import { DockerContainerService } from '@modules/container/infrastructure/services/DockerContainerService';
-import { TerminalService } from '@modules/container/infrastructure/services/TerminalService';
-import { ContainerSocketModule } from '@modules/container/infrastructure/socket/ContainerSocketModule';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { ContainerOwnershipService, DockerContainerService, TerminalService } from '@modules/container/services';
+import { ContainerSocketModule } from '@modules/container/socket';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { container, Lifecycle } from 'tsyringe';
+import type { AITool } from '@shared/application/ai/AITool';
 
-import { CreateContainerUseCase } from '@modules/container/application/use-cases/CreateContainerUseCase';
-import { UpdateContainerUseCase } from '@modules/container/application/use-cases/UpdateContainerUseCase';
-import { DeleteContainerUseCase } from '@modules/container/application/use-cases/DeleteContainerUseCase';
-import { ListContainersUseCase } from '@modules/container/application/use-cases/ListContainersUseCase';
-import { GetContainerStatsUseCase } from '@modules/container/application/use-cases/GetContainerStatsUseCase';
-import { GetContainerFilesUseCase } from '@modules/container/application/use-cases/GetContainerFilesUseCase';
-import { ReadContainerFileUseCase } from '@modules/container/application/use-cases/ReadContainerFileUseCase';
-import { GetContainerProcessesUseCase } from '@modules/container/application/use-cases/GetContainerProcessesUseCase';
-import { GetContainerByIdUseCase } from '@modules/container/application/use-cases/GetContainerByIdUseCase';
-import { ContainerOwnershipService } from '@modules/container/application/services/ContainerOwnershipService';
+interface AIToolClassProvider {
+    useClass: new (...args: any[]) => AITool;
+};
 
-import * as containerAiTools from '@modules/container/application/ai-tools';
+const CONTAINER_AI_TOOL_CLASSES: AIToolClassProvider[] = [
+    { useClass: CreateContainerAITool },
+    { useClass: DeleteContainerAITool },
+    { useClass: GetContainerByIdAITool },
+    { useClass: GetContainerProcessesAITool },
+    { useClass: GetContainerStatsAITool },
+    { useClass: ListContainerFilesAITool },
+    { useClass: ListContainersAITool },
+    { useClass: ReadContainerFileAITool },
+    { useClass: UpdateContainerAITool }
+];
 
 export const registerContainerDependencies = (): void => {
     container.register(CONTAINER_TOKENS.ContainerRepository, { useClass: ContainerRepository });
@@ -43,7 +56,9 @@ export const registerContainerDependencies = (): void => {
     container.registerSingleton(CONTAINER_TOKENS.ContainerSocketModule, ContainerSocketModule);
     container.register(SOCKET_TOKENS.SocketModule, { useToken: CONTAINER_TOKENS.ContainerSocketModule });
 
-    for (const ToolClass of Object.values(containerAiTools)) {
-        container.registerSingleton(AI_TOKENS.AITool, ToolClass as any);
+    for (const toolClassProvider of CONTAINER_AI_TOOL_CLASSES) {
+        container.register(AI_TOKENS.AITool, toolClassProvider, {
+            lifecycle: Lifecycle.Singleton
+        });
     }
 };

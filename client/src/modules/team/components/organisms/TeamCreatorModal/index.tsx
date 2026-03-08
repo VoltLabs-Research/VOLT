@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import Modal from '@/shared/presentation/components/Modal';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
-import useZodForm from '@/shared/presentation/hooks/use-zod-form';
+import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
+import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
+import ApiError from '@/shared/errors/ApiError';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import Modal from '@/shared/presentation/components/Modal';
 import useModalForm from '@/shared/presentation/hooks/use-modal-form';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
-import { useTeamStore } from '@/modules/team/stores/use-team-store';
-import { teamCreatorSchema, type TeamCreatorForm } from './validation-schema';
-import ApiError from '@/shared/errors/ApiError';
+import useZodForm from '@/shared/presentation/hooks/use-zod-form';
+import { useState } from 'react';
+import { teamCreatorSchema } from './validation-schema';
+import type { TeamCreatorForm } from './validation-schema';
 import './TeamCreatorModal.css';
 
 const MODAL_ID = 'team-creator-modal';
@@ -18,13 +19,25 @@ interface TeamCreatorModalProps {
     isRequired?: boolean;
     onSuccess?: () => void;
     onClose?: () => void;
-}
+};
 
-const TeamCreatorModal: React.FC<TeamCreatorModalProps> = ({
+interface PromiseToastOptions {
+    loading: { title: string };
+    success: { title: string };
+    error: { title: string };
+};
+
+const TEAM_CREATOR_TOAST_OPTIONS: PromiseToastOptions = {
+    loading: { title: 'Creating team...' },
+    success: { title: 'Team created successfully' },
+    error: { title: 'Failed to create team' }
+};
+
+export const TeamCreatorModal = ({
     isRequired = false,
     onSuccess,
     onClose
-}) => {
+}: TeamCreatorModalProps) => {
     const [apiError, setApiError] = useState<string | null>(null);
 
     const createTeamMutation = useCreateTeamMutation();
@@ -57,11 +70,7 @@ const TeamCreatorModal: React.FC<TeamCreatorModalProps> = ({
                     name: data.name.trim(),
                     description: data.description?.trim() || ''
                 }),
-                {
-                    loading: { title: 'Creating team...' },
-                    success: { title: 'Team created successfully' },
-                    error: { title: 'Failed to create team' }
-                }
+                TEAM_CREATOR_TOAST_OPTIONS
             );
             setSelectedTeamId(team._id);
             modalForm.close();
@@ -146,5 +155,3 @@ const TeamCreatorModal: React.FC<TeamCreatorModalProps> = ({
         </Modal>
     );
 };
-
-export default TeamCreatorModal;

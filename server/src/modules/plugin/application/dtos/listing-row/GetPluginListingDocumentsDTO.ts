@@ -39,30 +39,34 @@ export interface ListingRowData {
     [key: string]: unknown;
 };
 
+export interface PluginListingDocumentsMeta {
+    pluginId: string;
+    exposureName: string;
+    exposureId: string;
+    columns: ColumnDef[];
+    subListingNames: string[];
+};
+
+export interface PluginListingExportMeta {
+    pluginId: string;
+    exposureId: string;
+    analysisId?: string;
+    trajectoryId?: string;
+    total: number;
+    columns: ColumnDef[];
+    format: ExportType;
+};
+
 export interface GetPluginListingDocumentsOutputDTO {
     data: ListingRowData[];
     total: number;
     page: number;
     totalPages: number;
     limit: number;
-    _meta: {
-        pluginId: string;
-        exposureName: string;
-        exposureId: string;
-        columns: ColumnDef[];
-        subListingNames: string[];
-    };
+    _meta: PluginListingDocumentsMeta;
 };
 
 export interface ExportPluginListingDocumentsOutputDTO {
-    meta: {
-        pluginId: string;
-        exposureId: string;
-        analysisId?: string;
-        trajectoryId?: string;
-        total: number;
-        columns: ColumnDef[];
-        format: ExportType;
-    };
+    meta: PluginListingExportMeta;
     data: ListingRowData[];
 };

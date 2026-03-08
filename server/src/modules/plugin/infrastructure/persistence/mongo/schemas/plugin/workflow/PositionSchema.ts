@@ -1,0 +1,15 @@
+import { ValidationCodes } from '@core/constants/validation-codes';
+import { Schema } from 'mongoose';
+
+export const PositionSchema = new Schema({
+    x: {
+        type: Number,
+        required: [true, ValidationCodes.PLUGIN_POSITION_X_REQUIRED],
+        default: 0
+    },
+    y: {
+        type: Number,
+        required: [true, ValidationCodes.PLUGIN_POSITION_Y_REQUIRED],
+        default: 0
+    }
+}, { _id: false });

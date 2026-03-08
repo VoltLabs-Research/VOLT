@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { MdNature } from 'react-icons/md';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import Select from '@/shared/presentation/components/Select';
 import { row, colorField } from '../../../../molecules/CanvasRenderConfigHelpers';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+
+import { useMemo } from 'react';
+import { MdNature } from 'react-icons/md';
+import { useShallow } from 'zustand/react/shallow';
+import Select from '@/shared/presentation/components/Select';
+
 import type { RenderGroup } from '../../types';
 
 const useEnvironmentGroup = (): RenderGroup => {

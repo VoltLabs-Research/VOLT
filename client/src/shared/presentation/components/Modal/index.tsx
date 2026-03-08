@@ -1,19 +1,23 @@
-import React, { useState, type ReactNode } from 'react';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import Container from '@/shared/presentation/components/Container';
 import CloseButton from '@/shared/presentation/components/CloseButton';
+import Container from '@/shared/presentation/components/Container';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Title from '@/shared/presentation/components/Title';
 import FloatingRootContext from '@/shared/presentation/contexts/FloatingRootContext';
 import './Modal.css';
+import { useState } from 'react';
+import React from 'react';
+import type { ReactNode } from 'react';
 
 declare module 'react' {
     interface ButtonHTMLAttributes<T> extends React.HTMLAttributes<T> {
         command?: string;
         commandfor?: string;
     }
-};
+}
 
-interface ModalProps{
+type ModalTriggerElement = React.ReactElement<React.ButtonHTMLAttributes<HTMLButtonElement>>;
+
+interface ModalProps {
     id: string;
     trigger?: ReactNode;
     title?: string;
@@ -22,6 +26,10 @@ interface ModalProps{
     footer?: ReactNode;
     className?: string;
     width?: string;
+};
+
+const isDialogElement = (element: HTMLElement | null): element is HTMLDialogElement => {
+    return element instanceof HTMLDialogElement;
 };
 
 const Modal = ({
@@ -55,7 +63,7 @@ const Modal = ({
     return (
         <>
             {trigger && React.isValidElement(trigger) ? (
-                React.cloneElement(trigger as React.ReactElement<any>, {
+                React.cloneElement(trigger as ModalTriggerElement, {
                     command: 'show-modal',
                     commandfor: id,
                     type: 'button'
@@ -104,11 +112,17 @@ const Modal = ({
 export default Modal;
 
 export const openModal = (id: string) => {
-    (document.getElementById(id) as HTMLDialogElement)?.showModal();
+    const element = document.getElementById(id);
+    if (isDialogElement(element)) {
+        element.showModal();
+    }
 };
 
 export const closeModal = (id: string) => {
-    (document.getElementById(id) as HTMLDialogElement)?.close();
+    const element = document.getElementById(id);
+    if (isDialogElement(element)) {
+        element.close();
+    }
 };
 
 export const resetModal = (id: string, reset: () => void, delay = 300) => {

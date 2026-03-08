@@ -5,7 +5,7 @@ interface UseAsyncActionOptions {
     onError?: (error: unknown) => void;
     /** Called when the action completes (success or failure) */
     onFinally?: () => void;
-}
+};
 
 interface UseAsyncActionReturn {
     isLoading: boolean;
@@ -14,7 +14,7 @@ interface UseAsyncActionReturn {
     execute: <T>(action: () => Promise<T>) => Promise<T | undefined>;
     /** Reset the error state */
     clearError: () => void;
-}
+};
 
 /**
  * Hook for managing async action loading states.

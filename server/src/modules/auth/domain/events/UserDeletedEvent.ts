@@ -8,4 +8,4 @@ export default class UserDeletedEvent extends BaseDomainEvent<UserDeletedEventPa
     constructor(payload: UserDeletedEventPayload) {
         super('user.deleted', payload);
     }
-}
+};

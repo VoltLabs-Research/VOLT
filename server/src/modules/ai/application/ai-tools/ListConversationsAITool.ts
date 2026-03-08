@@ -1,9 +1,9 @@
-import { injectable, inject } from 'tsyringe';
-import { z } from 'zod';
-import { AITool } from '@shared/application/ai/AITool';
-import type { AIToolScope } from '@modules/ai/application/services/AIToolService';
+import type { AIToolScope } from '@modules/ai/services/AIToolService';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import ListAIConversationsUseCase from '@modules/ai/application/use-cases/ListAIConversationsUseCase';
-import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
+import { AITool } from '@shared/application/ai/AITool';
+import { inject, injectable } from 'tsyringe';
+import { z } from 'zod';
 
 @injectable()
 export class ListConversationsAITool extends AITool {
@@ -35,4 +35,4 @@ export class ListConversationsAITool extends AITool {
             total: result.value.total
         };
     }
-}
+};

@@ -5,7 +5,7 @@ import type {
     EnvironmentConfigState,
     EffectsConfigState,
     LightsState
-} from '@/modules/fractal/types/stores/editor/visual-types';
+} from '@/modules/fractal/stores/contracts/editor/visual-types';
 import type {
     RendererCreateState,
     RendererRuntimeState,
@@ -13,9 +13,8 @@ import type {
     DprSettings,
     CanvasPerformanceProp,
     PowerPreference
-} from '@/modules/fractal/types/stores/editor/performance-types';
-import type { SlicePlaneConfig } from '@/modules/fractal/api/entities/fractal';
-import type { SceneObjectType } from '@/modules/fractal/api/entities/fractal';
+} from '@/modules/fractal/stores/contracts/editor/performance-types';
+import type { SlicePlaneConfig, SceneObjectType } from '@/modules/fractal/api/entities/scene';
 
 export interface FractalSceneConfig {
     rendererCreate: RendererCreateState & { powerPreference: PowerPreference };
@@ -33,4 +32,4 @@ export interface FractalSceneConfig {
     adaptiveEventsEnabled: boolean;
     interactionDegradeEnabled: boolean;
     activeScene: SceneObjectType;
-}
+};

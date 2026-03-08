@@ -1,7 +1,7 @@
 interface NetworkSpeedFormatted {
     value: string;
     unit: string;
-}
+};
 
 export const formatNetworkSpeedWithUnit = (kbs: number): NetworkSpeedFormatted => {
     if(kbs < 1){

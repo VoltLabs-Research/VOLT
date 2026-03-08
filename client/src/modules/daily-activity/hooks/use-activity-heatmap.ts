@@ -1,25 +1,26 @@
-import { useMemo, useState, type MouseEvent, type ReactNode } from 'react';
 import { addDays, format, subDays } from 'date-fns';
-import type { HeatmapValue } from 'react-calendar-heatmap';
-import formatActivityTooltip from '../utilities/format-activity-tooltip';
+import { useMemo, useState } from 'react';
 import type { DailyActivity } from '../api/entities/daily-activity';
+import type { ActivityItem } from '../api/entities/daily-activity';
+import type { MouseEvent } from 'react';
+import type { HeatmapValue } from 'react-calendar-heatmap';
 
 export interface ActivityHeatmapChartDataItem extends HeatmapValue {
     date: string;
     count: number;
     level: number;
     data?: DailyActivity;
-}
+};
 
 interface UseActivityHeatmapParams {
     data: DailyActivity[];
     range: number;
-}
+};
 
 interface TooltipPosition {
     x: number;
     y: number;
-}
+};
 
 const buildChartData = (
     data: DailyActivity[],
@@ -76,17 +77,17 @@ const useActivityHeatmap = ({ data, range }: UseActivityHeatmapParams) => {
 
     const [tooltipOpen, setTooltipOpen] = useState(false);
     const [tooltipPos, setTooltipPos] = useState<TooltipPosition>({ x: 0, y: 0 });
-    const [tooltipContent, setTooltipContent] = useState<ReactNode>(null);
+    const [tooltipActivity, setTooltipActivity] = useState<ActivityItem[]>([]);
 
     const chartData = useMemo(
         () => buildChartData(data, range, startDate),
         [data, range, startDate]
     );
 
-    const handleMouseEnter = (event: MouseEvent, value: ActivityHeatmapChartDataItem | null) => {
-        const rect = (event.target as Element).getBoundingClientRect();
+    const handleMouseEnter = (event: MouseEvent<SVGRectElement>, value: ActivityHeatmapChartDataItem | null) => {
+        const rect = event.currentTarget.getBoundingClientRect();
         setTooltipPos({ x: rect.left + (rect.width / 2), y: rect.top });
-        setTooltipContent(formatActivityTooltip(value?.data?.activity ?? []));
+        setTooltipActivity(value?.data?.activity ?? []);
         setTooltipOpen(true);
     };
 
@@ -104,7 +105,7 @@ const useActivityHeatmap = ({ data, range }: UseActivityHeatmapParams) => {
         startDate,
         tooltipOpen,
         tooltipPos,
-        tooltipContent,
+        tooltipActivity,
         handleMouseEnter,
         handleMouseLeave,
         handleMouseMove

@@ -1,18 +1,24 @@
-import { injectable, inject } from 'tsyringe';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IUseCase } from '@shared/application/IUseCase';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO } from '@modules/trajectory/application/dtos/trajectory/CreateTrajectoryDTO';
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
-import { ITrajectoryBackgroundProcessor } from '@modules/trajectory/domain/port/ITrajectoryBackgroundProcessor';
-import { TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
+import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import { ITrajectoryBackgroundProcessor } from '@modules/trajectory/domain/port/trajectory/ITrajectoryBackgroundProcessor';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
-import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
-import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/TrajectoryCreatedEvent';
+import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import path from 'node:path';
+import { Result } from '@shared/domain/port/Result';
+import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryCreatedEvent';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
+
+import { injectable, inject } from 'tsyringe';
+import path from 'node:path';
+
+interface InitialTrajectoryStats {
+    totalFiles: number;
+    totalSize: number;
+};
 
 @injectable()
 export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO, ApplicationError> {
@@ -32,6 +38,10 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
 
         const ext = path.extname(name);
         const cleanName = ext ? name.slice(0, -ext.length) : name;
+        const stats: InitialTrajectoryStats = {
+            totalFiles: 0,
+            totalSize: 0
+        };
 
         const trajectory = await this.trajectoryRepo.create({
             name: cleanName,
@@ -39,7 +49,7 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
             createdBy: userId,
             status: TrajectoryStatus.WaitingForProcess,
             frames: [],
-            stats: { totalFiles: 0, totalSize: 0 },
+            stats,
             analysis: [],
             rasterSceneViews: 0,
             isPublic: true,
@@ -61,4 +71,4 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
 
         return Result.ok(toPersistedOutput(trajectory));
     }
-}
+};

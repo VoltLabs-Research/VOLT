@@ -1,14 +1,28 @@
-import { memo, useEffect, useState } from 'react';
-import type { IconType, IconBaseProps } from 'react-icons';
-import { GrStatusUnknown } from 'react-icons/gr';
 import { ICON_LIB_LOADERS } from '@/shared/presentation/components/DynamicIcon/loaders';
+import { memo, useEffect, useState } from 'react';
+import { GrStatusUnknown } from 'react-icons/gr';
+import type { IconType, IconBaseProps } from 'react-icons';
 
 type IconLib = keyof typeof ICON_LIB_LOADERS;
+
+interface IconModule {
+    [key: string]: unknown;
+};
+
+const ICON_LIB_PREFIXES = Object.keys(ICON_LIB_LOADERS) as IconLib[];
+
+const isIconLib = (value: string): value is IconLib => {
+    return ICON_LIB_PREFIXES.some((prefix) => prefix === value);
+};
+
+const isIconModule = (value: unknown): value is IconModule => {
+    return typeof value === 'object' && value !== null;
+};
 
 const getLibFromIconName = (iconName: string): IconLib | null => {
     const match = iconName.match(/^[A-Z][a-z0-9]*/);
     const prefix = (match?.[0] ?? '').toLowerCase();
-    return prefix in ICON_LIB_LOADERS ? (prefix as IconLib) : null;
+    return isIconLib(prefix) ? prefix : null;
 };
 
 const isRenderableComponent = (value: unknown): value is IconType => {
@@ -35,7 +49,9 @@ const resolveIcon = async (iconName: string, fallback: IconType): Promise<IconTy
 
     try {
         const mod = await modPromise;
-        const candidate = (mod as Record<string, unknown>)[iconName];
+        if (!isIconModule(mod)) return fallback;
+
+        const candidate = mod[iconName];
         if (!isRenderableComponent(candidate)) return fallback;
 
         iconCache.set(iconName, candidate);

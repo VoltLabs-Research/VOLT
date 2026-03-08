@@ -1,6 +1,6 @@
-import { Client } from 'minio';
-import logger from '@shared/infrastructure/logger';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
+import logger from '@shared/infrastructure/logger';
+import { Client } from 'minio';
 
 let minioClient: Client | null = null;
 
@@ -56,12 +56,14 @@ const ensureBucketExists = async (client: Client, bucket: string): Promise<void>
         if (bucket === SYS_BUCKETS.AVATARS || bucket === SYS_BUCKETS.CHAT) {
             const policy = {
                 Version: '2012-10-17',
-                Statement: [{
-                    Effect: 'Allow',
-                    Principal: '*',
-                    Action: ['s3:GetObject'],
-                    Resource: [`arn:aws:s3:::${bucket}/*`]
-                }]
+                Statement: [
+                    {
+                        Effect: 'Allow',
+                        Principal: '*',
+                        Action: ['s3:GetObject'],
+                        Resource: [`arn:aws:s3:::${bucket}/*`]
+                    }
+                ]
             };
             await client.setBucketPolicy(bucket, JSON.stringify(policy));
         }

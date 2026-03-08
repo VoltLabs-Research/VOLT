@@ -1,35 +1,38 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { RxDotsHorizontal } from 'react-icons/rx';
-import { Plus } from 'lucide-react';
-import { Skeleton } from '@mui/material';
-import type { QueryKey } from '@tanstack/react-query';
-import useSocket from '@/modules/socket/hooks/use-socket';
-import queryClient from '@/shared/infrastructure/query/query-client';
-import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
-import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-import useOptimisticAction from '@/shared/presentation/hooks/use-optimistic-action';
-import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
-import DocumentListingTable, { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import DocumentListingGrid from '@/shared/presentation/components/DocumentListingGrid';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import ApiError from '@/shared/errors/ApiError';
-import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Container from '@/shared/presentation/components/Container';
-import Button from '@/shared/presentation/components/Button';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import { sileo } from 'sileo';
-import { getValueByPath } from '@/shared/utils/format';
-import { triggerBrowserDownload } from '@/shared/utils/file';
-import { sortData } from '@/shared/utils/sort';
-import { SortConfig } from '@/shared/domain/sorting/types';
 import { ExportType } from '@/shared/domain/export/types';
 import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { MenuOption } from '@/shared/presentation/types/menu';
+import { SortConfig } from '@/shared/domain/sorting/types';
+import { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
+import { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { triggerBrowserDownload } from '@/shared/utils/file';
+import { getValueByPath } from '@/shared/utils/format';
+import { sortData } from '@/shared/utils/sort';
+import useSocket from '@/modules/socket/core/hooks/use-socket';
+import ApiError from '@/shared/errors/ApiError';
+import queryClient from '@/shared/infrastructure/query/query-client';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import DocumentListingGrid from '@/shared/presentation/components/DocumentListingGrid';
+import DocumentListingTable from '@/shared/presentation/components/DocumentListingTable';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import Modal from '@/shared/presentation/components/Modal';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Title from '@/shared/presentation/components/Title';
+import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
+import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
+import useOptimisticAction from '@/shared/presentation/hooks/use-optimistic-action';
 import './DocumentListing.css';
+import { Skeleton } from '@mui/material';
+import { motion } from 'framer-motion';
+import { Plus } from 'lucide-react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { RxDotsHorizontal } from 'react-icons/rx';
+import { sileo } from 'sileo';
+import React from 'react';
+import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
+import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { QueryKey } from '@tanstack/react-query';
 
 export type { ColumnConfig, MenuOption };
 export { getValueByPath };
@@ -37,7 +40,7 @@ export { getValueByPath };
 export interface SocketInvalidationConfig {
     event: string;
     queryKeys: QueryKey[];
-}
+};
 
 type ViewMode = 'table' | 'grid';
 type HeaderTabMode = 'list' | 'export';
@@ -47,12 +50,12 @@ export interface DocumentListingExportParams<TContext = Record<string, never>> {
     context?: TContext;
     search: string;
     sort?: SortConfig | null;
-}
+};
 
 interface DocumentListingExportConfig<TContext = Record<string, never>> {
     onExport?: (params: DocumentListingExportParams<TContext>) => Promise<Blob | void>;
     getFilename?: (format: ExportType) => string;
-}
+};
 
 interface DocumentListingProps<T, TContext = Record<string, never>> {
     title: string | React.ReactNode;
@@ -67,7 +70,7 @@ interface DocumentListingProps<T, TContext = Record<string, never>> {
     headerActions?: React.ReactNode;
     gap?: string;
     // Table view props
-    columns?: ColumnConfig[];
+    columns?: ColumnConfig<T>[];
     getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
     // Grid view props
     view?: ViewMode;
@@ -118,7 +121,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     socketInvalidation
 }: DocumentListingProps<T, TContext>) => {
     const socketService = useSocket();
-    const getColumnSortKey = useCallback((col: ColumnConfig): string => {
+    const getColumnSortKey = useCallback((col: ColumnConfig<T>): string => {
         return String(col.key ?? (col as any).path ?? '');
     }, []);
 
@@ -197,7 +200,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         return sortData(visibleData, sortConfig, getValueByPath);
     }, [visibleData, sortConfig]);
 
-    const handleSort = useCallback((col: ColumnConfig) => {
+    const handleSort = useCallback((col: ColumnConfig<T>) => {
         if(!col.sortable) return;
         const columnKey = getColumnSortKey(col);
         if (!columnKey) return;
@@ -209,7 +212,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         });
     }, [getColumnSortKey]);
 
-    const getSortIndicator = useCallback((col: ColumnConfig) => {
+    const getSortIndicator = useCallback((col: ColumnConfig<T>) => {
         if(!col.sortable) return null;
         const columnKey = getColumnSortKey(col);
         if(!sortConfig || sortConfig.key !== columnKey) return <span className='sort-indicator'>⇅</span>;

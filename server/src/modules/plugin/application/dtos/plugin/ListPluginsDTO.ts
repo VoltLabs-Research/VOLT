@@ -1,4 +1,5 @@
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+
 import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin/PersistedPluginDTO';
 
 export interface ListPluginsInputDTO {
@@ -6,8 +7,8 @@ export interface ListPluginsInputDTO {
     userId: string;
     page?: number;
     limit?: number;
-}
+};
 
-export interface ListedPluginDTO extends PersistedPluginDTO { }
+export interface ListedPluginDTO extends PersistedPluginDTO { };
 
-export interface ListPluginsOutputDTO extends PaginatedResult<ListedPluginDTO> { }
+export interface ListPluginsOutputDTO extends PaginatedResult<ListedPluginDTO> { };

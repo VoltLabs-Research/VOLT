@@ -1,6 +1,13 @@
 import { z } from 'zod';
+import type { GetPasswordInfoOutputDTO } from '@/modules/auth/api/dtos/password-info';
 
-export type { GetPasswordInfoOutputDTO as PasswordInfo } from '@/modules/auth/api/dtos/password-info';
+export type PasswordInfo = GetPasswordInfoOutputDTO;
+
+export interface PasswordChangeForm {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+};
 
 export const passwordChangeSchema = z.object({
     currentPassword: z.string(),
@@ -15,5 +22,3 @@ export const passwordChangeSchema = z.object({
     message: 'Passwords do not match',
     path: ['confirmPassword']
 });
-
-export type PasswordChangeForm = z.infer<typeof passwordChangeSchema>;

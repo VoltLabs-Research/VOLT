@@ -1,11 +1,33 @@
-import mongoose, { Schema, Model, Document } from 'mongoose';
-import { teamRefField, userRefField, trajectoryRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
-import { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
+import mongoose from 'mongoose';
+import { Schema } from 'mongoose';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import { teamRefField, trajectoryRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
+import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
+import type { Document, Model } from 'mongoose';
 
-type AnalysisRelations = 'plugin' | 'trajectory' | 'createdBy' | 'team';
+enum AnalysisRelation {
+    Plugin = 'plugin',
+    Trajectory = 'trajectory',
+    CreatedBy = 'createdBy',
+    Team = 'team'
+};
 
-export interface AnalysisDocument extends Persistable<AnalysisProps, AnalysisRelations>, Document { }
+type AnalysisRelations = `${AnalysisRelation}`;
+
+interface AnalysisTrajectoryInverse {
+    path: string;
+    behavior: 'addToSet';
+};
+
+const analysisTrajectoryInverse: AnalysisTrajectoryInverse = {
+    path: 'analysis',
+    behavior: 'addToSet'
+};
+
+export interface AnalysisDocument extends Persistable<
+    AnalysisProps,
+    AnalysisRelations
+>, Document {};
 
 const AnalysisSchema = new Schema<AnalysisDocument>({
     plugin: {
@@ -40,13 +62,17 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
     finishedAt: {
         type: Date
     },
-    team: teamRefField() as unknown as AnalysisDocument['team'],
+    team: {
+        ...teamRefField()
+    },
     trajectory: {
-        ...(trajectoryRefField() as unknown as Record<string, unknown>),
+        ...trajectoryRefField(),
         cascade: 'delete',
-        inverse: { path: 'analysis', behavior: 'addToSet' }
-    } as unknown as AnalysisDocument['trajectory'],
-    createdBy: userRefField() as unknown as AnalysisDocument['createdBy']
+        inverse: analysisTrajectoryInverse
+    },
+    createdBy: {
+        ...userRefField()
+    }
 }, {
     timestamps: true
 });

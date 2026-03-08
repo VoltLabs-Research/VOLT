@@ -1,10 +1,10 @@
-import { container } from 'tsyringe';
-import GetTeamAIIntegrationsController from './GetTeamAIIntegrationsController';
 import CreateTeamAIIntegrationController from './CreateTeamAIIntegrationController';
-import UpdateTeamAIIntegrationController from './UpdateTeamAIIntegrationController';
 import DeleteTeamAIIntegrationController from './DeleteTeamAIIntegrationController';
-import GetTeamAIIntegrationModelsController from './GetTeamAIIntegrationModelsController';
 import DiscoverTeamAIProviderModelsController from './DiscoverTeamAIProviderModelsController';
+import GetTeamAIIntegrationModelsController from './GetTeamAIIntegrationModelsController';
+import GetTeamAIIntegrationsController from './GetTeamAIIntegrationsController';
+import UpdateTeamAIIntegrationController from './UpdateTeamAIIntegrationController';
+import { container } from 'tsyringe';
 
 export default {
     listByTeamId: container.resolve(GetTeamAIIntegrationsController),

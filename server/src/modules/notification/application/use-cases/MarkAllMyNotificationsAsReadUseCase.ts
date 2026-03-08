@@ -1,10 +1,10 @@
-import { INotificationRepository } from '@modules/notification/domain/port/INotificationRepository';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IUseCase } from '@shared/application/IUseCase';
-import { MarkAllMyNotificationsAsReadInputDTO } from '@modules/notification/application/dtos/MarkAllMyNotificationsAsReadDTO';
 import { NOTIFICATION_TOKENS } from '@modules/notification/infrastructure/di/NotificationTokens';
-import { injectable, inject } from 'tsyringe';
+import type { MarkAllMyNotificationsAsReadInputDTO } from '@modules/notification/application/dtos';
+import { Result } from '@shared/domain/port/Result';
+import { inject, injectable } from 'tsyringe';
+import type { INotificationRepository } from '@modules/notification/domain/port/INotificationRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
+import type ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 @injectable()
 export default class MarkAllMyNotificationsAsReadUseCase implements IUseCase<MarkAllMyNotificationsAsReadInputDTO, void, ApplicationError>{

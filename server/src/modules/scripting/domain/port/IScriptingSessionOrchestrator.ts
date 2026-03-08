@@ -1,22 +1,30 @@
+export interface DefaultNotebookTemplateContext {
+    trajectoryId: string;
+};
+
+export interface ScriptingSessionNotebookInput {
+    notebookPath: string;
+    content?: unknown;
+};
+
+export interface ScriptingSessionJupyterInfo {
+    url: string;
+    ready: boolean;
+};
+
 export interface ScriptingSessionStartInput {
     teamId: string;
     trajectoryId: string;
     userId: string;
-    notebook?: {
-        notebookPath: string;
-        content?: unknown;
-    };
-}
+    notebook?: ScriptingSessionNotebookInput;
+};
 
 export interface ScriptingSessionStartResult {
-    jupyter: {
-        url: string;
-        ready: boolean;
-    };
-}
+    jupyter: ScriptingSessionJupyterInfo;
+};
 
 export interface IScriptingSessionOrchestrator {
     startSession(input: ScriptingSessionStartInput): Promise<ScriptingSessionStartResult>;
     deleteSession(trajectoryId: string): Promise<void>;
-    resolveDefaultNotebookTemplateContent(context: { trajectoryId: string }): Promise<string>;
-}
+    resolveDefaultNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<string>;
+};

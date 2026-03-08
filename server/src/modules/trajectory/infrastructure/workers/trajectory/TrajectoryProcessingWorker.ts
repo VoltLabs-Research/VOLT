@@ -1,0 +1,87 @@
+import { normalizeTrajectoryWorkerFailure } from './trajectory-worker-failure';
+import { registerAllDependencies } from '@core/bootstrap/register-deps';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import Job from '@modules/jobs/domain/entities/Job';
+import logger from '@shared/infrastructure/logger';
+import BaseWorker from '@shared/infrastructure/workers/BaseWorker';
+
+import { performance } from 'node:perf_hooks';
+import 'reflect-metadata';
+import { container } from 'tsyringe';
+
+import type { IAtomisticExporter } from '@modules/trajectory/domain/port/trajectory/exporters/AtomisticExporter';
+import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
+
+registerAllDependencies();
+
+interface TrajectoryProcessingJobMetadata {
+    trajectoryId: string;
+    timestep: number;
+};
+
+export default class TrajectoryProcessingWorker extends BaseWorker<Job> {
+    private dumpStorage!: ITrajectoryDumpStorageService;
+    private atomisticExporter!: IAtomisticExporter;
+
+    protected async setup(): Promise<void> {
+        await this.connectDB();
+        this.dumpStorage = container.resolve<ITrajectoryDumpStorageService>(TRAJECTORY_TOKENS.TrajectoryDumpStorageService);
+        this.atomisticExporter = container.resolve<IAtomisticExporter>(TRAJECTORY_TOKENS.AtomisticExporter);
+    }
+
+    protected async perform(job: Job): Promise<void> {
+        const metadata = job.props.metadata as TrajectoryProcessingJobMetadata;
+        const { trajectoryId, timestep } = metadata;
+        const { jobId } = job.props;
+
+        const start = performance.now();
+
+        logger.info(`@trajectory-processing-worker - #${process.pid}] start job ${jobId} | frame ${timestep}`);
+
+        try {
+            logger.debug(`@trajectory-processing-worker - #${process.pid}] Fetching dump for trajectory ${trajectoryId}, timestep ${timestep}`);
+            const localDumpPath = await this.dumpStorage.getDump(trajectoryId, String(timestep));
+
+            if (!localDumpPath) {
+                logger.error(`@trajectory-processing-worker - #${process.pid}] Dump not found for trajectory ${trajectoryId}, timestep ${timestep}`);
+                throw new Error(ErrorCodes.TRAJECTORY_DUMP_NOT_FOUND);
+            }
+            logger.debug(`@trajectory-processing-worker - #${process.pid}] Found dump at ${localDumpPath}`);
+
+            // Generate GLB object name (not dump object name)
+            const targetObjectName = `trajectory-${trajectoryId}/timestep-${timestep}.glb`;
+            logger.debug(`@trajectory-processing-worker - #${process.pid}] Exporting to storage object: ${targetObjectName}`);
+
+            await this.atomisticExporter.toStorage(localDumpPath, targetObjectName);
+            logger.debug(`@trajectory-processing-worker - #${process.pid}] Export completed successfully`);
+
+            const totalTime = (performance.now() - start).toFixed(2);
+            logger.info(`@trajectory-processing-worker - #${process.pid}] job ${jobId} success | duration: ${totalTime}ms`);
+
+            this.sendMessage({
+                status: 'completed',
+                jobId,
+                timestep,
+                duration: totalTime
+            });
+        } catch (error: unknown) {
+            const failure = normalizeTrajectoryWorkerFailure(
+                error,
+                ErrorCodes.TRAJECTORY_GLB_GENERATION_FAILED
+            );
+
+            logger.error(
+                error,
+                `@trajectory-processing-worker - #${process.pid}] error processing job ${jobId}`
+            );
+
+            this.sendFailure(jobId, failure, {
+                timestep,
+                trajectoryId
+            });
+        }
+    }
+};
+
+BaseWorker.start(TrajectoryProcessingWorker);

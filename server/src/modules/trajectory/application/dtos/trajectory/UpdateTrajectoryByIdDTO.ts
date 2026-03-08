@@ -1,4 +1,4 @@
-import { TrajectoryProps } from '@modules/trajectory/domain/entities/Trajectory';
+import { TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 
 export interface UpdateTrajectoryByIdInputDTO {
     trajectoryId: string;

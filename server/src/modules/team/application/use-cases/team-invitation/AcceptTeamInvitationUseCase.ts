@@ -1,15 +1,15 @@
-import { injectable, inject } from 'tsyringe';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
-import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
-import { ITeamRepository } from '@modules/team/domain/port/ITeamRepository';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/AcceptTeamInvitationDTO';
+import { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
+import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO, ApplicationError> {
@@ -77,4 +77,4 @@ export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamI
             message: 'Invitation accepted successfully'
         });
     }
-}
+};

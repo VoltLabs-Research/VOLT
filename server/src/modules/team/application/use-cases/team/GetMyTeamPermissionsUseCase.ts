@@ -1,11 +1,11 @@
-import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
-import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/TeamMember';
-import { IUseCase } from '@shared/application/IUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { Result } from '@shared/domain/port/Result';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { GetMyTeamPermissionsInputDTO, GetMyTeamPermissionsOutputDTO } from '@modules/team/application/dtos/team/GetMyTeamPermissionsDTO';
+import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
+import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class GetMyTeamPermissionsUseCase implements IUseCase<GetMyTeamPermissionsInputDTO, GetMyTeamPermissionsOutputDTO, ApplicationError> {
@@ -31,4 +31,4 @@ export default class GetMyTeamPermissionsUseCase implements IUseCase<GetMyTeamPe
 
         return Result.ok({ permissions });
     }
-}
+};

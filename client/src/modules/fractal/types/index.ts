@@ -1,10 +1,23 @@
-import type React from 'react';
-import type { Plane } from 'three';
-import type { BoundsInfo } from '@/modules/fractal/core/model-transform';
-import type { BoxBounds, Pos3D } from '@/modules/fractal/api/entities/fractal';
-import type { ModelLoadingState } from '@/modules/fractal/api/entities/fractal';
+import type { RefObject } from 'react';
+import type { Camera, Plane, Vector3 } from 'three';
+import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
+import type { BoxBounds, Pos3D, ModelLoadingState } from '@/modules/fractal/api/entities/model';
 
-export type AnalysisStatus = 'pending' | 'running' | 'completed' | 'failed';
+export enum AnalysisStatus {
+    Pending = 'pending',
+    Running = 'running',
+    Completed = 'completed',
+    Failed = 'failed'
+};
+
+export interface OrbitControlsHandle {
+    enabled: boolean;
+    update: () => void;
+    target: Vector3;
+    object: Camera;
+    minDistance: number;
+    maxDistance: number;
+};
 
 export type { BoxBounds, Pos3D, ModelLoadingState };
 
@@ -19,7 +32,7 @@ export type UseGlbSceneParams = {
     useFixedReference?: boolean;
     preserveInitialTransform?: boolean;
     onSelect?: () => void;
-    orbitControlsRef?: React.RefObject<{ enabled: boolean } | null>;
+    orbitControlsRef?: RefObject<OrbitControlsHandle | null>;
     onEmptyData?: () => void;
     disableAutoTransform?: boolean;
     sceneKey?: string;

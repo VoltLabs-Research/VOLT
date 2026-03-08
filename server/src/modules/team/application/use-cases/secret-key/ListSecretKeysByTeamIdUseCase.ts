@@ -1,13 +1,9 @@
-import { injectable, inject } from 'tsyringe';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { ListSecretKeysByTeamIdInputDTO, ListSecretKeysByTeamIdOutputDTO, SecretKeyListItemDTO } from '@modules/team/application/dtos/secret-key/ListSecretKeysByTeamIdDTO';
+import { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { ISecretKeyRepository } from '@modules/team/domain/port/ISecretKeyRepository';
-import {
-    ListSecretKeysByTeamIdInputDTO,
-    ListSecretKeysByTeamIdOutputDTO,
-    SecretKeyListItemDTO
-} from '@modules/team/application/dtos/secret-key/ListSecretKeysByTeamIdDTO';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class ListSecretKeysByTeamIdUseCase implements IUseCase<ListSecretKeysByTeamIdInputDTO, ListSecretKeysByTeamIdOutputDTO> {
@@ -55,4 +51,4 @@ export default class ListSecretKeysByTeamIdUseCase implements IUseCase<ListSecre
             data
         });
     }
-}
+};

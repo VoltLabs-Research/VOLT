@@ -7,6 +7,6 @@ export interface CreateColoredModelInputDTO {
     startValue: number;
     endValue: number;
     gradient: string;
-}
+};
 
 export type CreateColoredModelOutputDTO = null;

@@ -1,11 +1,12 @@
-import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { IListingRowRepository } from '@modules/plugin/domain/port/listing-row/IListingRowRepository';
+import { ISubListingRowRepository } from '@modules/plugin/domain/port/listing-row/ISubListingRowRepository';
 import PluginDeletedEvent from '@modules/plugin/domain/events/PluginDeletedEvent';
-import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
-import { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
-import { ISubListingRowRepository } from '@modules/plugin/domain/port/ISubListingRowRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
-import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
+
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class PluginDeletedEventHandler implements IEventHandler<PluginDeletedEvent> {
@@ -30,4 +31,4 @@ export default class PluginDeletedEventHandler implements IEventHandler<PluginDe
             this.subListingRowRepository.deleteMany(query)
         ]);
     }
-}
+};

@@ -1,18 +1,18 @@
+import { AddUsersToGroupInputDTO, AddUsersToGroupOutputDTO } from '@modules/chat/application/dtos/chat/AddUsersToGroupDTO';
+import { ensureTeamMembersExist } from '@modules/chat/application/services/chat/ensureTeamMembersExist';
+import { resolveGroupChat } from '@modules/chat/application/services/chat/resolveGroupChat';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { toPersistedChatOutput } from '@modules/chat/domain/services/toPersistedChatOutput';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
-import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
-import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { AddUsersToGroupInputDTO, AddUsersToGroupOutputDTO } from '@modules/chat/application/dtos/chat/AddUsersToGroupDTO';
-import { resolveGroupChat } from '@modules/chat/application/helpers/resolveGroupChat';
-import { ensureTeamMembersExist } from '@modules/chat/application/helpers/ensureTeamMembersExist';
-import { toPersistedChatOutput } from '@modules/chat/application/helpers/toPersistedChatOutput';
+import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
+import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 
 @injectable()
 export class AddUsersToGroupUseCase implements IUseCase<AddUsersToGroupInputDTO, AddUsersToGroupOutputDTO, ApplicationError> {

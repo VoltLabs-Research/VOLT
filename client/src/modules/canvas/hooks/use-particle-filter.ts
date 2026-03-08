@@ -1,42 +1,59 @@
-import { useState, useCallback, useMemo } from 'react';
-import useModifierBase, { UseModifierBaseOptions } from './use-modifier-base';
-import {
-    usePreviewFilterMutation,
-    useApplyFilterMutation,
-    uniqueValuesQuery
-} from '@/modules/trajectory/hooks/particle-filter/queries';
+import { UseModifierBaseOptions } from './use-modifier-base';
+import useModifierBase from './use-modifier-base';
+
+import { useApplyFilterMutation, uniqueValuesQuery, usePreviewFilterMutation } from '@/modules/trajectory/hooks/particle-filter/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { useCallback, useMemo, useState } from 'react';
 import { sileo } from 'sileo';
 import ApiError from '@/shared/errors/ApiError';
-import type { ParticleFilterScene } from '@/modules/fractal/api/entities/fractal';
 
-export type FilterOperator = '==' | '!=' | '>' | '>=' | '<' | '<=';
-export type FilterAction = 'delete' | 'highlight';
+import type { ParticleFilterScene } from '@/modules/fractal/api/entities/scene';
 
-export const OPERATORS: { value: FilterOperator; title: string }[] = [
-    { value: '==', title: '=' },
-    { value: '!=', title: '!=' },
-    { value: '>', title: '>' },
-    { value: '>=', title: '>=' },
-    { value: '<', title: '<' },
-    { value: '<=', title: '<=' }
-];
+export enum FilterOperator {
+    Equal = '==',
+    NotEqual = '!=',
+    GreaterThan = '>',
+    GreaterThanOrEqual = '>=',
+    LessThan = '<',
+    LessThanOrEqual = '<='
+};
 
-export const ACTIONS: { value: FilterAction; title: string }[] = [
-    { value: 'delete', title: 'Delete' },
-    { value: 'highlight', title: 'Color Selection' }
-];
+export enum FilterAction {
+    Delete = 'delete',
+    Highlight = 'highlight'
+};
+
+interface FilterOption<TValue extends string> {
+    value: TValue;
+    title: string;
+};
+
+interface PreviewFilterParams {
+    property: string;
+    operator: FilterOperator;
+    value: number;
+    exposureId?: string;
+};
 
 export interface PreviewResult {
     matchCount: number;
     totalCount: number;
-    filterParams: {
-        property: string;
-        operator: FilterOperator;
-        value: number;
-        exposureId?: string;
-    };
-}
+    filterParams: PreviewFilterParams;
+};
+
+export const OPERATORS: FilterOption<FilterOperator>[] = [
+    { value: FilterOperator.Equal, title: '=' },
+    { value: FilterOperator.NotEqual, title: '!=' },
+    { value: FilterOperator.GreaterThan, title: '>' },
+    { value: FilterOperator.GreaterThanOrEqual, title: '>=' },
+    { value: FilterOperator.LessThan, title: '<' },
+    { value: FilterOperator.LessThanOrEqual, title: '<=' }
+];
+
+export const ACTIONS: FilterOption<FilterAction>[] = [
+    { value: FilterAction.Delete, title: 'Delete' },
+    { value: FilterAction.Highlight, title: 'Color Selection' }
+];
 
 const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
     const {
@@ -55,9 +72,9 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
     const applyFilterMutation = useApplyFilterMutation();
     const [uniqueValuesEnabled, setUniqueValuesEnabled] = useState(false);
 
-    const [operator, setOperator] = useState<FilterOperator>('==');
+    const [operator, setOperator] = useState<FilterOperator>(FilterOperator.Equal);
     const [value, setValue] = useState(0);
-    const [action, setAction] = useState<FilterAction>('delete');
+    const [action, setAction] = useState<FilterAction>(FilterAction.Delete);
     const [previewResult, setPreviewResult] = useState<PreviewResult | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -104,6 +121,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
 
     const fetchValueSuggestions = useCallback(async () => {
         if (!uniqueValuesParams) return;
+
         sileo.info({ title: 'Loading suggestions...' });
         setUniqueValuesEnabled(true);
 
@@ -114,9 +132,10 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
             }
         } catch (fetchError: unknown) {
             if (ApiError.isRBACError(fetchError)) {
-                const message = fetchError instanceof ApiError
-                    ? fetchError.getFriendlyMessage()
-                    : 'You do not have permission to perform this action.';
+                let message = 'You do not have permission to perform this action.';
+                if (fetchError instanceof ApiError) {
+                    message = fetchError.getFriendlyMessage();
+                }
                 sileo.error({ title: message });
             } else {
                 sileo.error({ title: 'Failed to load suggestions' });
@@ -151,6 +170,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 value,
                 exposureId: normalizedExposureId
             });
+
             setPreviewResult({
                 matchCount: result.matchCount,
                 totalCount: result.totalAtoms,
@@ -163,9 +183,10 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
             });
             sileo.success({ title: 'Preview generated' });
         } catch (previewError: unknown) {
-            const errorMessage = previewError instanceof Error
-                ? previewError.message
-                : 'Preview failed';
+            let errorMessage = 'Preview failed';
+            if (previewError instanceof Error) {
+                errorMessage = previewError.message;
+            }
             setError(errorMessage);
         }
     }, [trajectoryId, analysisId, currentTimestep, property, operator, value, exposureId, propertyOptions, previewMutation]);
@@ -198,7 +219,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 }
             );
 
-            setActiveScene({
+            const nextScene: ParticleFilterScene = {
                 sceneType: 'particle-filter',
                 source: 'particle-filter',
                 analysisId,
@@ -207,17 +228,22 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 value: filterParams.value,
                 action,
                 exposureId: filterParams.exposureId
-            } as ParticleFilterScene);
+            };
+            setActiveScene(nextScene);
 
             window.dispatchEvent(new CustomEvent('canvas:scene-artifacts:changed', {
-                detail: { sourceType: 'particle-filter', trajectoryId }
+                detail: {
+                    sourceType: 'particle-filter',
+                    trajectoryId
+                }
             }));
 
             setPreviewResult(null);
         } catch (applyError: unknown) {
-            const errorMessage = applyError instanceof Error
-                ? applyError.message
-                : 'Apply failed';
+            let errorMessage = 'Apply failed';
+            if (applyError instanceof Error) {
+                errorMessage = applyError.message;
+            }
             setError(errorMessage);
         }
     }, [trajectoryId, analysisId, currentTimestep, action, previewResult, setActiveScene, applyFilterMutation]);
@@ -237,11 +263,28 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
     }, [isLoadingPreview, isApplying, property, isLoadingProperties]);
 
     return {
-        property, propertyOptions, handlePropertyChange, isLoadingProperties,
-        operator, setOperator, value, setValue, action, setAction,
-        valueSuggestions, fetchValueSuggestions, isLoadingValueSuggestions,
-        previewResult, isLoadingPreview, handlePreview, handleCancelPreview, percentage, canPreview,
-        isApplying, handleApplyAction, error
+        property,
+        propertyOptions,
+        handlePropertyChange,
+        isLoadingProperties,
+        operator,
+        setOperator,
+        value,
+        setValue,
+        action,
+        setAction,
+        valueSuggestions,
+        fetchValueSuggestions,
+        isLoadingValueSuggestions,
+        previewResult,
+        isLoadingPreview,
+        handlePreview,
+        handleCancelPreview,
+        percentage,
+        canPreview,
+        isApplying,
+        handleApplyAction,
+        error
     };
 };
 

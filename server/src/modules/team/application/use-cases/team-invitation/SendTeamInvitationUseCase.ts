@@ -1,22 +1,22 @@
-import { injectable, inject } from 'tsyringe';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
-import { ITeamRepository } from '@modules/team/domain/port/ITeamRepository';
 import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/SendTeamInvitationDTO';
-import crypto from 'crypto';
-import TeamInvitation, { TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
-import { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleRepository';
-import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
+import TeamInvitation, { TeamInvitationStatus } from '@modules/team/domain/entities/team-invitation/TeamInvitation';
+import InvitationSentEvent from '@modules/team/domain/events/team-invitation/InvitationSentEvent';
+import { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
+import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
+import { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IEventBus } from '@shared/application/events/IEventBus';
-import InvitationSentEvent from '@modules/team/domain/events/InvitationSentEvent';
-import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { Result } from '@shared/domain/port/Result';
+import crypto from 'crypto';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO, ApplicationError> {
@@ -118,4 +118,4 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
 
         return Result.ok(toPersistedOutput(invitation));
     }
-}
+};

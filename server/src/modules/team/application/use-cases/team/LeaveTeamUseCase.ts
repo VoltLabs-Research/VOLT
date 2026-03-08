@@ -1,13 +1,13 @@
-import { injectable, inject } from 'tsyringe';
+import { LeaveTeamInputDTO } from '../../dtos/team/LeaveTeamDTO';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import TeamMembershipService from '@modules/team/application/services/team/TeamMembershipService';
+import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { ITeamRepository } from '@modules/team/domain/port/ITeamRepository';
-import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
-import { LeaveTeamInputDTO } from '../../dtos/team/LeaveTeamDTO';
-import TeamMembershipService from '@modules/team/application/services/TeamMembershipService';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class LeaveTeamUseCase implements IUseCase<LeaveTeamInputDTO, null, ApplicationError> {
@@ -45,4 +45,4 @@ export default class LeaveTeamUseCase implements IUseCase<LeaveTeamInputDTO, nul
 
         return Result.ok(null);
     }
-}
+};

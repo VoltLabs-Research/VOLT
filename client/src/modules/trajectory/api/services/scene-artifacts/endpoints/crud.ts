@@ -1,12 +1,12 @@
 import { get } from '@/app/core/http/utilities/create-service';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { SceneArtifact } from '../../../entities/scene-artifact';
+import type { SceneArtifact } from '../../../entities/scene-artifacts';
 import type {
     ListSceneArtifactsInputDTO,
     RenderableExposurePayload
-} from '../../../dtos/list-scene-artifacts';
+} from '../../../dtos/scene-artifacts';
 
-const endpoints = {
+export default {
     listByTrajectory: get<ListSceneArtifactsInputDTO, PaginatedResponse<SceneArtifact | RenderableExposurePayload>>(
         '/:trajectoryId/scene-artifacts', {
             unwrap: 'raw',
@@ -25,5 +25,3 @@ const endpoints = {
         }
     )
 };
-
-export default endpoints;

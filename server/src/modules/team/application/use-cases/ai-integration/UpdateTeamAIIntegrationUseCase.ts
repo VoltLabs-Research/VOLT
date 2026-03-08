@@ -1,21 +1,18 @@
-import { injectable, inject } from 'tsyringe';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import TeamAIIntegration from '@modules/team/domain/entities/TeamAIIntegration';
-import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ITeamAIIntegrationRepository';
-import TeamAIIntegrationInputService from '@modules/team/application/services/TeamAIIntegrationInputService';
-import TeamAIIntegrationSecretService from '@modules/team/application/services/TeamAIIntegrationSecretService';
-import {
-    UpdateTeamAIIntegrationInputDTO,
-    UpdateTeamAIIntegrationOutputDTO
-} from '@modules/team/application/dtos/ai-integration/UpdateTeamAIIntegrationDTO';
-import TeamAIIntegrationSerializer from '@modules/team/application/services/TeamAIIntegrationSerializer';
-import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationOutputDTO } from '@modules/team/application/dtos/ai-integration/UpdateTeamAIIntegrationDTO';
+import TeamAIIntegrationInputService from '@modules/team/application/services/ai-integration/TeamAIIntegrationInputService';
+import TeamAIIntegrationSecretService from '@modules/team/application/services/ai-integration/TeamAIIntegrationSecretService';
+import TeamAIIntegrationSerializer from '@modules/team/application/services/ai-integration/TeamAIIntegrationSerializer';
+import TeamAIIntegration from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
+import TeamAIIntegrationUpdatedEvent from '@modules/team/domain/events/ai-integration/TeamAIIntegrationUpdatedEvent';
+import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IEventBus } from '@shared/application/events/IEventBus';
-import TeamAIIntegrationUpdatedEvent from '@modules/team/domain/events/TeamAIIntegrationUpdatedEvent';
 import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationOutputDTO, ApplicationError> {
@@ -102,4 +99,4 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
             integration: this.integrationSerializer.toDTO(persisted)
         });
     }
-}
+};

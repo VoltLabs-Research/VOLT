@@ -1,6 +1,6 @@
 import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import Loader from '@/shared/presentation/components/Loader';
+import Paragraph from '@/shared/presentation/components/Paragraph';
 import './ProcessingLoader.css';
 
 interface ProcessingLoaderProps {

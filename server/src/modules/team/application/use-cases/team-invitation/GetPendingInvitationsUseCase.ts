@@ -1,11 +1,11 @@
-import { injectable, inject } from 'tsyringe';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { GetPendingInvitationsInputDTO, GetPendingInvitationsOutputDTO } from '@modules/team/application/dtos/team-invitation/GetPendingInvitationsDTO';
+import { TeamInvitationStatus } from '@modules/team/domain/entities/team-invitation/TeamInvitation';
+import { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
-import { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
-import { GetPendingInvitationsInputDTO, GetPendingInvitationsOutputDTO } from '@modules/team/application/dtos/team-invitation/GetPendingInvitationsDTO';
-import { TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class GetPendingInvitationsUseCase implements IUseCase<GetPendingInvitationsInputDTO, GetPendingInvitationsOutputDTO, ApplicationError> {
@@ -37,4 +37,4 @@ export default class GetPendingInvitationsUseCase implements IUseCase<GetPending
             }))
         });
     }
-}
+};

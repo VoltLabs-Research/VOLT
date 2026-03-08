@@ -1,18 +1,16 @@
-import { container } from 'tsyringe';
-import { injectable } from 'tsyringe';
-import type { InjectionToken } from 'tsyringe';
-import type { Response } from 'express';
 import { BaseController } from './BaseController';
-import type { StreamableOutput } from './BaseStreamController';
-import { PaginatedBaseController } from './PaginatedBaseController';
 import { BaseStreamController } from './BaseStreamController';
+import { PaginatedBaseController } from './PaginatedBaseController';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import type { IUseCase, UseCaseInstance, UseCaseOutput } from '@shared/application/IUseCase';
+import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import { asRecord } from '@shared/infrastructure/utilities/type-guards';
+import { container, injectable } from 'tsyringe';
+import type { Response } from 'express';
+import type { IUseCase, UseCaseInput, UseCaseInstance, UseCaseOutput } from '@shared/application/IUseCase';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { RequestValidationState, ValidationSchemaInput } from '@shared/infrastructure/http/middleware/validation';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import type { UseCaseInput } from '@shared/application/IUseCase';
-import { asRecord } from '@shared/infrastructure/utilities/type-guards';
+import type { StreamableOutput } from './BaseStreamController';
+import type { InjectionToken } from 'tsyringe';
 
 type ControllerSuccessHandler<TUseCase extends UseCaseInstance> = (
     res: Response,
@@ -29,7 +27,7 @@ interface ControllerOptions<TUseCase extends UseCaseInstance = UseCaseInstance> 
     ) => Record<string, unknown>;
     handleSuccess?: ControllerSuccessHandler<TUseCase>;
     handleUnexpectedError?: (res: Response, error: unknown) => void;
-}
+};
 
 type DerivedControllerOptions<TUseCase extends UseCaseInstance = UseCaseInstance> = Omit<
     ControllerOptions<TUseCase>,
@@ -40,32 +38,32 @@ interface StreamControllerOptions<TUseCase extends IUseCase<unknown, StreamableO
     extends DerivedControllerOptions<TUseCase> {
     getHeaders?: (resultValue: UseCaseOutput<TUseCase>) => Record<string, string>;
     prepareOutput?: (resultValue: UseCaseOutput<TUseCase>) => Promise<void>;
-}
+};
 
-const getControllerOptions = <TOptions extends ControllerOptions>(
-    statusCodeOrOptions: HttpStatus | TOptions | undefined,
+const getControllerOptions = <TUseCase extends UseCaseInstance>(
+    statusCodeOrOptions: HttpStatus | ControllerOptions<TUseCase> | undefined,
     fallbackStatusCode: HttpStatus
-): TOptions => {
+): ControllerOptions<TUseCase> => {
     if (typeof statusCodeOrOptions === 'number') {
         return {
             statusCode: statusCodeOrOptions
-        } as TOptions;
+        };
     }
 
     return {
         statusCode: fallbackStatusCode,
         ...statusCodeOrOptions
-    } as TOptions;
+    };
 };
 
-const buildControllerParams = <TUseCase extends UseCaseInstance>(
+const buildControllerParams = (
     req: AuthenticatedRequest,
     validationState: RequestValidationState,
     extendParams?: (
         req: AuthenticatedRequest,
         params: Record<string, unknown>
     ) => Record<string, unknown>
-): UseCaseInput<TUseCase> => {
+): Record<string, unknown> => {
     const bodyPayload = asRecord(validationState.body ?? req.body) ?? {};
     const baseParams = {
         ...(asRecord(validationState.params ?? req.params) ?? {}),
@@ -78,9 +76,11 @@ const buildControllerParams = <TUseCase extends UseCaseInstance>(
         files: req.files
     };
 
-    return (extendParams
-        ? extendParams(req, baseParams)
-        : baseParams) as UseCaseInput<TUseCase>;
+    if (!extendParams) {
+        return baseParams;
+    }
+
+    return extendParams(req, baseParams);
 };
 
 export const createController = <TUseCase extends UseCaseInstance>(
@@ -105,7 +105,7 @@ export const createController = <TUseCase extends UseCaseInstance>(
         }
 
         protected override getParams(req: AuthenticatedRequest): UseCaseInput<TUseCase> {
-            return buildControllerParams<TUseCase>(req, this.getValidatedRequestData(req), options.extendParams);
+            return buildControllerParams(req, this.getValidatedRequestData(req), options.extendParams) as UseCaseInput<TUseCase>;
         }
 
         protected override handleSuccess(res: Response, value: UseCaseOutput<TUseCase>): void | Promise<void> {
@@ -123,7 +123,7 @@ export const createController = <TUseCase extends UseCaseInstance>(
 
             return super.handleUnexpectedError(res, error);
         }
-    }
+    };
 
     return GeneratedController;
 };
@@ -150,16 +150,16 @@ export const createPaginatedController = <
         }
 
         protected override getParams(req: AuthenticatedRequest): UseCaseInput<TUseCase> {
-            return buildControllerParams<TUseCase>(req, this.getValidatedRequestData(req), options.extendParams);
+            return buildControllerParams(req, this.getValidatedRequestData(req), options.extendParams) as UseCaseInput<TUseCase>;
         }
 
-        protected override handleSuccess(res: Response, value: UseCaseOutput<TUseCase>): void {
+        protected override async handleSuccess(res: Response, value: UseCaseOutput<TUseCase>): Promise<void> {
             if (options.handleSuccess) {
-                void options.handleSuccess(res, value);
+                await options.handleSuccess(res, value);
                 return;
             }
 
-            return super.handleSuccess(res, value);
+            super.handleSuccess(res, value);
         }
 
         protected override handleUnexpectedError(res: Response, error: unknown): void {
@@ -169,7 +169,7 @@ export const createPaginatedController = <
 
             return super.handleUnexpectedError(res, error);
         }
-    }
+    };
 
     return GeneratedPaginatedController;
 };
@@ -196,7 +196,7 @@ export const createStreamController = <
         }
 
         protected override getParams(req: AuthenticatedRequest): UseCaseInput<TUseCase> {
-            return buildControllerParams<TUseCase>(req, this.getValidatedRequestData(req), options.extendParams);
+            return buildControllerParams(req, this.getValidatedRequestData(req), options.extendParams) as UseCaseInput<TUseCase>;
         }
 
         protected override getHeaders(resultValue: UseCaseOutput<TUseCase>): Record<string, string> {
@@ -227,7 +227,7 @@ export const createStreamController = <
 
             return super.handleUnexpectedError(res, error);
         }
-    }
+    };
 
     return GeneratedStreamController;
 };

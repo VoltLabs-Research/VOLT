@@ -1,18 +1,20 @@
-import { injectable, inject } from 'tsyringe';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
-import { ErrorCodes } from '@core/constants/error-codes';
+
+import { injectable, inject } from 'tsyringe';
+
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 interface DeleteTrajectoryByIdInput {
     trajectoryId: string;
-}
+};
 
 interface DeleteTrajectoryByIdOutput {
     success: boolean;
-}
+};
 
 @injectable()
 export default class DeleteTrajectoryByIdUseCase implements IUseCase<DeleteTrajectoryByIdInput, DeleteTrajectoryByIdOutput, ApplicationError> {
@@ -31,4 +33,4 @@ export default class DeleteTrajectoryByIdUseCase implements IUseCase<DeleteTraje
         }
         return Result.ok({ success: true });
     }
-}
+};

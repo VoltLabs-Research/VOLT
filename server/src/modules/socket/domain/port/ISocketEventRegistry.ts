@@ -44,11 +44,4 @@ export interface ISocketEventRegistry {
         handler: (connection: ISocketConnection) => void | Promise<void>
     ): void;
 
-    unregisterSocket(
-        socketId: string
-    ): void;
-
-    registerSocket(
-        socket: any
-    ): void;
 };

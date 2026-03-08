@@ -1,8 +1,8 @@
+import ReviewItem from '../../atoms/ReviewItem';
 import { Box } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Button from '@/shared/presentation/components/Button';
-import ReviewItem from '../../atoms/ReviewItem';
 import type { ContainerConfig } from '../../../hooks/use-create-container-form';
 
 interface ReviewStepProps {
@@ -24,9 +24,15 @@ const ReviewStep = ({
     onBack,
     onCreate
 }: ReviewStepProps) => {
-    const portsDisplay = config.ports.length > 0 
-        ? config.ports.map((p) => `${p.private}:${p.public || 'Auto'}`).join(', ') 
-        : 'None';
+    let portsDisplay = 'None';
+    if (config.ports.length > 0) {
+        portsDisplay = config.ports.map((p) => `${p.private}:${p.public || 'Auto'}`).join(', ');
+    }
+
+    let leftIcon;
+    if (!isLoading) {
+        leftIcon = <Box size={18} />;
+    }
 
     return (
         <Container className='create-container-step d-flex column gap-2'>
@@ -46,7 +52,7 @@ const ReviewStep = ({
                     intent='brand'
                     onClick={onCreate}
                     isLoading={isLoading}
-                    leftIcon={!isLoading ? <Box size={18} /> : undefined}
+                    leftIcon={leftIcon}
                 >
                     {!isLoading && 'Deploy Container'}
                 </Button>

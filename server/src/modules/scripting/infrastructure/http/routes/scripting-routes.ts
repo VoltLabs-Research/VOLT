@@ -1,16 +1,10 @@
-import { Router } from 'express';
-import { container } from 'tsyringe';
-import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import { Resource } from '@core/constants/resources';
-import CreateScriptingJupyterSessionController from '@modules/scripting/infrastructure/http/controllers/CreateScriptingJupyterSessionController';
-import ListScriptingNotebooksController from '@modules/scripting/infrastructure/http/controllers/ListScriptingNotebooksController';
-import DeleteScriptingNotebookController from '@modules/scripting/infrastructure/http/controllers/DeleteScriptingNotebookController';
+import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
+import scriptingControllers from '@modules/scripting/infrastructure/http/controllers';
 import type { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
+import { Router } from 'express';
 
 const router = Router({ mergeParams: true });
-const listScriptingNotebooksController = container.resolve(ListScriptingNotebooksController);
-const createScriptingJupyterSessionController = container.resolve(CreateScriptingJupyterSessionController);
-const deleteScriptingNotebookController = container.resolve(DeleteScriptingNotebookController);
 const module: HttpModule = {
     basePath: '/api/scripting/:teamId',
     router,
@@ -19,9 +13,9 @@ const module: HttpModule = {
 
 const createJupyterSessionRateLimit = createStandardRateLimiter(5);
 
-router.get('/notebooks', listScriptingNotebooksController.handle);
-router.get('/:trajectoryId/notebooks', listScriptingNotebooksController.handle);
-router.post('/:trajectoryId/sessions', createJupyterSessionRateLimit, createScriptingJupyterSessionController.handle);
-router.delete('/notebooks/:notebookId', deleteScriptingNotebookController.handle);
+router.get('/notebooks', scriptingControllers.listNotebooks.handle);
+router.get('/:trajectoryId/notebooks', scriptingControllers.listNotebooks.handle);
+router.post('/:trajectoryId/sessions', createJupyterSessionRateLimit, scriptingControllers.createJupyterSession.handle);
+router.delete('/notebooks/:notebookId', scriptingControllers.deleteNotebook.handle);
 
 export default module;

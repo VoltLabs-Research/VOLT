@@ -1,22 +1,23 @@
-import type { SceneObjectType } from '@/modules/fractal/api/entities/fractal';
+import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 
 type PluginSceneDescriptor = {
     exposureId: string;
     exportType?: string;
 };
 
-export const getSceneKey = (sceneConfig: { source: string; sceneType: string; analysisId?: string; exposureId?: string }) => {
+interface SceneKeyConfig {
+    source: string;
+    sceneType: string;
+    analysisId?: string;
+    exposureId?: string;
+};
+
+export const getSceneKey = (sceneConfig: SceneKeyConfig) => {
     if (sceneConfig.source === 'plugin') {
         return `plugin-${sceneConfig.analysisId}-${sceneConfig.exposureId}`;
     }
     return `${sceneConfig.source}-${sceneConfig.sceneType}`;
 };
-
-export const normalizeVec3 = (value?: { x?: number; y?: number; z?: number }) => ({
-    x: value?.x ?? 0,
-    y: value?.y ?? 0,
-    z: value?.z ?? 0
-});
 
 export const DEFAULT_SCENE: SceneObjectType = { sceneType: 'trajectory', source: 'default' };
 

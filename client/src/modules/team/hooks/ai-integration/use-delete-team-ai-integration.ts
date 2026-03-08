@@ -1,9 +1,9 @@
-import { useCallback } from 'react';
 import { useDeleteTeamAIIntegrationMutation } from '@/modules/team/hooks/ai-integration/queries';
-import type { AIProvider } from '@/modules/ai/api/entities/ai-constants';
+import type { AIProvider } from '@/modules/ai/api/entities/ai-provider';
+import { useCallback } from 'react';
 import useRequiredSelectedTeamId from './use-required-selected-team-id';
 
-const useDeleteTeamAIIntegration = () => {
+export default function useDeleteTeamAIIntegration() {
     const requireSelectedTeamId = useRequiredSelectedTeamId();
     const deleteMutation = useDeleteTeamAIIntegrationMutation();
 
@@ -13,6 +13,4 @@ const useDeleteTeamAIIntegration = () => {
             provider
         });
     }, [requireSelectedTeamId, deleteMutation]);
-};
-
-export default useDeleteTeamAIIntegration;
+}

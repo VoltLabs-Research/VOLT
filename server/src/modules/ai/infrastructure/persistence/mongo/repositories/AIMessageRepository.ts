@@ -1,9 +1,10 @@
 import { injectable } from 'tsyringe';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
-import AIMessage, { AIMessageProps } from '@modules/ai/domain/entities/AIMessage';
-import AIMessageModel, { AIMessageDocument } from '@modules/ai/infrastructure/persistence/mongo/models/AIMessageModel';
 import aiMessageMapper from '@modules/ai/infrastructure/persistence/mongo/mappers/AIMessageMapper';
+import { AIMessageDocument } from '@modules/ai/infrastructure/persistence/mongo/models/AIMessageModel';
+import AIMessage, { AIMessageProps } from '@modules/ai/domain/entities/AIMessage';
+import AIMessageModel from '@modules/ai/infrastructure/persistence/mongo/models/AIMessageModel';
 
 @injectable()
 export default class AIMessageRepository
@@ -13,4 +14,4 @@ export default class AIMessageRepository
     constructor() {
         super(AIMessageModel, aiMessageMapper);
     }
-}
+};

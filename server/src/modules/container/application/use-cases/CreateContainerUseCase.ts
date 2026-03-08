@@ -1,19 +1,15 @@
-import { injectable, inject } from 'tsyringe';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { CreateContainerInputDTO, CreateContainerOutputDTO } from '@modules/container/application/dtos/CreateContainerDTO';
+import ContainerCreatedEvent from '@modules/container/domain/events/ContainerCreatedEvent';
 import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { IContainerService } from '@modules/container/domain/port/IContainerService';
 import { IDockerNetworkRepository } from '@modules/container/domain/port/IDockerNetworkRepository';
 import { IDockerVolumeRepository } from '@modules/container/domain/port/IDockerVolumeRepository';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import ContainerCreatedEvent from '@modules/container/domain/events/ContainerCreatedEvent';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-
-const execFileAsync = promisify(execFile);
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO, CreateContainerOutputDTO> {
@@ -23,7 +19,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         @inject(CONTAINER_TOKENS.DockerNetworkRepository) private networkRepository: IDockerNetworkRepository,
         @inject(CONTAINER_TOKENS.DockerVolumeRepository) private volumeRepository: IDockerVolumeRepository,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
-    ){}
+    ) {}
 
     private buildContainerRuntimeConfig(
         input: Pick<CreateContainerInputDTO, 'image' | 'name' | 'env' | 'ports'>,
@@ -66,14 +62,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
 
         if (mountDockerSocket) {
             binds.push('/var/run/docker.sock:/var/run/docker.sock');
-            try {
-                const { stdout } = await execFileAsync('getent', ['group', 'docker']);
-                const dockerGid = stdout.split(':')[2]?.trim();
-                if (dockerGid) {
-                    groupAdd.push(dockerGid);
-                }
-            } catch {
-            }
+            groupAdd.push(...await this.containerService.resolveDockerSocketGroupAdd());
         }
 
         const dockerConfig = this.buildContainerRuntimeConfig({
@@ -134,4 +123,4 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
 
         return Result.ok({ container });
     }
-}
+};

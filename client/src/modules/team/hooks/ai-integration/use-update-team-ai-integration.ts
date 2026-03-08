@@ -1,10 +1,10 @@
-import { useCallback } from 'react';
 import { useUpdateTeamAIIntegrationMutation } from '@/modules/team/hooks/ai-integration/queries';
-import type { AIProvider } from '@/modules/ai/api/entities/ai-constants';
-import type { UpdateTeamAIIntegrationParams } from '@/modules/team/api/dtos/update-team-ai-integration';
+import type { AIProvider } from '@/modules/ai/api/entities/ai-provider';
+import type { UpdateTeamAIIntegrationParams } from '@/modules/team/api/dtos/ai-integration/update-team-ai-integration';
+import { useCallback } from 'react';
 import useRequiredSelectedTeamId from './use-required-selected-team-id';
 
-const useUpdateTeamAIIntegration = () => {
+export default function useUpdateTeamAIIntegration() {
     const requireSelectedTeamId = useRequiredSelectedTeamId();
     const updateMutation = useUpdateTeamAIIntegrationMutation();
 
@@ -15,6 +15,4 @@ const useUpdateTeamAIIntegration = () => {
             ...data
         });
     }, [requireSelectedTeamId, updateMutation]);
-};
-
-export default useUpdateTeamAIIntegration;
+}

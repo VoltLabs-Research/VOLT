@@ -2,13 +2,13 @@ import fs from 'fs/promises';
 import { injectable } from 'tsyringe';
 import logger from '@shared/infrastructure/logger';
 import type { NetworkMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
-import type { NetworkCheck } from './metricsTypes';
+import type { NetworkMetricSnapshot } from '@modules/system/domain/contracts';
 
 const BYTES_PER_KB = 1024;
 
 @injectable()
 export default class NetworkMetricsCollector {
-    private lastNetworkCheck: NetworkCheck | null = null;
+    private lastNetworkCheck: NetworkMetricSnapshot | null = null;
 
     async collect(): Promise<NetworkMetrics> {
         try {

@@ -3,11 +3,11 @@ import { injectable } from 'tsyringe';
 import { redis } from '@core/config/redis';
 import logger from '@shared/infrastructure/logger';
 import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
+import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
 import {
     deserializeSystemMetrics,
-    serializeSystemMetrics,
-    type SystemMetrics
-} from '@modules/system/domain/value-objects/SystemMetrics';
+    serializeSystemMetrics
+} from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisMapper';
 
 const ACTIVE_CLUSTERS_KEY = 'active_clusters';
 

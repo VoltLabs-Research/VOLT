@@ -1,15 +1,29 @@
-import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
-import { SOCKET_TEAM_EVENTS } from '@/modules/socket/api/entities/socket-constants';
+import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
+import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { useTeamPresenceStore } from '@/modules/team/stores/use-team-presence-store';
+import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
 
-const useTeamPresenceSocket = (): void => {
+interface TeamPresenceSnapshotUser {
+    _id: string;
+};
+
+interface TeamPresenceSnapshotEvent {
+    teamId: string;
+    users: TeamPresenceSnapshotUser[];
+};
+
+interface TeamPresenceUserEvent {
+    teamId: string;
+    userId: string;
+};
+
+export default function useTeamPresenceSocket(): void {
     const teamId = useSelectedTeamId();
     const setPresenceSnapshot = useTeamPresenceStore((s) => s.setPresenceSnapshot);
     const addOnlineUser = useTeamPresenceStore((s) => s.addOnlineUser);
     const removeOnlineUser = useTeamPresenceStore((s) => s.removeOnlineUser);
 
-    useSocketEvent<{ teamId: string; users: { _id: string }[] }>(SOCKET_TEAM_EVENTS.PRESENCE_SNAPSHOT, (data) => {
+    useSocketEvent<TeamPresenceSnapshotEvent>(SOCKET_TEAM_EVENTS.PRESENCE_SNAPSHOT, (data) => {
         if (!teamId || data.teamId !== teamId) {
             return;
         }
@@ -17,7 +31,7 @@ const useTeamPresenceSocket = (): void => {
         setPresenceSnapshot(data.users.map((u) => u._id));
     });
 
-    useSocketEvent<{ teamId: string; userId: string }>(SOCKET_TEAM_EVENTS.USER_ONLINE, (data) => {
+    useSocketEvent<TeamPresenceUserEvent>(SOCKET_TEAM_EVENTS.USER_ONLINE, (data) => {
         if (!teamId || data.teamId !== teamId) {
             return;
         }
@@ -25,13 +39,11 @@ const useTeamPresenceSocket = (): void => {
         addOnlineUser(data.userId);
     });
 
-    useSocketEvent<{ teamId: string; userId: string }>(SOCKET_TEAM_EVENTS.USER_OFFLINE, (data) => {
+    useSocketEvent<TeamPresenceUserEvent>(SOCKET_TEAM_EVENTS.USER_OFFLINE, (data) => {
         if (!teamId || data.teamId !== teamId) {
             return;
         }
 
         removeOnlineUser(data.userId);
     });
-};
-
-export default useTeamPresenceSocket;
+}

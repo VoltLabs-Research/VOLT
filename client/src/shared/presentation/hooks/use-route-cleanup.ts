@@ -1,10 +1,10 @@
+import { runRouteCleanup } from '@/shared/utils/app-cleanup-registry';
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { runRouteCleanup } from '@/shared/utils/app-cleanup-registry';
 
 interface UseRouteCleanupOptions {
     shouldCleanup?: (previousPathname: string, nextPathname: string) => boolean;
-}
+};
 
 export const useRouteCleanup = (options?: UseRouteCleanupOptions): void => {
     const location = useLocation();

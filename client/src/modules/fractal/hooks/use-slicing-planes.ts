@@ -1,22 +1,31 @@
 import { useMemo } from 'react';
 import { Plane, Vector3 } from 'three';
-import type { SliceAxis, SlicePlaneConfig, ModelWorldBounds } from '@/modules/fractal/types/configuration';
+import { SliceAxis } from '@/modules/fractal/types/configuration';
+import type { SlicePlaneConfig, ModelWorldBounds } from '@/modules/fractal/types/configuration';
 
 const AXIS_NORMALS: Record<SliceAxis, Vector3> = {
-    x: new Vector3(1, 0, 0),
-    y: new Vector3(0, 1, 0),
-    z: new Vector3(0, 0, 1),
+    [SliceAxis.X]: new Vector3(1, 0, 0),
+    [SliceAxis.Y]: new Vector3(0, 1, 0),
+    [SliceAxis.Z]: new Vector3(0, 0, 1),
 };
 
 const ROTATION_AXES: Record<SliceAxis, Vector3> = {
-    x: new Vector3(0, 0, 1),
-    y: new Vector3(1, 0, 0),
-    z: new Vector3(1, 0, 0),
+    [SliceAxis.X]: new Vector3(0, 0, 1),
+    [SliceAxis.Y]: new Vector3(1, 0, 0),
+    [SliceAxis.Z]: new Vector3(1, 0, 0),
 };
 
 const DEFAULT_BOUNDS: ModelWorldBounds = {
-    min: { x: -4, y: -4, z: -4 },
-    max: { x: 4, y: 4, z: 4 }
+    min: {
+        x: -4,
+        y: -4,
+        z: -4
+    },
+    max: {
+        x: 4,
+        y: 4,
+        z: 4
+    }
 };
 
 const useSlicingPlanes = (

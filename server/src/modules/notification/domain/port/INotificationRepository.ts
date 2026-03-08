@@ -1,7 +1,6 @@
-import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
-import Notification, { NotificationProps } from '@modules/notification/domain/entities/Notification';
-
-export type PersistedNotificationDTO = NotificationProps & { _id: string };
+import type { NotificationProps } from '@modules/notification/domain/entities/Notification';
+import type Notification from '@modules/notification/domain/entities/Notification';
+import type { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 
 export interface INotificationRepository extends IBaseRepository<Notification, NotificationProps>{
     /**

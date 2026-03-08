@@ -1,15 +1,15 @@
-import { injectable, inject } from 'tsyringe';
-import { TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
-import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/TrajectoryUpdatedEvent';
-import SessionCompletedEvent from '@modules/jobs/application/events/SessionCompletedEvent';
-import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import type { IEventBus } from '@shared/application/events/IEventBus';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
+import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import SessionCompletedEvent from '@modules/jobs/domain/events/SessionCompletedEvent';
+import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
+import logger from '@shared/infrastructure/logger';
+import { inject, injectable } from 'tsyringe';
 import type { IRasterJobEnqueuer } from '@modules/raster/domain/port/IRasterJobEnqueuer';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import type { IEventBus } from '@shared/application/events/IEventBus';
+import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
 @injectable()
 export class RasterSessionCompletedEventHandler implements IEventHandler<SessionCompletedEvent> {
@@ -22,17 +22,23 @@ export class RasterSessionCompletedEventHandler implements IEventHandler<Session
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
-    ){}
+    ) {}
 
     async handle(event: SessionCompletedEvent): Promise<void> {
         try {
             const { queueType, metadata, teamId, failureSummary } = event.payload;
+            let trajectoryId: string | undefined;
+            if (typeof metadata?.trajectoryId === 'string') {
+                trajectoryId = metadata.trajectoryId;
+            }
+
+            const hasSessionFailures = (failureSummary?.failedJobs || 0) > 0;
 
             if (queueType === 'trajectory_processing') {
                 await this.handleTrajectoryProcessingCompletion(
-                    metadata?.trajectoryId as string | undefined,
+                    trajectoryId,
                     teamId,
-                    (failureSummary?.failedJobs || 0) > 0,
+                    hasSessionFailures,
                     failureSummary?.lastFailure
                 );
                 return;
@@ -40,9 +46,9 @@ export class RasterSessionCompletedEventHandler implements IEventHandler<Session
 
             if (queueType === 'rasterizer') {
                 await this.handleRasterizationCompletion(
-                    metadata?.trajectoryId as string | undefined,
+                    trajectoryId,
                     teamId,
-                    (failureSummary?.failedJobs || 0) > 0,
+                    hasSessionFailures,
                     failureSummary?.lastFailure
                 );
             }
@@ -129,4 +135,4 @@ export class RasterSessionCompletedEventHandler implements IEventHandler<Session
             updatedAt: new Date()
         }));
     }
-}
+};

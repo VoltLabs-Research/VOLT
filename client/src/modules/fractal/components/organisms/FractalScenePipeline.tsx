@@ -1,4 +1,3 @@
-import React from 'react';
 import { OrbitControls, GizmoHelper, GizmoViewport, AdaptiveDpr, Preload, Bvh } from '@react-three/drei';
 import DynamicRenderer from '@/modules/fractal/components/molecules/DynamicRenderer';
 import DynamicBackground from '@/modules/fractal/components/molecules/DynamicBackground';
@@ -9,18 +8,25 @@ import CameraRig from '@/modules/fractal/components/atoms/CameraRig';
 import CanvasGrid from '@/modules/fractal/components/atoms/CanvasGrid';
 import SlicePlaneHelper from '@/modules/fractal/components/atoms/SlicePlaneHelper';
 import ScreenshotCapture from '@/modules/fractal/components/atoms/ScreenshotCapture';
+import { LightingPreset } from '@/modules/fractal/components/molecules/DynamicLights';
+import type { MutableRefObject, ReactNode } from 'react';
+import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
+import type { OrbitControlsHandle } from '@/modules/fractal/types';
 
 interface FractalScenePipelineProps {
     config: FractalSceneConfig;
-    orbitRef: React.MutableRefObject<any>;
+    orbitRef: MutableRefObject<OrbitControlsHandle | null>;
     orbitProps: Record<string, unknown>;
     showGizmo: boolean;
     showGrid?: boolean;
-    onControlsRef?: (ref: any) => void;
+    modelWorldBounds?: ModelWorldBounds | null;
+    screenshotCaptureRequested?: boolean;
+    onScreenshotCaptureHandled?: () => void;
+    onControlsRef?: (ref: OrbitControlsHandle | null) => void;
     markInteracting: (active: boolean) => void;
-    children?: React.ReactNode;
-}
+    children?: ReactNode;
+};
 
 const FractalScenePipeline = ({
     config,
@@ -28,6 +34,9 @@ const FractalScenePipeline = ({
     orbitProps,
     showGizmo,
     showGrid,
+    modelWorldBounds,
+    screenshotCaptureRequested = false,
+    onScreenshotCaptureHandled,
     onControlsRef,
     markInteracting,
     children
@@ -58,7 +67,7 @@ const FractalScenePipeline = ({
             <DynamicLights settings={config.lights} />
             <DynamicEnvironment settings={config.environment} />
 
-            <DynamicLights preset={isDefectScene ? 'defect' : 'trajectory'} />
+            <DynamicLights preset={isDefectScene ? LightingPreset.Defect : LightingPreset.Trajectory} />
 
             <OrbitControls
                 ref={(r) => {
@@ -74,7 +83,7 @@ const FractalScenePipeline = ({
             {gridEnabled && (
                 <CanvasGrid settings={{ ...config.grid, enabled: gridEnabled }} />
             )}
-            <SlicePlaneHelper config={config.slicePlaneConfig} />
+            <SlicePlaneHelper config={config.slicePlaneConfig} modelWorldBounds={modelWorldBounds} />
 
             <color attach="background" args={['#0a0a0a']} />
 
@@ -82,7 +91,10 @@ const FractalScenePipeline = ({
                 {children}
             </Bvh>
 
-            <ScreenshotCapture />
+            <ScreenshotCapture
+                captureRequested={screenshotCaptureRequested}
+                onCaptureHandled={onScreenshotCaptureHandled ?? (() => undefined)}
+            />
         </>
     );
 };

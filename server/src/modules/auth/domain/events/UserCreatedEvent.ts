@@ -12,4 +12,4 @@ export default class UserCreatedEvent extends BaseDomainEvent<UserCreatedEventPa
     constructor(payload: UserCreatedEventPayload) {
         super('user.created', payload);
     }
-}
+};

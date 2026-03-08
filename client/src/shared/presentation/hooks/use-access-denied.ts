@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
 import ApiError from '@/shared/errors/ApiError';
+import { useCallback, useState } from 'react';
 
 const useAccessDenied = () => {
     const [accessDenied, setAccessDenied] = useState(false);

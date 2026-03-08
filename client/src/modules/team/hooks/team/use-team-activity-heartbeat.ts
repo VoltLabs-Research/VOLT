@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { SOCKET_TEAM_EVENTS } from '@/modules/socket/api/entities/socket-constants';
+import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
+import useSocket from '@/modules/socket/core/hooks/use-socket';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import useSocket from '@/modules/socket/hooks/use-socket';
+import { useCallback, useEffect, useRef } from 'react';
 
 const HEARTBEAT_INTERVAL_MS = 100;
 
-const useTeamActivityHeartbeat = (): void => {
+export default function useTeamActivityHeartbeat(): void {
     const socketService = useSocket();
     const teamId = useSelectedTeamId();
     const isConnectedRef = useRef(socketService.isConnected());
@@ -43,6 +43,4 @@ const useTeamActivityHeartbeat = (): void => {
             window.clearInterval(interval);
         };
     }, [sendHeartbeat, socketService, teamId]);
-};
-
-export default useTeamActivityHeartbeat;
+}

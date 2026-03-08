@@ -1,7 +1,7 @@
-import { injectable, inject } from 'tsyringe';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { DeleteManyOnTeamDeletedHandler } from '@shared/application/events/DeleteManyOnTeamDeletedHandler';
-import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { inject, injectable } from 'tsyringe';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 
 @injectable()
 export default class TeamDeletedEventHandler extends DeleteManyOnTeamDeletedHandler {

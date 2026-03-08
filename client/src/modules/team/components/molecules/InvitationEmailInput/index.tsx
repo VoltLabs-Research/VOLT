@@ -1,12 +1,13 @@
-import React, { ChangeEvent, KeyboardEvent } from 'react';
+import { InviteButton } from '../../atoms/InviteButton';
+import type { InviteButtonState } from '../../atoms/InviteButton';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import InviteButton, { type InviteButtonState } from '../../atoms/InviteButton';
+import type { ChangeEvent, KeyboardEvent } from 'react';
 import './InvitationEmailInput.css';
 
 interface InvitationEmailInputProps {
     value: string;
-    onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
     onBlur: () => void;
     onSubmit: () => Promise<void>;
     error?: string;
@@ -15,7 +16,7 @@ interface InvitationEmailInputProps {
     disabled?: boolean;
 };
 
-const InvitationEmailInput: React.FC<InvitationEmailInputProps> = ({
+export const InvitationEmailInput = ({
     value,
     onChange,
     onBlur,
@@ -24,11 +25,11 @@ const InvitationEmailInput: React.FC<InvitationEmailInputProps> = ({
     isSubmitting,
     buttonState,
     disabled = false
-}) => {
-    const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
-        if(e.key === 'Enter'){
-            e.preventDefault();
-            void onSubmit();
+}: InvitationEmailInputProps) => {
+    const handleKeyPress = (event: KeyboardEvent<HTMLInputElement>) => {
+        if(event.key === 'Enter'){
+            event.preventDefault();
+            onSubmit();
         }
     };
 
@@ -49,13 +50,9 @@ const InvitationEmailInput: React.FC<InvitationEmailInputProps> = ({
             <InviteButton
                 state={buttonState}
                 isLoading={isSubmitting}
-                onClick={() => {
-                    void onSubmit();
-                }}
+                onClick={onSubmit}
                 disabled={disabled}
             />
         </Container>
     );
 };
-
-export default InvitationEmailInput;

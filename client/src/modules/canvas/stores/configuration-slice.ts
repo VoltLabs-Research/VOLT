@@ -1,7 +1,9 @@
-import type { StateCreator } from 'zustand';
-import type { SlicePlaneConfig, ConfigurationStore, ConfigurationState, SliceAxis } from '@/modules/fractal/types/configuration';
-import type { EditorStore } from './editor/types';
 import { mergeNestedSectionState, resetSectionState, setSectionFieldState } from './editor/store-section';
+
+import type { EditorStore } from './editor/types';
+import { SliceAxis } from '@/modules/fractal/types/configuration';
+import type { SlicePlaneConfig, ConfigurationStore, ConfigurationState } from '@/modules/fractal/types/configuration';
+import type { StateCreator } from 'zustand';
 
 export interface ConfigurationSlice {
     configuration: ConfigurationStore;
@@ -9,8 +11,16 @@ export interface ConfigurationSlice {
 
 const DEFAULT_SLICE_PLANE_CONFIG: SlicePlaneConfig = {
     activeAxes: [],
-    positions: { x: 0, y: 0, z: 0 },
-    angles: { x: 0, y: 0, z: 0 },
+    positions: {
+        [SliceAxis.X]: 0,
+        [SliceAxis.Y]: 0,
+        [SliceAxis.Z]: 0
+    },
+    angles: {
+        [SliceAxis.X]: 0,
+        [SliceAxis.Y]: 0,
+        [SliceAxis.Z]: 0
+    },
     showHelper: true,
 };
 
@@ -31,10 +41,10 @@ export const createConfigurationSlice: StateCreator<EditorStore, [], [], Configu
         },
 
         toggleSliceAxis: (axis: SliceAxis) => {
-            const current = get().configuration.slicePlaneConfig.activeAxes as SliceAxis[];
+            const current = get().configuration.slicePlaneConfig.activeAxes;
             const isActive = current.includes(axis);
             const next = isActive
-                ? current.filter((a: SliceAxis) => a !== axis)
+                ? current.filter((item) => item !== axis)
                 : [...current, axis];
             set((state) => mergeNestedSectionState(state, 'configuration', 'slicePlaneConfig', { activeAxes: next }));
         },

@@ -1,18 +1,30 @@
-import React, { type ReactElement, type SVGProps } from 'react';
-import CalendarHeatmap, { type HeatmapValue } from 'react-calendar-heatmap';
-import 'react-calendar-heatmap/dist/styles.css';
+import useActivityHeatmap from '@/modules/daily-activity/hooks/use-activity-heatmap';
+import ActivityTooltipContent from '@/modules/daily-activity/components/atoms/ActivityTooltipContent';
 import Container from '@/shared/presentation/components/Container';
 import CursorTooltip from '@/shared/presentation/components/CursorTooltip';
+import 'react-calendar-heatmap/dist/styles.css';
+import React from 'react';
+import CalendarHeatmap from 'react-calendar-heatmap';
 import type { DailyActivity } from '@/modules/daily-activity/api/entities/daily-activity';
-import useActivityHeatmap, { type ActivityHeatmapChartDataItem } from '@/modules/daily-activity/hooks/use-activity-heatmap';
+import type { ActivityHeatmapChartDataItem } from '@/modules/daily-activity/hooks/use-activity-heatmap';
+import type { MouseEvent, MouseEventHandler, ReactElement } from 'react';
+import type { HeatmapValue } from 'react-calendar-heatmap';
 import './ActivityHeatmap.css';
 
 interface ActivityHeatmapProps {
     data: DailyActivity[];
     range?: number;
-}
+};
 
-type DayElement = ReactElement<SVGProps<SVGRectElement>>;
+interface DayElementProps {
+    onMouseEnter?: MouseEventHandler<SVGRectElement>;
+    onMouseLeave?: MouseEventHandler<SVGRectElement>;
+    onMouseMove?: MouseEventHandler<SVGRectElement>;
+};
+
+const isActivityHeatmapChartDataItem = (value: HeatmapValue | null): value is ActivityHeatmapChartDataItem => {
+    return value !== null && typeof value.date === 'string' && typeof value.level === 'number' && typeof value.count === 'number';
+};
 
 const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, range = 365 }) => {
     const {
@@ -21,7 +33,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, range = 365 }) 
         startDate,
         tooltipOpen,
         tooltipPos,
-        tooltipContent,
+        tooltipActivity,
         handleMouseEnter,
         handleMouseLeave,
         handleMouseMove
@@ -34,14 +46,20 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, range = 365 }) 
                 endDate={today}
                 values={chartData}
                 classForValue={(value: HeatmapValue | null) => {
-                    if(!value || (value as ActivityHeatmapChartDataItem).count === 0) return 'color-empty';
-                    return `color-scale-${Math.min((value as ActivityHeatmapChartDataItem).level, 4)}`;
+                    if (!isActivityHeatmapChartDataItem(value) || value.count === 0) return 'color-empty';
+                    return `color-scale-${Math.min(value.level, 4)}`;
                 }}
                 showWeekdayLabels={false}
                 gutterSize={5}
                 transformDayElement={(element: ReactElement, value: HeatmapValue | null, _index: number) => {
-                    return React.cloneElement(element as DayElement, {
-                        onMouseEnter: (e: React.MouseEvent) => handleMouseEnter(e, value as ActivityHeatmapChartDataItem | null),
+                    const chartValue = isActivityHeatmapChartDataItem(value) ? value : null;
+
+                    if (!React.isValidElement<DayElementProps>(element)) {
+                        return element;
+                    }
+
+                    return React.cloneElement(element, {
+                        onMouseEnter: (event: MouseEvent<SVGRectElement>) => handleMouseEnter(event, chartValue),
                         onMouseLeave: handleMouseLeave,
                         onMouseMove: handleMouseMove
                     });
@@ -51,7 +69,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, range = 365 }) 
                 isOpen={tooltipOpen}
                 x={tooltipPos.x}
                 y={tooltipPos.y}
-                content={tooltipContent}
+                content={<ActivityTooltipContent activity={tooltipActivity} />}
             />
         </Container>
     );

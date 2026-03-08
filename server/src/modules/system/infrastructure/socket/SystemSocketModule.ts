@@ -6,7 +6,7 @@ import logger from '@shared/infrastructure/logger';
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import type { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
 import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
-import SystemMetricsSocketOrchestrator from '@modules/system/application/services/SystemMetricsSocketOrchestrator';
+import SystemMetricsSocketOrchestrator from '@modules/system/infrastructure/socket/SystemMetricsSocketOrchestrator';
 import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
 
 @singleton()
