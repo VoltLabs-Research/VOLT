@@ -8,6 +8,7 @@ interface PopoverMenuItemProps {
     children?: React.ReactNode;
     onClick?: () => void;
     variant?: 'default' | 'danger';
+    size?: 'sm' | 'md';
     disabled?: boolean;
     isLoading?: boolean;
 };
@@ -18,6 +19,7 @@ const PopoverMenuItem: React.FC<PopoverMenuItemProps> = ({
     children,
     onClick,
     variant = 'default',
+    size = 'md',
     disabled = false,
     isLoading = false
 }) => {
@@ -30,7 +32,7 @@ const PopoverMenuItem: React.FC<PopoverMenuItemProps> = ({
             size='sm'
             block
             align='start'
-            className='popover-menu-item radius-sm font-size-2 color-primary u-select-none cursor-pointer'
+            className={`popover-menu-item popover-menu-item--${size} radius-sm color-primary u-select-none cursor-pointer`}
             onClick={isLoading ? undefined : onClick}
             disabled={disabled || isLoading}
             isLoading={isLoading}

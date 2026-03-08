@@ -1,7 +1,21 @@
 import { parentPort } from 'node:worker_threads';
+import { ErrorCodes } from '@core/constants/error-codes';
 import logger from '@shared/infrastructure/logger';
 import mongoConnector from '@shared/infrastructure/utilities/mongo-connector';
+import {
+    createWorkerFailureMessage,
+    normalizeWorkerFailureEnvelope,
+    type WorkerFailureEnvelope
+} from '@shared/infrastructure/workers/WorkerFailureEnvelope';
 import '@core/config/env';
+
+type JobWithProps = {
+    props: Record<string, unknown>;
+};
+
+const isJobWithProps = (value: unknown): value is JobWithProps => {
+    return typeof value === 'object' && value !== null && 'props' in value;
+};
 
 export default abstract class BaseWorker<TJob> {
     constructor() {
@@ -33,15 +47,25 @@ export default abstract class BaseWorker<TJob> {
                 return;
             }
 
+            const normalizedJob = isJobWithProps(message.job)
+                ? message.job
+                : {
+                    props: message.job as Record<string, unknown>
+                };
+
             try {
-                await this.perform(message.job);
-            } catch (fatalError: any) {
+                await this.perform(normalizedJob as TJob);
+            } catch (fatalError: unknown) {
+                const failure = normalizeWorkerFailureEnvelope({
+                    error: fatalError,
+                    fallbackCode: ErrorCodes.WORKER_FAILURE
+                });
+
                 logger.error(`@worker #${process.pid} - fatal unhandled error: ${fatalError}`);
-                parentPort?.postMessage({
-                    status: 'failed',
-                    jobId: (message.job as any).jobId || 'unknown',
-                    error: fatalError.message || 'Fatal worker crash'
-                })
+                parentPort?.postMessage(createWorkerFailureMessage({
+                    jobId: (normalizedJob.props.jobId as string | undefined) || 'unknown',
+                    failure
+                }));
             }
         });
     }
@@ -57,6 +81,14 @@ export default abstract class BaseWorker<TJob> {
 
     protected sendMessage(message: any) {
         parentPort?.postMessage(message);
+    }
+
+    protected sendFailure(jobId: string, failure: WorkerFailureEnvelope, metadata?: Record<string, unknown>) {
+        this.sendMessage(createWorkerFailureMessage({
+            jobId,
+            failure,
+            metadata
+        }));
     }
 
     protected async setup(): Promise<void> {

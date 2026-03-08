@@ -3,11 +3,12 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { ListContainersInputDTO, ListContainersOutputDTO } from '@modules/container/application/dtos/ListContainersDTO';
 import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 
 @injectable()
 export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, ListContainersOutputDTO> {
     constructor(
-        @inject('IContainerRepository') private repository: IContainerRepository
+        @inject(CONTAINER_TOKENS.ContainerRepository) private repository: IContainerRepository
     ){}
 
     async execute(input: ListContainersInputDTO): Promise<Result<ListContainersOutputDTO>> {

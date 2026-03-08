@@ -100,6 +100,14 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     'SecretKey::NotFound': 'Secret key not found',
     'SecretKey::NameRequired': 'Secret key name is required',
     'SecretKey::RoleRequired': 'A role is required for the secret key',
+    'SecretKey::ParamsRequired': 'Required secret key parameters are missing',
+
+    // Team AI integration errors
+    'TeamAIIntegration::NotFound': 'AI integration not found',
+    'TeamAIIntegration::AlreadyExists': 'An AI integration for this provider already exists',
+    'TeamAIIntegration::Provider::Unsupported': 'This AI provider is not supported',
+    'TeamAIIntegration::ApiKey::Required': 'An API key is required for this AI integration',
+    'TeamAIIntegration::Model::Unsupported': 'This AI model is not supported',
 
     // Chat errors
     'Chat::Team::NotFound': 'Team not found',
@@ -156,6 +164,13 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
 
     // Container errors
     'Container::NotFound': 'Container not found',
+    'Container::Creation::Failed': 'Failed to create container',
+    'Container::Start::Failed': 'Failed to start container',
+    'Container::Stop::Failed': 'Failed to stop container',
+    'Container::Deletion::Failed': 'Failed to delete container',
+    'Container::Stats::Failed': 'Failed to retrieve container statistics',
+    'Container::File::ReadFailed': 'Failed to read container file',
+    'Container::Exec::Failed': 'Failed to execute command in container',
     'Container::AccessDenied': 'You do not have permission to access this container',
     'Container::LoadError': 'Failed to load container data',
     'Container::TeamIdRequired': 'Team ID is required for this container',
@@ -207,6 +222,7 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     // Docker errors
     'Docker::Create::MissingImage': 'Docker image is required to create a container',
     'Docker::Create::Error': 'Failed to create Docker container',
+    'Docker::Connect::Error': 'Failed to connect to Docker',
     'Docker::Stop::Error': 'Failed to stop Docker container',
     'Docker::Remove::Error': 'Failed to remove Docker container',
     'Docker::Start::Error': 'Failed to start Docker container',
@@ -225,6 +241,11 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     'Resource::NotFound': 'Resource not found',
     'Resource::LoadError': 'Failed to load resource',
     'Resource::LockConflict': 'Resource is locked by another operation',
+
+    // AI errors
+    'AI::Conversation::NotFound': 'AI conversation not found',
+    'AI::Integration::NotConfigured': 'AI integration is not configured for this team',
+    'AI::Provider::Unavailable': 'The selected AI provider is currently unavailable',
 
     // Core errors
     'Core::APIFeatures::QueryExecutionFailed': 'Query execution failed',

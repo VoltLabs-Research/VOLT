@@ -1,5 +1,6 @@
-export interface ExportPluginOutputDTO {
-    stream: any; // ReadableStream
+import type { DownloadStreamOutputDTO } from '@modules/plugin/application/dtos/shared/DownloadStreamOutputDTO';
+
+export interface ExportPluginOutputDTO extends DownloadStreamOutputDTO {
     fileName: string;
 }
 

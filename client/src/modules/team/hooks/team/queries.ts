@@ -1,0 +1,185 @@
+import { useMutation, useQuery, type UseQueryOptions } from '@tanstack/react-query';
+import queryClient from '@/shared/infrastructure/query/query-client';
+import { buildKeys } from '@/shared/infrastructure/query';
+import type { Team } from '../../api/entities/team';
+import type { CreateTeamInputDTO } from '../../api/dtos/create-team';
+import type { UpdateTeamInputDTO } from '../../api/dtos/update-team';
+import type { DeleteTeamInputDTO } from '../../api/dtos/delete-team';
+import type { LeaveTeamInputDTO } from '../../api/dtos/leave-team';
+import teamService from '../../api/services/team';
+
+type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
+
+// ---------------------------------------------------------------------------
+// Keys
+// ---------------------------------------------------------------------------
+
+const teamKeys = buildKeys<{
+    teams: void;
+}>('teams');
+
+const permissionKeys = buildKeys<{
+    permissions: void;
+    teamPermissions: string;
+}>('team-permissions');
+
+export const TEAM_QUERY_KEYS = {
+    teams: teamKeys.teams,
+    permissions: permissionKeys.permissions,
+    teamPermissions: permissionKeys.teamPermissions
+};
+
+// ---------------------------------------------------------------------------
+// Team-scoped query matching (used for bulk invalidation/removal by teamId)
+// ---------------------------------------------------------------------------
+
+const TEAM_SCOPED_QUERY_ROOTS = new Set<string>([
+    'team-permissions',
+    'team-roles',
+    'team-members',
+    'team-invitations',
+    'secret-keys',
+    'secret-key-usage',
+    'secret-key-team-metrics',
+    'team-ai-integrations',
+    'team-ai-integration-models',
+    'team-ai-integration-model-discovery'
+]);
+
+const extractTeamId = (value: unknown): string | null => {
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object' && 'teamId' in value) {
+        const teamId = (value as { teamId?: unknown }).teamId;
+        return typeof teamId === 'string' ? teamId : null;
+    }
+    return null;
+};
+
+const getQueryTeamId = (queryKey: readonly unknown[]): string | null => {
+    for (let i = 2; i < queryKey.length; i++) {
+        const result = extractTeamId(queryKey[i]);
+        if (result) return result;
+    }
+    return extractTeamId(queryKey[1]);
+};
+
+const matchesTeamScopedQuery = (queryKey: readonly unknown[], teamId: string) => {
+    const root = queryKey[0];
+    if (typeof root !== 'string' || !TEAM_SCOPED_QUERY_ROOTS.has(root)) return false;
+    return getQueryTeamId(queryKey) === teamId;
+};
+
+// ---------------------------------------------------------------------------
+// Cache helpers
+// ---------------------------------------------------------------------------
+
+const setTeamsQueryData = (updater: (previous?: Team[]) => Team[] | undefined) => {
+    queryClient.setQueryData<Team[]>(TEAM_QUERY_KEYS.teams(), updater);
+};
+
+export const invalidateTeamsQuery = () => {
+    return queryClient.invalidateQueries({ queryKey: TEAM_QUERY_KEYS.teams() });
+};
+
+const invalidateTeamScopedQueries = (teamId: string) => {
+    return queryClient.invalidateQueries({
+        predicate: (query) => matchesTeamScopedQuery(query.queryKey, teamId)
+    });
+};
+
+const removeTeamScopedQueries = (teamId: string) => {
+    queryClient.removeQueries({
+        predicate: (query) => matchesTeamScopedQuery(query.queryKey, teamId)
+    });
+};
+
+// ---------------------------------------------------------------------------
+// Query hooks
+// ---------------------------------------------------------------------------
+
+export const useTeamsQuery = (_params?: void, options?: QueryOptions<Team[]>) => {
+    return useQuery({
+        queryKey: TEAM_QUERY_KEYS.teams(),
+        queryFn: () => teamService.getAll({}),
+        ...options
+    });
+};
+
+export const useTeamPermissionsQuery = (teamId: string, options?: QueryOptions<string[]>) => {
+    return useQuery({
+        queryKey: TEAM_QUERY_KEYS.teamPermissions(teamId),
+        queryFn: () => teamService.getMyPermissions({ teamId }),
+        ...options
+    });
+};
+
+// ---------------------------------------------------------------------------
+// Mutation hooks
+// ---------------------------------------------------------------------------
+
+export const useCreateTeamMutation = () => {
+    return useMutation<Team, Error, CreateTeamInputDTO>({
+        mutationFn: teamService.create,
+        onSuccess: (newTeam) => {
+            setTeamsQueryData((previous) => {
+                if (!previous) return [newTeam];
+                return [newTeam, ...previous];
+            });
+        }
+    });
+};
+
+export const useUpdateTeamMutation = () => {
+    return useMutation<Team, Error, UpdateTeamInputDTO>({
+        mutationFn: teamService.update,
+        onSuccess: (updatedTeam) => {
+            setTeamsQueryData((previous) => {
+                if (!previous) return previous;
+                return previous.map((team) => team._id === updatedTeam._id ? updatedTeam : team);
+            });
+        }
+    });
+};
+
+export const useDeleteTeamMutation = () => {
+    return useMutation<void, Error, DeleteTeamInputDTO>({
+        mutationFn: teamService.delete,
+        onSuccess: (_data, { teamId }) => {
+            setTeamsQueryData((previous) => {
+                if (!previous) return previous;
+                return previous.filter((team) => team._id !== teamId);
+            });
+            void invalidateTeamScopedQueries(teamId);
+        }
+    });
+};
+
+export const useLeaveTeamMutation = () => {
+    return useMutation<void, Error, LeaveTeamInputDTO, { previousTeams?: Team[] }>({
+        mutationFn: teamService.leave,
+        onMutate: async (variables) => {
+            await queryClient.cancelQueries({ queryKey: TEAM_QUERY_KEYS.teams() });
+
+            const previousTeams = queryClient.getQueryData<Team[]>(TEAM_QUERY_KEYS.teams());
+
+            setTeamsQueryData((previous) => {
+                if (!previous) return previous;
+                return previous.filter((team) => team._id !== variables.teamId);
+            });
+
+            return { previousTeams };
+        },
+        onError: (_error, _variables, context) => {
+            if (context?.previousTeams) {
+                queryClient.setQueryData(TEAM_QUERY_KEYS.teams(), context.previousTeams);
+            }
+        },
+        onSuccess: (_data, variables) => {
+            removeTeamScopedQueries(variables.teamId);
+
+            window.setTimeout(() => {
+                void invalidateTeamsQuery();
+            }, 1500);
+        }
+    });
+};

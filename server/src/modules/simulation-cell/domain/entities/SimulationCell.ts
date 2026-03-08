@@ -14,12 +14,16 @@ export interface SimulationCellGeometry {
     };
 };
 
-import { TrajectoryProps } from '@modules/trajectory/domain/entities/Trajectory';
+export interface SimulationCellTrajectoryReference {
+    _id?: string;
+    name?: string;
+};
+
 export interface SimulationCellProps {
     boundingBox: SimulationCellDims;
     geometry: SimulationCellGeometry;
     team: string;
-    trajectory: string | TrajectoryProps;
+    trajectory: string | SimulationCellTrajectoryReference;
     timestep: number;
     createdAt?: Date;
     updatedAt?: Date;
@@ -27,7 +31,11 @@ export interface SimulationCellProps {
 
 export default class SimulationCell {
     constructor(
-        public id: string,
+        public readonly _id: string,
         public props: SimulationCellProps
     ){}
+
+    get id(): string {
+        return this._id;
+    }
 };

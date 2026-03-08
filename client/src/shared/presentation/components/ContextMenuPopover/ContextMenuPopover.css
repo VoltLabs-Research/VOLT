@@ -1,0 +1,11 @@
+.context-menu-popover {
+    overflow: hidden;
+}
+
+.context-menu-popover--sm {
+    min-width: 124px;
+}
+
+.context-menu-popover--sm .popover-menu {
+    min-width: 124px;
+}

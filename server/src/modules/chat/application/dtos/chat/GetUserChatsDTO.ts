@@ -1,7 +1,7 @@
-import { ChatProps } from '@modules/chat/domain/entities/Chat';
+import { PersistedChatDTO } from '@modules/chat/domain/port/IChatRepository';
 
 export interface GetUserChatsInputDTO{
     userId: string;
 };
 
-export interface GetUserChatsOutputDTO extends ChatProps{}
+export interface GetUserChatsOutputDTO extends PersistedChatDTO{}

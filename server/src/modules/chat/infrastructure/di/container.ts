@@ -1,13 +1,18 @@
 import { container } from 'tsyringe';
 import { CHAT_TOKENS } from './ChatTokens';
-import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/ChatRepository';
-import ChatMessageRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/ChatMessageRepository';
 import { SendChatMessageUseCase } from '@modules/chat/application/use-cases/chat-message/SendChatMessageUseCase';
 import { SendFileMessageUseCase } from '@modules/chat/application/use-cases/chat-message/SendFileMessageUseCase';
 import { EditMessageUseCase } from '@modules/chat/application/use-cases/chat-message/EditMessageUseCase';
 import { DeleteMessageUseCase } from '@modules/chat/application/use-cases/chat-message/DeleteMessageUseCase';
 import { ToggleMessageReactionUseCase } from '@modules/chat/application/use-cases/chat-message/ToggleMessageReactionUseCase';
-import { MarkMessagesAsReadUseCase } from '@modules/chat/application/use-cases/chat-message/MarkMessageAsReadUseCase';
+import { MarkMessageAsReadUseCase } from '@modules/chat/application/use-cases/chat-message/MarkMessageAsReadUseCase';
+import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/ChatRepository';
+import ChatMessageRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/ChatMessageRepository';
+import ChatSocketModule from '@modules/chat/infrastructure/socket/ChatSocketModule';
+import ChatSocketAccessPolicy from '@modules/chat/infrastructure/socket/ChatSocketAccessPolicy';
+import ChatSocketEventOrchestrator from '@modules/chat/infrastructure/socket/ChatSocketEventOrchestrator';
+import ChatSocketPresenceService from '@modules/chat/infrastructure/socket/ChatSocketPresenceService';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 
 export const registerChatDependencies = () => {
     container.registerSingleton(CHAT_TOKENS.ChatRepository, ChatRepository);
@@ -17,5 +22,10 @@ export const registerChatDependencies = () => {
     container.registerSingleton(CHAT_TOKENS.EditMessageUseCase, EditMessageUseCase);
     container.registerSingleton(CHAT_TOKENS.DeleteMessageUseCase, DeleteMessageUseCase);
     container.registerSingleton(CHAT_TOKENS.ToggleMessageReactionUseCase, ToggleMessageReactionUseCase);
-    container.registerSingleton(CHAT_TOKENS.MarkMessagesAsReadUseCase, MarkMessagesAsReadUseCase);
+    container.registerSingleton(CHAT_TOKENS.MarkMessagesAsReadUseCase, MarkMessageAsReadUseCase);
+    container.registerSingleton(CHAT_TOKENS.ChatSocketAccessPolicy, ChatSocketAccessPolicy);
+    container.registerSingleton(CHAT_TOKENS.ChatSocketEventOrchestrator, ChatSocketEventOrchestrator);
+    container.registerSingleton(CHAT_TOKENS.ChatSocketPresenceService, ChatSocketPresenceService);
+    container.registerSingleton(CHAT_TOKENS.ChatSocketModule, ChatSocketModule);
+    container.register(SOCKET_TOKENS.SocketModule, { useToken: CHAT_TOKENS.ChatSocketModule });
 };

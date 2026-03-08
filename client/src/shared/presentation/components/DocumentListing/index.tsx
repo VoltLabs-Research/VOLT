@@ -3,17 +3,19 @@ import { motion } from 'framer-motion';
 import { RxDotsHorizontal } from 'react-icons/rx';
 import { Plus } from 'lucide-react';
 import { Skeleton } from '@mui/material';
+import type { QueryKey } from '@tanstack/react-query';
+import useSocket from '@/modules/socket/hooks/use-socket';
+import queryClient from '@/shared/infrastructure/query/query-client';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
-import { createListSyncConfig, type ListSyncConfig } from '@/shared/presentation/hooks/use-list-sync';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import useOptimisticAction from '@/shared/presentation/hooks/use-optimistic-action';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
-import DocumentListingTable, { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListingTable';
+import DocumentListingTable, { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import DocumentListingGrid from '@/shared/presentation/components/DocumentListingGrid';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import ApiError from '@/shared/errors/ApiError';
 import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
-import FormField from '@/shared/presentation/components/FormField';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Title from '@/shared/presentation/components/Title';
@@ -26,11 +28,16 @@ import { sortData } from '@/shared/utils/sort';
 import { SortConfig } from '@/shared/domain/sorting/types';
 import { ExportType } from '@/shared/domain/export/types';
 import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 import './DocumentListing.css';
 
 export type { ColumnConfig, MenuOption };
-export { createListSyncConfig };
 export { getValueByPath };
+
+export interface SocketInvalidationConfig {
+    event: string;
+    queryKeys: QueryKey[];
+}
 
 type ViewMode = 'table' | 'grid';
 type HeaderTabMode = 'list' | 'export';
@@ -49,6 +56,7 @@ interface DocumentListingExportConfig<TContext = Record<string, never>> {
 
 interface DocumentListingProps<T, TContext = Record<string, never>> {
     title: string | React.ReactNode;
+    queryKey: QueryKey;
     fetchData: (params: PaginationParams & TContext) => Promise<PaginatedResponse<T>>;
     transformData?: (data: T[]) => T[];
     context?: TContext;
@@ -77,11 +85,12 @@ interface DocumentListingProps<T, TContext = Record<string, never>> {
     hideTabs?: boolean;
     exportConfig?: DocumentListingExportConfig<TContext>;
     onHideItemRef?: React.MutableRefObject<((id: string) => void) | null>;
-    listSyncConfig?: ListSyncConfig;
+    socketInvalidation?: SocketInvalidationConfig[];
 };
 
 const DocumentListing = <T extends { _id: string }, TContext = Record<string, never>>({
     title,
+    queryKey,
     fetchData,
     transformData,
     context,
@@ -106,8 +115,9 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     hideTabs = false,
     exportConfig,
     onHideItemRef,
-    listSyncConfig
+    socketInvalidation
 }: DocumentListingProps<T, TContext>) => {
+    const socketService = useSocket();
     const getColumnSortKey = useCallback((col: ColumnConfig): string => {
         return String(col.key ?? (col as any).path ?? '');
     }, []);
@@ -123,13 +133,31 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         refresh,
         search
     } = useDocumentListingPagination<T, TContext>({
+        queryKey,
         fetchData,
         transformData,
         context,
         defaultLimit,
-        enabled,
-        listSyncConfig
+        enabled
     });
+
+    useEffect(() => {
+        if (!socketInvalidation?.length) {
+            return;
+        }
+
+        const unsubscribers = socketInvalidation.map(({ event, queryKeys }) => {
+            return socketService.on(event, () => {
+                void Promise.allSettled(
+                    queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey }))
+                );
+            });
+        });
+
+        return () => {
+            unsubscribers.forEach((unsubscribe) => unsubscribe());
+        };
+    }, [socketService, socketInvalidation]);
 
     // F5 keyboard shortcut to refresh data instead of reloading the page
     useKeyboardShortcut('F5', refresh);
@@ -369,7 +397,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                 )}
             >
                 <Container className='p-1-5'>
-                    <FormField
+                    <FormFieldRHF
                         label='Format'
                         fieldType='select'
                         variant='inline'

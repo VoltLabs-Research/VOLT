@@ -4,11 +4,15 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
 import { ITeamRepository } from '@modules/team/domain/port/ITeamRepository';
 import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
+import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import { CreateGroupChatInputDTO, CreateGroupChatOutputDTO } from '@modules/chat/application/dtos/chat/CreateGroupChatDTO';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { ensureTeamMembersExist } from '@modules/chat/application/helpers/ensureTeamMembersExist';
+import { toPersistedChatOutput } from '@modules/chat/application/helpers/toPersistedChatOutput';
 
 @injectable()
 export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO, CreateGroupChatOutputDTO, ApplicationError> {
@@ -18,11 +22,13 @@ export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO,
         @inject(TEAM_TOKENS.TeamRepository)
         private teamRepo: ITeamRepository,
         @inject(TEAM_TOKENS.TeamMemberRepository)
-        private teamMemberRepo: ITeamMemberRepository
+        private teamMemberRepo: ITeamMemberRepository,
+        @inject(SOCKET_TOKENS.SocketEmitter)
+        private socketEmitter: ISocketEmitter
     ){}
 
     async execute(input: CreateGroupChatInputDTO): Promise<Result<CreateGroupChatOutputDTO, ApplicationError>> {
-        const { teamId, participantIds, groupName, ownerId, groupDescription } = input;
+        const { teamId, participantIds, groupName, userId, groupDescription } = input;
 
         const team = await this.teamRepo.findById(teamId);
         if (!team) {
@@ -32,16 +38,10 @@ export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO,
             ));
         }
 
-        const allUserIds = [...new Set([ownerId, ...participantIds])];
-        const memberChecks = await Promise.all(
-            allUserIds.map((userId) => this.teamMemberRepo.findOne({ team: teamId, user: userId }))
-        );
-        const invalidIndex = memberChecks.findIndex((member) => !member);
-        if(invalidIndex !== -1){
-            return Result.fail(ApplicationError.notFound(
-                ErrorCodes.TEAM_MEMBER_NOT_FOUND,
-                `User ${allUserIds[invalidIndex]} is not a member of this team`
-            ));
+        const allUserIds = [...new Set([userId, ...participantIds])];
+        const membersResult = await ensureTeamMembersExist(this.teamMemberRepo, teamId, allUserIds);
+        if (!membersResult.success) {
+            return Result.fail(membersResult.error!);
         }
 
         const chat = await this.chatRepo.create({
@@ -50,11 +50,18 @@ export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO,
             isGroup: true,
             groupName,
             groupDescription,
-            admins: [ownerId],
-            createdBy: ownerId,
+            admins: [userId],
+            createdBy: userId,
             isActive: true
         });
 
-        return Result.ok(chat.props);
+        for (const userId of allUserIds) {
+            this.socketEmitter.emitToRoom(`user-${userId}`, 'group_created', {
+                chatId: chat._id,
+                createdBy: userId
+            });
+        }
+
+        return Result.ok(toPersistedChatOutput(chat));
     }
 };

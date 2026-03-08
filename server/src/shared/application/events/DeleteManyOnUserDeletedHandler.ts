@@ -1,11 +1,7 @@
-import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { DeleteManyOnEntityDeletedHandler } from '@shared/application/events/DeleteManyOnEntityDeletedHandler';
 import UserDeletedEvent from '@modules/auth/domain/events/UserDeletedEvent';
 
-export abstract class DeleteManyOnUserDeletedHandler implements IEventHandler<UserDeletedEvent> {
-    protected abstract readonly repository: { deleteMany(filter: any): Promise<any> };
-
-    async handle(event: UserDeletedEvent): Promise<void> {
-        const { userId } = event.payload;
-        await this.repository.deleteMany({ user: userId });
-    }
+export abstract class DeleteManyOnUserDeletedHandler extends DeleteManyOnEntityDeletedHandler<UserDeletedEvent> {
+    protected readonly payloadKey = 'userId';
+    protected readonly filterField: string = 'user';
 }

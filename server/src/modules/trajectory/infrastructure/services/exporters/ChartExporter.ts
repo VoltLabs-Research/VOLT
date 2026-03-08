@@ -114,17 +114,13 @@ export default class ChartExporter implements IChartExporter {
         objectName: string,
         options: IChartExportOptions
     ): Promise<void> {
-        try {
-            const pngBuffer = await this.generatePNG(data, options);
-            await this.storageService.upload(
-                SYS_BUCKETS.PLUGINS,
-                objectName,
-                pngBuffer,
-                { 'Content-Type': 'image/png' }
-            );
-        } catch (error: any) {
-            throw error;
-        }
+        const pngBuffer = await this.generatePNG(data, options);
+        await this.storageService.upload(
+            SYS_BUCKETS.PLUGINS,
+            objectName,
+            pngBuffer,
+            { 'Content-Type': 'image/png' }
+        );
     }
 
     /**
@@ -153,8 +149,7 @@ export default class ChartExporter implements IChartExporter {
                 labels,
                 datasets: [{
                     label: options.title || 'Data',
-                    // @ts-ignore
-                    data: dataValues,
+                    data: dataValues as ChartConfiguration['data']['datasets'][number]['data'],
                     borderColor: lineColor,
                     backgroundColor: isArea || options.chartType === ChartType.Bar ? fillColor : lineColor,
                     fill: isArea,

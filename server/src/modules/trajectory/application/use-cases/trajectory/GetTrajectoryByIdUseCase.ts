@@ -1,31 +1,36 @@
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { GetTrajectoryByIdInputDTO, GetTrajectoryByIdOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryByIdDTO';
+import type { GetTrajectoryByIdOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryByIdDTO';
+import type { FindOptions } from '@shared/domain/port/IBaseRepository';
+
+interface GetTrajectoryByIdInput {
+    trajectoryId: string;
+    options?: Pick<FindOptions<unknown>, 'populate' | 'select'>;
+}
 
 @injectable()
-export default class GetTrajectoryByIdUseCase implements IUseCase<GetTrajectoryByIdInputDTO, GetTrajectoryByIdOutputDTO, ApplicationError> {
+export default class GetTrajectoryByIdUseCase implements IUseCase<GetTrajectoryByIdInput, GetTrajectoryByIdOutputDTO, ApplicationError> {
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepo: ITrajectoryRepository
-    ){}
+        private readonly repository: ITrajectoryRepository
+    ) {}
 
-    async execute(input: GetTrajectoryByIdInputDTO): Promise<Result<GetTrajectoryByIdOutputDTO, ApplicationError>> {
-        const { trajectoryId } = input;
-        const result = await this.trajectoryRepo.findById(trajectoryId, {
+    async execute(input: GetTrajectoryByIdInput): Promise<Result<GetTrajectoryByIdOutputDTO, ApplicationError>> {
+        const entity = await this.repository.findById(input.trajectoryId, {
             populate: ['team', 'analysis', 'frames.simulationCell']
         });
-        if (!result) {
+        if (!entity) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
                 'Trajectory not found'
             ));
         }
-
-        return Result.ok(result.props);
+        return Result.ok(toPersistedOutput(entity));
     }
-};
+}

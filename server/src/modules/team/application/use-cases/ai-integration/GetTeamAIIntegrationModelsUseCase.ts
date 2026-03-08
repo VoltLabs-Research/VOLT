@@ -3,11 +3,12 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ITeamAIIntegrationRepository';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
-import AIProviderModelDiscoveryService from '@modules/ai/application/services/AIProviderModelDiscoveryService';
+import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
 import TeamAIProviderCatalog from '@modules/team/application/services/TeamAIProviderCatalog';
+import TeamAIIntegrationSecretService from '@modules/team/application/services/TeamAIIntegrationSecretService';
+import type { IAIProviderModelDiscovery } from '@modules/ai/application/ports/IAIProviderModelDiscovery';
 import {
     GetTeamAIIntegrationModelsInputDTO,
     GetTeamAIIntegrationModelsOutputDTO,
@@ -21,8 +22,11 @@ export default class GetTeamAIIntegrationModelsUseCase implements IUseCase<GetTe
         @inject(TEAM_TOKENS.TeamAIIntegrationRepository)
         private readonly integrationRepository: ITeamAIIntegrationRepository,
 
-        @inject(AI_TOKENS.AIProviderModelDiscoveryService)
-        private readonly discoveryService: AIProviderModelDiscoveryService,
+        @inject(AI_TOKENS.AIProviderModelDiscovery)
+        private readonly discoveryService: IAIProviderModelDiscovery,
+
+        @inject(TEAM_TOKENS.TeamAIIntegrationSecretService)
+        private readonly secretService: TeamAIIntegrationSecretService,
 
         @inject(TEAM_TOKENS.TeamAIProviderCatalog)
         private readonly providerCatalog: TeamAIProviderCatalog
@@ -36,7 +40,7 @@ export default class GetTeamAIIntegrationModelsUseCase implements IUseCase<GetTe
 
         const discoveryResults = await Promise.all(
             integrations.map(async (integration) => {
-                const apiKey = integration.getApiKey();
+                const apiKey = this.secretService.decryptApiKey(integration.props.encryptedApiKey);
                 if (!apiKey && integration.props.provider !== 'ollama') {
                     return null;
                 }

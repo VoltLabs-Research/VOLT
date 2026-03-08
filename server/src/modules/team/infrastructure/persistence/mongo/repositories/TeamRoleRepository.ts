@@ -6,6 +6,7 @@ import { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleReposito
 import teamRoleMapper from '@modules/team/infrastructure/persistence/mongo/mappers/TeamRole';
 
 import { Types } from 'mongoose';
+import { FindOptions, PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
 
 @injectable()
 export default class TeamRoleRepository
@@ -16,11 +17,22 @@ export default class TeamRoleRepository
         super(TeamRoleModel, teamRoleMapper);
     }
 
-    override async findAll(options: any): Promise<any> {
+    override async findAll(
+        options: FindOptions<TeamRoleProps> & PaginationOptions
+    ): Promise<PaginatedResult<TeamRole>> {
         const { filter } = options;
         if (filter && filter.team && typeof filter.team === 'string') {
-            filter.team = new Types.ObjectId(filter.team);
+            const normalizedFilter = {
+                ...filter,
+                team: new Types.ObjectId(filter.team)
+            } as unknown as FindOptions<TeamRoleProps>['filter'];
+
+            return super.findAll({
+                ...options,
+                filter: normalizedFilter
+            });
         }
+
         return super.findAll(options);
     }
 }

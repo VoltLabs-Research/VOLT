@@ -2,9 +2,9 @@ import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 import { AITool } from '@shared/application/ai/AITool';
 import type { AIToolScope } from '@modules/ai/application/services/AIToolService';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
 import type { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
-import { PluginListingService } from '@modules/plugin/infrastructure/services/PluginListingService';
+import type { IPluginListingService } from '@modules/plugin/domain/port/IPluginListingService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 
@@ -21,8 +21,8 @@ export class GetAnalysisListingDataAITool extends AITool {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository)
         private readonly pluginRepo: IPluginRepository,
-        @inject(PluginListingService)
-        private readonly pluginListingService: PluginListingService
+        @inject(PLUGIN_TOKENS.PluginListingService)
+        private readonly pluginListingService: IPluginListingService
     ) {
         super();
     }

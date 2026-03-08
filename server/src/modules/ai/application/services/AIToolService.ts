@@ -1,6 +1,6 @@
 import type { ToolSet } from 'ai';
 import { injectAll, injectable } from 'tsyringe';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
 import type { AITool } from '@shared/application/ai/AITool';
 
 export interface AIToolScope {

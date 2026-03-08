@@ -1,4 +1,3 @@
-import { encrypt, decrypt } from '@shared/infrastructure/utilities/crypto';
 import { type AIProvider } from '@modules/ai/domain/constants/AIProviders';
 
 export type TeamAIProvider = AIProvider;
@@ -19,31 +18,76 @@ export interface TeamAIIntegrationProps {
 
 export default class TeamAIIntegration {
     constructor(
-        public id: string,
+        public _id: string,
         public props: TeamAIIntegrationProps
     ) {}
 
-    public static encryptApiKey(apiKey: string): string {
-        if (!apiKey?.trim()) {
-            throw new Error('API key cannot be empty');
+    public get id(): string {
+        return this._id;
+    }
+
+    public getTeamId(): string {
+        return TeamAIIntegration.getRefId(this.props.team);
+    }
+
+    public getCreatedById(): string {
+        return TeamAIIntegration.getRefId(this.props.createdBy);
+    }
+
+    public static create(input: {
+        teamId: string;
+        provider: TeamAIProvider;
+        encryptedApiKey: string;
+        isEnabled: boolean;
+        defaultModel: string;
+        enabledModels: string[];
+        metadata?: Record<string, unknown>;
+        userId: string;
+        now?: Date;
+    }): Partial<TeamAIIntegrationProps> {
+        const now = input.now ?? new Date();
+
+        return {
+            team: input.teamId,
+            provider: input.provider,
+            encryptedApiKey: input.encryptedApiKey,
+            isEnabled: input.isEnabled,
+            defaultModel: input.defaultModel,
+            enabledModels: [...new Set(input.enabledModels)],
+            metadata: input.metadata,
+            createdBy: input.userId,
+            createdAt: now,
+            updatedAt: now
+        };
+    }
+
+    public buildUpdatePayload(input: {
+        encryptedApiKey: string;
+        isEnabled: boolean;
+        defaultModel: string;
+        enabledModels: string[];
+        metadata?: Record<string, unknown>;
+        now?: Date;
+    }): Partial<TeamAIIntegrationProps> {
+        return {
+            encryptedApiKey: input.encryptedApiKey,
+            isEnabled: input.isEnabled,
+            defaultModel: input.defaultModel,
+            enabledModels: [...new Set(input.enabledModels)],
+            metadata: input.metadata,
+            updatedAt: input.now ?? new Date()
+        };
+    }
+
+    private static getRefId(value: TeamAIIntegrationCreatedBy | string): string {
+        if (typeof value === 'string') {
+            return value;
         }
 
-        return encrypt(apiKey.trim());
-    }
-
-    public static decryptApiKey(encryptedApiKey: string): string {
-        if (!encryptedApiKey) {
-            return '';
+        if (typeof value._id === 'string') {
+            return value._id;
         }
 
-        return decrypt(encryptedApiKey);
-    }
-
-    public setApiKey(apiKey: string): void {
-        this.props.encryptedApiKey = TeamAIIntegration.encryptApiKey(apiKey);
-    }
-
-    public getApiKey(): string {
-        return TeamAIIntegration.decryptApiKey(this.props.encryptedApiKey);
+        return value.toString?.() ?? '';
     }
 }

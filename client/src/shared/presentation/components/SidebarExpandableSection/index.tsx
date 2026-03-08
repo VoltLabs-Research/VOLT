@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState, forwardRef } from 'react';
 import { IoChevronDown } from 'react-icons/io5';
 import type { IconType } from 'react-icons';
 import Container from '@/shared/presentation/components/Container';
@@ -24,7 +24,7 @@ interface SidebarExpandableSectionProps {
     disabled?: boolean;
 };
 
-const SidebarExpandableSection = ({
+const SidebarExpandableSection = forwardRef<HTMLDivElement, SidebarExpandableSectionProps>(({
     label,
     icon: Icon,
     isActive = false,
@@ -33,7 +33,7 @@ const SidebarExpandableSection = ({
     expanded: controlledExpanded,
     onExpandedChange,
     disabled = false
-}: SidebarExpandableSectionProps) => {
+}, ref) => {
     const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
     
     const isControlled = controlledExpanded !== undefined;
@@ -49,13 +49,19 @@ const SidebarExpandableSection = ({
         }
     };
 
+    useEffect(() => {
+        if (!isControlled && isActive) {
+            setInternalExpanded(true);
+        }
+    }, [isActive, isControlled]);
+
     const renderSubItem = (item: SubItem, index: number) => {
         const hasChildren = Boolean(item.subItems?.length);
 
         if (!hasChildren) {
             return (
                 <Button
-                    key={index}
+                    key={item.label || index}
                     variant='ghost'
                     intent='neutral'
                     align='start'
@@ -71,7 +77,7 @@ const SidebarExpandableSection = ({
 
         return (
             <NestedSubItems
-                key={index}
+                key={item.label || index}
                 item={item}
                 childSelected={childSelected}
             />
@@ -79,7 +85,7 @@ const SidebarExpandableSection = ({
     };
 
     return (
-        <Container className='sidebar-expandable-section'>
+        <Container ref={ref} className='sidebar-expandable-section'>
             <Button
                 variant='ghost'
                 intent='neutral'
@@ -104,7 +110,9 @@ const SidebarExpandableSection = ({
             )}
         </Container>
     );
-};
+});
+
+SidebarExpandableSection.displayName = 'SidebarExpandableSection';
 
 interface NestedSubItemsProps {
     item: SubItem;
@@ -114,6 +122,12 @@ interface NestedSubItemsProps {
 const NestedSubItems = ({ item, childSelected }: NestedSubItemsProps) => {
     const [expanded, setExpanded] = useState(childSelected);
     const children = item.subItems || [];
+
+    useEffect(() => {
+        if (childSelected) {
+            setExpanded(true);
+        }
+    }, [childSelected]);
 
     return (
         <Container className='sidebar-nested-section'>
@@ -135,7 +149,7 @@ const NestedSubItems = ({ item, childSelected }: NestedSubItemsProps) => {
                 <Container className='sidebar-nested-items'>
                     {children.map((subItem, index) => (
                         <Button
-                            key={`${item.label}-${index}`}
+                            key={`${item.label}-${subItem.label || index}`}
                             variant='ghost'
                             intent='neutral'
                             align='start'

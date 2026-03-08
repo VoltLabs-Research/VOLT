@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import { Resource } from '@core/constants/resources';
-import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
+import { colorCodingValidation } from '@modules/trajectory/infrastructure/http/validation/color-coding-schemas';
 import controllers from '@modules/trajectory/infrastructure/http/controllers/color-coding';
 
 const router = Router({ mergeParams: true });
@@ -11,16 +12,16 @@ const module: HttpModule = {
     resource: Resource.TRAJECTORY
 };
 
-router.use(protect);
+const applyColorCodingRateLimit = createStandardRateLimiter(15);
 
-router.get('/properties/:trajectoryId', controllers.getProperties.handle);
-router.get('/stats/:trajectoryId', controllers.getStats.handle);
-router.get('/:trajectoryId', controllers.get.handle);
-router.post('/:trajectoryId', controllers.create.handle);
+router.get('/properties/:trajectoryId', colorCodingValidation.getProperties, controllers.getProperties.handle);
+router.get('/stats/:trajectoryId', colorCodingValidation.getStats, controllers.getStats.handle);
+router.get('/:trajectoryId', colorCodingValidation.getModel, controllers.get.handle);
+router.post('/:trajectoryId', applyColorCodingRateLimit, colorCodingValidation.applyColorCoding, controllers.create.handle);
 
-router.get('/properties/:trajectoryId/:analysisId', controllers.getProperties.handle);
-router.get('/stats/:trajectoryId/:analysisId', controllers.getStats.handle);
-router.get('/:trajectoryId/:analysisId', controllers.get.handle);
-router.post('/:trajectoryId/:analysisId', controllers.create.handle);
+router.get('/properties/:trajectoryId/:analysisId', colorCodingValidation.getPropertiesByAnalysis, controllers.getProperties.handle);
+router.get('/stats/:trajectoryId/:analysisId', colorCodingValidation.getStatsByAnalysis, controllers.getStats.handle);
+router.get('/:trajectoryId/:analysisId', colorCodingValidation.getModelByAnalysis, controllers.get.handle);
+router.post('/:trajectoryId/:analysisId', applyColorCodingRateLimit, colorCodingValidation.applyColorCodingByAnalysis, controllers.create.handle);
 
 export default module;

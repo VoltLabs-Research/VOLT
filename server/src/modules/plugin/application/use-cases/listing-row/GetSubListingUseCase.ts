@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
 import { ISubListingRowRepository } from '@modules/plugin/domain/port/ISubListingRowRepository';
 import {
     GetSubListingInputDTO,
@@ -34,11 +34,14 @@ export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, Get
             }
         });
 
-        const rows = result.data.map((document) => document.props.row);
+        const rows = result.data.map((document) => ({
+            _id: document._id,
+            ...(document.props.row || {})
+        }));
 
         let columns: SubListingColumn[] = [];
-        if (rows.length > 0) {
-            columns = Object.keys(rows[0]).map((key) => ({
+        if (result.data.length > 0) {
+            columns = Object.keys(result.data[0].props.row || {}).map((key) => ({
                 label: key,
                 sortable: true
             }));

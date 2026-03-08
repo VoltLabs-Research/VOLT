@@ -1,14 +1,6 @@
-import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
-import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
+import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import SendTeamInvitationUseCase from '@modules/team/application/use-cases/team-invitation/SendTeamInvitationUseCase';
 
-@injectable()
-export default class SendTeamInvitationController extends BaseController<SendTeamInvitationUseCase> {
-    constructor(
-        @inject(SendTeamInvitationUseCase) 
-        useCase: SendTeamInvitationUseCase
-    ) {
-        super(useCase, HttpStatus.Created);
-    }
-};
+const SendTeamInvitationController = createController(SendTeamInvitationUseCase, HttpStatus.Created);
+export default SendTeamInvitationController;

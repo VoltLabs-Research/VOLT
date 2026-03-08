@@ -13,10 +13,14 @@ export interface SubListingColumn {
     sortable: boolean;
 }
 
+export type SubListingRowData = Record<string, unknown> & {
+    _id: string;
+};
+
 export interface GetSubListingOutputDTO {
     subListingName: string;
     columns: SubListingColumn[];
-    rows: Record<string, unknown>[];
+    rows: SubListingRowData[];
     total: number;
     page: number;
     totalPages: number;

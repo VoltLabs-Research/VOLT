@@ -1,13 +1,5 @@
-import { injectable, inject, delay } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
 import { UpdateSSHConnectionByIdUseCase } from '@modules/ssh/application/use-cases/UpdateSSHConnectionByIdUseCase';
 
-@injectable()
-export default class UpdateSSHConnectionByIdController extends BaseController<UpdateSSHConnectionByIdUseCase> {
-    constructor(
-        @inject(delay(() => UpdateSSHConnectionByIdUseCase))
-        useCase: UpdateSSHConnectionByIdUseCase
-    ) {
-        super(useCase);
-    }
-};
+const UpdateSSHConnectionByIdController = createController(UpdateSSHConnectionByIdUseCase);
+export default UpdateSSHConnectionByIdController;

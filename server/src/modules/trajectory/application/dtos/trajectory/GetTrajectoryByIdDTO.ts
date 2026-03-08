@@ -4,4 +4,6 @@ export interface GetTrajectoryByIdInputDTO {
     trajectoryId: string;
 };
 
-export interface GetTrajectoryByIdOutputDTO extends TrajectoryProps { };
+export interface GetTrajectoryByIdOutputDTO extends TrajectoryProps {
+    _id: string;
+};

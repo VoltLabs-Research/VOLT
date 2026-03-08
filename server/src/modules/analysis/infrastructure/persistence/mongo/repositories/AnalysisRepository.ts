@@ -13,6 +13,17 @@ export default class AnalysisRepository
     extends MongooseBaseRepository<Analysis, AnalysisProps, AnalysisDocument>
     implements IAnalysisRepository {
 
+    async getCompletedFramesByCluster(): Promise<Record<string, number>> {
+        const aggregation = await this.model.aggregate<{ _id: string | null; count: number }>([
+            { $group: { _id: '$clusterId', count: { $sum: '$completedFrames' } } }
+        ]);
+
+        return aggregation.reduce<Record<string, number>>((counts, item) => {
+            counts[item._id || 'main-cluster'] = item.count || 0;
+            return counts;
+        }, {});
+    }
+
     constructor(
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
@@ -27,7 +38,7 @@ export default class AnalysisRepository
             await this.eventBus.publish(new AnalysisDeletedEvent({
                 analysisId: id,
                 trajectoryId: result.trajectory?.toString(),
-                pluginId: result.plugin,
+                pluginId: result.plugin?.toString(),
                 teamId: result.team?.toString()
             }));
         }

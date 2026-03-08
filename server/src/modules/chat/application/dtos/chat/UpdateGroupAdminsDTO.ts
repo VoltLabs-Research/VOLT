@@ -6,10 +6,12 @@ export enum GroupAdminAction{
 };
 
 export interface UpdateGroupAdminsInputDTO{
-    requesterId: string;
+    userId: string;
     chatId: string;
     targetUserIds: string[];
     action: GroupAdminAction;
 };
 
-export interface UpdateGroupAdminsOutputDTO extends ChatProps{}
+export interface UpdateGroupAdminsOutputDTO extends ChatProps{
+    _id: string;
+}

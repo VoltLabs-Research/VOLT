@@ -1,3 +1,8 @@
+import type {
+    ContainerEnvironmentVariable,
+    ContainerPortMapping
+} from '@modules/container/domain/port/IContainerService';
+
 export interface IContainerProps {
     name: string;
     image: string;
@@ -8,13 +13,12 @@ export interface IContainerProps {
     cpus: number;
     internalIp?: string;
     team?: string;
-    env: Array<{ key: string; value: string }>;
-    ports: Array<{ private: number; public: number }>;
+    env: ContainerEnvironmentVariable[];
+    ports: ContainerPortMapping[];
     network?: string;
     volume?: string;
     createdAt?: Date;
     updatedAt?: Date;
-    _id?: string;
 }
 
 export class Container implements IContainerProps {
@@ -27,16 +31,15 @@ export class Container implements IContainerProps {
     public cpus!: number;
     public internalIp?: string;
     public team?: string;
-    public env!: Array<{ key: string; value: string }>;
-    public ports!: Array<{ private: number; public: number }>;
+    public env!: ContainerEnvironmentVariable[];
+    public ports!: ContainerPortMapping[];
     public network?: string;
     public volume?: string;
     public createdAt?: Date;
     public updatedAt?: Date;
-    public _id?: string;
 
     constructor(
-        public readonly id: string,
+        public readonly _id: string,
         props: IContainerProps
     ){
         Object.assign(this, props);

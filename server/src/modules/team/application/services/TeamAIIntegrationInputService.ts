@@ -1,15 +1,8 @@
 import { inject, injectable } from 'tsyringe';
 import type { TeamAIProvider } from '@modules/team/domain/entities/TeamAIIntegration';
 import TeamAIProviderCatalog from '@modules/team/application/services/TeamAIProviderCatalog';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    if (value === null || typeof value !== 'object') {
-        return false;
-    }
-
-    return !Array.isArray(value);
-};
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 @injectable()
 export default class TeamAIIntegrationInputService {

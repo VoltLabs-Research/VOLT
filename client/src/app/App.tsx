@@ -4,10 +4,11 @@ import type { ErrorInfo } from 'react';
 import { renderPublicRoutes, renderGuestRoutes, renderProtectedRoutes } from './routes/RouteRenderer';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
 import GlobalErrorListener from '@/shared/presentation/components/GlobalErrorListener';
+import QueryProvider from '@/shared/presentation/components/QueryProvider';
 import { buildErrorPath } from '@/shared/utils';
 import { Toaster } from 'sileo';
 import { useGlobalShortcuts } from '@/shared/presentation/hooks/use-global-shortcuts';
-import { usePageTracker } from '@/shared/presentation/hooks/use-page-tracker';
+import { usePageTracker } from '@/modules/start/hooks/use-page-tracker';
 import { useRouteCleanup } from '@/shared/presentation/hooks/use-route-cleanup';
 import { ensureApplicationStoreCleanupsRegistered } from '@/shared/utils/application-store-cleanups';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
@@ -64,16 +65,18 @@ const AppRoutes = () => {
 
 const App = () => {
     return (
-        <BrowserRouter>
-            <AppRoutes />
-            <Toaster
-                position="bottom-right"
-                theme="light"
-                options={{
-                    fill: '#171717'
-                }}
-            />
-        </BrowserRouter>
+        <QueryProvider>
+            <BrowserRouter>
+                <AppRoutes />
+                <Toaster
+                    position="bottom-right"
+                    theme="light"
+                    options={{
+                        fill: '#171717'
+                    }}
+                />
+            </BrowserRouter>
+        </QueryProvider>
     );
 };
 

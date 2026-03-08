@@ -1,9 +1,11 @@
 import { ChatProps } from '@modules/chat/domain/entities/Chat';
 
 export interface AddUsersToGroupInputDTO{
-    requesterId: string;
+    userId: string;
     chatId: string;
-    userIdsToAdd: string[];
+    userIds: string[];
 };
 
-export interface AddUsersToGroupOutputDTO extends ChatProps{}
+export interface AddUsersToGroupOutputDTO extends ChatProps{
+    _id: string;
+}

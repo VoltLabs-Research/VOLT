@@ -1,20 +1,12 @@
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { v4 } from 'uuid';
+import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 
 export interface SSHConnectionDeletedEventPayload {
     sshConnectionId: string;
     teamId: string;
 }
 
-export default class SSHConnectionDeletedEvent implements IDomainEvent {
-    public readonly name = 'ssh-connection.deleted';
-    public readonly occurredOn: Date;
-    public readonly eventId: string;
-
-    constructor(
-        public readonly payload: SSHConnectionDeletedEventPayload
-    ) {
-        this.occurredOn = new Date();
-        this.eventId = v4();
+export default class SSHConnectionDeletedEvent extends BaseDomainEvent<SSHConnectionDeletedEventPayload> {
+    constructor(payload: SSHConnectionDeletedEventPayload) {
+        super('ssh-connection.deleted', payload);
     }
 }

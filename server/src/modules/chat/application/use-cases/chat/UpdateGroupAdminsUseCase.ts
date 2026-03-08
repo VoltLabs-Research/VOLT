@@ -3,36 +3,34 @@ import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
+import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { GroupAdminAction, UpdateGroupAdminsInputDTO, UpdateGroupAdminsOutputDTO } from '@modules/chat/application/dtos/chat/UpdateGroupAdminsDTO';
+import { resolveGroupChat } from '@modules/chat/application/helpers/resolveGroupChat';
+import { isParticipant } from '@modules/chat/application/helpers/isParticipant';
+import { toPersistedChatOutput } from '@modules/chat/application/helpers/toPersistedChatOutput';
 
 @injectable()
 export class UpdateGroupAdminsUseCase implements IUseCase<UpdateGroupAdminsInputDTO, UpdateGroupAdminsOutputDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatRepository)
-        private chatRepo: IChatRepository
+        private chatRepo: IChatRepository,
+        @inject(SOCKET_TOKENS.SocketEmitter)
+        private socketEmitter: ISocketEmitter
     ){}
 
     async execute(input: UpdateGroupAdminsInputDTO): Promise<Result<UpdateGroupAdminsOutputDTO, ApplicationError>> {
-        const { action, chatId, requesterId, targetUserIds } = input;
-        const chat = await this.chatRepo.findById(chatId);
-        if (!chat || !chat.props.isGroup || !chat.props.isActive) {
-            return Result.fail(ApplicationError.notFound(
-                ErrorCodes.CHAT_NOT_FOUND,
-                'Chat not found'
-            ));
-        }
+        const { action, chatId, userId, targetUserIds } = input;
 
-        if (!chat.isAdmin(requesterId)) {
-            return Result.fail(ApplicationError.unauthorized(
-                ErrorCodes.AUTH_UNAUTHORIZED,
-                'Unauthorized'
-            ));
+        const chatResult = await resolveGroupChat(this.chatRepo, chatId, userId, true);
+        if (!chatResult.success) {
+            return Result.fail(chatResult.error!);
         }
+        const chat = chatResult.value!;
 
-        // Validate that are participants
-        const validUsers = input.targetUserIds.filter((id) => chat.props.participants.includes(id));
+        const validUsers = targetUserIds.filter((id) => isParticipant(chat, id));
         if (validUsers.length !== targetUserIds.length) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.CHAT_USERS_NOT_IN_TEAM,
@@ -48,7 +46,7 @@ export class UpdateGroupAdminsUseCase implements IUseCase<UpdateGroupAdminsInput
             if (updatedAdmins.length === 0) {
                 return Result.fail(ApplicationError.badRequest(
                     ErrorCodes.CHAT_GROUP_MIN_ADMINS,
-                    'At least 1 ad mins is required'
+                    'At least 1 admin is required'
                 ));
             }
         } else {
@@ -69,6 +67,13 @@ export class UpdateGroupAdminsUseCase implements IUseCase<UpdateGroupAdminsInput
             ));
         }
 
-        return Result.ok(updatedChat.props);
+        this.socketEmitter.emitToRoom(`chat-${chatId}`, 'group_admins_updated', {
+            chatId,
+            action,
+            targetUserIds: validUsers,
+            updatedBy: userId
+        });
+
+        return Result.ok(toPersistedChatOutput(updatedChat));
     }
 };

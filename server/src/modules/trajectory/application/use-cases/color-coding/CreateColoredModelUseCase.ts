@@ -1,11 +1,11 @@
 import { injectable, inject } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 import { IColorCodingService } from '@modules/trajectory/domain/port/IColorCodingService';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { CreateColoredModelInputDTO, CreateColoredModelOutputDTO } from '@modules/trajectory/application/dtos/generated-models';
+import { CreateColoredModelInputDTO, CreateColoredModelOutputDTO } from '@modules/trajectory/application/dtos/color-coding';
 
 @injectable()
 export class CreateColoredModelUseCase implements IUseCase<CreateColoredModelInputDTO, CreateColoredModelOutputDTO, ApplicationError> {
@@ -16,23 +16,13 @@ export class CreateColoredModelUseCase implements IUseCase<CreateColoredModelInp
 
     async execute(input: CreateColoredModelInputDTO): Promise<Result<CreateColoredModelOutputDTO, ApplicationError>> {
         const { trajectoryId, timestep, property, gradient } = input;
-        const startValue = Number(input.startValue);
-        const endValue = Number(input.endValue);
-        const hasMissingRequired = [trajectoryId, timestep, property, gradient].some((value) => !value?.trim());
-
-        if (hasMissingRequired || !Number.isFinite(startValue) || !Number.isFinite(endValue)) {
-            return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.COLOR_CODING_MISSING_PARAMS,
-                'Missing required color-coding parameters'
-            ));
-        }
 
         await this.colorCodingService.createColoredModel(
             trajectoryId,
             timestep,
             property,
-            startValue,
-            endValue,
+            input.startValue,
+            input.endValue,
             gradient,
             input.analysisId,
             input.exposureId

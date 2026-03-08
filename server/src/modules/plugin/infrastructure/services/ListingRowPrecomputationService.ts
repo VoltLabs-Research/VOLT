@@ -1,11 +1,11 @@
 import { injectable, inject } from 'tsyringe';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
-import { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
+import { IListingRowRepository, ListingRowUpsertOperation } from '@modules/plugin/domain/port/IListingRowRepository';
 import { ISubListingRowRepository } from '@modules/plugin/domain/port/ISubListingRowRepository';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import { getExposureNodes } from '@modules/plugin/infrastructure/utilities/get-exposure-nodes';
 import logger from '@shared/infrastructure/logger';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IStorageService } from '@shared/domain/port/IStorageService';
@@ -13,15 +13,13 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { decodeMultiStream } from '@shared/infrastructure/utilities/msgpack';
 import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/merge-chunked-value';
 import { SubListingRowProps } from '@modules/plugin/domain/entities/SubListingRow';
+import { listExposurePayloadObjects } from '@modules/plugin/infrastructure/utilities/analysis-file-collection';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 interface PrecomputeAnalysisParams {
     analysisId: string;
     teamId?: string;
-}
-
-interface ExposureDescriptor {
-    exposureId: string;
-    exposureName: string;
 }
 
 interface TimestepRecord {
@@ -75,22 +73,30 @@ export class ListingRowPrecomputationService {
 
         const analysis = await this.analysisRepo.findById(analysisId);
         if (!analysis) {
-            throw new Error(`Analysis::NotFound:${analysisId}`);
+            throw ApplicationError.notFound(
+                ErrorCodes.ANALYSIS_NOT_FOUND,
+                `Analysis not found: ${analysisId}`
+            );
         }
 
         const plugin = await this.pluginRepo.findById(analysis.props.plugin);
         if (!plugin) {
-            throw new Error(`Plugin::NotFound:${analysis.props.plugin}`);
+            throw ApplicationError.notFound(
+                ErrorCodes.PLUGIN_NOT_FOUND,
+                `Plugin not found: ${analysis.props.plugin}`
+            );
         }
 
         const workflow = plugin.props.workflow;
         if (!workflow?.props?.nodes?.length) {
-            throw new Error(`Plugin::WorkflowMissing:${plugin.id}`);
+            throw ApplicationError.internalServerError(
+                `Plugin workflow not found for plugin ${plugin._id}`
+            );
         }
 
-        const exposures = this.findExposures(workflow);
+        const exposures = getExposureNodes(workflow.props.nodes);
         if (!exposures.length) {
-            logger.info(`[ListingRowPrecomputation] No exposures found for plugin ${plugin.id}`);
+            logger.info(`[ListingRowPrecomputation] No exposures found for plugin ${plugin._id}`);
             return;
         }
 
@@ -119,6 +125,8 @@ export class ListingRowPrecomputationService {
                     continue;
                 }
 
+                const upsertOperations: ListingRowUpsertOperation[] = [];
+
                 for (const record of timestepRecords) {
                     const mainListingRow = record.mainListing;
                     if (!mainListingRow || typeof mainListingRow !== 'object' || Object.keys(mainListingRow).length === 0) {
@@ -130,30 +138,25 @@ export class ListingRowPrecomputationService {
 
                     const subListingNames = Object.keys(record.subListings);
 
-                    const rowData = {
-                        plugin: plugin.id,
-                        team: teamId,
-                        trajectory: trajectoryId,
-                        trajectoryName: '',
-                        analysis: analysisId,
-                        exposureName: descriptor.exposureName,
-                        exposureId: descriptor.exposureId,
-                        timestep: record.timestep,
-                        row: mainListingRow,
-                        subListingNames
-                    };
-
-                    const existing = await this.listingRowRepo.findOne({
-                        analysis: analysisId,
-                        exposureId: descriptor.exposureId,
-                        timestep: record.timestep
+                    upsertOperations.push({
+                        filter: {
+                            analysis: analysisId,
+                            exposureId: descriptor.exposureId,
+                            timestep: record.timestep
+                        },
+                        update: {
+                            plugin: plugin._id,
+                            team: teamId,
+                            trajectory: trajectoryId,
+                            trajectoryName: '',
+                            analysis: analysisId,
+                            exposureName: descriptor.exposureName,
+                            exposureId: descriptor.exposureId,
+                            timestep: record.timestep,
+                            row: mainListingRow,
+                            subListingNames
+                        }
                     });
-
-                    if (existing) {
-                        await this.listingRowRepo.updateById(existing.id, rowData);
-                    } else {
-                        await this.listingRowRepo.create(rowData);
-                    }
 
                     materializedRows += 1;
 
@@ -164,7 +167,7 @@ export class ListingRowPrecomputationService {
                         }
 
                         const subListingDocuments = cleanedRows.map((cleanedRow) => ({
-                            plugin: plugin.id,
+                            plugin: plugin._id,
                             team: teamId,
                             trajectory: trajectoryId,
                             analysis: analysisId,
@@ -175,8 +178,12 @@ export class ListingRowPrecomputationService {
                             row: cleanedRow
                         }));
 
-                        await this.subListingRowRepo.insertMany(subListingDocuments as any);
+                        await this.subListingRowRepo.insertMany(subListingDocuments as Partial<SubListingRowProps>);
                     }
+                }
+
+                if (upsertOperations.length > 0) {
+                    await this.listingRowRepo.bulkUpsert(upsertOperations);
                 }
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : String(error);
@@ -188,33 +195,16 @@ export class ListingRowPrecomputationService {
         }
 
         if (materializedRows === 0) {
-            throw new Error(`ListingPrecompute::NoRowsMaterialized:analysis=${analysisId}`);
+            throw ApplicationError.internalServerError(
+                `No listing rows were materialized for analysis ${analysisId}`
+            );
         }
 
         if (exposureFailures.length > 0) {
-            throw new Error(
-                `ListingPrecompute::PartialFailure:analysis=${analysisId}:failures=${exposureFailures.join(' | ')}`
+            throw ApplicationError.internalServerError(
+                `Listing precomputation partially failed for analysis ${analysisId}: ${exposureFailures.join(' | ')}`
             );
         }
-    }
-
-    private findExposures(workflow: { props: { nodes: Array<{ id: string; type: string; data: Record<string, any> }> } }): ExposureDescriptor[] {
-        const nodes = workflow.props.nodes || [];
-        const descriptors: ExposureDescriptor[] = [];
-
-        for (const node of nodes) {
-            if (node.type !== WorkflowNodeType.Exposure) continue;
-
-            const exposureName = String(node.data?.exposure?.name || '').trim();
-            if (!exposureName) continue;
-
-            descriptors.push({
-                exposureId: node.id,
-                exposureName
-            });
-        }
-
-        return descriptors;
     }
 
     private async collectTimestepRecords(
@@ -222,7 +212,12 @@ export class ListingRowPrecomputationService {
         analysisId: string,
         exposureId: string
     ): Promise<TimestepRecord[]> {
-        const payloadObjects = await this.listExposurePayloadObjects(trajectoryId, analysisId, exposureId);
+        const payloadObjects = await listExposurePayloadObjects(
+            this.storageService,
+            trajectoryId,
+            analysisId,
+            exposureId
+        );
         const records: TimestepRecord[] = [];
 
         for (const payloadObject of payloadObjects) {
@@ -258,31 +253,9 @@ export class ListingRowPrecomputationService {
         return records;
     }
 
-    private async listExposurePayloadObjects(
-        trajectoryId: string,
-        analysisId: string,
-        exposureId: string
-    ): Promise<Array<{ objectName: string; timestep: number }>> {
-        const prefix = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/`;
-        const objects: Array<{ objectName: string; timestep: number }> = [];
-
-        for await (const objectName of this.storageService.listByPrefix(SYS_BUCKETS.PLUGINS, prefix, true)) {
-            const match = objectName.match(/timestep-(\d+)\.msgpack$/);
-            if (!match) continue;
-
-            objects.push({
-                objectName,
-                timestep: Number(match[1])
-            });
-        }
-
-        objects.sort((a, b) => a.timestep - b.timestep);
-        return objects;
-    }
-
-    private async readDecodedPayload(objectName: string): Promise<Record<string, any> | null> {
+    private async readDecodedPayload(objectName: string): Promise<Record<string, unknown> | null> {
         const stream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, objectName);
-        let decoded: Record<string, any> | null = null;
+        let decoded: Record<string, unknown> | null = null;
 
         for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array | Buffer>)) {
             if (message && typeof message === 'object') {

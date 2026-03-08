@@ -6,7 +6,8 @@ import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
+import { mapPluginToPersistedDTO } from '@modules/plugin/application/use-cases/plugin/mapPluginToPersistedDTO';
 
 @injectable()
 export class GetPluginByIdUseCase implements IUseCase<GetPluginByIdInputDTO, GetPluginByIdOutputDTO, ApplicationError> {
@@ -23,9 +24,6 @@ export class GetPluginByIdUseCase implements IUseCase<GetPluginByIdInputDTO, Get
             ));
         }
 
-        return Result.ok({
-            ...plugin.props,
-            workflow: plugin.props.workflow.props
-        } as any);
+        return Result.ok(mapPluginToPersistedDTO(plugin));
     }
 }

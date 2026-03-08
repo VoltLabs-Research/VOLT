@@ -24,12 +24,11 @@ export const T = {
 };
 
 export interface ExecutionContext{
-    outputs: Map<string, Record<string, any>>;
-    userConfig: Record<string, any>;
+    outputs: Map<string, Record<string, unknown>>;
+    userConfig: Record<string, unknown>;
     trajectoryId: string;
     analysisId: string;
     generatedFiles: string[];
-    pluginId: string;
     pluginId: string;
     teamId: string;
     selectedFrameOnly?: boolean;
@@ -37,19 +36,7 @@ export interface ExecutionContext{
     workflow: Workflow
 };
 
-export interface ValidationResult{
-    valid: boolean;
-    errors: string[];
-};
-
-export interface IWorkflowValidator{
-    validateStructure(workflow: Workflow): ValidationResult;
-    validateRequiredNodes(workflow: Workflow): ValidationResult;
-    validateNodeData(node: WorkflowNode): ValidationResult;
-    hasCycle(workflow: Workflow): boolean;
-};
-
-export interface INodeHandler<TOutput = Record<string, any>>{
+export interface INodeHandler<TOutput = Record<string, unknown>>{
     readonly type: WorkflowNodeType;
     readonly outputSchema: NodeOutputSchema;
     
@@ -62,11 +49,11 @@ export interface INodeHandler<TOutput = Record<string, any>>{
 export interface INodeRegistry{
     register(handler: INodeHandler): void;
     get(type: WorkflowNodeType): INodeHandler | undefined;
-    execute(node: WorkflowNode, context: ExecutionContext): Promise<Record<string, any>>;
+    execute(node: WorkflowNode, context: ExecutionContext): Promise<Record<string, unknown>>;
     has(type: WorkflowNodeType): boolean;
     getRegisteredTypes(): WorkflowNodeType[];
     getSchemas(): Record<string, NodeOutputSchema>;
 
-    resolveReference(ref: string, context: ExecutionContext): any;
+    resolveReference(ref: string, context: ExecutionContext): unknown;
     resolveTemplate(template: string, context: ExecutionContext): string;
 };

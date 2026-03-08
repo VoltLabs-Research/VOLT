@@ -1,13 +1,5 @@
-import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
 import RevokeSecretKeyByIdUseCase from '@modules/team/application/use-cases/secret-key/RevokeSecretKeyByIdUseCase';
 
-@injectable()
-export default class RevokeSecretKeyByIdController extends BaseController<RevokeSecretKeyByIdUseCase> {
-    constructor(
-        @inject(RevokeSecretKeyByIdUseCase)
-        useCase: RevokeSecretKeyByIdUseCase
-    ) {
-        super(useCase);
-    }
-}
+const RevokeSecretKeyByIdController = createController(RevokeSecretKeyByIdUseCase);
+export default RevokeSecretKeyByIdController;

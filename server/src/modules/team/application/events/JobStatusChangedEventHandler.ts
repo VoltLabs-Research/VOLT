@@ -12,7 +12,7 @@ export default class TeamJobStatusChangedEventHandler implements IEventHandler<J
     ){}
 
     async handle(event: JobStatusChangedEvent): Promise<void> {
-        const { teamId, jobId, status, queueType, metadata } = event.data;
+        const { teamId, jobId, status, queueType, metadata } = event.payload;
 
         if (teamId) {
             await this.socketEmitter.emitToRoom(

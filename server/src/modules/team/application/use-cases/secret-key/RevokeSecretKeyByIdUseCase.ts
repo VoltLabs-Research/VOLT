@@ -3,7 +3,7 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ISecretKeyRepository } from '@modules/team/domain/port/ISecretKeyRepository';
 import {
     RevokeSecretKeyByIdInputDTO,
@@ -18,19 +18,16 @@ export default class RevokeSecretKeyByIdUseCase implements IUseCase<RevokeSecret
     ) {}
 
     async execute(input: RevokeSecretKeyByIdInputDTO): Promise<Result<RevokeSecretKeyByIdOutputDTO, ApplicationError>> {
-        const key = await this.secretKeyRepository.findOne({
-            _id: input.secretKeyId,
-            team: input.teamId
-        } as any);
+        const key = await this.secretKeyRepository.findById(input.secretKeyId);
 
-        if (!key) {
+        if (!key || key.props.team !== input.teamId) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.SECRET_KEY_NOT_FOUND,
                 'Secret key not found'
             ));
         }
 
-        const updated = await this.secretKeyRepository.updateById(key.id, {
+        const updated = await this.secretKeyRepository.updateById(key._id, {
             isActive: false,
             updatedAt: new Date()
         });
@@ -43,8 +40,8 @@ export default class RevokeSecretKeyByIdUseCase implements IUseCase<RevokeSecret
         }
 
         return Result.ok({
-            _id: updated.id,
-            teamId: String(updated.props.team),
+            _id: updated._id,
+            teamId: input.teamId,
             isActive: updated.props.isActive,
             updatedAt: updated.props.updatedAt
         });

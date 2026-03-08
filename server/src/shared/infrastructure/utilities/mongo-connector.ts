@@ -9,6 +9,10 @@ const mongoConnector = async () => {
         MONGO_URI
     } = process.env;
 
+    if (!MONGO_URI) {
+        throw new Error('MONGO_URI environment variable is required');
+    }
+
     const databaseName = NODE_ENV === 'production' ? PRODUCTION_DATABASE : DEVELOPMENT_DATABASE;
     const uri = `${MONGO_URI}/${databaseName}`;
 
@@ -23,7 +27,7 @@ const mongoConnector = async () => {
         connectTimeoutMS: 100000,
         socketTimeoutMS: 60000,
         authSource: 'admin',
-        appName: 'opendxa',
+        appName: 'volt',
         serverSelectionTimeoutMS: 5000,
         maxIdleTimeMS: 30000,
         retryWrites: true

@@ -6,6 +6,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IPluginBinaryCacheService } from '@modules/plugin/domain/port/IPluginBinaryCacheService';
 import { ITempFileService } from '@shared/domain/port/ITempFileService';
 import { IProcessExecutorService } from '@modules/plugin/domain/port/IProcessExecutorService';
+import { ErrorCodes } from '@core/constants/error-codes';
 import path from 'node:path';
 import logger from '@shared/infrastructure/logger';
 
@@ -40,7 +41,7 @@ export default class EntrypointHandler implements INodeHandler{
 
     async execute(node: WorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
         const config = node.data.entrypoint!;
-        if(!config.binaryObjectPath) throw new Error('Entrypoint: Binary not configured');
+        if(!config.binaryObjectPath) throw new Error(ErrorCodes.PLUGIN_ENTRYPOINT_BINARY_REQUIRED);
 
         // Resolve binary 
         const binaryPath = await this.binaryCache.getBinaryPath({
@@ -61,7 +62,7 @@ export default class EntrypointHandler implements INodeHandler{
         // Execute
         try{
             const result = await this.processExecutor.execute(binaryPath, args, outputDir);
-            return {
+            const output = {
                 results: [{
                     index,
                     input: item,
@@ -74,33 +75,36 @@ export default class EntrypointHandler implements INodeHandler{
                 successCount: 1,
                 failCount: 0
             };
-        }catch(error: any){
-            logger.error(`@entrypoint-handler: job #${index} failed: ${error.message}`);
-            return {
+            return output;
+        }catch(error: unknown){
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            logger.error(`@entrypoint-handler: job #${index} failed: ${errorMessage}`);
+            const output = {
                 results: [{
                     index,
                     input: item,
                     success: false,
-                    error: error.message
+                    error: errorMessage
                 }],
                 stdout: '',
-                stderr: error.message,
+                stderr: errorMessage,
                 exitCode: 1,
                 successCount: 0,
                 failCount: 1
             };
+            return output;
         }
     }
 
     private async prepareContext(nodeId: string, context: ExecutionContext){
         const forEachNode = context.workflow.findParentByType(nodeId, WorkflowNodeType.ForEach);
-        if(!forEachNode) throw new Error('Entrypoint: Must be inside a ForEach loop');
+        if(!forEachNode) throw new Error(ErrorCodes.PLUGIN_ENTRYPOINT_FOREACH_REQUIRED);
 
         const output = context.outputs.get(forEachNode.id);
         const item = output?.currentValue;
         const index = output?.currentIndex ?? 0;
 
-        if(item === null) throw new Error('Entrypoint: No current item in loop iteration');
+        if(item === null || item === undefined) throw new Error(ErrorCodes.PLUGIN_ENTRYPOINT_ITERATION_MISSING);
 
         // Create unique output directory for this job execution
         const dirName = `job-${context.analysisId}-${index}-${Date.now()}`;

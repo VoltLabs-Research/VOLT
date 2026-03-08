@@ -16,13 +16,6 @@ export default class GetGuestIdentityUseCase implements IUseCase<GetGuestIdentit
     ){}
 
     async execute(input: GetGuestIdentityInputDTO): Promise<Result<GetGuestIdentityOutputDTO, ApplicationError>>{
-        if(!input.seed){
-            return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.AUTHENTICATION_GUEST_SEED_REQUIRED,
-                'Seed is required'
-            ));
-        }
-
         const hash = crypto.createHash('md5').update(input.seed).digest('hex');
         const { buffer } = this.avatarService.generateIdenticon(hash);
         const avatar = `data:image/png;base64,${buffer}`;

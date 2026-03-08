@@ -1,10 +1,12 @@
 import 'reflect-metadata';
-import '@core/bootstrap/register-deps';
+import { registerAllDependencies } from '@core/bootstrap/register-deps';
 import BaseWorker from '@shared/infrastructure/workers/BaseWorker';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/ITrajectoryDumpStorageService';
 import { container } from 'tsyringe';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import Job from '@modules/jobs/domain/entities/Job';
+
+registerAllDependencies();
 
 class CloudUploadWorker extends BaseWorker<Job> {
     private dumpStorage!: ITrajectoryDumpStorageService;

@@ -2,8 +2,8 @@ import { container } from 'tsyringe';
 import { PluginListingService } from '@modules/plugin/infrastructure/services/PluginListingService';
 import { WorkflowValidatorService } from '@modules/plugin/infrastructure/services/WorkflowValidatorService';
 import { ListingRowPrecomputationService } from '@modules/plugin/infrastructure/services/ListingRowPrecomputationService';
-import { PLUGIN_TOKENS } from './PluginTokens';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
+import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/PluginRepository';
 import ListingRowRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/ListingRowRepository';
 import SubListingRowRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/SubListingRowRepository';
@@ -13,6 +13,9 @@ import NodeRegistry from '@modules/plugin/infrastructure/services/nodes/NodeRegi
 import PluginStorageService from '@modules/plugin/infrastructure/services/PluginStorageService';
 import PluginBinaryCacheService from '@modules/plugin/infrastructure/services/PluginBinaryCacheService';
 import ProcessExecutorService from '@modules/plugin/infrastructure/services/ProcessExecutorService';
+import { DefaultPluginBootstrapService } from '@modules/plugin/infrastructure/services/DefaultPluginBootstrapService';
+import { PluginExposureExportService } from '@modules/plugin/infrastructure/services/PluginExposureExportService';
+import { ListingRowsExportPresenter } from '@modules/plugin/infrastructure/presenters/ListingRowsExportPresenter';
 import AnalysisProcessingQueue from '@modules/plugin/infrastructure/queues/AnalysisProcessingQueue';
 import AnalysisJobFactory from '@modules/plugin/infrastructure/services/AnalysisJobFactory';
 
@@ -39,6 +42,11 @@ import { DeleteBinaryUseCase } from '@modules/plugin/application/use-cases/plugi
 import { UploadBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/UploadBinaryUseCase';
 import { ExportPluginListingDocumentsUseCase } from '@modules/plugin/application/use-cases/listing-row/ExportPluginListingDocumentsUseCase';
 import { ExportListingRowsByAnalysisIdUseCase } from '@modules/plugin/application/use-cases/listing-row/ExportListingRowsByAnalysisIdUseCase';
+import { GetPluginExposureGLBUseCase } from '@modules/plugin/application/use-cases/exposure/GetPluginExposureGLBUseCase';
+import { GetPluginExposureExportUseCase } from '@modules/plugin/application/use-cases/exposure/GetPluginExposureExportUseCase';
+import { DebugSocketOrchestrator } from '@modules/plugin/infrastructure/socket/debug/DebugSocketOrchestrator';
+import DebugSocketModule from '@modules/plugin/infrastructure/socket/DebugSocketModule';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 
 import * as pluginAiTools from '@modules/plugin/application/ai-tools';
 
@@ -49,7 +57,10 @@ export const registerPluginDependencies = (): void => {
     container.registerSingleton(PLUGIN_TOKENS.WorkflowValidatorService, WorkflowValidatorService);
     container.registerSingleton(PLUGIN_TOKENS.ListingRowPrecomputationService, ListingRowPrecomputationService);
     container.registerSingleton(PLUGIN_TOKENS.PluginStorageService, PluginStorageService);
+    container.registerSingleton(PLUGIN_TOKENS.DefaultPluginBootstrapService, DefaultPluginBootstrapService);
     container.registerSingleton(PLUGIN_TOKENS.PluginBinaryCacheService, PluginBinaryCacheService);
+    container.registerSingleton(PLUGIN_TOKENS.ListingRowsExportPresenter, ListingRowsExportPresenter);
+    container.registerSingleton(PLUGIN_TOKENS.PluginExposureExportService, PluginExposureExportService);
     container.registerSingleton(PLUGIN_TOKENS.ProcessExecutorService, ProcessExecutorService);
 
     container.registerSingleton(PLUGIN_TOKENS.PluginRepository, PluginRepository);
@@ -71,6 +82,9 @@ export const registerPluginDependencies = (): void => {
 
     container.registerSingleton(PLUGIN_TOKENS.AnalysisProcessingQueue, AnalysisProcessingQueue);
     container.registerSingleton(PLUGIN_TOKENS.AnalysisJobFactory, AnalysisJobFactory);
+    container.registerSingleton(DebugSocketOrchestrator);
+    container.registerSingleton(PLUGIN_TOKENS.DebugSocketModule, DebugSocketModule);
+    container.register(SOCKET_TOKENS.SocketModule, { useToken: PLUGIN_TOKENS.DebugSocketModule });
 
     container.registerSingleton(CreatePluginUseCase);
     container.registerSingleton(GetPluginByIdUseCase);
@@ -86,6 +100,8 @@ export const registerPluginDependencies = (): void => {
     container.registerSingleton(UploadBinaryUseCase);
     container.registerSingleton(ExportPluginListingDocumentsUseCase);
     container.registerSingleton(ExportListingRowsByAnalysisIdUseCase);
+    container.registerSingleton(GetPluginExposureGLBUseCase);
+    container.registerSingleton(GetPluginExposureExportUseCase);
 
     for (const ToolClass of Object.values(pluginAiTools)) {
         container.registerSingleton(AI_TOKENS.AITool, ToolClass as any);
@@ -106,5 +122,9 @@ export const initializeNodeHandlers = (): void => {
         container.resolve<INodeHandler>(PLUGIN_TOKENS.IfStatementHandler)
     ];
 
-    handlers.forEach((handler) => nodeRegistry.register(handler));
+    handlers.forEach((handler) => {
+        if (!nodeRegistry.has(handler.type)) {
+            nodeRegistry.register(handler);
+        }
+    });
 };

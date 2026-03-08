@@ -3,7 +3,7 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
 import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
 import { DeleteAIConversationInputDTO } from '@modules/ai/application/dtos/DeleteAIConversationDTO';
@@ -33,10 +33,10 @@ export default class DeleteAIConversationUseCase implements IUseCase<DeleteAICon
         }
 
         await this.messageRepository.deleteMany({
-            conversationId: conversation.id
+            conversationId: conversation._id
         } as any);
 
-        await this.conversationRepository.deleteById(conversation.id);
+        await this.conversationRepository.deleteById(conversation._id);
 
         return Result.ok(null);
     }

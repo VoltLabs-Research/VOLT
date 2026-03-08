@@ -2,11 +2,15 @@ import { ISSHConnectionService, SSHFileEntry, DownloadProgress } from '@modules/
 import SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
 import { Client, SFTPWrapper } from 'ssh2';
 import { createWriteStream } from 'node:fs';
-import { spawn } from 'node:child_process';
 import { pipeline } from 'node:stream/promises';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { injectable, inject } from 'tsyringe';
 import logger from '@shared/infrastructure/logger';
+import { ErrorCodes, type ErrorCode } from '@core/constants/error-codes';
+import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { ISSHCredentialsCipher } from '@modules/ssh/domain/port/ISSHCredentialsCipher';
 
 interface CachedConnection {
     client: Client;
@@ -30,6 +34,18 @@ interface SSH2Connection {
     sftp: SFTPWrapper;
 };
 
+class SSHServiceError extends Error {
+    constructor(
+        public readonly code: ErrorCode,
+        public readonly statusCode: number,
+        message: string
+    ) {
+        super(message);
+        this.name = 'SSHServiceError';
+    }
+}
+
+@injectable()
 export default class SSHConnectionService implements ISSHConnectionService {
     private connections: Map<string, CachedConnection> = new Map();
     private connectionPromises: Map<string, Promise<SSH2Connection>> = new Map();
@@ -43,7 +59,10 @@ export default class SSHConnectionService implements ISSHConnectionService {
     // 1 MB
     private readonly STREAM_HIGH_WATER_MARK = 1024 * 1024;
 
-    constructor() {
+    constructor(
+        @inject(SSH_CONN_TOKENS.SSHCredentialsCipher)
+        private readonly sshCredentialsCipher: ISSHCredentialsCipher
+    ) {
         setInterval(() => this.cleanupIdleConnections(), 1000 * 60);
     }
 
@@ -54,7 +73,7 @@ export default class SSHConnectionService implements ISSHConnectionService {
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 client.end();
-                reject(new Error('Connection timeout during test'));
+                reject(this.normalizeServiceError(undefined, 'Failed to test SSH connection'));
             }, 10000);
 
             client.on('ready', () => {
@@ -66,7 +85,7 @@ export default class SSHConnectionService implements ISSHConnectionService {
             client.on('error', (error) => {
                 clearTimeout(timeout);
                 client.end();
-                reject(error);
+                reject(this.normalizeServiceError(error, 'Failed to test SSH connection'));
             });
 
             client.connect(config);
@@ -74,7 +93,7 @@ export default class SSHConnectionService implements ISSHConnectionService {
     }
 
     async listFiles(connection: SSHConnection, remotePath: string = '.'): Promise<SSHFileEntry[]> {
-        logger.info(`[SSHConnectionService] Listing files for ${connection.id} at ${remotePath}`);
+        logger.info(`[SSHConnectionService] Listing files for ${connection._id} at ${remotePath}`);
         return this.executeWithRetry(connection, async (sftp) => {
             return new Promise((resolve, reject) => {
                 sftp.readdir(remotePath, (error, list) => {
@@ -155,8 +174,13 @@ export default class SSHConnectionService implements ISSHConnectionService {
         localPath: string,
         onProgress?: (progress: DownloadProgress) => void
     ): Promise<string[]> {
-        const { client } = await this.getConnection(connection);
-        if (remotePath === '/') throw new Error('Refusing to download "/"');
+        if (remotePath === '/') {
+            throw new SSHServiceError(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                400,
+                'Refusing to download root directory'
+            );
+        }
 
         await fs.mkdir(localPath, { recursive: true });
 
@@ -165,84 +189,76 @@ export default class SSHConnectionService implements ISSHConnectionService {
             totalBytes = await this.getRemoteDirectorySize(connection, remotePath);
         }
 
-        return new Promise((resolve, reject) => {
-            const remoteDir = path.posix.dirname(remotePath);
-            const remoteBase = path.posix.basename(remotePath);
-            const cmd = `tar -C ${this.shQuote(remoteDir)} -cf - -- ${this.shQuote(remoteBase)}`;
+        let downloadedBytes = 0;
+        let lastEmit = 0;
+        const downloadedFiles: string[] = [];
 
-            client.exec(cmd, (error, stream) => {
-                if (error) return reject(error);
+        const emitProgress = (currentFile: string) => {
+            if (!onProgress) return;
+            const now = Date.now();
+            if ((now - lastEmit) < this.PROGRESS_THROTTLE_MS) return;
+            lastEmit = now;
 
-                const tarExtract = spawn('tar', ['-xf', '-', '-C', localPath], {
-                    stdio: ['pipe', 'ignore', 'pipe']
-                });
+            const percent = totalBytes > 0
+                ? Math.min(100, Math.round((downloadedBytes / totalBytes) * 100))
+                : 0;
+            onProgress({
+                totalBytes,
+                downloadedBytes,
+                currentFile,
+                percent
+            });
+        };
 
-                let downloadedBytes = 0;
-                let lastEmit = 0;
+        const downloadRecursive = async (sftp: SFTPWrapper, remoteDir: string, localDir: string): Promise<void> => {
+            await fs.mkdir(localDir, { recursive: true });
 
-                const failHandler = (error: any) => {
-                    try {
-                        stream.destroy();
-                    } catch (_) {
-                        // Nothing to do!
-                    }
-
-                    try {
-                        tarExtract.stdin.destroy();
-                    } catch (_) {
-                        // Nothing to do!
-                    }
-
-                    reject(error instanceof Error ? error : new Error(String(error)));
-                };
-
-                stream.on('error', failHandler);
-
-                tarExtract.on('error', (spawnError) => failHandler(new Error(`Local tar failed: ${spawnError.message}`)));
-                tarExtract.stdin.on('error', failHandler);
-
-                stream.on('data', (chunk: Buffer) => {
-                    downloadedBytes += chunk.length;
-                    if (!onProgress) return;
-
-                    const now = Date.now();
-                    if ((now - lastEmit) < this.PROGRESS_THROTTLE_MS) return;
-                    lastEmit = now;
-
-                    const percent = totalBytes > 0
-                        ? Math.min(100, Math.round((downloadedBytes / totalBytes) * 100))
-                        : 0;
-                    onProgress({
-                        totalBytes,
-                        downloadedBytes,
-                        currentFile: 'streaming...',
-                        percent
-                    });
-                });
-
-                stream.pipe(tarExtract.stdin!);
-
-                tarExtract.on('close', async (code) => {
-                    if (code != 0) return failHandler(new Error(`Local tar exited with code ${code}`));
-
-                    if (onProgress) {
-                        onProgress({
-                            totalBytes,
-                            downloadedBytes,
-                            currentFile: 'done',
-                            percent: totalBytes > 0 ? 100 : 0
-                        })
-                    }
-
-                    try {
-                        const files = await this.walkFiles(localPath);
-                        resolve(files);
-                    } catch (error) {
-                        failHandler(error);
-                    }
+            const entries = await new Promise<SSHFileEntry[]>((resolve, reject) => {
+                sftp.readdir(remoteDir, (error, list) => {
+                    if (error) return reject(error);
+                    resolve(list.map((item) => ({
+                        name: item.filename,
+                        path: path.posix.join(remoteDir, item.filename),
+                        isDirectory: item.attrs.isDirectory(),
+                        size: item.attrs.size,
+                        mtime: new Date(item.attrs.mtime * 1000)
+                    })));
                 });
             });
+
+            for (const entry of entries) {
+                const localEntryPath = path.join(localDir, entry.name);
+                if (entry.isDirectory) {
+                    await downloadRecursive(sftp, entry.path, localEntryPath);
+                } else {
+                    await fs.mkdir(path.dirname(localEntryPath), { recursive: true });
+                    await new Promise<void>((resolve, reject) => {
+                        sftp.fastGet(entry.path, localEntryPath, (error) => {
+                            if (error) return reject(error);
+                            resolve();
+                        });
+                    });
+                    downloadedBytes += entry.size;
+                    downloadedFiles.push(localEntryPath);
+                    emitProgress(entry.name);
+                }
+            }
+        };
+
+        await this.executeWithRetry(connection, async (sftp) => {
+            await downloadRecursive(sftp, remotePath, localPath);
         });
+
+        if (onProgress) {
+            onProgress({
+                totalBytes,
+                downloadedBytes,
+                currentFile: 'done',
+                percent: totalBytes > 0 ? 100 : 0
+            });
+        }
+
+        return downloadedFiles;
     }
 
     private async executeWithRetry<T>(
@@ -253,21 +269,28 @@ export default class SSHConnectionService implements ISSHConnectionService {
         try {
             const { sftp } = await this.getConnection(connection);
             return await operation(sftp);
-        } catch (error: any) {
-            logger.warn(`[SSHConnectionService] Attempt ${attempt} failed for ${connection.id}: ${error.message}`);
+        } catch (error: unknown) {
+            const sshError = error as Record<string, unknown>;
+            const errorMessage = sshError.message as string | undefined;
+            logger.warn(`[SSHConnectionService] Attempt ${attempt} failed for ${connection._id}: ${errorMessage}`);
 
-            if (error.message?.includes('All configured authentication methods failed')
-                || error.level === 'client-authentication') {
+            if (error instanceof SSHServiceError) {
                 throw error;
             }
 
+            if (errorMessage?.includes('All configured authentication methods failed')
+                || sshError.level === 'client-authentication') {
+                throw this.normalizeServiceError(error, 'SSH authentication failed');
+            }
+
             const shouldRetry = attempt <= this.MAX_RETRIES &&
-                (error.code === 'ECONNRESET' || error.message?.includes('No SFTP') || !error.code);
+                (sshError.code === 'ECONNRESET' || errorMessage?.includes('No SFTP') || !sshError.code);
 
-            if (!shouldRetry) throw error;
+            if (!shouldRetry) {
+                throw this.normalizeServiceError(error, 'SSH operation failed');
+            }
 
-            // Force reconnect
-            this.closeConnection(connection.id);
+            this.closeConnection(connection._id);
             await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
             return this.executeWithRetry(connection, operation, attempt + 1);
         }
@@ -276,24 +299,24 @@ export default class SSHConnectionService implements ISSHConnectionService {
     private async getConnection(connection: SSHConnection): Promise<SSH2Connection> {
         const config = this.createConfig(connection);
         const configHash = this.getConfigHash(config);
-        const cached = this.connections.get(connection.id);
+        const cached = this.connections.get(connection._id);
         if (cached) {
             if (cached.configHash === configHash && !cached.isClosing) {
                 cached.lastUsed = Date.now();
                 return cached;
             }
-            this.closeConnection(connection.id);
+            this.closeConnection(connection._id);
         }
 
-        if (this.connectionPromises.has(connection.id)) {
-            return this.connectionPromises.get(connection.id)!;
+        if (this.connectionPromises.has(connection._id)) {
+            return this.connectionPromises.get(connection._id)!;
         }
 
         const connectPromise = new Promise<SSH2Connection>((resolve, reject) => {
             const client = new Client();
             const timeoutTimer = setTimeout(() => {
                 client.destroy();
-                reject(new Error(`Connection timeout after ${this.CONNECTION_TIMEOUT}ms`));
+                reject(this.normalizeServiceError(undefined, 'Failed to establish SSH connection'));
             }, this.CONNECTION_TIMEOUT + 1000);
 
             client.on('ready', () => {
@@ -301,10 +324,10 @@ export default class SSHConnectionService implements ISSHConnectionService {
                     clearTimeout(timeoutTimer);
                     if (error) {
                         client.end();
-                        return reject(error);
+                        return reject(this.normalizeServiceError(error, 'Failed to establish SSH connection'));
                     }
 
-                    this.connections.set(connection.id, {
+                    this.connections.set(connection._id, {
                         client,
                         sftp,
                         lastUsed: Date.now(),
@@ -317,50 +340,51 @@ export default class SSHConnectionService implements ISSHConnectionService {
             });
 
             client.on('error', (error) => {
-                logger.error(`[SSHConnectionService] Connection error for ${connection.id}: ${error.message}`);
+                logger.error(`[SSHConnectionService] Connection error for ${connection._id}: ${error.message}`);
                 clearTimeout(timeoutTimer);
-                reject(error);
+                reject(this.normalizeServiceError(error, 'Failed to establish SSH connection'));
             });
 
             client.on('close', () => {
-                this.connections.delete(connection.id);
-                this.connectionPromises.delete(connection.id);
+                this.connections.delete(connection._id);
+                this.connectionPromises.delete(connection._id);
             });
 
             try {
                 client.connect(config);
-            } catch (error) {
+            } catch (error: unknown) {
                 clearTimeout(timeoutTimer);
-                reject(error);
+                reject(this.normalizeServiceError(error, 'Failed to establish SSH connection'));
             }
         });
 
-        this.connectionPromises.set(connection.id, connectPromise);
+        this.connectionPromises.set(connection._id, connectPromise);
 
         try {
             return await connectPromise;
         } catch (error) {
-            this.connections.delete(connection.id);
+            this.connections.delete(connection._id);
             throw error;
         } finally {
-            this.connectionPromises.delete(connection.id);
+            this.connectionPromises.delete(connection._id);
         }
     }
 
     private createConfig(connection: SSHConnection): SSHConnectionConfig {
-        const { host, port, username } = connection.props;
+        const { encryptedPassword, host, port, username } = connection.props;
         return {
             host,
             port: Number(port),
             username,
-            password: connection.getPassword(),
+            password: this.sshCredentialsCipher.decrypt(encryptedPassword),
             readyTimeout: this.CONNECTION_TIMEOUT,
             keepAliveInterval: 10000
         };
     }
 
     private getConfigHash(config: SSHConnectionConfig): string {
-        return `${config.host}:${config.port}:${config.username}:${config.password.length}`;
+        const passwordHash = createHash('sha256').update(config.password).digest('hex');
+        return `${config.host}:${config.port}:${config.username}:${passwordHash}`;
     }
 
     private cleanupIdleConnections() {
@@ -385,22 +409,44 @@ export default class SSHConnectionService implements ISSHConnectionService {
         return `'${value.replace(/'/g, `'\\''`)}'`;
     }
 
-    private async walkFiles(root: string): Promise<string[]> {
-        const out: string[] = [];
-        const stack: string[] = [root];
-
-        while (stack.length > 0) {
-            const dir = stack.pop()!;
-            const entries = await fs.readdir(dir, { withFileTypes: true });
-            for (const entry of entries) {
-                const p = path.join(dir, entry.name);
-                if (entry.isDirectory()) {
-                    stack.push(p);
-                } else {
-                    out.push(p);
-                }
-            }
+    private normalizeServiceError(error: unknown, fallbackMessage: string): SSHServiceError {
+        if (error instanceof SSHServiceError) {
+            return error;
         }
-        return out;
+
+        if (this.isPathNotFoundError(error)) {
+            return new SSHServiceError(
+                ErrorCodes.SSH_PATH_NOT_FOUND,
+                404,
+                'SSH path not found'
+            );
+        }
+
+        return new SSHServiceError(
+            ErrorCodes.INTERNAL_SERVER_ERROR,
+            500,
+            fallbackMessage
+        );
     }
+
+    private isPathNotFoundError(error: unknown): boolean {
+        if (!(error instanceof Error)) {
+            return false;
+        }
+
+        const normalizedMessage = error.message.toLowerCase();
+
+        if (normalizedMessage.includes('no such file') || normalizedMessage.includes('not found')) {
+            return true;
+        }
+
+        const sshError = error as Error & { code?: unknown };
+
+        if (sshError.code === 2 || sshError.code === 'ENOENT') {
+            return true;
+        }
+
+        return false;
+    }
+
 };

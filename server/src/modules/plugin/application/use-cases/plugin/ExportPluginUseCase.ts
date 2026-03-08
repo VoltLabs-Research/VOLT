@@ -6,8 +6,8 @@ import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository
 import { IPluginStorageService } from '@modules/plugin/domain/port/IPluginStorageService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { createStreamResponse } from '@modules/plugin/application/helpers/create-download-response';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
 
 @injectable()
 export class ExportPluginUseCase implements IUseCase<ExportPluginInputDTO, ExportPluginOutputDTO, ApplicationError> {
@@ -26,11 +26,16 @@ export class ExportPluginUseCase implements IUseCase<ExportPluginInputDTO, Expor
             ));
         }
 
+        const fileName = `${plugin._id}.zip`;
         const stream = await this.storageService.exportPlugin(input.pluginId);
 
         return Result.ok({
-            stream,
-            fileName: `${plugin.id}.zip`
+            ...createStreamResponse({
+                stream,
+                contentType: 'application/zip',
+                filename: fileName
+            }),
+            fileName
         });
     }
 }

@@ -12,4 +12,4 @@ export const PositionSchema = new Schema({
         required: [true, ValidationCodes.PLUGIN_POSITION_Y_REQUIRED],
         default: 0
     }
-});
+}, { _id: false });

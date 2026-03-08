@@ -3,7 +3,7 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { CreateAnalysisInputDTO, CreateAnalysisOutputDTO } from '@modules/analysis/application/dtos/CreateAnalysisDTO';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
 
 @injectable()
 export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, CreateAnalysisOutputDTO> {
@@ -24,7 +24,7 @@ export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, C
 
         return Result.ok({
             analysis: {
-                id: analysis.id,
+                _id: analysis._id,
                 trajectory: analysis.props.trajectory,
                 plugin: analysis.props.plugin,
                 config: analysis.props.config,

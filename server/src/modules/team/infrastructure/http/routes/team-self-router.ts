@@ -1,15 +1,15 @@
 import { Router } from 'express';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
-import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
 import controllers from '@modules/team/infrastructure/http/controllers/team';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/team/self',
-    router
+    basePath: '/api/team/:teamId/self',
+    router,
+    teamScope: 'base-path'
 };
 
-router.use(protect);
-router.get('/:teamId/permissions/me', controllers.getMyPermissions.handle);
+router.get('/permissions', controllers.getMyPermissions.handle);
+router.post('/leave', controllers.leave.handle);
 
 export default module;

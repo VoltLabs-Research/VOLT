@@ -1,14 +1,9 @@
-// dump_parser.cpp - Ultra-optimized LAMMPS dump parser with multi-threading
 #include <node_api.h>
 #include <vector>
 #include <string>
 #include <thread>
 #include <future>
 #include "common.hpp"
-
-// ============================================================================
-// DUMP FILE METADATA
-// ============================================================================
 
 struct DumpMetadata {
     int timestep = 0;
@@ -18,10 +13,6 @@ struct DumpMetadata {
     bool isValid = false;
     const char* atomsSectionPtr = nullptr;
 };
-
-// ============================================================================
-// HEADER PARSING
-// ============================================================================
 
 static DumpMetadata parseDumpHeader(const char* RESTRICT data, size_t fileSize, ColumnMapping& cols) {
     DumpMetadata meta;

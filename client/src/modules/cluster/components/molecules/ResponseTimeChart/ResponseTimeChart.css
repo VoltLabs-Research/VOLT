@@ -1,0 +1,6 @@
+.response-chart-bar {
+    width: 3px;
+    height: 1.25rem;
+    background-color: var(--accent-blue);
+    border-radius: var(--radius-full);
+}

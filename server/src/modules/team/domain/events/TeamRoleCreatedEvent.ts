@@ -1,5 +1,4 @@
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { v4 } from 'uuid';
+import { createTeamDomainEvent } from './createTeamDomainEvent';
 
 export interface TeamRoleCreatedEventPayload {
     teamRoleId: string;
@@ -7,15 +6,4 @@ export interface TeamRoleCreatedEventPayload {
     name: string;
 }
 
-export default class TeamRoleCreatedEvent implements IDomainEvent {
-    public readonly name = 'team-role.created';
-    public readonly occurredOn: Date;
-    public readonly eventId: string;
-
-    constructor(
-        public readonly payload: TeamRoleCreatedEventPayload
-    ) {
-        this.occurredOn = new Date();
-        this.eventId = v4();
-    }
-}
+export default class TeamRoleCreatedEvent extends createTeamDomainEvent<TeamRoleCreatedEventPayload>('team-role.created') {}

@@ -88,7 +88,7 @@ const Sidebar = ({
     );
 
     const headerElement = header
-        ? React.cloneElement(header as React.ReactElement, {
+        ? React.cloneElement(header as React.ReactElement<React.ComponentProps<typeof SidebarHeader>>, {
             collapsed,
             onToggle: toggleCollapsed
         })

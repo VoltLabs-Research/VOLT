@@ -2,13 +2,13 @@ import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 import { AITool } from '@shared/application/ai/AITool';
 import type { AIToolScope } from '@modules/ai/application/services/AIToolService';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
-import { SYS_BUCKETS } from '@core/config/minio';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { listAnalysisFiles } from '@modules/plugin/infrastructure/utilities/analysis-file-collection';
 
 @injectable()
 export class ListAnalysisExposuresAITool extends AITool {
@@ -30,22 +30,10 @@ export class ListAnalysisExposuresAITool extends AITool {
         const trajectory = await this.trajectoryRepo.findById(trajectoryId);
         if (!trajectory) throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Trajectory not found');
 
-        const prefixes = [
-            { bucket: SYS_BUCKETS.PLUGINS, prefix: `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`, type: 'data' },
-            { bucket: SYS_BUCKETS.PLUGINS, prefix: `trajectory-${trajectoryId}/analysis-${analysisId}/charts/`, type: 'chart' },
-            { bucket: SYS_BUCKETS.MODELS, prefix: `trajectory-${trajectoryId}/analysis-${analysisId}/glb/`, type: 'model' }
-        ];
+        const rows = await listAnalysisFiles(this.storageService, trajectoryId, analysisId, {
+            ignoreErrors: true
+        });
 
-        const rows: any[] = [];
-        for (const { bucket, prefix, type } of prefixes) {
-            try { 
-                for await (const obj of this.storageService.listByPrefix(bucket, prefix, true)) { 
-                    rows.push({ bucket, path: obj, type }); 
-                } 
-            } catch { 
-                /* bucket may not exist */ 
-            }
-        }
         return { summary: `Found ${rows.length} files for analysis ${analysisId}.`, data: rows };
     }
 }

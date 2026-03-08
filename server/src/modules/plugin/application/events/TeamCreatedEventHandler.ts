@@ -1,22 +1,17 @@
 import { injectable, inject } from 'tsyringe';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import TeamCreatedEvent from '@modules/team/domain/events/TeamCreatedEvent';
-import { IPluginStorageService } from '@modules/plugin/domain/port/IPluginStorageService';
+import type { IDefaultPluginBootstrapService } from '@modules/plugin/domain/port/IDefaultPluginBootstrapService';
 import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
 import CreateNotificationUseCase from '@modules/notification/application/use-cases/CreateNotificationUseCase';
 import logger from '@shared/infrastructure/logger';
-import path from 'node:path';
-import fs from 'node:fs/promises';
-import { STATIC_ROOT } from '@core/config/paths';
-
-const DEFAULT_PLUGINS_PATH = path.join(STATIC_ROOT, 'default/plugins');
 
 @injectable()
 export default class TeamCreatedEventHandler implements IEventHandler<TeamCreatedEvent> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginStorageService)
-        private readonly pluginStorageService: IPluginStorageService,
+        @inject(PLUGIN_TOKENS.DefaultPluginBootstrapService)
+        private readonly defaultPluginBootstrapService: IDefaultPluginBootstrapService,
 
         @inject(CreateNotificationUseCase)
         private readonly createNotificationUseCase: CreateNotificationUseCase
@@ -26,44 +21,24 @@ export default class TeamCreatedEventHandler implements IEventHandler<TeamCreate
         const { teamId, ownerId } = event.payload;
 
         try {
-            const files = await fs.readdir(DEFAULT_PLUGINS_PATH);
-            const zipFiles = files.filter((file) => file.endsWith('.zip'));
+            const result = await this.defaultPluginBootstrapService.importDefaultPluginsForTeam(
+                teamId,
+                PluginStatus.Published
+            );
 
-            if (zipFiles.length === 0) {
+            if (result.totalFound === 0) {
                 logger.info(`@team-created-handler: no default plugins found`);
                 return;
-            }
-
-            let importedCount = 0;
-            const failedPlugins: string[] = [];
-
-            for (const zipFile of zipFiles) {
-                try {
-                    const filePath = path.join(DEFAULT_PLUGINS_PATH, zipFile);
-                    const fileBuffer = await fs.readFile(filePath);
-
-                    await this.pluginStorageService.importPlugin(
-                        fileBuffer,
-                        teamId,
-                        PluginStatus.Published
-                    );
-
-                    importedCount++;
-                    logger.info(`@team-created-handler: imported plugin ${zipFile} for team ${teamId}`);
-                } catch (error) {
-                    logger.error(`@team-created-handler: failed to import ${zipFile}: ${error}`);
-                    failedPlugins.push(zipFile);
-                }
             }
 
             await this.createNotificationUseCase.execute({
                 recipient: ownerId,
                 title: 'Default Plugins Imported',
-                content: `${importedCount} default plugin(s) have been imported to your new team.${failedPlugins.length > 0 ? ` ${failedPlugins.length} failed.` : ''}`,
+                content: `${result.importedCount} default plugin(s) have been imported to your new team.${result.failedPlugins.length > 0 ? ` ${result.failedPlugins.length} failed.` : ''}`,
                 link: '/plugins'
             });
 
-            logger.info(`@team-created-handler: completed importing ${importedCount}/${zipFiles.length} plugins for team ${teamId}`);
+            logger.info(`@team-created-handler: completed importing ${result.importedCount}/${result.totalFound} plugins for team ${teamId}`);
         } catch (error) {
             logger.error(`@team-created-handler: error importing default plugins: ${error}`);
         }

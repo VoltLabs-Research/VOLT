@@ -1,7 +1,7 @@
-import { PluginProps } from '@modules/plugin/domain/entities/Plugin';
+import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin/PersistedPluginDTO';
 
 export interface GetPluginByIdInputDTO{
     pluginId: string;
 };
 
-export interface GetPluginByIdOutputDTO extends PluginProps{};
+export interface GetPluginByIdOutputDTO extends PersistedPluginDTO { }

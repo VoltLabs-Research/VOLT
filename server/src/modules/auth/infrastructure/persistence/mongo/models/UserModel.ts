@@ -1,27 +1,27 @@
 import mongoose, { Schema, Model, Document, Types } from 'mongoose';
 import validator from 'validator';
-import { ValidationCodes } from '@core/constants/validation-codes';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { UserProps, OAuthProvider, UserRole } from '@modules/auth/domain/entities/User';
 
-export interface UserDocument extends Omit<UserProps, 'id'>, Document {
+export interface UserDocument extends UserProps, Document {
     _id: Types.ObjectId;
 }
 
 const UserSchema: Schema<UserDocument> = new Schema({
     email: {
         type: String,
-        required: [true, ValidationCodes.USER_EMAIL_REQUIRED],
+        required: [true, ErrorCodes.VALIDATION_INVALID_INPUT],
         unique: true,
         lowercase: true,
         trim: true,
-        validate: [validator.isEmail, ValidationCodes.USER_EMAIL_INVALID]
+        validate: [validator.isEmail, ErrorCodes.VALIDATION_INVALID_INPUT]
     },
     password: {
         type: String,
         required: function (this: UserDocument) {
             return !this.oauthProvider;
         },
-        minlength: [8, ValidationCodes.USER_PASSWORD_MINLEN],
+        minlength: [8, ErrorCodes.VALIDATION_INVALID_INPUT],
         select: false
     },
     role: {
@@ -42,17 +42,17 @@ const UserSchema: Schema<UserDocument> = new Schema({
     },
     firstName: {
         type: String,
-        minlength: [4, ValidationCodes.USER_FIRST_NAME_MINLEN],
-        maxlength: [64, ValidationCodes.USER_FIRST_NAME_MAXLEN],
-        required: [true, ValidationCodes.USER_FIRST_NAME_REQUIRED],
+        minlength: [1, ErrorCodes.VALIDATION_INVALID_INPUT],
+        maxlength: [64, ErrorCodes.VALIDATION_INVALID_INPUT],
+        required: [true, ErrorCodes.VALIDATION_INVALID_INPUT],
         lowercase: true,
         trim: true
     },
     lastName: {
         type: String,
-        minlength: [4, ValidationCodes.USER_LAST_NAME_MINLEN],
-        maxlength: [64, ValidationCodes.USER_LAST_NAME_MAXLEN],
-        required: [true, ValidationCodes.USER_LAST_NAME_REQUIRED],
+        minlength: [1, ErrorCodes.VALIDATION_INVALID_INPUT],
+        maxlength: [64, ErrorCodes.VALIDATION_INVALID_INPUT],
+        required: [true, ErrorCodes.VALIDATION_INVALID_INPUT],
         lowercase: true,
         trim: true
     },

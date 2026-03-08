@@ -1,9 +1,7 @@
-import { Types, Document, SchemaDefinition } from 'mongoose';
+import { Types } from 'mongoose';
 
-export type Persistable<T, Relations extends keyof T = never> = Omit<T, 'id' | Relations> & {
+export type Persistable<T, Relations extends keyof T = never> = Omit<T, '_id' | Relations> & {
     _id: Types.ObjectId;
 } & {
-    [K in Relations]: T[K] extends any[] ? Types.ObjectId[] : Types.ObjectId;
+    [K in Relations]: T[K] extends unknown[] ? Types.ObjectId[] : Types.ObjectId;
 };
-
-type MongooseSchema<T> = SchemaDefinition<Omit<T, keyof Document>>;

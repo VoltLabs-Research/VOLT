@@ -1,5 +1,5 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
-import { ValidationCodes } from '@core/constants/validation-codes';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { SSHConnectionProps } from '@modules/ssh/domain/entities/SSHConnection';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
@@ -8,58 +8,66 @@ type SSHConnectionRelations = 'team' | 'user';
 
 export interface SSHConnectionDocument extends Persistable<SSHConnectionProps, SSHConnectionRelations>, Document{}
 
+const SSH_CONNECTION_VALIDATION_ERROR = ErrorCodes.VALIDATION_INVALID_INPUT;
+
 const SSHConnectionSchema = new Schema({
     name: {
         type: String,
-        required: [true, ValidationCodes.SSH_CONNECTION_NAME_REQUIRED],
-        minlength: [2, ValidationCodes.SSH_CONNECTION_MINLEN],
-        maxlength: [64, ValidationCodes.SSH_CONNECTION_MAXLEN],
+        required: [true, SSH_CONNECTION_VALIDATION_ERROR],
+        minlength: [2, SSH_CONNECTION_VALIDATION_ERROR],
+        maxlength: [64, SSH_CONNECTION_VALIDATION_ERROR],
         trim: true
     },
     team: {
-        ...teamRefField([true, ValidationCodes.SSH_CONNECTION_TEAM]),
+        ...teamRefField([true, SSH_CONNECTION_VALIDATION_ERROR]),
         index: true
     },
     host: {
         type: String,
-        required: [true, ValidationCodes.SSH_CONNECTION_HOST],
+        required: [true, SSH_CONNECTION_VALIDATION_ERROR],
         trim: true,
         validate: {
-            validator: function (v: string) {
-                // Basic validation for hostname or IP
-                return /^[a-zA-Z0-9.-]+$/.test(v) || /^(\d{1,3}\.){3}\d{1,3}$/.test(v);
+            validator: function (value: string) {
+                const isHostname = /^[a-zA-Z0-9.-]+$/.test(value);
+                const isIPv4 = /^(\d{1,3}\.){3}\d{1,3}$/.test(value);
+
+                if (isHostname || isIPv4) {
+                    return true;
+                }
+
+                return false;
             },
-            message: ValidationCodes.SSH_CONNECTION_HOST_INVALID
+            message: SSH_CONNECTION_VALIDATION_ERROR
         }
     },
     port: {
         type: Number,
-        required: [true, ValidationCodes.SSH_CONNECTION_PORT_REQUIRED],
-        min: [1, ValidationCodes.SSH_CONNECTION_PORT_MIN],
-        max: [65535, ValidationCodes.SSH_CONNECTION_PORT_MAX],
+        required: [true, SSH_CONNECTION_VALIDATION_ERROR],
+        min: [1, SSH_CONNECTION_VALIDATION_ERROR],
+        max: [65535, SSH_CONNECTION_VALIDATION_ERROR],
         default: 22
     },
     username: {
         type: String,
-        required: [true, ValidationCodes.SSH_CONNECTION_USERNAME_REQUIRED],
+        required: [true, SSH_CONNECTION_VALIDATION_ERROR],
         trim: true,
-        minlength: [1, ValidationCodes.SSH_CONNECTION_USERNAME_MINLEN],
-        maxlength: [64, ValidationCodes.SSH_CONNECTION_USERNAME_MAXLEN]
+        minlength: [1, SSH_CONNECTION_VALIDATION_ERROR],
+        maxlength: [64, SSH_CONNECTION_VALIDATION_ERROR]
     },
     encryptedPassword: {
         type: String,
-        required: [true, ValidationCodes.SSH_CONNECTION_ENCRYPTED_PASSWORD],
+        required: [true, SSH_CONNECTION_VALIDATION_ERROR],
         select: false
     },
     user: {
-        ...userRefField([true, ValidationCodes.SSH_CONNECTION_USER]),
+        ...userRefField([true, SSH_CONNECTION_VALIDATION_ERROR]),
         index: true
     }
 }, {
     timestamps: true
 });
 
-SSHConnectionSchema.index({ user: 1, name: 1 }, { unique: true });
+SSHConnectionSchema.index({ team: 1, name: 1 }, { unique: true });
 
 const SSHConnectionModel: Model<SSHConnectionDocument> = mongoose.model<SSHConnectionDocument>('SSHConnection', SSHConnectionSchema);
 

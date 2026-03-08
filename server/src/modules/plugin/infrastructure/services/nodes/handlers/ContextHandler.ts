@@ -5,6 +5,7 @@ import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/I
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
 import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import { ContextSource } from '@modules/plugin/domain/entities/workflow/nodes/ContextNode';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export default class ContextHandler implements INodeHandler{
@@ -31,7 +32,7 @@ export default class ContextHandler implements INodeHandler{
     async execute(node: WorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
         const source = node.data.context?.source;
         if(source !== ContextSource.TrajectoryDumps){
-            throw new Error(`ContextHandler: Unknown source '${source}'`);
+            throw new Error(ErrorCodes.PLUGIN_CONTEXT_SOURCE_UNSUPPORTED);
         }
 
         const [allTimesteps, trajectory] = await Promise.all([

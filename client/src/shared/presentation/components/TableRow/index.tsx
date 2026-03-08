@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
 import Container from '@/shared/presentation/components/Container';
-import Popover from '@/shared/presentation/components/Popover';
-import AsyncMenuItemWrapper from '@/shared/presentation/components/AsyncMenuItemWrapper';
-import type { ColumnConfig, MenuOption, Identifiable } from '../DocumentListingTable';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { ColumnConfig, Identifiable } from '../DocumentListingTable';
 
 interface TableRowProps<T extends Identifiable> {
     item: T;
@@ -86,11 +86,7 @@ const TableRow = <T extends Identifiable>({
     if(menuOptions.length === 0) return content;
 
     return (
-        <Popover id={`row-menu-${item._id}`} trigger={content} triggerAction='contextmenu'>
-            {menuOptions.map((option, idx) => (
-                <AsyncMenuItemWrapper key={idx} option={option} />
-            ))}
-        </Popover>
+        <ContextMenuPopover id={`row-menu-${item._id}`} trigger={content} options={menuOptions} />
     );
 };
 

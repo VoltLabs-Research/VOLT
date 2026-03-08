@@ -7,8 +7,8 @@ export enum SessionActivityType{
 };
 
 export interface SessionProps{
-    user: string;
-    token: string;
+    user: string | null;
+    token: string | null;
     userAgent: string;
     ip: string;
     isActive: boolean;
@@ -22,7 +22,7 @@ export interface SessionProps{
 
 export default class Session{
     constructor(
-        public readonly id: string,
+        public readonly _id: string,
         public props: SessionProps
     ){}
 };

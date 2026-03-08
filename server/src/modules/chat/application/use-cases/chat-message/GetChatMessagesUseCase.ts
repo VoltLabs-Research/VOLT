@@ -6,7 +6,8 @@ import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { IChatMessageRepository } from '@modules/chat/domain/port/IChatMessageRepository';
 import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
 import { GetChatMessagesInputDTO, GetChatMessagesOutputDTO } from '@modules/chat/application/dtos/chat-message/GetChatMessagesDTO';
-import { ErrorCodes } from '@core/constants/error-codes';
+import { resolveAccessibleChat } from '@modules/chat/application/helpers/resolveAccessibleChat';
+import { toPersistedChatOutput } from '@modules/chat/application/helpers/toPersistedChatOutput';
 
 
 @injectable()
@@ -21,13 +22,11 @@ export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO,
     async execute(input: GetChatMessagesInputDTO): Promise<Result<GetChatMessagesOutputDTO, ApplicationError>> {
         const { chatId } = input;
 
-        const chat = await this.chatRepo.findById(chatId);
-        if(!chat || !chat.props.participants.includes(input.userId)){
-            return Result.fail(ApplicationError.unauthorized(
-                ErrorCodes.AUTH_UNAUTHORIZED,
-                'You are not a participant in this chat'
-            ));
+        const chatResult = await resolveAccessibleChat(this.chatRepo, chatId, input.userId);
+        if (!chatResult.success) {
+            return Result.fail(chatResult.error!);
         }
+
         const messages = await this.messageRepo.findAll({
             filter: { chat: chatId },
             limit: input.limit,
@@ -37,7 +36,7 @@ export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO,
         });
         return Result.ok({
             ...messages,
-            data: messages.data.map(m => m.props)
+            data: messages.data.map((message) => toPersistedChatOutput(message))
         });
     }
 };

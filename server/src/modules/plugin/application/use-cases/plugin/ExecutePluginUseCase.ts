@@ -1,24 +1,24 @@
 import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
 import { injectable, inject } from 'tsyringe';
 import { ExecutePluginInputDTO } from '@modules/plugin/application/dtos/plugin/ExecutePluginDTO';
 import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
 import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { IPluginWorkflowEngine } from '@modules/plugin/domain/port/IPluginWorkflowEngine';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
 import AnalysisCreatedEvent from '@modules/analysis/domain/events/AnalysisCreatedEvent';
 import { IAnalysisJobFactory } from '@modules/plugin/domain/port/IAnalysisJobFactory';
-import BaseProcessingQueue from '@modules/jobs/infrastructure/services/BaseProcessingQueue';
-import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import type { IAnalysisQueue } from '@modules/plugin/domain/port/IAnalysisQueue';
+import PluginDisplayNameResolver from '@modules/plugin/domain/services/PluginDisplayNameResolver';
 
 @injectable()
 export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { analysisId: string }, ApplicationError> {
@@ -42,7 +42,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { a
         private jobFactory: IAnalysisJobFactory,
 
         @inject(PLUGIN_TOKENS.AnalysisProcessingQueue)
-        private analysisQueue: BaseProcessingQueue
+        private analysisQueue: IAnalysisQueue
     ){}
 
     async execute(input: ExecutePluginInputDTO): Promise<Result<{ analysisId: string }, ApplicationError>> {
@@ -77,12 +77,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { a
             ));
         }
 
-        const modifierNode = plugin.props.workflow?.props?.nodes?.find(
-            (node: any) => node?.type === WorkflowNodeType.Modifier
-        );
-        const pluginDisplayName = typeof modifierNode?.data?.modifier?.name === 'string'
-            ? modifierNode.data.modifier.name.trim()
-            : '';
+        const pluginDisplayName = PluginDisplayNameResolver.resolve(plugin.props.workflow);
 
         if (!pluginDisplayName) {
             return Result.fail(ApplicationError.badRequest(
@@ -91,17 +86,17 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { a
             ));
         }
 
-        await this.eventBus.publish(new PluginExecutionRequestEvent(
-            plugin.id,
-            input.trajectoryId,
-            input.userId,
-            pluginDisplayName,
-            input.teamId,
-            trajectory.props.name
-        ));
+        await this.eventBus.publish(new PluginExecutionRequestEvent({
+            pluginId: plugin._id,
+            trajectoryId: input.trajectoryId,
+            userId: input.userId,
+            pluginName: pluginDisplayName,
+            teamId: input.teamId,
+            trajectoryName: trajectory.props.name
+        }));
 
         const analysis = await this.analysisRepo.create({
-            plugin: plugin.id,
+            plugin: plugin._id,
 
             config: input.config,
             team: input.teamId,
@@ -113,7 +108,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { a
         await this.eventBus.publish(new AnalysisCreatedEvent({
             analysisId: analysis.id,
             trajectoryId: input.trajectoryId,
-            pluginId: plugin.id,
+            pluginId: plugin._id,
             pluginDisplayName,
             teamId: input.teamId,
             config: input.config,

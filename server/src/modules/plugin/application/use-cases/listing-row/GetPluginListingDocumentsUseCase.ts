@@ -1,31 +1,31 @@
-import { injectable, inject } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { GetPluginListingDocumentsInputDTO, GetPluginListingDocumentsOutputDTO } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
 import { IPluginListingService } from '@modules/plugin/domain/port/IPluginListingService';
+import { toPluginListingOptions } from '@modules/plugin/application/use-cases/listing-row/toPluginListingOptions';
 
 @injectable()
-export class GetPluginListingDocumentsUseCase implements IUseCase<GetPluginListingDocumentsInputDTO, GetPluginListingDocumentsOutputDTO> {
+export class GetPluginListingDocumentsUseCase implements IUseCase<
+    GetPluginListingDocumentsInputDTO,
+    GetPluginListingDocumentsOutputDTO
+> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginListingService) private listingService: IPluginListingService
-    ) {}
+        @inject(PLUGIN_TOKENS.PluginListingService)
+        private readonly listingService: IPluginListingService
+    ){}
 
     async execute(input: GetPluginListingDocumentsInputDTO): Promise<Result<GetPluginListingDocumentsOutputDTO>> {
         const result = await this.listingService.getListingDocuments(
             input.pluginId,
             {
-                teamId: input.teamId,
-                trajectoryId: input.trajectoryId,
-                analysisId: input.analysisId,
-                exposureId: input.exposureId,
-                exposureName: input.exposureName,
+                ...toPluginListingOptions(input),
                 page: input.page ?? 1,
-                limit: input.limit ?? 50,
-                sortAsc: input.sortAsc ?? false
+                limit: input.limit ?? 50
             }
         );
 
         return Result.ok(result);
     }
-};
+}

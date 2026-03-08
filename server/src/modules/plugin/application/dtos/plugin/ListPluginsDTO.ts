@@ -1,5 +1,5 @@
-import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { PluginProps } from '@modules/plugin/domain/entities/Plugin';
+import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin/PersistedPluginDTO';
 
 export interface ListPluginsInputDTO {
     teamId: string;
@@ -8,4 +8,6 @@ export interface ListPluginsInputDTO {
     limit?: number;
 }
 
-export interface ListPluginsOutputDTO extends PaginatedResult<PluginProps> { }
+export interface ListedPluginDTO extends PersistedPluginDTO { }
+
+export interface ListPluginsOutputDTO extends PaginatedResult<ListedPluginDTO> { }

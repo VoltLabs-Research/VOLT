@@ -1,6 +1,8 @@
 import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 import Session, { SessionProps } from '@modules/session/domain/entities/Session';
 
+export type PersistedSessionDTO = SessionProps & { _id: string };
+
 export interface ISessionRepository extends IBaseRepository<Session, SessionProps>{
     /**
      * Find session by token.
@@ -10,7 +12,7 @@ export interface ISessionRepository extends IBaseRepository<Session, SessionProp
     /**
      * Find all active sessions for a user.
      */
-    findActiveByUserId(userId: string): Promise<SessionProps[]>;
+    findActiveByUserId(userId: string): Promise<PersistedSessionDTO[]>;
 
     /**
      * Find login activity history for a user.
@@ -18,7 +20,7 @@ export interface ISessionRepository extends IBaseRepository<Session, SessionProp
     findLoginActivity(
         userId: string,
         limit: number
-    ): Promise<SessionProps[]>;
+    ): Promise<PersistedSessionDTO[]>;
 
     /**
      * Deactivate session by token.

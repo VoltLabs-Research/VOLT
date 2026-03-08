@@ -1,22 +1,15 @@
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { v4 } from 'uuid';
+import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 
 export interface UserCreatedEventPayload {
+    userId: string;
     id: string;
     email: string;
     firstName: string;
     lastName: string;
 };
 
-export default class UserCreatedEvent implements IDomainEvent {
-    public readonly name = 'user.created';
-    public readonly occurredOn: Date;
-    public readonly eventId: string;
-
-    constructor(
-        public readonly payload: UserCreatedEventPayload
-    ) {
-        this.occurredOn = new Date();
-        this.eventId = v4();
+export default class UserCreatedEvent extends BaseDomainEvent<UserCreatedEventPayload> {
+    constructor(payload: UserCreatedEventPayload) {
+        super('user.created', payload);
     }
 }

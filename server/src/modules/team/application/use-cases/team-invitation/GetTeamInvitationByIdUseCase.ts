@@ -1,34 +1,36 @@
-import { Result } from '@shared/domain/port/Result';
-import { IUseCase } from '@shared/application/IUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
-import { GetTeamInvitationByIdInputDTO, GetTeamInvitationByIdOutputDTO } from '@modules/team/application/dtos/team-invitation/GetTeamInvitationByIdDTO';
+import type { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
+import type {
+    GetTeamInvitationByIdInputDTO,
+    GetTeamInvitationByIdOutputDTO
+} from '@modules/team/application/dtos/team-invitation/GetTeamInvitationByIdDTO';
 
 @injectable()
 export default class GetTeamInvitationByIdUseCase implements IUseCase<GetTeamInvitationByIdInputDTO, GetTeamInvitationByIdOutputDTO, ApplicationError> {
     constructor(
         @inject(TEAM_TOKENS.TeamInvitationRepository)
-        private invitationRepository: ITeamInvitationRepository
-    ){}
+        private readonly repository: ITeamInvitationRepository
+    ) {}
 
     async execute(input: GetTeamInvitationByIdInputDTO): Promise<Result<GetTeamInvitationByIdOutputDTO, ApplicationError>> {
-        const { invitationId } = input;
-        const invitation = await this.invitationRepository.findById(invitationId, {
+        const entity = await this.repository.findById(input.invitationId, {
             populate: {
                 path: 'invitedBy team',
-                select: 'firstName lastName name _id'
+                select: ['firstName', 'lastName', 'name', '_id']
             }
         });
-        if (!invitation) {
+        if (!entity) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TEAM_INVITATION_NOT_FOUND,
-                'Team invitation not found'
+                'TeamInvitation not found'
             ));
         }
-
-        return Result.ok(invitation.props);
+        return Result.ok(toPersistedOutput(entity));
     }
-};
+}

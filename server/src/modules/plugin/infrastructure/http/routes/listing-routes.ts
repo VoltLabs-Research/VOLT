@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { createExportRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import { Resource } from '@core/constants/resources';
 import controllers from '@modules/plugin/infrastructure/http/controllers/listing';
-import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
@@ -11,13 +11,13 @@ const module: HttpModule = {
     resource: Resource.PLUGIN
 };
 
-router.use(protect);
+const exportRateLimit = createExportRateLimiter(10);
 
 router.get('/listing/analysis/:analysisId', controllers.getListingRowsByAnalysisId.handle);
-router.get('/listing/analysis/:analysisId/export', controllers.exportListingRowsByAnalysisId.handle);
+router.get('/listing/analysis/:analysisId/export', exportRateLimit, controllers.exportListingRowsByAnalysisId.handle);
 router.get('/listing/analysis/:analysisId/sub-listing/:exposureId/:timestep/:subListingName', controllers.getSubListing.handle);
-router.get('/listing/:pluginId/export', controllers.exportPluginListingDocuments.handle);
-router.get('/listing/:pluginId/trajectory/:trajectoryId/export', controllers.exportPluginListingDocuments.handle);
+router.get('/listing/:pluginId/export', exportRateLimit, controllers.exportPluginListingDocuments.handle);
+router.get('/listing/:pluginId/trajectory/:trajectoryId/export', exportRateLimit, controllers.exportPluginListingDocuments.handle);
 router.get('/listing/:pluginId', controllers.getPluginListingDocuments.handle);
 
 export default module;

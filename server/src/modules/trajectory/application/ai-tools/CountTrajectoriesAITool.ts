@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { AITool } from '@shared/application/ai/AITool';
 import type { AIToolScope } from '@modules/ai/application/services/AIToolService';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 
 @injectable()
 export class CountTrajectoriesAITool extends AITool {

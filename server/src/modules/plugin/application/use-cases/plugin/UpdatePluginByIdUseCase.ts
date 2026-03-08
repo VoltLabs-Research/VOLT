@@ -5,10 +5,13 @@ import { UpdatePluginByIdInputDTO, UpdatePluginByIdOutputDTO } from '@modules/pl
 import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
 import { PluginProps, PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
 import { IWorkflowValidatorService } from '@modules/plugin/domain/port/IWorkflowValidatorService';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
+import { mapPluginToPersistedDTO } from '@modules/plugin/application/use-cases/plugin/mapPluginToPersistedDTO';
+import WorkflowProjectionService from '@modules/plugin/domain/services/WorkflowProjectionService';
 
 
 @injectable()
@@ -59,20 +62,32 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
                 }
             }
 
-            update.workflow = input.workflow;
+            const workflow = new Workflow(plugin._id, input.workflow);
+            const projection = WorkflowProjectionService.project(workflow, plugin._id);
+
+            update.workflow = workflow;
+            update.modifier = projection.modifier;
+            update.exposures = projection.exposures;
+            update.arguments = projection.arguments;
+            update.listingExposures = projection.listingExposures;
         }
 
-        // If the user is trying publish this plugin and there are
-        // validation errors, throws an error.
-        // if(input.status === PluginStatus.Published && !(update.validated ?? plugin.props.validated)){
-        //    return Result.fail(ApplicationError.notFound(
-        //        ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
-        //        'Plugin not valid, cannot publish'
-        //    ));
-        // }
+        if(input.status === PluginStatus.Published && !(update.validated ?? plugin.props.validated)){
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
+                'Plugin not valid, cannot publish'
+            ));
+        }
 
-        await this.pluginRepository.updateById(input.pluginId, update);
+        const updatedPlugin = await this.pluginRepository.updateById(input.pluginId, update);
 
-        return Result.ok(plugin.props);
+        if(!updatedPlugin){
+            return Result.fail(ApplicationError.notFound(
+                ErrorCodes.PLUGIN_NOT_FOUND,
+                'Plugin not found'
+            ));
+        }
+
+        return Result.ok(mapPluginToPersistedDTO(updatedPlugin));
     }
 }

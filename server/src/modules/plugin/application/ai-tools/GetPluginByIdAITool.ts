@@ -3,6 +3,15 @@ import { z } from 'zod';
 import { AITool } from '@shared/application/ai/AITool';
 import type { AIToolScope } from '@modules/ai/application/services/AIToolService';
 import { GetPluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/GetPluginByIdUseCase';
+import type { GetPluginByIdOutputDTO } from '@modules/plugin/application/dtos/plugin/GetPluginByIdDTO';
+
+interface PluginExposureSummary {
+    _id: string;
+    name: string;
+    hasListing?: boolean;
+    canvas?: boolean;
+    raster?: boolean;
+}
 
 @injectable()
 export class GetPluginByIdAITool extends AITool {
@@ -20,15 +29,17 @@ export class GetPluginByIdAITool extends AITool {
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
         const result = await this.useCase.execute({ pluginId: params.pluginId });
         if (!result.success) throw result.error;
-        const plugin = result.value as any;
+        const plugin: GetPluginByIdOutputDTO = result.value;
         return {
             pluginId: plugin._id || params.pluginId,
             name: plugin.modifier?.name || params.pluginId,
             status: plugin.status, validated: plugin.validated,
-            exposures: Array.isArray(plugin.exposures) ? plugin.exposures.map((e: any) => ({
-                exposureId: e._id, name: e.name,
-                hasListing: Boolean(e.hasListing),
-                canvas: e.canvas ?? false, raster: e.raster ?? false
+            exposures: Array.isArray(plugin.exposures) ? plugin.exposures.map((exposure: PluginExposureSummary) => ({
+                exposureId: exposure._id,
+                name: exposure.name,
+                hasListing: Boolean(exposure.hasListing),
+                canvas: exposure.canvas ?? false,
+                raster: exposure.raster ?? false
             })) : []
         };
     }

@@ -11,13 +11,14 @@ export default class QueueRegistry implements IQueueRegistry {
             logger.warn(`[QueueRegistry] Queue ${info.queueName} is already registered. Skipping.`);
             return;
         }
-
         this.queues.set(info.queueName, info);
         logger.info(`[QueueRegistry] Registered queue: ${info.queueName}`);
     }
 
     getAllStatusKeyPrefixes(): string[] {
-        return Array.from(this.queues.values()).map(q => q.statusKeyPrefix);
+        return Array.from(new Set(
+            Array.from(this.queues.values()).map((queue) => queue.statusKeyPrefix)
+        ));
     }
 
     getQueueInfo(queueName: string): QueueInfo | undefined {

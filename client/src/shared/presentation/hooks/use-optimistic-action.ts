@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { MenuOption } from '@/shared/presentation/components/DocumentListingTable';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 
 interface Identifiable {
     _id: string;

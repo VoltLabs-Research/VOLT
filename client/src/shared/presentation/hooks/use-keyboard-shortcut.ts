@@ -1,4 +1,5 @@
-import { useCallback, useEffect } from 'react';
+import { useMemo } from 'react';
+import useAppHotkeys from './use-app-hotkeys';
 
 interface ShortcutOptions {
     ctrl?: boolean;
@@ -6,15 +7,10 @@ interface ShortcutOptions {
     shift?: boolean;
     alt?: boolean;
     preventDefault?: boolean;
-};
+    enabled?: boolean;
+    enableOnFormTags?: boolean;
+}
 
-/**
- * Hook for handling keyboard shortcuts.
- * 
- * @param key - The key to listen for (e.g., 's', 'Enter', 'Escape')
- * @param callback - Function to execute when the shortcut is triggered
- * @param options - Modifier keys and behavior options
- */
 const useKeyboardShortcut = (
     key: string,
     callback: () => void,
@@ -25,28 +21,34 @@ const useKeyboardShortcut = (
         meta = false,
         shift = false,
         alt = false,
-        preventDefault = true
+        preventDefault = true,
+        enabled = true,
+        enableOnFormTags = false
     } = options;
 
-    const handleKeyDown = useCallback((event: KeyboardEvent) => {
-        const isCtrlMatch = ctrl ? (event.ctrlKey || event.metaKey) : true;
-        const isMetaMatch = meta ? event.metaKey : true;
-        const isShiftMatch = shift ? event.shiftKey : !event.shiftKey;
-        const isAltMatch = alt ? event.altKey : !event.altKey;
-        const isKeyMatch = event.key.toLowerCase() === key.toLowerCase();
+    const hotkey = useMemo(() => {
+        const parts: string[] = [];
 
-        if(isKeyMatch && isCtrlMatch && isMetaMatch && isShiftMatch && isAltMatch){
-            if(preventDefault){
-                event.preventDefault();
-            }
-            callback();
-        }
-    }, [key, callback, ctrl, meta, shift, alt, preventDefault]);
+        if (ctrl) parts.push('ctrl');
+        if (meta) parts.push('meta');
+        if (shift) parts.push('shift');
+        if (alt) parts.push('alt');
 
-    useEffect(() => {
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleKeyDown]);
+        parts.push(key.toLowerCase());
+
+        return parts.join('+');
+    }, [alt, ctrl, key, meta, shift]);
+
+    useAppHotkeys(
+        hotkey,
+        () => callback(),
+        {
+            enabled,
+            enableOnFormTags,
+            preventDefault
+        },
+        [callback]
+    );
 };
 
 export default useKeyboardShortcut;

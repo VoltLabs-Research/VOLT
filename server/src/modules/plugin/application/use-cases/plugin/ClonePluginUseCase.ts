@@ -6,12 +6,14 @@ import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository
 import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import PluginCreatedEvent from '@modules/plugin/domain/events/PluginCreatedEvent';
-
+import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
+import { mapPluginToPersistedDTO } from '@modules/plugin/application/use-cases/plugin/mapPluginToPersistedDTO';
+import WorkflowProjectionService from '@modules/plugin/domain/services/WorkflowProjectionService';
 
 @injectable()
 export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePluginOutputDTO> {
@@ -48,18 +50,27 @@ export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePl
             nodes: clonedNodes
         };
 
+        const workflow = new Workflow('', clonedWorkflowProps);
+        const projection = WorkflowProjectionService.project(workflow, '');
+
         const plugin = await this.pluginRepository.create({
-            workflow: clonedWorkflowProps as any,
+            workflow,
             team: input.teamId,
             validated: original.props.validated,
-            status: PluginStatus.Draft
+            status: PluginStatus.Draft,
+            modifier: projection.modifier,
+            exposures: projection.exposures,
+            arguments: projection.arguments,
+            listingExposures: projection.listingExposures
         });
 
         await this.eventBus.publish(new PluginCreatedEvent({
-            pluginId: plugin.id,
+            pluginId: plugin._id,
             teamId: input.teamId
         }));
 
-        return Result.ok({ plugin });
+        return Result.ok({
+            plugin: mapPluginToPersistedDTO(plugin)
+        });
     }
 }

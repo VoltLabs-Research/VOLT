@@ -22,22 +22,22 @@ export class DockerNetworkRepository implements IDockerNetworkRepository {
         return this.toEntity(document);
     }
 
-    async findById(id: string): Promise<DockerNetworkEntity | null> {
-        const document = await DockerNetwork.findById(id);
+    async findById(_id: string): Promise<DockerNetworkEntity | null> {
+        const document = await DockerNetwork.findById(_id);
         if (!document) {
             return null;
         }
         return this.toEntity(document);
     }
 
-    async deleteById(id: string): Promise<boolean> {
-        const result = await DockerNetwork.findByIdAndDelete(id);
+    async deleteById(_id: string): Promise<boolean> {
+        const result = await DockerNetwork.findByIdAndDelete(_id);
         return result !== null;
     }
 
     private toEntity(document: IDockerNetwork): DockerNetworkEntity {
         return {
-            id: document._id.toString(),
+            _id: document._id.toString(),
             networkId: document.networkId,
             name: document.name,
             driver: document.driver,

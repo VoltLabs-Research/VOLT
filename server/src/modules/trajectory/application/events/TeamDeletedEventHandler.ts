@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
 import { DeleteManyOnTeamDeletedHandler } from '@shared/application/events/DeleteManyOnTeamDeletedHandler';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
 
 @injectable()

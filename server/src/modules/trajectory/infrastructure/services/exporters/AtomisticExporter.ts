@@ -7,6 +7,9 @@ import { IStorageService } from '@shared/domain/port/IStorageService';
 import nativeExporter from '@modules/trajectory/infrastructure/native/NativeExporter';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
 import { GradientType, AtomsGroupedByType, IAtomisticExporter } from '@modules/trajectory/domain/port/exporters/AtomisticExporter';
+import { getPropertyValues } from '@modules/trajectory/infrastructure/utilities/get-property-values';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export default class AtomisticExporter implements IAtomisticExporter {
@@ -53,7 +56,13 @@ export default class AtomisticExporter implements IAtomisticExporter {
                 tempFile
             );
 
-            if (!success) throw new Error('GLB Generation Failed');
+            if (!success) {
+                throw new ApplicationError(
+                    ErrorCodes.TRAJECTORY_GLB_GENERATION_FAILED,
+                    'Failed to generate trajectory GLB model',
+                    500
+                );
+            }
 
             // Pass file path instead of stream to ensure upload waits for completion
             await this.storageService.upload(
@@ -92,7 +101,10 @@ export default class AtomisticExporter implements IAtomisticExporter {
 
         let colors: Float32Array;
         if (externalValues) {
-            if (!parsed.ids) throw new Error('Atom IDs required for external values');
+            if (!parsed.ids) {
+                throw ApplicationError.internalServerError('Trajectory atom ids are required for external values');
+            }
+
             const values = new Float32Array(parsed.metadata.natoms);
             for (let i = 0; i < parsed.metadata.natoms; i++) {
                 values[i] = externalValues[parsed.ids[i]];
@@ -100,26 +112,12 @@ export default class AtomisticExporter implements IAtomisticExporter {
 
             colors = nativeExporter.applyPropertyColors(values, startValue, endValue, gradientType);
         } else {
-            const lowerProp = property.toLowerCase();
-            let values: Float32Array;
-
-            if (lowerProp === 'type' && parsed.types) {
-                values = new Float32Array(parsed.types);
-            } else if (lowerProp === 'x') {
-                values = new Float32Array(parsed.positions.length / 3);
-                for (let i = 0; i < values.length; i++) values[i] = parsed.positions[i * 3];
-            } else if (lowerProp === 'y') {
-                values = new Float32Array(parsed.positions.length / 3);
-                for (let i = 0; i < values.length; i++) values[i] = parsed.positions[i * 3 + 1];
-            } else if (lowerProp === 'z') {
-                values = new Float32Array(parsed.positions.length / 3);
-                for (let i = 0; i < values.length; i++) values[i] = parsed.positions[i * 3 + 2];
-            } else {
-                const propValues = parsed.properties?.[property] || parsed.properties?.[lowerProp];
-                if (!propValues) {
-                    throw new Error(`Property '${property}' not found in trajectory dump`);
-                }
-                values = propValues;
+            const values = getPropertyValues(parsed, property);
+            if (values.length === 0) {
+                throw ApplicationError.badRequest(
+                    ErrorCodes.VALIDATION_INVALID_INPUT,
+                    `Property '${property}' not found in trajectory dump`
+                );
             }
 
             colors = nativeExporter.applyPropertyColors(values, startValue, endValue, gradientType);

@@ -1,5 +1,4 @@
-export interface MarkMessagesAsReadInputDTO{
+export interface MarkMessageAsReadInputDTO{
     userId: string;
     chatId: string;
 };
-

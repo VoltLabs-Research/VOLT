@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
 import { GetPendingInvitationsInputDTO, GetPendingInvitationsOutputDTO } from '@modules/team/application/dtos/team-invitation/GetPendingInvitationsDTO';
 import { TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
@@ -31,7 +31,10 @@ export default class GetPendingInvitationsUseCase implements IUseCase<GetPending
 
         return Result.ok({
             ...results,
-            data: results.data.map(a => a.props)
+            data: results.data.map((invitation) => ({
+                _id: invitation._id,
+                ...invitation.props
+            }))
         });
     }
 }

@@ -10,6 +10,8 @@
     --radius-2xl: 24px;
     --radius-full: 9999px;
 
+    --z-floating: 99999;
+
     --color-bg: #070708;
     --color-content-bg: #101011; 
     --color-surface-1: #171719; 

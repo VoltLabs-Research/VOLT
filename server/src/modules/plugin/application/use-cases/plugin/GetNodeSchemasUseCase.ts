@@ -1,19 +1,20 @@
-import { injectable, inject } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { GetNodeSchemasOutputDTO } from '@modules/plugin/application/dtos/plugin/GetNodeSchemasDTO';
 import { INodeRegistry } from '@modules/plugin/domain/port/INodeRegistry';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
 
 @injectable()
 export class GetNodeSchemasUseCase implements IUseCase<void, GetNodeSchemasOutputDTO> {
     constructor(
         @inject(PLUGIN_TOKENS.NodeRegistry)
-        private nodeRegistry: INodeRegistry
+        private readonly nodeRegistry: INodeRegistry
     ){}
 
     async execute(): Promise<Result<GetNodeSchemasOutputDTO>> {
-        const schemas = this.nodeRegistry.getSchemas();
-        return Result.ok({ schemas });
+        return Result.ok({
+            schemas: this.nodeRegistry.getSchemas()
+        });
     }
 }

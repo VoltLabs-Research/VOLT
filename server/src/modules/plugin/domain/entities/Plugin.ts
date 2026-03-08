@@ -20,7 +20,11 @@ export interface PluginProps extends Partial<PluginProjection> {
 
 export default class Plugin {
     constructor(
-        public id: string,
+        public _id: string,
         public props: PluginProps
     ){}
+
+    get id(): string {
+        return this._id;
+    }
 };

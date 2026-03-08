@@ -14,7 +14,11 @@ export interface SubListingRowProps {
 
 export default class SubListingRow {
     constructor(
-        public id: string,
+        public _id: string,
         public props: SubListingRowProps
     ) {}
+
+    get id(): string {
+        return this._id;
+    }
 }

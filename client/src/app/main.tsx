@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import 'reflect-metadata';
+
 import 'invokers-polyfill';
 
 import { loader } from '@monaco-editor/react';
@@ -15,23 +15,9 @@ import App from './App';
 import '@/shared/presentation/assets/stylesheets/theme.css';
 import '@/shared/presentation/assets/stylesheets/base.css';
 import '@/shared/presentation/assets/stylesheets/general.css';
-import { ensureAuthDI } from '@/modules/auth/infrastructure/di/container';
-import { ensureTeamDI } from '@/modules/team/infrastructure/di/container';
-import { ensureTrajectoryDI } from '@/modules/trajectory/infrastructure/di/container';
-import { ensureAnalysisDI } from '@/modules/analysis/infrastructure/di/container';
-import { ensurePluginDI } from '@/modules/plugin/infrastructure/di/container';
-import { ensureScriptingDI } from '@/modules/scripting/infrastructure/di/container';
-import { ensureNotificationDI } from '@/modules/notification/infrastructure/di/container';
-import { ensureDailyActivityDI } from '@/modules/daily-activity/infrastructure/di/container';
-import { ensureSocketDI } from '@/modules/socket/infrastructure/di/container';
-import { ensureSimulationCellDI } from '@/modules/simulation-cell/infrastructure/di/container';
-import { ensureContainerDI } from '@/modules/container/infrastructure/di/container';
-import { ensureSSHDI } from '@/modules/ssh/infrastructure/di/container';
-import { ensureChatDI } from '@/modules/chat/infrastructure/di/container';
-import { ensureJobsDI } from '@/modules/jobs/infrastructure/di/container';
-import { ensureSystemDI } from '@/modules/system/infrastructure/di/container';
-import { ensureSessionDI } from '@/modules/session/infrastructure/di/container';
 
+// Socket module initializes eagerly via singleton — import to ensure side-effects run
+import '@/modules/socket/services/socket-service';
 self.MonacoEnvironment = {
     getWorker(_, label) {
         if (label === 'json') {
@@ -51,24 +37,6 @@ self.MonacoEnvironment = {
 };
 
 loader.config({ monaco });
-
-// Register all dependencies
-ensureAuthDI();
-ensureSocketDI();
-ensureTeamDI();
-ensureTrajectoryDI();
-ensureJobsDI();
-ensureAnalysisDI();
-ensurePluginDI();
-ensureScriptingDI();
-ensureNotificationDI();
-ensureDailyActivityDI();
-ensureSimulationCellDI();
-ensureContainerDI();
-ensureSSHDI();
-ensureChatDI();
-ensureSystemDI();
-ensureSessionDI();
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>

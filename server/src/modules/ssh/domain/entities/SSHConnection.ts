@@ -1,5 +1,3 @@
-import { encrypt, decrypt } from '@shared/infrastructure/utilities/crypto';
-
 export interface SSHConnectionProps{
     name: string;
     team: string;
@@ -12,45 +10,36 @@ export interface SSHConnectionProps{
 
 export default class SSHConnection{
     constructor(
-        public id: string,
+        public _id: string,
         public props: SSHConnectionProps
     ){}
     
     public static create(
-        id: string,
+        _id: string,
         input: {
             name: string;
             host: string;
             port: number;
             username: string;
-            password: string;
+            encryptedPassword: string;
             teamId: string;
             userId: string;
         }
-    ): SSHConnection{
-        const instance = new SSHConnection(id, {
+    ): SSHConnection | null{
+        if (!input.encryptedPassword || input.encryptedPassword.trim().length === 0) {
+            return null;
+        }
+
+        const instance = new SSHConnection(_id, {
             name: input.name,
             host: input.host,
             port: input.port,
             username: input.username,
             team: input.teamId,
             user: input.userId,
-            encryptedPassword: ''
+            encryptedPassword: input.encryptedPassword
         });
 
-        instance.setPassword(input.password);
         return instance;
-    }
-
-    public setPassword(password: string): void{
-        if(!password){
-            throw new Error('Password cannot be empty');
-        }
-        this.props.encryptedPassword = encrypt(password);
-    }
-
-    public getPassword(): string{
-        if(!this.props.encryptedPassword) return '';
-        return decrypt(this.props.encryptedPassword);
     }
 };

@@ -7,7 +7,6 @@ class ChatMapper extends BaseMapper<Chat, ChatProps, ChatDocument>{
         super(Chat, [
             'participants',
             'team',
-            'messages',
             'admins',
             'createdBy',
             'lastMessage'            

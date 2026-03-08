@@ -2,17 +2,16 @@ import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { ImportPluginInputDTO, ImportPluginOutputDTO } from '@modules/plugin/application/dtos/plugin/ImportPluginDTO';
-import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
 import { IPluginStorageService } from '@modules/plugin/domain/port/IPluginStorageService';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import PluginCreatedEvent from '@modules/plugin/domain/events/PluginCreatedEvent';
+import { mapPluginToPersistedDTO } from '@modules/plugin/application/use-cases/plugin/mapPluginToPersistedDTO';
 
 @injectable()
 export class ImportPluginUseCase implements IUseCase<ImportPluginInputDTO, ImportPluginOutputDTO> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
         @inject(PLUGIN_TOKENS.PluginStorageService) private storageService: IPluginStorageService,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ){}
@@ -24,10 +23,10 @@ export class ImportPluginUseCase implements IUseCase<ImportPluginInputDTO, Impor
         );
 
         await this.eventBus.publish(new PluginCreatedEvent({
-            pluginId: (data.plugin as any)._id ?? (data.plugin as any).id ?? '',
+            pluginId: data.plugin._id,
             teamId: input.teamId
         }));
 
-        return Result.ok(data.plugin);
+        return Result.ok(mapPluginToPersistedDTO(data.plugin));
     }
 }

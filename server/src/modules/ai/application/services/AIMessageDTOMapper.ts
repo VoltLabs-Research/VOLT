@@ -2,6 +2,7 @@ import { injectable } from 'tsyringe';
 import type AIMessage from '@modules/ai/domain/entities/AIMessage';
 import type { AIMessageDTO } from '@modules/ai/application/dtos/ListAIConversationMessagesDTO';
 import type { AIMessageToolStep } from '@modules/ai/domain/entities/AIMessage';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 const VALID_KINDS = new Set<string>(['table', 'chart', 'image', 'text']);
 
@@ -10,10 +11,10 @@ export default class AIMessageDTOMapper {
     toDTO(message: AIMessage): AIMessageDTO {
         const { modelInfo } = message.props;
         const steps = modelInfo?.steps ?? [];
-        const artifactItems = this.extractArtifacts(message.id, steps);
+        const artifactItems = this.extractArtifacts(message._id, steps);
 
         return {
-            _id: message.id,
+            _id: message._id,
             conversationId: message.props.conversationId,
             role: message.props.role,
             parts: message.props.parts,
@@ -26,19 +27,15 @@ export default class AIMessageDTOMapper {
         };
     }
 
-    /**
-     * Extracts display artifacts from tool result data stored in modelInfo.steps.
-     * These artifacts drive rich UI rendering (tables, charts, images).
-     */
     private extractArtifacts(messageId: string, steps: AIMessageToolStep[]): Record<string, unknown>[] {
         const items: Record<string, unknown>[] = [];
 
-        for (let s = 0; s < steps.length; s++) {
-            const step = steps[s];
+        for (let stepIndex = 0; stepIndex < steps.length; stepIndex++) {
+            const step = steps[stepIndex];
 
-            for (let i = 0; i < step.toolResults.length; i++) {
-                const result = step.toolResults[i];
-                if (!this.isRecord(result.output)) continue;
+            for (let resultIndex = 0; resultIndex < step.toolResults.length; resultIndex++) {
+                const result = step.toolResults[resultIndex];
+                if (!isRecord(result.output)) continue;
 
                 const output = result.output;
                 const payloadType = typeof output.payloadType === 'string'
@@ -47,7 +44,7 @@ export default class AIMessageDTOMapper {
                 const kind = VALID_KINDS.has(payloadType) ? payloadType : 'unknown';
 
                 items.push({
-                    id: `${messageId}:step-${s}:tool-result-${i}`,
+                    id: `${messageId}:step-${stepIndex}:tool-result-${resultIndex}`,
                     messageId,
                     kind,
                     title: result.toolName,
@@ -59,13 +56,5 @@ export default class AIMessageDTOMapper {
         }
 
         return items;
-    }
-
-    private isRecord(value: unknown): value is Record<string, unknown> {
-        if (value === null || typeof value !== 'object') {
-            return false;
-        }
-
-        return !Array.isArray(value);
     }
 }

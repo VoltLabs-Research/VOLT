@@ -1,7 +1,28 @@
-import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useCallback, useLayoutEffect, useMemo, cloneElement, isValidElement, type ReactNode, type ReactElement, type Ref } from 'react';
+import {
+    useFloating,
+    useClick,
+    useDismiss,
+    useRole,
+    useInteractions,
+    FloatingPortal,
+    FloatingFocusManager,
+    offset,
+    flip,
+    shift,
+    autoUpdate,
+    type Placement,
+    type VirtualElement
+} from '@floating-ui/react';
 import Container from '@/shared/presentation/components/Container';
+import composeRefs from '@/shared/presentation/utils/compose-refs';
+import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import './Popover.css';
+
+interface ContextMenuPosition {
+    x: number;
+    y: number;
+}
 
 interface PopoverProps {
     id: string;
@@ -11,7 +32,8 @@ interface PopoverProps {
     noPadding?: boolean;
     triggerAction?: 'click' | 'contextmenu';
     onOpenChange?: (isOpen: boolean) => void;
-};
+    placement?: Placement;
+}
 
 const Popover: React.FC<PopoverProps> = ({
     id,
@@ -20,157 +42,139 @@ const Popover: React.FC<PopoverProps> = ({
     className = '',
     noPadding = false,
     triggerAction = 'click',
-    onOpenChange
+    onOpenChange,
+    placement = 'bottom-start'
 }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [style, setStyle] = useState<React.CSSProperties>({});
-    const triggerRef = useRef<HTMLDivElement | null>(null);
-    const popoverRef = useRef<HTMLDivElement>(null);
-    const cursorPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+    const [contextMenuPosition, setContextMenuPosition] = useState<ContextMenuPosition | null>(null);
+    const floatingRoot = useFloatingRoot();
+    const onOpenChangeRef = React.useRef(onOpenChange);
 
-    const calculatePosition = useCallback(() => {
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const padding = 16;
-
-        requestAnimationFrame(() => {
-            if(!popoverRef.current) return;
-
-            const rect = popoverRef.current.getBoundingClientRect();
-            const { x, y } = cursorPosRef.current;
-
-            let left = x;
-            let top = y;
-
-            if(left + rect.width > vw - padding){
-                left = x - rect.width;
-            }
-
-            if(top + rect.height > vh - padding){
-                top = y - rect.height;
-            }
-
-            if(left < padding) left = padding;
-            if(top < padding) top = padding;
-
-            setStyle({
-                position: 'fixed',
-                top: `${top}px`,
-                left: `${left}px`,
-                margin: 0,
-                maxWidth: `calc(100vw - ${padding * 2}px)`,
-                zIndex: 9999
-            });
-        });
-    }, []);
-
-    const close = useCallback(() => {
-        setIsOpen(false);
-    }, []);
-
-    const toggle = useCallback((e: React.MouseEvent) => {
-        cursorPosRef.current = { x: e.clientX, y: e.clientY };
-        setIsOpen((prev) => !prev);
-    }, []);
-
-    const onOpenChangeRef = useRef(onOpenChange);
     useLayoutEffect(() => {
         onOpenChangeRef.current = onOpenChange;
     });
 
-    useEffect(() => {
-        if(isOpen){
-            calculatePosition();
+    const handleOpenChange = useCallback((nextOpen: boolean) => {
+        setIsOpen(nextOpen);
+        if (!nextOpen) {
+            setContextMenuPosition(null);
         }
-        onOpenChangeRef.current?.(isOpen);
-    }, [isOpen, calculatePosition]);
+        onOpenChangeRef.current?.(nextOpen);
+    }, []);
 
-    useEffect(() => {
-        if(!isOpen) return;
+    const { refs, floatingStyles, context } = useFloating({
+        open: isOpen,
+        onOpenChange: handleOpenChange,
+        placement,
+        middleware: [
+            offset(8),
+            flip({ padding: 16 }),
+            shift({ padding: 16 })
+        ],
+        whileElementsMounted: autoUpdate
+    });
 
-        const handleClickOutside = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
+    const positionReference = useMemo<VirtualElement | null>(() => {
+        if (triggerAction !== 'contextmenu' || !contextMenuPosition) {
+            return null;
+        }
 
-            if(popoverRef.current?.contains(target)){
-                return;
+        return {
+            getBoundingClientRect() {
+                return {
+                    width: 0,
+                    height: 0,
+                    x: contextMenuPosition.x,
+                    y: contextMenuPosition.y,
+                    top: contextMenuPosition.y,
+                    right: contextMenuPosition.x,
+                    bottom: contextMenuPosition.y,
+                    left: contextMenuPosition.x
+                };
             }
-
-            if(triggerRef.current?.contains(target)){
-                return;
-            }
-
-            close();
         };
+    }, [contextMenuPosition, triggerAction]);
 
-        const handleEscape = (e: KeyboardEvent) => {
-            if(e.key === 'Escape'){
-                close();
-            }
-        };
+    useLayoutEffect(() => {
+        if (positionReference) {
+            refs.setPositionReference(positionReference);
+            return;
+        }
 
-        const timeoutId = setTimeout(() => {
-            document.addEventListener('mousedown', handleClickOutside);
-            document.addEventListener('keydown', handleEscape);
-        }, 0);
+        const referenceElement = refs.domReference.current;
 
-        return () => {
-            clearTimeout(timeoutId);
-            document.removeEventListener('mousedown', handleClickOutside);
-            document.removeEventListener('keydown', handleEscape);
-        };
-    }, [isOpen, close]);
+        if (referenceElement) {
+            refs.setPositionReference(referenceElement);
+        }
+    }, [positionReference, refs]);
 
-    const handleTriggerClick = useCallback((e: React.MouseEvent) => {
-        if(triggerAction !== 'click') return;
-        e.stopPropagation();
-        toggle(e);
-    }, [triggerAction, toggle]);
+    const click = useClick(context, {
+        enabled: triggerAction === 'click'
+    });
+    const dismiss = useDismiss(context);
+    const role = useRole(context);
 
-    const handleContextMenu = useCallback((e: React.MouseEvent) => {
-        if(triggerAction !== 'contextmenu') return;
-        e.preventDefault();
-        e.stopPropagation();
-        toggle(e);
-    }, [triggerAction, toggle]);
+    const { getReferenceProps, getFloatingProps } = useInteractions([
+        click,
+        dismiss,
+        role
+    ]);
 
-    const triggerElement = trigger && React.isValidElement(trigger)
-        ? (
-            <Container
-                ref={triggerRef}
-                data-popover-trigger={id}
-                style={{ display: 'contents' }}
-                onClick={handleTriggerClick}
-                onContextMenu={handleContextMenu}
-            >
-                {trigger}
-            </Container>
-        )
-        : null;
+    const close = useCallback(() => {
+        handleOpenChange(false);
+    }, [handleOpenChange]);
+
+    const handleContextMenu = useCallback((event: React.MouseEvent) => {
+        if (triggerAction !== 'contextmenu') return;
+        event.preventDefault();
+        event.stopPropagation();
+        setContextMenuPosition({
+            x: event.clientX,
+            y: event.clientY
+        });
+        handleOpenChange(true);
+    }, [triggerAction, handleOpenChange]);
 
     const renderChildren = () => {
-        if(typeof children === 'function'){
+        if (typeof children === 'function') {
             return children(close);
         }
         return children;
     };
 
-    const popoverContent = isOpen ? createPortal(
-        <Container
-            ref={popoverRef}
-            id={id}
-            className={`popover radius-lg d-flex column glass-bg ${noPadding ? '' : 'p-05'} ${className} color-primary`}
-            style={style}
-            onClick={(e) => e.stopPropagation()}
-        >
-            {renderChildren()}
-        </Container>,
-        document.body
-    ) : null;
+    const triggerElement = trigger && isValidElement(trigger)
+        ? cloneElement(trigger as ReactElement<Record<string, unknown>>, {
+            ref: composeRefs(
+                refs.setReference,
+                (trigger as ReactElement & { ref?: Ref<HTMLElement> }).ref
+            ),
+            'data-popover-trigger': id,
+            ...getReferenceProps({
+                onContextMenu: handleContextMenu
+            })
+        })
+        : null;
 
     return (
         <>
             {triggerElement}
-            {popoverContent}
+
+            {isOpen && (
+                <FloatingPortal root={floatingRoot}>
+                    <FloatingFocusManager context={context} modal={false}>
+                        <Container
+                            ref={refs.setFloating}
+                            id={id}
+                            className={`popover radius-lg d-flex column glass-bg ${noPadding ? '' : 'p-05'} ${className} color-primary`}
+                            style={floatingStyles}
+                            onClick={(event) => event.stopPropagation()}
+                            {...getFloatingProps()}
+                        >
+                            {renderChildren()}
+                        </Container>
+                    </FloatingFocusManager>
+                </FloatingPortal>
+            )}
         </>
     );
 };

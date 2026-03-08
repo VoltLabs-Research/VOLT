@@ -1,32 +1,25 @@
 import { Router } from 'express';
-import { container } from 'tsyringe';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import { Resource } from '@core/constants/resources';
-import DeleteAnalysisByIdController from '@modules/analysis/infrastructure/http/controllers/DeleteAnalysisByIdController';
-import GetAnalysesByTeamIdController from '@modules/analysis/infrastructure/http/controllers/GetAnalysesByTeamIdController';
-import GetAnalysisByIdController from '@modules/analysis/infrastructure/http/controllers/GetAnalysisByIdController';
-import GetAnalysesByTrajectoryIdController from '@modules/analysis/infrastructure/http/controllers/GetAnalysesByTrajectoryIdController';
-import { HttpModule } from '@shared/infrastructure/http/HttpModule';
-
-const deleteAnalysisByIdController = container.resolve(DeleteAnalysisByIdController);
-const getAnalysesByTeamIdController = container.resolve(GetAnalysesByTeamIdController);
-const getAnalysisByIdController = container.resolve(GetAnalysisByIdController);
-const getAnalysesByTrajectoryIdController = container.resolve(GetAnalysesByTrajectoryIdController);
+import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
+import controllers from '@modules/analysis/infrastructure/http/controllers';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/analysis',
+    basePath: '/api/analysis/:teamId',
     router,
     resource: Resource.ANALYSIS
 };
 
-router.use(protect);
+const deleteAnalysisRateLimit = createStandardRateLimiter(30);
 
-router.get('/:teamId/trajectory/:trajectoryId', getAnalysesByTrajectoryIdController.handle);
-router.get('/:teamId', getAnalysesByTeamIdController.handle);
+router.get('/', controllers.listByTeamId.handle);
+router.get('/trajectory/:trajectoryId', controllers.listByTrajectoryId.handle);
 
-router.route('/:teamId/:analysisId')
-    .get(getAnalysisByIdController.handle)
-    .delete(deleteAnalysisByIdController.handle);
+router.post('/:analysisId/retry-failed-frames', controllers.retryFailedFrames.handle);
+
+router.route('/:analysisId')
+    .get(controllers.getById.handle)
+    .delete(deleteAnalysisRateLimit, controllers.deleteById.handle);
 
 export default module;

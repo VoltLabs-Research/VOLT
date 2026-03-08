@@ -13,8 +13,7 @@ export default class TrajectoryCreatedEventHandler implements IEventHandler<Traj
     ) {}
 
     async handle(event: TrajectoryCreatedEvent): Promise<void> {
-        const payload = event.payload || (event as any);
-        const { teamId, userId, trajectoryName } = payload;
+        const { teamId, userId, trajectoryName } = event.payload;
         if (!teamId || !userId) return;
         const description = `Uploaded trajectory "${trajectoryName}"`;
         await this.activityRepo.addDailyActivity(

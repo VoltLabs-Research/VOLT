@@ -1,24 +1,20 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { IContainerService } from '@modules/container/domain/port/IContainerService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { GetContainerProcessesOutputDTO } from '@modules/container/application/dtos/GetContainerProcessesDTO';
+import { GetContainerProcessesInputDTO, GetContainerProcessesOutputDTO } from '@modules/container/application/dtos/GetContainerProcessesDTO';
+import { ContainerOwnershipService } from '@modules/container/application/services/ContainerOwnershipService';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 
 @injectable()
-export class GetContainerProcessesUseCase implements IUseCase<{ containerId: string }, GetContainerProcessesOutputDTO> {
+export class GetContainerProcessesUseCase implements IUseCase<GetContainerProcessesInputDTO, GetContainerProcessesOutputDTO> {
     constructor(
-        @inject('IContainerRepository') private repository: IContainerRepository,
-        @inject('IContainerService') private containerService: IContainerService
+        @inject(CONTAINER_TOKENS.ContainerService) private containerService: IContainerService,
+        @inject(ContainerOwnershipService) private ownershipService: ContainerOwnershipService
     ){}
 
-    async execute(input: { containerId: string }): Promise<Result<GetContainerProcessesOutputDTO>> {
-        const container = await this.repository.findById(input.containerId);
-        if (!container) {
-            throw new ApplicationError(ErrorCodes.CONTAINER_NOT_FOUND, 'Container not found', 404);
-        }
+    async execute(input: GetContainerProcessesInputDTO): Promise<Result<GetContainerProcessesOutputDTO>> {
+        const container = await this.ownershipService.getOwnedByTeam(input.containerId, input.teamId);
 
         const processes = await this.containerService.getProcesses(container.containerId);
 

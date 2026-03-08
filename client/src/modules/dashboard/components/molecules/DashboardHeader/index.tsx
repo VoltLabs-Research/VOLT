@@ -1,0 +1,59 @@
+import { IoMenuOutline } from 'react-icons/io5';
+import { GoPersonAdd } from 'react-icons/go';
+import Container from '@/shared/presentation/components/Container';
+import Tooltip from '@/shared/presentation/components/Tooltip';
+import IconButton from '@/shared/presentation/components/IconButton';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import TeamInvitePanelPopover from '@/modules/team/components/molecules/TeamInvitePanelPopover';
+import HeaderBreadcrumbs from '@/modules/dashboard/components/atoms/HeaderBreadcrumbs';
+import GlobalSearch from '@/modules/dashboard/components/molecules/GlobalSearch';
+import NotificationsPopover from '@/modules/notification/components/organisms/NotificationsPopover';
+import AIFloatingAssistantPanel from '@/modules/ai/components/organisms/AIFloatingAssistantPanel';
+import './DashboardHeader.css';
+
+interface DashboardHeaderProps {
+    setSidebarOpen: (status: boolean) => void;
+};
+
+const DashboardHeader = ({ setSidebarOpen }: DashboardHeaderProps) => {
+    const { canAccess } = useTeamPermissions();
+    const canInvite = canAccess(['team-invitation:create']);
+
+    return (
+        <header className='dashboard-top-header p-sticky gap-1 d-flex items-center top-0'>
+            <IconButton
+                className='mobile-sidebar-trigger radius-xs'
+                onClick={() => setSidebarOpen(true)}
+            >
+                <IoMenuOutline size={20} />
+            </IconButton>
+
+            <Container className='dashboard-header-left d-flex items-center flex-1'>
+                <HeaderBreadcrumbs />
+            </Container>
+
+            <Container className='dashboard-header-center d-flex content-center'>
+                <GlobalSearch />
+            </Container>
+
+            <Container className='dashboard-header-right gap-05 d-flex items-center flex-1 content-end'>
+                {canInvite ? (
+                    <TeamInvitePanelPopover />
+                ) : (
+                    <Tooltip content='You must be an admin or owner to invite members' placement='bottom'>
+                        <span>
+                            <IconButton disabled>
+                                <GoPersonAdd size={18} />
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                )}
+
+                <AIFloatingAssistantPanel />
+                <NotificationsPopover />
+            </Container>
+        </header>
+    );
+};
+
+export default DashboardHeader;

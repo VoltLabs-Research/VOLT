@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ISecretKeyRepository } from '@modules/team/domain/port/ISecretKeyRepository';
 import {
     ListSecretKeysByTeamIdInputDTO,
@@ -23,7 +23,7 @@ export default class ListSecretKeysByTeamIdUseCase implements IUseCase<ListSecre
         const result = await this.secretKeyRepository.findAll({
             filter: {
                 team: input.teamId
-            } as any,
+            },
             page,
             limit,
             sort: {
@@ -36,20 +36,18 @@ export default class ListSecretKeysByTeamIdUseCase implements IUseCase<ListSecre
         });
 
         const data = result.data.map((secretKey) => {
-            const role = secretKey.props.role as any;
-
             return {
-                _id: secretKey.id,
+                _id: secretKey._id,
                 teamId: String(secretKey.props.team),
-                roleId: role?._id?.toString?.() || String(secretKey.props.role),
-                roleName: role?.name || 'Unknown',
+                roleId: secretKey.getRoleId(),
+                roleName: secretKey.getRoleName(),
                 name: secretKey.props.name,
                 keyPrefix: secretKey.props.keyPrefix,
                 isActive: secretKey.props.isActive,
                 lastUsedAt: secretKey.props.lastUsedAt,
                 createdAt: secretKey.props.createdAt,
                 updatedAt: secretKey.props.updatedAt
-            } as SecretKeyListItemDTO;
+            } satisfies SecretKeyListItemDTO;
         });
 
         return Result.ok({

@@ -1,21 +1,12 @@
 import { useMemo } from 'react';
-import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
-import { canAccessTeamPermissions } from '@/modules/team/presentation/utilities/permission-evaluator';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 
 type PermissionMode = 'any' | 'all';
 
 const usePermission = (requiredPermissions: string[], mode?: PermissionMode): boolean => {
-    const selectedTeamId = useTeamStore((state) => state.selectedTeam?._id ?? null);
-    const teamPermissions = useTeamStore((state) => state.permissions);
-    const permissionsTeamId = useTeamStore((state) => state.permissionsTeamId);
+    const { canAccess } = useTeamPermissions();
 
-    return useMemo(() => canAccessTeamPermissions({
-        selectedTeamId,
-        permissionsTeamId,
-        permissions: teamPermissions,
-        requiredPermissions,
-        mode
-    }), [selectedTeamId, permissionsTeamId, teamPermissions, requiredPermissions, mode]);
+    return useMemo(() => canAccess(requiredPermissions, mode), [canAccess, requiredPermissions, mode]);
 };
 
 export default usePermission;

@@ -2,6 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import { INodeHandler, ExecutionContext, NodeOutputSchema, T, INodeRegistry } from '@modules/plugin/domain/port/INodeRegistry';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export default class ForEachHandler implements INodeHandler{
@@ -21,13 +22,13 @@ export default class ForEachHandler implements INodeHandler{
 
     async execute(node: WorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
         const rawRef = node.data.forEach?.iterableSource;
-        if(!rawRef) throw new Error('ForEachHandler: Missing iterableSource');
+        if(!rawRef) throw new Error(ErrorCodes.PLUGIN_FOREACH_SOURCE_REQUIRED);
 
         const cleanRef = rawRef.replace(/^\{\{\s*|\s*\}\}$/g, '');
         const items = this.registry.resolveReference(cleanRef, context);
 
         if(!Array.isArray(items)){
-            throw new Error('ForEachHandler: Source is not an array');
+            throw new Error(ErrorCodes.PLUGIN_FOREACH_SOURCE_INVALID);
         }
 
         return {

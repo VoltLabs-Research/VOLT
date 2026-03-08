@@ -6,7 +6,7 @@ import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
 import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
 import './DocumentListingGrid.css';
 
-interface DocumentListingGridProps<T = unknown> {
+interface DocumentListingGridProps<T extends { _id: string }> {
     data: T[];
     isLoading?: boolean;
     isFetchingMore?: boolean;
@@ -23,7 +23,7 @@ interface DocumentListingGridProps<T = unknown> {
     className?: string;
 };
 
-const DocumentListingGrid = <T,>({
+const DocumentListingGrid = <T extends { _id: string },>({
     data,
     isLoading = false,
     isFetchingMore = false,
@@ -70,7 +70,7 @@ const DocumentListingGrid = <T,>({
             )}
 
             {!isInitialLoading && data.map((item, index) => (
-                <React.Fragment key={index}>
+                <React.Fragment key={item._id}>
                     {renderItem(item, index)}
                 </React.Fragment>
             ))}

@@ -2,28 +2,22 @@ import crypto from 'node:crypto';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
-const SALT_LENGTH = 64;
 const KEY_LENGTH = 32;
 
-/**
- * Get encryption key from environment variable.
- * If not set, throw an error.
- */
+let cachedKey: Buffer | null = null;
+
 const getEncryptionKey = (): Buffer => {
+    if (cachedKey) return cachedKey;
     const keyString = process.env.SSH_ENCRYPTION_KEY;
-    if(!keyString){
+    if (!keyString) {
         throw new Error('SSH_ENCRYPTION_KEY environment variable is required');
     }
-    return crypto.scryptSync(keyString, 'Volt-ssh', KEY_LENGTH);
+    cachedKey = crypto.scryptSync(keyString, 'Volt-ssh', KEY_LENGTH);
+    return cachedKey;
 };
 
-/**
- * Encrypt text using the specified algorithm.
- * Returns: salt:iv:encrypted:authTag (base64 encoded).
- */
 export const encrypt = (text: string): string => {
-    try{
-        const salt = crypto.randomBytes(SALT_LENGTH);
+    try {
         const iv = crypto.randomBytes(IV_LENGTH);
         const key = getEncryptionKey();
 
@@ -35,27 +29,31 @@ export const encrypt = (text: string): string => {
         const authTag = cipher.getAuthTag();
 
         return [
-            salt.toString('base64'),
             iv.toString('base64'),
             encrypted,
             authTag.toString('base64')
         ].join(':');
-    }catch(error: any){
-        throw new Error(`Encryption failed: ${error.message}`);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`Encryption failed: ${message}`);
     }
 };
 
-/**
- * Decrypt text encrypted with encrypt().
- */
 export const decrypt = (encryptedText: string): string => {
-    try{
+    try {
         const parts = encryptedText.split(':');
-        if(parts.length != 4){
+        let ivB64: string;
+        let encrypted: string;
+        let authTagB64: string;
+
+        if (parts.length === 4) {
+            [, ivB64, encrypted, authTagB64] = parts;
+        } else if (parts.length === 3) {
+            [ivB64, encrypted, authTagB64] = parts;
+        } else {
             throw new Error('Invalid encrypted text format');
         }
-        
-        const [_saltB64, ivB64, encrypted, authTagB64] = parts;
+
         const iv = Buffer.from(ivB64, 'base64');
         const authTag = Buffer.from(authTagB64, 'base64');
         const key = getEncryptionKey();
@@ -65,9 +63,10 @@ export const decrypt = (encryptedText: string): string => {
 
         let decrypted = decipher.update(encrypted, 'base64', 'utf8');
         decrypted += decipher.final('utf8');
-        
+
         return decrypted;
-    }catch(error: any){
-        throw new Error(`Decryption failed: ${error.message}`);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`Decryption failed: ${message}`);
     }
 };

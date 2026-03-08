@@ -1,5 +1,5 @@
 export interface DockerVolumeEntity {
-    id: string;
+    _id: string;
     volumeId: string;
     name: string;
     driver: string;
@@ -13,7 +13,7 @@ export interface IDockerVolumeRepository {
         data: { name: string; driver: string }
     ): Promise<DockerVolumeEntity>;
 
-    findById(id: string): Promise<DockerVolumeEntity | null>;
+    findById(_id: string): Promise<DockerVolumeEntity | null>;
 
-    deleteById(id: string): Promise<boolean>;
+    deleteById(_id: string): Promise<boolean>;
 }

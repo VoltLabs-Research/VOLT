@@ -2,71 +2,26 @@ import { injectable, inject } from 'tsyringe';
 import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
 import { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
 import ListingRow from '@modules/plugin/domain/entities/ListingRow';
+import Plugin from '@modules/plugin/domain/entities/Plugin';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { ExportType, PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
-
-interface ListingOptions {
-    teamId?: string;
-    trajectoryId?: string;
-    analysisId?: string;
-    exposureName?: string;
-    exposureId?: string;
-    page?: number;
-    limit?: number;
-    sortAsc?: boolean;
-    format?: ExportType;
-}
+import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import { WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import { getExposureNodes } from '@modules/plugin/infrastructure/utilities/get-exposure-nodes';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
+import {
+    ColumnConfig,
+    ListingOptions,
+    PluginListingExportResult,
+    PluginListingPaginatedResult,
+    PluginListingRowData as ListingRowData
+} from '@modules/plugin/domain/port/PluginListingTypes';
 
 interface ListingPreparedContext {
     pluginId: string;
     exposureId: string;
     exposureName: string;
     baseQuery: Record<string, unknown>;
-}
-
-interface ColumnConfig {
-    label: string;
-    sortable: boolean;
-    width?: number;
-}
-
-interface ListingRowData {
-    _id: string;
-    timestep: number;
-    analysisId: string;
-    trajectoryId: string;
-    exposureId: string;
-    trajectoryName: string;
-    [key: string]: unknown;
-}
-
-export interface PluginListingPaginatedResult {
-    data: ListingRowData[];
-    total: number;
-    page: number;
-    totalPages: number;
-    limit: number;
-    _meta: {
-        pluginId: string;
-        exposureName: string;
-        exposureId: string;
-        columns: ColumnConfig[];
-        subListingNames: string[];
-    };
-}
-
-export interface PluginListingExportResult {
-    meta: {
-        pluginId: string;
-        exposureId: string;
-        analysisId?: string;
-        trajectoryId?: string;
-        total: number;
-        columns: ColumnConfig[];
-        format: ExportType;
-    };
-    data: ListingRowData[];
 }
 
 const SYSTEM_KEYS = new Set([
@@ -169,21 +124,32 @@ export class PluginListingService {
 
     private async prepareListingContext(pluginId: string, options: ListingOptions): Promise<ListingPreparedContext> {
         if (!options.exposureId && !options.exposureName) {
-            throw new Error('Exposure::SelectorRequired');
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS,
+                'Either exposureId or exposureName is required'
+            );
         }
 
         const plugin = await this.pluginRepository.findById(pluginId);
         if (!plugin) {
-            throw new Error('Plugin::NotFound');
+            throw ApplicationError.notFound(
+                ErrorCodes.PLUGIN_NOT_FOUND,
+                'Plugin not found'
+            );
         }
 
         const exposure = this.findExposure(plugin, options.exposureId, options.exposureName);
         if (!exposure) {
-            throw new Error('Exposure::NotFound');
+            const exposureSelector = options.exposureId || options.exposureName || 'unknown';
+
+            throw ApplicationError.notFound(
+                ErrorCodes.RESOURCE_NOT_FOUND,
+                `Exposure not found for selector: ${exposureSelector}`
+            );
         }
 
         const baseQuery: Record<string, unknown> = {
-            plugin: plugin.id,
+            plugin: plugin._id,
             exposureId: exposure.exposureId,
             team: options.teamId
         };
@@ -195,7 +161,10 @@ export class PluginListingService {
         if (options.trajectoryId) {
             baseQuery.trajectory = options.trajectoryId;
         } else if (!options.teamId) {
-            throw new Error('Team::IdRequired');
+            throw ApplicationError.badRequest(
+                ErrorCodes.TEAM_ID_REQUIRED,
+                'Team ID is required when trajectoryId is not provided'
+            );
         }
 
         if (options.analysisId) {
@@ -211,25 +180,20 @@ export class PluginListingService {
     }
 
     private findExposure(
-        plugin: Record<string, any>,
+        plugin: Plugin,
         exposureId?: string,
         exposureName?: string
     ): { exposureId: string; exposureName: string } | null {
-        const nodes = plugin?.props?.workflow?.props?.nodes || [];
+        const nodes = plugin.props.workflow.props.nodes;
+        const exposures = getExposureNodes(nodes as WorkflowNode[]);
 
-        for (const node of nodes) {
-            if (node.type !== WorkflowNodeType.Exposure) continue;
-
-            const nodeId = String(node.id || '');
-            const nodeName = String(node.data?.exposure?.name || '').trim();
-            if (!nodeId || !nodeName) continue;
-
-            if (exposureId && nodeId !== exposureId) continue;
-            if (!exposureId && exposureName && nodeName !== exposureName) continue;
+        for (const exposure of exposures) {
+            if (exposureId && exposure.exposureId !== exposureId) continue;
+            if (!exposureId && exposureName && exposure.exposureName !== exposureName) continue;
 
             return {
-                exposureId: nodeId,
-                exposureName: nodeName
+                exposureId: exposure.exposureId,
+                exposureName: exposure.exposureName
             };
         }
 
@@ -247,7 +211,7 @@ export class PluginListingService {
                 : '';
 
             return {
-                _id: document.id,
+                _id: document._id,
                 timestep: document.props.timestep,
                 analysisId: document.props.analysis,
                 trajectoryId,

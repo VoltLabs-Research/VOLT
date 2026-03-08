@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import './core/config/env';
-import './core/bootstrap/register-deps';
 
 import { initializeRedis, redis } from './core/config/redis';
+import { registerAllDependencies } from './core/bootstrap/register-deps';
 import { initializeMinio } from './core/config/minio';
 import { registerAllSubscribers } from './core/events/registerAllSubscribers';
 import { container } from 'tsyringe';
@@ -10,15 +10,18 @@ import logger from './shared/infrastructure/logger';
 import { readNumberEnv } from './shared/infrastructure/utilities/env';
 import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
 import SocketGateway from './modules/socket/infrastructure/gateway/SocketGateway';
-import mountHttpRoutes from './core/bootstrap/mount-http-routes';
+import { SOCKET_TOKENS } from './modules/socket/infrastructure/di/SocketTokens';
 import startQueues from './core/bootstrap/start-queues';
 import app from './core/config/express';
+import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
 import http from 'http';
 import os from 'node:os';
 
 const SERVER_PORT = readNumberEnv('SERVER_PORT', 8000);
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
 const SERVER_TIMEOUT = readNumberEnv('SERVER_TIMEOUT', 1800000);
+
+registerAllDependencies();
 
 const shutdown = async () => {
     process.exit(0);
@@ -34,8 +37,10 @@ process.on('uncaughtException', (error: Error) => {
 });
 
 const startServer = async () => {
+    const { default: mountHttpRoutes } = await import('./core/bootstrap/mount-http-routes');
     const server = http.createServer(app);
     app.use(mountHttpRoutes());
+    app.use(httpErrorMiddleware);
 
     server.setTimeout(SERVER_TIMEOUT);
     server.requestTimeout = SERVER_TIMEOUT;
@@ -61,8 +66,8 @@ const startServer = async () => {
 
         await registerAllSubscribers();
 
-        const socketGateway = container.resolve(SocketGateway);
-        const socketModules = container.resolveAll<any>('SocketModule');
+        const socketGateway = container.resolve<SocketGateway>(SOCKET_TOKENS.SocketGateway);
+        const socketModules = container.resolveAll<any>(SOCKET_TOKENS.SocketModule);
         for (const module of socketModules) {
             socketGateway.register(module);
         }

@@ -1,14 +1,6 @@
-import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
+import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import DeleteSecretKeyByIdUseCase from '@modules/team/application/use-cases/secret-key/DeleteSecretKeyByIdUseCase';
-import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
 
-@injectable()
-export default class DeleteSecretKeyByIdController extends BaseController<DeleteSecretKeyByIdUseCase> {
-    constructor(
-        @inject(DeleteSecretKeyByIdUseCase)
-        useCase: DeleteSecretKeyByIdUseCase
-    ) {
-        super(useCase, HttpStatus.Deleted);
-    }
-}
+const DeleteSecretKeyByIdController = createController(DeleteSecretKeyByIdUseCase, HttpStatus.NoContent);
+export default DeleteSecretKeyByIdController;

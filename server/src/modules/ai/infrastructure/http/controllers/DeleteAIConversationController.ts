@@ -1,14 +1,5 @@
-import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
-import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
-import DeleteAIConversationUseCase from '@modules/ai/application/use-cases/DeleteAIConversationUseCase';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
+import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 
-@injectable()
-export default class DeleteAIConversationController extends BaseController<DeleteAIConversationUseCase> {
-    constructor(
-        @inject(DeleteAIConversationUseCase)
-        useCase: DeleteAIConversationUseCase
-    ) {
-        super(useCase, HttpStatus.Deleted);
-    }
-}
+export default createController(AI_TOKENS.DeleteAIConversationUseCase, HttpStatus.NoContent);

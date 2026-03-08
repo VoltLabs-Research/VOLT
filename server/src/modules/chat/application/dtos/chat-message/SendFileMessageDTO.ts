@@ -1,4 +1,4 @@
-import { ChatMessageProps } from '@modules/chat/domain/entities/ChatMessage';
+import { PersistedChatMessageDTO } from '@modules/chat/application/dtos/chat-message/SendChatMessageDTO';
 
 interface FileDataInput{
     filename: string;
@@ -14,4 +14,4 @@ export interface SendFileMessageInputDTO{
     fileData: FileDataInput;
 };
 
-export interface SendFileMessageOutputDTO extends ChatMessageProps{}
+export interface SendFileMessageOutputDTO extends PersistedChatMessageDTO{}

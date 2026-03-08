@@ -3,7 +3,8 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { ListPluginsInputDTO, ListPluginsOutputDTO } from '@modules/plugin/application/dtos/plugin/ListPluginsDTO';
 import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
+import { mapPluginToPersistedDTO } from '@modules/plugin/application/use-cases/plugin/mapPluginToPersistedDTO';
 
 @injectable()
 export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPluginsOutputDTO> {
@@ -18,10 +19,7 @@ export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPlu
             limit: input.limit
         });
 
-        const data = result.data.map((plugin) => ({
-            ...plugin.props,
-            _id: plugin.id
-        }));
+        const data = result.data.map((plugin) => mapPluginToPersistedDTO(plugin));
 
         return Result.ok({
             ...result,

@@ -1,6 +1,7 @@
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
+import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/TeamMember';
 import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { Result } from '@shared/domain/port/Result';
@@ -25,7 +26,7 @@ export default class GetMyTeamPermissionsUseCase implements IUseCase<GetMyTeamPe
             return Result.ok({ permissions: [] });
         }
 
-        const rolePermissions = member.props.role?.permissions ?? [];
+        const rolePermissions = getTeamMemberRolePermissions(member.props.role);
         const permissions = Array.from(new Set(rolePermissions));
 
         return Result.ok({ permissions });

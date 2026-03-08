@@ -1,31 +1,24 @@
 import { injectable, inject } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 import { IParticleFilterService } from '@modules/trajectory/domain/port/IParticleFilterService';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { GetParticleFilterPropertiesInputDTO, GetParticleFilterPropertiesOutputDTO } from '@modules/trajectory/application/dtos/generated-models';
+import { GetParticleFilterPropertiesInputDTO, GetParticleFilterPropertiesOutputDTO } from '@modules/trajectory/application/dtos/particle-filter';
+import { ValidatedServiceUseCase } from '@modules/trajectory/application/use-cases/shared/ValidatedServiceUseCase';
 
 @injectable()
-export class GetParticleFilterPropertiesUseCase implements IUseCase<GetParticleFilterPropertiesInputDTO, GetParticleFilterPropertiesOutputDTO, ApplicationError> {
+export class GetParticleFilterPropertiesUseCase extends ValidatedServiceUseCase<
+    GetParticleFilterPropertiesInputDTO,
+    GetParticleFilterPropertiesOutputDTO,
+    IParticleFilterService
+> {
     constructor(
         @inject(TRAJECTORY_TOKENS.ParticleFilterService)
         private readonly particleFilterService: IParticleFilterService
-    ) { }
-
-    async execute(input: GetParticleFilterPropertiesInputDTO): Promise<Result<GetParticleFilterPropertiesOutputDTO, ApplicationError>> {
-        const { trajectoryId, timestep } = input;
-        const hasMissingRequired = [trajectoryId, timestep].some((value) => !value?.trim());
-
-        if (hasMissingRequired) {
-            return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.COLOR_CODING_MISSING_PARAMS,
-                'Missing required particle-filter parameters'
-            ));
-        }
-
-        const data = await this.particleFilterService.getProperties(trajectoryId, timestep, input.analysisId);
-        return Result.ok(data);
+    ) {
+        super(
+            particleFilterService,
+            () => null,
+            (service, input) => service.getProperties(input.trajectoryId, input.timestep, input.analysisId)
+        );
     }
 }

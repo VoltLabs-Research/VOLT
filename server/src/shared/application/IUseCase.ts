@@ -1,10 +1,22 @@
-import { Result } from '@shared/domain/port/Result';
+import type { Result } from '@shared/domain/port/Result';
 
 export interface IUseCase<TInput, TOutput, TError = Error>{
     execute(input: TInput): Promise<Result<TOutput, TError>>;
 };
 
-export type UseCaseInput<T> = T extends IUseCase<infer I, any, any> ? I : never;
-type UseCaseOutput<T> = T extends IUseCase<any, infer O, any> ? O : never;
+export type UseCaseInput<TUseCase extends IUseCase<unknown, unknown, unknown>> =
+    TUseCase extends IUseCase<infer TInput, unknown, unknown>
+        ? TInput
+        : never;
 
-export type UseCaseInstance = IUseCase<any, any, any>;
+export type UseCaseOutput<TUseCase extends IUseCase<unknown, unknown, unknown>> =
+    TUseCase extends IUseCase<unknown, infer TOutput, unknown>
+        ? TOutput
+        : never;
+
+export type UseCaseError<TUseCase extends IUseCase<unknown, unknown, unknown>> =
+    TUseCase extends IUseCase<unknown, unknown, infer TError>
+        ? TError
+        : never;
+
+export type UseCaseInstance = IUseCase<unknown, unknown, unknown>;

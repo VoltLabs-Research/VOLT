@@ -1,4 +1,4 @@
-import type { User } from '@/modules/auth/domain/entities/User';
+import type { User } from '@/modules/auth/api/entities/user';
 
 export const getInitialsFromUser = (user: User | string | null | undefined): string => {
     if(!user || typeof user === 'string') return '?';

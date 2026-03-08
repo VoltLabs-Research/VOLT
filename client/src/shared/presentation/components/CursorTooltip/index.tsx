@@ -1,5 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useRef, useMemo } from 'react';
+import {
+    useFloating,
+    offset,
+    flip,
+    shift,
+    autoUpdate,
+    FloatingPortal
+} from '@floating-ui/react';
+import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import './CursorTooltip.css';
 
 interface CursorTooltipProps {
@@ -19,54 +27,72 @@ const CursorTooltip: React.FC<CursorTooltipProps> = ({
     y,
     content,
     className = '',
-    autoPosition = true,
     interactive = false,
-    offset = 16
+    offset: cursorOffset = 16
 }) => {
-    const tooltipRef = useRef<HTMLDivElement>(null);
-    const [style, setStyle] = useState<React.CSSProperties>({ top: y, left: x });
+    const arrowOffset = cursorOffset;
+    const floatingRoot = useFloatingRoot();
 
-    useEffect(() => {
-        if(!isOpen || !tooltipRef.current || !autoPosition){
-            if(!autoPosition){
-                setStyle({ top: y, left: x });
-            }
-            return;
+    const virtualElementRef = useRef({
+        getBoundingClientRect() {
+            return {
+                x,
+                y,
+                top: y,
+                left: x,
+                bottom: y,
+                right: x,
+                width: 0,
+                height: 0
+            };
         }
+    });
 
-        const rect = tooltipRef.current.getBoundingClientRect();
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const padding = 16;
+    // Keep the virtual element in sync with current x/y
+    virtualElementRef.current.getBoundingClientRect = () => ({
+        x,
+        y,
+        top: y,
+        left: x,
+        bottom: y,
+        right: x,
+        width: 0,
+        height: 0
+    });
 
-        let left = x + offset;
-        let top = y + offset;
+    const { refs, floatingStyles } = useFloating({
+        open: isOpen,
+        placement: 'right-start',
+        middleware: [
+            offset({ mainAxis: arrowOffset, crossAxis: arrowOffset }),
+            flip({ padding: 16 }),
+            shift({ padding: 16 })
+        ],
+        whileElementsMounted: autoUpdate
+    });
 
-        if(left + rect.width > vw - padding){
-            left = x - rect.width - offset;
-        }
+    // Attach virtual element as reference
+    useMemo(() => {
+        refs.setReference(virtualElementRef.current as unknown as Element);
+    }, [refs]);
 
-        if(top + rect.height > vh - padding){
-            top = y - rect.height - offset;
-        }
+    // Update position when x/y change
+    useMemo(() => {
+        refs.setReference(virtualElementRef.current as unknown as Element);
+    }, [x, y, refs]);
 
-        if(left < padding) left = padding;
-        if(top < padding) top = padding;
+    if (!isOpen) return null;
 
-        setStyle({ top: `${top}px`, left: `${left}px` });
-    }, [x, y, isOpen, autoPosition, content, offset]);
-
-    if(!isOpen) return null;
-
-    return createPortal(
-        <div
-            ref={tooltipRef}
-            className={`cursor-tooltip visible ${interactive ? 'interactive' : ''} ${className}`}
-            style={style}
-        >
-            {content}
-        </div>,
-        document.body
+    return (
+        <FloatingPortal root={floatingRoot}>
+            <div
+                ref={refs.setFloating}
+                className={`cursor-tooltip visible ${interactive ? 'interactive' : ''} ${className}`}
+                style={floatingStyles}
+            >
+                {content}
+            </div>
+        </FloatingPortal>
     );
 };
 

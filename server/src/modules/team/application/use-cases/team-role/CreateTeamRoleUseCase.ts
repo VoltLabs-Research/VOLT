@@ -1,17 +1,19 @@
 import { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleRepository';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IUseCase } from '@shared/application/IUseCase';
 import { CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO } from '@modules/team/application/dtos/team-role/CreateTeamRoleDTO';
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import TeamRoleCreatedEvent from '@modules/team/domain/events/TeamRoleCreatedEvent';
+import { createTeamRoleInputSchema } from '@modules/team/application/dtos/team-role/CreateTeamRoleDTO';
+import TeamRole from '@modules/team/domain/entities/TeamRole';
+import { IUseCase } from '@shared/application/IUseCase';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 
 @injectable()
-export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO, ApplicationError>{
+export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO, ApplicationError> {
     constructor(
         @inject(TEAM_TOKENS.TeamRoleRepository)
         private readonly teamRoleRepository: ITeamRoleRepository,
@@ -19,38 +21,31 @@ export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInp
         private readonly eventBus: IEventBus
     ){}
 
-    async execute(input: CreateTeamRoleInputDTO): Promise<Result<CreateTeamRoleOutputDTO, ApplicationError>>{
-        const { teamId, name, permissions, isSystem } = input;
-
-        if (!teamId) {
+    async execute(input: CreateTeamRoleInputDTO): Promise<Result<CreateTeamRoleOutputDTO, ApplicationError>> {
+        const parsed = createTeamRoleInputSchema.safeParse(input);
+        if (!parsed.success) {
+            const firstError = parsed.error.issues[0];
             return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.TEAM_ID_REQUIRED,
-                'Team ID is required'
+                firstError.message,
+                firstError.message
             ));
         }
 
-        if (!name) {
-            return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.TEAM_ROLE_NAME_REQUIRED,
-                'Role name is required'
-            ));
-        }
+        const { teamId, name, permissions, isSystem } = parsed.data;
 
-        const newRole = await this.teamRoleRepository.create({
-            team: teamId,
-            name,
-            permissions: permissions || [],
-            isSystem,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
-
-        await this.eventBus.publish(new TeamRoleCreatedEvent({
-            teamRoleId: newRole.id,
+        const newRole = await this.teamRoleRepository.create(TeamRole.create({
             teamId,
-            name
+            name,
+            permissions,
+            isSystem
         }));
 
-        return Result.ok(newRole.props);
+        await this.eventBus.publish(new TeamRoleCreatedEvent({
+            teamRoleId: newRole._id,
+            teamId: String(newRole.props.team),
+            name: newRole.props.name
+        }));
+
+        return Result.ok(toPersistedOutput(newRole));
     }
-};
+}

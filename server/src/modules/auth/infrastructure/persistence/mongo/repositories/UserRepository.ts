@@ -2,21 +2,15 @@ import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import User, { UserProps } from '@modules/auth/domain/entities/User';
 import UserModel, { UserDocument } from '@modules/auth/infrastructure/persistence/mongo/models/UserModel';
 import userMapper from '@modules/auth/infrastructure/persistence/mongo/mappers/UserMapper';
-import { injectable, inject } from 'tsyringe';
+import { injectable } from 'tsyringe';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import UserDeletedEvent from '@modules/auth/domain/events/UserDeletedEvent';
 
 @injectable()
 export default class UserRepository
     extends MongooseBaseRepository<User, UserProps, UserDocument>
     implements IUserRepository {
 
-    constructor(
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
-    ) {
+    constructor() {
         super(UserModel, userMapper);
     }
 
@@ -30,8 +24,8 @@ export default class UserRepository
         return doc ? userMapper.toDomainWithPassword(doc) : null;
     }
 
-    async findByIdWithPassword(id: string): Promise<(User & { password: string; }) | null> {
-        const doc = await UserModel.findById(id).select('+password');
+    async findByIdWithPassword(userId: string): Promise<(User & { password: string; }) | null> {
+        const doc = await UserModel.findById(userId).select('+password');
         return doc ? userMapper.toDomainWithPassword(doc) : null;
     }
 
@@ -43,44 +37,48 @@ export default class UserRepository
         });
     }
 
+    async removeUsersFromTeam(teamId: string): Promise<void> {
+        await this.model.updateMany(
+            { teams: teamId },
+            {
+                $pull: {
+                    teams: teamId
+                }
+            }
+        );
+    }
+
     async emailExists(email: string): Promise<boolean> {
         return await this.exists({ email: email.toLowerCase() });
     }
 
-    async updatePassword(id: string, hashedPassword: string): Promise<void> {
-        await UserModel.findByIdAndUpdate(id, {
+    async updatePassword(userId: string, hashedPassword: string): Promise<void> {
+        await UserModel.findByIdAndUpdate(userId, {
             password: hashedPassword,
             passwordChangedAt: new Date(Date.now() - 1000)
         });
     }
 
-    async updateLastLogin(id: string): Promise<void> {
+    async updateLastLogin(userId: string): Promise<void> {
         const now = new Date();
-        await this.updateById(id, {
+        await this.updateById(userId, {
             lastLoginAt: now,
             lastSeenAt: now
         });
     }
 
-    async updateLastSeen(id: string, timestamp: Date = new Date()): Promise<void> {
-        await this.updateById(id, {
+    async updateLastSeen(userId: string, timestamp: Date = new Date()): Promise<void> {
+        await this.updateById(userId, {
             lastSeenAt: timestamp
         });
     }
 
-    async updateAvatar(id: string, avatarUrl: string): Promise<void> {
-        await this.updateById(id, { avatar: avatarUrl });
+    async updateAvatar(userId: string, avatarUrl: string): Promise<void> {
+        await this.updateById(userId, { avatar: avatarUrl });
     }
 
-    async deleteById(id: string): Promise<boolean> {
-        const result = await this.model.findByIdAndDelete(id);
-
-        if (result) {
-            await this.eventBus.publish(new UserDeletedEvent({
-                userId: id
-            }));
-        }
-
+    async deleteById(userId: string): Promise<boolean> {
+        const result = await this.model.findByIdAndDelete(userId);
         return !!result;
     }
 };

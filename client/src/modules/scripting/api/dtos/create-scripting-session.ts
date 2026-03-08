@@ -1,0 +1,4 @@
+export interface CreateScriptingSessionParams {
+    trajectoryId: string;
+    notebookId?: string;
+};

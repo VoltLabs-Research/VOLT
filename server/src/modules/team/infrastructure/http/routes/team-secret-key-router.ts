@@ -1,27 +1,27 @@
 import { Router } from 'express';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import { Resource } from '@core/constants/resources';
-import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
+import { teamSecretKeyValidation } from '@modules/team/infrastructure/http/validation/team-secret-key-schemas';
 import controllers from '@modules/team/infrastructure/http/controllers/secret-key';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/team/secret-keys',
+    basePath: '/api/team/:teamId/secret-keys',
     router,
     resource: Resource.TEAM_SECRET_KEY
 };
 
-router.use(protect);
-router.get('/me', controllers.current.handle);
+const createSecretKeyRateLimit = createStandardRateLimiter(5);
 
-router.get('/:teamId/metrics', controllers.teamMetrics.handle);
-router.get('/:teamId/:secretKeyId/usage', controllers.keyUsage.handle);
+router.get('/metrics', controllers.teamMetrics.handle);
+router.get('/:secretKeyId/usage', controllers.keyUsage.handle);
 
-router.route('/:teamId')
+router.route('/')
     .get(controllers.listByTeamId.handle)
-    .post(controllers.create.handle);
+    .post(createSecretKeyRateLimit, teamSecretKeyValidation.create, controllers.create.handle);
 
-router.patch('/:teamId/:secretKeyId/revoke', controllers.revokeById.handle);
-router.delete('/:teamId/:secretKeyId', controllers.deleteById.handle);
+router.patch('/:secretKeyId/revoke', controllers.revokeById.handle);
+router.delete('/:secretKeyId', controllers.deleteById.handle);
 
 export default module;

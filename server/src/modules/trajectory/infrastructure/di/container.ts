@@ -14,6 +14,8 @@ import AtomisticExporter from '@modules/trajectory/infrastructure/services/expor
 import DislocationExporter from '@modules/trajectory/infrastructure/services/exporters/DislocationExporter';
 import MeshExporter from '@modules/trajectory/infrastructure/services/exporters/MeshExporter';
 import ChartExporter from '@modules/trajectory/infrastructure/services/exporters/ChartExporter';
+import TrajectoryReader from '@modules/trajectory/infrastructure/services/TrajectoryReader';
+import TeamMetricsQueryService from '@modules/trajectory/infrastructure/services/TeamMetricsQueryService';
 
 import SessionCompletedEventHandler from '@modules/trajectory/application/events/SessionCompletedEventHandler';
 import JobStatusChangedEventHandler from '@modules/trajectory/application/events/JobStatusChangedEventHandler';
@@ -33,10 +35,12 @@ import * as trajectoryAiTools from '@modules/trajectory/application/ai-tools';
 
 export const registerTrajectoryDependencies = (): void => {
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryRepository, TrajectoryRepository);
+    container.registerSingleton(TRAJECTORY_TOKENS.TeamMetricsQueryService, TeamMetricsQueryService);
     container.registerSingleton(TRAJECTORY_TOKENS.SceneArtifactRepository, SceneArtifactRepository);
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryProcessingQueue, TrajectoryProcessingQueue);
     container.registerSingleton(TRAJECTORY_TOKENS.CloudUploadQueue, CloudUploadQueue);
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryDumpStorageService, TrajectoryDumpStorageService);
+    container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryReader, TrajectoryReader);
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryBackgroundProcessor, TrajectoryBackgroundProcessor);
 
     // Exporters

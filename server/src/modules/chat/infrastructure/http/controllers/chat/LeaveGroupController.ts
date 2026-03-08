@@ -1,23 +1,6 @@
-import { injectable, inject, delay } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
 import { LeaveGroupUseCase } from '@modules/chat/application/use-cases/chat/LeaveGroupUseCase';
-import { LeaveGroupInputDTO } from '@modules/chat/application/dtos/chat/LeaveGroupDTO';
-import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 
-@injectable()
-export default class LeaveGroupController extends BaseController<LeaveGroupUseCase> {
-    constructor(
-        @inject(delay(() => LeaveGroupUseCase))
-        useCase: LeaveGroupUseCase
-    ) {
-        super(useCase);
-    }
+const LeaveGroupController = createController(LeaveGroupUseCase);
 
-    protected getParams(req: AuthenticatedRequest): LeaveGroupInputDTO {
-        const { chatId } = req.params;
-        return {
-            chatId: String(chatId),
-            participantId: req.userId!
-        };
-    }
-};
+export default LeaveGroupController;

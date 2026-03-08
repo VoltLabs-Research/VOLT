@@ -1,3 +1,1 @@
-export const SCRIPTING_TOKENS = {
-    ScriptingNotebookRepository: Symbol.for('ScriptingNotebookRepository')
-};
+export { SCRIPTING_TOKENS } from '@modules/scripting/application/di/ScriptingTokens';

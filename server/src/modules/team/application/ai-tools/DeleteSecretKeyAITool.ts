@@ -1,15 +1,31 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
-import { AITool } from '@shared/application/ai/AITool';
+import DeleteSecretKeyByIdUseCase from '@modules/team/application/use-cases/secret-key/DeleteSecretKeyByIdUseCase';
+import { TeamUseCaseAITool } from './TeamUseCaseAITool';
+
+const deleteSecretKeyParametersSchema = z.object({
+    secretKeyId: z.string(),
+    reason: z.string().optional()
+});
 
 @injectable()
-export class DeleteSecretKeyAITool extends AITool {
+export class DeleteSecretKeyAITool extends TeamUseCaseAITool<
+    z.infer<typeof deleteSecretKeyParametersSchema>,
+    DeleteSecretKeyByIdUseCase,
+    typeof deleteSecretKeyParametersSchema
+> {
     readonly name = 'delete_secret_key';
     readonly description = 'Permanently delete an API secret key.';
-    readonly parameters = z.object({ secretKeyId: z.string(), reason: z.string().optional() });
+    readonly parameters = deleteSecretKeyParametersSchema;
     protected needsApproval = true;
 
-    constructor() {
-        super();
+    constructor(
+        @inject(DeleteSecretKeyByIdUseCase)
+        useCase: DeleteSecretKeyByIdUseCase
+    ) {
+        super(useCase, (params, scope) => ({
+            teamId: scope.teamId,
+            secretKeyId: params.secretKeyId
+        }));
     }
 }

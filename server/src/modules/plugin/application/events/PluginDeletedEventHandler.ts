@@ -1,10 +1,10 @@
 import { injectable, inject } from 'tsyringe';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import PluginDeletedEvent from '@modules/plugin/domain/events/PluginDeletedEvent';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
 import { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
 import { ISubListingRowRepository } from '@modules/plugin/domain/port/ISubListingRowRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 
 @injectable()

@@ -1,29 +1,35 @@
-import { ITeamRepository } from '@modules/team/domain/port/ITeamRepository';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type { ITeamRepository } from '@modules/team/domain/port/ITeamRepository';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { GetTeamByIdInputDTO, GetTeamByIdOutputDTO } from '@modules/team/application/dtos/team/GetTeamByIdDTO';
+import type { TeamProps } from '@modules/team/domain/entities/Team';
+import type { FindOptions } from '@shared/domain/port/IBaseRepository';
+
+interface GetTeamByIdInput {
+    teamId: string;
+    options?: Pick<FindOptions<unknown>, 'populate' | 'select'>;
+}
 
 @injectable()
-export default class GetTeamByIdUseCase implements IUseCase<GetTeamByIdInputDTO, GetTeamByIdOutputDTO, ApplicationError>{
+export default class GetTeamByIdUseCase implements IUseCase<GetTeamByIdInput, PersistedOutput<TeamProps>, ApplicationError> {
     constructor(
         @inject(TEAM_TOKENS.TeamRepository)
-        private teamRepository: ITeamRepository
-    ){}
+        private readonly repository: ITeamRepository
+    ) {}
 
-    async execute(input: GetTeamByIdInputDTO): Promise<Result<GetTeamByIdOutputDTO, ApplicationError>>{
-        const { teamId } = input;
-        const team = await this.teamRepository.findById(teamId);
-        if(!team){
+    async execute(input: GetTeamByIdInput): Promise<Result<PersistedOutput<TeamProps>, ApplicationError>> {
+        const entity = await this.repository.findById(input.teamId, input.options);
+        if (!entity) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TEAM_NOT_FOUND,
                 'Team not found'
             ));
         }
-
-        return Result.ok(team.props);
+        return Result.ok(toPersistedOutput(entity));
     }
 }

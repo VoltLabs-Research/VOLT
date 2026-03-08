@@ -1,12 +1,12 @@
-import type { UIMessage } from 'ai';
 import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { AIConversationMessageParts } from '@modules/ai/application/contracts/AIConversationMessage';
 import type { AIMessageRole, AIMessageModelInfo, AIMessageTokenUsage } from '@modules/ai/domain/entities/AIMessage';
 
 export interface AIMessageDTO {
     _id: string;
     conversationId: string;
     role: AIMessageRole;
-    parts: UIMessage['parts'];
+    parts: AIConversationMessageParts;
     content: string;
     artifacts: { items: Record<string, unknown>[] } | null;
     modelInfo: AIMessageModelInfo | null;

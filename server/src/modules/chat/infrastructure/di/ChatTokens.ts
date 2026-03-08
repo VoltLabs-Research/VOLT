@@ -7,5 +7,8 @@ export const CHAT_TOKENS = {
     DeleteMessageUseCase: Symbol.for('DeleteMessageUseCase'),
     ToggleMessageReactionUseCase: Symbol.for('ToggleMessageReactionUseCase'),
     MarkMessagesAsReadUseCase: Symbol.for('MarkMessagesAsReadUseCase'),
-    ChatSocketModule: Symbol.for('ChatSocketModule')
+    ChatSocketModule: Symbol.for('ChatSocketModule'),
+    ChatSocketAccessPolicy: Symbol.for('ChatSocketAccessPolicy'),
+    ChatSocketEventOrchestrator: Symbol.for('ChatSocketEventOrchestrator'),
+    ChatSocketPresenceService: Symbol.for('ChatSocketPresenceService')
 };

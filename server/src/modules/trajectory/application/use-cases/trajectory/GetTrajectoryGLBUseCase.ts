@@ -1,10 +1,11 @@
 import { injectable, inject } from 'tsyringe';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { SYS_BUCKETS } from '@core/config/minio';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { GetTrajectoryGLBInputDTO, GetTrajectoryGLBOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryGLBDTO';
 
 @injectable()
@@ -19,13 +20,13 @@ export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGL
             const { trajectoryId, timestep } = input;
             const objectName = `trajectory-${trajectoryId}/timestep-${timestep}.glb`;
             const [stat, stream] = await Promise.all([
-                this.storageService.getStat(SYS_BUCKETS.MODELS, objectName), 
+                this.storageService.getStat(SYS_BUCKETS.MODELS, objectName),
                 this.storageService.getStream(SYS_BUCKETS.MODELS, objectName)
             ]);
 
             return Result.ok({ stream, size: stat.size, objectName });
-        } catch (error: any) {
-            return Result.fail(new ApplicationError('GLB::NOT_FOUND', 'GLB model not found', 404));
+        } catch {
+            return Result.fail(new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'GLB model not found', 404));
         }
     }
 }

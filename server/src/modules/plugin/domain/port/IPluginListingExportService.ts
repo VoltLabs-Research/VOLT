@@ -1,5 +1,8 @@
-import { PluginListingExportResult } from '@modules/plugin/infrastructure/services/PluginListingService';
+import type {
+    ListingOptions,
+    PluginListingExportResult
+} from '@modules/plugin/domain/port/PluginListingTypes';
 
 export interface IPluginListingExportService {
-    exportListingDocuments(pluginId: string, options: any): Promise<PluginListingExportResult>;
+    exportListingDocuments(pluginId: string, options: ListingOptions): Promise<PluginListingExportResult>;
 }

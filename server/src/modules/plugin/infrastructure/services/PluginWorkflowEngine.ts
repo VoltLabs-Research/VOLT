@@ -4,8 +4,19 @@ import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/Workf
 import { injectable, inject } from 'tsyringe';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ExecutionContext, INodeRegistry } from '@modules/plugin/domain/port/INodeRegistry';
+import { getExposureNodes } from '@modules/plugin/infrastructure/utilities/get-exposure-nodes';
 import fs from 'node:fs/promises';
 import logger from '@shared/infrastructure/logger';
+
+type ExposureOutputItem = {
+    error?: unknown;
+    data?: unknown;
+    objectPath?: string;
+};
+
+type ExposureOutput = {
+    results?: ExposureOutputItem[];
+};
 
 @injectable()
 export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
@@ -21,7 +32,7 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
         const context = this.createExecutionContext(request);
         const executionOrder = request.plugin.props.workflow.topologicalSort();
 
-        logger.info(`@plugin-workflow-engine: planning execution for plugin "${request.plugin.id}"`);
+        logger.info(`@plugin-workflow-engine: planning execution for plugin "${request.plugin._id}"`);
         for(const node of executionOrder){
             // Execute the current node
             await this.nodeRegistry.execute(node, context);
@@ -43,37 +54,66 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
         return null;
     }
 
-    /**
-     * 
-     * @param request Runs the workflow for a specific item
-     */
-    async executeWorkflowJob(request: WorkflowExecutionRequest): Promise<ExposureResult[]>{
+    async executeWorkflowJob(request: WorkflowExecutionRequest, hooks?: DebugHooks): Promise<ExposureResult[]>{
         const { plugin, currentIterationIndex, currentIterationItem } = request;
         const context = this.createExecutionContext(request);
 
         try{
             const executionOrder = plugin.props.workflow.topologicalSort();
             const nodesToSkip = new Set<string>();
+            const total = executionOrder.length;
+            const logPrefix = hooks ? 'debug job' : 'job';
 
-            logger.info(`@plugin-workflow-engine: job start "${plugin.id}" (Index: ${currentIterationIndex})`);
-            for(const node of executionOrder){
-                // Skip logic (handled by previous If-Statements)
-                if(nodesToSkip.has(node.id)) continue;
+            logger.info(`@plugin-workflow-engine: ${logPrefix} start "${plugin._id}" (Index: ${currentIterationIndex})`);
 
-                // ForEach injection logic
-                if(node.type === WorkflowNodeType.ForEach && currentIterationIndex !== undefined){
-                    await this.nodeRegistry.execute(node, context);
-                    const forEachOutput = context.outputs.get(node.id);
-                    if(forEachOutput){
-                        forEachOutput.currentValue = currentIterationItem;
-                        forEachOutput.currentIndex = currentIterationIndex ?? 0;
+            for(let i = 0; i < executionOrder.length; i++){
+                const node = executionOrder[i];
+
+                if(nodesToSkip.has(node.id)){
+                    if(hooks){
+                        await hooks.onNodeSkipped(node.id, node.type, 'Disabled by if-statement branch');
                     }
-                }else{
-                    // Standard execution
-                    await this.nodeRegistry.execute(node, context);
+                    continue;
                 }
 
-                // Branching Logic (If-Statement)
+                if(hooks){
+                    await hooks.onNodeStart(node.id, node.type, i, total);
+                }
+
+                const startTime = Date.now();
+
+                try{
+                    if(node.type === WorkflowNodeType.ForEach && currentIterationIndex !== undefined){
+                        logger.info(`@plugin-workflow-engine: executing ForEach node ${node.id} with iterationIndex=${currentIterationIndex}`);
+                        await this.nodeRegistry.execute(node, context);
+                        const forEachOutput = context.outputs.get(node.id);
+                        if(forEachOutput){
+                            forEachOutput.currentValue = currentIterationItem;
+                            forEachOutput.currentIndex = currentIterationIndex ?? 0;
+                        }
+                    }else{
+                        await this.nodeRegistry.execute(node, context);
+                    }
+
+                    const rawOutput = context.outputs.get(node.id);
+
+                    if(hooks){
+                        const durationMs = Date.now() - startTime;
+                        const output = rawOutput ?? {};
+                        const contextSnapshot: Record<string, Record<string, unknown>> = {};
+                        context.outputs.forEach((value, key) => {
+                            contextSnapshot[key] = value;
+                        });
+                        await hooks.onNodeCompleted(node.id, node.type, output, durationMs, i, contextSnapshot);
+                    }
+                }catch(nodeError: unknown){
+                    if(hooks){
+                        const error = nodeError instanceof Error ? nodeError : new Error(String(nodeError));
+                        await hooks.onNodeError(node.id, node.type, error);
+                    }
+                    throw nodeError;
+                }
+
                 if(node.type === WorkflowNodeType.IfStatement){
                     this.handleBranching(node.id, context, plugin.props.workflow, nodesToSkip);
                 }
@@ -83,87 +123,9 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
             await this.cleanupGeneratedFiles(context.generatedFiles);
 
             return results;
-        }catch(error: any){
-            logger.error(`@plugin-workflow-engine: job failed ${error.message}`);
-            await this.cleanupGeneratedFiles(context.generatedFiles);
-            throw error;
-        }
-    }
-
-    /**
-     * Same as executeWorkflowJob but calls debug hooks before/after each node.
-     */
-    async executeWorkflowJobWithDebugHooks(
-        request: WorkflowExecutionRequest,
-        hooks: DebugHooks
-    ): Promise<ExposureResult[]> {
-        const { plugin, currentIterationIndex, currentIterationItem } = request;
-        const context = this.createExecutionContext(request);
-
-        try {
-            const executionOrder = plugin.props.workflow.topologicalSort();
-            const nodesToSkip = new Set<string>();
-            const total = executionOrder.length;
-
-            logger.info(`@plugin-workflow-engine: debug job start "${plugin.id}" (Index: ${currentIterationIndex})`);
-
-            for (let i = 0; i < executionOrder.length; i++) {
-                const node = executionOrder[i];
-
-                // Skip logic (handled by previous If-Statements)
-                if (nodesToSkip.has(node.id)) {
-                    await hooks.onNodeSkipped(node.id, node.type, 'Disabled by if-statement branch');
-                    continue;
-                }
-
-                // Notify hook: node is about to start
-                await hooks.onNodeStart(node.id, node.type, i, total);
-
-                const startTime = Date.now();
-
-                try {
-                    // ForEach injection logic
-                    if (node.type === WorkflowNodeType.ForEach && currentIterationIndex !== undefined) {
-                        await this.nodeRegistry.execute(node, context);
-                        const forEachOutput = context.outputs.get(node.id);
-                        if (forEachOutput) {
-                            forEachOutput.currentValue = currentIterationItem;
-                            forEachOutput.currentIndex = currentIterationIndex ?? 0;
-                        }
-                    } else {
-                        // Standard execution
-                        await this.nodeRegistry.execute(node, context);
-                    }
-
-                    const durationMs = Date.now() - startTime;
-                    const output = context.outputs.get(node.id) ?? {};
-
-                    // Build a plain-object snapshot of all accumulated outputs
-                    const contextSnapshot: Record<string, Record<string, any>> = {};
-                    context.outputs.forEach((value, key) => {
-                        contextSnapshot[key] = value;
-                    });
-
-                    // Notify hook: node completed
-                    await hooks.onNodeCompleted(node.id, node.type, output, durationMs, i, contextSnapshot);
-
-                } catch (nodeError: any) {
-                    await hooks.onNodeError(node.id, node.type, nodeError);
-                    throw nodeError;
-                }
-
-                // Branching Logic (If-Statement)
-                if (node.type === WorkflowNodeType.IfStatement) {
-                    this.handleBranching(node.id, context, plugin.props.workflow, nodesToSkip);
-                }
-            }
-
-            const results = this.collectExposureResults(plugin.props.workflow, context);
-            await this.cleanupGeneratedFiles(context.generatedFiles);
-
-            return results;
-        } catch (error: any) {
-            logger.error(`@plugin-workflow-engine: debug job failed ${error.message}`);
+        }catch(error: unknown){
+            const message = error instanceof Error ? error.message : String(error);
+            logger.error(`@plugin-workflow-engine: ${hooks ? 'debug ' : ''}job failed ${message}`);
             await this.cleanupGeneratedFiles(context.generatedFiles);
             throw error;
         }
@@ -171,28 +133,28 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
 
     private collectExposureResults(workflow: Workflow, context: ExecutionContext): ExposureResult[]{
         const results: ExposureResult[] = [];
-        const exposureNodes = workflow.props.nodes.filter((node) => node.type === WorkflowNodeType.Exposure);
-        
-        for(const exposureNode of exposureNodes){
-            const exposureOutput = context.outputs.get(exposureNode.id);
+        const descriptors = getExposureNodes(workflow.props.nodes);
+
+        for(const { exposureName, node } of descriptors){
+            const exposureOutput = context.outputs.get(node.id) as ExposureOutput | undefined;
             if(!exposureOutput?.results) continue;
 
-            const exportNode = workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Export);
+            const exportNode = workflow.findDescendantByType(node.id, WorkflowNodeType.Export);
 
-            const exposureData = exposureNode.data.exposure;
+            const exposureData = node.data.exposure;
             if(!exposureData) continue;
-            const firstSuccess = exposureOutput.results.find((result: any) => !result.error);
+            const firstSuccess = exposureOutput.results.find((result) => !result.error);
 
             results.push({
-                exposureName: exposureData.name,
-                nodeId: exposureNode.id,
+                exposureName,
+                nodeId: node.id,
                 data: firstSuccess?.data,
                 canvas: exposureData.canvas,
                 raster: exposureData.raster,
                 export: exportNode ? {
                     exporter: exportNode.data.export!.exporter,
                     type: exportNode.data.export!.type,
-                    objectPath: context.outputs.get(exportNode.id)?.results?.[0]?.objectPath
+                    objectPath: (context.outputs.get(exportNode.id) as ExposureOutput | undefined)?.results?.[0]?.objectPath
                 } : undefined
             });
         }
@@ -221,7 +183,7 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
             outputs: new Map(),
             userConfig: req.userConfig,
             trajectoryId: req.trajectoryId,
-            pluginId: req.plugin.id,
+            pluginId: req.plugin._id,
             teamId: req.teamId,
             analysisId: req.analysisId,
             generatedFiles: [],

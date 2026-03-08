@@ -1,13 +1,5 @@
-import { injectable, inject, delay } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
 import { GetUserChatsUseCase } from '@modules/chat/application/use-cases/chat/GetUserChatsUseCase';
 
-@injectable()
-export default class GetUserChatsController extends BaseController<GetUserChatsUseCase> {
-    constructor(
-        @inject(delay(() => GetUserChatsUseCase))
-        useCase: GetUserChatsUseCase
-    ) {
-        super(useCase);
-    }
-};
+const GetUserChatsController = createController(GetUserChatsUseCase);
+export default GetUserChatsController;

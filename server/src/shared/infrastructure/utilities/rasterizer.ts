@@ -1,5 +1,10 @@
 import path from 'path';
+import { ErrorCodes } from '@core/constants/error-codes';
 import logger from '@shared/infrastructure/logger';
+import {
+    createWorkerFailureEnvelope,
+    WorkerFailureError
+} from '@shared/infrastructure/workers/WorkerFailureEnvelope';
 
 interface Rasterizer {
     rasterize(
@@ -24,11 +29,21 @@ interface RasterizerOptions {
     up?: 'z' | 'y';
 };
 
-// Adjust path to point to the correct location in the new architecture
-// Assuming native folder is in the root of the project, same as package.json
 const nativePath = path.resolve(process.cwd(), 'native/build/Release/rasterizer.node');
 
-let rasterizer: Rasterizer;
+const resolveErrorMessage = (error: unknown): string => {
+    if (error instanceof Error && error.message.trim()) {
+        return error.message;
+    }
+
+    if (typeof error === 'string' && error.trim()) {
+        return error;
+    }
+
+    return 'Native rasterization failed';
+};
+
+let rasterizer: Rasterizer | null = null;
 try {
     rasterizer = require(nativePath);
 } catch (error) {
@@ -37,7 +52,10 @@ try {
 
 const rasterize = (glbPath: string, pngPath: string, options: RasterizerOptions = {}): boolean => {
     if (!rasterizer) {
-        throw new Error('Native rasterizer module is not loaded.');
+        throw new WorkerFailureError(createWorkerFailureEnvelope({
+            code: ErrorCodes.RASTER_WORKER_RENDER_FAILED,
+            details: 'Native rasterizer module is not loaded.'
+        }));
     }
 
     const width = options.width ?? 1600;
@@ -50,9 +68,13 @@ const rasterize = (glbPath: string, pngPath: string, options: RasterizerOptions 
 
     try {
         return rasterizer.rasterize(glbPath, pngPath, width, height, az, el, { fov, distScale, zUp });
-    } catch (error: any) {
-        logger.error({ err: error }, `[Rasterizer] Native module threw exception: ${error.message || error}`);
-        throw new Error(`Native rasterizer exception: ${error.message || error}`);
+    } catch (error: unknown) {
+        const errorMessage = resolveErrorMessage(error);
+        logger.error({ err: error }, `[Rasterizer] Native module threw exception: ${errorMessage}`);
+        throw new WorkerFailureError(createWorkerFailureEnvelope({
+            code: ErrorCodes.RASTER_WORKER_RENDER_FAILED,
+            details: `Native rasterizer exception: ${errorMessage}`
+        }));
     }
 };
 

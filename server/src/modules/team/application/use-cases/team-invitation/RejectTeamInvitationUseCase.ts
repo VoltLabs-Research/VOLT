@@ -1,12 +1,11 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
-import { TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
 import { RejectTeamInvitationInputDTO, RejectTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/RejectTeamInvitationDTO';
+import { IUseCase } from '@shared/application/IUseCase';
 
 @injectable()
 export default class RejectTeamInvitationUseCase implements IUseCase<RejectTeamInvitationInputDTO, RejectTeamInvitationOutputDTO, ApplicationError> {
@@ -26,29 +25,24 @@ export default class RejectTeamInvitationUseCase implements IUseCase<RejectTeamI
             ));
         }
 
-        if (invitation.props.status !== TeamInvitationStatus.Pending) {
+        if (!invitation.isPending()) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.TEAM_INVITATION_ALREADY_PROCESSED,
                 'Invitation has already been processed'
             ));
         }
 
-        // Verify the user rejecting is the one invited
-        const invitedUserId = typeof invitation.props.invitedUser === 'object'
-            ? (invitation.props.invitedUser as any).id || (invitation.props.invitedUser as any)._id
-            : invitation.props.invitedUser;
-
-        if (invitedUserId.toString() !== userId) {
+        if (invitation.getInvitedUserId() !== userId) {
             return Result.fail(ApplicationError.forbidden(
                 ErrorCodes.TEAM_INVITATION_INVALID_USER,
                 'This invitation was not sent to you'
             ));
         }
 
-        // Update Status to Rejected
-        invitation.props.status = TeamInvitationStatus.Rejected;
-        await this.invitationRepository.updateById(invitation.id, invitation.props);
+        await this.invitationRepository.updateById(invitation._id, invitation.reject());
 
-        return Result.ok({ message: 'Invitation rejected successfully' });
+        return Result.ok({
+            message: 'Invitation rejected successfully'
+        });
     }
 }

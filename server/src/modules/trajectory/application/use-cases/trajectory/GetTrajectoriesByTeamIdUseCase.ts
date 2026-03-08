@@ -3,8 +3,9 @@ import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 import { GetTrajectoriesByTeamIdInputDTO, GetTrajectoriesByTeamIdOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoriesByTeamIdDTO';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 
 @injectable()
 export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTrajectoriesByTeamIdInputDTO, GetTrajectoriesByTeamIdOutputDTO, ApplicationError> {
@@ -30,7 +31,7 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
         
         return Result.ok({
             ...results,
-            data: results.data.map(a => a.props)
+            data: results.data.map((trajectory) => toPersistedOutput(trajectory))
         });
     }
 };

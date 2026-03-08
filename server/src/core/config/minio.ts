@@ -5,12 +5,12 @@ import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 let minioClient: Client | null = null;
 
 export const SYS_BUCKETS = {
-    MODELS: 'opendxa-models',
-    RASTERIZER: 'opendxa-rasterizer',
-    PLUGINS: 'opendxa-plugins',
-    DUMPS: 'opendxa-dumps',
-    AVATARS: 'opendxa-avatars',
-    CHAT: 'opendxa-chat'
+    MODELS: 'volt-models',
+    RASTERIZER: 'volt-rasterizer',
+    PLUGINS: 'volt-plugins',
+    DUMPS: 'volt-dumps',
+    AVATARS: 'volt-avatars',
+    CHAT: 'volt-chat'
 };
 
 export const getMinioConfig = () => {

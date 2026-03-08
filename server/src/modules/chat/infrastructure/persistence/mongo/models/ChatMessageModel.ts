@@ -10,8 +10,7 @@ const MessageSchema: Schema<ChatMessageDocument> = new Schema({
     chat: {
         type: Schema.Types.ObjectId,
         ref: 'Chat',
-        required: true,
-        inverse: { path: 'messages', behavior: 'addToSet' }
+        required: true
     },
     sender: {
         type: Schema.Types.ObjectId,

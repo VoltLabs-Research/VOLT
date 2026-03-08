@@ -185,7 +185,7 @@ const LiquidToggle = ({
             <button
                 ref={btnRef}
                 aria-label='toggle'
-                aria-pressed={String(effectivePressed)}
+                aria-pressed={effectivePressed}
                 className={`liquid-toggle${className ? ` ${className}` : ''}`}
                 data-active={String(active)}
                 type='button'

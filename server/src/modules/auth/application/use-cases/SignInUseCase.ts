@@ -5,33 +5,28 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { SignInInputDTO, SignInOutputDTO } from '@modules/auth/application/dtos/SignInDTO';
 import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
-import { ITokenService } from '@modules/auth/domain/port/ITokenService';
-import { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
+import { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import { injectable, inject } from 'tsyringe';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
+import AuthSessionService from '@modules/auth/application/services/AuthSessionService';
+import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
 
 @injectable()
 export default class SignInUseCase implements IUseCase<SignInInputDTO, SignInOutputDTO, ApplicationError>{
     constructor(
         @inject(AUTH_TOKENS.UserRepository)
         private readonly userRepository: IUserRepository,
-        @inject(AUTH_TOKENS.BcryptPasswordHasher)
+        @inject(AUTH_TOKENS.PasswordHasher)
         private readonly passwordHasher: IPasswordHasher,
-        @inject(AUTH_TOKENS.JwtTokenService)
-        private readonly tokenService: ITokenService,
-        @inject(AUTH_TOKENS.SessionRepository)
-        private readonly sessionRepository: ISessionRepository
+        @inject(SESSION_TOKENS.SessionRepository)
+        private readonly sessionRepository: ISessionRepository,
+        @inject(AUTH_TOKENS.AuthSessionService)
+        private readonly authSessionService: AuthSessionService
     ){}
 
     async execute(input: SignInInputDTO): Promise<Result<SignInOutputDTO, ApplicationError>>{
-        if(!input.email || !input.password){
-            return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.AUTH_CREDENTIALS_MISSING,
-                'Email and password are required'
-            ));
-        }
-
         const user = await this.userRepository.findByEmailWithPassword(input.email);
         if(!user){
             await this.sessionRepository.createFailedLogin(
@@ -50,7 +45,7 @@ export default class SignInUseCase implements IUseCase<SignInInputDTO, SignInOut
         const isPasswordValid = await this.passwordHasher.compare(input.password, user.password);
         if(!isPasswordValid){
             await this.sessionRepository.createFailedLogin(
-                user.id,
+                user._id,
                 input.userAgent,
                 input.ip,
                 'Invalid password'
@@ -62,26 +57,18 @@ export default class SignInUseCase implements IUseCase<SignInInputDTO, SignInOut
             ));
         }
 
-        await this.userRepository.updateLastLogin(user.id);
+        await this.userRepository.updateLastLogin(user._id);
         
-        const token = this.tokenService.sign(user.id);
-
-        await this.sessionRepository.create({
-            user: user.id,
-            token,
-            userAgent: input.userAgent,
+        const token = await this.authSessionService.createSessionWithToken({
+            userId: user._id,
             ip: input.ip,
-            isActive: true,
-            lastActivity: new Date(),
-            action: SessionActivityType.Login,
-            success: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            userAgent: input.userAgent,
+            activityType: SessionActivityType.Login
         });
 
         return Result.ok({
             token,
-            user: user.props
+            user: toPersistedUserDTO(user)
         });
     }
 };

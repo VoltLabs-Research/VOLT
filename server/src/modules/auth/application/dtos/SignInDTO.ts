@@ -1,4 +1,4 @@
-import { UserProps } from '@modules/auth/domain/entities/User';
+import { PersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
 
 export interface SignInInputDTO{
     email: string;
@@ -9,5 +9,5 @@ export interface SignInInputDTO{
 
 export interface SignInOutputDTO{
     token: string;
-    user: UserProps;
+    user: PersistedUserDTO;
 };

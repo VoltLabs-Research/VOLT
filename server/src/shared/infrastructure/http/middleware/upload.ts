@@ -1,23 +1,52 @@
-import { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import { ErrorCodes } from '@core/constants/error-codes';
-import BaseResponse from '@shared/infrastructure/http/BaseResponse';
+import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 
 const storage = multer.memoryStorage();
 const CHAT_MAX_FILE_SIZE = 25 * 1024 * 1024;
 
-const fileFilter = (_req: any, _file: Express.Multer.File, cb: any) => {
-    cb(null, true);
+const createUploadErrorResponse = (response: Response, error: unknown): void => {
+    if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            BaseResponse.error(
+                response,
+                'File exceeds the allowed upload size.',
+                HttpStatus.BadRequest,
+                ErrorCodes.FILE_READ_ERROR
+            );
+            return;
+        }
+
+        BaseResponse.error(
+            response,
+            error.message,
+            HttpStatus.BadRequest,
+            ErrorCodes.FILE_READ_ERROR
+        );
+        return;
+    }
+
+    BaseResponse.error(
+        response,
+        'Failed to process uploaded file.',
+        HttpStatus.BadRequest,
+        ErrorCodes.FILE_READ_ERROR
+    );
 };
 
 export const upload = multer({
     storage,
-    fileFilter
+    limits: {
+        fields: 50,
+        files: 20,
+        fieldSize: 1024 * 1024
+    }
 });
 
 const chatUpload = multer({
     storage,
-    fileFilter,
     limits: {
         fileSize: CHAT_MAX_FILE_SIZE,
         files: 1
@@ -34,29 +63,15 @@ export const uploadChatSingleFile = (fieldName: string) => (
             return next();
         }
 
-        if (error instanceof multer.MulterError) {
-            if (error.code === 'LIMIT_FILE_SIZE') {
-                return BaseResponse.error(
-                    _res,
-                    'File exceeds the 25MB upload limit.',
-                    400,
-                    ErrorCodes.FILE_READ_ERROR
-                );
-            }
-
+        if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
             return BaseResponse.error(
                 _res,
-                error.message,
-                400,
+                'File exceeds the 25MB upload limit.',
+                HttpStatus.BadRequest,
                 ErrorCodes.FILE_READ_ERROR
             );
         }
 
-        return BaseResponse.error(
-            _res,
-            'Failed to process uploaded file.',
-            400,
-            ErrorCodes.FILE_READ_ERROR
-        );
+        return createUploadErrorResponse(_res, error);
     });
 };

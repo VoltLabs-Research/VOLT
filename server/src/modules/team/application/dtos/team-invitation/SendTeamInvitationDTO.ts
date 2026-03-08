@@ -1,10 +1,12 @@
+import {
+    EntityOutputDTO,
+    TeamUserScopedInputDTO
+} from '@modules/team/application/dtos/common';
 import { TeamInvitationProps } from '@modules/team/domain/entities/TeamInvitation';
 
-export interface SendTeamInvitationInputDTO {
-    teamId: string;
-    userId: string;
+export interface SendTeamInvitationInputDTO extends TeamUserScopedInputDTO {
     email: string;
     roleId?: string;
 }
 
-export interface SendTeamInvitationOutputDTO extends TeamInvitationProps {}
+export type SendTeamInvitationOutputDTO = EntityOutputDTO<TeamInvitationProps>;

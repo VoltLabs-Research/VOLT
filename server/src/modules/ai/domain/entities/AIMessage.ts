@@ -1,24 +1,16 @@
-import type { UIMessage } from 'ai';
+import type { AIConversationMessageParts } from '@modules/ai/application/contracts/AIConversationMessage';
 
 export type AIMessageRole = 'user' | 'assistant';
 
 /**
  * Represents a single message stored in the database.
  * 
- * Messages are persisted in UIMessage-compatible format so they can be
- * directly fed back into the SDK without manual conversion. The SDK's
- * `convertToModelMessages()` handles the UIMessage -> ModelMessage
- * transformation reliably.
- * 
- * Note: We only store user and assistant roles. The SDK internally
- * produces tool-role ModelMessages from assistant tool-call parts,
- * so we never need to persist tool messages separately.
+ * Messages are persisted in a transport-agnostic conversation format.
  */
 export interface AIMessageProps {
     conversationId: string;
     role: AIMessageRole;
-    /** SDK UIMessage parts — the source of truth for message content. */
-    parts: UIMessage['parts'];
+    parts: AIConversationMessageParts;
     /** Plain-text extraction of the message for search/display fallback. */
     content: string;
     /** Metadata from the AI response (provider, model, finish reason, tool steps). */
@@ -50,7 +42,7 @@ export interface AIMessageTokenUsage {
 
 export default class AIMessage {
     constructor(
-        public readonly id: string,
+        public readonly _id: string,
         public readonly props: AIMessageProps
     ) {}
 }

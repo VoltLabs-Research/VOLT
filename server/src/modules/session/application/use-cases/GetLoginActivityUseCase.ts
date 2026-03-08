@@ -14,10 +14,10 @@ export default class GetLoginActivityUseCase implements IUseCase<GetLoginActivit
     ){}
 
     async execute(input: GetLoginActivityInputDTO): Promise<Result<GetLoginActivityOutputDTO, ApplicationError>>{
-        const sessions = await this.sessionRepository.findLoginActivity(input.userId, input.limit);
+        const sessions = await this.sessionRepository.findLoginActivity(input.userId, input.limit ?? 20);
         
         return Result.ok({
-            activites: sessions,
+            activities: sessions,
             total: sessions.length
         });
     }

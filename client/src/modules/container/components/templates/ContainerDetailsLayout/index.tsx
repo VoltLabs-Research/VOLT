@@ -1,0 +1,133 @@
+import { useParams, useNavigate, Outlet } from 'react-router-dom';
+import useContainerStats from '../../../hooks/use-container-stats';
+import { containerQuery, useContainerByIdQuery } from '../../../hooks/queries';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
+import { confirm } from '@/shared/presentation/hooks/use-confirm';
+import Container from '@/shared/presentation/components/Container';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import ContainerSidebar from '../../molecules/ContainerSidebar';
+import ContainerDetailsSkeleton from '../../atoms/ContainerDetailsSkeleton';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import type { EnvVariable } from '@/modules/container/api/entities/env-variable';
+import type { PortMapping } from '@/modules/container/api/entities/port-mapping';
+import type { ContainerDetailsContext } from '../../../hooks/use-container-details-context';
+import './ContainerDetailsLayout.css';
+
+const ContainerDetailsLayout = () => {
+    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
+
+    const updateContainerMutation = containerQuery.useUpdateMutation();
+    const deleteContainerMutation = containerQuery.useDeleteMutation();
+
+    const { data: container, isLoading, isError, error } = useContainerByIdQuery(id!, {
+        enabled: !!id
+    });
+
+    const actionLoading = updateContainerMutation.isPending || deleteContainerMutation.isPending;
+    const { accessDenied, checkRBACError } = useAccessDenied();
+
+    const isRunning = container?.status === 'running';
+
+    const stats = useContainerStats({
+        containerId: id,
+        isRunning: !!isRunning
+    });
+
+    if(isError){
+        if(!checkRBACError(error)){
+            const message = error instanceof Error ? error.message : 'Failed to load container';
+            sileo.error({ title: message });
+        }
+    }
+
+    const handleAction = async (action: 'start' | 'stop' | 'restart' | 'delete') => {
+        if(!container || !id) return;
+
+        try{
+            if(action === 'delete'){
+                const isConfirmed = confirm('Are you sure you want to delete this container?');
+                if(!isConfirmed) return;
+                await showPromise(
+                    deleteContainerMutation.mutateAsync(id),
+                    {
+                        loading: { title: 'Deleting container...' },
+                        success: { title: 'Container deleted' },
+                        error: { title: 'Failed to delete container' }
+                    }
+                );
+                navigate('/dashboard/containers');
+                return;
+            }
+
+            await showPromise(
+                updateContainerMutation.mutateAsync({ id, params: { action } }),
+                {
+                    loading: { title: `${action.charAt(0).toUpperCase() + action.slice(1)}ing container...` },
+                    success: { title: `Container ${action}ed successfully` },
+                    error: { title: `Failed to ${action} container` }
+                }
+            );
+        }catch{
+            // Error handled by showPromise
+        }
+    };
+
+    const handleUpdateEnv = async (env: EnvVariable[]) => {
+        if(!id) return;
+        await showPromise(
+            updateContainerMutation.mutateAsync({ id, params: { env } }),
+            {
+                loading: { title: 'Updating environment variables...' },
+                success: { title: 'Environment variables updated' },
+                error: { title: 'Failed to update environment variables' }
+            }
+        );
+    };
+
+    const handleUpdatePorts = async (ports: PortMapping[]) => {
+        if(!id) return;
+        await showPromise(
+            updateContainerMutation.mutateAsync({ id, params: { ports } }),
+            {
+                loading: { title: 'Updating port bindings...' },
+                success: { title: 'Port bindings updated - container will be recreated' },
+                error: { title: 'Failed to update ports' }
+            }
+        );
+    };
+
+    if(isLoading && !container){
+        return <ContainerDetailsSkeleton />;
+    }
+
+    if(accessDenied) return <AccessDenied />;
+
+    if(!container) return null;
+
+    const outletContext: ContainerDetailsContext = {
+        container,
+        stats,
+        isRunning: !!isRunning,
+        onUpdateEnv: handleUpdateEnv,
+        onUpdatePorts: handleUpdatePorts
+    };
+
+    return (
+        <Container className='container-details-layout d-flex overflow-hidden'>
+            <ContainerSidebar
+                container={container}
+                onBack={() => navigate('/dashboard/containers')}
+                onAction={handleAction}
+                actionLoading={actionLoading}
+            />
+
+            <Container className='container-details-content-area y-auto flex-1'>
+                <Outlet context={outletContext} />
+            </Container>
+        </Container>
+    );
+};
+
+export default ContainerDetailsLayout;

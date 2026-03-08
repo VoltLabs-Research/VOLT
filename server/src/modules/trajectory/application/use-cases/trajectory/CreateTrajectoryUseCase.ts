@@ -2,14 +2,15 @@ import { injectable, inject } from 'tsyringe';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 import { CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO } from '@modules/trajectory/application/dtos/trajectory/CreateTrajectoryDTO';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
 import { ITrajectoryBackgroundProcessor } from '@modules/trajectory/domain/port/ITrajectoryBackgroundProcessor';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
 import { IEventBus } from '@shared/application/events/IEventBus';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
 import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/TrajectoryCreatedEvent';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import path from 'node:path';
 import logger from '@shared/infrastructure/logger';
 
@@ -46,18 +47,18 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
             createdAt: new Date()
         });
 
-        this.backgroundProcessor.process(trajectory.id, files, teamId).catch(async err => {
-            logger.error(err, `[CreateTrajectoryUseCase] Background processing failed for ${trajectory.id}`);
-            await this.trajectoryRepo.updateById(trajectory.id, { status: TrajectoryStatus.Failed }).catch(() => { });
+        this.backgroundProcessor.process(trajectory._id, files, teamId).catch(async err => {
+            logger.error(err, `[CreateTrajectoryUseCase] Background processing failed for ${trajectory._id}`);
+            await this.trajectoryRepo.updateById(trajectory._id, { status: TrajectoryStatus.Failed }).catch(() => { });
         });
 
         await this.eventBus.publish(new TrajectoryCreatedEvent({
-            trajectoryId: trajectory.id,
+            trajectoryId: trajectory._id,
             trajectoryName: name,
             teamId,
             userId
         }));
 
-        return Result.ok(trajectory.props);
+        return Result.ok(toPersistedOutput(trajectory));
     }
 }

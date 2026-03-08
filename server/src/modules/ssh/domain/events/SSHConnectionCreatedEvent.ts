@@ -1,5 +1,4 @@
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { v4 } from 'uuid';
+import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 
 export interface SSHConnectionCreatedEventPayload {
     sshConnectionId: string;
@@ -7,15 +6,8 @@ export interface SSHConnectionCreatedEventPayload {
     name: string;
 }
 
-export default class SSHConnectionCreatedEvent implements IDomainEvent {
-    public readonly name = 'ssh-connection.created';
-    public readonly occurredOn: Date;
-    public readonly eventId: string;
-
-    constructor(
-        public readonly payload: SSHConnectionCreatedEventPayload
-    ) {
-        this.occurredOn = new Date();
-        this.eventId = v4();
+export default class SSHConnectionCreatedEvent extends BaseDomainEvent<SSHConnectionCreatedEventPayload> {
+    constructor(payload: SSHConnectionCreatedEventPayload) {
+        super('ssh-connection.created', payload);
     }
 }

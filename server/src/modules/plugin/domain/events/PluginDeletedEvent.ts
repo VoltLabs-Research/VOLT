@@ -1,22 +1,14 @@
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { v4 } from 'uuid';
+import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
 
 export interface PluginDeletedEventPayload {
     pluginId: string;
     teamId: string;
     workflow: Workflow;
-};
+}
 
-export default class PluginDeletedEvent implements IDomainEvent{
-    public readonly name = 'plugin.deleted';
-    public readonly occurredOn: Date;
-    public readonly eventId: string;
-
-    constructor(
-        public readonly payload: PluginDeletedEventPayload
-    ){
-        this.occurredOn = new Date();
-        this.eventId = v4();
+export default class PluginDeletedEvent extends BaseDomainEvent<PluginDeletedEventPayload> {
+    constructor(payload: PluginDeletedEventPayload) {
+        super('plugin.deleted', payload);
     }
-};
+}

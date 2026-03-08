@@ -1,9 +1,13 @@
-import { TeamUsageMetrics } from '@modules/team/application/dtos/secret-key/SecretKeyUsageTypes';
+import { z } from 'zod';
+import { ErrorCodes } from '@core/constants/error-codes';
+import type { TeamUsageMetrics } from '@modules/team/domain/contracts/SecretKeyUsageMetrics';
 
-export interface GetSecretKeyTeamMetricsInputDTO {
-    teamId: string;
-    days?: number;
-};
+export const getSecretKeyTeamMetricsInputSchema = z.object({
+    teamId: z.string().min(1, ErrorCodes.TEAM_ID_REQUIRED),
+    days: z.coerce.number().int().min(1).max(365).optional()
+});
+
+export type GetSecretKeyTeamMetricsInputDTO = z.input<typeof getSecretKeyTeamMetricsInputSchema>;
 
 export type GetSecretKeyTeamMetricsOutputDTO = Omit<TeamUsageMetrics, 'perKey'> & {
     totalKeys: number;

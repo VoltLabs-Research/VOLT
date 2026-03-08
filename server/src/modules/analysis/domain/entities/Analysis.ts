@@ -16,7 +16,11 @@ export interface AnalysisProps {
 
 export default class Analysis {
     constructor(
-        public id: string,
+        public readonly _id: string,
         public props: AnalysisProps
     ){}
+
+    get id(): string {
+        return this._id;
+    }
 };

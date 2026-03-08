@@ -1,10 +1,11 @@
 import { injectable, inject } from 'tsyringe';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { SYS_BUCKETS } from '@core/config/minio';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
 
 @injectable()
@@ -17,7 +18,7 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
     async execute(input: GetTrajectoryPreviewInputDTO): Promise<Result<GetTrajectoryPreviewOutputDTO, ApplicationError>> {
         const { trajectoryId } = input;
         if (!trajectoryId) {
-            return Result.fail(new ApplicationError('PREVIEW::MISSING_ID', 'Trajectory ID is required', 400));
+            return Result.fail(new ApplicationError(ErrorCodes.VALIDATION_ID_REQUIRED, 'Trajectory ID is required', 400));
         }
 
         const prefix = `trajectory-${trajectoryId}/previews/`;
@@ -38,6 +39,6 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
             }
         }
 
-        return Result.fail(new ApplicationError('PREVIEW::NOT_FOUND', 'No preview available for this trajectory', 404));
+        return Result.fail(new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'No preview available for this trajectory', 404));
     }
 }

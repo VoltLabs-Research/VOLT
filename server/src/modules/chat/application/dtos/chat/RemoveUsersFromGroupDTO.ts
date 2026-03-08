@@ -1,9 +1,11 @@
 import { ChatProps } from '@modules/chat/domain/entities/Chat';
 
 export interface RemoveUsersFromGroupInputDTO{
-    requesterId: string;
+    userId: string;
     chatId: string;
-    userIdsToRemove: string[];
+    userIds: string[];
 };
 
-export interface RemoveUsersFromGroupOutputDTO extends ChatProps{}
+export interface RemoveUsersFromGroupOutputDTO extends ChatProps{
+    _id: string;
+}

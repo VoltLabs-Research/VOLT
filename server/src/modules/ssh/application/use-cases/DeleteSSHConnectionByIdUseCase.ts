@@ -1,7 +1,7 @@
 import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '@modules/ssh/domain/di/SSHConnectionTokens';
+import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { DeleteSSHConnectionByIdInputDTO } from '@modules/ssh/application/dtos/DeleteSSHConnectionByIdDTO';
@@ -22,11 +22,22 @@ export class DeleteSSHConnectionByIdUseCase implements IUseCase<DeleteSSHConnect
 
     async execute(input: DeleteSSHConnectionByIdInputDTO): Promise<Result<null, ApplicationError>> {
         const { sshConnectionId, teamId } = input;
-        const result = await this.sshConnRepository.deleteById(sshConnectionId);
-        if (!result) {
+        const existingConnection = await this.sshConnRepository.findById(sshConnectionId);
+
+        if (!existingConnection || existingConnection.props.team !== teamId) {
             return Result.fail(ApplicationError.notFound(
+                ErrorCodes.SSH_CONNECTION_NOT_FOUND,
+                'SSH connection not found'
+            ));
+        }
+
+        const result = await this.sshConnRepository.deleteById(sshConnectionId);
+
+        if (!result) {
+            return Result.fail(new ApplicationError(
                 ErrorCodes.SSH_CONNECTION_DELETE_ERROR,
-                'SSH connection delete error'
+                'Failed to delete SSH connection',
+                500
             ));
         }
 

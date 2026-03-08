@@ -2,7 +2,43 @@ import { inject, injectable } from 'tsyringe';
 import { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
 import { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import logger from '@shared/infrastructure/logger';
+
+type TeamJobStatus = JobStatus | 'retrying' | 'partial';
+
+interface TeamJobMetadata {
+    trajectoryId?: string;
+    trajectoryName?: string;
+    timestep?: number;
+    analysisId?: string;
+    message?: string;
+    [key: string]: unknown;
+}
+
+interface TeamJobStatusRecord {
+    jobId: string;
+    teamId?: string;
+    queueType?: string;
+    status?: TeamJobStatus;
+    sessionId?: string;
+    message?: string;
+    metadata?: TeamJobMetadata;
+    timestamp?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    analysisId?: string;
+    trajectoryId?: string;
+    timestep?: number;
+}
+
+export interface TeamJobSummary extends TeamJobStatusRecord {
+    jobId: string;
+    queueType: string;
+    status: TeamJobStatus;
+    teamId: string;
+    [key: string]: unknown;
+}
 
 interface TrajectoryJobGroup {
     trajectoryId: string;
@@ -16,7 +52,7 @@ interface TrajectoryJobGroup {
 
 interface FrameJobGroup {
     timestep: number;
-    jobs: any[];
+    jobs: TeamJobSummary[];
     overallStatus: string;
 }
 
@@ -46,20 +82,18 @@ export default class TeamJobsService {
                 return [];
             }
 
-            const jobStatuses = await Promise.all(
-                jobIds.map(async (jobId) => {
-                    // Try each prefix until we find the job
-                    for (const prefix of queuePrefixes) {
-                        const status = await this.jobRepository.getJobStatus(`${prefix}${jobId}`);
-                        if (status) {
-                            return status;
-                        }
-                    }
-                    return null;
-                })
+            const statusKeys = queuePrefixes.flatMap((prefix) =>
+                jobIds.map((jobId) => `${prefix}${jobId}`)
             );
 
-            const validJobs = jobStatuses.filter(job => job !== null && job !== undefined);
+            const jobStatuses = await this.jobRepository.getJobStatuses(statusKeys);
+
+            const validJobs: TeamJobSummary[] = [];
+            for (const job of jobStatuses) {
+                if (this.isTeamJobSummary(job)) {
+                    validJobs.push(job);
+                }
+            }
 
 
 
@@ -72,9 +106,9 @@ export default class TeamJobsService {
         }
     }
 
-    async getFlatTeamJobs(teamId: string): Promise<any[]> {
+    async getFlatTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
         const groupedJobs = await this.getTeamJobs(teamId);
-        const jobsById = new Map<string, any>();
+        const jobsById = new Map<string, TeamJobSummary>();
 
         for (const trajectory of groupedJobs) {
             for (const frameGroup of trajectory.frameGroups) {
@@ -87,8 +121,8 @@ export default class TeamJobsService {
         return Array.from(jobsById.values());
     }
 
-    private groupJobsByTrajectory(jobs: any[]): TrajectoryJobGroup[] {
-        const trajectoryMap = new Map<string, any[]>();
+    private groupJobsByTrajectory(jobs: TeamJobSummary[]): TrajectoryJobGroup[] {
+        const trajectoryMap = new Map<string, TeamJobSummary[]>();
 
         // Group by trajectoryId
         for (const job of jobs) {
@@ -103,7 +137,7 @@ export default class TeamJobsService {
         const groups: TrajectoryJobGroup[] = [];
 
         for (const [trajectoryId, trajectoryJobs] of trajectoryMap.entries()) {
-            const frameMap = new Map<number, any[]>();
+            const frameMap = new Map<number, TeamJobSummary[]>();
 
             // Group by timestep within trajectory
             for (const job of trajectoryJobs) {
@@ -131,7 +165,7 @@ export default class TeamJobsService {
             // Compute overall trajectory status
             const allJobs = trajectoryJobs;
             const overallStatus = this.computeFrameStatus(allJobs);
-            const completedCount = allJobs.filter(j => j.status === 'completed').length;
+            const completedCount = allJobs.filter((job) => job.status === JobStatus.Completed).length;
 
             groups.push({
                 trajectoryId,
@@ -152,16 +186,35 @@ export default class TeamJobsService {
         return groups;
     }
 
-    private computeFrameStatus(jobs: any[]): string {
-        const hasRunning = jobs.some(j => j.status === 'running');
-        const hasQueued = jobs.some(j => j.status === 'queued' || j.status === 'retrying');
-        const hasFailed = jobs.some(j => j.status === 'failed');
-        const allCompleted = jobs.every(j => j.status === 'completed');
+    private computeFrameStatus(jobs: TeamJobSummary[]): TeamJobStatus {
+        const hasRunning = jobs.some((job) => job.status === JobStatus.Running);
+        const hasQueued = jobs.some((job) => job.status === JobStatus.Queued || job.status === 'retrying');
+        const hasFailed = jobs.some((job) => job.status === JobStatus.Failed);
+        const allCompleted = jobs.every((job) => job.status === JobStatus.Completed);
 
-        if (hasRunning) return 'running';
-        if (hasQueued) return 'queued';
-        if (allCompleted) return 'completed';
-        if (hasFailed && jobs.filter(j => j.status === 'completed').length === 0) return 'failed';
+        if (hasRunning) return JobStatus.Running;
+        if (hasQueued) return JobStatus.Queued;
+        if (allCompleted) return JobStatus.Completed;
+        if (hasFailed && jobs.filter((job) => job.status === JobStatus.Completed).length === 0) return JobStatus.Failed;
         return 'partial';
+    }
+
+    private isTeamJobSummary(job: Record<string, unknown> | null): job is TeamJobSummary {
+        return Boolean(
+            job
+            && typeof job.jobId === 'string'
+            && typeof job.teamId === 'string'
+            && typeof job.queueType === 'string'
+            && this.isTeamJobStatus(job.status)
+        );
+    }
+
+    private isTeamJobStatus(status: unknown): status is TeamJobStatus {
+        return status === JobStatus.Queued
+            || status === JobStatus.Running
+            || status === JobStatus.Completed
+            || status === JobStatus.Failed
+            || status === 'retrying'
+            || status === 'partial';
     }
 }

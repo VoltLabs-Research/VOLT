@@ -15,7 +15,11 @@ export interface ListingRowProps{
 
 export default class ListingRow{
     constructor(
-        public id: string,
+        public _id: string,
         public props: ListingRowProps
     ){}
+
+    get id(): string {
+        return this._id;
+    }
 };

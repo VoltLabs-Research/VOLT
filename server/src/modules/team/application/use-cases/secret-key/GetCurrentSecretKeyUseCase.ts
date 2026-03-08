@@ -3,7 +3,7 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import type { ISecretKeyRepository } from '@modules/team/domain/port/ISecretKeyRepository';
 import {
     GetCurrentSecretKeyInputDTO,
@@ -33,16 +33,13 @@ export default class GetCurrentSecretKeyUseCase implements IUseCase<GetCurrentSe
             ));
         }
 
-        const role = secretKey.props.role as any;
-        const createdBy = secretKey.props.createdBy as any;
-
         return Result.ok({
-            _id: secretKey.id,
+            _id: secretKey._id,
             team: typeof secretKey.props.team === 'string'
                 ? secretKey.props.team
                 : String(secretKey.props.team),
-            role: role?._id?.toString?.() || String(secretKey.props.role || ''),
-            createdBy: createdBy?._id?.toString?.() || String(secretKey.props.createdBy || ''),
+            role: secretKey.getRoleId(),
+            createdBy: secretKey.getCreatedById(),
             name: secretKey.props.name,
             keyPrefix: secretKey.props.keyPrefix,
             isActive: secretKey.props.isActive,

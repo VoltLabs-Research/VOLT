@@ -4,6 +4,13 @@ import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
 import { ISocketEventRegistry, SocketEventHandler } from '@modules/socket/domain/port/ISocketEventRegistry';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import type { ErrorCode } from '@core/constants/error-codes';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import {
+    createSocketErrorEnvelope,
+    createSocketErrorEnvelopeFromApplicationError,
+    type SocketErrorEnvelope
+} from '@modules/socket/infrastructure/utilities/socket-error-envelope';
 
 /**
  * Each module can hook into the lifecycle and register its own handlers.
@@ -45,6 +52,18 @@ export default abstract class BaseSocketModule implements ISocketModule{
      */
     protected async joinRoom(socketId: string, room: string): Promise<void>{
         await this.roomManager.join(socketId, room);
+    }
+
+    protected async switchRoom(
+        socketId: string,
+        room: string,
+        previousRoom?: string
+    ): Promise<void> {
+        if (previousRoom && previousRoom !== room) {
+            await this.leaveRoom(socketId, previousRoom);
+        }
+
+        await this.joinRoom(socketId, room);
     }
 
     /**
@@ -97,6 +116,34 @@ export default abstract class BaseSocketModule implements ISocketModule{
         this.emitter.emitToSocket(socketId, event, data);
     }
 
+    protected createErrorEnvelope(
+        code: ErrorCode | string,
+        details?: string
+    ): SocketErrorEnvelope {
+        return createSocketErrorEnvelope(code, details);
+    }
+
+    protected createApplicationErrorEnvelope(
+        error: ApplicationError
+    ): SocketErrorEnvelope {
+        return createSocketErrorEnvelopeFromApplicationError(error);
+    }
+
+    protected emitErrorToSocket(
+        socketId: string,
+        code: ErrorCode | string,
+        details?: string
+    ): void {
+        this.emitToSocket(socketId, 'error', this.createErrorEnvelope(code, details));
+    }
+
+    protected emitApplicationErrorToSocket(
+        socketId: string,
+        error: ApplicationError
+    ): void {
+        this.emitToSocket(socketId, 'error', this.createApplicationErrorEnvelope(error));
+    }
+
     /**
      * Emit an event to a room excluding the sender.
      */
@@ -114,6 +161,21 @@ export default abstract class BaseSocketModule implements ISocketModule{
      */
     protected broadcast(event: string, data: unknown): void{
         this.emitter.broadcast(event, data);
+    }
+
+    protected emitErrorToRoom(
+        room: string,
+        code: ErrorCode | string,
+        details?: string
+    ): void {
+        this.emitToRoom(room, 'error', this.createErrorEnvelope(code, details));
+    }
+
+    protected broadcastError(
+        code: ErrorCode | string,
+        details?: string
+    ): void {
+        this.broadcast('error', this.createErrorEnvelope(code, details));
     }
 
     /**

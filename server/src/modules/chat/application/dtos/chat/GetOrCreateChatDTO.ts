@@ -6,4 +6,6 @@ export interface GetOrCreateChatInputDTO{
     teamId: string;
 };
 
-export interface GetOrCreateChatOutputDTO extends ChatProps{}
+export interface GetOrCreateChatOutputDTO extends ChatProps{
+    _id: string;
+}

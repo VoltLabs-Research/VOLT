@@ -8,43 +8,13 @@ export interface QueueOptions {
 }
 
 export interface IJobQueueService {
-    /**
-     * Add jobs to the queue
-     */
     addJobs(jobs: Job[]): Promise<void>;
-
-    /**
-     * Get job status
-     */
-    getJobStatus(jobId: string): Promise<any | null>;
-
-    /**
-     * Get available worker count
-     */
+    retryFailedJobs(jobs: Job[]): Promise<number>;
+    getJobStatus(jobId: string): Promise<Record<string, unknown> | null>;
     getAvailableWorkerCount(): number;
-
-    /**
-     * Get mapped status
-     */
     getMappedStatus(jobStatus: string): string;
-
-    /**
-     * Get queue name
-     */
     getQueueName(): string;
-
-    /**
-     * Start the queue processing
-     */
     start(): Promise<void>;
-
-    /**
-     * Stop the queue processing
-     */
     stop(): Promise<void>;
-
-    /**
-     * Abort currently running jobs by id
-     */
     abortRunningJobs(jobIds: string[]): Promise<number>;
 }

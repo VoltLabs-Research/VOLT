@@ -1,21 +1,15 @@
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { v4 } from 'uuid';
+import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 
-export interface JobCompletedEventData {
+export interface JobCompletedEventPayload {
     jobId: string;
     teamId: string;
     queueType: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
     completedAt: Date;
-};
+}
 
-export default class JobCompletedEvent implements IDomainEvent {
-    public readonly name = 'job.completed';
-    public readonly eventId: string;
-    public readonly occurredOn: Date;
-
-    constructor(public readonly data: JobCompletedEventData) {
-        this.eventId = v4();
-        this.occurredOn = new Date();
+export default class JobCompletedEvent extends BaseDomainEvent<JobCompletedEventPayload> {
+    constructor(payload: JobCompletedEventPayload) {
+        super('job.completed', payload);
     }
-};
+}

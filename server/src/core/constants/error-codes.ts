@@ -1,4 +1,15 @@
 export const ErrorCodes = {
+    INTERNAL_SERVER_ERROR: 'Internal::Server::Error',
+    WORKER_FAILURE: 'Worker::Failure',
+    WORKER_TIMEOUT: 'Worker::Timeout',
+    WORKER_EXIT_ERROR: 'Worker::ExitError',
+    JOB_CANCELLED: 'Job::Cancelled',
+    RASTER_WORKER_DOWNLOAD_FAILED: 'Raster::Worker::DownloadFailed',
+    RASTER_WORKER_INPUT_NOT_FOUND: 'Raster::Worker::InputNotFound',
+    RASTER_WORKER_RENDER_FAILED: 'Raster::Worker::RenderFailed',
+    RASTER_WORKER_OUTPUT_INVALID: 'Raster::Worker::OutputInvalid',
+    RASTER_WORKER_UPLOAD_FAILED: 'Raster::Worker::UploadFailed',
+
     AUTH_UNAUTHORIZED: 'Auth::Unauthorized',
     AUTH_CREDENTIALS_MISSING: 'Auth::Credentials::Missing',
     AUTH_CREDENTIALS_INVALID: 'Auth::Credentials::Invalid',
@@ -11,10 +22,12 @@ export const ErrorCodes = {
     USER_NOT_FOUND: 'User::NotFound',
 
     VALIDATION_ID_REQUIRED: 'Validation::IdRequired',
+    VALIDATION_INVALID_INPUT: 'Validation::InvalidInput',
 
     TEAM_NOT_FOUND: 'Team::NotFound',
     TEAM_ID_REQUIRED: 'Team::IdRequired',
     TEAM_ACCESS_DENIED: 'Team::AccessDenied',
+    RBAC_INSUFFICIENT_PERMISSIONS: 'RBAC::InsufficientPermissions',
     TEAM_MEMBERSHIP_FORBIDDEN: 'Team::Membership::Forbidden',
     TEAM_USER_NOT_MEMBER: 'Team::UserNotAMember',
 
@@ -25,6 +38,8 @@ export const ErrorCodes = {
     CONTAINER_DELETION_FAILED: 'Container::Deletion::Failed',
     CONTAINER_STATS_FAILED: 'Container::Stats::Failed',
     CONTAINER_FILE_READ_FAILED: 'Container::File::ReadFailed',
+    CONTAINER_FILE_IS_DIRECTORY: 'Container::File::IsDirectory',
+    CONTAINER_FILE_BINARY_UNSUPPORTED: 'Container::File::BinaryUnsupported',
     CONTAINER_EXEC_FAILED: 'Container::Exec::Failed',
 
     SSH_CONNECTION_NOT_FOUND: 'SSHConnection::NotFound',
@@ -38,12 +53,28 @@ export const ErrorCodes = {
     SESSION_NOT_FOUND: 'Session::NotFound',
     SESSION_REVOKE_FAILED: 'Session::RevokeSession::Failed',
 
+    SIMULATION_CELL_NOT_FOUND: 'SimulationCell::NotFound',
+
     TRAJECTORY_CREATION_NO_VALID_FILES: 'Trajectory::Creation::NoValidFiles',
 
     ANALYSIS_NOT_FOUND: 'Analysis::NotFound',
 
     PLUGIN_NOT_FOUND: 'Plugin::NotFound',
     PLUGIN_NODE_NOT_FOUND: 'Plugin::Node::NotFound',
+    PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE: 'Plugin::Executor::Binary::NotAccessible',
+    PLUGIN_EXECUTOR_START_FAILED: 'Plugin::Executor::Start::Failed',
+    PLUGIN_EXECUTOR_EXIT_FAILED: 'Plugin::Executor::Exit::Failed',
+    PLUGIN_CONTEXT_SOURCE_UNSUPPORTED: 'Plugin::Context::Source::Unsupported',
+    PLUGIN_FOREACH_SOURCE_REQUIRED: 'Plugin::ForEach::Source::Required',
+    PLUGIN_FOREACH_SOURCE_INVALID: 'Plugin::ForEach::Source::Invalid',
+    PLUGIN_ENTRYPOINT_BINARY_REQUIRED: 'Plugin::Entrypoint::Binary::Required',
+    PLUGIN_ENTRYPOINT_FOREACH_REQUIRED: 'Plugin::Entrypoint::ForEach::Required',
+    PLUGIN_ENTRYPOINT_ITERATION_MISSING: 'Plugin::Entrypoint::Iteration::Missing',
+    PLUGIN_EXPOSURE_INPUT_REQUIRED: 'Plugin::Exposure::Input::Required',
+    PLUGIN_EXPORT_EXPOSURE_REQUIRED: 'Plugin::Export::Exposure::Required',
+    PLUGIN_EXPORT_EXPOSURE_NAME_REQUIRED: 'Plugin::Export::ExposureName::Required',
+    PLUGIN_EXPORT_DATA_REQUIRED: 'Plugin::Export::Data::Required',
+    PLUGIN_EXPORT_TYPE_UNSUPPORTED: 'Plugin::Export::Type::Unsupported',
 
     CHAT_NOT_FOUND: 'Chat::NotFound',
     CHAT_USERS_NOT_IN_TEAM: 'Chat::Users::NotInTeam',
@@ -56,6 +87,9 @@ export const ErrorCodes = {
 
     FILE_NOT_FOUND: 'File::NotFound',
     FILE_READ_ERROR: 'File::ReadError',
+
+    RASTER_NOT_FOUND: 'Raster::NotFound',
+    RASTER_FAILED: 'Raster::Failed',
 
     COLOR_CODING_MISSING_PARAMS: 'ColorCoding::MissingParams',
     COLOR_CODING_DUMP_NOT_FOUND: 'ColorCoding::DumpNotFound',
@@ -82,6 +116,11 @@ export const ErrorCodes = {
 
     TRAJECTORY_NOT_FOUND: 'Trajectory::NotFound',
     TRAJECTORY_DUMP_NOT_FOUND: 'Trajectory::Dump::NotFound',
+    TRAJECTORY_FORMAT_UNSUPPORTED: 'Trajectory::Format::Unsupported',
+    TRAJECTORY_DATA_PARSE_FAILED: 'Trajectory::Data::ParseFailed',
+    TRAJECTORY_DUMP_PARSE_FAILED: 'Trajectory::Dump::ParseFailed',
+    TRAJECTORY_STATS_PARSE_FAILED: 'Trajectory::Stats::ParseFailed',
+    TRAJECTORY_GLB_GENERATION_FAILED: 'Trajectory::GLB::GenerationFailed',
 
     TEAM_ROLE_NOT_FOUND: 'TeamRole::NotFound',
     TEAM_ROLE_IS_SYSTEM: 'TeamRole::IsSystem',

@@ -63,23 +63,6 @@ export interface DebugHooks {
 };
 
 export interface IPluginWorkflowEngine{
-    /**
-     * Executes the workflow only up to the "ForEach" node.
-     * This determines how many parallel jobs need to be spawned (e.g., 100 frames = 100 jobs).
-     */
     planExecutionStrategy(request: WorkflowExecutionRequest): Promise<ExecutionPlanResult | null>;
-
-    /**
-     * Executes the full workflow for a single item from the planning phase.
-     */
-    executeWorkflowJob(request: WorkflowExecutionRequest): Promise<ExposureResult[]>;
-
-    /**
-     * Executes the full workflow with debug hooks called before/after each node.
-     * Hooks are async to support step-through (pause/continue) patterns.
-     */
-    executeWorkflowJobWithDebugHooks(
-        request: WorkflowExecutionRequest,
-        hooks: DebugHooks
-    ): Promise<ExposureResult[]>;
+    executeWorkflowJob(request: WorkflowExecutionRequest, hooks?: DebugHooks): Promise<ExposureResult[]>;
 };

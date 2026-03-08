@@ -3,14 +3,14 @@ export interface NotificationProps{
     title: string;
     content: string;
     read: boolean;
-    link: string;
+    link?: string;
     createdAt: Date;
     updatedAt: Date;
 };
 
 export default class Notification{
     constructor(
-        public id: string,
+        public readonly _id: string,
         public props: NotificationProps
     ){}
 };

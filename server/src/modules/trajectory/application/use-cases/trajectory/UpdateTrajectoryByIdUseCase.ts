@@ -3,9 +3,10 @@ import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { UpdateTrajectoryByIdInputDTO, UpdateTrajectoryByIdOutputDTO } from '@modules/trajectory/application/dtos/trajectory/UpdateTrajectoryByIdDTO';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 
 @injectable()
 export default class UpdateTrajectoryByIdUseCase implements IUseCase<UpdateTrajectoryByIdInputDTO, UpdateTrajectoryByIdOutputDTO, ApplicationError>{
@@ -28,6 +29,6 @@ export default class UpdateTrajectoryByIdUseCase implements IUseCase<UpdateTraje
             ));
         }
         
-        return Result.ok(result.props);
+        return Result.ok(toPersistedOutput(result));
     }
 };

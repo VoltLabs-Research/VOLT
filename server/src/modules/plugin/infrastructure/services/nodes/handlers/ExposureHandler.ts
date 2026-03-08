@@ -6,6 +6,7 @@ import { IStorageService } from '@shared/domain/port/IStorageService';
 import pLimit from 'p-limit';
 import readExposurePayload from '@modules/plugin/infrastructure/utilities/read-exposure-payload';
 import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export default class ExposureHandler implements INodeHandler{
@@ -61,8 +62,8 @@ export default class ExposureHandler implements INodeHandler{
 
     private getInputItems(nodeId: string, context: ExecutionContext){
         const entrypoint = context.workflow.findAncestorByType(nodeId, WorkflowNodeType.Entrypoint);
-        const output = entrypoint ? context.outputs.get(entrypoint.id) : null;
-        if(!output?.results?.length) throw new Error('ExposureHandler: No input results found');
+        const output = entrypoint ? context.outputs.get(entrypoint.id) as { results?: unknown[] } | null : null;
+        if(!Array.isArray(output?.results) || output.results.length === 0) throw new Error(ErrorCodes.PLUGIN_EXPOSURE_INPUT_REQUIRED);
         return output.results;
     }
 

@@ -1,14 +1,22 @@
 import { Router } from 'express';
 import { container } from 'tsyringe';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { createGeneralRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import { Resource } from '@core/constants/resources';
+import GetSimulationCellByIdController from '@modules/simulation-cell/infrastructure/http/controllers/GetSimulationCellByIdController';
+import GetSimulationCellByTrajectoryController from '@modules/simulation-cell/infrastructure/http/controllers/GetSimulationCellByTrajectoryController';
+import ListSimulationCellsByTeamIdController from '@modules/simulation-cell/infrastructure/http/controllers/ListSimulationCellsByTeamIdController';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
-import FindCellsByTeamIdController from '@modules/simulation-cell/infrastructure/http/controllers/FindCellsByTeamIdController';
-import FindCellByIdController from '@modules/simulation-cell/infrastructure/http/controllers/FindCellByIdController';
-import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
 
-const findCellsByTeamIdController = container.resolve<FindCellsByTeamIdController>(SIMULATION_CELL_TOKENS.FindCellsByTeamIdController);
-const findCellByIdController = container.resolve<FindCellByIdController>(SIMULATION_CELL_TOKENS.FindCellByIdController);
+const listSimulationCellsByTeamIdController = container.resolve<InstanceType<typeof ListSimulationCellsByTeamIdController>>(
+    SIMULATION_CELL_TOKENS.ListSimulationCellsByTeamIdController
+);
+const getSimulationCellByIdController = container.resolve<InstanceType<typeof GetSimulationCellByIdController>>(
+    SIMULATION_CELL_TOKENS.GetSimulationCellByIdController
+);
+const getSimulationCellByTrajectoryController = container.resolve<InstanceType<typeof GetSimulationCellByTrajectoryController>>(
+    SIMULATION_CELL_TOKENS.GetSimulationCellByTrajectoryController
+);
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
@@ -17,9 +25,12 @@ const module: HttpModule = {
     resource: Resource.SIMULATION_CELL
 };
 
-router.use(protect);
+const generalRateLimit = createGeneralRateLimiter(60);
 
-router.get('/', findCellsByTeamIdController.handle);
-router.get('/:id', findCellByIdController.handle);
+router.use(generalRateLimit);
+
+router.get('/', listSimulationCellsByTeamIdController.handle);
+router.get('/by-trajectory/:trajectoryId', getSimulationCellByTrajectoryController.handle);
+router.get('/:simulationCellId', getSimulationCellByIdController.handle);
 
 export default module;

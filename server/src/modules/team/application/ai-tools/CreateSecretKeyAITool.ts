@@ -1,14 +1,33 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
-import { AITool } from '@shared/application/ai/AITool';
+import CreateSecretKeyUseCase from '@modules/team/application/use-cases/secret-key/CreateSecretKeyUseCase';
+import { TeamUseCaseAITool } from './TeamUseCaseAITool';
+
+const createSecretKeyParametersSchema = z.object({
+    name: z.string(),
+    roleId: z.string(),
+    reason: z.string().optional()
+});
 
 @injectable()
-export class CreateSecretKeyAITool extends AITool {
+export class CreateSecretKeyAITool extends TeamUseCaseAITool<
+    z.infer<typeof createSecretKeyParametersSchema>,
+    CreateSecretKeyUseCase,
+    typeof createSecretKeyParametersSchema
+> {
     readonly name = 'create_secret_key';
     readonly description = 'Create a new API secret key.';
-    readonly parameters = z.object({ name: z.string(), roleId: z.string(), reason: z.string().optional() });
+    readonly parameters = createSecretKeyParametersSchema;
 
-    constructor() {
-        super();
+    constructor(
+        @inject(CreateSecretKeyUseCase)
+        useCase: CreateSecretKeyUseCase
+    ) {
+        super(useCase, (params, scope) => ({
+            teamId: scope.teamId,
+            userId: scope.userId,
+            name: params.name,
+            roleId: params.roleId
+        }));
     }
 }

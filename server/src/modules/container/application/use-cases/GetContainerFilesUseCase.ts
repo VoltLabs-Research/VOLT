@@ -2,23 +2,19 @@ import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { GetContainerFilesInputDTO, GetContainerFilesOutputDTO } from '@modules/container/application/dtos/GetContainerFilesDTO';
-import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { IContainerService } from '@modules/container/domain/port/IContainerService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
+import { ContainerOwnershipService } from '@modules/container/application/services/ContainerOwnershipService';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 
 @injectable()
 export class GetContainerFilesUseCase implements IUseCase<GetContainerFilesInputDTO, GetContainerFilesOutputDTO> {
     constructor(
-        @inject('IContainerRepository') private repository: IContainerRepository,
-        @inject('IContainerService') private containerService: IContainerService
+        @inject(CONTAINER_TOKENS.ContainerService) private containerService: IContainerService,
+        @inject(ContainerOwnershipService) private ownershipService: ContainerOwnershipService
     ){}
 
     async execute(input: GetContainerFilesInputDTO): Promise<Result<GetContainerFilesOutputDTO>> {
-        const container = await this.repository.findById(input.containerId);
-        if (!container) {
-            throw new ApplicationError(ErrorCodes.CONTAINER_NOT_FOUND, 'Container not found', 404);
-        }
+        const container = await this.ownershipService.getOwnedByTeam(input.containerId, input.teamId);
 
         const files = await this.containerService.getFiles(container.containerId, input.path || '/');
 

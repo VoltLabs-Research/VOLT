@@ -1,22 +1,16 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { v4 } from 'uuid';
+import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 
-export interface JobStatusChangedEventData{
+export interface JobStatusChangedEventPayload {
     jobId: string;
     teamId: string;
     status: JobStatus;
     queueType: string;
-    metadata?: Record<string, any>;
-};
+    metadata?: Record<string, unknown>;
+}
 
-export default class JobStatusChangedEvent implements IDomainEvent {
-    public readonly name = 'job.status.changed';
-    public readonly eventId: string;
-    public readonly occurredOn: Date;
-
-    constructor(public readonly data: JobStatusChangedEventData){
-        this.eventId = v4();
-        this.occurredOn = new Date();
+export default class JobStatusChangedEvent extends BaseDomainEvent<JobStatusChangedEventPayload> {
+    constructor(payload: JobStatusChangedEventPayload) {
+        super('job.status.changed', payload);
     }
-};
+}

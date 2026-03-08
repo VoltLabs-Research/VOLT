@@ -1,0 +1,114 @@
+.canvas-timeline {
+    height: 100%;
+    min-height: 0;
+}
+
+.canvas-timeline-header {
+    position: relative;
+    height: 40px;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.canvas-timeline-tabs-region,
+.canvas-timeline-frame-region {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.canvas-timeline-controls-region {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    pointer-events: none;
+    padding: 0 6px;
+}
+
+.canvas-timeline-controls-center {
+    width: max-content;
+    pointer-events: auto;
+}
+
+.canvas-timeline-tabs {
+    flex: 0 1 auto;
+    max-width: min(55vw, 500px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 14px, black calc(100% - 14px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, black 14px, black calc(100% - 14px), transparent 100%);
+}
+
+.canvas-timeline-tabs > * {
+    flex-shrink: 0;
+}
+
+.canvas-timeline-frame-info {
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.canvas-timeline-frame-region {
+    justify-content: flex-end;
+}
+
+
+.canvas-playhead {
+    width: 2px;
+    background: var(--accent-blue);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.canvas-playhead-head {
+    top: -4px;
+    left: -4px;
+    width: 10px;
+    height: 10px;
+    background: var(--accent-blue);
+    border-radius: 50%;
+}
+
+.canvas-timeline-ruler {
+    height: 100%;
+    min-height: 18px;
+    border-bottom: 1px solid var(--color-border-soft);
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.canvas-timeline-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+}
+
+.canvas-ruler-tick {
+    padding: 0 6px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.canvas-ruler-tick-label {
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.canvas-ruler-tick-mark {
+    width: 1px;
+    background: var(--color-border);
+    height: 6px;
+}
+
+.canvas-ruler-tick-mark.major {
+    height: 10px;
+    background: var(--color-text-muted);
+}
+
+.canvas-simcell-value--mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}

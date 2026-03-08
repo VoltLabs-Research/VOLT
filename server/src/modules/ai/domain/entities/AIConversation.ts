@@ -12,7 +12,7 @@ export interface AIConversationProps {
 
 export default class AIConversation {
     constructor(
-        public id: string,
+        public _id: string,
         public props: AIConversationProps
     ) {}
 };

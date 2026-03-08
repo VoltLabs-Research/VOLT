@@ -3,6 +3,8 @@ import LammpsDataParser from './LammpsDataParser';
 import { ParseResult, FrameMetadata, ParseOptions } from '@modules/trajectory/domain/port/ParserTypes';
 import { createReadStream } from 'fs';
 import { createInterface } from 'readline';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 async function peekFileHeader(filePath: string, maxLines: number = 200): Promise<string[]> {
     return new Promise((resolve, reject) => {
@@ -43,7 +45,10 @@ export default class TrajectoryParserFactory {
         } else if (this.dataParser.canParse(headerLines)) {
             return this.dataParser.parse(filePath, options);
         } else {
-            throw new Error('UnsupportedTrajectoryFormat');
+            throw ApplicationError.badRequest(
+                ErrorCodes.TRAJECTORY_FORMAT_UNSUPPORTED,
+                'Unsupported trajectory format'
+            );
         }
     }
 

@@ -1,29 +1,36 @@
-import { Result } from '@shared/domain/port/Result';
-import { IUseCase } from '@shared/application/IUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
-import { UpdateTeamInvitationByIdInputDTO, UpdateTeamInvitationByIdOutputDTO } from '@modules/team/application/dtos/team-invitation/UpdateTeamInvitationByIdDTO';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
+import type { TeamInvitationProps } from '@modules/team/domain/entities/TeamInvitation';
+import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
+import type { FindOptions } from '@shared/domain/port/IBaseRepository';
+
+interface UpdateTeamInvitationByIdInput {
+    invitationId: string;
+    data: Partial<TeamInvitationProps>;
+    options?: Pick<FindOptions<unknown>, 'populate' | 'select'>;
+}
 
 @injectable()
-export default class UpdateTeamInvitationByIdUseCase implements IUseCase<UpdateTeamInvitationByIdInputDTO, UpdateTeamInvitationByIdOutputDTO, ApplicationError>{
+export default class UpdateTeamInvitationByIdUseCase implements IUseCase<UpdateTeamInvitationByIdInput, PersistedOutput<TeamInvitationProps>, ApplicationError> {
     constructor(
         @inject(TEAM_TOKENS.TeamInvitationRepository)
-        private invitationRepo: ITeamInvitationRepository
-    ){}
-    
-    async execute(input: UpdateTeamInvitationByIdInputDTO): Promise<Result<UpdateTeamInvitationByIdOutputDTO, ApplicationError>>{
-        const { invitationId, status } = input;
-        const invitation = await this.invitationRepo.updateById(invitationId, { status });
-        if(!invitation){
+        private readonly repository: ITeamInvitationRepository
+    ) {}
+
+    async execute(input: UpdateTeamInvitationByIdInput): Promise<Result<PersistedOutput<TeamInvitationProps>, ApplicationError>> {
+        const entity = await this.repository.updateById(input.invitationId, input.data, input.options);
+        if (!entity) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TEAM_INVITATION_NOT_FOUND,
-                'Team invitation not found'
+                'TeamInvitation not found'
             ));
         }
-
-        return Result.ok(invitation.props);
+        return Result.ok(toPersistedOutput(entity));
     }
-};
+}

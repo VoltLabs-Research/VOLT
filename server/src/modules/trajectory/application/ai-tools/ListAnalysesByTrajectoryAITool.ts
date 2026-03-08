@@ -23,7 +23,7 @@ export class ListAnalysesByTrajectoryAITool extends AITool {
         return {
             summary: `Found ${result.value.data.length} analyses.`,
             data: result.value.data.map((a: any) => ({
-                analysisId: a._id || a.id, pluginId: a.plugin, pluginName: a.pluginDisplayName || a.plugin,
+                analysisId: a._id, pluginId: a.plugin, pluginName: a.pluginDisplayName || a.plugin,
                 status: a.status, totalFrames: a.totalFrames ?? null, completedFrames: a.completedFrames ?? null,
                 createdAt: a.createdAt ?? null
             }))

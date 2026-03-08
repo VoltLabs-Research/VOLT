@@ -2,17 +2,17 @@ import { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleReposito
 import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { DeleteTeamRoleByIdInputDTO, DeleteTeamRoleByIdOutputDTO } from '@modules/team/application/dtos/team-role/DeleteTeamRoleByIdDTO';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import TeamRoleDeletedEvent from '@modules/team/domain/events/TeamRoleDeletedEvent';
+import { IUseCase } from '@shared/application/IUseCase';
 
 @injectable()
-export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRoleByIdInputDTO, DeleteTeamRoleByIdOutputDTO, ApplicationError>{
+export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRoleByIdInputDTO, DeleteTeamRoleByIdOutputDTO, ApplicationError> {
     constructor(
         @inject(TEAM_TOKENS.TeamRoleRepository)
         private readonly teamRoleRepository: ITeamRoleRepository,
@@ -22,7 +22,7 @@ export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRol
         private readonly eventBus: IEventBus
     ){}
 
-    async execute(input: DeleteTeamRoleByIdInputDTO): Promise<Result<DeleteTeamRoleByIdOutputDTO, ApplicationError>>{
+    async execute(input: DeleteTeamRoleByIdInputDTO): Promise<Result<DeleteTeamRoleByIdOutputDTO, ApplicationError>> {
         const { roleId, teamId } = input;
 
         const roleToDelete = await this.teamRoleRepository.findById(roleId);
@@ -55,7 +55,7 @@ export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRol
 
         await this.teamMemberRepository.updateMany(
             { team: teamId, role: roleId },
-            { role: memberRole.id }
+            { role: memberRole._id }
         );
 
         const result = await this.teamRoleRepository.deleteById(roleId);
@@ -73,4 +73,4 @@ export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRol
 
         return Result.ok({ success: true });
     }
-};
+}

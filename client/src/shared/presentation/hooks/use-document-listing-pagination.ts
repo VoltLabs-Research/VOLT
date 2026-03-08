@@ -1,26 +1,27 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useInfiniteQuery, type QueryKey, type InfiniteData } from '@tanstack/react-query';
+import queryClient from '@/shared/infrastructure/query/query-client';
+import { useCallback, useRef, useEffect, useMemo } from 'react';
 import usePaginationParams, { type PaginationParams } from './use-pagination-params';
-import useListingLifecycle from './use-listing-lifecycle';
-import useListSync, { type ListSyncConfig } from './use-list-sync';
 import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import { deduplicateById } from '@/shared/domain/utils/deduplicateById';
 import ApiError from '@/shared/errors/ApiError';
 
 /**
  * Props for useDocumentListingPagination hook.
  */
-export interface UseDocumentListingPaginationProps<T, TContext = Record<string, never>> {
+export interface UseDocumentListingPaginationProps<T extends { _id: string }, TContext = Record<string, never>> {
+    queryKey: QueryKey;
     fetchData: (params: PaginationParams & TContext) => Promise<PaginatedResponse<T>>;
     transformData?: (data: T[]) => T[];
     context?: TContext;
     defaultLimit?: number;
     enabled?: boolean;
-    listSyncConfig?: ListSyncConfig;
 };
 
 /**
  * Return type for useDocumentListingPagination hook.
  */
-export interface UseDocumentListingPaginationReturn<T> {
+export interface UseDocumentListingPaginationReturn<T extends { _id: string }> {
     data: T[];
     isLoading: boolean;
     isFetchingMore: boolean;
@@ -34,127 +35,108 @@ export interface UseDocumentListingPaginationReturn<T> {
 
 /**
  * Hook to manage pagination logic for DocumentListing component.
- * Handles URL params, fetching, data state, loading states, and load more functionality.
+ * Uses TanStack Query's useInfiniteQuery to manage server state.
+ * URL search params are still used for search and limit via usePaginationParams.
  */
-export function useDocumentListingPagination<T, TContext = Record<string, never>>(
+export function useDocumentListingPagination<T extends { _id: string }, TContext = Record<string, never>>(
     props: UseDocumentListingPaginationProps<T, TContext>
 ): UseDocumentListingPaginationReturn<T> {
-    const { 
-        fetchData, 
+    const {
+        queryKey,
+        fetchData,
         transformData,
-        context, 
+        context,
         defaultLimit = 20,
-        enabled = true,
-        listSyncConfig
+        enabled = true
     } = props;
 
-    const { page, limit, search, updateParams } = usePaginationParams({ defaultLimit });
-    
-    const [data, setData] = useState<T[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [hasMore, setHasMore] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [errorCode, setErrorCode] = useState<string | null>(null);
+    const { limit, search } = usePaginationParams({ defaultLimit });
 
     const fetchDataRef = useRef(fetchData);
     useEffect(() => {
         fetchDataRef.current = fetchData;
     });
 
-    const fetchDataAsync = useCallback(async (isRefresh = false) => {
-        setIsLoading(true);
-        setError(null);
-        setErrorCode(null);
-
-        if(isRefresh){
-            setData([]);
+    const effectiveQueryKey = useMemo(() => {
+        const params: Record<string, unknown> = { limit };
+        if (search.trim().length > 0) {
+            params.search = search;
         }
+        if (context) {
+            Object.assign(params, context);
+        }
+        return [...queryKey, params];
+    }, [queryKey, search, limit, context]);
 
-        try{
-            const params = { page, limit, search } as PaginationParams & TContext;
-            
-            if(context){
+    const {
+        data: infiniteData,
+        isLoading,
+        isFetchingNextPage,
+        hasNextPage,
+        fetchNextPage,
+        error: queryError
+    } = useInfiniteQuery<PaginatedResponse<T>, Error, InfiniteData<PaginatedResponse<T>, number>, QueryKey, number>({
+        queryKey: effectiveQueryKey,
+        queryFn: ({ pageParam }) => {
+            const params = { page: pageParam, limit, search } as PaginationParams & TContext;
+            if (search.trim().length === 0) {
+                delete (params as Record<string, unknown>).search;
+            }
+            if (context) {
                 Object.assign(params, context);
             }
-
-            const result = await fetchDataRef.current(params);
-
-            setData((prev) => {
-                if(page === 1 || isRefresh || prev.length === 0){
-                    return result.data;
-                }
-                return [...prev, ...result.data];
-            });
-            
-            setHasMore(result.pagination.hasMore);
-        }catch(err){
-            if(err instanceof ApiError){
-                setError(err.getFriendlyMessage());
-                setErrorCode(err.code);
-            }else if(err instanceof Error){
-                setError(err.message);
-            }else{
-                setError('Failed to fetch data');
-            }
-        }finally{
-            setIsLoading(false);
-        }
-    }, [page, limit, search, context]);
-
-    // Fetch data when pagination params or context changes
-    const contextSignature = useMemo(() => JSON.stringify(context ? context : {}), [context]);
-
-    // Memoize callbacks to prevent infinite loops in useListingLifecycle
-    const stableFetchData = useCallback(() => fetchDataAsync(), [fetchDataAsync]);
-    const stableInitialFetchParams = useMemo(() => ({ page: 1, limit }), [limit]);
-    const stableOnLoadMore = useCallback((nextPage: number) => updateParams({ page: nextPage }), [updateParams]);
-
-    const resetToFirstPage = useCallback(() => {
-        setData([]);
-        if (page === 1) {
-            fetchDataAsync(true);
-        } else {
-            updateParams({ page: 1 });
-        }
-    }, [page, fetchDataAsync, updateParams]);
-
-    const { handleLoadMore } = useListingLifecycle({
-        data,
-        isLoading,
-        isFetchingMore: isLoading && page > 1,
-        listingMeta: {
-            page,
-            limit,
-            hasMore
+            return fetchDataRef.current(params);
         },
-        fetchData: stableFetchData,
-        initialFetchParams: stableInitialFetchParams,
-        dependencies: [page, limit, search, enabled],
-        resetDependencies: [contextSignature],
-        onLoadMore: stableOnLoadMore,
-        skipInitialFetch: !enabled,
-        onReset: resetToFirstPage
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) =>
+            lastPage.pagination.hasMore ? lastPage.pagination.page + 1 : undefined,
+        enabled,
+        retry: (failureCount, error) => {
+            if (error instanceof ApiError && error.status !== undefined && error.status < 500) {
+                return false;
+            }
+
+            return failureCount < 3;
+        }
     });
+
+    // Derive flat data from pages, deduplicate, and optionally transform
+    const data = useMemo(() => {
+        if (!infiniteData?.pages) return [];
+        const allItems = infiniteData.pages.flatMap((p) => p.data);
+        const deduplicated = deduplicateById([], allItems);
+        return transformData ? transformData(deduplicated) : deduplicated;
+    }, [infiniteData, transformData]);
+
+    // Extract error info
+    const error = useMemo<string | null>(() => {
+        if (!queryError) return null;
+        if (queryError instanceof ApiError) return queryError.getFriendlyMessage();
+        if (queryError instanceof Error) return queryError.message;
+        return 'Failed to fetch data';
+    }, [queryError]);
+
+    const errorCode = useMemo<string | null>(() => {
+        if (!queryError) return null;
+        if (queryError instanceof ApiError) return queryError.code;
+        return null;
+    }, [queryError]);
+
+    const hasMore = hasNextPage ?? false;
+    const isFetchingMore = isFetchingNextPage;
+
+    const handleLoadMore = useCallback(() => {
+        if (!isFetchingNextPage && hasNextPage) {
+            fetchNextPage();
+        }
+    }, [isFetchingNextPage, hasNextPage, fetchNextPage]);
 
     const refresh = useCallback(() => {
-        if(!isLoading){
-            resetToFirstPage();
-        }
-    }, [isLoading, resetToFirstPage]);
-
-    const isFetchingMore = isLoading && page > 1;
-
-    // Wire up real-time list sync via socket events
-    useListSync<T & { _id: string }>({
-        config: listSyncConfig,
-        setData: setData as React.Dispatch<React.SetStateAction<(T & { _id: string })[]>>,
-        refresh
-    });
-
-    const transformedData = transformData ? transformData(data) : data;
+        queryClient.resetQueries({ queryKey: effectiveQueryKey });
+    }, [effectiveQueryKey]);
 
     return {
-        data: transformedData,
+        data,
         isLoading,
         isFetchingMore,
         hasMore,

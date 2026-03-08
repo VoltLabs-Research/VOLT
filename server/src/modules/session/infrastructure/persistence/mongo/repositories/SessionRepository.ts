@@ -1,9 +1,16 @@
-import { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
-import Session, { SessionProps } from '@modules/session/domain/entities/Session';
+import { ISessionRepository, PersistedSessionDTO } from '@modules/session/domain/port/ISessionRepository';
+import Session, { SessionActivityType, SessionProps } from '@modules/session/domain/entities/Session';
 import SessionModel, { SessionDocument } from '@modules/session/infrastructure/persistence/mongo/models/SessionModel';
 import sessionMapper from '@modules/session/infrastructure/persistence/mongo/mappers/SessionMapper';
 import { injectable } from 'tsyringe';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+
+const toPersistedSession = (session: Session): PersistedSessionDTO => {
+    return {
+        _id: session._id,
+        ...session.props
+    };
+};
 
 @injectable()
 export default class SessionRepository
@@ -14,19 +21,19 @@ export default class SessionRepository
         super(SessionModel, sessionMapper);
     }
 
-    async findActiveByUserId(userId: string): Promise<SessionProps[]> {
+    async findActiveByUserId(userId: string): Promise<PersistedSessionDTO[]> {
         const docs = await SessionModel
             .find({ user: userId, isActive: true })
             .sort({ lastActivity: -1 });
-        return docs.map((doc) => this.mapper.toDomain(doc).props);
+        return docs.map((doc) => toPersistedSession(this.mapper.toDomain(doc)));
     }
 
-    async findLoginActivity(userId: string, limit: number): Promise<SessionProps[]> {
+    async findLoginActivity(userId: string, limit: number): Promise<PersistedSessionDTO[]> {
         const docs = await SessionModel
             .find({ user: userId })
             .sort({ createdAt: -1 })
             .limit(limit);
-        return docs.map((doc) => this.mapper.toDomain(doc).props);
+        return docs.map((doc) => toPersistedSession(this.mapper.toDomain(doc)));
     }
 
     async deactivateByToken(token: string): Promise<void> {
@@ -52,7 +59,7 @@ export default class SessionRepository
     }
 
     async createFailedLogin(
-        userId: string, 
+        userId: string | null,
         userAgent: string, 
         ip: string, 
         reason: string
@@ -64,7 +71,7 @@ export default class SessionRepository
             ip,
             isActive: false,
             lastActivity: new Date(),
-            action: 'failed_login',
+            action: SessionActivityType.FailedLogin,
             success: false,
             failureReason: reason
         });

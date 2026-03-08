@@ -1,15 +1,34 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
-import { AITool } from '@shared/application/ai/AITool';
+import UpdateTeamMemberByIdUseCase from '@modules/team/application/use-cases/team-member/UpdateTeamMemberByIdUseCase';
+import { TeamUseCaseAITool } from './TeamUseCaseAITool';
+
+const updateTeamMemberParametersSchema = z.object({
+    memberId: z.string(),
+    roleId: z.string().optional(),
+    reason: z.string().optional()
+});
 
 @injectable()
-export class UpdateTeamMemberAITool extends AITool {
+export class UpdateTeamMemberAITool extends TeamUseCaseAITool<
+    z.infer<typeof updateTeamMemberParametersSchema>,
+    UpdateTeamMemberByIdUseCase,
+    typeof updateTeamMemberParametersSchema
+> {
     readonly name = 'update_team_member';
     readonly description = 'Update a team member role.';
-    readonly parameters = z.object({ memberId: z.string(), roleId: z.string().optional(), reason: z.string().optional() });
+    readonly parameters = updateTeamMemberParametersSchema;
     protected needsApproval = true;
 
-    constructor() {
-        super();
+    constructor(
+        @inject(UpdateTeamMemberByIdUseCase)
+        useCase: UpdateTeamMemberByIdUseCase
+    ) {
+        super(useCase, (params) => ({
+            teamMemberId: params.memberId,
+            data: {
+                role: params.roleId
+            }
+        }));
     }
 }

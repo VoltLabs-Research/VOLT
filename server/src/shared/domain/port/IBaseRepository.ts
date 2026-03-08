@@ -78,7 +78,7 @@ export interface IBaseRepository<T, TProps> {
         data: Partial<TProps>
     ): Promise<number>;
 
-    insertMany(data: Partial<TProps>): Promise<void>;
+    insertMany(data: Partial<TProps> | Array<Partial<TProps>>): Promise<void>;
 
     /**
      * Delete an entity by ID.
@@ -94,6 +94,11 @@ export interface IBaseRepository<T, TProps> {
      * Count entities matching fiter.
      */
     count(filter?: Partial<TProps>): Promise<number>;
+
+    countGroupedBy(
+        field: string,
+        fieldValues: string[]
+    ): Promise<Map<string, number>>;
 
     /**
      * Check if any entity matches the filter.

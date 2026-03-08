@@ -1,14 +1,19 @@
-import { KeyUsageMetrics } from '@modules/team/application/dtos/secret-key/SecretKeyUsageTypes';
+import { z } from 'zod';
+import { ErrorCodes } from '@core/constants/error-codes';
+import type { KeyUsageMetrics } from '@modules/team/domain/contracts/SecretKeyUsageMetrics';
 
-export interface GetSecretKeyUsageInputDTO {
-    teamId: string;
-    secretKeyId: string;
-    days?: number;
-};
+export const secretKeyUsageWindowSchema = z.coerce.number().int().min(1).max(365).optional();
+export const getSecretKeyUsageInputSchema = z.object({
+    teamId: z.string().min(1, ErrorCodes.TEAM_ID_REQUIRED),
+    secretKeyId: z.string().min(1, ErrorCodes.SECRET_KEY_PARAMS_REQUIRED),
+    days: secretKeyUsageWindowSchema
+});
+
+export type GetSecretKeyUsageInputDTO = z.input<typeof getSecretKeyUsageInputSchema>;
 
 export interface GetSecretKeyUsageOutputDTO extends KeyUsageMetrics {
     key: {
-        id: string;
+        _id: string;
         name: string;
         keyPrefix: string;
         roleName: string;
@@ -16,4 +21,4 @@ export interface GetSecretKeyUsageOutputDTO extends KeyUsageMetrics {
         createdAt: Date;
         lastUsedAt: Date | null;
     };
-};
+}

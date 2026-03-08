@@ -1,29 +1,44 @@
-import { Result } from '@shared/domain/port/Result';
-import { IUseCase } from '@shared/application/IUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { injectable, inject } from 'tsyringe';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { DeleteAnalysisByIdInputDTO } from '@modules/analysis/application/dtos/DeleteAnalysisByIdDTO';
+import { Result } from '@shared/domain/port/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type { DeleteAnalysisByIdInputDTO } from '@modules/analysis/application/dtos/DeleteAnalysisByIdDTO';
 
 @injectable()
-export default class DeleteAnalysisByIdUseCase implements IUseCase<DeleteAnalysisByIdInputDTO, null, ApplicationError>{
+export default class DeleteAnalysisByIdUseCase {
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private analysisRepo: IAnalysisRepository
-    ){}
+        private readonly repository: IAnalysisRepository
+    ) {}
 
-    async execute(input: DeleteAnalysisByIdInputDTO): Promise<Result<null, ApplicationError>>{
-        const { analysisId } = input;
-        const result = await this.analysisRepo.deleteById(analysisId);
-        if(!result){
+    async execute(input: DeleteAnalysisByIdInputDTO): Promise<Result<{ success: boolean }, ApplicationError>> {
+        const analysis = await this.repository.findById(input.analysisId);
+
+        if (!analysis) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
                 'Analysis not found'
             ));
         }
 
-        return Result.ok(null);
+        if (input.teamId && analysis.props.team !== input.teamId) {
+            return Result.fail(ApplicationError.forbidden(
+                ErrorCodes.TEAM_ACCESS_DENIED,
+                'Analysis does not belong to this team'
+            ));
+        }
+
+        const deleted = await this.repository.deleteById(input.analysisId);
+
+        if (!deleted) {
+            return Result.fail(ApplicationError.notFound(
+                ErrorCodes.ANALYSIS_NOT_FOUND,
+                'Analysis not found'
+            ));
+        }
+
+        return Result.ok({ success: true });
     }
-};
+}

@@ -1,6 +1,8 @@
 import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 import Chat, { ChatProps } from '@modules/chat/domain/entities/Chat';
 
+export type PersistedChatDTO = ChatProps & { _id: string };
+
 export interface IChatRepository extends IBaseRepository<Chat, ChatProps>{
     /**
      * Verify if the user id already have a chat with target user id.
@@ -15,7 +17,7 @@ export interface IChatRepository extends IBaseRepository<Chat, ChatProps>{
     /**
      * Find chats for the specified user id.
      */
-    findChatsByUserId(userId: string): Promise<ChatProps[]>;
+    findChatsByUserId(userId: string): Promise<PersistedChatDTO[]>;
 
     /**
      * Update last message for the specified chat id.

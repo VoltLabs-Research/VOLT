@@ -1,12 +1,5 @@
-import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
 import CheckInvitePermissionUseCase from '@modules/team/application/use-cases/team/CheckInvitePermissionUseCase';
 
-@injectable()
-export default class CheckInvitePermissionController extends BaseController<CheckInvitePermissionUseCase> {
-    constructor(
-        @inject(CheckInvitePermissionUseCase) useCase: CheckInvitePermissionUseCase
-    ) {
-        super(useCase);
-    }
-};
+const CheckInvitePermissionController = createController(CheckInvitePermissionUseCase);
+export default CheckInvitePermissionController;

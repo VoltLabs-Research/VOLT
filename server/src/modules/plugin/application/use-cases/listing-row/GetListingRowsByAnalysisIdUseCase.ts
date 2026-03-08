@@ -1,13 +1,18 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
 import { IListingRowRepository } from '@modules/plugin/domain/port/IListingRowRepository';
 import {
     GetListingRowsByAnalysisIdInputDTO,
     GetListingRowsByAnalysisIdOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
 import { mapListingRowByAnalysis } from './mapListingRowByAnalysis';
+
+interface ListingRowsByAnalysisFilter {
+    analysis: string;
+    team: string;
+}
 
 @injectable()
 export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRowsByAnalysisIdInputDTO, GetListingRowsByAnalysisIdOutputDTO> {
@@ -24,7 +29,7 @@ export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRow
             filter: {
                 analysis: input.analysisId,
                 team: input.teamId
-            } as any,
+            } as ListingRowsByAnalysisFilter,
             limit,
             page,
             sort: {

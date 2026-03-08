@@ -12,15 +12,45 @@ class PluginMapper extends BaseMapper<Plugin, PluginProps, PluginDocument> {
     }
 
     toDomain(doc: PluginDocument): Plugin {
-        const props = doc.toObject({ flattenMaps: true });
-        const workflow = new Workflow(doc._id.toString(), props.workflow);
+        const rawProps = doc.toObject({ flattenMaps: true });
+        const {
+            _id: ignoredId,
+            __v: ignoredVersion,
+            workflow: workflowProps,
+            ...props
+        } = rawProps;
+        const workflow = new Workflow(doc._id.toString(), workflowProps);
         const projection = WorkflowProjectionService.project(workflow, doc._id.toString());
+
+        const resolvedModifier = props.modifier ?? projection.modifier;
+        const resolvedExposures = props.exposures ?? projection.exposures;
+        const resolvedArguments = props.arguments ?? projection.arguments;
+        const resolvedListingExposures = props.listingExposures ?? projection.listingExposures;
 
         return new Plugin(doc._id.toString(), {
             ...props,
             workflow,
-            ...projection
+            modifier: resolvedModifier,
+            exposures: resolvedExposures,
+            arguments: resolvedArguments,
+            listingExposures: resolvedListingExposures
         });
+    }
+
+    toPersistence(domainOrProps: Plugin | PluginProps): Partial<PluginDocument> {
+        const persistenceData = super.toPersistence(domainOrProps);
+        const source = 'props' in (domainOrProps as object)
+            ? (domainOrProps as Plugin).props
+            : domainOrProps as PluginProps;
+
+        if (!source.workflow) {
+            return persistenceData;
+        }
+
+        return {
+            ...persistenceData,
+            workflow: source.workflow.props
+        } as unknown as Partial<PluginDocument>;
     }
 };
 

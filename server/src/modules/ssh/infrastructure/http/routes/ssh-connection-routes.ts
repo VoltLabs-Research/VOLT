@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import { Resource } from '@core/constants/resources';
 import controllers from '@modules/ssh/infrastructure/http/controllers';
-import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
+import { sshConnectionValidation } from '@modules/ssh/infrastructure/http/validation/ssh-schemas';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
@@ -11,17 +12,19 @@ const module: HttpModule = {
     resource: Resource.SSH_CONNECTION
 };
 
-router.use(protect);
+const createConnectionLimiter = createStandardRateLimiter(10);
 
-router.route('/')
-    .get(controllers.listByTeamId.handle)
-    .post(controllers.create.handle);
+const testConnectionLimiter = createStandardRateLimiter(10);
+
+router.get('/', sshConnectionValidation.listByTeamId, controllers.listByTeamId.handle);
+router.post('/', createConnectionLimiter, sshConnectionValidation.create, controllers.create.handle);
 
 router.route('/:sshConnectionId')
-    .patch(controllers.updateById.handle)
-    .delete(controllers.deleteById.handle);
+    .patch(sshConnectionValidation.update, controllers.updateById.handle)
+    .delete(sshConnectionValidation.deleteById, controllers.deleteById.handle);
 
-router.get('/:sshConnectionId/files', controllers.listFiles.handle);
-router.get('/:sshConnectionId/test', controllers.testById.handle);
+router.get('/:sshConnectionId/files', sshConnectionValidation.listFiles, controllers.listFiles.handle);
+router.get('/:sshConnectionId/test', testConnectionLimiter, sshConnectionValidation.testById, controllers.testById.handle);
+router.post('/:sshConnectionId/import', sshConnectionValidation.importTrajectory, controllers.importTrajectory.handle);
 
 export default module;

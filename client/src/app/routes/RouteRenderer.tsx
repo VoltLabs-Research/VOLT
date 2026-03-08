@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import { Route } from 'react-router-dom';
 import { routesConfig } from './config';
-import ProtectedRoute from '@/modules/auth/presentation/components/atoms/ProtectedRoute';
+import ProtectedRoute from '@/modules/auth/components/atoms/ProtectedRoute';
 import PageTransition from '@/shared/presentation/components/PageTransition';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import type { RouteConfig } from './types';
-import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
-import { canAccessByPermissions, getScopedPermissions, isPermissionScopeReady } from '@/modules/team/presentation/utilities/permission-evaluator';
+import { canAccessByPermissions } from '@/modules/team/utilities/permission-evaluator';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 
 const wrapWithPageTransition = (Component: React.ComponentType) => (
     <PageTransition>
@@ -20,10 +21,8 @@ interface RoutePermissionGuardProps {
 }
 
 const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) => {
-    const selectedTeamId = useTeamStore((state) => state.selectedTeam?._id ?? null);
-    const teamPermissions = useTeamStore((state) => state.permissions);
-    const permissionsTeamId = useTeamStore((state) => state.permissionsTeamId);
-    const isPermissionsLoading = useTeamStore((state) => state.isPermissionsLoading);
+    const selectedTeamId = useSelectedTeamId();
+    const { scopedPermissions, isScopeReady, isLoading: isPermissionsLoading } = useTeamPermissions();
     const permissions = route.requiredPermissions ?? [];
     const mode = route.permissionMode ?? 'any';
 
@@ -35,19 +34,14 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
         return <>{children}</>;
     }
 
-    if (!isPermissionScopeReady({ selectedTeamId, permissionsTeamId })) {
+    if (!isScopeReady) {
         return <>{children}</>;
     }
 
-    if (isPermissionsLoading && teamPermissions.length === 0) {
+    if (isPermissionsLoading && scopedPermissions.length === 0) {
         return <>{children}</>;
     }
 
-    const scopedPermissions = getScopedPermissions({
-        selectedTeamId,
-        permissionsTeamId,
-        permissions: teamPermissions
-    });
     const isAllowed = canAccessByPermissions(scopedPermissions, permissions, mode);
 
     if (!isAllowed) {

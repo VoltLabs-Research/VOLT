@@ -1,21 +1,22 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
 import { ITeamRepository } from '@modules/team/domain/port/ITeamRepository';
 import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/SendTeamInvitationDTO';
 import crypto from 'crypto';
-import { TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
+import TeamInvitation, { TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
 import { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleRepository';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import InvitationSentEvent from '@modules/team/domain/events/InvitationSentEvent';
 import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
+import { IUseCase } from '@shared/application/IUseCase';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 
 @injectable()
 export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO, ApplicationError> {
@@ -41,6 +42,7 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
 
     async execute(input: SendTeamInvitationInputDTO): Promise<Result<SendTeamInvitationOutputDTO, ApplicationError>> {
         const { teamId, userId, email, roleId } = input;
+        const normalizedEmail = TeamInvitation.normalizeEmail(email);
 
         const team = await this.teamRepository.findById(teamId);
         if (!team) {
@@ -50,7 +52,7 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
             ));
         }
 
-        const user = await this.userRepository.findByEmail(email.toLowerCase());
+        const user = await this.userRepository.findByEmail(normalizedEmail);
         if (!user) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.USER_NOT_FOUND,
@@ -72,7 +74,7 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
 
         const existingInvitation = await this.invitationRepository.findOne({
             team: teamId,
-            email: email.toLowerCase(),
+            email: normalizedEmail,
             status: TeamInvitationStatus.Pending
         });
 
@@ -100,20 +102,20 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
             team: teamId,
             invitedBy: userId,
             invitedUser: user.id,
-            email: email.toLowerCase(),
+            email: normalizedEmail,
             token,
-            role: role.id,
+            role: role._id,
             expiresAt,
-            acceptedAt: new Date(),
             status: TeamInvitationStatus.Pending
         });
 
+        const invitationTeam = await this.teamRepository.findById(invitation.getTeamId());
         await this.eventBus.publish(new InvitationSentEvent({
-            invitationId: invitation.id,
-            teamName: team.props.name,
-            invitedUserId: user.id
+            invitationId: invitation._id,
+            teamName: invitationTeam?.props.name ?? '',
+            invitedUserId: invitation.getInvitedUserId()
         }));
 
-        return Result.ok(invitation.props);
+        return Result.ok(toPersistedOutput(invitation));
     }
 }

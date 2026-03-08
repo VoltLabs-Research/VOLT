@@ -2,10 +2,19 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
     transition: background-color 0.15s ease;
-    font-size: 0.875rem;
     color: var(--color-text-primary);
+}
+
+.popover-menu-item--md {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.popover-menu-item--sm {
+    gap: 0.375rem;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
 }
 
 .popover-menu-item:hover {
