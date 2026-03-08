@@ -6,7 +6,7 @@ import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
-import type { AIToolScope } from '@modules/ai/services/AIToolService';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 
 import type { PluginListingRowData } from '@modules/plugin/domain/contracts/listing-row/PluginListing';
 import type { IPluginListingExportService } from '@modules/plugin/domain/port/listing-row/IPluginListingExportService';

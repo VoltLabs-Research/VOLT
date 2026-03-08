@@ -1,6 +1,6 @@
 import { LeaveGroupInputDTO } from '@modules/chat/application/dtos/chat/LeaveGroupDTO';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { resolveGroupChat } from '@modules/chat/application/services/chat/resolveGroupChat';
+import { resolveGroupChat } from '@modules/chat/utilities/chat/resolveGroupChat';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { IUseCase } from '@shared/application/IUseCase';

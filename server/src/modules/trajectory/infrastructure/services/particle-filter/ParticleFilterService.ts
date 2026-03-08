@@ -6,9 +6,9 @@ import { IParticleFilterService } from '@modules/trajectory/domain/port/particle
 import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { buildParticleFilterObjectName } from '@modules/trajectory/infrastructure/utilities/trajectory/minio-path-builder';
-import { normalizeAnalysisId, extractModifierAtomData } from '@modules/trajectory/infrastructure/utilities/trajectory/modifier-data';
-import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utilities/scene-artifacts/record-scene-artifact';
+import { buildParticleFilterObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
+import { normalizeAnalysisId, extractModifierAtomData } from '@modules/trajectory/utilities/trajectory/modifier-data';
+import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import nativeExporter from '@modules/trajectory/infrastructure/native/trajectory/NativeExporter';

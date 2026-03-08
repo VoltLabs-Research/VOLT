@@ -2,7 +2,7 @@ import { AITool } from '@shared/application/ai/AITool';
 import { ListScriptingNotebooksUseCase } from '@modules/scripting/application/use-cases/ListScriptingNotebooksUseCase';
 import { inject, injectable } from 'tsyringe';
 import { z } from 'zod';
-import type { AIToolScope } from '@modules/ai/services/AIToolService';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 
 @injectable()
 export class ListScriptingNotebooksAITool extends AITool {

@@ -1,9 +1,9 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { CreateTeamAIIntegrationInputDTO, CreateTeamAIIntegrationOutputDTO } from '@modules/team/application/dtos/ai-integration/CreateTeamAIIntegrationDTO';
-import TeamAIIntegrationInputService from '@modules/team/application/services/ai-integration/TeamAIIntegrationInputService';
-import TeamAIIntegrationSecretService from '@modules/team/application/services/ai-integration/TeamAIIntegrationSecretService';
-import TeamAIIntegrationSerializer from '@modules/team/application/services/ai-integration/TeamAIIntegrationSerializer';
+import TeamAIIntegrationInputService from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationInputService';
+import TeamAIIntegrationSecretService from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationSecretService';
+import TeamAIIntegrationSerializer from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationSerializer';
 import TeamAIIntegration from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
 import TeamAIIntegrationCreatedEvent from '@modules/team/domain/events/ai-integration/TeamAIIntegrationCreatedEvent';
 import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';

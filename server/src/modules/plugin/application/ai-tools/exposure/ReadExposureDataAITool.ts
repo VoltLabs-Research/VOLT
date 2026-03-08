@@ -1,4 +1,4 @@
-import { buildExposurePayloadObjectName } from '@modules/plugin/infrastructure/utilities/exposure/analysis-file-collection';
+import { buildExposurePayloadObjectName } from '@modules/plugin/utilities/exposure/analysis-file-collection';
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -10,7 +10,7 @@ import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
-import type { AIToolScope } from '@modules/ai/services/AIToolService';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 

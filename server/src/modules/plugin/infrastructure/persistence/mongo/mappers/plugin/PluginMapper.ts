@@ -1,7 +1,7 @@
 import Plugin, { PluginProps } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { PluginDocument } from '@modules/plugin/infrastructure/persistence/mongo/models/plugin/PluginModel';
 import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
-import WorkflowProjectionService from '@modules/plugin/domain/services/plugin/WorkflowProjectionService';
+import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 
 import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMapper';
 

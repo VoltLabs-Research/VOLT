@@ -1,6 +1,6 @@
 import Workflow from './workflow/Workflow';
 
-import type { PluginProjection } from '@modules/plugin/domain/services/plugin/WorkflowProjectionService';
+import type { PluginProjection } from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 
 export enum PluginStatus {
     Draft = 'draft',

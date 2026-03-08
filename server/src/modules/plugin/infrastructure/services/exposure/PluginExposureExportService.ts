@@ -2,11 +2,11 @@ import {
     createZipArchiveStream,
     createZipDownloadResponse,
     sanitizeDownloadName
-} from '@modules/plugin/application/helpers/plugin/create-download-response';
+} from '@modules/plugin/utilities/plugin/create-download-response';
 import {
     groupAnalysisFilesByTimestep,
     listAnalysisFiles
-} from '@modules/plugin/infrastructure/utilities/exposure/analysis-file-collection';
+} from '@modules/plugin/utilities/exposure/analysis-file-collection';
 
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -21,7 +21,7 @@ import type {
     IPluginExposureExportService,
     PluginExposureExportParams
 } from '@modules/plugin/domain/port/exposure/IPluginExposureExportService';
-import type { AnalysisFileRef } from '@modules/plugin/infrastructure/utilities/exposure/analysis-file-collection';
+import type { AnalysisFileRef } from '@modules/plugin/utilities/exposure/analysis-file-collection';
 
 const sortAnalysisFilesByObjectName = (left: AnalysisFileRef, right: AnalysisFileRef): number => {
     return left.objectName.localeCompare(right.objectName);

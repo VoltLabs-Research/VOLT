@@ -16,8 +16,8 @@ import SessionCompletedEventHandler from '@modules/trajectory/application/events
 import GetTeamMetricsUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTeamMetricsUseCase';
 import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
-import CloudUploadQueue from '@modules/trajectory/infrastructure/queues/trajectory/CloudUploadQueue';
-import TrajectoryProcessingQueue from '@modules/trajectory/infrastructure/queues/trajectory/TrajectoryProcessingQueue';
+import CloudUploadQueue from '@modules/trajectory/queues/CloudUploadQueue';
+import TrajectoryProcessingQueue from '@modules/trajectory/queues/TrajectoryProcessingQueue';
 import AtomPropertiesService from '@modules/trajectory/infrastructure/services/trajectory/AtomPropertiesService';
 import ColorCodingService from '@modules/trajectory/infrastructure/services/color-coding/ColorCodingService';
 import AtomisticExporter from '@modules/trajectory/infrastructure/services/trajectory/exporters/AtomisticExporter';

@@ -1,6 +1,6 @@
 import { MarkMessageAsReadInputDTO } from '@modules/chat/application/dtos/chat-message/MarkMessageAsReadDTO';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { resolveAccessibleChat } from '@modules/chat/application/services/chat/resolveAccessibleChat';
+import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';

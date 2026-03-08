@@ -8,13 +8,13 @@ import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRep
 import { IAtomPropertiesService, FilterExpression, FilterResult, ExposureAtomConfig } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { getPropertyValues } from '@modules/trajectory/infrastructure/utilities/trajectory/get-property-values';
+import { getPropertyValues } from '@modules/trajectory/utilities/trajectory/get-property-values';
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { decodeMultiStream } from '@shared/infrastructure/utilities/msgpack';
 import Analysis from '@modules/analysis/domain/entities/Analysis';
 import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
-import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/exposure/merge-chunked-value';
+import mergeChunkedValue from '@modules/plugin/utilities/exposure/merge-chunked-value';
 import nativeStats from '@modules/trajectory/infrastructure/native/trajectory/NativeStats';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/trajectory/TrajectoryParserFactory';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';

@@ -4,7 +4,7 @@ import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di
 import { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, TeamMemberStatsProps } from '@modules/team/application/dtos/team-member/ListTeamMembersByTeamIdDTO';
-import TeamPresenceService from '@modules/team/application/services/team-member/TeamPresenceService';
+import TeamPresenceService from '@modules/team/infrastructure/services/team-member/TeamPresenceService';
 import { isPopulatedTeamMemberUser, getTeamMemberUserId } from '@modules/team/domain/entities/team-member/TeamMember';
 import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';

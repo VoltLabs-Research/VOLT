@@ -1,6 +1,6 @@
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { GetPluginByIdInputDTO, GetPluginByIdOutputDTO } from '@modules/plugin/application/dtos/plugin/GetPluginByIdDTO';
-import { mapPluginToPersistedDTO } from '@modules/plugin/application/mappers/plugin/mapPluginToPersistedDTO';
+import { mapPluginToPersistedDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 
 import { ErrorCodes } from '@core/constants/error-codes';

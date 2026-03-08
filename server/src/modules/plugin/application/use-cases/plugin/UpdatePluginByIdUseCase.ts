@@ -1,12 +1,12 @@
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { UpdatePluginByIdInputDTO, UpdatePluginByIdOutputDTO } from '@modules/plugin/application/dtos/plugin/UpdatePluginByIdDTO';
-import { mapPluginToPersistedDTO } from '@modules/plugin/application/mappers/plugin/mapPluginToPersistedDTO';
+import { mapPluginToPersistedDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
 import { PluginProps, PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { IWorkflowValidatorService } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
-import WorkflowProjectionService from '@modules/plugin/domain/services/plugin/WorkflowProjectionService';
+import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 
 import { ErrorCodes } from '@core/constants/error-codes';
 import { IUseCase } from '@shared/application/IUseCase';

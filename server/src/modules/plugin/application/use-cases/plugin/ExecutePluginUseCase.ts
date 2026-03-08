@@ -5,7 +5,7 @@ import { IAnalysisJobFactory } from '@modules/plugin/domain/port/plugin/IAnalysi
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { IPluginWorkflowEngine } from '@modules/plugin/domain/port/plugin/IPluginWorkflowEngine';
 import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
-import PluginDisplayNameResolver from '@modules/plugin/domain/services/plugin/PluginDisplayNameResolver';
+import PluginDisplayNameResolver from '@modules/plugin/utilities/plugin/PluginDisplayNameResolver';
 
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';

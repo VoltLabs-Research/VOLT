@@ -1,6 +1,6 @@
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ListPluginsInputDTO, ListPluginsOutputDTO } from '@modules/plugin/application/dtos/plugin/ListPluginsDTO';
-import { mapPluginToPersistedDTO } from '@modules/plugin/application/mappers/plugin/mapPluginToPersistedDTO';
+import { mapPluginToPersistedDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 
 import { IUseCase } from '@shared/application/IUseCase';

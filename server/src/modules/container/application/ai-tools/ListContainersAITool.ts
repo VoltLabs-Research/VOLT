@@ -2,7 +2,7 @@ import { ListContainersUseCase } from '@modules/container/application/use-cases/
 import { AITool } from '@shared/application/ai/AITool';
 import { inject, injectable } from 'tsyringe';
 import { z } from 'zod';
-import type { AIToolScope } from '@modules/ai/services/AIToolService';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 
 @injectable()
 export class ListContainersAITool extends AITool {

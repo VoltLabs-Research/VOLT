@@ -6,7 +6,7 @@ import { Result } from '@shared/domain/port/Result';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
 import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
 import { AIMessageDTO, ListAIConversationMessagesInputDTO, ListAIConversationMessagesOutputDTO } from '@modules/ai/application/dtos/ListAIConversationMessagesDTO';
-import AIMessageDTOMapper from '@modules/ai/services/AIMessageDTOMapper';
+import AIMessageDTOMapper from '@modules/ai/utilities/AIMessageDTOMapper';
 import { inject, injectable } from 'tsyringe';
 
 interface ListAIConversationMessagesLookup {

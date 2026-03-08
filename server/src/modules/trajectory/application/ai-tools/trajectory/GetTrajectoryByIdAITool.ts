@@ -4,7 +4,7 @@ import GetTrajectoryByIdUseCase from '@modules/trajectory/application/use-cases/
 import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 
-import type { AIToolScope } from '@modules/ai/services/AIToolService';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 
 @injectable()
 export class GetTrajectoryByIdAITool extends AITool {

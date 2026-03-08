@@ -1,8 +1,8 @@
 import { GroupAdminAction, UpdateGroupAdminsInputDTO, UpdateGroupAdminsOutputDTO } from '@modules/chat/application/dtos/chat/UpdateGroupAdminsDTO';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { isParticipant } from '@modules/chat/application/services/chat/isParticipant';
-import { resolveGroupChat } from '@modules/chat/application/services/chat/resolveGroupChat';
-import { toPersistedChatOutput } from '@modules/chat/domain/services/toPersistedChatOutput';
+import { isParticipant } from '@modules/chat/utilities/chat/isParticipant';
+import { resolveGroupChat } from '@modules/chat/utilities/chat/resolveGroupChat';
+import { toPersistedChatOutput } from '@modules/chat/utilities/toPersistedChatOutput';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { IUseCase } from '@shared/application/IUseCase';

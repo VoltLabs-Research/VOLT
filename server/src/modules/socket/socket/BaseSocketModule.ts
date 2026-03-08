@@ -1,0 +1,250 @@
+import { inject } from 'tsyringe';
+import { ISocketModule, ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
+import { ISocketEventRegistry, SocketEventHandler } from '@modules/socket/domain/port/ISocketEventRegistry';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import type { ErrorCode } from '@core/constants/error-codes';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import {
+    createSocketErrorEnvelope,
+    createSocketErrorEnvelopeFromApplicationError,
+    type SocketErrorEnvelope
+} from '@modules/socket/utilities/socket-error-envelope';
+
+/**
+ * Each module can hook into the lifecycle and register its own handlers.
+ */
+export default abstract class BaseSocketModule implements ISocketModule{
+    public abstract readonly name: string;
+
+    constructor(
+        @inject(SOCKET_TOKENS.SocketEventEmitter)
+        protected readonly emitter: ISocketEmitter,
+        
+        @inject(SOCKET_TOKENS.SocketRoomManager)
+        protected readonly roomManager: ISocketRoomManager,
+
+        @inject(SOCKET_TOKENS.SocketEventRegistry)
+        protected readonly eventRegistry: ISocketEventRegistry
+    ){}
+
+    /**
+     * Called once when the module is registered in the gateway.
+     * Override to perform initialization logic.
+     */
+    onInit(): void | Promise<void>{}
+
+    /**
+     * Called per connection if the module wants to handle the socket.
+     * Override to register event handlers for the connection.
+     */
+    abstract onConnection(connection: ISocketConnection): void;
+
+    /**
+     * Called during graceful shutdown.
+     * Override to cleanup resources like intervals or subscriptions.
+     */
+    async onShutdown(): Promise<void>{}
+
+    /**
+     * Join a room with the given socket.
+     */
+    protected async joinRoom(socketId: string, room: string): Promise<void>{
+        await this.roomManager.join(socketId, room);
+    }
+
+    protected async switchRoom(
+        socketId: string,
+        room: string,
+        previousRoom?: string
+    ): Promise<void> {
+        if (previousRoom && previousRoom !== room) {
+            await this.leaveRoom(socketId, previousRoom);
+        }
+
+        await this.joinRoom(socketId, room);
+    }
+
+    /**
+     * Leave a room with the given socket.
+     */
+    protected async leaveRoom(socketId: string, room: string): Promise<void>{
+        await this.roomManager.leave(socketId, room);
+    }
+
+    /**
+     * Register an event handler for a socket.
+     */
+    protected on<T = unknown>(
+        socketId: string,
+        event: string,
+        handler: SocketEventHandler<T>
+    ): void{
+        this.eventRegistry.on(socketId, event, handler);
+    }
+
+    /**
+     * Register a disconnect handler for a socket.
+     */
+    protected onDisconnect(
+        socketId: string,
+        handler: (connection: ISocketConnection) => void | Promise<void>
+    ): void{
+        this.eventRegistry.onDisconnect(socketId, handler);
+    }
+
+    /**
+     * Emit an event to a room.
+     */
+    protected emitToRoom(
+        room: string,
+        event: string,
+        data: unknown
+    ): void{
+        this.emitter.emitToRoom(room, event, data);
+    }
+
+    /**
+     * Emit an event to a specific socket.
+     */
+    protected emitToSocket(
+        socketId: string,
+        event: string,
+        data: unknown
+    ): void{
+        this.emitter.emitToSocket(socketId, event, data);
+    }
+
+    protected createErrorEnvelope(
+        code: ErrorCode | string,
+        details?: string
+    ): SocketErrorEnvelope {
+        return createSocketErrorEnvelope(code, details);
+    }
+
+    protected createApplicationErrorEnvelope(
+        error: ApplicationError
+    ): SocketErrorEnvelope {
+        return createSocketErrorEnvelopeFromApplicationError(error);
+    }
+
+    protected emitErrorToSocket(
+        socketId: string,
+        code: ErrorCode | string,
+        details?: string
+    ): void {
+        this.emitToSocket(socketId, 'error', this.createErrorEnvelope(code, details));
+    }
+
+    protected emitApplicationErrorToSocket(
+        socketId: string,
+        error: ApplicationError
+    ): void {
+        this.emitToSocket(socketId, 'error', this.createApplicationErrorEnvelope(error));
+    }
+
+    /**
+     * Emit an event to a room excluding the sender.
+     */
+    protected emitToRoomExcept(
+        socketId: string,
+        room: string,
+        event: string,
+        data: unknown
+    ): void {
+        this.emitter.emitToRoomExcept(socketId, room, event, data);
+    }
+
+    /**
+     * Broadcast an event to all connected sockets.
+     */
+    protected broadcast(event: string, data: unknown): void{
+        this.emitter.broadcast(event, data);
+    }
+
+    protected emitErrorToRoom(
+        room: string,
+        code: ErrorCode | string,
+        details?: string
+    ): void {
+        this.emitToRoom(room, 'error', this.createErrorEnvelope(code, details));
+    }
+
+    protected broadcastError(
+        code: ErrorCode | string,
+        details?: string
+    ): void {
+        this.broadcast('error', this.createErrorEnvelope(code, details));
+    }
+
+    /**
+     * Collect presence information for a room.
+     */
+    protected async collectPresence(
+        room: string,
+        userExtractor: (connection: ISocketConnection) => PresenceUser
+    ): Promise<PresenceUser[]> {
+        return this.roomManager.collectPresence(room, userExtractor);
+    }
+
+    /**
+     * Broadcast presence update to a room.
+     */
+    protected async broadcastPresence(
+        room: string,
+        updateEvent: string,
+        userExtractor: (connection: ISocketConnection) => PresenceUser
+    ): Promise<void>{
+        const users = await this.collectPresence(room, userExtractor);
+        this.emitToRoom(room, updateEvent, users);
+    }
+
+    /**
+     * Wire a subscription pattern with presence for a specific event.
+     */
+    protected wirePresenceSubscription<TPayload extends Record<string, any>>(
+        connection: ISocketConnection,
+        cfg: {
+            event: string;
+            roomOf: (payload: TPayload) => string | undefined;
+            previousOf: (payload: TPayload) => string | undefined;
+            setContext: (connection: ISocketConnection, payload: TPayload) => void;
+            updateEvent: string;
+            userExtractor: (connection: ISocketConnection) => PresenceUser;
+        }
+    ): void {
+        this.on<TPayload>(connection.id, cfg.event, async (conn, payload) => {
+            const prev = cfg.previousOf?.(payload);
+            if(prev){
+                await this.leaveRoom(conn.id, prev);
+                await this.broadcastPresence(prev, cfg.updateEvent, cfg.userExtractor);
+            }
+
+            const room = cfg.roomOf(payload);
+            if(!room) return;
+
+            cfg.setContext(conn, payload);
+            await this.joinRoom(conn.id, room);
+
+            await this.broadcastPresence(room, cfg.updateEvent, cfg.userExtractor);
+        });
+    }
+
+    /**
+     * Register a disconnect handler that re-broadcasts presence.
+     */
+    protected wirePresenceOnDisconnect(
+        connection: ISocketConnection,
+        getRoomFromConnection: (conn: ISocketConnection) => string | undefined,
+        updateEvent: string,
+        userExtractor: (connection: ISocketConnection) => PresenceUser
+    ): void {
+        this.onDisconnect(connection.id, async (conn) => {
+            const room = getRoomFromConnection(conn);
+            if(room){
+                await this.broadcastPresence(room, updateEvent, userExtractor);
+            }
+        });
+    }
+};

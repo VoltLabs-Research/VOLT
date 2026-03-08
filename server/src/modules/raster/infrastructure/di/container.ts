@@ -1,8 +1,8 @@
 import { RasterSessionCompletedEventHandler } from '@modules/raster/application/events/RasterSessionCompletedEventHandler';
-import { RasterStorageService } from '@modules/raster/services/RasterStorageService';
-import { RasterMetadataService } from '@modules/raster/services/RasterMetadataService';
-import { RasterFrameService } from '@modules/raster/services/RasterFrameService';
-import { RasterJobEnqueuerService } from '@modules/raster/services/RasterJobEnqueuerService';
+import { RasterStorageService } from '@modules/raster/infrastructure/services/RasterStorageService';
+import { RasterMetadataService } from '@modules/raster/infrastructure/services/RasterMetadataService';
+import { RasterFrameService } from '@modules/raster/infrastructure/services/RasterFrameService';
+import { RasterJobEnqueuerService } from '@modules/raster/infrastructure/services/RasterJobEnqueuerService';
 import { RASTER_TOKENS } from './RasterTokens';
 import RasterizerQueue from '@modules/raster/queues/RasterizerQueue';
 import { container } from 'tsyringe';

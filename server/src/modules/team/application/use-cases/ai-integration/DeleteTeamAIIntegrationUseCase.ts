@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { DeleteTeamAIIntegrationInputDTO } from '@modules/team/application/dtos/ai-integration/DeleteTeamAIIntegrationDTO';
-import TeamAIIntegrationInputService from '@modules/team/application/services/ai-integration/TeamAIIntegrationInputService';
+import TeamAIIntegrationInputService from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationInputService';
 import TeamAIIntegrationDeletedEvent from '@modules/team/domain/events/ai-integration/TeamAIIntegrationDeletedEvent';
 import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';

@@ -1,13 +1,13 @@
 import { TEAM_TOKENS } from './TeamTokens';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import SecretKeyUsageMetricsMapper from '@modules/team/application/services/secret-key/SecretKeyUsageMetricsMapper';
-import TeamAIIntegrationInputService from '@modules/team/application/services/ai-integration/TeamAIIntegrationInputService';
-import TeamAIIntegrationSecretService from '@modules/team/application/services/ai-integration/TeamAIIntegrationSecretService';
-import TeamAIIntegrationSerializer from '@modules/team/application/services/ai-integration/TeamAIIntegrationSerializer';
-import TeamAIProviderCatalog from '@modules/team/application/services/ai-integration/TeamAIProviderCatalog';
-import TeamMembershipService from '@modules/team/application/services/team/TeamMembershipService';
-import TeamPresenceService from '@modules/team/application/services/team-member/TeamPresenceService';
+import SecretKeyUsageMetricsMapper from '@modules/team/infrastructure/services/secret-key/SecretKeyUsageMetricsMapper';
+import TeamAIIntegrationInputService from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationInputService';
+import TeamAIIntegrationSecretService from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationSecretService';
+import TeamAIIntegrationSerializer from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationSerializer';
+import TeamAIProviderCatalog from '@modules/team/infrastructure/services/ai-integration/TeamAIProviderCatalog';
+import TeamMembershipService from '@modules/team/infrastructure/services/team/TeamMembershipService';
+import TeamPresenceService from '@modules/team/infrastructure/services/team-member/TeamPresenceService';
 import {
     CreateSecretKeyAITool,
     CreateTeamRoleAITool,
@@ -32,10 +32,10 @@ import TeamInvitationRepository from '@modules/team/infrastructure/persistence/m
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
-import TeamJobsService from '@modules/team/infrastructure/socket/team/TeamJobsService';
+import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
 import TeamAIIntegrationSecretCipher from '@modules/team/infrastructure/security/ai-integration/TeamAIIntegrationSecretCipher';
-import TeamJobsSocketModule from '@modules/team/infrastructure/socket/team/TeamJobsSocketModule';
-import TeamPresenceSocketModule from '@modules/team/infrastructure/socket/team-member/TeamPresenceSocketModule';
+import TeamJobsSocketModule from '@modules/team/socket/team/TeamJobsSocketModule';
+import TeamPresenceSocketModule from '@modules/team/socket/team-member/TeamPresenceSocketModule';
 import { container } from 'tsyringe';
 import type { AITool } from '@shared/application/ai/AITool';
 

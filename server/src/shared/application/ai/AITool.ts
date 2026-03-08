@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import type { Tool } from 'ai';
 import { z } from 'zod';
-import type { AIToolScope } from '@modules/ai/services/AIToolService';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 import type { UseCaseInstance } from '@shared/application/IUseCase';
 
 interface MutableToolDefinition<TInput extends Record<string, unknown>, TResult, TSchema extends z.ZodType<TInput>> {

@@ -1,7 +1,7 @@
 import { SignInInputDTO, SignInOutputDTO } from '@modules/auth/application/dtos/SignInDTO';
 import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import AuthSessionService from '@modules/auth/services/AuthSessionService';
+import AuthSessionService from '@modules/auth/infrastructure/services/AuthSessionService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';

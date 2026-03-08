@@ -3,8 +3,8 @@ import {
     ExportPluginListingDocumentsInputDTO,
     ExportPluginListingDocumentsOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
-import { createSerializedDownloadResponse } from '@modules/plugin/application/helpers/plugin/create-download-response';
-import { toPluginListingOptions } from '@modules/plugin/application/helpers/listing-row/toPluginListingOptions';
+import { createSerializedDownloadResponse } from '@modules/plugin/utilities/plugin/create-download-response';
+import { toPluginListingOptions } from '@modules/plugin/utilities/listing-row/toPluginListingOptions';
 import { IPluginListingExportService } from '@modules/plugin/domain/port/listing-row/IPluginListingExportService';
 
 import { IUseCase } from '@shared/application/IUseCase';

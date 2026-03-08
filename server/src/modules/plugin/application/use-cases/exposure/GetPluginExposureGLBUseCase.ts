@@ -2,7 +2,7 @@ import {
     GetPluginExposureGLBInputDTO,
     GetPluginExposureGLBOutputDTO
 } from '@modules/plugin/application/dtos/exposure/GetPluginExposureGLBDTO';
-import { createStreamResponse } from '@modules/plugin/application/helpers/plugin/create-download-response';
+import { createStreamResponse } from '@modules/plugin/utilities/plugin/create-download-response';
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';

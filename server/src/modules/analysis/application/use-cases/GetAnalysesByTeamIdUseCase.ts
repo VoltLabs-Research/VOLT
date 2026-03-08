@@ -1,6 +1,6 @@
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTeamIdDTO';
-import AnalysisPluginDisplayNameService, { extractPluginId } from '@modules/analysis/services/AnalysisPluginDisplayNameService';
+import AnalysisPluginDisplayNameService, { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';

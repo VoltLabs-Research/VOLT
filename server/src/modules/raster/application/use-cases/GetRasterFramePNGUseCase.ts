@@ -1,5 +1,5 @@
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
-import { createStreamResponse } from '@modules/raster/application/helpers/create-download-response';
+import { createStreamResponse } from '@modules/raster/utilities/create-download-response';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';

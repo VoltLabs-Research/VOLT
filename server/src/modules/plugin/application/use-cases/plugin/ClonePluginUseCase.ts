@@ -1,12 +1,12 @@
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ClonePluginInputDTO, ClonePluginOutputDTO } from '@modules/plugin/application/dtos/plugin/ClonePluginDTO';
-import { mapPluginToPersistedDTO } from '@modules/plugin/application/mappers/plugin/mapPluginToPersistedDTO';
+import { mapPluginToPersistedDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import PluginCreatedEvent from '@modules/plugin/domain/events/PluginCreatedEvent';
-import WorkflowProjectionService from '@modules/plugin/domain/services/plugin/WorkflowProjectionService';
+import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';

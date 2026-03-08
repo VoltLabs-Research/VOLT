@@ -1,6 +1,6 @@
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { GetPluginListingDocumentsInputDTO, GetPluginListingDocumentsOutputDTO } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
-import { toPluginListingOptions } from '@modules/plugin/application/helpers/listing-row/toPluginListingOptions';
+import { toPluginListingOptions } from '@modules/plugin/utilities/listing-row/toPluginListingOptions';
 import { IPluginListingService } from '@modules/plugin/domain/port/listing-row/IPluginListingService';
 
 import { IUseCase } from '@shared/application/IUseCase';

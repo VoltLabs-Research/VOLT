@@ -1,7 +1,7 @@
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { GradientType, AtomsGroupedByType, IAtomisticExporter } from '@modules/trajectory/domain/port/trajectory/exporters/AtomisticExporter';
-import { getPropertyValues } from '@modules/trajectory/infrastructure/utilities/trajectory/get-property-values';
+import { getPropertyValues } from '@modules/trajectory/utilities/trajectory/get-property-values';
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { ITempFileService } from '@shared/domain/port/ITempFileService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';

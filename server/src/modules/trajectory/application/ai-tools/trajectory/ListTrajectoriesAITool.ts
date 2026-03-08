@@ -4,7 +4,7 @@ import GetTrajectoriesByTeamIdUseCase from '@modules/trajectory/application/use-
 import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 
-import type { AIToolScope } from '@modules/ai/services/AIToolService';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 import type { TrajectoryPersistedDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoriesByTeamIdDTO';
 
 @injectable()

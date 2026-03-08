@@ -7,10 +7,10 @@ import { SendChatMessageUseCase } from '@modules/chat/application/use-cases/chat
 import { SendFileMessageUseCase } from '@modules/chat/application/use-cases/chat-message/SendFileMessageUseCase';
 import { ToggleMessageReactionUseCase } from '@modules/chat/application/use-cases/chat-message/ToggleMessageReactionUseCase';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import ChatSocketAccessPolicy from '@modules/chat/infrastructure/socket/chat/ChatSocketAccessPolicy';
-import ChatSocketEventOrchestrator from '@modules/chat/infrastructure/socket/chat/ChatSocketEventOrchestrator';
-import ChatSocketModule from '@modules/chat/infrastructure/socket/chat/ChatSocketModule';
-import ChatSocketPresenceService from '@modules/chat/infrastructure/socket/chat/ChatSocketPresenceService';
+import ChatSocketAccessPolicy from '@modules/chat/socket/chat/ChatSocketAccessPolicy';
+import ChatSocketEventOrchestrator from '@modules/chat/socket/chat/ChatSocketEventOrchestrator';
+import ChatSocketModule from '@modules/chat/socket/chat/ChatSocketModule';
+import ChatSocketPresenceService from '@modules/chat/socket/chat/ChatSocketPresenceService';
 import ChatMessageRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat-message/ChatMessageRepository';
 import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
 

@@ -1,6 +1,6 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
+import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import logger from '@shared/infrastructure/logger';
 import { inject, singleton } from 'tsyringe';
 import type NotificationCreatedEvent from '@modules/notification/domain/events/NotificationCreatedEvent';

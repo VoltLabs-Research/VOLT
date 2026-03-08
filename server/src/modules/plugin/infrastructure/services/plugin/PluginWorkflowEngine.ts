@@ -2,7 +2,7 @@ import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflo
 import { ExecutionContext, INodeRegistry } from '@modules/plugin/domain/port/plugin/INodeRegistry';
 import { IPluginWorkflowEngine, ExposureResult, ExecutionPlanResult, WorkflowExecutionRequest, DebugHooks } from '@modules/plugin/domain/port/plugin/IPluginWorkflowEngine';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { getExposureNodes } from '@modules/plugin/infrastructure/utilities/exposure/get-exposure-nodes';
+import { getExposureNodes } from '@modules/plugin/utilities/exposure/get-exposure-nodes';
 import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 
 import { injectable, inject } from 'tsyringe';

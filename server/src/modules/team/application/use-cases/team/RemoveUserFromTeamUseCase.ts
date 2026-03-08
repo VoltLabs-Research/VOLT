@@ -3,7 +3,7 @@ import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { RemoveUserFromTeamInputDTO } from '@modules/team/application/dtos/team/RemoveUserFromTeamDTO';
-import TeamMembershipService from '@modules/team/application/services/team/TeamMembershipService';
+import TeamMembershipService from '@modules/team/infrastructure/services/team/TeamMembershipService';
 import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
