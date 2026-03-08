@@ -2,7 +2,7 @@ import { Exporter, ExportType } from '@modules/plugin/domain/entities/plugin/wor
 import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { INodeHandler, ExecutionContext, NodeOutputSchema, T, INodeRegistry } from '@modules/plugin/domain/port/plugin/INodeRegistry';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/exposure/merge-chunked-value';
+import mergeChunkedValue from '@modules/plugin/utilities/exposure/merge-chunked-value';
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -13,7 +13,7 @@ import { IDislocationExporter } from '@modules/trajectory/domain/port/trajectory
 import { IMeshExporter } from '@modules/trajectory/domain/port/trajectory/exporters/MeshExporter';
 import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utilities/scene-artifacts/record-scene-artifact';
+import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { decodeMultiStreamFromFile } from '@shared/infrastructure/utilities/msgpack';

@@ -1,4 +1,4 @@
-import type { AIToolScope } from '@modules/ai/services/AIToolService';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import UpdateAIConversationUseCase from '@modules/ai/application/use-cases/UpdateAIConversationUseCase';
 import { AITool } from '@shared/application/ai/AITool';

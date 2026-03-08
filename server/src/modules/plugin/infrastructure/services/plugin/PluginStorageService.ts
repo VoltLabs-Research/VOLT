@@ -5,7 +5,7 @@ import { IPluginBinaryCacheService } from '@modules/plugin/domain/port/plugin/IP
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { BinaryUploadResult, IPluginStorageService, PluginImportResult } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import WorkflowProjectionService from '@modules/plugin/domain/services/plugin/WorkflowProjectionService';
+import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';

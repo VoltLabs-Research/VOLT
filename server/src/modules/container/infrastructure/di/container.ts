@@ -13,7 +13,7 @@ import { ContainerRepository } from '@modules/container/infrastructure/persisten
 import { DockerNetworkRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/DockerNetworkRepository';
 import { DockerVolumeRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/DockerVolumeRepository';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-import { ContainerOwnershipService, DockerContainerService, TerminalService } from '@modules/container/services';
+import { ContainerOwnershipService, DockerContainerService, TerminalService } from '@modules/container/infrastructure/services';
 import { ContainerSocketModule } from '@modules/container/socket';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { container, Lifecycle } from 'tsyringe';

@@ -1,6 +1,6 @@
 import { GetOrCreateChatInputDTO, GetOrCreateChatOutputDTO } from '@modules/chat/application/dtos/chat/GetOrCreateChatDTO';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { toPersistedChatOutput } from '@modules/chat/domain/services/toPersistedChatOutput';
+import { toPersistedChatOutput } from '@modules/chat/utilities/toPersistedChatOutput';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';

@@ -44,7 +44,7 @@ export const authValidation = {
         body: signUpSchema
     } satisfies ValidationSchemaInput,
     checkEmail: {
-        body: checkEmailSchema
+        params: checkEmailSchema
     } satisfies ValidationSchemaInput,
     updatePassword: {
         body: updatePasswordSchema

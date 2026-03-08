@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import type { ContainerTerminalAttachPayload, ITerminalService } from '@modules/container/domain/port/ITerminalService';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
+import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';

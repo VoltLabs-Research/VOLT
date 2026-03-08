@@ -1,8 +1,8 @@
 import { AddUsersToGroupInputDTO, AddUsersToGroupOutputDTO } from '@modules/chat/application/dtos/chat/AddUsersToGroupDTO';
-import { ensureTeamMembersExist } from '@modules/chat/application/services/chat/ensureTeamMembersExist';
-import { resolveGroupChat } from '@modules/chat/application/services/chat/resolveGroupChat';
+import { ensureTeamMembersExist } from '@modules/chat/utilities/chat/ensureTeamMembersExist';
+import { resolveGroupChat } from '@modules/chat/utilities/chat/resolveGroupChat';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { toPersistedChatOutput } from '@modules/chat/domain/services/toPersistedChatOutput';
+import { toPersistedChatOutput } from '@modules/chat/utilities/toPersistedChatOutput';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';

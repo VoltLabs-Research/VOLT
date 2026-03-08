@@ -5,7 +5,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import {
     getAnalysisRasterFrameObjectName,
     getRasterFrameObjectName
-} from '@modules/raster/services/raster-storage-paths';
+} from '@modules/raster/utilities/raster-storage-paths';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { RasterUpAxis } from '@shared/infrastructure/utilities/rasterizer';
 import {

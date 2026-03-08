@@ -1,6 +1,6 @@
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ExportPluginInputDTO, ExportPluginOutputDTO } from '@modules/plugin/application/dtos/plugin/ExportPluginDTO';
-import { createStreamResponse } from '@modules/plugin/application/helpers/plugin/create-download-response';
+import { createStreamResponse } from '@modules/plugin/utilities/plugin/create-download-response';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { IPluginStorageService } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
 

@@ -10,7 +10,7 @@ import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/err
 import { readNumberEnv } from './shared/infrastructure/utilities/env';
 import app from './core/config/express';
 import startQueues from './core/bootstrap/start-queues';
-import SocketGateway from './modules/socket/infrastructure/gateway/SocketGateway';
+import SocketGateway from './modules/socket/socket/SocketGateway';
 import logger from './shared/infrastructure/logger';
 import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
 import http from 'http';

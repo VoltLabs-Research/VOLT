@@ -9,7 +9,7 @@ import {
     PluginListingRowData as ListingRowData
 } from '@modules/plugin/domain/contracts/listing-row/PluginListing';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { getExposureNodes } from '@modules/plugin/infrastructure/utilities/exposure/get-exposure-nodes';
+import { getExposureNodes } from '@modules/plugin/utilities/exposure/get-exposure-nodes';
 import ListingRow from '@modules/plugin/domain/entities/listing-row/ListingRow';
 import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 

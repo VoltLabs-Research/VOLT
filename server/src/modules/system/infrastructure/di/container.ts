@@ -9,8 +9,8 @@ import MongoMetricsCollector from '@modules/system/infrastructure/services/Mongo
 import ServiceHealthPinger from '@modules/system/infrastructure/services/ServiceHealthPinger';
 import ClusterMetricsAggregator from '@modules/system/infrastructure/services/ClusterMetricsAggregator';
 import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
-import SystemSocketModule from '@modules/system/infrastructure/socket/SystemSocketModule';
-import SystemMetricsSocketOrchestrator from '@modules/system/infrastructure/socket/SystemMetricsSocketOrchestrator';
+import SystemSocketModule from '@modules/system/socket/SystemSocketModule';
+import SystemMetricsSocketOrchestrator from '@modules/system/socket/SystemMetricsSocketOrchestrator';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 
 export const registerSystemDependencies = (): void => {

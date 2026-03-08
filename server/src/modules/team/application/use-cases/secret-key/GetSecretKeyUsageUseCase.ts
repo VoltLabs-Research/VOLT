@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { GetSecretKeyUsageInputDTO, GetSecretKeyUsageOutputDTO, getSecretKeyUsageInputSchema } from '@modules/team/application/dtos/secret-key/GetSecretKeyUsageDTO';
-import SecretKeyUsageMetricsMapper from '@modules/team/application/services/secret-key/SecretKeyUsageMetricsMapper';
+import SecretKeyUsageMetricsMapper from '@modules/team/infrastructure/services/secret-key/SecretKeyUsageMetricsMapper';
 import { resolveSecretKeyValidationErrorCode } from '@modules/team/application/use-cases/secret-key/resolve-secret-key-validation-error-code';
 import { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
 import { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/secret-key/ISecretKeyUsageLogRepository';

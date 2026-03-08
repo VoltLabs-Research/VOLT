@@ -1,13 +1,13 @@
 import { container } from 'tsyringe';
 import AuthenticateSocketConnectionUseCase from '@modules/socket/application/use-cases/AuthenticateSocketConnectionUseCase';
-import SocketTeamSubscriptionCoordinator from '@modules/socket/services/team-subscription/SocketTeamSubscriptionCoordinator';
-import SocketIOEmitter from '@modules/socket/infrastructure/adapters/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/infrastructure/adapters/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/infrastructure/adapters/SocketIORoomManager';
+import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import { SOCKET_TOKENS } from './SocketTokens';
-import SocketGateway from '@modules/socket/infrastructure/gateway/SocketGateway';
-import TeamSubscriptionSocketModule from '@modules/socket/infrastructure/modules/TeamSubscriptionSocketModule';
-import SocketConnectionMapper from '@modules/socket/infrastructure/connection/SocketConnectionMapper';
+import SocketGateway from '@modules/socket/socket/SocketGateway';
+import TeamSubscriptionSocketModule from '@modules/socket/socket/team-subscription/TeamSubscriptionSocketModule';
+import SocketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
 
 export const registerSocketDependencies = (): void => {
     container.registerSingleton(SOCKET_TOKENS.SocketEventEmitter, SocketIOEmitter);

@@ -6,7 +6,7 @@ import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory
 import { ITrajectoryBackgroundProcessor, ProcessorContext, TrajectoryUploadFile } from '@modules/trajectory/domain/port/trajectory/ITrajectoryBackgroundProcessor';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { normalizeTrajectoryWorkerFailure } from '@modules/trajectory/infrastructure/workers/trajectory/trajectory-worker-failure';
+import { normalizeTrajectoryWorkerFailure } from '@modules/trajectory/utilities/trajectory/trajectory-worker-failure';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IFileExtractorService } from '@shared/domain/port/IFileExtractorService';
 import { ITempFileService } from '@shared/domain/port/ITempFileService';

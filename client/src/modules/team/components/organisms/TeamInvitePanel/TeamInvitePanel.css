@@ -6,6 +6,8 @@
 
 .team-invite-panel-popover{
     max-height: 420px;
+    width: 100%;
+    max-width: 400px;
 }
 
 .team-invite-content{

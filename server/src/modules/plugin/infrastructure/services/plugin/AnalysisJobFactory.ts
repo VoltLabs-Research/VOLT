@@ -1,5 +1,5 @@
 import { IAnalysisJobFactory, AnalysisJobCreateInput } from '@modules/plugin/domain/port/plugin/IAnalysisJobFactory';
-import PluginDisplayNameResolver from '@modules/plugin/domain/services/plugin/PluginDisplayNameResolver';
+import PluginDisplayNameResolver from '@modules/plugin/utilities/plugin/PluginDisplayNameResolver';
 
 import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { injectable } from 'tsyringe';

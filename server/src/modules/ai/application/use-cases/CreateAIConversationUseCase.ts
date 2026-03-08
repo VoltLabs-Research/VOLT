@@ -7,7 +7,7 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { Result } from '@shared/domain/port/Result';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
 import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
-import AIMessageDTOMapper from '@modules/ai/services/AIMessageDTOMapper';
+import AIMessageDTOMapper from '@modules/ai/utilities/AIMessageDTOMapper';
 import { CreateAIConversationInputDTO, CreateAIConversationOutputDTO } from '@modules/ai/application/dtos/CreateAIConversationDTO';
 import { inject, injectable } from 'tsyringe';
 

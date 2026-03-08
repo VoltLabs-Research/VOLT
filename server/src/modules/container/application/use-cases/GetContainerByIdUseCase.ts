@@ -1,5 +1,5 @@
 import { GetContainerByIdInputDTO, GetContainerByIdOutputDTO } from '@modules/container/application/dtos/GetContainerByIdDTO';
-import { ContainerOwnershipService } from '@modules/container/services/ContainerOwnershipService';
+import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';

@@ -1,5 +1,5 @@
 import { AITool } from '@shared/application/ai/AITool';
-import type { AIToolScope } from '@modules/ai/services/AIToolService';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 import type { IUseCase, UseCaseInput, UseCaseOutput } from '@shared/application/IUseCase';
 import type { z } from 'zod';
 

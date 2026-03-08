@@ -1,6 +1,6 @@
 import { DeleteContainerInputDTO, DeleteContainerOutputDTO } from '@modules/container/application/dtos/DeleteContainerDTO';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-import { ContainerOwnershipService } from '@modules/container/services/ContainerOwnershipService';
+import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
 import ContainerDeletedEvent from '@modules/container/domain/events/ContainerDeletedEvent';
 import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { IContainerService } from '@modules/container/domain/port/IContainerService';

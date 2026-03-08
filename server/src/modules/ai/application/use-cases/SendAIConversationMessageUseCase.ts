@@ -7,9 +7,9 @@ import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversati
 import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
 import { AIMessageDTO } from '@modules/ai/application/dtos/ListAIConversationMessagesDTO';
 import { SendAIConversationMessageInputDTO, SendAIConversationMessageOutputDTO } from '@modules/ai/application/dtos/SendAIConversationMessageDTO';
-import AIResponseMessagePartsMapper from '@modules/ai/services/AIResponseMessagePartsMapper';
-import AIUIMessageUtils from '@modules/ai/services/AIUIMessageUtils';
-import AIMessageDTOMapper from '@modules/ai/services/AIMessageDTOMapper';
+import AIResponseMessagePartsMapper from '@modules/ai/utilities/AIResponseMessagePartsMapper';
+import AIUIMessageUtils from '@modules/ai/utilities/AIUIMessageUtils';
+import AIMessageDTOMapper from '@modules/ai/utilities/AIMessageDTOMapper';
 import AIMessage, { AIMessageRole } from '@modules/ai/domain/entities/AIMessage';
 import type { AIChatFinishEvent, IAIChatTransport } from '@modules/ai/domain/port/IAIChatTransport';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';

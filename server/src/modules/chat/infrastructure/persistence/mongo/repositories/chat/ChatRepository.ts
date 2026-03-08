@@ -1,6 +1,6 @@
 import chatMapper from '@modules/chat/infrastructure/persistence/mongo/mappers/chat/ChatMapper';
 import ChatDeletedEvent from '@modules/chat/domain/events/ChatDeletedEvent';
-import { toPersistedChatOutput } from '@modules/chat/domain/services/toPersistedChatOutput';
+import { toPersistedChatOutput } from '@modules/chat/utilities/toPersistedChatOutput';
 import ChatModel from '@modules/chat/infrastructure/persistence/mongo/models/chat/ChatModel';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';

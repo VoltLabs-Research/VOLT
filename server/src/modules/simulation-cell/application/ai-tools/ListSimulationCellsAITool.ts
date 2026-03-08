@@ -3,7 +3,7 @@ import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/
 import ListSimulationCellsByTeamIdUseCase from '@modules/simulation-cell/application/use-cases/ListSimulationCellsByTeamIdUseCase';
 import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
-import type { AIToolScope } from '@modules/ai/services/AIToolService';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 
 @injectable()
 export class ListSimulationCellsAITool extends AITool {

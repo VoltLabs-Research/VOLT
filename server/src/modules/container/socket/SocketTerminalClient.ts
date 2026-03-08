@@ -1,5 +1,5 @@
 import type { ContainerTerminalError, ContainerTerminalResizePayload, ITerminalClient } from '@modules/container/domain/port/ITerminalService';
-import { createSocketErrorEnvelope } from '@modules/socket/infrastructure/utilities/socket-error-envelope';
+import { createSocketErrorEnvelope } from '@modules/socket/utilities/socket-error-envelope';
 import type { Socket } from 'socket.io';
 
 export class SocketTerminalClient implements ITerminalClient {

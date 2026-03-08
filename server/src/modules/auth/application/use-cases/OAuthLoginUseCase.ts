@@ -1,7 +1,7 @@
 import { OAuthLoginInputDTO, OAuthLoginOutputDTO } from '@modules/auth/application/dtos/OAuthLoginDTO';
 import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import AuthSessionService from '@modules/auth/services/AuthSessionService';
+import AuthSessionService from '@modules/auth/infrastructure/services/AuthSessionService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
 import { Result } from '@shared/domain/port/Result';

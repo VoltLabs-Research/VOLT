@@ -249,6 +249,10 @@
     justify-content: center;
 }
 
+.content-around{
+    justify-content: space-around;
+}
+
 .content-between {
     justify-content: space-between;
 }

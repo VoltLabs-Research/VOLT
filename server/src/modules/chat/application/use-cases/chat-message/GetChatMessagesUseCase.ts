@@ -1,7 +1,7 @@
 import { GetChatMessagesInputDTO, GetChatMessagesOutputDTO } from '@modules/chat/application/dtos/chat-message/GetChatMessagesDTO';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { resolveAccessibleChat } from '@modules/chat/application/services/chat/resolveAccessibleChat';
-import { toPersistedChatOutput } from '@modules/chat/domain/services/toPersistedChatOutput';
+import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
+import { toPersistedChatOutput } from '@modules/chat/utilities/toPersistedChatOutput';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';

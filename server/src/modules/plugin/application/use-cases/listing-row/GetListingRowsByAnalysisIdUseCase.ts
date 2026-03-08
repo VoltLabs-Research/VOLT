@@ -1,4 +1,4 @@
-import { mapListingRowByAnalysis } from '@modules/plugin/application/mappers/listing-row/mapListingRowByAnalysis';
+import { mapListingRowByAnalysis } from '@modules/plugin/utilities/mappers/listing-row/mapListingRowByAnalysis';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     GetListingRowsByAnalysisIdInputDTO,

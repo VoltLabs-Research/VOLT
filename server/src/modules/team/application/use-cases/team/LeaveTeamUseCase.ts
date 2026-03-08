@@ -1,7 +1,7 @@
 import { LeaveTeamInputDTO } from '../../dtos/team/LeaveTeamDTO';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import TeamMembershipService from '@modules/team/application/services/team/TeamMembershipService';
+import TeamMembershipService from '@modules/team/infrastructure/services/team/TeamMembershipService';
 import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';

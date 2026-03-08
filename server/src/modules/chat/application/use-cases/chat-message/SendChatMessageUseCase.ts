@@ -1,7 +1,7 @@
 import { SendChatMessageInputDTO, SendChatMessageOutputDTO } from '@modules/chat/application/dtos/chat-message/SendChatMessageDTO';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { resolveAccessibleChat } from '@modules/chat/application/services/chat/resolveAccessibleChat';
-import { toPersistedChatOutput } from '@modules/chat/domain/services/toPersistedChatOutput';
+import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
+import { toPersistedChatOutput } from '@modules/chat/utilities/toPersistedChatOutput';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';

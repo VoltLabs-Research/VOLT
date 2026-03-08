@@ -1,5 +1,5 @@
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import TeamMembershipService from '@modules/team/application/services/team/TeamMembershipService';
+import TeamMembershipService from '@modules/team/infrastructure/services/team/TeamMembershipService';
 import TeamMemberLeaveEvent from '@modules/team/domain/events/team-member/TeamMemberLeaveEvent';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import { injectable, inject } from 'tsyringe';

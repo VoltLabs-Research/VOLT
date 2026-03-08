@@ -3,8 +3,8 @@ import { IDislocationExporter, DislocationExportOptions, ProcessedDislocationGeo
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import nativeExporter from '@modules/trajectory/infrastructure/native/trajectory/NativeExporter';
-import calculateDislocationType from '@modules/trajectory/infrastructure/utilities/trajectory/calculate-dislocation-type';
-import computeBoundsFromPoints from '@modules/trajectory/infrastructure/utilities/trajectory/compute-bounds-from-points';
+import calculateDislocationType from '@modules/trajectory/utilities/trajectory/calculate-dislocation-type';
+import computeBoundsFromPoints from '@modules/trajectory/utilities/trajectory/compute-bounds-from-points';
 
 import { injectable, inject } from 'tsyringe';
 

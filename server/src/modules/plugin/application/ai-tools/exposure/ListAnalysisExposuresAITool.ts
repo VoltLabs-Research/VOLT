@@ -1,4 +1,4 @@
-import { listAnalysisFiles } from '@modules/plugin/infrastructure/utilities/exposure/analysis-file-collection';
+import { listAnalysisFiles } from '@modules/plugin/utilities/exposure/analysis-file-collection';
 
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
@@ -8,7 +8,7 @@ import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
-import type { AIToolScope } from '@modules/ai/services/AIToolService';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 

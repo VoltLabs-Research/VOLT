@@ -1,7 +1,7 @@
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
+import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { inject, singleton } from 'tsyringe';
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';

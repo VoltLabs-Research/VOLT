@@ -3,9 +3,9 @@ import { IListingRowRepository, ListingRowUpsertOperation } from '@modules/plugi
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { ISubListingRowRepository } from '@modules/plugin/domain/port/listing-row/ISubListingRowRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { listExposurePayloadObjects } from '@modules/plugin/infrastructure/utilities/exposure/analysis-file-collection';
-import { getExposureNodes } from '@modules/plugin/infrastructure/utilities/exposure/get-exposure-nodes';
-import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/exposure/merge-chunked-value';
+import { listExposurePayloadObjects } from '@modules/plugin/utilities/exposure/analysis-file-collection';
+import { getExposureNodes } from '@modules/plugin/utilities/exposure/get-exposure-nodes';
+import mergeChunkedValue from '@modules/plugin/utilities/exposure/merge-chunked-value';
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';

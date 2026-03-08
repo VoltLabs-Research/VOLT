@@ -1,7 +1,7 @@
 import { CreateGroupChatInputDTO, CreateGroupChatOutputDTO } from '@modules/chat/application/dtos/chat/CreateGroupChatDTO';
-import { ensureTeamMembersExist } from '@modules/chat/application/services/chat/ensureTeamMembersExist';
+import { ensureTeamMembersExist } from '@modules/chat/utilities/chat/ensureTeamMembersExist';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { toPersistedChatOutput } from '@modules/chat/domain/services/toPersistedChatOutput';
+import { toPersistedChatOutput } from '@modules/chat/utilities/toPersistedChatOutput';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';

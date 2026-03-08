@@ -17,17 +17,17 @@ import { UpdatePluginByIdUseCase } from '@modules/plugin/application/use-cases/p
 import { UploadBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/UploadBinaryUseCase';
 import { ValidateWorkflowUseCase } from '@modules/plugin/application/use-cases/plugin/ValidateWorkflowUseCase';
 import { INodeRegistry, INodeHandler } from '@modules/plugin/domain/port/plugin/INodeRegistry';
-import { ListingRowsExportPresenter } from '@modules/plugin/infrastructure/presenters/listing-row/ListingRowsExportPresenter';
+import { ListingRowsExportPresenter } from '@modules/plugin/infrastructure/http/presenters/listing-row/ListingRowsExportPresenter';
 import { DefaultPluginBootstrapService } from '@modules/plugin/infrastructure/services/plugin/DefaultPluginBootstrapService';
 import { ListingRowPrecomputationService } from '@modules/plugin/infrastructure/services/listing-row/ListingRowPrecomputationService';
 import { PluginExposureExportService } from '@modules/plugin/infrastructure/services/exposure/PluginExposureExportService';
 import { PluginListingService } from '@modules/plugin/infrastructure/services/listing-row/PluginListingService';
 import { WorkflowValidatorService } from '@modules/plugin/infrastructure/services/plugin/WorkflowValidatorService';
-import { DebugSocketOrchestrator } from '@modules/plugin/infrastructure/socket/debug/DebugSocketOrchestrator';
+import { DebugSocketOrchestrator } from '@modules/plugin/socket/debug/DebugSocketOrchestrator';
 import ListingRowRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/listing-row/ListingRowRepository';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
 import SubListingRowRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/listing-row/SubListingRowRepository';
-import AnalysisProcessingQueue from '@modules/plugin/infrastructure/queues/AnalysisProcessingQueue';
+import AnalysisProcessingQueue from '@modules/plugin/queues/AnalysisProcessingQueue';
 import AnalysisJobFactory from '@modules/plugin/infrastructure/services/plugin/AnalysisJobFactory';
 import ArgumentsHandler from '@modules/plugin/infrastructure/services/plugin/nodes/handlers/ArgumentsHandler';
 import ContextHandler from '@modules/plugin/infrastructure/services/plugin/nodes/handlers/ContextHandler';
@@ -42,7 +42,7 @@ import PluginBinaryCacheService from '@modules/plugin/infrastructure/services/pl
 import PluginStorageService from '@modules/plugin/infrastructure/services/plugin/PluginStorageService';
 import PluginWorkflowEngine from '@modules/plugin/infrastructure/services/plugin/PluginWorkflowEngine';
 import ProcessExecutorService from '@modules/plugin/infrastructure/services/plugin/ProcessExecutorService';
-import DebugSocketModule from '@modules/plugin/infrastructure/socket/DebugSocketModule';
+import DebugSocketModule from '@modules/plugin/socket/DebugSocketModule';
 
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';

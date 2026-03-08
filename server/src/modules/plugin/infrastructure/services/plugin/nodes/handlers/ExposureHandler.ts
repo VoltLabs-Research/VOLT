@@ -1,6 +1,6 @@
 import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { INodeHandler, ExecutionContext, NodeOutputSchema, T } from '@modules/plugin/domain/port/plugin/INodeRegistry';
-import readExposurePayload from '@modules/plugin/infrastructure/utilities/exposure/read-exposure-payload';
+import readExposurePayload from '@modules/plugin/utilities/exposure/read-exposure-payload';
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
