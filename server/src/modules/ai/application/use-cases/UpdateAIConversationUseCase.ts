@@ -3,7 +3,7 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
 import {
     UpdateAIConversationInputDTO,
@@ -40,7 +40,7 @@ export default class UpdateAIConversationUseCase implements IUseCase<UpdateAICon
             updateData.lastMessageAt = input.lastMessageAt ? new Date(input.lastMessageAt) : null;
         }
 
-        const updatedConversation = await this.conversationRepository.updateById(conversation.id, updateData);
+        const updatedConversation = await this.conversationRepository.updateById(conversation._id, updateData);
 
         if (!updatedConversation) {
             return Result.fail(ApplicationError.notFound(
@@ -50,7 +50,7 @@ export default class UpdateAIConversationUseCase implements IUseCase<UpdateAICon
         }
 
         return Result.ok({
-            _id: updatedConversation.id,
+            _id: updatedConversation._id,
             ...updatedConversation.props
         });
     }

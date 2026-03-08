@@ -20,7 +20,7 @@ export class GetTrajectoryByIdAITool extends AITool {
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
         const result = await this.useCase.execute({ trajectoryId: params.trajectoryId });
         if (!result.success) throw result.error;
-        const { name, status, isPublic, frames, stats, createdAt } = result.value;
-        return { trajectoryId: params.trajectoryId, name, status, isPublic, framesCount: Array.isArray(frames) ? frames.length : 0, stats: stats ?? null, createdAt };
+        const { _id, name, status, isPublic, frames, stats, createdAt } = result.value;
+        return { trajectoryId: _id, name, status, isPublic, framesCount: Array.isArray(frames) ? frames.length : 0, stats: stats ?? null, createdAt };
     }
 }

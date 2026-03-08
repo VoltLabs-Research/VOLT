@@ -1,4 +1,5 @@
-import { OAuthProvider, UserProps } from '@modules/auth/domain/entities/User';
+import { PersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
+import { OAuthProvider } from '@modules/auth/domain/entities/User';
 
 export interface OAuthLoginInputDTO{
     email: string;
@@ -13,5 +14,5 @@ export interface OAuthLoginInputDTO{
 
 export interface OAuthLoginOutputDTO{
     token: string;
-    user: UserProps;
+    user: PersistedUserDTO;
 };

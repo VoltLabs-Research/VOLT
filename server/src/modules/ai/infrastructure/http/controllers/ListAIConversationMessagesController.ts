@@ -1,13 +1,4 @@
-import { injectable, inject } from 'tsyringe';
-import { PaginatedBaseController } from '@shared/infrastructure/http/PaginatedBaseController';
-import ListAIConversationMessagesUseCase from '@modules/ai/application/use-cases/ListAIConversationMessagesUseCase';
+import { createPaginatedController } from '@shared/infrastructure/http/controllers/createController';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 
-@injectable()
-export default class ListAIConversationMessagesController extends PaginatedBaseController<ListAIConversationMessagesUseCase> {
-    constructor(
-        @inject(ListAIConversationMessagesUseCase)
-        useCase: ListAIConversationMessagesUseCase
-    ) {
-        super(useCase);
-    }
-}
+export default createPaginatedController(AI_TOKENS.ListAIConversationMessagesUseCase);

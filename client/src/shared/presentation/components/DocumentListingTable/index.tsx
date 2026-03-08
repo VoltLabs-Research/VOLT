@@ -7,6 +7,7 @@ import TableSkeletonRow from '@/shared/presentation/components/TableSkeletonRow'
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
 import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 import './DocumentListingTable.css';
 
 const MIN_COLUMN_WIDTH = 180;
@@ -26,13 +27,6 @@ export interface ColumnConfig {
     render?: (value: unknown, row?: unknown) => React.ReactNode;
     skeleton?: { variant: 'text' | 'rounded'; width: number; height?: number };
     sortable?: boolean;
-};
-
-export interface MenuOption {
-    label: string;
-    icon?: React.ComponentType;
-    onClick: () => void | Promise<void>;
-    destructive?: boolean;
 };
 
 interface DocumentListingTableProps<T extends Identifiable> {

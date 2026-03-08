@@ -1,7 +1,9 @@
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as GoogleStrategy, type VerifyCallback, type Profile, type GoogleCallbackParameters } from 'passport-google-oauth20';
+import type { Request } from 'express';
 import BaseOAuthStrategy from '@modules/auth/infrastructure/http/passport/BaseOAuthStrategy';
 import OAuthLoginUseCase from '@modules/auth/application/use-cases/OAuthLoginUseCase';
 import { OAuthProvider } from '@modules/auth/domain/entities/User';
+import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 
 export default class GoogleStrategyWrapper extends BaseOAuthStrategy{
     constructor(oauthLoginUseCase: OAuthLoginUseCase){
@@ -22,6 +24,8 @@ export default class GoogleStrategyWrapper extends BaseOAuthStrategy{
             callbackURL: process.env.GOOGLE_CALLBACK_URL!,
             scope: ['profile', 'email'],
             passReqToCallback: true
-        }, this.verify.bind(this));
+        }, (request: Request, accessToken: string, refreshToken: string, _params: GoogleCallbackParameters, profile: Profile, done: VerifyCallback) => {
+            void this.verify(request as AuthenticatedRequest, accessToken, refreshToken, profile, done);
+        });
     }
 };

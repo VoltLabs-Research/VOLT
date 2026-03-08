@@ -1,4 +1,4 @@
-import { ExportType } from '@shared/domain/port/IBaseRepository';
+import type { ExportType } from '@shared/domain/port/IBaseRepository';
 
 export interface GetPluginListingDocumentsInputDTO {
     pluginId: string;
@@ -24,8 +24,9 @@ export interface ExportPluginListingDocumentsInputDTO {
 };
 
 export interface ColumnDef {
-    path: string;
     label: string;
+    sortable: boolean;
+    width?: number;
 };
 
 export interface ListingRowData {
@@ -49,6 +50,7 @@ export interface GetPluginListingDocumentsOutputDTO {
         exposureName: string;
         exposureId: string;
         columns: ColumnDef[];
+        subListingNames: string[];
     };
 };
 

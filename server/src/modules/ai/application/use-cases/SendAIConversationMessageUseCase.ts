@@ -1,16 +1,14 @@
 import { injectable, inject } from 'tsyringe';
-import { convertToModelMessages } from 'ai';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
 import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
 import AIMessage from '@modules/ai/domain/entities/AIMessage';
-import AIChatOrchestratorService from '@modules/ai/application/services/AIChatOrchestratorService';
 import {
     SendAIConversationMessageInputDTO,
     SendAIConversationMessageOutputDTO
@@ -20,6 +18,7 @@ import AIResponseMessagePartsMapper from '@modules/ai/application/services/AIRes
 import AIUIMessageUtils from '@modules/ai/application/services/AIUIMessageUtils';
 import AIMessageDTOMapper from '@modules/ai/application/services/AIMessageDTOMapper';
 import logger from '@shared/infrastructure/logger';
+import type { AIChatFinishEvent, IAIChatTransport } from '@modules/ai/application/ports/IAIChatTransport';
 
 @injectable()
 export default class SendAIConversationMessageUseCase implements IUseCase<SendAIConversationMessageInputDTO, SendAIConversationMessageOutputDTO, ApplicationError> {
@@ -33,8 +32,8 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
         @inject(TEAM_TOKENS.TeamMemberRepository)
         private readonly teamMemberRepository: ITeamMemberRepository,
 
-        @inject(AI_TOKENS.AIChatOrchestratorService)
-        private readonly aiChatOrchestrator: AIChatOrchestratorService,
+        @inject(AI_TOKENS.AIChatTransport)
+        private readonly aiChatTransport: IAIChatTransport,
 
         @inject(AI_TOKENS.AIMessageDTOMapper)
         private readonly messageDTOMapper: AIMessageDTOMapper,
@@ -87,7 +86,7 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
         if (userText) {
             const now = new Date();
             userMessage = await this.messageRepository.create({
-                conversationId: conversation.id,
+                conversationId: conversation._id,
                 role: 'user',
                 parts: [{ type: 'text', text: userText }],
                 content: userText,
@@ -98,37 +97,53 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
             } as any);
         }
 
-        const modelMessages = await convertToModelMessages(uiMessages);
-
         logger.debug(
-            'AI conversation %s: %d UI messages -> %d model messages',
-            conversation.id,
-            uiMessages.length,
-            modelMessages.length
+            'AI conversation %s: sending %d normalized messages',
+            conversation._id,
+            uiMessages.length
         );
 
+        let resolveAssistantMessage: (message: AIMessageDTO | undefined) => void = () => undefined;
+        let rejectAssistantMessage: (error: unknown) => void = () => undefined;
+        const assistantMessage = new Promise<AIMessageDTO | undefined>((resolve, reject) => {
+            resolveAssistantMessage = resolve;
+            rejectAssistantMessage = reject;
+        });
+
         try {
-            const streamResult = await this.aiChatOrchestrator.generateReplyStream({
+            const streamResult = await this.aiChatTransport.generateReplyStream({
                 teamId: input.teamId,
                 userId: input.userId,
                 provider: input.provider,
                 model: input.model,
-                messages: modelMessages,
+                messages: uiMessages,
                 onFinish: async (event) => {
-                    await this.persistAssistantResponse(conversation.id, event);
-                    await this.conversationRepository.updateById(conversation.id, {
-                        lastMessageAt: new Date(),
-                        lastProvider: event.provider,
-                        lastModel: event.model
-                    } as any);
+                    try {
+                        const persistedAssistantMessage = await this.persistAssistantResponse(conversation._id, event);
+                        const conversationUpdate = {
+                            lastMessageAt: new Date(),
+                            lastProvider: event.provider,
+                            lastModel: event.model,
+                            title: input.title?.trim() || conversation.props.title
+                        } as any;
+
+                        await this.conversationRepository.updateById(conversation._id, conversationUpdate);
+                        resolveAssistantMessage(persistedAssistantMessage);
+                    } catch (error) {
+                        rejectAssistantMessage(error);
+                        throw error;
+                    }
                 }
             });
 
             return Result.ok({
                 streamResult,
-                userMessage: userMessage ? this.toDTO(userMessage) : undefined
+                userMessage: userMessage ? this.toDTO(userMessage) : undefined,
+                assistantMessage
             });
         } catch (error) {
+            rejectAssistantMessage(error);
+
             if (error instanceof ApplicationError) {
                 return Result.fail(error);
             }
@@ -138,22 +153,16 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
 
     private async persistAssistantResponse(
         conversationId: string,
-        event: {
-            text: string;
-            totalUsage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number } | null;
-            finishReason: string;
-            steps: any[];
-            responseMessages: any[];
-            provider: string;
-            model: string;
-        }
-    ): Promise<void> {
+        event: AIChatFinishEvent
+    ): Promise<AIMessageDTO | undefined> {
         const { parts: allParts, textContent } = this.responseMessagePartsMapper.mapAssistantResponseParts(event.responseMessages);
 
-        if (allParts.length === 0) return;
+        if (allParts.length === 0) {
+            return undefined;
+        }
 
         const now = new Date();
-        await this.messageRepository.create({
+        const assistantMessage = await this.messageRepository.create({
             conversationId,
             role: 'assistant',
             parts: allParts,
@@ -162,18 +171,7 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
                 provider: event.provider,
                 model: event.model,
                 finishReason: event.finishReason,
-                steps: event.steps.map((step) => ({
-                    stepNumber: step.stepNumber,
-                    toolCalls: step.toolCalls.map((toolCall: any) => ({
-                        toolName: toolCall.toolName,
-                        input: toolCall.args
-                    })),
-                    toolResults: step.toolResults.map((toolResult: any) => ({
-                        toolName: toolResult.toolName,
-                        input: toolResult.args,
-                        output: toolResult.result
-                    }))
-                }))
+                steps: event.steps
             },
             tokenUsage: {
                 inputTokens: event.totalUsage?.inputTokens ?? 0,
@@ -183,6 +181,8 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
             createdAt: now,
             updatedAt: now
         } as any);
+
+        return this.toDTO(assistantMessage);
     }
 
     private toDTO(message: AIMessage): AIMessageDTO {

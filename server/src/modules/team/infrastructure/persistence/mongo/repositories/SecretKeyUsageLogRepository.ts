@@ -3,15 +3,16 @@ import { injectable } from 'tsyringe';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import SecretKeyUsageLog, { SecretKeyUsageLogProps } from '@modules/team/domain/entities/SecretKeyUsageLog';
 import { ISecretKeyUsageLogRepository, LogRequestInput } from '@modules/team/domain/port/ISecretKeyUsageLogRepository';
-import { TeamUsageMetrics, KeyUsageMetrics } from '@modules/team/application/dtos/secret-key/SecretKeyUsageTypes';
+import type {
+    KeyUsageAnalytics,
+    TeamUsageAnalytics
+} from '@modules/team/domain/contracts/SecretKeyUsageAnalytics';
+import type { KeyUsageMetrics, TeamUsageMetrics } from '@modules/team/domain/contracts/SecretKeyUsageMetrics';
 import SecretKeyUsageLogModel, { SecretKeyUsageLogDocument } from '@modules/team/infrastructure/persistence/mongo/models/SecretKeyUsageLogModel';
 import secretKeyUsageLogMapper from '@modules/team/infrastructure/persistence/mongo/mappers/SecretKeyUsageLogMapper';
 
 const IS_SUCCESS_STATUS = { $and: [{ $gte: ['$statusCode', 200] }, { $lt: ['$statusCode', 300] }] };
 const COUNT_SUCCESS = { $sum: { $cond: [IS_SUCCESS_STATUS, 1, 0] } };
-
-const calcSuccessRate = (success: number, total: number): number =>
-    total > 0 ? Math.round((success / total) * 1000) / 10 : 0;
 
 const endpointPipelineStages = (limit?: number): Record<string, unknown>[] => {
     const stages: Record<string, unknown>[] = [
@@ -43,6 +44,73 @@ const endpointPipelineStages = (limit?: number): Record<string, unknown>[] => {
     return stages;
 };
 
+interface TeamMetricsOverviewRow {
+    totalRequests: number;
+    successRequests: number;
+    avgResponseTime: number;
+}
+
+interface TeamMetricsPerKeyRow {
+    _id: mongoose.Types.ObjectId;
+    totalRequests: number;
+    successRequests: number;
+    avgResponseTime: number;
+    lastRequestAt: Date | null;
+}
+
+interface TeamMetricsDailyRow {
+    _id: {
+        date: string;
+        secretKey: mongoose.Types.ObjectId;
+    };
+    count: number;
+}
+
+interface KeyMetricsOverviewRow extends TeamMetricsOverviewRow {
+    requests24h: number;
+    requests7d: number;
+}
+
+interface CountByLabelRow {
+    _id: string;
+    count: number;
+}
+
+interface PeakHourRow {
+    _id: number;
+    count: number;
+}
+
+interface StatusDistributionRow {
+    code: number;
+    count: number;
+}
+
+interface RecentRequestRow {
+    method: string;
+    path: string;
+    statusCode: number;
+    responseTime: number;
+    ip: string;
+    createdAt: Date;
+}
+
+interface TeamMetricsAggregateResult {
+    overview: TeamMetricsOverviewRow[];
+    perKey: TeamMetricsPerKeyRow[];
+    daily: TeamMetricsDailyRow[];
+    topEndpoints: TeamUsageMetrics['topEndpoints'];
+}
+
+interface KeyMetricsAggregateResult {
+    overview: KeyMetricsOverviewRow[];
+    hourly: CountByLabelRow[];
+    daily: CountByLabelRow[];
+    endpoints: KeyUsageMetrics['endpoints'];
+    statusDistribution: StatusDistributionRow[];
+    peakHour: PeakHourRow[];
+}
+
 @injectable()
 export default class SecretKeyUsageLogRepository
     extends MongooseBaseRepository<SecretKeyUsageLog, SecretKeyUsageLogProps, SecretKeyUsageLogDocument>
@@ -56,12 +124,12 @@ export default class SecretKeyUsageLogRepository
         await this.create(data as unknown as SecretKeyUsageLogProps);
     }
 
-    async getTeamMetrics(teamId: string, days: number): Promise<TeamUsageMetrics> {
+    async getTeamUsageAnalytics(teamId: string, days: number): Promise<TeamUsageAnalytics> {
         const since = new Date();
         since.setDate(since.getDate() - days);
         const teamObjectId = new mongoose.Types.ObjectId(teamId);
 
-        const [result] = await this.model.aggregate([
+        const [result] = await this.model.aggregate<TeamMetricsAggregateResult>([
             { $match: { team: teamObjectId, createdAt: { $gte: since } } },
             {
                 $facet: {
@@ -102,53 +170,29 @@ export default class SecretKeyUsageLogRepository
                     topEndpoints: endpointPipelineStages(10)
                 }
             }
-        ]);
+        ] as any);
 
         const overview = result.overview[0] || { totalRequests: 0, successRequests: 0, avgResponseTime: 0 };
-        const successRate = calcSuccessRate(overview.successRequests, overview.totalRequests);
-
-        const dateSet = new Set<string>();
-        const keyDayMap: Record<string, Record<string, number>> = {};
-
-        for (const row of result.daily) {
-            const date = row._id.date;
-            const keyId = row._id.secretKey.toString();
-            dateSet.add(date);
-            if (!keyDayMap[keyId]) keyDayMap[keyId] = {};
-            keyDayMap[keyId][date] = row.count;
-        }
-
-        const labels = Array.from(dateSet).sort();
-        const byKey: Record<string, number[]> = {};
-        const total = labels.map(() => 0);
-
-        for (const [keyId, dayMap] of Object.entries(keyDayMap)) {
-            byKey[keyId] = labels.map((label, i) => {
-                const count = dayMap[label] || 0;
-                total[i] += count;
-                return count;
-            });
-        }
 
         return {
-            overview: {
-                totalRequests: overview.totalRequests,
-                successRate,
-                avgResponseTime: Math.round(overview.avgResponseTime || 0)
-            },
-            perKey: result.perKey.map((pk: Record<string, any>) => ({
+            overview,
+            perKey: result.perKey.map((pk) => ({
                 secretKeyId: pk._id.toString(),
                 totalRequests: pk.totalRequests,
                 successRequests: pk.successRequests,
-                avgResponseTime: Math.round(pk.avgResponseTime || 0),
+                avgResponseTime: pk.avgResponseTime || 0,
                 lastRequestAt: pk.lastRequestAt || null
             })),
-            daily: { labels, total, byKey },
+            daily: result.daily.map((row) => ({
+                date: row._id.date,
+                secretKeyId: row._id.secretKey.toString(),
+                count: row.count
+            })),
             topEndpoints: result.topEndpoints
         };
     }
 
-    async getKeyMetrics(secretKeyId: string, days: number): Promise<KeyUsageMetrics> {
+    async getKeyUsageAnalytics(secretKeyId: string, days: number): Promise<KeyUsageAnalytics> {
         const since = new Date();
         since.setDate(since.getDate() - days);
         const now = new Date();
@@ -156,7 +200,7 @@ export default class SecretKeyUsageLogRepository
         const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         const keyObjectId = new mongoose.Types.ObjectId(secretKeyId);
 
-        const [result] = await this.model.aggregate([
+        const [result] = await this.model.aggregate<KeyMetricsAggregateResult>([
             { $match: { secretKey: keyObjectId, createdAt: { $gte: since } } },
             {
                 $facet: {
@@ -219,43 +263,37 @@ export default class SecretKeyUsageLogRepository
                     ]
                 }
             }
-        ]);
+        ] as any);
 
-        const ov = result.overview[0] || { totalRequests: 0, successRequests: 0, avgResponseTime: 0, requests24h: 0, requests7d: 0 };
-        const successRate = calcSuccessRate(ov.successRequests, ov.totalRequests);
-
-        const peakHourRaw = result.peakHour[0]?._id;
-        const peakHour = peakHourRaw !== undefined
-            ? `${String(peakHourRaw).padStart(2, '0')}:00`
-            : '--:--';
+        const overview = result.overview[0] || {
+            totalRequests: 0,
+            successRequests: 0,
+            avgResponseTime: 0,
+            requests24h: 0,
+            requests7d: 0
+        };
 
         const recentDocs = await this.model
             .find({ secretKey: keyObjectId })
             .sort({ createdAt: -1 })
             .limit(50)
             .select('method path statusCode responseTime ip createdAt')
-            .lean();
+            .lean<RecentRequestRow[]>();
 
         return {
-            stats: {
-                totalRequests: ov.totalRequests,
-                requests24h: ov.requests24h,
-                requests7d: ov.requests7d,
-                successRate,
-                avgResponseTime: Math.round(ov.avgResponseTime || 0),
-                peakHour
-            },
-            hourly: {
-                labels: result.hourly.map((h: Record<string, any>) => h._id),
-                data: result.hourly.map((h: Record<string, any>) => h.count)
-            },
-            daily: {
-                labels: result.daily.map((d: Record<string, any>) => d._id),
-                data: result.daily.map((d: Record<string, any>) => d.count)
-            },
+            overview,
+            hourly: result.hourly.map((hour) => ({
+                label: hour._id,
+                count: hour.count
+            })),
+            daily: result.daily.map((day) => ({
+                label: day._id,
+                count: day.count
+            })),
             endpoints: result.endpoints,
             statusDistribution: result.statusDistribution,
-            recentRequests: recentDocs.map((doc: Record<string, any>) => ({
+            peakHour: result.peakHour[0]?._id ?? null,
+            recentRequests: recentDocs.map((doc) => ({
                 method: doc.method,
                 path: doc.path,
                 statusCode: doc.statusCode,

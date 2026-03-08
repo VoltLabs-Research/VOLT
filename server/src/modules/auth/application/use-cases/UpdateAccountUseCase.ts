@@ -5,10 +5,9 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { UpdateAccountInputDTO, UpdateAccountOutputDTO } from '@modules/auth/application/dtos/UpdateAccountDTO';
 import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { IAvatarService } from '@modules/auth/domain/port/IAvatarService';
-import validator from 'validator';
 import { injectable, inject } from 'tsyringe';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import { UserProps } from '@modules/auth/domain/entities/User';
+import User, { UserProps } from '@modules/auth/domain/entities/User';
 
 @injectable()
 export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInputDTO, UpdateAccountOutputDTO, ApplicationError>{
@@ -28,15 +27,12 @@ export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInput
             ));
         }
 
-        if(input.email && !validator.isEmail(input.email)){
-            return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.AUTH_CREDENTIALS_INVALID,
-                'Invalid email format'
-            ));
-        }
+        const normalizedEmail = input.email
+            ? User.normalizeEmail(input.email)
+            : undefined;
 
-        if(input.email && input.email !== user.props.email){
-            const exists = await this.userRepository.emailExists(input.email);
+        if (normalizedEmail && normalizedEmail !== user.props.email) {
+            const exists = await this.userRepository.emailExists(normalizedEmail);
             if(exists){
                 return Result.fail(ApplicationError.conflict(
                     ErrorCodes.AUTH_CREDENTIALS_INVALID,
@@ -46,22 +42,28 @@ export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInput
         }
 
         const updateData: Partial<UserProps> = {};
-        if(input.firstName) updateData.firstName = input.firstName;
-        if(input.lastName) updateData.lastName = input.lastName;
+        if (input.firstName) {
+            updateData.firstName = User.normalizeName(input.firstName);
+        }
+
+        if (input.lastName) {
+            updateData.lastName = User.normalizeName(input.lastName);
+        }
 
         if(input.fullName){
-            const normalizedFullName = input.fullName.trim().replace(/\s+/g, ' ');
-            if(normalizedFullName){
-                const parts = normalizedFullName.split(' ');
-                updateData.firstName = parts[0];
-                updateData.lastName = parts.length > 1
-                    ? parts.slice(1).join(' ')
-                    : user.props.lastName;
+            const normalizedFullName = User.splitFullName(input.fullName);
+
+            updateData.firstName = normalizedFullName.firstName;
+
+            if (normalizedFullName.lastName) {
+                updateData.lastName = normalizedFullName.lastName;
+            } else {
+                updateData.lastName = user.props.lastName;
             }
         }
 
-        if(input.email){
-            updateData.email = input.email.toLowerCase().trim();
+        if (normalizedEmail) {
+            updateData.email = normalizedEmail;
         }
 
         if(input.file?.buffer){
@@ -78,7 +80,7 @@ export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInput
         }
 
         return Result.ok({
-            _id: updatedUser.id,
+            _id: updatedUser._id,
             ...updatedUser.props,
             fullName: `${updatedUser.props.firstName} ${updatedUser.props.lastName}`.trim()
         });

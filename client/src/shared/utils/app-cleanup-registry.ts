@@ -29,6 +29,13 @@ const registerCleanup = (
     };
 };
 
+export const registerAppCleanup = (
+    handler: AppCleanupHandler,
+    reasons: AppCleanupReason[]
+): (() => void) => {
+    return registerCleanup(handler, reasons);
+};
+
 const runCleanup = (context: AppCleanupContext): void => {
     cleanupRegistry[context.reason].forEach((handler) => {
         try {
@@ -48,6 +55,10 @@ export const registerErrorRecoveryCleanup = (handler: AppCleanupHandler): (() =>
 
 export const registerSharedAppCleanup = (handler: AppCleanupHandler): (() => void) => {
     return registerCleanup(handler, ['route-change', 'error-recovery', 'manual-reset']);
+};
+
+export const registerManualAppCleanup = (handler: AppCleanupHandler): (() => void) => {
+    return registerCleanup(handler, ['manual-reset']);
 };
 
 export const runRouteCleanup = (

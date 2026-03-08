@@ -1,13 +1,5 @@
-import { injectable, inject } from 'tsyringe';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
 import RejectTeamInvitationUseCase from '@modules/team/application/use-cases/team-invitation/RejectTeamInvitationUseCase';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
 
-@injectable()
-export default class RejectTeamInvitationController extends BaseController<RejectTeamInvitationUseCase> {
-    constructor(
-        @inject(RejectTeamInvitationUseCase)
-        useCase: RejectTeamInvitationUseCase
-    ) {
-        super(useCase);
-    }
-}
+const RejectTeamInvitationController = createController(RejectTeamInvitationUseCase);
+export default RejectTeamInvitationController;

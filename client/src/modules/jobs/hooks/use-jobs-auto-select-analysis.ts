@@ -1,0 +1,136 @@
+import { useCallback, useEffect, useRef } from 'react';
+import { JobStatus, type Job } from '../api/entities/job';
+import useGetTrajectoryById from '@/modules/trajectory/hooks/use-get-trajectory-by-id';
+import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
+
+interface UseJobsAutoSelectAnalysisArgs {
+    trajectoryId?: string;
+    jobs: Job[];
+    setCurrentTimestep: (timestep: number) => void;
+}
+
+interface PendingSelection {
+    analysisId: string;
+    timestep?: number;
+}
+
+const getAnalysisIdFromJob = (job: Job): string | undefined => {
+    if (job.analysisId) return job.analysisId;
+    if (!job.jobId || !job.jobId.includes('-')) return undefined;
+
+    const parts = job.jobId.split('-');
+    parts.pop();
+    return parts.join('-');
+};
+
+const useJobsAutoSelectAnalysis = ({
+    trajectoryId,
+    jobs,
+    setCurrentTimestep
+}: UseJobsAutoSelectAnalysisArgs) => {
+    const trackedJobIdsRef = useRef<Set<string>>(new Set());
+    const hasAutoSelectedRef = useRef(false);
+    const pendingSelectionRef = useRef<PendingSelection | null>(null);
+    const refreshInFlightRef = useRef(false);
+    const { trajectory, refetch: refetchTrajectory } = useGetTrajectoryById({ trajectoryId, enabled: false });
+    const { setAnalysisId } = useCanvasUrlState();
+
+    const resetTracking = useCallback(() => {
+        hasAutoSelectedRef.current = false;
+        trackedJobIdsRef.current = new Set();
+        pendingSelectionRef.current = null;
+        refreshInFlightRef.current = false;
+    }, []);
+
+    const applySelection = useCallback((selection: PendingSelection): boolean => {
+        const analysis = trajectory?.analysis?.find((item) => item._id === selection.analysisId);
+
+        if (!analysis) {
+            return false;
+        }
+
+        setAnalysisId(analysis._id, { replace: true });
+
+        if (selection.timestep !== undefined) {
+            setCurrentTimestep(selection.timestep);
+        }
+
+        pendingSelectionRef.current = null;
+
+        return true;
+    }, [setAnalysisId, setCurrentTimestep, trajectory]);
+
+    const refreshTrajectory = useCallback(async () => {
+        if (!trajectoryId || refreshInFlightRef.current) {
+            return;
+        }
+
+        refreshInFlightRef.current = true;
+
+        try {
+            await refetchTrajectory();
+        } catch {
+            hasAutoSelectedRef.current = false;
+            pendingSelectionRef.current = null;
+        } finally {
+            refreshInFlightRef.current = false;
+        }
+    }, [refetchTrajectory, trajectoryId]);
+
+    useEffect(() => {
+        resetTracking();
+    }, [trajectoryId, resetTracking]);
+
+    const trackActiveJobs = useCallback(() => {
+        if (!trajectoryId) return;
+
+        for (const job of jobs) {
+            if (job.status !== JobStatus.Completed && job.status !== JobStatus.Failed && job.jobId) {
+                trackedJobIdsRef.current.add(job.jobId);
+            }
+        }
+    }, [jobs, trajectoryId]);
+
+    const attemptAutoSelect = useCallback(async () => {
+        if (!trajectoryId || hasAutoSelectedRef.current) return;
+
+        for (const job of jobs) {
+            const isTracked = job.jobId && trackedJobIdsRef.current.has(job.jobId);
+            const analysisId = getAnalysisIdFromJob(job);
+
+            if (job.status === JobStatus.Completed && isTracked && analysisId) {
+                hasAutoSelectedRef.current = true;
+                const selection = { analysisId, timestep: job.timestep };
+                pendingSelectionRef.current = selection;
+
+                if (!applySelection(selection)) {
+                    void refreshTrajectory();
+                }
+
+                break;
+            }
+        }
+    }, [applySelection, jobs, refreshTrajectory, trajectoryId]);
+
+    useEffect(() => {
+        trackActiveJobs();
+    }, [trackActiveJobs]);
+
+    useEffect(() => {
+        const pendingSelection = pendingSelectionRef.current;
+
+        if (!pendingSelection) {
+            return;
+        }
+
+        applySelection(pendingSelection);
+    }, [applySelection, trajectory]);
+
+    useEffect(() => {
+        void attemptAutoSelect();
+    }, [attemptAutoSelect]);
+
+    return { resetTracking };
+};
+
+export default useJobsAutoSelectAnalysis;

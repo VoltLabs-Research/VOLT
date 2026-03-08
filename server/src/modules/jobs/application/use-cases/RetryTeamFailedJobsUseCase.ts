@@ -1,36 +1,31 @@
 import { inject, injectable } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import TeamJobMaintenanceService from '@modules/jobs/infrastructure/services/TeamJobMaintenanceService';
+import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import {
     RetryTeamFailedJobsInputDTO,
     RetryTeamFailedJobsOutputDTO,
 } from '@modules/jobs/application/dtos/RetryTeamFailedJobsDTO';
+import { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
+import BaseTeamJobActionUseCase from '@modules/jobs/application/use-cases/BaseTeamJobActionUseCase';
 
 @injectable()
-export default class RetryTeamFailedJobsUseCase implements IUseCase<
+export default class RetryTeamFailedJobsUseCase extends BaseTeamJobActionUseCase<
     RetryTeamFailedJobsInputDTO,
-    RetryTeamFailedJobsOutputDTO,
-    ApplicationError
-> {
+    RetryTeamFailedJobsOutputDTO
+> implements IUseCase<RetryTeamFailedJobsInputDTO, RetryTeamFailedJobsOutputDTO, ApplicationError> {
     constructor(
-        @inject(TeamJobMaintenanceService)
-        private readonly teamJobMaintenanceService: TeamJobMaintenanceService
-    ){}
+        @inject(JOBS_TOKENS.TeamJobMaintenanceService)
+        private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
+    ) {
+        super();
+    }
 
-    async execute(
-        input: RetryTeamFailedJobsInputDTO
-    ): Promise<Result<RetryTeamFailedJobsOutputDTO, ApplicationError>> {
-        if (!input.teamId) {
-            return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.TEAM_ID_REQUIRED,
-                'Team id is required'
-            ));
-        }
+    protected async run(teamId: string): Promise<RetryTeamFailedJobsOutputDTO> {
+        const result = await this.teamJobMaintenanceService.retryFailedJobs(teamId);
 
-        const result = await this.teamJobMaintenanceService.retryFailedJobs(input.teamId);
-        return Result.ok(result);
+        return {
+            retriedFrames: result.retriedFrames
+        };
     }
 }

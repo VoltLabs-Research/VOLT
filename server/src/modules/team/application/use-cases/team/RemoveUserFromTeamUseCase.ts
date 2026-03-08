@@ -3,15 +3,13 @@ import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { RemoveUserFromTeamInputDTO } from '@modules/team/application/dtos/team/RemoveUserFromTeamDTO';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import TeamMemberLeaveEvent from '@modules/team/domain/events/TeamMemberLeaveEvent';
+import TeamMembershipService from '@modules/team/application/services/TeamMembershipService';
 
 @injectable()
 export default class RemoveUserFromTeamUseCase implements IUseCase<RemoveUserFromTeamInputDTO, null, ApplicationError>{
@@ -25,8 +23,8 @@ export default class RemoveUserFromTeamUseCase implements IUseCase<RemoveUserFro
         @inject(AUTH_TOKENS.UserRepository)
         private userRepository: IUserRepository,
 
-        @inject(SHARED_TOKENS.EventBus)
-        private eventBus: IEventBus
+        @inject(TEAM_TOKENS.TeamMembershipService)
+        private teamMembershipService: TeamMembershipService
     ){}
 
     async execute(input: RemoveUserFromTeamInputDTO): Promise<Result<null, ApplicationError>>{
@@ -59,10 +57,7 @@ export default class RemoveUserFromTeamUseCase implements IUseCase<RemoveUserFro
             ));
         }
 
-        await this.eventBus.publish(new TeamMemberLeaveEvent({
-            memberId: member.id,
-            teamId: teamId
-        }));
+        await this.teamMembershipService.removeMemberFromTeam(member._id, teamId);
 
         return Result.ok(null);
     }

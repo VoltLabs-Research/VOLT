@@ -1,23 +1,17 @@
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { v4 as uuidv4 } from 'uuid';
+import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 
 export interface NotificationCreatedPayload {
-    notificationId: string;
+    _id: string;
     recipient: string;
     title: string;
     content: string;
     read: boolean;
-    link: string;
+    link?: string;
     createdAt: Date;
 }
 
-export default class NotificationCreatedEvent implements IDomainEvent {
-    public readonly occurredOn: Date;
-    public readonly name = 'notification.created';
-    public readonly eventId: string;
-
-    constructor(public readonly payload: NotificationCreatedPayload) {
-        this.occurredOn = new Date();
-        this.eventId = uuidv4();
+export default class NotificationCreatedEvent extends BaseDomainEvent<NotificationCreatedPayload> {
+    constructor(payload: NotificationCreatedPayload) {
+        super('notification.created', payload);
     }
 }

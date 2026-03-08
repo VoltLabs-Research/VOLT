@@ -5,6 +5,8 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { GetOrCreateChatInputDTO, GetOrCreateChatOutputDTO } from '@modules/chat/application/dtos/chat/GetOrCreateChatDTO';
 import { injectable, inject } from 'tsyringe';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { toPersistedChatOutput } from '@modules/chat/application/helpers/toPersistedChatOutput';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export class GetOrCreateChatUseCase implements IUseCase<GetOrCreateChatInputDTO, GetOrCreateChatOutputDTO, ApplicationError> {
@@ -17,11 +19,13 @@ export class GetOrCreateChatUseCase implements IUseCase<GetOrCreateChatInputDTO,
         const { userId, targetUserId, teamId } = input;
 
         if (userId === targetUserId) {
-            // Assuming ErrorCodes.SELF_CHAT_NOT_ALLOWED doesn't exist yet, using INVALID_INPUT or similar
-            return Result.fail(ApplicationError.badRequest('INVALID_INPUT', 'Cannot create chat with yourself'));
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.CHAT_INVALID_ACTION,
+                'Cannot create chat with yourself'
+            ));
         }
 
         const result = await this.chatRepo.findOrCreateChat(userId, targetUserId, teamId);
-        return Result.ok(result.props);
+        return Result.ok(toPersistedChatOutput(result));
     }
 };

@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import { Resource } from '@core/constants/resources';
 import multer from 'multer';
 import controllers from '@modules/plugin/infrastructure/http/controllers/plugin';
-import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
+import { pluginValidation } from '@modules/plugin/infrastructure/http/validation/plugin-schemas';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
@@ -17,30 +18,38 @@ const upload = multer({
     limits: { fileSize: 200 * 1024 * 1024 }
 });
 
-router.use(protect);
+const executeRateLimit = createStandardRateLimiter(10);
+
+const importAndBinaryRateLimit = createStandardRateLimiter(3);
+
+const createPluginRateLimit = createStandardRateLimiter(15);
+
+const cloneRateLimit = createStandardRateLimiter(10);
+
+const exportRateLimit = createStandardRateLimiter(10);
 
 router.get('/schemas', controllers.getNodeSchemas.handle);
-router.post('/validate-workflow', controllers.validateWorkflow.handle);
+router.post('/validate-workflow', pluginValidation.validateWorkflow, controllers.validateWorkflow.handle);
 
-router.get('/:pluginId/export', controllers.exportPlugin.handle);
-router.post('/import', upload.single('file'), controllers.importPlugin.handle);
+router.get('/:pluginId/export', exportRateLimit, controllers.exportPlugin.handle);
+router.post('/import', importAndBinaryRateLimit, upload.single('file'), controllers.importPlugin.handle);
 
 router.route('/')
     .get(controllers.listPlugins.handle)
-    .post(controllers.create.handle);
+    .post(createPluginRateLimit, pluginValidation.create, controllers.create.handle);
 
 router.route('/:pluginId/binary')
-    .post(upload.single('file'), controllers.uploadBinary.handle)
-    .patch(upload.single('file'), controllers.uploadBinary.handle)
+    .post(importAndBinaryRateLimit, upload.single('file'), controllers.uploadBinary.handle)
+    .patch(importAndBinaryRateLimit, upload.single('file'), controllers.uploadBinary.handle)
     .delete(controllers.deleteBinary.handle);
 
-router.post('/:pluginId/clone', controllers.clone.handle);
+router.post('/:pluginId/clone', cloneRateLimit, controllers.clone.handle);
 
 router.route('/:pluginId')
     .get(controllers.getPluginById.handle)
-    .patch(controllers.updatePluginById.handle)
+    .patch(pluginValidation.update, controllers.updatePluginById.handle)
     .delete(controllers.deleteById.handle);
 
-router.post('/:pluginId/trajectory/:trajectoryId/execute', controllers.executePlugin.handle);
+router.post('/:pluginId/trajectory/:trajectoryId/execute', executeRateLimit, controllers.executePlugin.handle);
 
 export default module;

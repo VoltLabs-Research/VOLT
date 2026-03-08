@@ -1,9 +1,8 @@
 import { useCallback } from 'react';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
-import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
-import { canAccessTeamPermissions } from '@/modules/team/presentation/utilities/permission-evaluator';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 import { confirm, confirmDelete } from './use-confirm';
-import type { MenuOption } from '../components/DocumentListingTable';
 
 type IconType = React.ComponentType<{ size?: number | string; className?: string }>;
 
@@ -25,6 +24,7 @@ export interface UseListingActionsReturn<T = unknown> {
     handleAction: (actionKey: string, item: T, selectedItems: T[]) => Promise<void>;
     getMenuOptions: (item: T, selectedItems: T[]) => MenuOption[];
     executeAction: (actionKey: string, item: T, selectedItems: T[]) => Promise<void>;
+    getSelectionActionOptions: (item: T, selectedItems: T[]) => MenuOption[];
 };
 
 const ICON_PRESETS_REACT_ICONS: Record<string, IconType> = {
@@ -40,19 +40,12 @@ const capitalize = (str: string): string => {
 const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): UseListingActionsReturn<T> => {
     const { actions } = config;
 
-    const selectedTeamId = useTeamStore((state) => state.selectedTeam?._id ?? null);
-    const teamPermissions = useTeamStore((state) => state.permissions);
-    const permissionsTeamId = useTeamStore((state) => state.permissionsTeamId);
+    const { canAccess } = useTeamPermissions();
 
     const hasPermission = useCallback((permission?: string): boolean => {
         if(!permission) return true;
-        return canAccessTeamPermissions({
-            selectedTeamId,
-            permissionsTeamId,
-            permissions: teamPermissions,
-            requiredPermissions: [permission]
-        });
-    }, [selectedTeamId, permissionsTeamId, teamPermissions]);
+        return canAccess([permission]);
+    }, [canAccess]);
     
     const getActionIcon = useCallback((actionKey: string, actionConfig: ActionConfig<T>): IconType | null => {
         if(actionConfig.icon) return actionConfig.icon;
@@ -85,7 +78,8 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
             return [item];
         }
 
-        if(selectedItems.includes(item)){
+        const currentItemId = (item as { _id?: string })._id;
+        if(currentItemId && selectedItems.some((selectedItem) => (selectedItem as { _id?: string })._id === currentItemId)){
             return selectedItems;
         }
 
@@ -144,9 +138,7 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
     const handleAction = executeAction;
 
     const getMenuOptions = useCallback((item: T, selectedItems: T[]): MenuOption[] => {
-        const actionEntries = selectedItems.length > 1
-            ? Object.entries(actions).filter(([actionKey]) => actionKey === 'delete')
-            : Object.entries(actions);
+        const actionEntries = Object.entries(actions);
 
         return actionEntries
             .filter(([, actionConfig]) => hasPermission(actionConfig.requiredPermission))
@@ -165,10 +157,19 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
             });
     }, [actions, hasPermission, getActionLabel, getActionIcon, executeAction]);
 
+    const getSelectionActionOptions = useCallback((item: T, selectedItems: T[]): MenuOption[] => {
+        if (selectedItems.length <= 1) {
+            return getMenuOptions(item, selectedItems);
+        }
+
+        return getMenuOptions(item, selectedItems).filter((option) => option.destructive);
+    }, [getMenuOptions]);
+
     return {
         handleAction,
         getMenuOptions,
-        executeAction
+        executeAction,
+        getSelectionActionOptions
     };
 };
 

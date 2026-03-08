@@ -1,3 +1,3 @@
-export interface DeleteTeamByIdInputDTO{
-    teamId: string;
-};
+import { EntityIdInputDTO } from '@modules/team/application/dtos/common';
+
+export type DeleteTeamByIdInputDTO = EntityIdInputDTO<'teamId'>;

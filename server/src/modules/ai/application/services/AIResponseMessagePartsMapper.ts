@@ -1,38 +1,23 @@
-import type { UIMessage } from 'ai';
 import { injectable } from 'tsyringe';
+import { isRecord, asRecord } from '@shared/infrastructure/utilities/type-guards';
+import type { AIConversationMessageParts } from '@modules/ai/application/contracts/AIConversationMessage';
 
 interface AIResponseMessagePartsMappingResult {
-    parts: UIMessage['parts'];
+    parts: AIConversationMessageParts;
     textContent: string;
 }
-
-const isObject = (value: unknown): value is Record<string, unknown> => {
-    if (value === null || typeof value !== 'object') {
-        return false;
-    }
-
-    return !Array.isArray(value);
-};
-
-const asRecord = (value: unknown): Record<string, unknown> | null => {
-    if (!isObject(value)) {
-        return null;
-    }
-
-    return value;
-};
 
 @injectable()
 export default class AIResponseMessagePartsMapper {
     mapAssistantResponseParts(responseMessages: unknown[]): AIResponseMessagePartsMappingResult {
-        const parts: UIMessage['parts'] = [];
+        const parts: AIConversationMessageParts = [];
         let textContent = '';
 
         for (const responseMsg of responseMessages) {
-            if (!isObject(responseMsg) || !Array.isArray(responseMsg.content)) continue;
+            if (!isRecord(responseMsg) || !Array.isArray(responseMsg.content)) continue;
 
             for (const part of responseMsg.content) {
-                if (!isObject(part)) continue;
+                if (!isRecord(part)) continue;
 
                 if (typeof part.type !== 'string') continue;
                 const partType = part.type;
@@ -69,7 +54,7 @@ export default class AIResponseMessagePartsMapper {
                                 approval: {
                                     id: approvalId
                                 }
-                            } as UIMessage['parts'][number];
+                            };
                             parts.push(toolCallPart);
                         }
                         break;
@@ -95,7 +80,7 @@ export default class AIResponseMessagePartsMapper {
                             invocationRecord.output = part.output;
                             invocationRecord.state = 'output-available';
 
-                            if (isObject(invocationRecord.approval) && typeof invocationRecord.approval.id === 'string') {
+                            if (isRecord(invocationRecord.approval) && typeof invocationRecord.approval.id === 'string') {
                                 const approvalRecord = invocationRecord.approval;
                                 if (approvalRecord.approved !== false) {
                                     invocationRecord.approval = {
@@ -112,7 +97,7 @@ export default class AIResponseMessagePartsMapper {
                                 input: part.input ?? {},
                                 output: part.output,
                                 state: 'output-available'
-                            } as UIMessage['parts'][number];
+                            };
                             parts.push(toolResultPart);
                         }
                         break;

@@ -13,12 +13,19 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
 import nativeExporter from '@modules/trajectory/infrastructure/native/NativeExporter';
 import nativeStats from '@modules/trajectory/infrastructure/native/NativeStats';
-import { formatValueForPath } from '@shared/infrastructure/utilities/format-value';
-import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utils/record-scene-artifact';
+import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utilities/record-scene-artifact';
+import { normalizeAnalysisId, extractModifierAtomData } from '@modules/trajectory/infrastructure/utilities/modifier-data';
+import { buildParticleFilterObjectName } from '@modules/trajectory/infrastructure/utilities/minio-path-builder';
+
+const buildDumpNotFoundError = (): ApplicationError => {
+    return ApplicationError.notFound(
+        ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND,
+        'Trajectory dump not found'
+    );
+};
 
 const HIGHLIGHT_COLOR = [1.0, 0.2, 0.6];
 const DEFAULT_COLOR = [0.8, 0.8, 0.8];
-const DEFAULT_ANALYSIS_ID = 'default';
 
 @injectable()
 export default class ParticleFilterService implements IParticleFilterService {
@@ -41,17 +48,17 @@ export default class ParticleFilterService implements IParticleFilterService {
         timestep: string | number,
         analysisId?: string
     ): Promise<{ dump: string[]; perAtom: Record<string, string[]> }> {
-        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
+        const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const dumpPath = await this.dumpStorage.getDump(trajectoryId, String(timestep));
         if (!dumpPath) {
-            throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            throw buildDumpNotFoundError();
         }
 
         const parsed = await TrajectoryParserFactory.parse(dumpPath, { properties: [] });
         const dumpHeaders = parsed.metadata.headers || [];
 
-        const modifierProps = normalizedAnalysisId
-            ? await this.atomProps.getModifierPerAtomProps(String(normalizedAnalysisId))
+        const modifierProps = resolvedAnalysisId
+            ? await this.atomProps.getModifierPerAtomProps(String(resolvedAnalysisId))
             : {};
 
         return {
@@ -68,16 +75,18 @@ export default class ParticleFilterService implements IParticleFilterService {
         analysisId?: string,
         exposureId?: string
     ): Promise<number[]> {
-        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
+        const resolvedAnalysisId = normalizeAnalysisId(analysisId);
 
-        if (exposureId && normalizedAnalysisId) {
+        if (exposureId && resolvedAnalysisId) {
             const modifierData = await this.atomProps.getModifierAnalysis(
                 String(trajectoryId),
-                String(normalizedAnalysisId),
+                String(resolvedAnalysisId),
                 String(exposureId),
                 String(timestep)
             );
-            const atomsData = (modifierData as any)?.data || modifierData;
+            const atomsData = extractModifierAtomData(modifierData);
+            if (!atomsData) return [];
+
             const uniqueSet = new Set<number>();
             for (const atom of atomsData) {
                 if (atom[property] !== undefined && uniqueSet.size < maxValues) {
@@ -89,7 +98,7 @@ export default class ParticleFilterService implements IParticleFilterService {
 
         const dumpPath = await this.dumpStorage.getDump(trajectoryId, String(timestep));
         if (!dumpPath) {
-            throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            throw buildDumpNotFoundError();
         }
 
         const parsed = await TrajectoryParserFactory.parse(dumpPath, { properties: [] });
@@ -110,10 +119,10 @@ export default class ParticleFilterService implements IParticleFilterService {
         analysisId?: string,
         exposureId?: string
     ): Promise<{ matchCount: number; totalAtoms: number }> {
-        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
+        const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const result = await this.atomProps.evaluateFilterExpression(
             trajectoryId,
-            normalizedAnalysisId,
+            resolvedAnalysisId,
             exposureId ? String(exposureId) : null,
             String(timestep),
             expression
@@ -133,10 +142,10 @@ export default class ParticleFilterService implements IParticleFilterService {
         analysisId?: string,
         exposureId?: string
     ): Promise<{ fileId: string; atomsResult: number; action: string }> {
-        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
+        const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const filterResult = await this.atomProps.evaluateFilterExpression(
             trajectoryId,
-            normalizedAnalysisId,
+            resolvedAnalysisId,
             exposureId ? String(exposureId) : null,
             String(timestep),
             expression
@@ -144,14 +153,20 @@ export default class ParticleFilterService implements IParticleFilterService {
 
         const dumpPath = await this.dumpStorage.getDump(trajectoryId, String(timestep));
         if (!dumpPath) {
-            throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            throw buildDumpNotFoundError();
         }
 
         const parsed = await TrajectoryParserFactory.parse(dumpPath);
-        const exposurePart = exposureId ? String(exposureId) : 'dump';
-        const analysisSegment = normalizedAnalysisId || DEFAULT_ANALYSIS_ID;
-        const formattedValue = formatValueForPath(Number(expression.value));
-        const objectName = `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/particle-filter/${exposurePart}/${expression.property}-${expression.operator}-${formattedValue}-${action}.glb`;
+        const objectName = buildParticleFilterObjectName(
+            trajectoryId,
+            resolvedAnalysisId,
+            timestep,
+            exposureId,
+            expression.property,
+            expression.operator,
+            expression.value,
+            action
+        );
 
         let buffer: Buffer;
         let atomsResult: number;
@@ -190,13 +205,13 @@ export default class ParticleFilterService implements IParticleFilterService {
                 parsed.max
             );
             atomsResult = filterResult.matchCount;
-        }  
+        }
 
         await this.storageService.upload(SYS_BUCKETS.MODELS, objectName, buffer, { 'Content-Type': 'model/gltf-binary' });
 
         await recordSceneArtifact(this.sceneArtifactRepository, {
             trajectory: String(trajectoryId),
-            analysis: normalizedAnalysisId,
+            analysis: resolvedAnalysisId,
             sourceType: 'particle-filter',
             timestep: Number(timestep),
             objectName,
@@ -209,7 +224,7 @@ export default class ParticleFilterService implements IParticleFilterService {
             },
             displayName: `PF · ${expression.property} ${expression.operator} ${expression.value} · ${action} · t=${timestep}`,
             metadata: {
-                analysisId: normalizedAnalysisId || null,
+                analysisId: resolvedAnalysisId || null,
                 exposureId: exposureId || null,
                 atomsResult,
                 totalAtoms: filterResult.mask.length
@@ -233,15 +248,20 @@ export default class ParticleFilterService implements IParticleFilterService {
         analysisId?: string,
         exposureId?: string
     ): Promise<Readable> {
-        const exposurePart = exposureId ? String(exposureId) : 'dump';
         const actionPart = action || 'delete';
-        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
-        const analysisSegment = normalizedAnalysisId || DEFAULT_ANALYSIS_ID;
-        const formattedValue = typeof value === 'number' ? formatValueForPath(value) : String(value);
-        const objectName = `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${formattedValue}-${actionPart}.glb`;
+        const objectName = buildParticleFilterObjectName(
+            trajectoryId,
+            normalizeAnalysisId(analysisId),
+            timestep,
+            exposureId,
+            property,
+            operator,
+            value,
+            actionPart
+        );
 
         if (!await this.storageService.exists(SYS_BUCKETS.MODELS, objectName)) {
-            throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            throw buildDumpNotFoundError();
         }
 
         return this.storageService.getStream(SYS_BUCKETS.MODELS, objectName);

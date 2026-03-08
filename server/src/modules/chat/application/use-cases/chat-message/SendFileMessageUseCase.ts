@@ -2,7 +2,6 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { SendFileMessageInputDTO, SendFileMessageOutputDTO } from '@modules/chat/application/dtos/chat-message/SendFileMessageDTO';
 import { SendChatMessageUseCase } from './SendChatMessageUseCase';
 import { ChatMessageMetadata, ChatMessageType } from '@modules/chat/domain/entities/ChatMessage';
@@ -10,7 +9,7 @@ import { ChatMessageMetadata, ChatMessageType } from '@modules/chat/domain/entit
 @injectable()
 export class SendFileMessageUseCase implements IUseCase<SendFileMessageInputDTO, SendFileMessageOutputDTO, ApplicationError> {
     constructor(
-        @inject(CHAT_TOKENS.SendChatMessageUseCase)
+        @inject(SendChatMessageUseCase)
         private sendChatMessage: SendChatMessageUseCase
     ){}
 

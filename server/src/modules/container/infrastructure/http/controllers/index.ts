@@ -1,22 +1,22 @@
 import CreateContainerController from './CreateContainerController';
-import DeleteContainerController from './DeleteContainerController';
+import DeleteContainerByIdController from './DeleteContainerByIdController';
 import GetContainerByIdController from './GetContainerByIdController';
-import GetContainerFilesController from './GetContainerFilesController';
-import GetContainerProcessesController from './GetContainerProcessesController';
-import GetContainerStatsController from './GetContainerStatsController';
-import ListContainersController from './ListContainersController';
-import ReadContainerFileController from './ReadContainerFileController';
-import UpdateContainerController from './UpdateContainerController';
+import GetContainerFilesByIdController from './GetContainerFilesByIdController';
+import GetContainerProcessesByIdController from './GetContainerProcessesByIdController';
+import GetContainerStatsByIdController from './GetContainerStatsByIdController';
+import ListContainersByTeamIdController from './ListContainersByTeamIdController';
+import ReadContainerFileByIdController from './ReadContainerFileByIdController';
+import UpdateContainerByIdController from './UpdateContainerByIdController';
 import { container } from 'tsyringe';
 
 export default {
     create: container.resolve(CreateContainerController),
-    deleteById: container.resolve(DeleteContainerController),
+    deleteById: container.resolve(DeleteContainerByIdController),
     getById: container.resolve(GetContainerByIdController),
-    getFilesById: container.resolve(GetContainerFilesController),
-    getProcessesById: container.resolve(GetContainerProcessesController),
-    getStatsById: container.resolve(GetContainerStatsController),
-    listByTeamId: container.resolve(ListContainersController),
-    readFileById: container.resolve(ReadContainerFileController),
-    updateById: container.resolve(UpdateContainerController)
+    getFilesById: container.resolve(GetContainerFilesByIdController),
+    getProcessesById: container.resolve(GetContainerProcessesByIdController),
+    getStatsById: container.resolve(GetContainerStatsByIdController),
+    listByTeamId: container.resolve(ListContainersByTeamIdController),
+    readFileById: container.resolve(ReadContainerFileByIdController),
+    updateById: container.resolve(UpdateContainerByIdController)
 };

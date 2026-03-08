@@ -1,4 +1,5 @@
 export interface ReadContainerFileInputDTO {
+    teamId: string;
     containerId: string;
     path: string;
 }

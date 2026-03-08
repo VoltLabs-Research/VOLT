@@ -1,5 +1,5 @@
 import { injectable, inject } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -102,7 +102,7 @@ export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTraject
         return Result.ok({
             ...artifacts,
             data: artifacts.data.map((artifact) => ({
-                _id: artifact.id,
+                _id: artifact._id,
                 ...artifact.props
             }))
         });

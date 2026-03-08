@@ -1,4 +1,3 @@
-export interface LeaveTeamInputDTO {
-    teamId: string;
-    userId: string;
-};
+import { TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
+
+export type LeaveTeamInputDTO = TeamUserScopedInputDTO;

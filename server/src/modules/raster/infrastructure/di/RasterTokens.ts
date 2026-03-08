@@ -1,4 +1,8 @@
 export const RASTER_TOKENS = {
-    RasterService: Symbol.for('RasterService'),
+    RasterStorage: Symbol.for('RasterStorage'),
+    RasterMetadataReader: Symbol.for('RasterMetadataReader'),
+    RasterFrameReader: Symbol.for('RasterFrameReader'),
+    RasterJobEnqueuer: Symbol.for('RasterJobEnqueuer'),
+    RasterSessionCompletedEventHandler: Symbol.for('RasterSessionCompletedEventHandler'),
     RasterizerQueue: Symbol.for('RasterizerQueue')
 };

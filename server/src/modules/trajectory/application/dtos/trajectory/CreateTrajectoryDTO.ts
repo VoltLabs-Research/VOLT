@@ -7,4 +7,6 @@ export interface CreateTrajectoryInputDTO {
     teamId: string;
 };
 
-export interface CreateTrajectoryOutputDTO extends TrajectoryProps { };
+export interface CreateTrajectoryOutputDTO extends TrajectoryProps {
+    _id: string;
+};

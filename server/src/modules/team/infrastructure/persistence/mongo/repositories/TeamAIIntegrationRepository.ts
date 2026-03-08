@@ -15,7 +15,7 @@ export default class TeamAIIntegrationRepository
     }
 
     async findByTeamAndProvider(teamId: string, provider: TeamAIProvider): Promise<TeamAIIntegration | null> {
-        return this.findOne({ team: teamId, provider } as any);
+        return this.findOne({ team: teamId, provider });
     }
 
     async findByTeamAndProviderWithSecret(teamId: string, provider: TeamAIProvider): Promise<TeamAIIntegration | null> {

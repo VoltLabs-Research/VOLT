@@ -6,12 +6,17 @@ import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { IChatMessageRepository } from '@modules/chat/domain/port/IChatMessageRepository';
 import { EditMessageInputDTO, EditMessageOutputDTO } from '@modules/chat/application/dtos/chat-message/EditMessageDTO';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { toPersistedChatOutput } from '@modules/chat/application/helpers/toPersistedChatOutput';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 
 @injectable()
 export class EditMessageUseCase implements IUseCase<EditMessageInputDTO, EditMessageOutputDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
-        private messageRepo: IChatMessageRepository
+        private messageRepo: IChatMessageRepository,
+        @inject(SOCKET_TOKENS.SocketEventEmitter)
+        private socketEmitter: ISocketEmitter
     ){}
 
     async execute(input: EditMessageInputDTO): Promise<Result<EditMessageOutputDTO, ApplicationError>> {
@@ -42,6 +47,13 @@ export class EditMessageUseCase implements IUseCase<EditMessageInputDTO, EditMes
             ));
         }
 
-        return Result.ok(updatedMessage.props);
+        const persistedMessage = toPersistedChatOutput(updatedMessage);
+
+        this.socketEmitter.emitToRoom(`chat-${input.chatId}`, 'message_edited', {
+            chatId: input.chatId,
+            message: persistedMessage
+        });
+
+        return Result.ok(persistedMessage);
     }
 };

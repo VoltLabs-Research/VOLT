@@ -1,13 +1,17 @@
 import "reflect-metadata";
-import '@core/bootstrap/register-deps';
+import { registerAllDependencies } from '@core/bootstrap/register-deps';
 import BaseWorker from '@shared/infrastructure/workers/BaseWorker';
 import logger from '@shared/infrastructure/logger';
-import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/TrajectoryDumpStorageService';
-import AtomisticExporter from '@modules/trajectory/infrastructure/services/exporters/AtomisticExporter';
+import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/ITrajectoryDumpStorageService';
+import type { IAtomisticExporter } from '@modules/trajectory/domain/port/exporters/AtomisticExporter';
 import { container } from 'tsyringe';
 import { performance } from 'node:perf_hooks';
 import { ErrorCodes } from '@core/constants/error-codes';
 import Job from '@modules/jobs/domain/entities/Job';
+import { normalizeTrajectoryWorkerFailure } from './trajectory-worker-failure';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+
+registerAllDependencies();
 
 interface TrajectoryProcessingJobMetadata {
     trajectoryId: string;
@@ -15,13 +19,13 @@ interface TrajectoryProcessingJobMetadata {
 }
 
 export default class TrajectoryProcessingWorker extends BaseWorker<Job> {
-    private dumpStorage!: TrajectoryDumpStorageService;
-    private atomisticExporter!: AtomisticExporter;
+    private dumpStorage!: ITrajectoryDumpStorageService;
+    private atomisticExporter!: IAtomisticExporter;
 
     protected async setup(): Promise<void> {
         await this.connectDB();
-        this.dumpStorage = container.resolve(TrajectoryDumpStorageService);
-        this.atomisticExporter = container.resolve(AtomisticExporter);
+        this.dumpStorage = container.resolve<ITrajectoryDumpStorageService>(TRAJECTORY_TOKENS.TrajectoryDumpStorageService);
+        this.atomisticExporter = container.resolve<IAtomisticExporter>(TRAJECTORY_TOKENS.AtomisticExporter);
     }
 
     protected async perform(job: Job): Promise<void> {
@@ -59,13 +63,20 @@ export default class TrajectoryProcessingWorker extends BaseWorker<Job> {
                 timestep,
                 duration: totalTime
             });
-        } catch (error: any) {
-            logger.error(`@trajectory-processing-worker - #${process.pid}] error processing job ${jobId}: ${error.message} \nStack: ${error.stack}`);
-            this.sendMessage({
-                status: 'failed',
-                jobId,
+        } catch (error: unknown) {
+            const failure = normalizeTrajectoryWorkerFailure(
+                error,
+                ErrorCodes.TRAJECTORY_GLB_GENERATION_FAILED
+            );
+
+            logger.error(
+                error,
+                `@trajectory-processing-worker - #${process.pid}] error processing job ${jobId}`
+            );
+
+            this.sendFailure(jobId, failure, {
                 timestep,
-                error: error.message
+                trajectoryId
             });
         }
     }

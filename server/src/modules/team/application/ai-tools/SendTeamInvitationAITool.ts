@@ -1,14 +1,33 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
-import { AITool } from '@shared/application/ai/AITool';
+import SendTeamInvitationUseCase from '@modules/team/application/use-cases/team-invitation/SendTeamInvitationUseCase';
+import { TeamUseCaseAITool } from './TeamUseCaseAITool';
+
+const sendTeamInvitationParametersSchema = z.object({
+    email: z.string(),
+    roleId: z.string().optional(),
+    reason: z.string().optional()
+});
 
 @injectable()
-export class SendTeamInvitationAITool extends AITool {
+export class SendTeamInvitationAITool extends TeamUseCaseAITool<
+    z.infer<typeof sendTeamInvitationParametersSchema>,
+    SendTeamInvitationUseCase,
+    typeof sendTeamInvitationParametersSchema
+> {
     readonly name = 'send_team_invitation';
     readonly description = 'Send a team invitation.';
-    readonly parameters = z.object({ email: z.string(), roleId: z.string().optional(), reason: z.string().optional() });
+    readonly parameters = sendTeamInvitationParametersSchema;
 
-    constructor() {
-        super();
+    constructor(
+        @inject(SendTeamInvitationUseCase)
+        useCase: SendTeamInvitationUseCase
+    ) {
+        super(useCase, (params, scope) => ({
+            teamId: scope.teamId,
+            userId: scope.userId,
+            email: params.email,
+            roleId: params.roleId
+        }));
     }
 }

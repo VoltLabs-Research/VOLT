@@ -2,6 +2,9 @@ import { Schema } from 'mongoose';
 import { ValidationCodes } from '@core/constants/validation-codes';
 import { WorkflowSchema } from './workflow/WorkflowSchema';
 import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
+import { ModifierDataSchema } from './workflow/nodes/ModifierDataSchema';
+import { ExportDataSchema } from './workflow/nodes/ExportDataSchema';
+import { ArgumentDefinitionSchema } from './workflow/nodes/ArgumentsDataSchema';
 
 export const PluginSchema = new Schema({
     team: {
@@ -12,7 +15,7 @@ export const PluginSchema = new Schema({
     },
     workflow: {
         type: WorkflowSchema,
-        required: [true, ValidationCodes.PLUGIN_WORKFLOW_REQUIRED]
+        required: [true, ValidationCodes.PLUGIN_WORKFLOW_NODE_ID_REQUIRED]
     },
     status: {
         type: String,
@@ -26,6 +29,43 @@ export const PluginSchema = new Schema({
     validationErrors: [{
         type: String
     }],
+    modifier: {
+        type: ModifierDataSchema,
+        default: null
+    },
+    exposures: {
+        type: [{
+            _id: { type: String, required: true },
+            name: { type: String, required: true },
+            results: { type: String, required: true },
+            iterable: { type: String },
+            iterableChunkSize: { type: Number },
+            icon: { type: String },
+            canvas: { type: Boolean, default: false },
+            raster: { type: Boolean, default: false },
+            hasListing: { type: Boolean, default: true },
+            export: { type: ExportDataSchema, default: null }
+        }],
+        default: []
+    },
+    arguments: {
+        type: [ArgumentDefinitionSchema],
+        default: []
+    },
+    listingExposures: {
+        type: {
+            pluginName: { type: String, required: true },
+            pluginId: { type: String, required: true },
+            exposures: {
+                type: [{
+                    exposureId: { type: String, required: true },
+                    name: { type: String, required: true }
+                }],
+                default: []
+            }
+        },
+        default: null
+    }
 }, {
     timestamps: true,
     toJSON: { virtuals: true },

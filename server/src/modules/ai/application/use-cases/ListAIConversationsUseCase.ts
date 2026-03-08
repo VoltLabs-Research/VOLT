@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
 import {
     ListAIConversationsInputDTO,
@@ -42,7 +42,7 @@ export default class ListAIConversationsUseCase implements IUseCase<ListAIConver
         });
 
         const data: AIConversationDTO[] = result.data.map((conversation) => ({
-            _id: conversation.id,
+            _id: conversation._id,
             ...conversation.props
         }));
 

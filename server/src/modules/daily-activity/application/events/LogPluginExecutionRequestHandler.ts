@@ -13,11 +13,12 @@ export default class LogPluginExecutionRequestHandler implements IEventHandler<P
     ){}
 
     async handle(event: PluginExecutionRequestEvent): Promise<void>{
-        const description = `started analysis on ${event.pluginName} for trajectory ${event.trajectoryName}`;
+        const { pluginName, trajectoryName, teamId, userId } = event.payload;
+        const description = `started analysis on ${pluginName} for trajectory ${trajectoryName}`;
         await this.activityRepo.addDailyActivity(
-            event.teamId, 
-            event.userId, 
-            ActivityType.AnalysisPerformed, 
+            teamId,
+            userId,
+            ActivityType.AnalysisPerformed,
             description
         );
     }

@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import '@core/bootstrap/register-deps';
+import { registerAllDependencies } from '@core/bootstrap/register-deps';
 import logger from '@shared/infrastructure/logger';
 import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
 import { ISSHConnectionService } from '@modules/ssh/domain/port/ISSHConnectionService';
@@ -10,6 +10,19 @@ import BaseWorker from '@shared/infrastructure/workers/BaseWorker';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ErrorCodes } from '@core/constants/error-codes';
+import {
+    createWorkerFailureEnvelope,
+    normalizeWorkerFailureEnvelope,
+    WorkerFailureError
+} from '@shared/infrastructure/workers/WorkerFailureEnvelope';
+
+registerAllDependencies();
+
+interface SSHImportJobMetadata {
+    sshConnectionId?: string;
+    remotePath?: string;
+    userId?: string;
+}
 
 export default class SSHImportWorker extends BaseWorker<Job> {
     private sshService!: ISSHConnectionService;
@@ -22,11 +35,17 @@ export default class SSHImportWorker extends BaseWorker<Job> {
     }
 
     protected async perform(job: Job): Promise<void> {
-        const { jobId, teamId, metadata } = job.props;
-        const { sshConnectionId, remotePath, userId } = metadata || {};
+        const { jobId, teamId } = job.props;
+        const metadata = job.props.metadata as SSHImportJobMetadata | undefined;
+        const sshConnectionId = metadata?.sshConnectionId;
+        const remotePath = metadata?.remotePath;
+        const userId = metadata?.userId;
 
         if (!sshConnectionId || !remotePath || !userId) {
-            throw new Error('Missing required job metadata: sshConnectionId, remotePath, or userId');
+            throw new WorkerFailureError(createWorkerFailureEnvelope({
+                code: ErrorCodes.WORKER_FAILURE,
+                details: 'Missing required job metadata: sshConnectionId, remotePath, or userId'
+            }));
         }
 
         try {
@@ -87,13 +106,16 @@ export default class SSHImportWorker extends BaseWorker<Job> {
             });
 
             logger.info(`@ssh-import-worker - #${process.pid}] ssh import job ${jobId} completed with ${localFiles.length} files`);
-        } catch (error: any) {
-            logger.error(`@ssh-import-worker - #${process.pid}] ssh import job ${jobId} failed: ${error.message} `);
-            this.sendMessage({
-                status: 'failed',
-                jobId,
-                error: error.message
+        } catch (error: unknown) {
+            const failure = normalizeWorkerFailureEnvelope({
+                error,
+                fallbackCode: ErrorCodes.SSH_IMPORT_ERROR
             });
+            const failureDetails = failure.details || failure.message;
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            logger.error(`@ssh-import-worker - #${process.pid}] ssh import job ${jobId} failed: ${failureDetails}${errorStack ? `\nStack: ${errorStack}` : ''}`);
+            this.sendFailure(jobId, failure);
         }
     }
 };

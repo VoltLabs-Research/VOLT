@@ -1,3 +1,1 @@
-export const ANALYSIS_TOKENS = {
-    AnalysisRepository: Symbol.for('AnalysisRepository')
-};
+export { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';

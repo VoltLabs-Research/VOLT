@@ -2,6 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
 import { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
 import { UpdateUserActivityInputDTO, UpdateUserActivityOutputDTO } from '@modules/daily-activity/application/dto/UpdateUserActivityDTO';
@@ -24,10 +25,18 @@ export default class UpdateUserActivityUseCase implements IUseCase<UpdateUserAct
         try {
             await this.repository.updateOnlineMinutes(teamId, userId, date, durationInMinutes);
             return Result.ok({ success: true });
-        } catch (error) {
+        } catch (error: unknown) {
             logger.error(error, 'Failed to update user activity');
-            // We usually don't want to crash the request if stats fail, but we return error here
-            return Result.fail(ApplicationError.internalServerError('Failed to update activity stats'));
+
+            if (error instanceof ApplicationError) {
+                return Result.fail(error);
+            }
+
+            return Result.fail(new ApplicationError(
+                ErrorCodes.INTERNAL_SERVER_ERROR,
+                'Failed to update activity stats',
+                500
+            ));
         }
     }
 }

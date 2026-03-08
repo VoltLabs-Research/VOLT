@@ -1,0 +1,65 @@
+import type { AccessedPage } from '../../../stores/use-start-accessed-pages-store';
+import { X } from 'lucide-react';
+import { useStartPageTile } from '../../../hooks/use-start-page-tile';
+
+interface StartPageTileProps {
+    page: AccessedPage;
+}
+
+const StartPageTile = ({ page }: StartPageTileProps) => {
+    const {
+        tileRef,
+        iframeScale,
+        handleClick,
+        handleMouseEnter,
+        handleMouseLeave,
+        handleMouseMove,
+        handleRemove
+    } = useStartPageTile(page.path);
+
+    const timeAgo = Math.floor((Date.now() - page.lastAccessed) / 60000);
+    const timeString = timeAgo < 1 ? 'Just now' : `${timeAgo}m ago`;
+
+    return (
+        <div
+            ref={tileRef}
+            className="metro-tile"
+            onClick={handleClick}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            onMouseEnter={handleMouseEnter}
+        >
+            {page.snapshot && (
+                <div
+                    className="metro-tile-preview-container"
+                    style={{ transform: `scale(${iframeScale})` }}
+                >
+                    <iframe
+                        srcDoc={page.snapshot}
+                        sandbox=""
+                        className="metro-tile-iframe"
+                        scrolling="no"
+                        tabIndex={-1}
+                    />
+                </div>
+            )}
+
+            <div className="metro-tile-shine" />
+
+            <div className="metro-tile-overlay">
+                <h3 className="metro-tile-name">{page.title}</h3>
+                <span className="metro-tile-time">{timeString}</span>
+            </div>
+
+            <button
+                onClick={handleRemove}
+                title="Remove from history"
+                className="metro-tile-close"
+            >
+                <X size={16} />
+            </button>
+        </div>
+    );
+};
+
+export default StartPageTile;

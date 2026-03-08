@@ -1,17 +1,19 @@
 import { Router } from 'express';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { createGeneralRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import { Resource } from '@core/constants/resources';
 import controllers from '@modules/daily-activity/infrastructure/http/controllers';
-import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/daily-activity/:teamId',
     router,
-    resource: Resource.TRAJECTORY
+    resource: Resource.DAILY_ACTIVITY
 };
 
-router.use(protect);
+const generalRateLimit = createGeneralRateLimiter(60);
+
+router.use(generalRateLimit);
 
 router.get('/', controllers.getByTeamId.handle);
 

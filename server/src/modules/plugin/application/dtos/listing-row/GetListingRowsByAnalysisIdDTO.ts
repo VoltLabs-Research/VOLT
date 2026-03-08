@@ -1,4 +1,4 @@
-import { ExportType } from '@shared/domain/port/IBaseRepository';
+import type { ExportType } from '@shared/domain/port/IBaseRepository';
 
 export interface GetListingRowsByAnalysisIdInputDTO {
     analysisId: string;
@@ -16,7 +16,7 @@ export interface ListingRowByAnalysisData {
     trajectory: string;
     trajectoryName: string;
     timestep: number;
-    row: any;
+    row: Record<string, unknown>;
 };
 
 export interface GetListingRowsByAnalysisIdOutputDTO {
@@ -41,8 +41,18 @@ export interface AnalysisListingExportData {
     columns: string[];
 };
 
+export interface AnalysisSubListingExportData {
+    exposureId: string;
+    exposureName: string;
+    subListingName: string;
+    timestep: number;
+    rows: Record<string, unknown>[];
+    columns: string[];
+ };
+
 export interface ExportListingRowsByAnalysisIdOutputDTO {
     analysisId: string;
     format: ExportType;
     listings: AnalysisListingExportData[];
+    subListings: AnalysisSubListingExportData[];
 };

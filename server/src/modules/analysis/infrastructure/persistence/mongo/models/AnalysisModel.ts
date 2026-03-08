@@ -3,11 +3,11 @@ import { teamRefField, userRefField, trajectoryRefField } from '@shared/infrastr
 import { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-type AnalysisRelations = 'trajectory' | 'createdBy' | 'team';
+type AnalysisRelations = 'plugin' | 'trajectory' | 'createdBy' | 'team';
 
 export interface AnalysisDocument extends Persistable<AnalysisProps, AnalysisRelations>, Document { }
 
-const AnalysisSchema: Schema<AnalysisDocument> = new Schema({
+const AnalysisSchema = new Schema<AnalysisDocument>({
     plugin: {
         type: Schema.Types.ObjectId,
         ref: 'Plugin',
@@ -34,15 +34,19 @@ const AnalysisSchema: Schema<AnalysisDocument> = new Schema({
         enum: ['pending', 'running', 'completed', 'failed'],
         default: 'pending'
     },
-    startedAt: Date,
-    finishedAt: Date,
-    team: teamRefField(),
+    startedAt: {
+        type: Date
+    },
+    finishedAt: {
+        type: Date
+    },
+    team: teamRefField() as unknown as AnalysisDocument['team'],
     trajectory: {
-        ...trajectoryRefField(),
+        ...(trajectoryRefField() as unknown as Record<string, unknown>),
         cascade: 'delete',
         inverse: { path: 'analysis', behavior: 'addToSet' }
-    },
-    createdBy: userRefField()
+    } as unknown as AnalysisDocument['trajectory'],
+    createdBy: userRefField() as unknown as AnalysisDocument['createdBy']
 }, {
     timestamps: true
 });

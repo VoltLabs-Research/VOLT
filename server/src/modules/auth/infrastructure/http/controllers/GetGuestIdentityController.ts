@@ -1,12 +1,7 @@
-import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
 import GetGuestIdentityUseCase from '@modules/auth/application/use-cases/GetGuestIdentityUseCase';
+import { authValidation } from '@modules/auth/infrastructure/http/validation/auth-schemas';
 
-@injectable()
-export default class GetGuestIdentityController extends BaseController<GetGuestIdentityUseCase> {
-    constructor(
-        @inject(GetGuestIdentityUseCase) useCase: GetGuestIdentityUseCase
-    ) {
-        super(useCase);
-    }
-};
+export default createController(GetGuestIdentityUseCase, {
+    validationSchema: authValidation.getGuestIdentity
+});

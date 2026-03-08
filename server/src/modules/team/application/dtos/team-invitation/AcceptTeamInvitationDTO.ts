@@ -1,8 +1,4 @@
-export interface AcceptTeamInvitationInputDTO {
-    invitationId: string;
-    userId: string;
-}
+import { TeamInvitationActionInputDTO, TeamInvitationActionOutputDTO } from './TeamInvitationActionDTO';
 
-export interface AcceptTeamInvitationOutputDTO {
-    message: string;
-}
+export type AcceptTeamInvitationInputDTO = TeamInvitationActionInputDTO;
+export type AcceptTeamInvitationOutputDTO = TeamInvitationActionOutputDTO;

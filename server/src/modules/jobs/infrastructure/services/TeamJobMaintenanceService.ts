@@ -1,23 +1,28 @@
 import { inject, injectable } from 'tsyringe';
+import IORedis from 'ioredis';
 import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
+import type { TeamJobSnapshot } from '@modules/jobs/domain/entities/TeamJobSnapshot';
 import { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
 import { IJobQueueService } from '@modules/jobs/domain/port/IJobQueueService';
 import { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
-import { ClearTeamJobsHistoryOutputDTO } from '@modules/jobs/application/dtos/ClearTeamJobsHistoryDTO';
-import { RemoveTeamRunningJobsOutputDTO } from '@modules/jobs/application/dtos/RemoveTeamRunningJobsDTO';
-import { RetryTeamFailedJobsOutputDTO } from '@modules/jobs/application/dtos/RetryTeamFailedJobsDTO';
+import {
+    ClearTeamJobsHistoryResult,
+    ITeamJobMaintenanceService,
+    RemoveTeamRunningJobsResult,
+    RetryTeamFailedJobsResult
+} from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import TeamJobQueryService from '@modules/jobs/infrastructure/services/TeamJobQueryService';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import TeamJobsService from '@modules/team/infrastructure/socket/TeamJobsService';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 
 const DELETE_BATCH_SIZE = 500;
-const JOB_RETRY_KEY_PREFIX = 'job:retries:';
 
 @injectable()
-export default class TeamJobMaintenanceService {
+export default class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
     private readonly queueServices: Map<string, IJobQueueService>;
 
     constructor(
@@ -26,6 +31,9 @@ export default class TeamJobMaintenanceService {
 
         @inject(JOBS_TOKENS.QueueRegistry)
         private readonly queueRegistry: IQueueRegistry,
+
+        @inject(SHARED_TOKENS.RedisClient)
+        private readonly redis: IORedis,
 
         @inject(TRAJECTORY_TOKENS.TrajectoryProcessingQueue)
         trajectoryProcessingQueue: IJobQueueService,
@@ -39,8 +47,7 @@ export default class TeamJobMaintenanceService {
         @inject(PLUGIN_TOKENS.AnalysisProcessingQueue)
         analysisProcessingQueue: IJobQueueService,
 
-        @inject(TeamJobsService)
-        private readonly teamJobsService: TeamJobsService
+        private readonly teamJobQueryService: TeamJobQueryService
     ) {
         const queues = [
             trajectoryProcessingQueue,
@@ -55,13 +62,16 @@ export default class TeamJobMaintenanceService {
         }
     }
 
-    async clearHistory(teamId: string): Promise<ClearTeamJobsHistoryOutputDTO> {
+    async clearHistory(teamId: string): Promise<ClearTeamJobsHistoryResult> {
         const teamJobIds = await this.jobRepository.getTeamJobIds(teamId);
         if (teamJobIds.length === 0) {
-            return { deletedJobs: 0, deletedAnalyses: 0 };
+            return {
+                deletedJobs: 0,
+                deletedAnalyses: 0
+            };
         }
 
-        const teamJobs = await this.teamJobsService.getFlatTeamJobs(teamId);
+        const teamJobs = await this.teamJobQueryService.getFlatTeamJobs(teamId);
         const runningByQueue = new Map<string, Set<string>>();
 
         for (const job of teamJobs) {
@@ -79,8 +89,7 @@ export default class TeamJobMaintenanceService {
             await queue.abortRunningJobs(Array.from(ids));
         }
 
-        await this.removeFromQueueLists(new Set(teamJobIds));
-        await this.deleteStatusAndRetryKeys(teamJobIds);
+        await this.deleteStatusKeys(teamJobIds);
         await this.jobRepository.deleteTeamJobs(teamId);
 
         const analysisIds = new Set<string>();
@@ -100,8 +109,8 @@ export default class TeamJobMaintenanceService {
         };
     }
 
-    async removeRunningJobs(teamId: string): Promise<RemoveTeamRunningJobsOutputDTO> {
-        const teamJobs = await this.teamJobsService.getFlatTeamJobs(teamId);
+    async removeRunningJobs(teamId: string): Promise<RemoveTeamRunningJobsResult> {
+        const teamJobs = await this.teamJobQueryService.getFlatTeamJobs(teamId);
         const runningByQueue = new Map<string, Set<string>>();
         const runningIds = new Set<string>();
         const analysisIds = new Set<string>();
@@ -125,7 +134,10 @@ export default class TeamJobMaintenanceService {
         }
 
         if (runningIds.size === 0) {
-            return { deletedJobs: 0, deletedAnalyses: 0 };
+            return {
+                deletedJobs: 0,
+                deletedAnalyses: 0
+            };
         }
 
         for (const [queueType, ids] of runningByQueue.entries()) {
@@ -135,8 +147,7 @@ export default class TeamJobMaintenanceService {
         }
 
         const runningIdList = Array.from(runningIds);
-        await this.removeFromQueueLists(new Set(runningIdList));
-        await this.deleteStatusAndRetryKeys(runningIdList);
+        await this.deleteStatusKeys(runningIdList);
         await this.jobRepository.removeFromTeamJobs(teamId, runningIdList);
 
         return {
@@ -145,9 +156,9 @@ export default class TeamJobMaintenanceService {
         };
     }
 
-    async retryFailedJobs(teamId: string): Promise<RetryTeamFailedJobsOutputDTO> {
-        const teamJobs = await this.teamJobsService.getFlatTeamJobs(teamId);
-        const failedByQueue = new Map<string, any[]>();
+    async retryFailedJobs(teamId: string): Promise<RetryTeamFailedJobsResult> {
+        const teamJobs = await this.teamJobQueryService.getFlatTeamJobs(teamId);
+        const failedByQueue = new Map<string, TeamJobSnapshot[]>();
         const failedIds = new Set<string>();
 
         for (const job of teamJobs) {
@@ -170,64 +181,39 @@ export default class TeamJobMaintenanceService {
             return { retriedFrames: 0 };
         }
 
-        await this.removeFromQueueLists(failedIds);
-
         let retriedFrames = 0;
         for (const [queueType, jobs] of failedByQueue.entries()) {
             const queue = this.queueServices.get(queueType);
             if (!queue) continue;
 
             const retryJobs: Job[] = jobs.map((job) => Job.create({
-                jobId: job.jobId,
-                teamId: job.teamId,
+                jobId: job.jobId as string,
+                teamId: job.teamId as string,
                 queueType,
                 status: JobStatus.Queued,
-                sessionId: job.sessionId,
-                message: job.message,
-                metadata: job.metadata
+                sessionId: job.sessionId as string,
+                message: job.message as string,
+                metadata: (job.metadata ?? {}) as Record<string, unknown>
             }));
 
-            await queue.addJobs(retryJobs);
-            retriedFrames += retryJobs.length;
+            retriedFrames += await queue.retryFailedJobs(retryJobs);
         }
 
-        await this.deleteRetryKeys(Array.from(failedIds));
         return { retriedFrames };
     }
 
-    private async removeFromQueueLists(jobIds: Set<string>): Promise<void> {
-        const listKeys = this.queueRegistry.getAllQueues()
-            .flatMap((queue) => [queue.queueKey, queue.processingKey]);
+    private async deleteStatusKeys(jobIds: string[]): Promise<void> {
+        const prefixes = this.queueRegistry.getAllStatusKeyPrefixes();
+        const allKeys = prefixes.flatMap((prefix) =>
+            jobIds.map((jobId) => `${prefix}${jobId}`)
+        );
 
-        for (const listKey of listKeys) {
-            const entries = await this.jobRepository.getListRange(listKey, 0, -1);
-            for (const entry of entries) {
-                const parsed = JSON.parse(entry);
-                const jobId = parsed.props?.jobId ?? parsed.jobId;
-                if (!jobIds.has(jobId)) continue;
-                await this.jobRepository.removeFromList(listKey, entry);
+        for (let i = 0; i < allKeys.length; i += DELETE_BATCH_SIZE) {
+            const batch = allKeys.slice(i, i + DELETE_BATCH_SIZE);
+            const pipeline = this.redis.pipeline();
+            for (const key of batch) {
+                pipeline.del(key);
             }
-        }
-    }
-
-    private async deleteStatusAndRetryKeys(jobIds: string[]): Promise<void> {
-        const statusKeys = this.queueRegistry.getAllQueues()
-            .flatMap((queue) => jobIds.map((jobId) => `${queue.statusKeyPrefix}${jobId}`));
-
-        await this.deleteKeys([
-            ...statusKeys,
-            ...jobIds.map((jobId) => `${JOB_RETRY_KEY_PREFIX}${jobId}`)
-        ]);
-    }
-
-    private async deleteRetryKeys(jobIds: string[]): Promise<void> {
-        await this.deleteKeys(jobIds.map((jobId) => `${JOB_RETRY_KEY_PREFIX}${jobId}`));
-    }
-
-    private async deleteKeys(keys: string[]): Promise<void> {
-        for (let i = 0; i < keys.length; i += DELETE_BATCH_SIZE) {
-            const pipeline = this.jobRepository.pipeline();
-            keys.slice(i, i + DELETE_BATCH_SIZE).forEach((key) => pipeline.del(key));
             await pipeline.exec();
         }
     }

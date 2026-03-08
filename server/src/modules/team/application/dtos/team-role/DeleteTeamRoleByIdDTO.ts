@@ -1,8 +1,8 @@
-export interface DeleteTeamRoleByIdInputDTO{
-    roleId: string;
-    teamId: string;
-};
+import {
+    OperationSuccessDTO,
+    TeamScopedEntityIdInputDTO
+} from '@modules/team/application/dtos/common';
 
-export interface DeleteTeamRoleByIdOutputDTO{
-    success: boolean;
-};
+export type DeleteTeamRoleByIdInputDTO = TeamScopedEntityIdInputDTO<'roleId'>;
+
+export type DeleteTeamRoleByIdOutputDTO = OperationSuccessDTO;

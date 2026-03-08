@@ -12,10 +12,17 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
-import { formatValueForPath } from '@shared/infrastructure/utilities/format-value';
-import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utils/record-scene-artifact';
+import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utilities/record-scene-artifact';
+import nativeStats from '@modules/trajectory/infrastructure/native/NativeStats';
+import { normalizeAnalysisId, extractModifierAtomData } from '@modules/trajectory/infrastructure/utilities/modifier-data';
+import { buildColorCodingObjectName } from '@modules/trajectory/infrastructure/utilities/minio-path-builder';
 
-const DEFAULT_ANALYSIS_ID = 'default';
+const buildDumpNotFoundError = (): ApplicationError => {
+    return ApplicationError.notFound(
+        ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND,
+        'Trajectory dump not found'
+    );
+};
 
 @injectable()
 export default class ColorCodingService implements IColorCodingService {
@@ -41,17 +48,17 @@ export default class ColorCodingService implements IColorCodingService {
         timestep: string | number,
         analysisId?: string
     ): Promise<{ base: string[]; modifiers: Record<string, string[]> }> {
-        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
+        const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const dumpPath = await this.dumpStorage.getDump(trajectoryId, String(timestep));
         if (!dumpPath) {
-            throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            throw buildDumpNotFoundError();
         }
 
         const parsed = await TrajectoryParserFactory.parse(dumpPath, { properties: [] });
         const headers = parsed.metadata.headers || [];
 
-        const modifierProps = normalizedAnalysisId
-            ? await this.atomProps.getModifierPerAtomProps(String(normalizedAnalysisId))
+        const modifierProps = resolvedAnalysisId
+            ? await this.atomProps.getModifierPerAtomProps(String(resolvedAnalysisId))
             : {};
 
         return {
@@ -68,23 +75,26 @@ export default class ColorCodingService implements IColorCodingService {
         analysisId?: string,
         exposureId?: string
     ): Promise<{ min: number; max: number }> {
-        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
+        const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         let min = Infinity;
         let max = -Infinity;
 
         if (type === 'modifier') {
-            if (!exposureId || !normalizedAnalysisId) {
-                throw new ApplicationError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400);
+            if (!exposureId || !resolvedAnalysisId) {
+                throw ApplicationError.badRequest(
+                    ErrorCodes.COLOR_CODING_MISSING_PARAMS,
+                    'Missing required color-coding parameters'
+                );
             }
 
             const modifierData = await this.atomProps.getModifierAnalysis(
                 String(trajectoryId),
-                String(normalizedAnalysisId),
+                String(resolvedAnalysisId),
                 String(exposureId),
                 String(timestep)
             );
 
-            const atomsData = (modifierData as any)?.data || modifierData;
+            const atomsData = extractModifierAtomData(modifierData);
             const stats = this.atomProps.getMinMaxFromData(atomsData, property);
             if (stats) {
                 min = stats.min;
@@ -93,34 +103,18 @@ export default class ColorCodingService implements IColorCodingService {
         } else {
             const dumpPath = await this.dumpStorage.getDump(String(trajectoryId), String(timestep));
             if (!dumpPath) {
-                throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+                throw buildDumpNotFoundError();
             }
 
-            const parsed = await TrajectoryParserFactory.parse(dumpPath, { properties: [property] });
+            const metadata = await TrajectoryParserFactory.parseMetadata(dumpPath);
+            const headers = metadata.headers || [];
+            const propIdx = headers.indexOf(property.toLowerCase());
 
-            let values: Float32Array;
-            const lowerProp = property.toLowerCase();
-
-            if (lowerProp === 'type') values = new Float32Array(parsed.types);
-            else if (lowerProp === 'x') {
-                values = new Float32Array(parsed.positions.length / 3);
-                for (let i = 0; i < values.length; i++) values[i] = parsed.positions[i * 3];
-            }
-            else if (lowerProp === 'y') {
-                values = new Float32Array(parsed.positions.length / 3);
-                for (let i = 0; i < values.length; i++) values[i] = parsed.positions[i * 3 + 1];
-            }
-            else if (lowerProp === 'z') {
-                values = new Float32Array(parsed.positions.length / 3);
-                for (let i = 0; i < values.length; i++) values[i] = parsed.positions[i * 3 + 2];
-            }
-            else {
-                values = parsed.properties?.[property] || parsed.properties?.[lowerProp] || new Float32Array(0);
-            }
-
-            for (let i = 0; i < values.length; i++) {
-                if (values[i] < min) min = values[i];
-                if (values[i] > max) max = values[i];
+            if (propIdx !== -1) {
+                const stats = nativeStats.getStatsForProperty(dumpPath, propIdx);
+                if (stats) {
+                    return { min: stats.min, max: stats.max };
+                }
             }
         }
 
@@ -140,16 +134,22 @@ export default class ColorCodingService implements IColorCodingService {
         analysisId?: string,
         exposureId?: string
     ): Promise<string> {
-        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
-        const analysisSegment = normalizedAnalysisId || DEFAULT_ANALYSIS_ID;
-        const formattedStart = formatValueForPath(startValue);
-        const formattedEnd = formatValueForPath(endValue);
-        const objectName =
-            `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${formattedStart}-${formattedEnd}/${gradient}.glb`;
+        const resolvedAnalysisId = normalizeAnalysisId(analysisId);
+        const objectName = buildColorCodingObjectName(
+            trajectoryId,
+            resolvedAnalysisId,
+            timestep,
+            exposureId,
+            property,
+            startValue,
+            endValue,
+            gradient
+        );
+
         if (await this.storageService.exists(SYS_BUCKETS.MODELS, objectName)) {
             await recordSceneArtifact(this.sceneArtifactRepository, {
                 trajectory: String(trajectoryId),
-                analysis: normalizedAnalysisId,
+                analysis: resolvedAnalysisId,
                 sourceType: 'color-coding',
                 timestep: Number(timestep),
                 objectName,
@@ -162,7 +162,7 @@ export default class ColorCodingService implements IColorCodingService {
                 },
                 displayName: `CC · ${property} · [${startValue}, ${endValue}] · ${gradient} · t=${timestep}`,
                 metadata: {
-                    analysisId: normalizedAnalysisId || null,
+                    analysisId: resolvedAnalysisId || null,
                     exposureId: exposureId || null
                 }
             });
@@ -171,20 +171,20 @@ export default class ColorCodingService implements IColorCodingService {
 
         const dumpPath = await this.dumpStorage.getDump(String(trajectoryId), String(timestep));
         if (!dumpPath) {
-            throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            throw buildDumpNotFoundError();
         }
 
         let externalValues: Float32Array | undefined;
 
-        if (exposureId && normalizedAnalysisId) {
+        if (exposureId && resolvedAnalysisId) {
             const modifierData = await this.atomProps.getModifierAnalysis(
                 String(trajectoryId),
-                String(normalizedAnalysisId),
+                String(resolvedAnalysisId),
                 String(exposureId),
                 String(timestep)
             );
 
-            const atomsData = (modifierData as any)?.data || modifierData;
+            const atomsData = extractModifierAtomData(modifierData);
             externalValues = this.atomProps.toFloat32ByAtomId(atomsData, String(property));
         }
 
@@ -200,7 +200,7 @@ export default class ColorCodingService implements IColorCodingService {
 
         await recordSceneArtifact(this.sceneArtifactRepository, {
             trajectory: String(trajectoryId),
-            analysis: normalizedAnalysisId,
+            analysis: resolvedAnalysisId,
             sourceType: 'color-coding',
             timestep: Number(timestep),
             objectName,
@@ -213,7 +213,7 @@ export default class ColorCodingService implements IColorCodingService {
             },
             displayName: `CC · ${property} · [${startValue}, ${endValue}] · ${gradient} · t=${timestep}`,
             metadata: {
-                analysisId: normalizedAnalysisId || null,
+                analysisId: resolvedAnalysisId || null,
                 exposureId: exposureId || null
             }
         });
@@ -231,15 +231,19 @@ export default class ColorCodingService implements IColorCodingService {
         analysisId?: string,
         exposureId?: string
     ): Promise<Readable> {
-        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
-        const analysisSegment = normalizedAnalysisId || DEFAULT_ANALYSIS_ID;
-        const formattedStart = formatValueForPath(startValue);
-        const formattedEnd = formatValueForPath(endValue);
-        const objectName =
-            `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${formattedStart}-${formattedEnd}/${gradient}.glb`;
+        const objectName = buildColorCodingObjectName(
+            trajectoryId,
+            normalizeAnalysisId(analysisId),
+            timestep,
+            exposureId,
+            property,
+            startValue,
+            endValue,
+            gradient
+        );
 
         if (!await this.storageService.exists(SYS_BUCKETS.MODELS, objectName)) {
-            throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+            throw buildDumpNotFoundError();
         }
 
         return this.storageService.getStream(SYS_BUCKETS.MODELS, objectName);

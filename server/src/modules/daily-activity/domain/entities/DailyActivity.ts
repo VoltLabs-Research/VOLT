@@ -27,7 +27,7 @@ export interface DailyActivityProps{
 
 export default class DailyActivity{
     constructor(
-        public id: string,
+        public _id: string,
         public props: DailyActivityProps
     ){}
 };

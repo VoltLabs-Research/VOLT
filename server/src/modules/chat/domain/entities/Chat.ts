@@ -1,5 +1,12 @@
+export interface ChatUserReference {
+    _id?: { toString(): string };
+    toString(): string;
+}
+
+export type ChatParticipant = string | ChatUserReference;
+
 export interface ChatProps {
-    participants: any[];
+    participants: ChatParticipant[];
     team: string;
     lastMessage: string;
     lastMessageAt: Date;
@@ -18,7 +25,7 @@ export interface ChatProps {
 
 export default class Chat {
     constructor(
-        public id: string,
+        public _id: string,
         public props: ChatProps
     ){}
 

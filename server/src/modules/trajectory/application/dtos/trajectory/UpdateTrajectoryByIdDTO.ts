@@ -6,4 +6,6 @@ export interface UpdateTrajectoryByIdInputDTO {
     isPublic: boolean;
 };
 
-export interface UpdateTrajectoryByIdOutputDTO extends TrajectoryProps { };
+export interface UpdateTrajectoryByIdOutputDTO extends TrajectoryProps {
+    _id: string;
+};

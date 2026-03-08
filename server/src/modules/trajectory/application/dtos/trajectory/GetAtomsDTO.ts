@@ -13,5 +13,5 @@ export interface AtomRecord {
     x: number;
     y: number;
     z: number;
-    [property: string]: number;
+    [property: string]: unknown;
 }

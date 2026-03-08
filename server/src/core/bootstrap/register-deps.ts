@@ -17,44 +17,50 @@ import { registerChatDependencies } from '@modules/chat/infrastructure/di/contai
 import { registerDailyActivityDependencies } from '@modules/daily-activity/infrastructure/di/container';
 import { registerJobsDependencies } from '@modules/jobs/infrastructure/di/container';
 import { registerSSHDependencies } from '@modules/ssh/infrastructure/di/container';
-import { registerSocketModule } from '@modules/socket/infrastructure/di/SocketModule';
+import { registerSocketDependencies } from '@modules/socket/infrastructure/di/container';
 import { registerSimulationCellDependencies } from '@modules/simulation-cell/infrastructure/di/container';
 import { registerAIDependencies } from '@modules/ai/infrastructure/di/container';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { registerSharedDependencies } from '@shared/infrastructure/di/container';
 import { createRedisClient } from '@core/config/redis';
 import { container } from 'tsyringe';
 
-/**
- * Register all dependencies in the DI container.
- */
-container.registerSingleton(SHARED_TOKENS.EventBus, RedisEventBus);
-container.registerSingleton(SHARED_TOKENS.StorageService, MinioStorageService);
-container.registerSingleton(SHARED_TOKENS.TempFileService, TempFileService);
-container.registerSingleton(SHARED_TOKENS.FileExtractorService, FileExtractorService);
+let dependenciesRegistered = false;
 
-registerAuthDependencies();
-registerTeamDependencies();
-registerContainerDependencies();
-registerPluginDependencies();
-registerScriptingDependencies();
-registerTrajectoryDependencies();
-registerSessionDependencies();
-registerRasterDependencies();
-registerSystemDependencies();
-registerNotificationDependencies();
-registerAnalysisDependencies();
-registerChatDependencies();
-registerDailyActivityDependencies();
-registerJobsDependencies();
-registerSSHDependencies();
-registerSocketModule();
-registerSimulationCellDependencies();
-registerAIDependencies();
+export const registerAllDependencies = (): void => {
+    if (dependenciesRegistered) {
+        return;
+    }
 
-const redisClient = createRedisClient();
-const redisBlockingClient = createRedisClient();
+    const redisClient = createRedisClient();
 
-container.registerInstance(SHARED_TOKENS.RedisClient, redisClient);
-container.registerInstance(SHARED_TOKENS.RedisBlockingClient, redisBlockingClient);
+    container.registerInstance(SHARED_TOKENS.RedisClient, redisClient);
+    container.registerSingleton(SHARED_TOKENS.EventBus, RedisEventBus);
+    container.registerSingleton(SHARED_TOKENS.StorageService, MinioStorageService);
+    container.registerSingleton(SHARED_TOKENS.TempFileService, TempFileService);
+    container.registerSingleton(SHARED_TOKENS.FileExtractorService, FileExtractorService);
+    registerSharedDependencies();
 
-initializeNodeHandlers();
+    registerAuthDependencies();
+    registerTeamDependencies();
+    registerContainerDependencies();
+    registerPluginDependencies();
+    registerScriptingDependencies();
+    registerTrajectoryDependencies();
+    registerSessionDependencies();
+    registerRasterDependencies();
+    registerSystemDependencies();
+    registerNotificationDependencies();
+    registerAnalysisDependencies();
+    registerChatDependencies();
+    registerDailyActivityDependencies();
+    registerJobsDependencies();
+    registerSSHDependencies();
+    registerSocketDependencies();
+    registerSimulationCellDependencies();
+    registerAIDependencies();
+
+    initializeNodeHandlers();
+
+    dependenciesRegistered = true;
+};

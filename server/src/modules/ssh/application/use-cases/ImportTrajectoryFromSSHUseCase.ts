@@ -1,7 +1,7 @@
 import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '@modules/ssh/domain/di/SSHConnectionTokens';
+import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { ISSHImportQueue } from '@modules/ssh/domain/port/ISSHImportQueue';
 import { ImportTrajectoryFromSSHInputDTO } from '@modules/ssh/application/dtos/ImportTrajectoryFromSSHInputDTO';
@@ -23,25 +23,22 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
     async execute(input: ImportTrajectoryFromSSHInputDTO): Promise<Result<ImportTrajectoryFromSSHOutputDTO, ApplicationError>>{
         const { sshConnectionId, remotePath, teamId, userId } = input;
 
-        // Get SSH connection from repository
         const sshConnection = await this.sshConnRepository.findByIdWithCredentials(sshConnectionId);
-        if(!sshConnection){
+
+        if (!sshConnection || sshConnection.props.team !== teamId) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.SSH_CONNECTION_NOT_FOUND,
                 'SSH connection not found'
             ));
         }
 
-        try{
-            // Generate unique IDs for job and session
+        try {
             const jobId = v4();
             const sessionId = v4();
             const queueId = v4();
 
-            // Extract trajectory name from remote path
             const trajectoryName = `Import: ${remotePath.split('/').pop() || remotePath}`;
 
-            // Create job with metadata for SSH import
             const job = Job.create({
                 jobId,
                 teamId,
@@ -59,7 +56,6 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
                 }
             });
 
-            // Add job to queue
             await this.sshImportQueue.addJobs([job]);
 
             return Result.ok({
@@ -67,13 +63,10 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
                 sessionId,
                 message: 'Import job queued successfully'
             });
-        }catch(error: unknown){
-            const errorMessage = error instanceof Error
-                ? error.message
-                : 'Unknown error occurred';
+        } catch (error: unknown) {
             return Result.fail(new ApplicationError(
                 ErrorCodes.SSH_IMPORT_ERROR,
-                `Failed to queue SSH import job: ${errorMessage}`,
+                'Failed to queue SSH import job',
                 500
             ));
         }

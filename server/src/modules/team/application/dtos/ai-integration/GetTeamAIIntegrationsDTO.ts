@@ -1,8 +1,7 @@
+import { TeamScopedInputDTO } from '@modules/team/application/dtos/common';
 import { TeamAIProvider } from '@modules/team/domain/entities/TeamAIIntegration';
 
-export interface GetTeamAIIntegrationsInputDTO {
-    teamId: string;
-}
+export type GetTeamAIIntegrationsInputDTO = TeamScopedInputDTO;
 
 export interface TeamAIIntegrationItemDTO {
     _id: string;

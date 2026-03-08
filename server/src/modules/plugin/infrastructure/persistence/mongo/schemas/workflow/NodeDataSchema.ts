@@ -4,7 +4,7 @@ import { ArgumentsDataSchema } from './nodes/ArgumentsDataSchema';
 import { ContextDataSchema } from './nodes/ContextDataSchema';
 import { ForEachDataSchema } from './nodes/ForEachDataSchema';
 import { EntrypointDataSchema } from './nodes/EntrypointDataSchema';
-import { ExposureDataSchema } from './nodes/ExposuredataSchema';
+import { ExposureDataSchema } from './nodes/ExposureDataSchema';
 import { ExportDataSchema } from './nodes/ExportDataSchema';
 import { IfStatementDataSchema } from './nodes/IfStatementDataSchema';
 

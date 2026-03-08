@@ -1,9 +1,21 @@
 import { getErrorMessage } from './error-codes';
 
 const PERMISSION_DENIED_CODES = new Set([
+    'Auth::Unauthorized',
+    'Authentication::Unauthorized',
+    'Authentication::User::AccessDenied',
+    'Team::AccessDenied',
+    'Team::Membership::Forbidden',
+    'Team::Ownership::Forbidden',
+    'Team::NotAuthorized',
     'RBAC::InsufficientPermissions',
     'Team::InsufficientPermissions',
-    'AccessControlService::Access::MissingPermissions'
+    'AccessControlService::Access::MissingPermissions',
+    'Container::AccessDenied',
+    'Container::Team::AccessDenied',
+    'Message::Forbidden',
+    'Message:Forbidden',
+    'Http::403'
 ]);
 
 export default class ApiError extends Error{

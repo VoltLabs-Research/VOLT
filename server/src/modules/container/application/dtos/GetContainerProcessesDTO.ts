@@ -1,4 +1,5 @@
 export interface GetContainerProcessesInputDTO {
+    teamId: string;
     containerId: string;
 }
 

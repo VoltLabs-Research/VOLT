@@ -1,5 +1,4 @@
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { v4 } from 'uuid';
+import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 
 export interface AnalysisCreatedEventPayload {
     analysisId: string;
@@ -12,15 +11,8 @@ export interface AnalysisCreatedEventPayload {
     createdAt: Date;
 }
 
-export default class AnalysisCreatedEvent implements IDomainEvent {
-    public readonly name = 'analysis.created';
-    public readonly occurredOn: Date;
-    public readonly eventId: string;
-
-    constructor(
-        public readonly payload: AnalysisCreatedEventPayload
-    ){
-        this.occurredOn = new Date();
-        this.eventId = v4();
+export default class AnalysisCreatedEvent extends BaseDomainEvent<AnalysisCreatedEventPayload> {
+    constructor(payload: AnalysisCreatedEventPayload) {
+        super('analysis.created', payload);
     }
 }

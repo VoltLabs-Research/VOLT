@@ -3,15 +3,16 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { IMetricsService } from '@modules/system/domain/port/IMetricsService';
 import { GetSystemStatsOutputDTO } from '@modules/system/application/dtos/GetSystemStatsDTO';
+import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
 
 @injectable()
 export class GetSystemStatsUseCase implements IUseCase<void, GetSystemStatsOutputDTO> {
     constructor(
-        @inject('IMetricsService') private metricsService: IMetricsService
+        @inject(SYSTEM_TOKENS.MetricsService) private metricsService: IMetricsService
     ){}
 
     async execute(): Promise<Result<GetSystemStatsOutputDTO>> {
-        let stats = await this.metricsService.getLatestFromRedis();
+        let stats = await this.metricsService.getLatest();
 
         if (!stats) {
             stats = await this.metricsService.collect();

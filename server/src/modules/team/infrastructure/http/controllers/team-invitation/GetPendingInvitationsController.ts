@@ -1,13 +1,5 @@
-import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
 import GetPendingInvitationsUseCase from '@modules/team/application/use-cases/team-invitation/GetPendingInvitationsUseCase';
 
-@injectable()
-export default class GetPendingInvitationsController extends BaseController<GetPendingInvitationsUseCase> {
-    constructor(
-        @inject(GetPendingInvitationsUseCase)
-        useCase: GetPendingInvitationsUseCase
-    ) {
-        super(useCase);
-    }
-};
+const GetPendingInvitationsController = createController(GetPendingInvitationsUseCase);
+export default GetPendingInvitationsController;

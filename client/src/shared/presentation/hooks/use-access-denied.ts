@@ -5,16 +5,19 @@ const useAccessDenied = () => {
     const [accessDenied, setAccessDenied] = useState(false);
     const [accessDeniedMessage, setAccessDeniedMessage] = useState<string>();
 
+    const setDeniedState = useCallback((error: ApiError) => {
+        setAccessDenied(true);
+        setAccessDeniedMessage(error.getFriendlyMessage());
+    }, []);
+
     const checkRBACError = useCallback((error: unknown): boolean => {
-        if(ApiError.isRBACError(error)){
-            setAccessDenied(true);
-            if(error instanceof ApiError){
-                setAccessDeniedMessage(error.getFriendlyMessage());
-            }
+        if(error instanceof ApiError && error.isPermissionDenied()){
+            setDeniedState(error);
             return true;
         }
+
         return false;
-    }, []);
+    }, [setDeniedState]);
 
     return { accessDenied, accessDeniedMessage, checkRBACError };
 };

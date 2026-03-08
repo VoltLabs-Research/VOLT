@@ -5,10 +5,9 @@ import TeamModel, { TeamDocument } from '@modules/team/infrastructure/persistenc
 import teamMapper from '@modules/team/infrastructure/persistence/mongo/mappers/TeamMapper';
 import { injectable, inject } from 'tsyringe';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import TeamDeletedEvent from '@modules/team/domain/events/TeamDeletedEvent';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import type { PersistedEntity } from '@modules/team/domain/contracts/PersistedEntity';
 
 @injectable()
 export default class TeamRepository
@@ -16,9 +15,6 @@ export default class TeamRepository
     implements ITeamRepository {
 
     constructor(
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus,
-
         @inject(TEAM_TOKENS.TeamMemberRepository)
         private readonly teamMemberRepository: ITeamMemberRepository
     ) {
@@ -54,7 +50,7 @@ export default class TeamRepository
         for (const membership of memberships) {
             await this.model.updateOne(
                 { _id: membership.props.team },
-                { $pull: { members: membership.id } }
+                { $pull: { members: membership._id } }
             );
         }
     }
@@ -67,7 +63,7 @@ export default class TeamRepository
         });
     }
 
-    async findUserTeams(userId: string): Promise<TeamProps[]> {
+    async findUserTeams(userId: string): Promise<PersistedEntity<TeamProps>[]> {
         // User belongs to a team if they are the owner OR they have a TeamMember record
         const teamIdsFromMembership = await this.teamMemberRepository.getTeamIdsByUserId(userId);
 
@@ -78,18 +74,6 @@ export default class TeamRepository
             ]
         }).populate('owner');
 
-        return docs.map((doc) => this.mapper.toDomain(doc as TeamDocument).props);
-    }
-
-    async deleteById(id: string): Promise<boolean> {
-        const result = await this.model.findByIdAndDelete(id);
-
-        if (result) {
-            await this.eventBus.publish(new TeamDeletedEvent({
-                teamId: id
-            }));
-        }
-
-        return !!result;
+        return docs.map((doc) => toPersistedOutput(this.mapper.toDomain(doc as TeamDocument)));
     }
 }

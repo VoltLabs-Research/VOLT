@@ -1,5 +1,5 @@
 export interface ScriptingNotebookDTO {
-    id: string;
+    _id: string;
     title: string;
     notebookPath: string;
     trajectories: string[];

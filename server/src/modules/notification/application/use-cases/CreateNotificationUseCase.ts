@@ -33,7 +33,7 @@ export default class CreateNotificationUseCase implements IUseCase<CreateNotific
 
         // Publish event for real-time socket delivery
         await this.eventBus.publish(new NotificationCreatedEvent({
-            notificationId: notification.id,
+            _id: notification._id,
             recipient: notification.props.recipient,
             title: notification.props.title,
             content: notification.props.content,
@@ -43,7 +43,7 @@ export default class CreateNotificationUseCase implements IUseCase<CreateNotific
         }));
 
         return Result.ok({
-            id: notification.id,
+            _id: notification._id,
             ...notification.props
         });
     }

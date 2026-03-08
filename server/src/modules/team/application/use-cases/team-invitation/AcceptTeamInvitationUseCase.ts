@@ -1,16 +1,15 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';
 import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
-import { TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
 import { IEventBus } from '@shared/application/events/IEventBus';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
 import { ITeamRepository } from '@modules/team/domain/port/ITeamRepository';
 import { AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/AcceptTeamInvitationDTO';
+import { IUseCase } from '@shared/application/IUseCase';
 
 @injectable()
 export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO, ApplicationError> {
@@ -39,57 +38,43 @@ export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamI
             ));
         }
 
-        if (invitation.props.status !== TeamInvitationStatus.Pending) {
+        if (!invitation.isPending()) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.TEAM_INVITATION_ALREADY_PROCESSED,
                 'Invitation has already been processed'
             ));
         }
 
-        if (invitation.props.expiresAt < new Date()) {
+        if (invitation.isExpired()) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.TEAM_INVITATION_EXPIRED,
                 'Invitation has expired'
             ));
         }
 
-        // Verify the user accepting is the one invited (if user check is enforced by login, this ensures it matches)
-        // Adjust logic if invitedUser is populated object vs ID. Assuming ID based on mapper but let's be safe.
-        // The mapper populates it, so it might be an object. We'll check the ID.
-        const invitedUserId = typeof invitation.props.invitedUser === 'object'
-            ? (invitation.props.invitedUser as any).id || (invitation.props.invitedUser as any)._id
-            : invitation.props.invitedUser;
-
-        if (invitedUserId.toString() !== userId) {
+        if (invitation.getInvitedUserId() !== userId) {
             return Result.fail(ApplicationError.forbidden(
                 ErrorCodes.TEAM_INVITATION_INVALID_USER,
                 'This invitation was not sent to you'
             ));
         }
 
-        // Create Team Member
+        const teamId = invitation.getTeamId();
+        const roleId = invitation.getRoleId();
+
         const teamMember = await this.teamMemberRepository.create({
-            team: invitation.props.team as any,
+            team: teamId,
             user: userId,
-            role: invitation.props.role as any,
+            role: roleId,
             joinedAt: new Date()
         });
 
-        // Add member to team (Repository method update)
-        // We need to update the team's member list. 
-        // Best approach: TeamRepository.addMemberToTeam(memberId, teamId)
-        // Assuming invitation.props.team is the Team ID or populated Team
-        const teamId = typeof invitation.props.team === 'object'
-            ? (invitation.props.team as any).id
-            : invitation.props.team;
+        await this.teamRepository.addMemberToTeam(teamMember._id, teamId);
 
-        await this.teamRepository.addMemberToTeam(teamMember.id, teamId);
+        await this.invitationRepository.updateById(invitation._id, invitation.accept());
 
-        // Update Invitation Status
-        invitation.props.status = TeamInvitationStatus.Accepted;
-        invitation.props.acceptedAt = new Date();
-        await this.invitationRepository.updateById(invitation.id, invitation.props);
-
-        return Result.ok({ message: 'Invitation accepted successfully' });
+        return Result.ok({
+            message: 'Invitation accepted successfully'
+        });
     }
 }

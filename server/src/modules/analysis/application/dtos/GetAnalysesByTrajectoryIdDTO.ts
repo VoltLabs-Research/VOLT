@@ -2,6 +2,7 @@ import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 
 export interface GetAnalysesByTrajectoryIdInputDTO {
+    teamId?: string;
     trajectoryId: string;
     page?: number;
     limit?: number;

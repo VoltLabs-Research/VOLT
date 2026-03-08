@@ -52,11 +52,10 @@ export default class MeshExporter implements IMeshExporter{
                 maxZ: processed.bounds.max[2]
             },
             {
-                // @ts-ignore
-                baseColor: opts.material.baseColor,
+                baseColor: opts.material.baseColor as [number, number, number, number],
                 metallic: opts.material.metallic,
                 roughness: opts.material.roughness,
-                emissive: opts.material.emissive,
+                emissive: opts.material.emissive as [number, number, number],
                 doubleSided: opts.enableDoubleSided
             }
         );

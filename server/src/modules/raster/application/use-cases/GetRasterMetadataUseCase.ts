@@ -1,20 +1,44 @@
 import { injectable, inject } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { GetRasterMetadataOutputDTO } from '@modules/raster/application/dtos/RasterDTOs';
-import { IRasterService } from '@modules/raster/domain/port/IRasterService';
+import type {
+    GetRasterMetadataInputDTO,
+    GetRasterMetadataOutputDTO
+} from '@modules/raster/application/dtos/GetRasterMetadataDTO';
+import type { IRasterMetadataReader } from '@modules/raster/domain/port/IRasterMetadataReader';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 
 @injectable()
-export class GetRasterMetadataUseCase implements IUseCase<string, GetRasterMetadataOutputDTO> {
+export class GetRasterMetadataUseCase implements IUseCase<GetRasterMetadataInputDTO, GetRasterMetadataOutputDTO, ApplicationError> {
     constructor(
-        @inject(RASTER_TOKENS.RasterService) private rasterService: IRasterService
+        @inject(RASTER_TOKENS.RasterMetadataReader) private readonly rasterMetadataReader: IRasterMetadataReader
     ){}
 
-    async execute(trajectoryId: string): Promise<Result<GetRasterMetadataOutputDTO>> {
-        const metadata = await this.rasterService.getRasterMetadata(trajectoryId);
+    async execute(input: GetRasterMetadataInputDTO): Promise<Result<GetRasterMetadataOutputDTO, ApplicationError>> {
+        try {
+            const metadata = await this.rasterMetadataReader.getRasterMetadata(input.trajectoryId);
 
-        return Result.ok({ metadata });
+            if (!metadata) {
+                return Result.fail(ApplicationError.notFound(
+                    ErrorCodes.RASTER_NOT_FOUND,
+                    'Raster metadata not found'
+                ));
+            }
+
+            return Result.ok({ metadata });
+        } catch (error) {
+            if (error instanceof ApplicationError) {
+                return Result.fail(error);
+            }
+
+            return Result.fail(new ApplicationError(
+                ErrorCodes.RASTER_FAILED,
+                'Failed to retrieve raster metadata',
+                500
+            ));
+        }
     }
 }

@@ -1,5 +1,5 @@
 export interface DockerNetworkEntity {
-    id: string;
+    _id: string;
     networkId: string;
     name: string;
     driver: string;
@@ -13,7 +13,7 @@ export interface IDockerNetworkRepository {
         data: { name: string; driver: string }
     ): Promise<DockerNetworkEntity>;
 
-    findById(id: string): Promise<DockerNetworkEntity | null>;
+    findById(_id: string): Promise<DockerNetworkEntity | null>;
 
-    deleteById(id: string): Promise<boolean>;
+    deleteById(_id: string): Promise<boolean>;
 }

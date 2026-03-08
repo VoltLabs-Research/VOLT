@@ -1,17 +1,21 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import TeamAIIntegration from '@modules/team/domain/entities/TeamAIIntegration';
 import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ITeamAIIntegrationRepository';
 import TeamAIIntegrationInputService from '@modules/team/application/services/TeamAIIntegrationInputService';
+import TeamAIIntegrationSecretService from '@modules/team/application/services/TeamAIIntegrationSecretService';
 import {
     UpdateTeamAIIntegrationInputDTO,
     UpdateTeamAIIntegrationOutputDTO
 } from '@modules/team/application/dtos/ai-integration/UpdateTeamAIIntegrationDTO';
 import TeamAIIntegrationSerializer from '@modules/team/application/services/TeamAIIntegrationSerializer';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import TeamAIIntegrationUpdatedEvent from '@modules/team/domain/events/TeamAIIntegrationUpdatedEvent';
+import { IUseCase } from '@shared/application/IUseCase';
 
 @injectable()
 export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationOutputDTO, ApplicationError> {
@@ -22,8 +26,14 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
         @inject(TEAM_TOKENS.TeamAIIntegrationInputService)
         private readonly inputService: TeamAIIntegrationInputService,
 
+        @inject(TEAM_TOKENS.TeamAIIntegrationSecretService)
+        private readonly secretService: TeamAIIntegrationSecretService,
+
         @inject(TEAM_TOKENS.TeamAIIntegrationSerializer)
-        private readonly integrationSerializer: TeamAIIntegrationSerializer
+        private readonly integrationSerializer: TeamAIIntegrationSerializer,
+
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
     ) {}
 
     async execute(input: UpdateTeamAIIntegrationInputDTO): Promise<Result<UpdateTeamAIIntegrationOutputDTO, ApplicationError>> {
@@ -43,10 +53,10 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
             ));
         }
 
-        const providedApiKey = input.apiKey?.trim();
-        const encryptedApiKey = providedApiKey
-            ? TeamAIIntegration.encryptApiKey(providedApiKey)
-            : existing.props.encryptedApiKey;
+        const encryptedApiKey = this.secretService.resolveEncryptedApiKey(
+            input.apiKey,
+            existing.props.encryptedApiKey
+        );
 
         const defaultModel = this.inputService.resolveDefaultModel(
             input.defaultModel,
@@ -65,15 +75,13 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
             existing.props.enabledModels || []
         );
 
-        const now = new Date();
-        const persisted = await this.integrationRepository.updateById(existing.id, {
+        const persisted = await this.integrationRepository.updateById(existing._id, existing.buildUpdatePayload({
             encryptedApiKey,
             isEnabled: input.isEnabled ?? existing.props.isEnabled,
             defaultModel,
             enabledModels,
-            metadata,
-            updatedAt: now
-        });
+            metadata
+        }));
 
         if (!persisted) {
             return Result.fail(ApplicationError.notFound(
@@ -81,6 +89,14 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
                 'AI integration could not be updated'
             ));
         }
+
+        await this.eventBus.publish(new TeamAIIntegrationUpdatedEvent({
+            teamAIIntegrationId: persisted._id,
+            teamId: persisted.getTeamId(),
+            provider: persisted.props.provider,
+            isEnabled: persisted.props.isEnabled,
+            defaultModel: persisted.props.defaultModel
+        }));
 
         return Result.ok({
             integration: this.integrationSerializer.toDTO(persisted)

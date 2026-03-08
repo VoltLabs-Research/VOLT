@@ -3,13 +3,11 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ITeamRepository } from '@modules/team/domain/port/ITeamRepository';
 import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
 import { LeaveTeamInputDTO } from '../../dtos/team/LeaveTeamDTO';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import TeamMemberLeaveEvent from '@modules/team/domain/events/TeamMemberLeaveEvent';
+import TeamMembershipService from '@modules/team/application/services/TeamMembershipService';
 
 @injectable()
 export default class LeaveTeamUseCase implements IUseCase<LeaveTeamInputDTO, null, ApplicationError> {
@@ -20,8 +18,8 @@ export default class LeaveTeamUseCase implements IUseCase<LeaveTeamInputDTO, nul
         @inject(TEAM_TOKENS.TeamMemberRepository)
         private readonly teamMemberRepository: ITeamMemberRepository,
 
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
+        @inject(TEAM_TOKENS.TeamMembershipService)
+        private readonly teamMembershipService: TeamMembershipService
     ){}
 
     async execute(input: LeaveTeamInputDTO): Promise<Result<null, ApplicationError>> {
@@ -43,10 +41,7 @@ export default class LeaveTeamUseCase implements IUseCase<LeaveTeamInputDTO, nul
             ));
         }
 
-        await this.eventBus.publish(new TeamMemberLeaveEvent({
-            memberId: member.id,
-            teamId
-        }));
+        await this.teamMembershipService.removeMemberFromTeam(member._id, teamId);
 
         return Result.ok(null);
     }

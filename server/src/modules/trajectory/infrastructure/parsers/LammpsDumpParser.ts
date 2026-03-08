@@ -1,6 +1,8 @@
 import path from 'path';
 import nativeStats from '@modules/trajectory/infrastructure/native/NativeStats';
 import { ParseResult, FrameMetadata, ParseOptions } from '@modules/trajectory/domain/port/ParserTypes';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 interface NativeDumpResult {
     positions: Float32Array;
@@ -34,7 +36,10 @@ export default class LammpsDumpParser {
         });
 
         if (!result) {
-            throw new Error('NativeDumpParserFailed');
+            throw ApplicationError.badRequest(
+                ErrorCodes.TRAJECTORY_DUMP_PARSE_FAILED,
+                'Failed to parse trajectory dump file'
+            );
         }
 
         const width = result.max[0] - result.min[0];
@@ -67,7 +72,10 @@ export default class LammpsDumpParser {
     public getStatsForProperty(filePath: string, property: string): { min: number; max: number } {
         const result = nativeModule.parseDump(filePath, { properties: [] });
         if (!result) {
-            throw new Error('NativeDumpParserFailed');
+            throw ApplicationError.badRequest(
+                ErrorCodes.TRAJECTORY_DUMP_PARSE_FAILED,
+                'Failed to parse trajectory dump file'
+            );
         }
 
         const propIdx = result.metadata.headers.findIndex(
@@ -75,12 +83,19 @@ export default class LammpsDumpParser {
         );
 
         if (propIdx === -1) {
-            throw new Error(`Property ${property} not found in dump file headers.`);
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                `Property '${property}' not found in trajectory dump`
+            );
         }
 
         const stats = nativeStats.getStatsForProperty(filePath, propIdx);
         if (!stats) {
-            throw new Error('Native stats parser failed');
+            throw new ApplicationError(
+                ErrorCodes.TRAJECTORY_STATS_PARSE_FAILED,
+                'Failed to calculate trajectory property stats',
+                500
+            );
         }
         return stats;
     }

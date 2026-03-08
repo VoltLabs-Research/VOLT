@@ -1,26 +1,14 @@
 import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@shared/application/events/IEventHandler';
-import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
-import logger from '@shared/infrastructure/logger';
-
-interface TeamDeletedEvent {
-    teamId: string;
-    occurredOn: Date;
-    name: string;
-    eventId: string;
-}
+import { DeleteManyOnTeamDeletedHandler } from '@shared/application/events/DeleteManyOnTeamDeletedHandler';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 
 @injectable()
-export class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent> {
+export default class TeamDeletedEventHandler extends DeleteManyOnTeamDeletedHandler {
     constructor(
-        @inject('IContainerRepository') private repository: IContainerRepository
-    ){}
-
-    async handle(event: TeamDeletedEvent): Promise<void> {
-        logger.info(`@container: Handling team:deleted event for team ${event.teamId}`);
-
-        await this.repository.deleteByTeamId(event.teamId);
-
-        logger.info(`@container: Deleted all containers for team ${event.teamId}`);
+        @inject(CONTAINER_TOKENS.ContainerRepository)
+        protected readonly repository: IContainerRepository
+    ) {
+        super();
     }
 }

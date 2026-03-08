@@ -1,11 +1,5 @@
 import TeamAIIntegration, { TeamAIIntegrationProps } from '@modules/team/domain/entities/TeamAIIntegration';
-import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMapper';
 import { TeamAIIntegrationDocument } from '@modules/team/infrastructure/persistence/mongo/models/TeamAIIntegrationModel';
+import { createMongoMapper } from '@shared/infrastructure/persistence/mongo/createMongoMapper';
 
-class TeamAIIntegrationMapper extends BaseMapper<TeamAIIntegration, TeamAIIntegrationProps, TeamAIIntegrationDocument> {
-    constructor() {
-        super(TeamAIIntegration, ['team', 'createdBy']);
-    }
-}
-
-export default new TeamAIIntegrationMapper();
+export default createMongoMapper<TeamAIIntegration, TeamAIIntegrationProps, TeamAIIntegrationDocument>(TeamAIIntegration, ['team', 'createdBy']);

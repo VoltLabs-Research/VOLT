@@ -22,22 +22,22 @@ export class DockerVolumeRepository implements IDockerVolumeRepository {
         return this.toEntity(document);
     }
 
-    async findById(id: string): Promise<DockerVolumeEntity | null> {
-        const document = await DockerVolume.findById(id);
+    async findById(_id: string): Promise<DockerVolumeEntity | null> {
+        const document = await DockerVolume.findById(_id);
         if (!document) {
             return null;
         }
         return this.toEntity(document);
     }
 
-    async deleteById(id: string): Promise<boolean> {
-        const result = await DockerVolume.findByIdAndDelete(id);
+    async deleteById(_id: string): Promise<boolean> {
+        const result = await DockerVolume.findByIdAndDelete(_id);
         return result !== null;
     }
 
     private toEntity(document: IDockerVolume): DockerVolumeEntity {
         return {
-            id: document._id.toString(),
+            _id: document._id.toString(),
             volumeId: document.volumeId,
             name: document.name,
             driver: document.driver,

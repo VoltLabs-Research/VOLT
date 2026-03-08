@@ -1,8 +1,10 @@
-import { PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
+import {
+    PaginatedTeamScopedInputDTO,
+    PersistedEntityDTO,
+    TeamScopedPaginatedOutputDTO
+} from '@modules/team/application/dtos/common';
 import { TeamRoleProps } from '@modules/team/domain/entities/TeamRole';
 
-export interface ListTeamRolesByTeamIdInputDTO extends PaginationOptions{
-    teamId: string;
-};
+export type ListTeamRolesByTeamIdInputDTO = PaginatedTeamScopedInputDTO;
 
-export interface ListTeamRolesByTeamIdOutputDTO extends PaginatedResult<TeamRoleProps>{}
+export type ListTeamRolesByTeamIdOutputDTO = TeamScopedPaginatedOutputDTO<PersistedEntityDTO<TeamRoleProps>>;

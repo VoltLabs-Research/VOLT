@@ -2,7 +2,8 @@ import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 import { AITool } from '@shared/application/ai/AITool';
 import type { AIToolScope } from '@modules/ai/application/services/AIToolService';
-import FindCellsByTeamIdUseCase from '@modules/simulation-cell/application/use-cases/FindCellsByTeamIdUseCase';
+import ListSimulationCellsByTeamIdUseCase from '@modules/simulation-cell/application/use-cases/ListSimulationCellsByTeamIdUseCase';
+import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 
 @injectable()
 export class ListSimulationCellsAITool extends AITool {
@@ -11,8 +12,8 @@ export class ListSimulationCellsAITool extends AITool {
     readonly parameters = z.object({ page: z.number().optional().default(1), limit: z.number().optional().default(50) });
 
     constructor(
-        @inject(FindCellsByTeamIdUseCase)
-        protected readonly useCase: FindCellsByTeamIdUseCase
+        @inject(SIMULATION_CELL_TOKENS.ListSimulationCellsByTeamIdUseCase)
+        protected readonly useCase: ListSimulationCellsByTeamIdUseCase
     ) {
         super();
     }
@@ -22,11 +23,12 @@ export class ListSimulationCellsAITool extends AITool {
         if (!result.success) throw result.error;
         return {
             summary: `Found ${result.value.total} simulation cells.`,
-            data: result.value.data.map((cell: any) => ({
-                cellId: cell.id, timestep: cell.props.timestep,
-                trajectory: typeof cell.props.trajectory === 'string' ? cell.props.trajectory : (cell.props.trajectory?.name || ''),
-                boundingBox: cell.props.boundingBox ? `${cell.props.boundingBox.width}x${cell.props.boundingBox.height}x${cell.props.boundingBox.length}` : '',
-                createdAt: cell.props.createdAt ?? null
+            data: result.value.data.map((cell) => ({
+                cellId: cell._id,
+                timestep: cell.timestep,
+                trajectory: typeof cell.trajectory === 'string' ? cell.trajectory : (cell.trajectory?.name || ''),
+                boundingBox: cell.boundingBox ? `${cell.boundingBox.width}x${cell.boundingBox.height}x${cell.boundingBox.length}` : '',
+                createdAt: cell.createdAt ?? null
             })),
             total: result.value.total
         };

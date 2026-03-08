@@ -1,8 +1,6 @@
 .cursor-tooltip {
-    z-index: 10000;
     pointer-events: none;
-    transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1), transform 0.2s cubic-bezier(0.2, 0, 0, 1);
-    position: fixed;
+    transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1), scale 0.2s cubic-bezier(0.2, 0, 0, 1);
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
@@ -13,10 +11,11 @@
     min-width: 200px;
     font-size: 0.9rem;
     opacity: 0;
-    transform: scale(0.95);
+    scale: 0.95;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    z-index: var(--z-floating);
 }
 
 .cursor-tooltip.interactive {
@@ -25,7 +24,7 @@
 
 .cursor-tooltip.visible {
     opacity: 1;
-    transform: scale(1);
+    scale: 1;
 }
 
 .cursor-tooltip.no-activity {

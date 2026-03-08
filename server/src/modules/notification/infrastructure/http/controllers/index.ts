@@ -1,8 +1,8 @@
-import GetNotificationsByUserIdController from './GetNotificationsByUserIdController';
-import MarkAllUserNotificationsAsReadController from './MarkAllUserNotificationsAsReadController';
+import GetMyNotificationsController from './GetMyNotificationsController';
+import MarkAllMyNotificationsAsReadController from './MarkAllMyNotificationsAsReadController';
 import { container } from 'tsyringe';
 
 export default {
-    getByUserId: container.resolve(GetNotificationsByUserIdController),
-    readAll: container.resolve(MarkAllUserNotificationsAsReadController)
+    getMyNotifications: container.resolve(GetMyNotificationsController),
+    markAllAsRead: container.resolve(MarkAllMyNotificationsAsReadController)
 };

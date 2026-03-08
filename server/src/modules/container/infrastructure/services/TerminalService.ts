@@ -1,13 +1,27 @@
 import { injectable, inject } from 'tsyringe';
-import { Socket } from 'socket.io';
-import { ITerminalService } from '@modules/container/domain/port/ITerminalService';
+import {
+    ContainerTerminalError,
+    ContainerTerminalResizePayload,
+    ITerminalClient,
+    ITerminalService
+} from '@modules/container/domain/port/ITerminalService';
 import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
-import { IContainerService } from '@modules/container/domain/port/IContainerService';
+import {
+    ContainerTerminalAttachment,
+    IContainerService
+} from '@modules/container/domain/port/IContainerService';
+import { ErrorCodes } from '@core/constants/error-codes';
 import logger from '@shared/infrastructure/logger';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+
+interface SocketTerminalHandlers {
+    onInput: (input: string) => void;
+    onResize: (size: ContainerTerminalResizePayload) => void;
+    onDisconnect: () => void;
+}
 
 interface TerminalSession {
-    stream: any;
-    exec: any;
+    attachment: ContainerTerminalAttachment;
     history: Buffer[];
     historySize: number;
     activeConnections: number;
@@ -18,35 +32,28 @@ interface TerminalSession {
 export class TerminalService implements ITerminalService {
     private sessions: Map<string, TerminalSession> = new Map();
     private readonly HISTORY_LIMIT_BYTES = 10000;
+    private readonly clientHandlers = new WeakMap<ITerminalClient, SocketTerminalHandlers>();
 
     constructor(
-        @inject('IContainerService') private containerService: IContainerService,
-        @inject('IContainerRepository') private repository: IContainerRepository
+        @inject(CONTAINER_TOKENS.ContainerService) private containerService: IContainerService,
+        @inject(CONTAINER_TOKENS.ContainerRepository) private repository: IContainerRepository
     ){}
 
-    handleConnection(socket: Socket): void {
-        socket.on('container:terminal:attach', async (data: { containerId: string }) => {
-            await this.attach(socket, data.containerId);
-        });
-    }
-
-    async attach(socket: Socket, containerId: string): Promise<void> {
-        socket.join(containerId);
+    async attach(client: ITerminalClient, containerId: string): Promise<void> {
+        client.joinRoom(containerId);
         let session = this.sessions.get(containerId);
 
         if (!session) {
             try {
-                // Find container via Repository to get Docker ID
                 const containerDoc = await this.repository.findById(containerId);
                 if (!containerDoc || !containerDoc.containerId) {
-                    socket.emit('container:error', 'Container not found only or not created');
+                    this.emitError(client, ErrorCodes.CONTAINER_NOT_FOUND, 'Container not found or not created');
                     return;
                 }
 
-                const { stream, exec } = await this.containerService.attachTerminal(containerDoc.containerId);
+                const attachment = await this.containerService.attachTerminal(containerDoc.containerId);
                 session = {
-                    stream,
-                    exec,
+                    attachment,
                     history: [],
                     historySize: 0,
                     activeConnections: 0,
@@ -55,9 +62,9 @@ export class TerminalService implements ITerminalService {
 
                 this.sessions.set(containerId, session);
 
-                stream.on('data', (chunk: Buffer) => {
+                attachment.stream.on('data', (chunk: Buffer) => {
                     const data = chunk.toString('utf-8');
-                    socket.nsp.to(containerId).emit('container:terminal:data', data);
+                    client.emitDataToRoom(containerId, data);
                     if (session) {
                         session.history.push(chunk);
                         session.historySize += chunk.length;
@@ -68,15 +75,15 @@ export class TerminalService implements ITerminalService {
                     }
                 });
 
-                stream.on('end', () => this.cleanupSession(containerId));
-                stream.on('error', (err: any) => {
-                    socket.nsp.to(containerId).emit('container:error', 'Stream error: ' + err.message);
+                attachment.stream.on('end', () => this.cleanupSession(containerId));
+                attachment.stream.on('error', (error: Error) => {
+                    this.emitErrorToRoom(client, containerId, ErrorCodes.CONTAINER_EXEC_FAILED, this.getErrorDetails(error, 'Terminal stream error'));
                     this.cleanupSession(containerId);
                 });
 
-            } catch (error: any) {
-                socket.emit('container:error', error.message);
-                socket.leave(containerId);
+            } catch (error: unknown) {
+                this.emitError(client, ErrorCodes.INTERNAL_SERVER_ERROR, this.getErrorDetails(error, 'Unexpected terminal error'));
+                client.leaveRoom(containerId);
                 return;
             }
         }
@@ -89,43 +96,45 @@ export class TerminalService implements ITerminalService {
         session.activeConnections++;
         if (session.history.length > 0) {
             const combined = Buffer.concat(session.history).toString('utf8');
-            socket.emit('container:terminal:data', combined);
+            client.emitData(combined);
         }
 
-        // Setup listeners
         const onInput = (input: string) => {
-            if (session && session.stream && !session.stream.destroyed) {
-                session.stream.write(input);
+            if (session && !session.attachment.stream.destroyed) {
+                session.attachment.stream.write(input);
             }
         };
 
-        const onResize = (size: { rows: number, cols: number }) => {
-            if (session && session.exec) {
-                session.exec.resize(size).catch(() => { });
+        const onResize = (size: ContainerTerminalResizePayload) => {
+            if (session) {
+                session.attachment.exec.resize(size).catch(() => { });
             }
         };
 
-        const onDisconnect = () => this.detach(socket, containerId);
+        const onDisconnect = () => this.detach(client, containerId);
 
-        // Store handlers on socket for cleanup
-        (socket as any)._termHandlers = { onInput, onResize, onDisconnect };
+        this.clientHandlers.set(client, {
+            onInput,
+            onResize,
+            onDisconnect
+        });
 
-        socket.on('container:terminal:input', onInput);
-        socket.on('container:terminal:resize', onResize);
-        socket.on('container:terminal:detach', onDisconnect);
-        socket.on('disconnect', onDisconnect);
+        client.onInput(onInput);
+        client.onResize(onResize);
+        client.onDetach(onDisconnect);
+        client.onDisconnect(onDisconnect);
     }
 
-    detach(socket: Socket, containerId: string): void {
-        const handlers = (socket as any)._termHandlers;
+    detach(client: ITerminalClient, containerId: string): void {
+        const handlers = this.clientHandlers.get(client);
         if (handlers) {
-            socket.off('container:terminal:input', handlers.onInput);
-            socket.off('container:terminal:resize', handlers.onResize);
-            socket.off('container:terminal:detach', handlers.onDisconnect);
-            socket.off('disconnect', handlers.onDisconnect);
-            delete (socket as any)._termHandlers;
+            client.offInput(handlers.onInput);
+            client.offResize(handlers.onResize);
+            client.offDetach(handlers.onDisconnect);
+            client.offDisconnect(handlers.onDisconnect);
+            this.clientHandlers.delete(client);
         }
-        socket.leave(containerId);
+        client.leaveRoom(containerId);
 
         const session = this.sessions.get(containerId);
         if (!session) return;
@@ -142,13 +151,36 @@ export class TerminalService implements ITerminalService {
         if (!session || session.activeConnections > 0) return;
 
         try {
-            session.stream.removeAllListeners();
-            session.stream.destroy();
-            session.exec = null;
+            session.attachment.stream.removeAllListeners();
+            session.attachment.stream.destroy();
             session.history = [];
         } catch (e) {
             logger.error(`Error cleaning up session ${containerId}: ${e}`);
         }
         this.sessions.delete(containerId);
+    }
+
+    private emitError(client: ITerminalClient, code: string, details?: string): void {
+        client.emitError(this.createTerminalError(code, details));
+    }
+
+    private emitErrorToRoom(client: ITerminalClient, room: string, code: string, details?: string): void {
+        client.emitErrorToRoom(room, this.createTerminalError(code, details));
+    }
+
+    private createTerminalError(code: string, details?: string): ContainerTerminalError {
+        return { code, details };
+    }
+
+    private getErrorDetails(error: unknown, fallbackMessage: string): string {
+        if (error instanceof Error && error.message) {
+            return error.message;
+        }
+
+        if (typeof error === 'string' && error.length > 0) {
+            return error;
+        }
+
+        return fallbackMessage;
     }
 }

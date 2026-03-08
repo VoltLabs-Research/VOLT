@@ -1,23 +1,24 @@
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { v4 } from 'uuid';
+import { WorkerFailureEnvelope } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
+import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 
-export interface SessionCompletedEventData{
+export interface SessionFailureSummary {
+    failedJobs: number;
+    lastFailure?: WorkerFailureEnvelope;
+}
+
+export interface SessionCompletedEventPayload {
     sessionId: string;
     teamId: string;
     queueType: string;
     totalJobs: number;
     startTime: Date;
     completedAt: Date;
-    metadata?: Record<string, any>;
-};
+    metadata?: Record<string, unknown>;
+    failureSummary?: SessionFailureSummary;
+}
 
-export default class SessionCompletedEvent implements IDomainEvent{
-    public readonly name = 'session.completed';
-    public readonly eventId: string;
-    public readonly occurredOn: Date;
-
-    constructor(public readonly data: SessionCompletedEventData){
-        this.eventId = v4();
-        this.occurredOn = new Date();
+export default class SessionCompletedEvent extends BaseDomainEvent<SessionCompletedEventPayload> {
+    constructor(payload: SessionCompletedEventPayload) {
+        super('session.completed', payload);
     }
-};
+}

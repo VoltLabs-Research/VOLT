@@ -1,0 +1,248 @@
+import { useState, useCallback, useMemo } from 'react';
+import useModifierBase, { UseModifierBaseOptions } from './use-modifier-base';
+import {
+    usePreviewFilterMutation,
+    useApplyFilterMutation,
+    uniqueValuesQuery
+} from '@/modules/trajectory/hooks/particle-filter/queries';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
+import ApiError from '@/shared/errors/ApiError';
+import type { ParticleFilterScene } from '@/modules/fractal/api/entities/fractal';
+
+export type FilterOperator = '==' | '!=' | '>' | '>=' | '<' | '<=';
+export type FilterAction = 'delete' | 'highlight';
+
+export const OPERATORS: { value: FilterOperator; title: string }[] = [
+    { value: '==', title: '=' },
+    { value: '!=', title: '!=' },
+    { value: '>', title: '>' },
+    { value: '>=', title: '>=' },
+    { value: '<', title: '<' },
+    { value: '<=', title: '<=' }
+];
+
+export const ACTIONS: { value: FilterAction; title: string }[] = [
+    { value: 'delete', title: 'Delete' },
+    { value: 'highlight', title: 'Color Selection' }
+];
+
+export interface PreviewResult {
+    matchCount: number;
+    totalCount: number;
+    filterParams: {
+        property: string;
+        operator: FilterOperator;
+        value: number;
+        exposureId?: string;
+    };
+}
+
+const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
+    const {
+        trajectoryId,
+        analysisId,
+        currentTimestep,
+        property,
+        exposureId,
+        propertyOptions,
+        isLoading: isLoadingProperties,
+        handlePropertyChange: baseHandlePropertyChange,
+        setActiveScene
+    } = useModifierBase(options);
+
+    const previewMutation = usePreviewFilterMutation();
+    const applyFilterMutation = useApplyFilterMutation();
+    const [uniqueValuesEnabled, setUniqueValuesEnabled] = useState(false);
+
+    const [operator, setOperator] = useState<FilterOperator>('==');
+    const [value, setValue] = useState(0);
+    const [action, setAction] = useState<FilterAction>('delete');
+    const [previewResult, setPreviewResult] = useState<PreviewResult | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    const uniqueValuesParams = useMemo(() => {
+        if (!property || !trajectoryId || currentTimestep === undefined) {
+            return null;
+        }
+
+        return {
+            trajectoryId,
+            analysisId,
+            timestep: currentTimestep,
+            property,
+            exposureId: exposureId ?? undefined,
+            maxValues: 50
+        };
+    }, [trajectoryId, analysisId, currentTimestep, property, exposureId]);
+
+    const uniqueValuesResult = uniqueValuesQuery(
+        uniqueValuesParams ?? {
+            trajectoryId: '',
+            timestep: 0,
+            property: ''
+        },
+        {
+            enabled: uniqueValuesEnabled && Boolean(uniqueValuesParams),
+            retry: false,
+            staleTime: 5 * 60 * 1000
+        }
+    );
+
+    const valueSuggestions = uniqueValuesResult.data?.values ?? [];
+    const isLoadingValueSuggestions = uniqueValuesResult.isFetching;
+
+    const isLoadingPreview = previewMutation.isPending;
+    const isApplying = applyFilterMutation.isPending;
+
+    const handlePropertyChange = useCallback((newValue: string) => {
+        baseHandlePropertyChange(newValue);
+        setPreviewResult(null);
+        setError(null);
+        setUniqueValuesEnabled(false);
+    }, [baseHandlePropertyChange]);
+
+    const fetchValueSuggestions = useCallback(async () => {
+        if (!uniqueValuesParams) return;
+        sileo.info({ title: 'Loading suggestions...' });
+        setUniqueValuesEnabled(true);
+
+        try {
+            const result = await uniqueValuesResult.refetch();
+            if (result.error) {
+                throw result.error;
+            }
+        } catch (fetchError: unknown) {
+            if (ApiError.isRBACError(fetchError)) {
+                const message = fetchError instanceof ApiError
+                    ? fetchError.getFriendlyMessage()
+                    : 'You do not have permission to perform this action.';
+                sileo.error({ title: message });
+            } else {
+                sileo.error({ title: 'Failed to load suggestions' });
+            }
+        }
+    }, [uniqueValuesParams, uniqueValuesResult]);
+
+    const handlePreview = useCallback(async () => {
+        if (!property || !trajectoryId || currentTimestep === undefined) {
+            setError('Missing required parameters');
+            return;
+        }
+
+        const selectedOption = propertyOptions.find((opt) => opt.value === property);
+        if (selectedOption?.exposureId && !analysisId) {
+            setError('Analysis required for modifier properties');
+            return;
+        }
+
+        setError(null);
+        setPreviewResult(null);
+        sileo.info({ title: 'Generating preview...' });
+        const normalizedExposureId = exposureId ?? undefined;
+
+        try {
+            const result = await previewMutation.mutateAsync({
+                trajectoryId,
+                analysisId,
+                timestep: currentTimestep,
+                property,
+                operator,
+                value,
+                exposureId: normalizedExposureId
+            });
+            setPreviewResult({
+                matchCount: result.matchCount,
+                totalCount: result.totalAtoms,
+                filterParams: {
+                    property,
+                    operator,
+                    value,
+                    exposureId: normalizedExposureId
+                }
+            });
+            sileo.success({ title: 'Preview generated' });
+        } catch (previewError: unknown) {
+            const errorMessage = previewError instanceof Error
+                ? previewError.message
+                : 'Preview failed';
+            setError(errorMessage);
+        }
+    }, [trajectoryId, analysisId, currentTimestep, property, operator, value, exposureId, propertyOptions, previewMutation]);
+
+    const handleApplyAction = useCallback(async () => {
+        if (!previewResult || !trajectoryId || currentTimestep === undefined) {
+            setError('Run preview first');
+            return;
+        }
+
+        setError(null);
+
+        try {
+            const { filterParams } = previewResult;
+            await showPromise(
+                applyFilterMutation.mutateAsync({
+                    trajectoryId,
+                    analysisId,
+                    timestep: currentTimestep,
+                    property: filterParams.property,
+                    operator: filterParams.operator,
+                    value: filterParams.value,
+                    exposureId: filterParams.exposureId,
+                    action
+                }),
+                {
+                    loading: { title: 'Applying filter...' },
+                    success: { title: 'Filter applied successfully' },
+                    error: { title: 'Failed to apply filter' }
+                }
+            );
+
+            setActiveScene({
+                sceneType: 'particle-filter',
+                source: 'particle-filter',
+                analysisId,
+                property: filterParams.property,
+                operator: filterParams.operator,
+                value: filterParams.value,
+                action,
+                exposureId: filterParams.exposureId
+            } as ParticleFilterScene);
+
+            window.dispatchEvent(new CustomEvent('canvas:scene-artifacts:changed', {
+                detail: { sourceType: 'particle-filter', trajectoryId }
+            }));
+
+            setPreviewResult(null);
+        } catch (applyError: unknown) {
+            const errorMessage = applyError instanceof Error
+                ? applyError.message
+                : 'Apply failed';
+            setError(errorMessage);
+        }
+    }, [trajectoryId, analysisId, currentTimestep, action, previewResult, setActiveScene, applyFilterMutation]);
+
+    const handleCancelPreview = useCallback(() => {
+        setPreviewResult(null);
+        setError(null);
+    }, []);
+
+    const percentage = useMemo(() => {
+        if (!previewResult) return '0';
+        return ((previewResult.matchCount / previewResult.totalCount) * 100).toFixed(2);
+    }, [previewResult]);
+
+    const canPreview = useMemo(() => {
+        return !isLoadingPreview && !isApplying && !!property && !isLoadingProperties;
+    }, [isLoadingPreview, isApplying, property, isLoadingProperties]);
+
+    return {
+        property, propertyOptions, handlePropertyChange, isLoadingProperties,
+        operator, setOperator, value, setValue, action, setAction,
+        valueSuggestions, fetchValueSuggestions, isLoadingValueSuggestions,
+        previewResult, isLoadingPreview, handlePreview, handleCancelPreview, percentage, canPreview,
+        isApplying, handleApplyAction, error
+    };
+};
+
+export default useParticleFilter;

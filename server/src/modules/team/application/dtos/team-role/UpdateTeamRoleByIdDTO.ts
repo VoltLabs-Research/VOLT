@@ -1,9 +1,9 @@
+import {
+    EntityOutputDTO,
+    EntityIdInputDTO,
+} from '@modules/team/application/dtos/common';
 import { TeamRoleProps } from '@modules/team/domain/entities/TeamRole';
 
-export interface UpdateTeamRoleByIdInputDTO{
-    roleId: string;
-    name?: string;
-    permissions?: string[];
-};
+export type UpdateTeamRoleByIdInputDTO = EntityIdInputDTO<'roleId'> & Partial<Pick<TeamRoleProps, 'name' | 'permissions'>>;
 
-export interface UpdateTeamRoleByIdOutputDTO extends TeamRoleProps{};
+export type UpdateTeamRoleByIdOutputDTO = EntityOutputDTO<TeamRoleProps>;

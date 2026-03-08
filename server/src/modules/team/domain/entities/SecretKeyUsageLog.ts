@@ -12,7 +12,11 @@ export interface SecretKeyUsageLogProps {
 
 export default class SecretKeyUsageLog {
     constructor(
-        public id: string,
+        public _id: string,
         public props: SecretKeyUsageLogProps
     ) {}
+
+    public get id(): string {
+        return this._id;
+    }
 };

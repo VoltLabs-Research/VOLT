@@ -7,8 +7,9 @@ import { IPluginBinaryCacheService } from '@modules/plugin/domain/port/IPluginBi
 import { IEventBus } from '@shared/application/events/IEventBus';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
+import PluginDeletedEvent from '@modules/plugin/domain/events/PluginDeletedEvent';
 
 @injectable()
 export class DeletePluginByIdUseCase implements IUseCase<DeletePluginByIdInputDTO, null, ApplicationError> {
@@ -19,15 +20,29 @@ export class DeletePluginByIdUseCase implements IUseCase<DeletePluginByIdInputDT
     ){}
 
     async execute(input: DeletePluginByIdInputDTO): Promise<Result<null, ApplicationError>> {
-        await this.binaryCacheService.evictByPluginId(input.pluginId);
-
-        const plugin = await this.pluginRepository.deleteById(input.pluginId);
+        const plugin = await this.pluginRepository.findById(input.pluginId);
         if (!plugin) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
             ));
         }
+
+        await this.binaryCacheService.evictByPluginId(input.pluginId);
+
+        const deleted = await this.pluginRepository.deleteById(input.pluginId);
+        if (!deleted) {
+            return Result.fail(ApplicationError.notFound(
+                ErrorCodes.PLUGIN_NOT_FOUND,
+                'Plugin not found'
+            ));
+        }
+
+        await this.eventBus.publish(new PluginDeletedEvent({
+            pluginId: plugin.id,
+            teamId: plugin.props.team,
+            workflow: plugin.props.workflow
+        }));
 
         return Result.ok(null);
     }

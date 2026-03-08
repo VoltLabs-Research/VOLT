@@ -1,0 +1,15 @@
+import { Router } from 'express';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
+import controllers from '@modules/team/infrastructure/http/controllers/secret-key';
+
+const router = Router({ mergeParams: true });
+const module: HttpModule = {
+    basePath: '/api/team/secret-keys',
+    router
+};
+
+router.use(protect);
+router.get('/me', controllers.current.handle);
+
+export default module;

@@ -30,7 +30,11 @@ export interface SceneArtifactProps {
 
 export default class SceneArtifact {
     constructor(
-        public id: string,
+        public readonly _id: string,
         public props: SceneArtifactProps
     ) {}
+
+    get id(): string {
+        return this._id;
+    }
 }

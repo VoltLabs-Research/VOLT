@@ -59,7 +59,13 @@ export default class NodeRegistry implements INodeRegistry{
         if(!propertyPath) return nodeOutput;
         return propertyPath
             .split('.')
-            .reduce((acc, key) => acc?.[key], nodeOutput);
+            .reduce<unknown>((acc, key) => {
+                if (typeof acc !== 'object' || acc === null) {
+                    return undefined;
+                }
+
+                return (acc as Record<string, unknown>)[key];
+            }, nodeOutput);
     }
 
     resolveTemplate(template: string, context: ExecutionContext): string{

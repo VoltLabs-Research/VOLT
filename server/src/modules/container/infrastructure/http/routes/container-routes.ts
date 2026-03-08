@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import { Resource } from '@core/constants/resources';
-import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
 import controllers from '@modules/container/infrastructure/http/controllers';
 
 const router = Router({ mergeParams: true });
@@ -11,16 +11,18 @@ const module: HttpModule = {
     resource: Resource.CONTAINER
 };
 
-router.use(protect);
+const createContainerRateLimit = createStandardRateLimiter(5);
+
+const deleteContainerRateLimit = createStandardRateLimiter(10);
 
 router.route('/')
-    .post(controllers.create.handle)
+    .post(createContainerRateLimit, controllers.create.handle)
     .get(controllers.listByTeamId.handle);
 
 router.route('/:containerId')
     .get(controllers.getById.handle)
     .patch(controllers.updateById.handle)
-    .delete(controllers.deleteById.handle);
+    .delete(deleteContainerRateLimit, controllers.deleteById.handle);
 
 router.get('/:containerId/files', controllers.getFilesById.handle);
 router.get('/:containerId/processes', controllers.getProcessesById.handle);

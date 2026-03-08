@@ -1,10 +1,10 @@
-import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import {
+    PersistedEntityDTO,
+    PaginatedTeamScopedInputDTO,
+    TeamScopedPaginatedOutputDTO
+} from '@modules/team/application/dtos/common';
 import { TeamInvitationProps } from '@modules/team/domain/entities/TeamInvitation';
 
-export interface GetPendingInvitationsInputDTO {
-    teamId: string;
-    page?: number;
-    limit?: number;
-}
+export type GetPendingInvitationsInputDTO = PaginatedTeamScopedInputDTO;
 
-export interface GetPendingInvitationsOutputDTO extends PaginatedResult<TeamInvitationProps>{}
+export type GetPendingInvitationsOutputDTO = TeamScopedPaginatedOutputDTO<PersistedEntityDTO<TeamInvitationProps>>;

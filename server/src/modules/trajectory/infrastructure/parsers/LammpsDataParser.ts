@@ -1,6 +1,8 @@
 import path from 'path';
 import { ParseResult, FrameMetadata, ParseOptions } from '@modules/trajectory/domain/port/ParserTypes';
 import * as fs from 'fs';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 interface NativeDataResult {
     positions: Float32Array;
@@ -29,7 +31,10 @@ export default class LammpsDataParser {
         });
 
         if (!result) {
-            throw new Error('NativeDataParserFailed');
+            throw ApplicationError.badRequest(
+                ErrorCodes.TRAJECTORY_DATA_PARSE_FAILED,
+                'Failed to parse trajectory data file'
+            );
         }
 
         let metadataWithCell = result.metadata as FrameMetadata;

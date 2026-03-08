@@ -1,4 +1,4 @@
-import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
+import { IChatRepository, PersistedChatDTO } from '@modules/chat/domain/port/IChatRepository';
 import Chat, { ChatProps } from '@modules/chat/domain/entities/Chat';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import ChatModel, { ChatDocument } from '@modules/chat/infrastructure/persistence/mongo/models/ChatModel';
@@ -7,6 +7,7 @@ import { injectable, inject } from 'tsyringe';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ChatDeletedEvent from '@modules/chat/domain/events/ChatDeletedEvent';
+import { toPersistedChatOutput } from '@modules/chat/application/helpers/toPersistedChatOutput';
 
 @injectable()
 export default class ChatRepository
@@ -48,7 +49,7 @@ export default class ChatRepository
         return this.mapper.toDomain(chat);
     }
 
-    async findChatsByUserId(userId: string): Promise<ChatProps[]> {
+    async findChatsByUserId(userId: string): Promise<PersistedChatDTO[]> {
         const chats = await this.model.find({
             participants: userId,
             isActive: true
@@ -57,7 +58,7 @@ export default class ChatRepository
             .populate('participants')
             .sort({ lastMessageAt: -1 });
 
-        return chats.map((chat) => this.mapper.toDomain(chat).props)
+        return chats.map((chat) => toPersistedChatOutput(this.mapper.toDomain(chat)));
     }
 
     async updateLastMessage(chatId: string, messageId: string): Promise<void> {

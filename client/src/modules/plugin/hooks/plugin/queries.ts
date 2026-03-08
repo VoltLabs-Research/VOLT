@@ -1,0 +1,289 @@
+import {
+    useInfiniteQuery,
+    useMutation,
+    useQuery,
+    type QueryKey,
+    type UseQueryOptions
+} from '@tanstack/react-query';
+import queryClient from '@/shared/infrastructure/query/query-client';
+import {
+    upsertEntityInList,
+    removeEntityFromList,
+    patchPaginatedPage,
+    patchInfinitePages,
+    batchInvalidateQueries
+} from '@/shared/infrastructure/query/cache-utils';
+import { createMutation, buildKeys } from '@/shared/infrastructure/query';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import pluginService from '../../api/services/plugin';
+import type { Plugin } from '../../api/entities/plugin';
+import type { ClonePluginInputDTO } from '../../api/dtos/plugin/clone-plugin';
+import type { DeletePluginInputDTO } from '../../api/dtos/plugin/delete-plugin';
+import type { ExecutePluginInputDTO, ExecutePluginOutputDTO } from '../../api/dtos/plugin/execute-plugin';
+import type { ExportAnalysisResultsInputDTO } from '../../api/dtos/plugin/export-analysis-results';
+import type { ExportPluginInputDTO } from '../../api/dtos/plugin/export-plugin';
+import type { GetPluginInputDTO } from '../../api/dtos/plugin/get-plugin';
+import type { GetPluginsInputDTO } from '../../api/dtos/plugin/get-plugins';
+import type { ImportPluginInputDTO } from '../../api/dtos/plugin/import-plugin';
+import type { SavePluginInputDTO } from '../../api/dtos/plugin/save-plugin';
+import type { UpdatePluginInputDTO } from '../../api/dtos/plugin/update-plugin';
+import type { UploadBinaryInputDTO, UploadBinaryOutputDTO } from '../../api/dtos/plugin/upload-binary';
+
+type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
+
+// ---------------------------------------------------------------------------
+// buildKeys — hierarchical keys with prefix support
+// ---------------------------------------------------------------------------
+
+const pluginBaseKeys = buildKeys<{
+    all: void;
+    byId: void;
+    pluginById: GetPluginInputDTO;
+}>('plugins');
+
+const catalogKeys = buildKeys<{
+    list: GetPluginsInputDTO;
+}>(['plugins', 'catalog']);
+
+const catalogInfiniteKeys = buildKeys<{
+    list: { limit: number };
+}>(['plugins', 'catalog', 'infinite']);
+
+// ---------------------------------------------------------------------------
+// PLUGIN_QUERY_KEYS — public facade
+// ---------------------------------------------------------------------------
+
+export const PLUGIN_QUERY_KEYS = {
+    root: pluginBaseKeys.prefix,
+    all: pluginBaseKeys.all,
+    byId: pluginBaseKeys.byId,
+    allList: pluginBaseKeys.all,
+    pluginById: pluginBaseKeys.pluginById,
+    catalog: catalogKeys.prefix,
+    catalogInfinite: catalogInfiniteKeys.prefix,
+    catalogList: catalogKeys.list,
+    catalogInfiniteList: catalogInfiniteKeys.list
+};
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const fetchAllPlugins = async (): Promise<Plugin[]> => {
+    const PAGE_SIZE = 100;
+    let page = 1;
+    const all: Plugin[] = [];
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        const res = await pluginService.getAll({ page, limit: PAGE_SIZE });
+        all.push(...res.data);
+        if (!res.pagination.hasMore) break;
+        page++;
+    }
+
+    return all;
+};
+
+const savePlugin = async (input: SavePluginInputDTO): Promise<Plugin> => {
+    if (input._id) {
+        return pluginService.update({ _id: input._id, workflow: input.workflow });
+    }
+    return pluginService.create({ workflow: input.workflow });
+};
+
+// ─── Plugin queries ──────────────────────────────────────────────────────────
+
+export const buildAllPluginsQueryOptions = () => ({
+    queryKey: PLUGIN_QUERY_KEYS.allList(),
+    queryFn: fetchAllPlugins
+});
+
+export const buildPluginByIdQueryOptions = (params: GetPluginInputDTO) => ({
+    queryKey: PLUGIN_QUERY_KEYS.pluginById(params),
+    queryFn: () => pluginService.getById(params)
+});
+
+export const fetchPluginById = (
+    params: GetPluginInputDTO,
+    options?: { staleTime?: number }
+) => {
+    return queryClient.fetchQuery<Plugin>({
+        ...buildPluginByIdQueryOptions(params),
+        ...options
+    });
+};
+
+export const useAllPluginsQuery = (
+    options?: QueryOptions<Plugin[], Plugin[]>
+) => {
+    return useQuery<Plugin[], Error, Plugin[], QueryKey>({
+        ...buildAllPluginsQueryOptions(),
+        ...options
+    });
+};
+
+export const usePluginByIdQuery = (
+    params: GetPluginInputDTO,
+    options?: QueryOptions<Plugin, Plugin>
+) => {
+    return useQuery<Plugin, Error, Plugin, QueryKey>({
+        ...buildPluginByIdQueryOptions(params),
+        ...options
+    });
+};
+
+// ─── Catalog queries ─────────────────────────────────────────────────────────
+
+export const buildPluginsQueryOptions = (params: GetPluginsInputDTO) => ({
+    queryKey: PLUGIN_QUERY_KEYS.catalogList(params),
+    queryFn: () => pluginService.getAll(params)
+});
+
+export const fetchPlugins = (params: GetPluginsInputDTO) => {
+    return queryClient.fetchQuery(buildPluginsQueryOptions(params));
+};
+
+export const usePluginsQuery = (
+    params: GetPluginsInputDTO,
+    options?: QueryOptions<PaginatedResponse<Plugin>, PaginatedResponse<Plugin>>
+) => {
+    return useQuery<PaginatedResponse<Plugin>, Error, PaginatedResponse<Plugin>, QueryKey>({
+        ...buildPluginsQueryOptions(params),
+        ...options
+    });
+};
+
+export const usePluginCatalogInfiniteQuery = (
+    params: { limit: number },
+    options: { getNextPageParam: (lastPage: PaginatedResponse<Plugin>) => number | undefined; enabled?: boolean }
+) => {
+    return useInfiniteQuery({
+        queryKey: PLUGIN_QUERY_KEYS.catalogInfiniteList(params),
+        queryFn: ({ pageParam }) => pluginService.getAll({
+            page: pageParam as number,
+            limit: params.limit
+        }),
+        initialPageParam: 1,
+        getNextPageParam: options.getNextPageParam,
+        enabled: options.enabled
+    });
+};
+
+// ─── Cache sync helpers ──────────────────────────────────────────────────────
+
+export const syncPluginEntityCaches = (plugin: Plugin): void => {
+    queryClient.setQueryData<Plugin[]>(PLUGIN_QUERY_KEYS.allList(), (currentPlugins = []) => {
+        const existingPluginIndex = currentPlugins.findIndex((currentPlugin) => currentPlugin._id === plugin._id);
+
+        if (existingPluginIndex === -1) {
+            return [plugin, ...currentPlugins];
+        }
+
+        return currentPlugins.map((currentPlugin) => {
+            return currentPlugin._id === plugin._id ? plugin : currentPlugin;
+        });
+    });
+
+    queryClient.setQueryData(PLUGIN_QUERY_KEYS.pluginById({ _id: plugin._id }), plugin);
+
+    patchPaginatedPage<Plugin>(PLUGIN_QUERY_KEYS.catalog(), (page) => {
+        if (!page.data.some((currentPlugin) => currentPlugin._id === plugin._id)) {
+            return page;
+        }
+
+        return upsertEntityInList(page, plugin);
+    });
+
+    patchInfinitePages<Plugin>(PLUGIN_QUERY_KEYS.catalogInfinite(), (page) => {
+        if (!page.data.some((currentPlugin) => currentPlugin._id === plugin._id)) {
+            return page;
+        }
+
+        return upsertEntityInList(page, plugin);
+    });
+};
+
+export const removePluginEntityCaches = (pluginId: string): void => {
+    queryClient.setQueryData<Plugin[]>(PLUGIN_QUERY_KEYS.allList(), (currentPlugins = []) => {
+        return currentPlugins.filter((currentPlugin) => currentPlugin._id !== pluginId);
+    });
+
+    queryClient.removeQueries({ queryKey: PLUGIN_QUERY_KEYS.pluginById({ _id: pluginId }) });
+
+    patchPaginatedPage<Plugin>(PLUGIN_QUERY_KEYS.catalog(), (page) => removeEntityFromList(page, pluginId));
+
+    patchInfinitePages<Plugin>(PLUGIN_QUERY_KEYS.catalogInfinite(), (page) => removeEntityFromList(page, pluginId));
+};
+
+export const invalidatePluginCatalogQueries = async (): Promise<void> => {
+    await batchInvalidateQueries([
+        PLUGIN_QUERY_KEYS.catalog(),
+        PLUGIN_QUERY_KEYS.all()
+    ]);
+};
+
+export const invalidatePluginEntityQueries = async (): Promise<void> => {
+    await invalidatePluginCatalogQueries();
+    await queryClient.invalidateQueries({ queryKey: PLUGIN_QUERY_KEYS.byId() });
+};
+
+// ─── Mutation hooks ──────────────────────────────────────────────────────────
+
+export const useSavePluginMutation = () => {
+    return useMutation<Plugin, Error, SavePluginInputDTO>({
+        mutationFn: savePlugin,
+        onSuccess: async (plugin) => {
+            syncPluginEntityCaches(plugin);
+            await invalidatePluginEntityQueries();
+        }
+    });
+};
+
+export const useDeletePluginMutation = () => {
+    return useMutation<void, Error, DeletePluginInputDTO>({
+        mutationFn: pluginService.delete,
+        onSuccess: async (_data, { _id }) => {
+            removePluginEntityCaches(_id);
+            await invalidatePluginEntityQueries();
+        }
+    });
+};
+
+export const useExportPluginMutation = createMutation<Blob, ExportPluginInputDTO>(pluginService.exportPlugin);
+
+export const useImportPluginMutation = () => {
+    return useMutation<Plugin, Error, ImportPluginInputDTO>({
+        mutationFn: pluginService.importPlugin,
+        onSuccess: async (plugin) => {
+            syncPluginEntityCaches(plugin);
+            await invalidatePluginEntityQueries();
+        }
+    });
+};
+
+export const useExecutePluginMutation = createMutation<ExecutePluginOutputDTO, ExecutePluginInputDTO>(pluginService.execute);
+
+export const useClonePluginMutation = () => {
+    return useMutation<Plugin, Error, ClonePluginInputDTO>({
+        mutationFn: pluginService.clone,
+        onSuccess: async (plugin) => {
+            syncPluginEntityCaches(plugin);
+            await invalidatePluginEntityQueries();
+        }
+    });
+};
+
+export const useUpdatePluginMutation = () => {
+    return useMutation<Plugin, Error, UpdatePluginInputDTO>({
+        mutationFn: pluginService.update,
+        onSuccess: async (plugin) => {
+            syncPluginEntityCaches(plugin);
+            await invalidatePluginEntityQueries();
+        }
+    });
+};
+
+export const useUploadBinaryMutation = createMutation<UploadBinaryOutputDTO, UploadBinaryInputDTO>(pluginService.uploadBinary);
+
+export const useDeleteBinaryMutation = createMutation<void, { pluginId: string }>(pluginService.deleteBinary);
+
+export const useExportAnalysisResultsMutation = createMutation<Blob, ExportAnalysisResultsInputDTO>(pluginService.exportAnalysisResults);

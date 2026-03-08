@@ -1,12 +1,7 @@
-import { injectable, inject } from 'tsyringe';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
 import CheckEmailUseCase from '@modules/auth/application/use-cases/CheckEmailUseCase';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { authValidation } from '@modules/auth/infrastructure/http/validation/auth-schemas';
 
-@injectable()
-export default class CheckEmailController extends BaseController<CheckEmailUseCase> {
-    constructor(
-        @inject(CheckEmailUseCase) useCase: CheckEmailUseCase
-    ) {
-        super(useCase);
-    }
-};
+export default createController(CheckEmailUseCase, {
+    validationSchema: authValidation.checkEmail
+});

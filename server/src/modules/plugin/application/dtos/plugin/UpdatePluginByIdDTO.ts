@@ -1,5 +1,6 @@
-import { PluginProps, PluginStatus } from '@modules/plugin/domain/entities/Plugin';
+import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 import { WorkflowProps } from '@modules/plugin/domain/entities/workflow/Workflow';
+import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin/PersistedPluginDTO';
 
 export interface UpdatePluginByIdInputDTO {
     pluginId: string;
@@ -11,4 +12,4 @@ export interface UpdatePluginByIdInputDTO {
     _allowBinaryFieldUpdate?: boolean;
 }
 
-export interface UpdatePluginByIdOutputDTO extends PluginProps{}
+export interface UpdatePluginByIdOutputDTO extends PersistedPluginDTO { }

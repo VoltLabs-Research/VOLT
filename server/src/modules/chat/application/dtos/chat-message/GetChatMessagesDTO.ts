@@ -1,5 +1,5 @@
 import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { ChatMessageProps } from '@modules/chat/domain/entities/ChatMessage';
+import { PersistedChatMessageDTO } from '@modules/chat/application/dtos/chat-message/SendChatMessageDTO';
 
 export interface GetChatMessagesInputDTO{
     userId: string;
@@ -8,4 +8,4 @@ export interface GetChatMessagesInputDTO{
     limit?: number;
 };
 
-export interface GetChatMessagesOutputDTO extends PaginatedResult<ChatMessageProps>{}
+export interface GetChatMessagesOutputDTO extends PaginatedResult<PersistedChatMessageDTO>{}

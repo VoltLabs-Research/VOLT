@@ -47,7 +47,6 @@ export default class WorkflowProjectionService {
         const exposures: ComputedExposure[] = exposureNodes.map((exposureNode) => {
             const exportNode = workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Export);
 
-            // TODO: What the fuck is this................
             const exposureData = exposureNode.data.exposure || {} as Record<string, unknown>;
             const { _id: _, id: __, ...cleanedExposureData } = exposureData as Record<string, unknown>;
 
@@ -72,7 +71,7 @@ export default class WorkflowProjectionService {
             name: exposure.name
         }));
 
-        const listingExposures: ListingExposuresData | null = modifier
+        const listingExposures: ListingExposuresData | null = modifier && pluginId
             ? {
                 pluginName: modifier.name,
                 pluginId,

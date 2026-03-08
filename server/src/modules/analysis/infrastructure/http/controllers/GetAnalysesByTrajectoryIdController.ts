@@ -1,13 +1,7 @@
-import { injectable, inject } from 'tsyringe';
+import { createPaginatedController } from '@shared/infrastructure/http/controllers/createController';
 import { GetAnalysesByTrajectoryIdUseCase } from '@modules/analysis/application/use-cases/GetAnalysesByTrajectoryIdUseCase';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { analysisValidation } from '@modules/analysis/infrastructure/http/validation/analysis-schemas';
 
-@injectable()
-export default class GetAnalysesByTrajectoryIdController extends BaseController<GetAnalysesByTrajectoryIdUseCase>{
-    constructor(
-        @inject(GetAnalysesByTrajectoryIdUseCase)
-        public useCase: GetAnalysesByTrajectoryIdUseCase
-    ){
-        super(useCase);
-    }
-}
+export default createPaginatedController(GetAnalysesByTrajectoryIdUseCase, {
+    validationSchema: analysisValidation.listByTrajectoryId
+});

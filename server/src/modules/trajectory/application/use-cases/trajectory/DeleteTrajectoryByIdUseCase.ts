@@ -1,28 +1,34 @@
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import { injectable, inject } from 'tsyringe';
+import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { IUseCase } from '@shared/application/IUseCase';
-import { injectable, inject } from 'tsyringe';
-import { DeleteTrajectoryByIdInputDTO } from '@modules/trajectory/application/dtos/trajectory/DeleteTrajectoryByIdDTO';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+
+interface DeleteTrajectoryByIdInput {
+    trajectoryId: string;
+}
+
+interface DeleteTrajectoryByIdOutput {
+    success: boolean;
+}
 
 @injectable()
-export default class DeleteTrajectoryByIdUseCase implements IUseCase<DeleteTrajectoryByIdInputDTO, null, ApplicationError>{
+export default class DeleteTrajectoryByIdUseCase implements IUseCase<DeleteTrajectoryByIdInput, DeleteTrajectoryByIdOutput, ApplicationError> {
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepo: ITrajectoryRepository
-    ){}
+        private readonly repository: ITrajectoryRepository
+    ) {}
 
-    async execute(input: DeleteTrajectoryByIdInputDTO): Promise<Result<null, ApplicationError>>{
-        const { trajectoryId } = input;
-        const result = await this.trajectoryRepo.deleteById(trajectoryId);
-        if(!result){
+    async execute(input: DeleteTrajectoryByIdInput): Promise<Result<DeleteTrajectoryByIdOutput, ApplicationError>> {
+        const deleted = await this.repository.deleteById(input.trajectoryId);
+        if (!deleted) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
                 'Trajectory not found'
             ));
         }
-        return Result.ok(null);
+        return Result.ok({ success: true });
     }
-};
+}

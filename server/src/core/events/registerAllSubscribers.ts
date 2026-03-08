@@ -10,6 +10,9 @@ import { registerDailyActivitySubscribers } from '@modules/daily-activity/infras
 import { registerContainerSubscribers } from '@modules/container/infrastructure/events/subscribers';
 import { registerSimulationCellSubscribers } from '@modules/simulation-cell/infrastructure/events/subscribers';
 import { registerSessionSubscribers } from '@modules/session/infrastructure/events/subscribers';
+import { registerAISubscribers } from '@modules/ai/infrastructure/events/subscribers';
+import { registerRasterSubscribers } from '@modules/raster/infrastructure/events/subscribers';
+import { registerAuthSubscribers } from '@modules/auth/infrastructure/events/subscribers';
 import logger from '@shared/infrastructure/logger';
 
 /**
@@ -27,10 +30,13 @@ export const registerAllSubscribers = async (): Promise<void> => {
         registerSSHSubscribers(),
         registerPluginSubscribers(),
         registerScriptingSubscribers(),
+        registerRasterSubscribers(),
         registerDailyActivitySubscribers(),
         registerContainerSubscribers(),
         registerSimulationCellSubscribers(),
-        registerSessionSubscribers()
+        registerSessionSubscribers(),
+        registerAISubscribers(),
+        registerAuthSubscribers()
     ]);
 
     logger.info('@event-bus: All event subscribers registered successfully');

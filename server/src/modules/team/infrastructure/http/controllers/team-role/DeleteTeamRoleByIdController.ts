@@ -1,13 +1,6 @@
-import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
-import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
+import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import DeleteTeamRoleByIdUseCase from '@modules/team/application/use-cases/team-role/DeleteTeamRoleByIdUseCase';
 
-@injectable()
-export default class DeleteTeamRoleByIdController extends BaseController<DeleteTeamRoleByIdUseCase> {
-    constructor(
-        @inject(DeleteTeamRoleByIdUseCase) useCase: DeleteTeamRoleByIdUseCase
-    ) {
-        super(useCase, HttpStatus.Deleted);
-    }
-};
+const DeleteTeamRoleByIdController = createController(DeleteTeamRoleByIdUseCase, HttpStatus.NoContent);
+export default DeleteTeamRoleByIdController;

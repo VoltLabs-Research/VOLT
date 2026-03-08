@@ -1,25 +1,34 @@
 import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
-import { AITool } from '@shared/application/ai/AITool';
-import type { AIToolScope } from '@modules/ai/application/services/AIToolService';
 import ListSecretKeysByTeamIdUseCase from '@modules/team/application/use-cases/secret-key/ListSecretKeysByTeamIdUseCase';
+import type { SecretKeyListItemDTO } from '@modules/team/application/dtos/secret-key/ListSecretKeysByTeamIdDTO';
+import type { TeamAIToolListResult } from './TeamUseCaseAITool';
+import { TeamUseCaseAITool } from './TeamUseCaseAITool';
+
+const listSecretKeysParametersSchema = z.object({});
 
 @injectable()
-export class ListSecretKeysAITool extends AITool {
+export class ListSecretKeysAITool extends TeamUseCaseAITool<
+    z.infer<typeof listSecretKeysParametersSchema>,
+    ListSecretKeysByTeamIdUseCase,
+    typeof listSecretKeysParametersSchema,
+    TeamAIToolListResult<SecretKeyListItemDTO[]>
+> {
     readonly name = 'list_secret_keys';
     readonly description = 'List API secret keys for the selected team.';
-    readonly parameters = z.object({});
+    readonly parameters = listSecretKeysParametersSchema;
 
     constructor(
         @inject(ListSecretKeysByTeamIdUseCase)
-        protected readonly useCase: ListSecretKeysByTeamIdUseCase
+        useCase: ListSecretKeysByTeamIdUseCase
     ) {
-        super();
-    }
-
-    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({ teamId: scope.teamId, page: 1, limit: 100 });
-        if (!result.success) throw result.error;
-        return { summary: `Found ${result.value.data.length} secret keys.`, data: result.value.data };
+        super(
+            useCase,
+            (_, scope) => ({ teamId: scope.teamId, page: 1, limit: 100 }),
+            (output) => ({
+                summary: `Found ${output.data.length} secret keys.`,
+                data: output.data
+            })
+        );
     }
 }

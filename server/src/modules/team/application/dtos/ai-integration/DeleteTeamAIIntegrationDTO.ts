@@ -1,4 +1,3 @@
-export interface DeleteTeamAIIntegrationInputDTO {
-    teamId: string;
-    provider: string;
-}
+import { ProviderScopedInputDTO } from '@modules/team/application/dtos/common';
+
+export type DeleteTeamAIIntegrationInputDTO = ProviderScopedInputDTO;

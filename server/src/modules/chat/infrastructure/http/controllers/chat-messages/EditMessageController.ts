@@ -1,13 +1,5 @@
-import { injectable, inject, delay } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
 import { EditMessageUseCase } from '@modules/chat/application/use-cases/chat-message/EditMessageUseCase';
 
-@injectable()
-export default class EditMessageController extends BaseController<EditMessageUseCase> {
-    constructor(
-        @inject(delay(() => EditMessageUseCase))
-        useCase: EditMessageUseCase
-    ) {
-        super(useCase);
-    }
-}
+const EditMessageController = createController(EditMessageUseCase);
+export default EditMessageController;

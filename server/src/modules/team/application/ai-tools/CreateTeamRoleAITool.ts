@@ -1,14 +1,33 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
-import { AITool } from '@shared/application/ai/AITool';
+import CreateTeamRoleUseCase from '@modules/team/application/use-cases/team-role/CreateTeamRoleUseCase';
+import { TeamUseCaseAITool } from './TeamUseCaseAITool';
+
+const createTeamRoleParametersSchema = z.object({
+    name: z.string(),
+    permissions: z.array(z.string()).optional(),
+    reason: z.string().optional()
+});
 
 @injectable()
-export class CreateTeamRoleAITool extends AITool {
+export class CreateTeamRoleAITool extends TeamUseCaseAITool<
+    z.infer<typeof createTeamRoleParametersSchema>,
+    CreateTeamRoleUseCase,
+    typeof createTeamRoleParametersSchema
+> {
     readonly name = 'create_team_role';
     readonly description = 'Create a new role.';
-    readonly parameters = z.object({ name: z.string(), permissions: z.array(z.string()).optional(), reason: z.string().optional() });
+    readonly parameters = createTeamRoleParametersSchema;
 
-    constructor() {
-        super();
+    constructor(
+        @inject(CreateTeamRoleUseCase)
+        useCase: CreateTeamRoleUseCase
+    ) {
+        super(useCase, (params, scope) => ({
+            teamId: scope.teamId,
+            name: params.name,
+            permissions: params.permissions,
+            isSystem: false
+        }));
     }
 }

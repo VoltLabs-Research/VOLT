@@ -22,9 +22,12 @@ export class ListSSHConnectionsAITool extends AITool {
         if (!result.success) throw result.error;
         return {
             summary: `Found ${result.value.data.length} SSH connections.`,
-            data: result.value.data.map((conn: any) => ({
-                connectionId: conn.id, name: conn.props.name, host: conn.props.host,
-                port: conn.props.port, username: conn.props.username
+            data: result.value.data.map((connection) => ({
+                connectionId: connection._id,
+                name: connection.name,
+                host: connection.host,
+                port: connection.port,
+                username: connection.username
             }))
         };
     }

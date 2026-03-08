@@ -1,13 +1,13 @@
 import { injectable, inject } from 'tsyringe';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
 import JobStatusChangedEvent from '@modules/jobs/application/events/JobStatusChangedEvent';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
-import TrajectoryUpdatedEvent from './TrajectoryUpdatedEvent';
+import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/TrajectoryUpdatedEvent';
 
 @injectable()
 export default class JobStatusChangedEventHandler implements IEventHandler<JobStatusChangedEvent> {
@@ -19,8 +19,8 @@ export default class JobStatusChangedEventHandler implements IEventHandler<JobSt
     ){}
 
     async handle(event: JobStatusChangedEvent): Promise<void> {
-        const { status, metadata, teamId } = event.data;
-        const trajectoryId = metadata?.trajectoryId;
+        const { status, metadata, teamId } = event.payload;
+        const trajectoryId = metadata?.trajectoryId as string | undefined;
 
         if (!trajectoryId) return;
 

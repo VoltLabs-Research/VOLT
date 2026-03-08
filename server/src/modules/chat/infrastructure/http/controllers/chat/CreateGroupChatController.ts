@@ -1,27 +1,6 @@
-import { injectable, inject, delay } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
 import { CreateGroupChatUseCase } from '@modules/chat/application/use-cases/chat/CreateGroupChatUseCase';
-import { CreateGroupChatInputDTO } from '@modules/chat/application/dtos/chat/CreateGroupChatDTO';
-import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 
-@injectable()
-export default class CreateGroupChatController extends BaseController<CreateGroupChatUseCase> {
-    constructor(
-        @inject(delay(() => CreateGroupChatUseCase))
-        useCase: CreateGroupChatUseCase
-    ) {
-        super(useCase);
-    }
+const CreateGroupChatController = createController(CreateGroupChatUseCase);
 
-    protected getParams(req: AuthenticatedRequest): CreateGroupChatInputDTO {
-        const { teamId } = req.params;
-        const { groupName, groupDescription, participantIds } = req.body;
-        return {
-            ownerId: req.userId!,
-            teamId: String(teamId),
-            groupName,
-            groupDescription,
-            participantIds
-        };
-    }
-};
+export default CreateGroupChatController;

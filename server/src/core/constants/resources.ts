@@ -1,7 +1,9 @@
 export enum Resource {
     ANALYSIS = 'analysis',
     CONTAINER = 'container',
+    DAILY_ACTIVITY = 'daily-activity',
     PLUGIN = 'plugin',
+    SCRIPTING = 'scripting',
     SSH_CONNECTION = 'ssh-connection',
     TEAM_INVITATION = 'team-invitation',
     TEAM_MEMBER = 'team-member',

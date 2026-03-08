@@ -1,7 +1,12 @@
 import 'reflect-metadata';
-import '@core/bootstrap/register-deps';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { registerAllDependencies } from '@core/bootstrap/register-deps';
 import BaseWorker from '@shared/infrastructure/workers/BaseWorker';
 import logger from '@shared/infrastructure/logger';
+import {
+    createWorkerFailureEnvelope,
+    WorkerFailureError
+} from '@shared/infrastructure/workers/WorkerFailureEnvelope';
 import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/TrajectoryDumpStorageService';
 import { container } from 'tsyringe';
 import { performance } from 'node:perf_hooks';
@@ -11,12 +16,13 @@ import { IPluginWorkflowEngine } from '@modules/plugin/domain/port/IPluginWorkfl
 import { IPluginRepository } from '@modules/plugin/domain/port/IPluginRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { initializeNodeHandlers } from '@modules/plugin/infrastructure/di/container';
+
+registerAllDependencies();
 
 interface AnalysisJobMetadata {
     trajectoryId: string;
     analysisId: string;
-    config: Record<string, any>;
+    config: Record<string, unknown>;
     inputFile: string;
     timestep: number;
     trajectoryName: string;
@@ -25,7 +31,7 @@ interface AnalysisJobMetadata {
     name: string;
     totalItems: number;
     itemIndex: number;
-    forEachItem: any;
+    forEachItem: Record<string, unknown>;
     forEachIndex: number;
 }
 
@@ -37,10 +43,6 @@ export default class AnalysisWorker extends BaseWorker<Job> {
 
     protected async setup(): Promise<void> {
         await this.connectDB();
-        
-        // Initialize node handlers for workflow execution
-        initializeNodeHandlers();
-        
         this.dumpStorage = container.resolve(TrajectoryDumpStorageService);
         this.workflowEngine = container.resolve<IPluginWorkflowEngine>(PLUGIN_TOKENS.PluginWorkflowEngine);
         this.pluginRepository = container.resolve<IPluginRepository>(PLUGIN_TOKENS.PluginRepository);
@@ -81,7 +83,10 @@ export default class AnalysisWorker extends BaseWorker<Job> {
             // Find the plugin
             const plugin = await this.pluginRepository.findById(pluginId);
             if (!plugin) {
-                throw new Error(`Plugin not found: ${pluginId}`);
+                throw new WorkerFailureError(createWorkerFailureEnvelope({
+                    code: ErrorCodes.PLUGIN_NOT_FOUND,
+                    details: `Plugin not found: ${pluginId}`
+                }));
             }
 
             // Execute the workflow for this specific item
@@ -107,8 +112,10 @@ export default class AnalysisWorker extends BaseWorker<Job> {
                 timestep,
                 duration: totalTime
             });
-        } catch (error: any) {
-            logger.error(`@analysis-worker #${process.pid}] error processing job ${jobId}: ${error.message}\nStack: ${error.stack}`);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : '';
+            logger.error(`@analysis-worker #${process.pid}] error processing job ${jobId}: ${errorMessage}\nStack: ${errorStack}`);
             
             // Mark analysis as failed
             await this.analysisRepository.updateById(analysisId, {
@@ -116,11 +123,15 @@ export default class AnalysisWorker extends BaseWorker<Job> {
                 finishedAt: new Date()
             }).catch(() => {});
 
-            this.sendMessage({
-                status: 'failed',
-                jobId,
-                timestep,
-                error: error.message
+            const failure = error instanceof WorkerFailureError
+                ? error.failure
+                : createWorkerFailureEnvelope({
+                    code: ErrorCodes.WORKER_FAILURE,
+                    details: errorMessage
+                });
+
+            this.sendFailure(jobId, failure, {
+                timestep
             });
         }
     }
@@ -144,24 +155,13 @@ export default class AnalysisWorker extends BaseWorker<Job> {
 
     private async updateProgress(analysisId: string, totalItems: number): Promise<void> {
         try {
-            const analysis = await this.analysisRepository.findById(analysisId);
-            if (!analysis) return;
-
-            const completedFrames = (analysis.props.completedFrames || 0) + 1;
-            
-            const updateData: any = {
-                completedFrames,
-                clusterId: process.env.CLUSTER_ID || 'default'
-            };
-
-            if (completedFrames >= totalItems) {
-                updateData.status = 'completed';
-                updateData.finishedAt = new Date();
-            }
-
-            await this.analysisRepository.updateById(analysisId, updateData);
-        } catch (error: any) {
-            logger.warn(`@analysis-worker #${process.pid}] Failed to update progress: ${error.message}`);
+            await this.analysisRepository.updateById(analysisId, {
+                $inc: { completedFrames: 1 },
+                $set: { clusterId: process.env.CLUSTER_ID || 'default' }
+            } as Record<string, unknown>);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logger.warn(`@analysis-worker #${process.pid}] Failed to update progress: ${message}`);
         }
     }
 }

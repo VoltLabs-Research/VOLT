@@ -1,5 +1,6 @@
 import { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
 import DailyActivity, { ActivityType, DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
+import type { PersistedDailyActivity } from '@modules/daily-activity/domain/types/PersistedDailyActivity';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import DailyActivityModel, { DailyActivityDocument } from '@modules/daily-activity/infrastructure/persistence/mongo/models/DailyActivityModel';
 import dailyActitvityMapper from '@modules/daily-activity/infrastructure/persistence/mongo/mappers/DailyActivityMapper';
@@ -30,7 +31,7 @@ export default class DailyActivityRepository
         );
     }
 
-    async findActivityByTeamId(teamId: string, range: number): Promise<DailyActivityProps[]> {
+    async findActivityByTeamId(teamId: string, range: number): Promise<PersistedDailyActivity[]> {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - range);
         startDate.setHours(0, 0, 0, 0);
@@ -42,11 +43,18 @@ export default class DailyActivityRepository
 
         // Return individual documents per user/date instead of grouping by date only
         const activities = await this.model.find(statsQuery)
-            .select('date user minutesOnline activity')
+            .select('date user minutesOnline activity team')
             .populate('user', 'firstName lastName avatar')
             .sort({ date: 1 });
 
-        return activities.map((activity) => dailyActitvityMapper.toDomain(activity).props);
+        return activities.map((activity) => {
+            const dailyActivity = dailyActitvityMapper.toDomain(activity);
+
+            return {
+                _id: dailyActivity._id,
+                ...dailyActivity.props
+            };
+        });
     }
 
     async addDailyActivity(

@@ -3,7 +3,7 @@ export interface ScriptingNotebookProps {
     title: string;
     notebookPath: string;
     trajectories: string[];
-    createdBy: any;
+    createdBy: string;
     content: Record<string, unknown>;
     lastOpenedAt?: Date;
     createdAt: Date;
@@ -12,7 +12,11 @@ export interface ScriptingNotebookProps {
 
 export default class ScriptingNotebook {
     constructor(
-        public id: string,
+        public readonly _id: string,
         public props: ScriptingNotebookProps
     ) {}
+
+    get id(): string {
+        return this._id;
+    }
 }

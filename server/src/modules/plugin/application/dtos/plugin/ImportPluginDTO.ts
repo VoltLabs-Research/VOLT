@@ -1,8 +1,8 @@
-import { PluginProps } from '@modules/plugin/domain/entities/Plugin';
+import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin/PersistedPluginDTO';
 
 export interface ImportPluginInputDTO {
     file: any;
     teamId: string;
 }
 
-export interface ImportPluginOutputDTO extends PluginProps{}
+export interface ImportPluginOutputDTO extends PersistedPluginDTO { }

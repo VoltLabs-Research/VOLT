@@ -2,7 +2,11 @@ import { Response, NextFunction } from 'express';
 import { container } from 'tsyringe';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/TeamMemberRepository';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
+import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/TeamMember';
+import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import logger from '@shared/infrastructure/logger';
 
 export const checkTeamMembership = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -12,40 +16,52 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
     logger.debug(`check-team-membership: teamId=${teamId} & userId=${userId}`);
 
     if (!teamId) {
-        return res.status(400).json({ status: 'error' });
+        return BaseResponse.error(
+            res,
+            ErrorCodes.TEAM_ID_REQUIRED,
+            HttpStatus.BadRequest,
+            ErrorCodes.TEAM_ID_REQUIRED
+        );
     }
 
     if (req.authType === 'secret-key') {
         if (req.secretKeyTeamId !== teamId) {
-            return res.status(403).json({
-                status: 'error',
-                message: ErrorCodes.TEAM_ACCESS_DENIED
-            });
+            return BaseResponse.error(
+                res,
+                ErrorCodes.TEAM_ACCESS_DENIED,
+                HttpStatus.Forbidden,
+                ErrorCodes.TEAM_ACCESS_DENIED
+            );
         }
 
-        req.teamPermissions = req.teamPermissions || [];
         return next();
     }
 
     if (!userId) {
-        return res.status(400).json({ status: 'error' });
+        return BaseResponse.error(
+            res,
+            ErrorCodes.AUTHENTICATION_REQUIRED,
+            HttpStatus.Unauthorized,
+            ErrorCodes.AUTHENTICATION_REQUIRED
+        );
     }
 
-    const repository = container.resolve(TeamMemberRepository);
+    const repository = container.resolve<ITeamMemberRepository>(TEAM_TOKENS.TeamMemberRepository);
     const member = await repository.findOne(
-        { user: userId, team: teamId },
+        { user: userId, team: teamId as string },
         { populate: { path: 'role', select: ['permissions'] } }
     );
 
     if (!member) {
-        return res.status(403).json({
-            status: 'error',
-            message: ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN
-        });
+        return BaseResponse.error(
+            res,
+            ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
+            HttpStatus.Forbidden,
+            ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN
+        );
     }
 
-    // Cache permissions for RBAC enforcement in BaseController
-    req.teamPermissions = member.props.role?.permissions || [];
+    req.teamPermissions = getTeamMemberRolePermissions(member.props.role);
 
     next();
 };

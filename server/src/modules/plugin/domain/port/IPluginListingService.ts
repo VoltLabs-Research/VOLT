@@ -1,5 +1,8 @@
-import { PluginListingPaginatedResult } from '@modules/plugin/infrastructure/services/PluginListingService';
+import type {
+    ListingOptions,
+    PluginListingPaginatedResult
+} from '@modules/plugin/domain/port/PluginListingTypes';
 
 export interface IPluginListingService {
-    getListingDocuments(pluginId: string, options: any): Promise<PluginListingPaginatedResult>;
+    getListingDocuments(pluginId: string, options: ListingOptions): Promise<PluginListingPaginatedResult>;
 }

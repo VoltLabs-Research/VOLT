@@ -6,7 +6,7 @@ export interface IUserRepository extends IBaseRepository<User, UserProps>{
      * Find user by ID with password included.
      */
     findByIdWithPassword(
-        id: string
+        userId: string
     ): Promise<(User & { password: string }) | null>;
 
     /**
@@ -16,6 +16,11 @@ export interface IUserRepository extends IBaseRepository<User, UserProps>{
         userId: string,
         teamId: string
     ): Promise<void>;
+
+    /**
+     * Delete the specified team from all users.
+     */
+    removeUsersFromTeam(teamId: string): Promise<void>;
 
     /**
      * Find user by email.
@@ -38,22 +43,22 @@ export interface IUserRepository extends IBaseRepository<User, UserProps>{
      * Update user password.
      */
     updatePassword(
-        id: string,
+        userId: string,
         hashedPassword: string
     ): Promise<void>;
 
     /**
      * Update last login timestamp.
      */
-    updateLastLogin(id: string): Promise<void>;
+    updateLastLogin(userId: string): Promise<void>;
 
     /**
      * Update last seen timestamp.
      */
-    updateLastSeen(id: string, timestamp?: Date): Promise<void>;
+    updateLastSeen(userId: string, timestamp?: Date): Promise<void>;
 
     /**
      * Update user avatar.
      */
-    updateAvatar(id: string, avatarUrl: string): Promise<void>;
+    updateAvatar(userId: string, avatarUrl: string): Promise<void>;
 };

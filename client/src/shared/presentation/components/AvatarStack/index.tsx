@@ -1,4 +1,4 @@
-import type { User } from '@/modules/auth/domain/entities/User';
+import type { User } from '@/modules/auth/api/entities/user';
 import Avatar from '@/shared/presentation/components/Avatar';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
@@ -6,8 +6,13 @@ import './AvatarStack.css';
 
 type StackSize = 'xs' | 'sm' | 'md';
 
+type AvatarStackUser = Partial<Pick<User, 'email' | 'firstName' | 'lastName' | 'avatar' | 'isOnline'>> & {
+    _id?: string;
+    id?: string;
+};
+
 interface AvatarStackProps {
-    users: Partial<User>[];
+    users: AvatarStackUser[];
     maxDisplay?: number;
     size?: StackSize;
     className?: string;
@@ -23,7 +28,7 @@ const AvatarStack = ({ users, maxDisplay = 3, size = 'sm', className = '' }: Ava
         <Container className={`avatar-stack d-flex items-center ${className}`}>
             {displayedUsers.map((user, index) => (
                 <Avatar
-                    key={user._id ?? index}
+                    key={user._id ?? user.id ?? index}
                     user={user as User}
                     size={size}
                     className='avatar-stack-item'

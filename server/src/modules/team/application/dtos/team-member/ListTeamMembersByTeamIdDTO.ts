@@ -1,9 +1,11 @@
-import { PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
+import {
+    PersistedEntityDTO,
+    PaginatedOutputDTO,
+    PaginatedTeamScopedInputDTO
+} from '@modules/team/application/dtos/common';
 import { TeamMemberProps } from '@modules/team/domain/entities/TeamMember';
 
-export interface ListTeamMembersByTeamIdInputDTO extends PaginationOptions {
-    teamId: string;
-};
+export type ListTeamMembersByTeamIdInputDTO = PaginatedTeamScopedInputDTO;
 
 export interface TeamMemberStatsProps extends TeamMemberProps {
     timeSpentLast7Days: number;
@@ -11,4 +13,4 @@ export interface TeamMemberStatsProps extends TeamMemberProps {
     analysesCount: number;
 };
 
-export interface ListTeamMembersByTeamIdOutputDTO extends PaginatedResult<TeamMemberStatsProps> { }
+export type ListTeamMembersByTeamIdOutputDTO = PaginatedOutputDTO<PersistedEntityDTO<TeamMemberStatsProps>>;

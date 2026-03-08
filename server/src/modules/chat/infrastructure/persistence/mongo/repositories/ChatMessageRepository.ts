@@ -11,22 +11,26 @@ export default class ChatMessageRepository
     implements IChatMessageRepository {
 
     constructor() {
-        super(ChatMessageModel, new chatMessageMapper());
+        super(ChatMessageModel, chatMessageMapper);
     }
 
-    async markMessageAsRead(messageId: string, userId: string): Promise<void> {
-        await this.model.findByIdAndUpdate(messageId, {
-            $addToSet: { readBy: userId }
-        });
+    async create(data: ChatMessageProps): Promise<ChatMessage> {
+        const persistenceData = this.mapper.toPersistence(data);
+        const doc = await this.model.create(persistenceData);
+
+        await doc.populate('sender');
+
+        return this.mapper.toDomain(doc);
     }
 
-    async findByChatId(chatId: string, limit: number = 50, offset: number = 0): Promise<ChatMessage[]> {
-        const docs = await this.model.find({ chat: chatId })
-            .populate('sender')
-            .sort({ createdAt: -1 })
-            .skip(offset)
-            .limit(limit);
-
-        return docs.map(doc => this.mapper.toDomain(doc));
+    async markAllAsRead(chatId: string, userId: string): Promise<void> {
+        await this.model.updateMany(
+            {
+                chat: chatId,
+                readBy: { $ne: userId }
+            },
+            { $addToSet: { readBy: userId } }
+        );
     }
+
 }

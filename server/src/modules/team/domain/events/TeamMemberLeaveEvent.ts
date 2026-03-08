@@ -1,20 +1,8 @@
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { v4 } from 'uuid';
+import { createTeamDomainEvent } from './createTeamDomainEvent';
 
-export interface TeamMemberLeaveEventPayload{
+export interface TeamMemberLeaveEventPayload {
     teamId: string;
     memberId: string;
-};
+}
 
-export default class TeamMemberLeaveEvent implements IDomainEvent{
-    public readonly name = 'team.member.leave';
-    public readonly occurredOn: Date;
-    public readonly eventId: string;
-
-    constructor(
-        public readonly payload: TeamMemberLeaveEventPayload
-    ){
-        this.occurredOn = new Date();
-        this.eventId = v4();
-    }
-};
+export default class TeamMemberLeaveEvent extends createTeamDomainEvent<TeamMemberLeaveEventPayload>('team-member.left') {}

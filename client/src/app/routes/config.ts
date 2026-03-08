@@ -1,42 +1,42 @@
 import { RouteGroup } from './types';
-import SignInPage from '@/modules/auth/presentation/components/templates/SignIn';
-import OAuthCallbackPage from '@/modules/auth/presentation/components/templates/OAuthCallback';
-import GeneralSettings from '@/modules/auth/presentation/components/templates/Settings/GeneralSettings';
-import AuthenticationSettings from '@/modules/auth/presentation/components/templates/Settings/AuthenticationSettings';
-import ThemeSettings from '@/modules/auth/presentation/components/templates/Settings/ThemeSettings';
-import MyTeamTemplate from '@/modules/team/presentation/components/templates/MyTeam';
-import ManageRolesTemplate from '@/modules/team/presentation/components/templates/ManageRoles';
-import TeamInvitationTemplate from '@/modules/team/presentation/components/templates/TeamInvitation';
-import TrajectoriesListing from '@/modules/trajectory/presentation/components/templates/TrajectoriesListing';
-import PerAtomViewer from '@/modules/trajectory/presentation/components/templates/PerAtomViewer';
-import CanvasPage from '@/modules/canvas/presentation/components/templates/CanvasPage';
-import AnalysesListing from '@/modules/analysis/presentation/components/templates/AnalysesListing';
-import SimulationCellsListing from '@/modules/simulation-cell/presentation/components/templates/SimulationCellsListing';
-import PluginsListing from '@/modules/plugin/presentation/components/templates/PluginsListing';
-import PluginBuilderPage from '@/modules/plugin/presentation/components/templates/PluginBuilderPage';
-import PluginListingPage from '@/modules/plugin/presentation/components/templates/PluginListingPage';
-import ClustersPage from '@/modules/cluster/presentation/components/templates/ClustersPage';
-import ContainersListing from '@/modules/container/presentation/components/templates/ContainersListing';
-import ContainerDetailsLayout from '@/modules/container/presentation/components/templates/ContainerDetailsLayout';
-import ContainerOverviewPage from '@/modules/container/presentation/pages/ContainerOverviewPage';
-import ContainerProcessesPage from '@/modules/container/presentation/pages/ContainerProcessesPage';
-import ContainerLogsPage from '@/modules/container/presentation/pages/ContainerLogsPage';
-import ContainerStoragePage from '@/modules/container/presentation/pages/ContainerStoragePage';
-import CreateContainer from '@/modules/container/presentation/components/templates/CreateContainer';
-import SSHConnectionsPage from '@/modules/ssh/presentation/components/templates/SSHConnectionsPage';
-import SSHFileExplorerPage from '@/modules/ssh/presentation/components/templates/SSHFileExplorerPage';
-import DashboardLayout from '@/modules/dashboard/presentation/components/organisms/DashboardLayout';
-import Dashboard from '@/modules/dashboard/presentation/components/templates/Dashboard';
-import MessagesPage from '@/modules/chat/presentation/components/templates/MessagesPage';
-import SecretKeysListing from '@/modules/team/presentation/components/templates/SecretKeysListing';
-import SecretKeyMetrics from '@/modules/team/presentation/components/templates/SecretKeyMetrics';
-import SecretKeyUsage from '@/modules/team/presentation/components/templates/SecretKeyUsage';
+import SignInPage from '@/modules/auth/components/templates/SignIn';
+import OAuthCallbackPage from '@/modules/auth/components/templates/OAuthCallback';
+import GeneralSettings from '@/modules/auth/components/templates/Settings/GeneralSettings';
+import AuthenticationSettings from '@/modules/auth/components/templates/Settings/AuthenticationSettings';
+import ThemeSettings from '@/modules/auth/components/templates/Settings/ThemeSettings';
+import MyTeamTemplate from '@/modules/team/components/templates/MyTeam';
+import ManageRolesTemplate from '@/modules/team/components/templates/ManageRoles';
+import TeamInvitationTemplate from '@/modules/team/components/templates/TeamInvitation';
+import TrajectoriesListing from '@/modules/trajectory/components/templates/TrajectoriesListing';
+import PerAtomViewer from '@/modules/trajectory/components/templates/PerAtomViewer';
+import CanvasPage from '@/modules/canvas/components/templates/CanvasPage';
+import AnalysesListing from '@/modules/analysis/components/templates/AnalysesListing';
+import SimulationCellsListing from '@/modules/simulation-cell/components/templates/SimulationCellsListing';
+import PluginsListing from '@/modules/plugin/components/templates/PluginsListing';
+import PluginBuilderPage from '@/modules/plugin/components/templates/PluginBuilderPage';
+import PluginListingPage from '@/modules/plugin/components/templates/PluginListingPage';
+import ClustersPage from '@/modules/cluster/components/templates/ClustersPage';
+import ContainersListing from '@/modules/container/components/templates/ContainersListing';
+import ContainerDetailsLayout from '@/modules/container/components/templates/ContainerDetailsLayout';
+import ContainerOverviewPage from '@/modules/container/components/pages/container-overview-page';
+import ContainerProcessesPage from '@/modules/container/components/pages/container-processes-page';
+import ContainerTerminalPage from '@/modules/container/components/pages/container-terminal-page';
+import ContainerStoragePage from '@/modules/container/components/pages/container-storage-page';
+import CreateContainer from '@/modules/container/components/templates/CreateContainer';
+import SSHConnectionsPage from '@/modules/ssh/components/templates/SSHConnectionsPage';
+import SSHFileExplorerPage from '@/modules/ssh/components/templates/SSHFileExplorerPage';
+import DashboardLayout from '@/modules/dashboard/components/organisms/DashboardLayout';
+import Dashboard from '@/modules/dashboard/components/templates/Dashboard';
+import MessagesPage from '@/modules/chat/components/templates/MessagesPage';
+import SecretKeysListing from '@/modules/team/components/templates/SecretKeysListing';
+import SecretKeyMetrics from '@/modules/team/components/templates/SecretKeyMetrics';
+import SecretKeyUsage from '@/modules/team/components/templates/SecretKeyUsage';
 import ErrorPage from '@/shared/presentation/components/ErrorPage';
-import NotebooksListing from '@/modules/scripting/presentation/components/templates/NotebooksListing';
-import IntegrationsSettings from '@/modules/auth/presentation/components/templates/Settings/IntegrationsSettings';
-import SessionSettings from '@/modules/session/presentation/components/templates/SessionSettings';
-import AIPage from '@/modules/ai/presentation/components/templates/AIPage';
-import StartPage from '@/modules/start/presentation/pages/StartPage';
+import NotebooksListing from '@/modules/scripting/components/templates/NotebooksListing';
+import IntegrationsSettings from '@/modules/team/components/templates/IntegrationsSettings';
+import SessionSettings from '@/modules/session/components/templates/SessionSettings';
+import AIPage from '@/modules/ai/components/templates/AIPage';
+import StartPage from '@/modules/start/components/templates/StartPage';
 
 export const routesConfig: RouteGroup = {
     public: [
@@ -169,7 +169,8 @@ export const routesConfig: RouteGroup = {
             children: [
                 { path: 'overview', component: ContainerOverviewPage, index: true },
                 { path: 'processes', component: ContainerProcessesPage },
-                { path: 'logs', component: ContainerLogsPage },
+                { path: 'terminal', component: ContainerTerminalPage },
+                { path: 'logs', component: ContainerTerminalPage },
                 { path: 'storage', component: ContainerStoragePage }
             ]
         },

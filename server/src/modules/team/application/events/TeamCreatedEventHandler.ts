@@ -3,7 +3,7 @@ import { injectable, inject } from 'tsyringe';
 import TeamCreatedEvent from '@modules/team/domain/events/TeamCreatedEvent';
 import CreateTeamRoleUseCase from '@modules/team/application/use-cases/team-role/CreateTeamRoleUseCase';
 import { SystemRoles } from '@core/constants/system-roles';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleRepository';
 import CreateTeamMemberUseCase from '@modules/team/application/use-cases/team-member/CreateTeamMemberUseCase';
 
@@ -40,7 +40,7 @@ export default class TeamCreatedEventHandler implements IEventHandler<TeamCreate
 
         if(ownerRole){
             await this.createTeamMemberUseCase.execute({
-                roleId: ownerRole.id,
+                roleId: ownerRole._id,
                 teamId,
                 userId: ownerId
             });

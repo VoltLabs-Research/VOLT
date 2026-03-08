@@ -15,8 +15,6 @@ export interface UserProps{
     lastSeenAt?: Date | null;
     role?: UserRole;
     passwordChangedAt?: Date;
-    passwordResetToken?: string;
-    passwordResetExpires?: Date;
     teams: string[];
     analyses: string[];
     firstName: string;
@@ -25,8 +23,6 @@ export interface UserProps{
     updatedAt: Date;
     avatar?: string;
     
-    // NOTE: The password is marked as optional given 
-    // the existence of users authenticated with OAuth.
     password?: string;
 
     oauthProvider?: OAuthProvider;
@@ -35,12 +31,41 @@ export interface UserProps{
 
 export default class User{
     constructor(
-        public readonly id: string,
+        public readonly _id: string,
         public props: UserProps
     ){}
 
-    public static create(id: string, props: UserProps): User{
-        return new User(id, props);
+    public static normalizeEmail(email: string): string {
+        return email.trim().toLowerCase();
+    }
+
+    public static normalizeName(name: string): string {
+        return name.trim().toLowerCase();
+    }
+
+    public static splitFullName(fullName: string): {
+        firstName: string;
+        lastName?: string;
+    } {
+        const normalizedFullName = fullName.trim().replace(/\s+/g, ' ');
+        const [firstName, ...lastNameParts] = normalizedFullName.split(' ');
+
+        const splitName: {
+            firstName: string;
+            lastName?: string;
+        } = {
+            firstName: User.normalizeName(firstName),
+        };
+
+        if (lastNameParts.length > 0) {
+            splitName.lastName = User.normalizeName(lastNameParts.join(' '));
+        }
+
+        return splitName;
+    }
+
+    public get id(): string {
+        return this._id;
     }
 
     public isPasswordChangedAfterTokenIssued(jwtTimestamp: number): boolean{

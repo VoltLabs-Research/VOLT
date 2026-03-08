@@ -1,11 +1,12 @@
-export interface RevokeSecretKeyByIdInputDTO {
-    teamId: string;
-    secretKeyId: string;
-}
+import {
+    TeamScopedEntityIdInputDTO,
+    TeamScopedInputDTO
+} from '@modules/team/application/dtos/common';
 
-export interface RevokeSecretKeyByIdOutputDTO {
+export type RevokeSecretKeyByIdInputDTO = TeamScopedEntityIdInputDTO<'secretKeyId'>;
+
+export interface RevokeSecretKeyByIdOutputDTO extends TeamScopedInputDTO {
     _id: string;
-    teamId: string;
     isActive: boolean;
     updatedAt: Date;
 }

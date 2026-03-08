@@ -12,8 +12,9 @@ import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import logger from '@shared/infrastructure/logger';
 import { ISocketModule } from '@modules/socket/domain/port/ISocketModule';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import JwtTokenService from '@modules/auth/infrastructure/security/JwtTokenService';
+import { ITokenService } from '@modules/auth/domain/port/ITokenService';
 import { ISocketMapper } from '@modules/socket/domain/port/ISocketMapper';
+import type { ISocketConnectionData } from '@modules/socket/domain/port/ISocketModule';
 
 export interface AuthenticatedSocket extends Socket{
     user?: any;
@@ -52,12 +53,21 @@ export default class SocketGateway{
         @inject(AUTH_TOKENS.UserRepository)
         private userRepository: IUserRepository,
 
-        @inject(AUTH_TOKENS.JwtTokenService)
-        private jwtTokenService: JwtTokenService,
+        @inject(AUTH_TOKENS.TokenService)
+        private tokenService: ITokenService,
 
         @inject(SOCKET_TOKENS.SocketMapper)
         private socketMapper: ISocketMapper
     ){}
+
+    static inject = [
+        SOCKET_TOKENS.SocketEventEmitter,
+        SOCKET_TOKENS.SocketRoomManager,
+        SOCKET_TOKENS.SocketEventRegistry,
+        AUTH_TOKENS.UserRepository,
+        AUTH_TOKENS.TokenService,
+        SOCKET_TOKENS.SocketMapper
+    ] as const;
 
     /**
      * Register a feature module (before initialize()).
@@ -116,6 +126,8 @@ export default class SocketGateway{
      */
     private handleConnection(socket: Socket): void{
         logger.info(`@socket-gateway - connected: ${socket.id}`);
+
+        socket.data = (socket.data ?? {}) as ISocketConnectionData;
 
         this.socketEmitter.registerSocket(socket);
         this.socketRoomManager.registerSocket(socket);
@@ -201,7 +213,7 @@ export default class SocketGateway{
                 return next();
             }
             
-            const decoded = this.jwtTokenService.verify(token);
+            const decoded = this.tokenService.verify(token);
             const user = await this.userRepository.findById(decoded?.id || '');
             if(!user){
                 socket.user = null;

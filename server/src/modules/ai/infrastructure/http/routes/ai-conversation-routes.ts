@@ -1,31 +1,36 @@
 import { Router } from 'express';
+import { createBurstRateLimiter, createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
-import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
 import { Resource } from '@core/constants/resources';
 import controllers from '@modules/ai/infrastructure/http/controllers';
+import { aiConversationValidation } from '@modules/ai/infrastructure/http/validation/ai-schemas';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/ai/conversations',
     router,
-    resource: Resource.AI_CONVERSATION
+    resource: Resource.AI_CONVERSATION,
+    teamScope: 'param'
 };
+
+const createConversationLimiter = createStandardRateLimiter(20);
+
+const aiMessageLimiter = createBurstRateLimiter(10, 60 * 1000);
 
 router.use(protect);
 
-router.route('/:teamId')
-    .get(controllers.listConversations.handle)
-    .post(controllers.createConversation.handle);
+router.get('/:teamId', controllers.listConversations.handle);
+router.post('/:teamId', createConversationLimiter, aiConversationValidation.createConversation, controllers.createConversation.handle);
+router.post('/:teamId/start', createConversationLimiter, aiConversationValidation.createConversation, controllers.createConversationWithMessage.handle);
 
-router.route('/:teamId/:conversationId/messages')
-    .get(controllers.listMessages.handle)
-    .post(controllers.sendMessage.handle);
+router.get('/:teamId/:conversationId/messages', controllers.listMessages.handle);
+router.post('/:teamId/:conversationId/messages', aiMessageLimiter, aiConversationValidation.sendMessage, controllers.sendMessage.handle);
 
-router.route('/:teamId/:conversationId/messages/stream')
-    .post(controllers.streamMessage.handle);
+router.post('/:teamId/:conversationId/messages/stream', aiMessageLimiter, aiConversationValidation.sendStreamMessage, controllers.streamMessage.handle);
 
 router.route('/:teamId/:conversationId')
-    .patch(controllers.updateConversation.handle)
+    .patch(aiConversationValidation.updateConversation, controllers.updateConversation.handle)
     .delete(controllers.deleteConversation.handle);
 
 export default module;

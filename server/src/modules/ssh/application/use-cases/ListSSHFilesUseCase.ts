@@ -1,13 +1,14 @@
 import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '@modules/ssh/domain/di/SSHConnectionTokens';
+import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { ISSHConnectionService } from '@modules/ssh/domain/port/ISSHConnectionService';
 import { ListSSHFilesInputDTO } from '@modules/ssh/application/dtos/ListSSHFilesInputDTO';
 import { ListSSHFilesOutputDTO, SSHFileEntryDTO } from '@modules/ssh/application/dtos/ListSSHFilesOutputDTO';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { resolveSSHServiceError } from './ssh-error-utils';
 
 @injectable()
 export default class ListSSHFilesUseCase implements IUseCase<ListSSHFilesInputDTO, ListSSHFilesOutputDTO, ApplicationError>{
@@ -19,45 +20,45 @@ export default class ListSSHFilesUseCase implements IUseCase<ListSSHFilesInputDT
     ){}
 
     async execute(input: ListSSHFilesInputDTO): Promise<Result<ListSSHFilesOutputDTO, ApplicationError>>{
-        const { sshConnectionId, path } = input;
-
-        // Get SSH connection from repository
+        const {
+            sshConnectionId,
+            teamId,
+            path
+        } = input;
         const sshConnection = await this.sshConnRepository.findByIdWithCredentials(sshConnectionId);
-        if(!sshConnection){
+
+        if (!sshConnection || sshConnection.props.team !== teamId) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.SSH_CONNECTION_NOT_FOUND,
                 'SSH connection not found'
             ));
         }
 
-        try{
-            // Default path to current directory if not provided
+        try {
             const remotePath = path || '.';
-
-            // List files using the SSH service
             const files = await this.sshConnService.listFiles(sshConnection, remotePath);
 
-            // Map to DTO format
-            const entries: SSHFileEntryDTO[] = files.map(f => ({
-                type: f.isDirectory ? 'dir' : 'file',
-                name: f.name,
-                relPath: f.path,
-                size: f.size,
-                mtime: f.mtime.toISOString()
-            }));
+            const entries: SSHFileEntryDTO[] = files.map((file) => {
+                const type = file.isDirectory ? 'dir' : 'file';
+
+                return {
+                    type,
+                    name: file.name,
+                    relPath: file.path,
+                    size: file.size,
+                    mtime: file.mtime.toISOString()
+                };
+            });
 
             return Result.ok({
                 cwd: remotePath,
                 entries
             });
-        }catch(error: unknown){
-            const errorMessage = error instanceof Error
-                ? error.message
-                : 'Unknown error occurred';
-            return Result.fail(new ApplicationError(
+        } catch (error: unknown) {
+            return Result.fail(resolveSSHServiceError(
+                error,
                 ErrorCodes.SSH_LIST_FILES_ERROR,
-                `Failed to list SSH files: ${errorMessage}`,
-                500
+                'Failed to list SSH files'
             ));
         }
     }

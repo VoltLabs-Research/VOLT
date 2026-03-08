@@ -5,6 +5,9 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import type { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
+import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
 import NotificationCreatedEvent from '@modules/notification/domain/events/NotificationCreatedEvent';
 import logger from '@shared/infrastructure/logger';
 
@@ -19,9 +22,9 @@ export default class NotificationSocketModule extends BaseSocketModule {
     constructor(
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
-        @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: any,
-        @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: any,
-        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: any
+        @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
+        @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
+        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry
     ) {
         super(emitter, roomManager, eventRegistry);
     }
@@ -41,7 +44,7 @@ export default class NotificationSocketModule extends BaseSocketModule {
     private createNotificationHandler(): IEventHandler<NotificationCreatedEvent> {
         return {
             handle: async (event: NotificationCreatedEvent) => {
-                const { recipient, notificationId, title, content, read, link, createdAt } = event.payload;
+                const { recipient, _id, title, content, read, link, createdAt } = event.payload;
 
                 if (!recipient) {
                     logger.warn(`[${this.name}] Notification has no recipient, skipping broadcast`);
@@ -49,7 +52,7 @@ export default class NotificationSocketModule extends BaseSocketModule {
                 }
 
                 const notification = {
-                    _id: notificationId,
+                    _id,
                     title,
                     content,
                     read,

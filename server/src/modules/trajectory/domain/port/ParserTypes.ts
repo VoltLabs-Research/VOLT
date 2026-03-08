@@ -36,15 +36,3 @@ export interface ParseOptions {
     properties?: string[];
 }
 
-interface NativeDataResult {
-    positions: Float32Array;
-    types: Uint16Array;
-    ids?: Uint32Array;
-    metadata: {
-        timestep: number;
-        natoms: number;
-        headers: string[];
-    };
-    min: [number, number, number];
-    max: [number, number, number];
-}

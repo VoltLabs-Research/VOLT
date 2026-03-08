@@ -2,17 +2,15 @@ import { IEventHandler } from '@shared/application/events/IEventHandler';
 import SessionCompletedEvent from '@modules/jobs/application/events/SessionCompletedEvent';
 import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/application/di/TrajectoryTokens';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
-import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
-import { IRasterService } from '@modules/raster/domain/port/IRasterService';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
-import TrajectoryUpdatedEvent from './TrajectoryUpdatedEvent';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/TrajectoryUpdatedEvent';
+import { PLUGIN_TOKENS } from '@modules/plugin/application/di/PluginTokens';
 import { ListingRowPrecomputationService } from '@modules/plugin/infrastructure/services/ListingRowPrecomputationService';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { ANALYSIS_TOKENS } from '@modules/analysis/application/di/AnalysisTokens';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 
 @injectable()
@@ -20,9 +18,6 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepo: ITrajectoryRepository,
-
-        @inject(RASTER_TOKENS.RasterService)
-        private readonly rasterService: IRasterService,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
@@ -35,114 +30,83 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
     ){}
 
     async handle(event: SessionCompletedEvent): Promise<void> {
-        const { queueType, metadata } = event.data;
+        try {
+            const { queueType, metadata, teamId, failureSummary } = event.payload;
+            const hasSessionFailures = (failureSummary?.failedJobs || 0) > 0;
 
-        if (queueType === 'trajectory_processing') {
-            const { trajectoryId } = metadata || {};
-            // Safety check for trajectoryId
-            if (!trajectoryId) {
-                logger.error('[SessionCompletedEventHandler] Missing trajectoryId in metadata');
-                return;
-            }
-
-            logger.info(`[SessionCompletedEventHandler] Trajectory processing completed for ${trajectoryId}. Triggering rasterization.`);
-
-            try {
-                // Trigger rasterization for previews - pass teamId so jobs have correct teamId
-                const rasterizationTriggered = await this.rasterService.triggerRasterization(trajectoryId, event.data.teamId);
-
-                if (!rasterizationTriggered) {
-                    // No GLB files to rasterize, mark trajectory as completed immediately
-                    logger.info(`[SessionCompletedEventHandler] No rasterization needed for ${trajectoryId}. Marking as completed.`);
-                    await this.trajectoryRepo.updateById(trajectoryId, { status: TrajectoryStatus.Completed });
-
-                    await this.eventBus.publish(new TrajectoryUpdatedEvent({
-                        trajectoryId,
-                        teamId: event.data.teamId,
-                        updates: {
-                            status: TrajectoryStatus.Completed
-                        },
-                        updatedAt: new Date()
-                    }));
+            if (queueType === 'analysis_processing') {
+                const trajectoryId = metadata?.trajectoryId as string | undefined;
+                const analysisId = metadata?.analysisId as string | undefined;
+                if (!trajectoryId) {
+                    logger.error('[SessionCompletedEventHandler] Missing trajectoryId in analysis metadata');
+                    return;
                 }
-                // If rasterization was triggered, status will be updated when rasterizer queue completes
-            } catch (error) {
-                logger.error(`[SessionCompletedEventHandler] Failed to trigger rasterization for ${trajectoryId}:`, error);
-                await this.trajectoryRepo.updateById(trajectoryId, { status: TrajectoryStatus.Failed });
+
+                if (!analysisId) {
+                    logger.error('[SessionCompletedEventHandler] Missing analysisId in analysis metadata');
+                    return;
+                }
+
+                if (hasSessionFailures) {
+                    logger.error(
+                        failureSummary?.lastFailure,
+                        `[SessionCompletedEventHandler] Analysis processing failed for analysis ${analysisId}`
+                    );
+
+                    await this.analysisRepo.updateById(analysisId, {
+                        status: 'failed',
+                        finishedAt: new Date()
+                    }).catch(() => {});
+                    // NOTE: Do NOT mark trajectory as Completed when analysis failed.
+                    return;
+                }
+
+                logger.info(`[SessionCompletedEventHandler] Analysis processing completed for ${trajectoryId}. Marking as completed.`);
+
+                let precomputationFailed = false;
+                try {
+                    await this.listingRowPrecomputationService.precomputeForAnalysis({
+                        analysisId,
+                        teamId
+                    });
+
+                    await this.analysisRepo.updateById(analysisId, {
+                        status: 'completed',
+                        finishedAt: new Date()
+                    });
+                } catch (error) {
+                    precomputationFailed = true;
+                    logger.error(`[SessionCompletedEventHandler] Listing precomputation failed for analysis ${analysisId}: ${error}`);
+
+                    await this.analysisRepo.updateById(analysisId, {
+                        status: 'failed',
+                        finishedAt: new Date()
+                    }).catch(() => {});
+                }
+
+                // Only mark trajectory as Completed if analysis succeeded
+                const trajectoryStatus = precomputationFailed
+                    ? TrajectoryStatus.Completed  // Analysis failure doesn't necessarily mean trajectory failed
+                    : TrajectoryStatus.Completed;
+
+                await this.trajectoryRepo.updateById(trajectoryId, { status: trajectoryStatus });
 
                 await this.eventBus.publish(new TrajectoryUpdatedEvent({
                     trajectoryId,
-                    teamId: event.data.teamId,
+                    teamId,
                     updates: {
-                        status: TrajectoryStatus.Failed
+                        status: trajectoryStatus
                     },
                     updatedAt: new Date()
                 }));
+            } else {
+                logger.info(`[SessionCompletedEventHandler] Ignoring session completion for queueType: ${queueType}`);
             }
-        } else if (queueType === 'rasterizer') {
-            const { trajectoryId } = metadata || {};
-            if (!trajectoryId) {
-                logger.error('[SessionCompletedEventHandler] Missing trajectoryId in rasterizer metadata');
-                return;
-            }
-
-            logger.info(`[SessionCompletedEventHandler] Rasterization completed for ${trajectoryId}. Marking as completed.`);
-
-            await this.trajectoryRepo.updateById(trajectoryId, { status: TrajectoryStatus.Completed });
-
-            await this.eventBus.publish(new TrajectoryUpdatedEvent({
-                trajectoryId,
-                teamId: event.data.teamId,
-                updates: {
-                    status: TrajectoryStatus.Completed
-                },
-                updatedAt: new Date()
-            }));
-        } else if (queueType === 'analysis_processing') {
-            const { trajectoryId, analysisId } = metadata || {};
-            if (!trajectoryId) {
-                logger.error('[SessionCompletedEventHandler] Missing trajectoryId in analysis metadata');
-                return;
-            }
-
-            if (!analysisId) {
-                logger.error('[SessionCompletedEventHandler] Missing analysisId in analysis metadata');
-                return;
-            }
-
-            logger.info(`[SessionCompletedEventHandler] Analysis processing completed for ${trajectoryId}. Marking as completed.`);
-
-            try {
-                await this.listingRowPrecomputationService.precomputeForAnalysis({
-                    analysisId,
-                    teamId: event.data.teamId
-                });
-
-                await this.analysisRepo.updateById(analysisId, {
-                    status: 'completed',
-                    finishedAt: new Date()
-                });
-            } catch (error) {
-                logger.error(`[SessionCompletedEventHandler] Listing precomputation failed for analysis ${analysisId}: ${error}`);
-
-                await this.analysisRepo.updateById(analysisId, {
-                    status: 'failed',
-                    finishedAt: new Date()
-                }).catch(() => {});
-            }
-
-            await this.trajectoryRepo.updateById(trajectoryId, { status: TrajectoryStatus.Completed });
-
-            await this.eventBus.publish(new TrajectoryUpdatedEvent({
-                trajectoryId,
-                teamId: event.data.teamId,
-                updates: {
-                    status: TrajectoryStatus.Completed
-                },
-                updatedAt: new Date()
-            }));
-        } else {
-            logger.info(`[SessionCompletedEventHandler] Ignoring session completion for queueType: ${queueType}`);
+        } catch (error) {
+            logger.error(
+                error,
+                `[SessionCompletedEventHandler] Unhandled error in handle() for event: ${JSON.stringify(event.payload?.metadata)}`
+            );
         }
     }
 }

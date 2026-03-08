@@ -23,7 +23,7 @@ export class ListTrajectoriesAITool extends AITool {
         return {
             summary: `Found ${result.value.total} trajectories.`,
             data: result.value.data.map((t: any) => ({
-                trajectoryId: t._id || t.id, name: t.name, status: t.status,
+                trajectoryId: t._id, name: t.name, status: t.status,
                 framesCount: Array.isArray(t.frames) ? t.frames.length : 0,
                 isPublic: t.isPublic, createdAt: t.createdAt ?? null
             })),

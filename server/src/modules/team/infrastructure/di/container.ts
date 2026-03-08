@@ -12,13 +12,22 @@ import TeamJobsService from '@modules/team/infrastructure/socket/TeamJobsService
 import TeamJobsSocketModule from '@modules/team/infrastructure/socket/TeamJobsSocketModule';
 import TeamAIProviderCatalog from '@modules/team/application/services/TeamAIProviderCatalog';
 import TeamAIIntegrationInputService from '@modules/team/application/services/TeamAIIntegrationInputService';
+import TeamAIIntegrationSecretService from '@modules/team/application/services/TeamAIIntegrationSecretService';
 import TeamAIIntegrationSerializer from '@modules/team/application/services/TeamAIIntegrationSerializer';
+import SecretKeyUsageMetricsMapper from '@modules/team/application/services/SecretKeyUsageMetricsMapper';
+import TeamMembershipService from '@modules/team/application/services/TeamMembershipService';
 import TeamPresenceService from '@modules/team/application/services/TeamPresenceService';
+import TeamPresenceSocketModule from '@modules/team/infrastructure/socket/TeamPresenceSocketModule';
+import TeamAIIntegrationSecretCipher from '@modules/team/infrastructure/security/TeamAIIntegrationSecretCipher';
+import DiscoverTeamAIProviderModelsUseCase from '@modules/team/application/use-cases/ai-integration/DiscoverTeamAIProviderModelsUseCase';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import type { AITool } from '@shared/application/ai/AITool';
 
 import * as teamAiTools from '@modules/team/application/ai-tools';
 
+type AIToolConstructor = new (...args: any[]) => AITool;
+
 export const registerTeamDependencies = () => {
-    // Register TeamMemberRepository FIRST - TeamRepository depends on it
     container.registerSingleton(TEAM_TOKENS.TeamMemberRepository, TeamMemberRepository);
     container.registerSingleton(TEAM_TOKENS.TeamRepository, TeamRepository);
     container.registerSingleton(TEAM_TOKENS.TeamRoleRepository, TeamRoleRepository);
@@ -29,12 +38,21 @@ export const registerTeamDependencies = () => {
     container.registerSingleton(TEAM_TOKENS.TeamJobsService, TeamJobsService);
     container.registerSingleton(TEAM_TOKENS.TeamPresenceService, TeamPresenceService);
     container.registerSingleton(TEAM_TOKENS.TeamJobsSocketModule, TeamJobsSocketModule);
+    container.registerSingleton(TEAM_TOKENS.TeamPresenceSocketModule, TeamPresenceSocketModule);
     container.registerSingleton(TEAM_TOKENS.TeamAIProviderCatalog, TeamAIProviderCatalog);
     container.registerSingleton(TEAM_TOKENS.TeamAIIntegrationInputService, TeamAIIntegrationInputService);
+    container.registerSingleton(TEAM_TOKENS.TeamAIIntegrationSecretCipher, TeamAIIntegrationSecretCipher);
+    container.registerSingleton(TEAM_TOKENS.TeamAIIntegrationSecretService, TeamAIIntegrationSecretService);
     container.registerSingleton(TEAM_TOKENS.TeamAIIntegrationSerializer, TeamAIIntegrationSerializer);
+    container.registerSingleton(TEAM_TOKENS.SecretKeyUsageMetricsMapper, SecretKeyUsageMetricsMapper);
+    container.registerSingleton(TEAM_TOKENS.TeamMembershipService, TeamMembershipService);
+    container.register(TEAM_TOKENS.DiscoverTeamAIProviderModelsUseCase, DiscoverTeamAIProviderModelsUseCase);
 
-    // Register all AI Tools for discovery
-    for (const ToolClass of Object.values(teamAiTools)) {
-        container.registerSingleton(AI_TOKENS.AITool, ToolClass as any);
+    container.register(SOCKET_TOKENS.SocketModule, { useToken: TEAM_TOKENS.TeamJobsSocketModule });
+    container.register(SOCKET_TOKENS.SocketModule, { useToken: TEAM_TOKENS.TeamPresenceSocketModule });
+
+    const toolClasses = Object.values(teamAiTools) as AIToolConstructor[];
+    for (const ToolClass of toolClasses) {
+        container.registerSingleton(AI_TOKENS.AITool as any, ToolClass as any);
     }
 };

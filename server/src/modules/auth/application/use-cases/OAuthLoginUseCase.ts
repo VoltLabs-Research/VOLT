@@ -3,22 +3,20 @@ import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { OAuthLoginInputDTO, OAuthLoginOutputDTO } from '@modules/auth/application/dtos/OAuthLoginDTO';
 import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import { ITokenService } from '@modules/auth/domain/port/ITokenService';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
-import { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import { injectable, inject } from 'tsyringe';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import generateRandomName from '@shared/infrastructure/utilities/generate-random-name';
+import AuthSessionService from '@modules/auth/application/services/AuthSessionService';
+import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
 
 @injectable()
 export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, OAuthLoginOutputDTO, ApplicationError>{
     constructor(
         @inject(AUTH_TOKENS.UserRepository)
         private readonly userRepository: IUserRepository,
-        @inject(AUTH_TOKENS.JwtTokenService)
-        private readonly tokenService: ITokenService,
-        @inject(AUTH_TOKENS.SessionRepository)
-        private readonly sessionRepository: ISessionRepository
+        @inject(AUTH_TOKENS.AuthSessionService)
+        private readonly authSessionService: AuthSessionService
     ){}
 
     async execute(input: OAuthLoginInputDTO): Promise<Result<OAuthLoginOutputDTO, ApplicationError>>{
@@ -34,7 +32,7 @@ export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, O
             
             if(user){
                 // Link the OAuthProvider with the existing user account
-                await this.userRepository.updateById(user.id, {
+                await this.userRepository.updateById(user._id, {
                     oauthProvider: input.oauthProvider,
                     oauthId: input.oauthId,
                     avatar: input.avatar || user.props.avatar
@@ -54,24 +52,17 @@ export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, O
             }
         }
 
-        await this.userRepository.updateLastLogin(user.id);
-        const token = this.tokenService.sign(user.id);
+        await this.userRepository.updateLastLogin(user._id);
 
-        await this.sessionRepository.create({
-            user: user.id,
-            token,
-            userAgent: input.userAgent,
+        const token = await this.authSessionService.createSessionWithToken({
+            userId: user._id,
             ip: input.ip,
-            isActive: true,
-            lastActivity: new Date(),
-            action: SessionActivityType.OAuthLogin,
-            success: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            userAgent: input.userAgent,
+            activityType: SessionActivityType.OAuthLogin
         });
 
         return Result.ok({ 
-            user: user.props, 
+            user: toPersistedUserDTO(user), 
             token 
         });
     }

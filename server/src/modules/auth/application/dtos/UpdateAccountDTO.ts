@@ -1,4 +1,4 @@
-import type { UserProps } from '@modules/auth/domain/entities/User';
+import type { PersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
 
 export interface UpdateAccountInputDTO{
     userId: string;
@@ -6,11 +6,9 @@ export interface UpdateAccountInputDTO{
     lastName?: string;
     fullName?: string;
     email?: string;
-    avatar?: any;
     file?: Express.Multer.File;
 };
 
 export type UpdateAccountOutputDTO = {
-    _id: string;
     fullName: string;
-} & UserProps;
+} & PersistedUserDTO;

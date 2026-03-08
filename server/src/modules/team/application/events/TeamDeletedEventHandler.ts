@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import TeamDeletedEvent from '@modules/team/domain/events/TeamDeletedEvent';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
 import type { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleRepository';
 import type { ITeamInvitationRepository } from '@modules/team/domain/port/ITeamInvitationRepository';

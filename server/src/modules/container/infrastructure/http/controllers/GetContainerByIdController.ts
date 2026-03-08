@@ -1,13 +1,7 @@
-import { injectable, inject } from 'tsyringe';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
 import { GetContainerByIdUseCase } from '@modules/container/application/use-cases/GetContainerByIdUseCase';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { containerValidation } from '@modules/container/infrastructure/http/validation/container-schemas';
 
-@injectable()
-export default class GetContainerByIdController extends BaseController<GetContainerByIdUseCase> {
-    constructor(
-        @inject(GetContainerByIdUseCase)
-        protected useCase: GetContainerByIdUseCase
-    ){
-        super(useCase);
-    }
-};
+export default createController(GetContainerByIdUseCase, {
+    validationSchema: containerValidation.byId
+});

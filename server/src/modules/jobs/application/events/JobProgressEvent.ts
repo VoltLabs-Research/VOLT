@@ -1,22 +1,16 @@
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { v4 } from 'uuid';
+import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 
-export interface JobProgressEventData {
+export interface JobProgressEventPayload {
     jobId: string;
     teamId: string;
     queueType: string;
     progress: number;
     message?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
 }
 
-export default class JobProgressEvent implements IDomainEvent {
-    public readonly name = 'job.progress';
-    public readonly eventId: string;
-    public readonly occurredOn: Date;
-
-    constructor(public readonly data: JobProgressEventData) {
-        this.eventId = v4();
-        this.occurredOn = new Date();
+export default class JobProgressEvent extends BaseDomainEvent<JobProgressEventPayload> {
+    constructor(payload: JobProgressEventPayload) {
+        super('job.progress', payload);
     }
 }

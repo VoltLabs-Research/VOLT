@@ -1,7 +1,7 @@
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { RevokeAllSessionsInputDTO, RevokeAllSessionsOutputDTO } from '@modules/session/application/dtos/RevokeAllSessionsDTo';
+import { RevokeAllSessionsInputDTO, RevokeAllSessionsOutputDTO } from '@modules/session/application/dtos/RevokeAllSessionsDTO';
 import { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import { injectable, inject } from 'tsyringe';
 import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';

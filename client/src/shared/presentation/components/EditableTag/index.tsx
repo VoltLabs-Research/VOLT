@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef } from 'react';
+import composeRefs from '@/shared/presentation/utils/compose-refs';
 import './EditableTag.css';
 
 interface EditableTagProps{
@@ -9,7 +10,7 @@ interface EditableTagProps{
     title?: string;
 };
 
-const EditableTag = React.memo(({ as: Tag, onSave, children, className, title }: EditableTagProps) => {
+const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: Tag, onSave, children, className, title }, ref) => {
     const [isEditing, setIsEditing] = useState(false);
     const elementRef = useRef<HTMLElement>(null);
 
@@ -58,7 +59,7 @@ const EditableTag = React.memo(({ as: Tag, onSave, children, className, title }:
     return React.createElement(
         Tag,
         {
-            ref: elementRef,
+            ref: composeRefs(elementRef, ref) as React.Ref<HTMLElement>,
             className: `${className || ''} ${isEditing ? 'is-editing radius-xs' : ''}`,
             contentEditable: isEditing,
             onDoubleClick: enableEditing,
@@ -69,7 +70,7 @@ const EditableTag = React.memo(({ as: Tag, onSave, children, className, title }:
         },
         children
     );
-});
+}));
 
 EditableTag.displayName = 'EditableTag';
 

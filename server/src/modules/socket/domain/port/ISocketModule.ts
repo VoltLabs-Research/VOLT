@@ -1,30 +1,23 @@
-/**
- * Interface representing a socket connection.
- */
+export interface ISocketConnectionUser {
+    readonly _id: string;
+    readonly firstName?: string;
+    readonly lastName?: string;
+    readonly email?: string;
+    readonly avatar?: string;
+    readonly teams?: string[];
+}
+
+export interface ISocketConnectionData {
+    currentTeamId?: string;
+    [key: string]: unknown;
+}
+
 export interface ISocketConnection {
-    /** Unique identifier for this socket connection */
     readonly id: string;
-
-    /** User ID if authenticated, undefined for anonymous connections */
     readonly userId?: string;
-
-    /** User object if authenticated */
-    readonly user?: {
-        _id: string;
-        firstName?: string;
-        lastName?: string;
-        email?: string;
-        avatar?: string;
-        teams?: string[];
-    };
-
-    /** Custom data attached to this connection */
-    data: Record<string, any>;
-
-    /** Rooms this socket has joined */
+    readonly user?: ISocketConnectionUser;
+    data: ISocketConnectionData;
     readonly rooms: Set<string>;
-
-    /** Native socket object */
     nativeSocket?: any;
 };
 

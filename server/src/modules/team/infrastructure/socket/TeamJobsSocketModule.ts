@@ -1,7 +1,12 @@
 import { inject, singleton } from 'tsyringe';
 import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
 import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
+import { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import type { SubscribeToTeamSocketPayload } from '@modules/socket/domain/contracts/team-subscription';
+import SocketTeamSubscriptionService from '@modules/socket/application/services/SocketTeamSubscriptionService';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamJobsService from './TeamJobsService';
 import logger from '@shared/infrastructure/logger';
@@ -9,48 +14,52 @@ import logger from '@shared/infrastructure/logger';
 @singleton()
 export default class TeamJobsSocketModule extends BaseSocketModule {
     public readonly name = 'TeamJobsSocketModule';
+    private unsubscribeFromTeamSubscription?: () => void;
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: any,
-        @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: any,
-        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: any,
-        @inject(TEAM_TOKENS.TeamJobsService) private readonly teamJobsService: TeamJobsService
+        @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
+        @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
+        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry,
+        @inject(TEAM_TOKENS.TeamJobsService) private readonly teamJobsService: TeamJobsService,
+        @inject(SocketTeamSubscriptionService)
+        private readonly teamSubscriptionService: SocketTeamSubscriptionService
     ) {
         super(emitter, roomManager, eventRegistry);
     }
 
     async onInit(): Promise<void> {
         logger.info('[TeamJobsSocketModule] Initialized');
+        this.unsubscribeFromTeamSubscription = this.teamSubscriptionService.subscribe(async ({ connection, subscription }) => {
+            await this.sendInitialJobs(connection, {
+                teamId: subscription.teamId,
+                previousTeamId: subscription.previousTeamId
+            });
+        });
+    }
+
+    async onShutdown(): Promise<void> {
+        this.unsubscribeFromTeamSubscription?.();
     }
 
     onConnection(connection: ISocketConnection): void {
-        this.on(connection.id, 'subscribe_to_team', async (conn, payload: { teamId: string; previousTeamId?: string }) => {
-            const { teamId, previousTeamId } = payload;
-            const teamRoom = `team:${teamId}`;
-
-            // Leave previous team room if provided
-            if (previousTeamId) {
-                const previousRoom = `team:${previousTeamId}`;
-                await this.leaveRoom(conn.id, previousRoom);
-                logger.debug(`[TeamJobsSocketModule] Left previous team room: ${previousRoom}`);
-            }
-
-            // Join new team room
-            await this.joinRoom(conn.id, teamRoom);
-            logger.info(`[TeamJobsSocketModule] Connection ${conn.id} joined team room: ${teamRoom}`);
-
-            // Fetch and send active jobs for this team
-            try {
-                const groupedJobs = await this.teamJobsService.getTeamJobs(teamId);
-                this.emitToSocket(conn.id, 'team.jobs.initial', groupedJobs);
-                logger.debug(`[TeamJobsSocketModule] Sent ${groupedJobs.length} job groups to connection ${conn.id}`);
-            } catch (error) {
-                logger.error(error, `[TeamJobsSocketModule] Failed to fetch jobs for team ${teamId}`);
-            }
-        });
-
-        this.on(connection.id, 'disconnect', async () => {
+        this.onDisconnect(connection.id, async () => {
             logger.debug(`[TeamJobsSocketModule] Connection ${connection.id} disconnected`);
         });
+    }
+
+    private async sendInitialJobs(
+        connection: ISocketConnection,
+        payload: SubscribeToTeamSocketPayload
+    ): Promise<void> {
+        const teamRoom = `team:${payload.teamId}`;
+        logger.info(`[TeamJobsSocketModule] Connection ${connection.id} joined team room: ${teamRoom}`);
+
+        try {
+            const groupedJobs = await this.teamJobsService.getTeamJobs(payload.teamId);
+            this.emitToSocket(connection.id, 'team.jobs.initial', groupedJobs);
+            logger.debug(`[TeamJobsSocketModule] Sent ${groupedJobs.length} job groups to connection ${connection.id}`);
+        } catch (error) {
+            logger.error(error, `[TeamJobsSocketModule] Failed to fetch jobs for team ${payload.teamId}`);
+        }
     }
 }

@@ -1,13 +1,26 @@
 import net from 'node:net';
 import path from 'node:path';
+import type { Readable } from 'node:stream';
 import Docker from 'dockerode';
 import { injectable } from 'tsyringe';
-import type { IContainerService, ContainerStats } from '@modules/container/domain/port/IContainerService';
+import type {
+    ContainerFileEntry,
+    ContainerStats,
+    ContainerTerminalAttachment,
+    CreateRuntimeContainerOptions,
+    IContainerService
+} from '@modules/container/domain/port/IContainerService';
 import logger from '@shared/infrastructure/logger';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
+import {
+    buildDockerContainerConfig,
+    type DockerContainerConfig
+} from '@modules/container/infrastructure/services/DockerContainerConfigFactory';
 
 const MAX_EXEC_BUFFER_SIZE = 10 * 1024 * 1024;
+const LOCAL_SCRIPTING_IMAGE_NAME = 'volt-scripting-env:latest';
+const LOCAL_SCRIPTING_IMAGE_BUILD_COMMAND = 'cd server/docker/scripting && docker build -t volt-scripting-env:latest .';
 
 @injectable()
 export class DockerContainerService implements IContainerService {
@@ -21,13 +34,20 @@ export class DockerContainerService implements IContainerService {
         });
     }
 
-    async createContainer(config: any): Promise<any> {
+    async createContainer(config: CreateRuntimeContainerOptions): Promise<unknown> {
         try {
-            const container = await this.docker.createContainer(config);
+            const dockerConfig = buildDockerContainerConfig(config);
+            const container = await this.docker.createContainer(dockerConfig as DockerContainerConfig as Docker.ContainerCreateOptions);
             return container.inspect();
-        } catch (error: any) {
-            logger.error(`Failed to create docker container: ${error.message}`);
-            throw new ApplicationError(ErrorCodes.CONTAINER_CREATION_FAILED, error.message, 500);
+        } catch (error: unknown) {
+            const errorMessage = this.getErrorMessage(error);
+            logger.error(`Failed to create docker container: ${errorMessage}`);
+            throw this.toOperationError(
+                error,
+                ErrorCodes.CONTAINER_CREATION_FAILED,
+                'Failed to create docker container',
+                false
+            );
         }
     }
 
@@ -35,10 +55,20 @@ export class DockerContainerService implements IContainerService {
         try {
             const container = this.docker.getContainer(containerId);
             await container.start();
-        } catch (error: any) {
-            if (error.statusCode === 304) return;
-            logger.error(`Failed to start container ${containerId}: ${error.message}`);
-            throw new ApplicationError(ErrorCodes.CONTAINER_START_FAILED, error.message, 500);
+        } catch (error: unknown) {
+            const dockerError = error as { statusCode?: number; message?: string };
+
+            if (dockerError.statusCode === 304) {
+                return;
+            }
+
+            const errorMessage = this.getErrorMessage(error);
+            logger.error(`Failed to start container ${containerId}: ${errorMessage}`);
+            throw this.toOperationError(
+                error,
+                ErrorCodes.CONTAINER_START_FAILED,
+                `Failed to start container ${containerId}`
+            );
         }
     }
 
@@ -46,29 +76,45 @@ export class DockerContainerService implements IContainerService {
         try {
             const container = this.docker.getContainer(containerId);
             await container.stop();
-        } catch (error: any) {
-            if (error.statusCode === 304) return;
-            if (error.statusCode === 404) return;
-            logger.error(`Failed to stop container ${containerId}: ${error.message}`);
-            throw new ApplicationError(ErrorCodes.CONTAINER_STOP_FAILED, error.message, 500);
+        } catch (error: unknown) {
+            const dockerError = error as { statusCode?: number; message?: string };
+
+            if (dockerError.statusCode === 304 || dockerError.statusCode === 404) {
+                return;
+            }
+
+            const errorMessage = this.getErrorMessage(error);
+            logger.error(`Failed to stop container ${containerId}: ${errorMessage}`);
+            throw this.toOperationError(
+                error,
+                ErrorCodes.CONTAINER_STOP_FAILED,
+                `Failed to stop container ${containerId}`
+            );
         }
     }
 
     async removeContainer(containerId: string): Promise<void> {
         try {
             const container = this.docker.getContainer(containerId);
-            // Calling stop() before remove(force=true) can cause race conditions or state conflicts
-            // We rely on force=true to kill and remove the container
             await container.remove({ force: true, v: true });
-        } catch (error: any) {
-            if (error.statusCode === 404) return;
-            // If removal is already in progress, we can consider this a success (or at least non-blocking)
-            // for the purpose of ensuring the container is going away.
-            if (error.statusCode === 409 && error.message.includes('in progress')) {
+        } catch (error: unknown) {
+            const dockerError = error as { statusCode?: number; message?: string };
+
+            if (dockerError.statusCode === 404) {
                 return;
             }
-            logger.error(`Failed to remove container ${containerId}: ${error.message}`);
-            throw new ApplicationError(ErrorCodes.CONTAINER_DELETION_FAILED, error.message, 500);
+
+            if (dockerError.statusCode === 409 && dockerError.message?.includes('in progress')) {
+                return;
+            }
+
+            const errorMessage = this.getErrorMessage(error);
+            logger.error(`Failed to remove container ${containerId}: ${errorMessage}`);
+            throw this.toOperationError(
+                error,
+                ErrorCodes.CONTAINER_DELETION_FAILED,
+                `Failed to remove container ${containerId}`
+            );
         }
     }
 
@@ -77,65 +123,113 @@ export class DockerContainerService implements IContainerService {
             const container = this.docker.getContainer(containerId);
             const stats = await container.stats({ stream: false });
             return stats as ContainerStats;
-        } catch (error: any) {
-            logger.error(`Failed to get stats for ${containerId}: ${error.message}`);
-            throw new ApplicationError(ErrorCodes.CONTAINER_STATS_FAILED, error.message, 500);
+        } catch (error: unknown) {
+            const errorMessage = this.getErrorMessage(error);
+            logger.error(`Failed to get stats for ${containerId}: ${errorMessage}`);
+            throw this.toOperationError(
+                error,
+                ErrorCodes.CONTAINER_STATS_FAILED,
+                `Failed to get stats for ${containerId}`
+            );
         }
     }
 
-    async getFiles(containerId: string, path: string = '/'): Promise<any[]> {
+    async getFiles(containerId: string, directoryPath: string = '/'): Promise<ContainerFileEntry[]> {
         try {
-            const output = await this.exec(containerId, ['ls', '-la', '--full-time', path]);
-            const lines = output.split('\n').slice(1);
-            return lines.map(line => {
-                const parts = line.trim().split(/\s+/);
-                if (parts.length < 9) return null;
-                const isDir = parts[0].startsWith('d');
-                const name = parts.slice(8).join(' ');
-                if (name === '.' || name === '..') return null;
-                return {
-                    name,
-                    isDirectory: isDir,
-                    size: parts[4],
-                    permissions: parts[0],
-                    owner: parts[2],
-                    group: parts[3],
-                    date: `${parts[5]} ${parts[6]} ${parts[7]}`
-                };
-            }).filter(Boolean);
-        } catch (error: any) {
-            logger.error(`Failed to list files in ${containerId}: ${error.message}`);
-            return [];
+            const normalizedDirectoryPath = this.normalizeContainerPath(directoryPath);
+            try {
+                const output = await this.exec(containerId, [
+                    'find',
+                    normalizedDirectoryPath,
+                    '-mindepth', '1',
+                    '-maxdepth', '1',
+                    '-printf', '%P\0%y\0%s\0%M\0%u\0%g\0%TY-%Tm-%TdT%TH:%TM:%TS\0'
+                ]);
+                return this.parseFindListingOutput(output);
+            } catch (findError: unknown) {
+                logger.warn(`Falling back to portable directory listing for ${containerId}:${normalizedDirectoryPath} - ${this.getErrorMessage(findError)}`);
+                return await this.getFilesWithPortableListing(containerId, normalizedDirectoryPath);
+            }
+        } catch (error: unknown) {
+            const errorMessage = this.getErrorMessage(error);
+            logger.error(`Failed to list files in ${containerId}: ${errorMessage}`);
+            throw this.toOperationError(
+                error,
+                ErrorCodes.CONTAINER_FILE_READ_FAILED,
+                `Failed to list files in ${containerId}`
+            );
         }
     }
 
-    async readFile(containerId: string, path: string): Promise<string> {
+    async readFile(containerId: string, filePath: string): Promise<string> {
         try {
-            const output = await this.exec(containerId, ['cat', path]);
-            return output.replace(/[\x00-\x09\x0B-\x1F\x7F]/g, '');
-        } catch (error: any) {
-            throw new ApplicationError(ErrorCodes.CONTAINER_FILE_READ_FAILED, error.message, 500);
+            const normalizedPath = this.normalizeContainerPath(filePath);
+            await this.exec(containerId, ['test', '-e', normalizedPath]);
+            const entryType = (await this.exec(containerId, ['sh', '-c', 'if [ -d "$1" ]; then printf "directory"; else printf "file"; fi', '--', normalizedPath])).trim();
+
+            if (entryType === 'directory') {
+                throw new ApplicationError(
+                    ErrorCodes.CONTAINER_FILE_IS_DIRECTORY,
+                    `Path ${normalizedPath} is a directory and cannot be opened as a file`,
+                    400
+                );
+            }
+
+            const binaryCheck = await this.exec(containerId, [
+                'sh',
+                '-c',
+                'if LC_ALL=C grep -q "[[:cntrl:]]" "$1" 2>/dev/null; then printf "binary"; else printf "text"; fi',
+                '--',
+                normalizedPath
+            ]);
+
+            if (binaryCheck.trim() === 'binary') {
+                throw new ApplicationError(
+                    ErrorCodes.CONTAINER_FILE_BINARY_UNSUPPORTED,
+                    `Path ${normalizedPath} appears to be binary and cannot be previewed as text`,
+                    400
+                );
+            }
+
+            const output = await this.exec(containerId, ['sh', '-c', 'cat -- "$1"', '--', normalizedPath]);
+            return output.replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '');
+        } catch (error: unknown) {
+            throw this.toOperationError(
+                error,
+                ErrorCodes.CONTAINER_FILE_READ_FAILED,
+                `Failed to read file ${filePath} from container ${containerId}`
+            );
         }
     }
 
     async writeFile(containerId: string, filePath: string, content: string): Promise<void> {
         try {
-            const dir = path.posix.dirname(filePath);
-            const command = `mkdir -p ${this.quoteShellArg(dir)} && cat > ${this.quoteShellArg(filePath)}`;
-            await this.exec(containerId, ['/bin/sh', '-lc', command], content);
-        } catch (error: any) {
-            throw new ApplicationError(ErrorCodes.CONTAINER_FILE_READ_FAILED, error.message, 500);
+            const normalizedPath = this.normalizeContainerPath(filePath);
+            const dir = path.posix.dirname(normalizedPath);
+            await this.exec(containerId, ['mkdir', '-p', '--', dir]);
+            await this.exec(containerId, ['tee', '--', normalizedPath], content);
+        } catch (error: unknown) {
+            throw this.toOperationError(
+                error,
+                ErrorCodes.CONTAINER_FILE_READ_FAILED,
+                `Failed to write file ${filePath} to container ${containerId}`
+            );
         }
     }
 
-    async getProcesses(containerId: string): Promise<any[]> {
+    async getProcesses(containerId: string): Promise<Record<string, unknown>[]> {
         try {
             const container = this.docker.getContainer(containerId);
-            // Pass specific arguments to ps. Put 'args' LAST because it can contain spaces which split into multiple array elements.
             const result = await container.top({ ps_args: '-o pid,comm,nlwp,user,rss,pcpu,args' });
-            return result.Processes || [];
-        } catch (error: any) {
-            return [];
+            return (result.Processes || []) as Record<string, unknown>[];
+        } catch (error: unknown) {
+            const errorMessage = this.getErrorMessage(error);
+            logger.error(`Failed to get processes for ${containerId}: ${errorMessage}`);
+            throw this.toOperationError(
+                error,
+                ErrorCodes.CONTAINER_EXEC_FAILED,
+                `Failed to get processes for ${containerId}`
+            );
         }
     }
 
@@ -185,13 +279,13 @@ export class DockerContainerService implements IContainerService {
     async exec(containerId: string, command: string[], stdin?: string): Promise<string> {
         try {
             const container = this.docker.getContainer(containerId);
-            const exec = await container.exec({
+            const dockerExec = await container.exec({
                 Cmd: command,
                 AttachStdin: typeof stdin === 'string',
                 AttachStdout: true,
                 AttachStderr: true
             });
-            const stream = await exec.start({ hijack: true, stdin: typeof stdin === 'string' });
+            const stream = await dockerExec.start({ hijack: true, stdin: typeof stdin === 'string' });
 
             return new Promise<string>((resolve, reject) => {
                 let output = '';
@@ -199,7 +293,10 @@ export class DockerContainerService implements IContainerService {
                 let truncated = false;
 
                 const safeWrite = (chunk: Buffer) => {
-                    if (truncated) return;
+                    if (truncated) {
+                        return;
+                    }
+
                     if (totalBytes + chunk.length > MAX_EXEC_BUFFER_SIZE) {
                         output += chunk.slice(0, MAX_EXEC_BUFFER_SIZE - totalBytes).toString('utf8');
                         output += '\n... [TRUNCATED] ...';
@@ -207,11 +304,12 @@ export class DockerContainerService implements IContainerService {
                     } else {
                         output += chunk.toString('utf8');
                     }
+
                     totalBytes += chunk.length;
                 };
 
                 try {
-                    this.docker.modem.demuxStream(stream, { write: safeWrite } as any, { write: safeWrite } as any);
+                    this.docker.modem.demuxStream(stream, { write: safeWrite } as NodeJS.WritableStream, { write: safeWrite } as NodeJS.WritableStream);
                 } catch {
                     stream.on('data', safeWrite);
                 }
@@ -220,31 +318,56 @@ export class DockerContainerService implements IContainerService {
                     try {
                         stream.write(stdin);
                         stream.end();
-                    } catch (error: any) {
+                    } catch (error) {
                         reject(error);
                         return;
                     }
                 }
 
-                stream.on('end', () => resolve(output));
-                stream.on('error', (err: any) => reject(err));
+                stream.on('end', async () => {
+                    try {
+                        const inspection = await dockerExec.inspect();
+
+                        if (typeof inspection.ExitCode === 'number' && inspection.ExitCode !== 0) {
+                            reject(new Error(output.trim() || `Command failed with exit code ${inspection.ExitCode}`));
+                            return;
+                        }
+
+                        resolve(output);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+                stream.on('error', (error) => reject(error));
             });
-        } catch (error: any) {
-            throw new ApplicationError(ErrorCodes.CONTAINER_EXEC_FAILED, error.message, 500);
+        } catch (error: unknown) {
+            throw this.toOperationError(
+                error,
+                ErrorCodes.CONTAINER_EXEC_FAILED,
+                `Failed to execute command in container ${containerId}`
+            );
         }
     }
 
     async pullImage(imageName: string): Promise<void> {
         if (this.pullLocks.has(imageName)) {
-            return this.pullLocks.get(imageName);
+            return this.pullLocks.get(imageName) as Promise<void>;
         }
 
         const pullPromise = new Promise<void>((resolve, reject) => {
-            this.docker.pull(imageName, (err: any, stream: any) => {
-                if (err) return reject(err);
-                this.docker.modem.followProgress(stream, (err: any, _output: any) => {
-                    if (err) reject(err);
-                    else resolve();
+            this.docker.pull(imageName, (error: Error | null, stream?: Readable) => {
+                if (error || !stream) {
+                    reject(error);
+                    return;
+                }
+
+                this.docker.modem.followProgress(stream, (progressError) => {
+                    if (progressError) {
+                        reject(progressError);
+                        return;
+                    }
+
+                    resolve();
                 });
             });
         }).finally(() => {
@@ -259,20 +382,43 @@ export class DockerContainerService implements IContainerService {
         try {
             const image = this.docker.getImage(imageName);
             await image.inspect();
-        } catch (e: any) {
-            if (e.statusCode === 404) {
-                if (imageName === 'volt-scripting-env:latest') {
-                    throw new Error(`Local image ${imageName} not found. Please build it first: cd server/docker/scripting && docker build -t volt-scripting-env:latest .`);
+        } catch (error: unknown) {
+            const dockerError = error as { statusCode?: number };
+
+            if (dockerError.statusCode === 404) {
+                if (imageName === LOCAL_SCRIPTING_IMAGE_NAME) {
+                    throw ApplicationError.notFound(
+                        ErrorCodes.RESOURCE_NOT_FOUND,
+                        `Local image ${LOCAL_SCRIPTING_IMAGE_NAME} not found. Please build it first: ${LOCAL_SCRIPTING_IMAGE_BUILD_COMMAND}`
+                    );
                 }
-                await this.pullImage(imageName);
-            } else {
-                throw e;
+
+                try {
+                    await this.pullImage(imageName);
+                } catch (pullError: unknown) {
+                    throw this.toOperationError(
+                        pullError,
+                        ErrorCodes.CONTAINER_CREATION_FAILED,
+                        `Failed to pull image ${imageName}`,
+                        false
+                    );
+                }
+
+                return;
             }
+
+            throw this.toOperationError(
+                error,
+                ErrorCodes.CONTAINER_CREATION_FAILED,
+                `Failed to inspect image ${imageName}`,
+                false
+            );
         }
     }
 
     async createNetwork(name: string): Promise<{ id: string; name: string }> {
         const networkName = `Volt-${name.replace(/\s+/g, '-').toLowerCase()}-net`;
+
         try {
             const network = await this.docker.createNetwork({
                 Name: networkName,
@@ -280,13 +426,26 @@ export class DockerContainerService implements IContainerService {
                 CheckDuplicate: true
             });
             const info = await network.inspect();
-            return { id: info.Id, name: info.Name };
-        } catch (error: any) {
-            if (error.statusCode === 409) {
+            return {
+                id: info.Id,
+                name: info.Name
+            };
+        } catch (error: unknown) {
+            const dockerError = error as { statusCode?: number; message?: string };
+
+            if (dockerError.statusCode === 409) {
                 const networks = await this.docker.listNetworks({ filters: { name: [networkName] } });
-                if (networks.length > 0) return { id: networks[0].Id, name: networks[0].Name };
+
+                if (networks.length > 0) {
+                    return {
+                        id: networks[0].Id,
+                        name: networks[0].Name
+                    };
+                }
             }
-            throw new ApplicationError(ErrorCodes.DOCKER_CONNECT_ERROR, `Failed to create network: ${error.message}`, 500);
+
+            const errorMessage = this.getErrorMessage(error);
+            throw new ApplicationError(ErrorCodes.DOCKER_CONNECT_ERROR, `Failed to create network: ${errorMessage}`, 500);
         }
     }
 
@@ -294,9 +453,14 @@ export class DockerContainerService implements IContainerService {
         try {
             const network = this.docker.getNetwork(networkId);
             await network.remove();
-        } catch (e: any) {
-            if (e.statusCode === 404) return;
-            logger.error(`Failed to remove network ${networkId}: ${e.message}`);
+        } catch (error: unknown) {
+            const dockerError = error as { statusCode?: number; message?: string };
+
+            if (dockerError.statusCode === 404) {
+                return;
+            }
+
+            logger.error(`Failed to remove network ${networkId}: ${dockerError.message || String(error)}`);
         }
     }
 
@@ -304,21 +468,28 @@ export class DockerContainerService implements IContainerService {
         try {
             const network = this.docker.getNetwork(networkId);
             await network.connect({ Container: containerId });
-        } catch (e: any) {
-            logger.error(`Failed to connect container ${containerId} to network ${networkId}: ${e.message}`);
+        } catch (error: unknown) {
+            const errorMessage = this.getErrorMessage(error);
+            logger.error(`Failed to connect container ${containerId} to network ${networkId}: ${errorMessage}`);
+            throw new ApplicationError(ErrorCodes.DOCKER_CONNECT_ERROR, errorMessage, 500);
         }
     }
 
     async createVolume(name: string): Promise<{ id: string; name: string }> {
         const volumeName = `Volt-${name.replace(/\s+/g, '-').toLowerCase()}-data`;
+
         try {
             const volume = await this.docker.createVolume({
                 Name: volumeName,
                 Driver: 'local'
             });
-            return { id: volume.Name || volumeName, name: volume.Name || volumeName };
-        } catch (e: any) {
-            throw new ApplicationError(ErrorCodes.DOCKER_CONNECT_ERROR, `Failed to create volume: ${e.message}`, 500);
+            return {
+                id: volume.Name || volumeName,
+                name: volume.Name || volumeName
+            };
+        } catch (error: unknown) {
+            const errorMessage = this.getErrorMessage(error);
+            throw new ApplicationError(ErrorCodes.DOCKER_CONNECT_ERROR, `Failed to create volume: ${errorMessage}`, 500);
         }
     }
 
@@ -326,9 +497,14 @@ export class DockerContainerService implements IContainerService {
         try {
             const volume = this.docker.getVolume(name);
             await volume.remove();
-        } catch (e: any) {
-            if (e.statusCode === 404) return;
-            logger.error(`Failed to remove volume ${name}: ${e.message}`);
+        } catch (error: unknown) {
+            const dockerError = error as { statusCode?: number; message?: string };
+
+            if (dockerError.statusCode === 404) {
+                return;
+            }
+
+            logger.error(`Failed to remove volume ${name}: ${dockerError.message || String(error)}`);
         }
     }
 
@@ -336,12 +512,18 @@ export class DockerContainerService implements IContainerService {
         try {
             const container = this.docker.getContainer(containerId);
             await container.commit({ repo, tag });
-        } catch (e: any) {
-            logger.error(`Failed to commit container ${containerId}: ${e.message}`);
+        } catch (error: unknown) {
+            const errorMessage = this.getErrorMessage(error);
+            logger.error(`Failed to commit container ${containerId}: ${errorMessage}`);
+            throw this.toOperationError(
+                error,
+                ErrorCodes.DOCKER_CREATE_ERROR,
+                `Failed to commit container ${containerId}`
+            );
         }
     }
 
-    async attachTerminal(containerId: string): Promise<{ stream: any; exec: any }> {
+    async attachTerminal(containerId: string): Promise<ContainerTerminalAttachment> {
         try {
             const container = this.docker.getContainer(containerId);
             const exec = await container.exec({
@@ -352,15 +534,121 @@ export class DockerContainerService implements IContainerService {
                 Cmd: ['/bin/sh'],
                 Env: ['TERM=xterm-256color']
             });
-
             const stream = await exec.start({ hijack: true, stdin: true });
-            return { stream, exec };
-        } catch (error: any) {
-            throw new ApplicationError(ErrorCodes.DOCKER_CONNECT_ERROR, `Failed to attach terminal: ${error.message}`, 500);
+
+            return {
+                stream,
+                exec
+            };
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new ApplicationError(ErrorCodes.DOCKER_CONNECT_ERROR, `Failed to attach terminal: ${errorMessage}`, 500);
         }
     }
 
-    private quoteShellArg(value: string): string {
-        return `'${String(value).replace(/'/g, `'\"'\"'`)}'`;
+    private normalizeContainerPath(targetPath: string): string {
+        const normalizedPath = path.posix.normalize(targetPath || '/');
+
+        if (normalizedPath === '.' || normalizedPath.length === 0) {
+            return '/';
+        }
+
+        if (normalizedPath.startsWith('/')) {
+            return normalizedPath;
+        }
+
+        return path.posix.join('/', normalizedPath);
+    }
+
+    private parseFindListingOutput(output: string): ContainerFileEntry[] {
+        const tokens = output.split('\0')
+            .map((token) => token.replace(/^\n+|\n+$/g, ''))
+            .filter((token) => token.length > 0);
+        const files: ContainerFileEntry[] = [];
+
+        for (let index = 0; index + 6 < tokens.length; index += 7) {
+            const name = tokens[index];
+            const fileType = tokens[index + 1];
+            const size = tokens[index + 2];
+            const permissions = tokens[index + 3];
+            const owner = tokens[index + 4];
+            const group = tokens[index + 5];
+            const date = tokens[index + 6];
+
+            if (!name) {
+                continue;
+            }
+
+            files.push({
+                name,
+                isDirectory: fileType === 'd',
+                size,
+                permissions,
+                owner,
+                group,
+                date
+            });
+        }
+
+        return files;
+    }
+
+    private async getFilesWithPortableListing(containerId: string, directoryPath: string): Promise<ContainerFileEntry[]> {
+        const shellScript = `target="$1"
+if [ ! -d "$target" ]; then
+  echo "Directory not found: $target" >&2
+  exit 1
+fi
+for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
+  [ -e "$entry" ] || continue
+  name=$(basename "$entry")
+  if [ -d "$entry" ]; then
+    type="d"
+  else
+    type="f"
+  fi
+  size=$(wc -c < "$entry" 2>/dev/null || printf "0")
+  perms=$(ls -ld "$entry" | awk '{print $1}')
+  owner=$(ls -ld "$entry" | awk '{print $3}')
+  group=$(ls -ld "$entry" | awk '{print $4}')
+  date=$(date -r "$entry" +"%Y-%m-%dT%H:%M:%S" 2>/dev/null || stat -c "%y" "$entry" 2>/dev/null | cut -d"." -f1 || printf "")
+  printf '%s\\0%s\\0%s\\0%s\\0%s\\0%s\\0%s\\0' "$name" "$type" "$size" "$perms" "$owner" "$group" "$date"
+done`;
+
+        const output = await this.exec(containerId, ['sh', '-c', shellScript, '--', directoryPath]);
+        return this.parseFindListingOutput(output);
+    }
+
+    private getErrorMessage(error: unknown): string {
+        if (error instanceof Error) {
+            return error.message;
+        }
+
+        return String(error);
+    }
+
+    private toOperationError(
+        error: unknown,
+        code: string,
+        fallbackMessage: string,
+        mapContainerNotFound: boolean = true
+    ): ApplicationError {
+        if (error instanceof ApplicationError) {
+            return error;
+        }
+
+        const dockerError = error as { statusCode?: number };
+
+        if (mapContainerNotFound && dockerError.statusCode === 404) {
+            return ApplicationError.notFound(ErrorCodes.CONTAINER_NOT_FOUND, 'Container not found');
+        }
+
+        const errorMessage = this.getErrorMessage(error);
+
+        if (errorMessage.length > 0) {
+            return new ApplicationError(code, errorMessage, 500);
+        }
+
+        return new ApplicationError(code, fallbackMessage, 500);
     }
 }

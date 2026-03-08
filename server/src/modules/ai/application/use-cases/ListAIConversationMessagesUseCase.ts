@@ -3,7 +3,7 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import { AI_TOKENS } from '@modules/ai/application/di/AITokens';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
 import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
 import {
@@ -45,7 +45,7 @@ export default class ListAIConversationMessagesUseCase implements IUseCase<ListA
 
         const result = await this.messageRepository.findAll({
             filter: {
-                conversationId: conversation.id
+                conversationId: conversation._id
             },
             page,
             limit,

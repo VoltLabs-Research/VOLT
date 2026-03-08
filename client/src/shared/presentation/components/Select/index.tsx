@@ -1,14 +1,30 @@
-import React, { useId, useMemo, useState, useRef, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useId, useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import {
+    useFloating,
+    useClick,
+    useDismiss,
+    useRole,
+    useListNavigation,
+    useTypeahead,
+    useInteractions,
+    FloatingPortal,
+    FloatingFocusManager,
+    offset,
+    flip,
+    shift,
+    size,
+    autoUpdate
+} from '@floating-ui/react';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import './Select.css';
 
 export interface SelectOption {
     value: string;
     title: string;
     description?: string;
-};
+}
 
 export interface SelectProps {
     options: SelectOption[];
@@ -24,7 +40,7 @@ export interface SelectProps {
     isLoading?: boolean;
     onScrollEnd?: () => void;
     renderOptionAction?: (option: SelectOption, isSelected: boolean) => React.ReactNode;
-};
+}
 
 const Select = ({
     options,
@@ -42,72 +58,103 @@ const Select = ({
     renderOptionAction
 }: SelectProps) => {
     const uid = useId();
+    const floatingRoot = useFloatingRoot();
     const [isOpen, setIsOpen] = useState(false);
-    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
-    const triggerRef = useRef<HTMLButtonElement>(null);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+    const [activeIndex, setActiveIndex] = useState<number | null>(null);
+    const listRef = useRef<Array<HTMLElement | null>>([]);
+    const listContentRef = useRef<Array<string | null>>([]);
 
     const selectedOption = useMemo(() => {
         if (!value) return null;
-        return options.find((o) => o.value === value) || null;
+        return options.find((option) => option.value === value) || null;
     }, [options, value]);
 
-    const calculatePosition = useCallback(() => {
-        if (!triggerRef.current) return;
-
-        const rect = triggerRef.current.getBoundingClientRect();
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const padding = 8;
-        const gap = 6;
-
-        let left = rect.left;
-        let top = rect.bottom + gap;
-        const minWidth = rect.width;
-
-        if (left + minWidth > vw - padding) {
-            left = vw - minWidth - padding;
+    const selectedIndex = useMemo(() => {
+        if (!value) {
+            return null;
         }
 
-        const estimatedHeight = Math.min(options.length * 48, 300);
-        if (top + estimatedHeight > vh - padding) {
-            top = rect.top - estimatedHeight - gap;
+        const optionIndex = options.findIndex((option) => option.value === value);
+
+        if (optionIndex < 0) {
+            return null;
         }
 
-        if (left < padding) left = padding;
+        return optionIndex;
+    }, [options, value]);
 
-        setDropdownStyle({
-            position: 'fixed',
-            top: `${top}px`,
-            left: `${left}px`,
-            minWidth: `${minWidth}px`,
-            zIndex: 9999
-        });
-    }, [options.length]);
+    listContentRef.current = options.map((option) => option.title);
 
-    const handleToggle = useCallback((e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (disabled) return;
-
+    useEffect(() => {
         if (!isOpen) {
-            calculatePosition();
+            setActiveIndex(null);
+            return;
         }
-        setIsOpen((prev) => !prev);
-    }, [disabled, isOpen, calculatePosition]);
 
-    const handleSelect = useCallback((e: React.MouseEvent, optValue: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onChange(optValue);
+        if (selectedIndex !== null) {
+            setActiveIndex(selectedIndex);
+            return;
+        }
+
+        if (options.length > 0) {
+            setActiveIndex(0);
+        }
+    }, [isOpen, options.length, selectedIndex]);
+
+    const { refs, floatingStyles, context } = useFloating({
+        open: isOpen,
+        onOpenChange: setIsOpen,
+        placement: 'bottom-start',
+        middleware: [
+            offset(6),
+            flip({ padding: 8 }),
+            shift({ padding: 8 }),
+            size({
+                apply({ rects, elements }) {
+                    Object.assign(elements.floating.style, {
+                        minWidth: `${rects.reference.width}px`
+                    });
+                },
+                padding: 8
+            })
+        ],
+        whileElementsMounted: autoUpdate
+    });
+
+    const click = useClick(context);
+    const dismiss = useDismiss(context);
+    const role = useRole(context, { role: 'listbox' });
+    const listNavigation = useListNavigation(context, {
+        listRef,
+        activeIndex,
+        selectedIndex: selectedIndex ?? undefined,
+        onNavigate: setActiveIndex,
+        loop: true
+    });
+    const typeahead = useTypeahead(context, {
+        listRef: listContentRef,
+        activeIndex,
+        selectedIndex: selectedIndex ?? undefined,
+        onMatch: setActiveIndex
+    });
+
+    const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([
+        click,
+        dismiss,
+        role,
+        listNavigation,
+        typeahead
+    ]);
+
+    const handleSelect = useCallback((optionValue: string) => {
+        onChange(optionValue);
         setIsOpen(false);
     }, [onChange]);
 
-    const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
         if (!onScrollEnd) return;
 
-        const target = e.currentTarget;
+        const target = event.currentTarget;
         const threshold = 50;
         const isNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < threshold;
 
@@ -116,138 +163,18 @@ const Select = ({
         }
     }, [onScrollEnd, isLoading]);
 
-    useEffect(() => {
-        if (!isOpen) return;
-
-        const handleClickOutside = (e: MouseEvent) => {
-            const target = e.target as Node | null;
-            const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
-
-            if (
-                (target && triggerRef.current?.contains(target)) ||
-                (target && dropdownRef.current?.contains(target)) ||
-                (triggerRef.current && path.includes(triggerRef.current)) ||
-                (dropdownRef.current && path.includes(dropdownRef.current))
-            ) {
-                return;
-            }
-
-            setIsOpen(false);
-        };
-
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                setIsOpen(false);
-            }
-        };
-
-        document.addEventListener('click', handleClickOutside);
-        document.addEventListener('keydown', handleEscape);
-
-        return () => {
-            document.removeEventListener('click', handleClickOutside);
-            document.removeEventListener('keydown', handleEscape);
-        };
-    }, [isOpen]);
-
-    useEffect(() => {
-        if (!isOpen) return;
-
-        const handleReposition = () => calculatePosition();
-
-        window.addEventListener('scroll', handleReposition, true);
-        window.addEventListener('resize', handleReposition);
-
-        return () => {
-            window.removeEventListener('scroll', handleReposition, true);
-            window.removeEventListener('resize', handleReposition);
-        };
-    }, [isOpen, calculatePosition]);
-
-    useEffect(() => {
-        const dropdownEl = dropdownRef.current as any;
-        if (!dropdownEl) return;
-
-        if (isOpen) {
-            dropdownEl.showPopover?.();
-            return;
-        }
-
-        dropdownEl.hidePopover?.();
-    }, [isOpen]);
-
-    const dropdown = isOpen ? createPortal(
-        <div
-            ref={dropdownRef}
-            popover='manual'
-            className='select-dropdown y-auto glass-bg'
-            style={{ ...dropdownStyle, zIndex: 2147483647 }}
-            onScroll={handleScroll}
-        >
-            {options.map((opt) => {
-                const isSelected = opt.value === value;
-
-                return (
-                    <div
-                        key={opt.value}
-                        className={`select-option d-flex items-center content-between gap-05 ${optionClassName} ${isSelected ? 'selected' : ''} color-primary cursor-pointer`}
-                        onClick={(e) => handleSelect(e, opt.value)}
-                    >
-                        <Container className='d-flex column'>
-                            <Paragraph className='font-size-2'>
-                                {opt.title}
-                            </Paragraph>
-
-                            {opt.description && (
-                                <Paragraph className='select-option-description color-muted font-size-1'>
-                                    {opt.description}
-                                </Paragraph>
-                            )}
-                        </Container>
-
-                        {showSelectionIcon && isSelected && (
-                            <svg
-                                className='select-option-check color-muted'
-                                width='16'
-                                height='16'
-                                viewBox='0 0 24 24'
-                                aria-hidden='true'
-                            >
-                                <path
-                                    d='M20 6L9 17l-5-5'
-                                    fill='none'
-                                    stroke='currentColor'
-                                    strokeWidth='2'
-                                />
-                            </svg>
-                        )}
-
-                        {renderOptionAction?.(opt, isSelected)}
-                    </div>
-                );
-            })}
-
-            {isLoading && (
-                <div className='select-option-loading d-flex items-center content-center'>
-                    <Paragraph className='color-muted font-size-1'>Loading...</Paragraph>
-                </div>
-            )}
-        </div>,
-        triggerRef.current?.closest('dialog') || document.body
-    ) : null;
-
     return (
         <>
             <button
-                ref={triggerRef}
+                ref={refs.setReference}
                 id={uid}
                 type='button'
                 className={`select-trigger d-flex items-center gap-05 ${onDark ? 'on-dark' : ''} ${className} ${isOpen ? 'open' : ''} overflow-hidden cursor-pointer`}
                 style={style}
-                onClick={handleToggle}
                 disabled={disabled}
                 aria-haspopup='listbox'
                 aria-expanded={isOpen}
+                {...getReferenceProps()}
             >
                 <span className='select-value overflow-hidden'>
                     {selectedOption ? selectedOption.title : (
@@ -271,7 +198,80 @@ const Select = ({
                 </svg>
             </button>
 
-            {dropdown}
+            {isOpen && (
+                <FloatingPortal root={floatingRoot}>
+                    <FloatingFocusManager context={context} modal={false}>
+                        <div
+                            ref={refs.setFloating}
+                            className='select-dropdown y-auto glass-bg'
+                            style={floatingStyles}
+                            onScroll={handleScroll}
+                            {...getFloatingProps()}
+                        >
+                            {options.map((option, index) => {
+                                const isSelected = option.value === value;
+
+                                return (
+                                    <div
+                                        key={option.value}
+                                        ref={(node) => { listRef.current[index] = node; }}
+                                        role='option'
+                                        tabIndex={activeIndex === index ? 0 : -1}
+                                        aria-selected={isSelected}
+                                        className={`select-option d-flex items-center content-between gap-05 ${optionClassName} ${isSelected ? 'selected' : ''} ${activeIndex === index ? 'active' : ''} color-primary cursor-pointer`}
+                                        {...getItemProps({
+                                            onClick: () => handleSelect(option.value),
+                                            onKeyDown: (event) => {
+                                                if (event.key === 'Enter' || event.key === ' ') {
+                                                    event.preventDefault();
+                                                    handleSelect(option.value);
+                                                }
+                                            }
+                                        })}
+                                    >
+                                        <Container className='d-flex column'>
+                                            <Paragraph className='font-size-2'>
+                                                {option.title}
+                                            </Paragraph>
+
+                                            {option.description && (
+                                                <Paragraph className='select-option-description color-muted font-size-1'>
+                                                    {option.description}
+                                                </Paragraph>
+                                            )}
+                                        </Container>
+
+                                        {showSelectionIcon && isSelected && (
+                                            <svg
+                                                className='select-option-check color-muted'
+                                                width='16'
+                                                height='16'
+                                                viewBox='0 0 24 24'
+                                                aria-hidden='true'
+                                            >
+                                                <path
+                                                    d='M20 6L9 17l-5-5'
+                                                    fill='none'
+                                                    stroke='currentColor'
+                                                    strokeWidth='2'
+                                                />
+                                            </svg>
+                                        )}
+
+                                        {renderOptionAction?.(option, isSelected)}
+                                    </div>
+                                );
+                            })}
+
+                            {isLoading && (
+                                <div className='select-option-loading d-flex items-center content-center'>
+                                    <Paragraph className='color-muted font-size-1'>Loading...</Paragraph>
+                                </div>
+                            )}
+                        </div>
+                    </FloatingFocusManager>
+                </FloatingPortal>
+            )}
         </>
     );
 };

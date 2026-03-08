@@ -8,7 +8,7 @@ export interface CreateAnalysisInputDTO {
 
 export interface CreateAnalysisOutputDTO {
     analysis: {
-        id: string;
+        _id: string;
         trajectory: string;
         plugin: string;
         config: any;

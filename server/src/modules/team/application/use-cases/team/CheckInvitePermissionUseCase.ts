@@ -1,9 +1,10 @@
 import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
+import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/TeamMember';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { Resource } from '@core/constants/resources';
 import { Action } from '@core/constants/permissions';
 import { CheckInvitePermissionInputDTO, CheckInvitePermissionOutputDTO } from '@modules/team/application/dtos/team/CheckInvitePermissionDTO';
@@ -27,7 +28,7 @@ export default class CheckInvitePermissionUseCase implements IUseCase<CheckInvit
             return Result.ok({ canInvite: false });
         }
 
-        const permissions: string[] = member.props.role?.permissions ?? [];
+        const permissions = getTeamMemberRolePermissions(member.props.role);
         const requiredPermission = `${Resource.TEAM_INVITATION}:${Action.CREATE}`;
 
         const canInvite = permissions.includes('*') || permissions.includes(requiredPermission);

@@ -1,0 +1,184 @@
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { RiWifiLine, RiEditLine } from 'react-icons/ri';
+import { LuFolderOpen } from 'react-icons/lu';
+import { formatDistanceToNow } from 'date-fns';
+import DocumentListing, { type ColumnConfig, type SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import useModalForm from '@/shared/presentation/hooks/use-modal-form';
+import usePermission from '@/shared/presentation/hooks/use-permission';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
+import {
+    useTestSSHConnectionMutation,
+    useDeleteSSHConnectionMutation,
+    sshConnectionsQuery,
+    sshConnectionsQueryKey
+} from '@/modules/ssh/hooks/queries';
+import SSHConnectionModal, { SSH_CONNECTION_MODAL_ID } from '../../molecules/SSHConnectionModal';
+import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { SSHConnection } from '@/modules/ssh/api/entities/ssh-connection';
+import type { GetSSHConnectionsInputDTO } from '@/modules/ssh/api/dtos/get-ssh-connections';
+
+const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
+    { event: 'ssh-connection.created', queryKeys: [sshConnectionsQueryKey()] },
+    { event: 'ssh-connection.deleted', queryKeys: [sshConnectionsQueryKey()] }
+];
+
+const SSHConnectionsPage = () => {
+    const navigate = useNavigate();
+    const testConnectionMutation = useTestSSHConnectionMutation();
+    const deleteConnectionMutation = useDeleteSSHConnectionMutation();
+    const canCreate = usePermission(['ssh-connection:create']);
+    const sshModal = useModalForm({ modalId: SSH_CONNECTION_MODAL_ID });
+
+    const [editingConnection, setEditingConnection] = useState<SSHConnection | null>(null);
+    const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+
+    const fetchData = async (params: PaginationParams & GetSSHConnectionsInputDTO): Promise<PaginatedResponse<SSHConnection>> => {
+        const queryParams: GetSSHConnectionsInputDTO = {
+            page: params.page,
+            limit: params.limit
+        };
+
+        return sshConnectionsQuery.fetch(queryParams);
+    };
+
+    const handleOpenFileExplorer = (connection: SSHConnection) => {
+        navigate(`/dashboard/ssh-connections/${connection._id}/file-explorer`);
+    };
+
+    const handleTestConnection = async (connection: SSHConnection) => {
+        try {
+            await showPromise(
+                testConnectionMutation.mutateAsync({ connectionId: connection._id }),
+                {
+                    loading: { title: `Testing connection to "${connection.name}"...` },
+                    success: (data) => ({
+                        title: data.valid
+                            ? `Connection to "${connection.name}" successful!`
+                            : (data.error || 'Unknown error')
+                    }),
+                    error: { title: 'Connection test failed' }
+                }
+            );
+        } catch {
+        }
+    };
+
+    const handleEditConnection = (connection: SSHConnection) => {
+        setEditingConnection(connection);
+        setModalMode('edit');
+        window.setTimeout(() => sshModal.open(), 0);
+    };
+
+    const handleDeleteConnection = async (connection: SSHConnection) => {
+        await showPromise(
+            deleteConnectionMutation.mutateAsync({ connectionId: connection._id }),
+            {
+                loading: { title: `Deleting "${connection.name}"...` },
+                success: { title: `Connection "${connection.name}" deleted` },
+                error: { title: 'Failed to delete connection' }
+            }
+        );
+    };
+
+    const handleCreateNew = () => {
+        setEditingConnection(null);
+        setModalMode('create');
+        window.setTimeout(() => sshModal.open(), 0);
+    };
+
+    const { getMenuOptions } = useListingActions<SSHConnection>({
+        actions: {
+            fileExplorer: {
+                label: 'File Explorer',
+                icon: LuFolderOpen,
+                handler: ({ item }) => handleOpenFileExplorer(item),
+                requiredPermission: 'ssh-connection:read'
+            },
+            test: {
+                label: 'Test Connection',
+                icon: RiWifiLine,
+                handler: ({ item }) => handleTestConnection(item),
+                requiredPermission: 'ssh-connection:read'
+            },
+            edit: {
+                label: 'Edit',
+                icon: RiEditLine,
+                handler: ({ item }) => handleEditConnection(item),
+                requiredPermission: 'ssh-connection:update'
+            },
+            delete: {
+                handler: ({ item }) => handleDeleteConnection(item),
+                confirm: ({ selectedItems }) => (
+                    selectedItems.length === 1
+                        ? `Delete connection "${selectedItems[0].name}"? This action cannot be undone.`
+                        : `Delete ${selectedItems.length} connections? This action cannot be undone.`
+                ),
+                variant: 'danger',
+                requiredPermission: 'ssh-connection:delete'
+            }
+        }
+    });
+
+    const columns: ColumnConfig[] = useMemo(() => [
+        {
+            key: 'name',
+            title: 'Name',
+            sortable: true,
+            skeleton: { variant: 'text', width: 150 }
+        },
+        {
+            key: 'host',
+            title: 'Host',
+            sortable: true,
+            skeleton: { variant: 'text', width: 120 }
+        },
+        {
+            key: 'port',
+            title: 'Port',
+            sortable: true,
+            skeleton: { variant: 'text', width: 60 }
+        },
+        {
+            key: 'username',
+            title: 'Username',
+            sortable: true,
+            skeleton: { variant: 'text', width: 100 }
+        },
+        {
+            key: 'createdAt',
+            title: 'Created',
+            sortable: true,
+            render: (value) => formatDistanceToNow(new Date(value as string), { addSuffix: true }),
+            skeleton: { variant: 'text', width: 80 }
+        }
+    ], []);
+
+    return (
+        <>
+            <DocumentListing<SSHConnection>
+                title='SSH Connections'
+                queryKey={sshConnectionsQueryKey()}
+                columns={columns}
+                fetchData={fetchData}
+                defaultLimit={20}
+                getMenuOptions={getMenuOptions}
+                emptyMessage='No SSH connections found. Create one to get started.'
+                createNew={canCreate ? {
+                    buttonTitle: 'Add Connection',
+                    onCreate: handleCreateNew
+                } : undefined}
+                socketInvalidation={SOCKET_INVALIDATION}
+            />
+            <SSHConnectionModal
+                connection={editingConnection}
+                mode={modalMode}
+                onSuccess={() => setEditingConnection(null)}
+            />
+        </>
+    );
+};
+
+export default SSHConnectionsPage;

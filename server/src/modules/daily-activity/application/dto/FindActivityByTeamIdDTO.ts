@@ -1,8 +1,8 @@
-import { DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
+import type { PersistedDailyActivity } from '@modules/daily-activity/domain/types/PersistedDailyActivity';
 
 export interface FindActivityByTeamIdInputDTO{
     teamId: string;
     range: number;
 };
 
-export interface FindActivityByTeamIdOutputDTO extends DailyActivityProps{};
+export type FindActivityByTeamIdOutputDTO = PersistedDailyActivity;

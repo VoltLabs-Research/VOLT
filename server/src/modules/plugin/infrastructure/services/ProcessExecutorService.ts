@@ -1,6 +1,7 @@
 import { injectable } from 'tsyringe';
 import { spawn } from 'node:child_process';
 import { IProcessExecutorService, ExecutionResult } from '@modules/plugin/domain/port/IProcessExecutorService';
+import { ErrorCodes, type ErrorCode } from '@core/constants/error-codes';
 import logger from '@shared/infrastructure/logger';
 import fs from 'node:fs/promises';
 
@@ -17,10 +18,18 @@ export default class ProcessExecutorService implements IProcessExecutorService{
 
     private async ensureExecutable(path: string): Promise<void>{
         try{
-            fs.access(path, fs.constants.X_OK);
+            await fs.access(path, fs.constants.X_OK);
         }catch{
-            throw new Error(`Binary not accessible or executable: ${path}`);
+            throw this.createProcessError(ErrorCodes.PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE);
         }
+    }
+
+    private createProcessError(code: ErrorCode): Error{
+        const error = new Error(code);
+        Object.assign(error, {
+            code
+        });
+        return error;
     }
 
     private spawnProcess(cmd: string, args: string[], cwd?: string): Promise<ExecutionResult>{
@@ -49,10 +58,10 @@ export default class ProcessExecutorService implements IProcessExecutorService{
 
             child.on('close', (code) => {
                 if(code === 0) resolve({ code: 0, stdout, stderr });
-                else reject(new Error(`Process exited with code ${code}. Logs:\n${stderr}`));
+                else reject(this.createProcessError(ErrorCodes.PLUGIN_EXECUTOR_EXIT_FAILED));
             });
 
-            child.on('error', (error) => reject(new Error(`Failed to start process: ${error.message}`)));
+            child.on('error', () => reject(this.createProcessError(ErrorCodes.PLUGIN_EXECUTOR_START_FAILED)));
         }); 
     }
 };

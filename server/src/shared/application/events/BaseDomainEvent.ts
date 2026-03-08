@@ -1,0 +1,12 @@
+import { v4 } from 'uuid';
+import { IDomainEvent } from './IDomainEvent';
+
+export abstract class BaseDomainEvent<T> implements IDomainEvent {
+    readonly occurredOn = new Date();
+    readonly eventId = v4();
+
+    constructor(
+        public readonly name: string,
+        public readonly payload: T
+    ) {}
+}

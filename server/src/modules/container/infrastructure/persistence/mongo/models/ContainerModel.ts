@@ -1,6 +1,4 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { DockerNetwork } from './DockerNetworkModel';
-import { DockerVolume } from './DockerVolumeModel';
 import { ValidationCodes } from '@core/constants/validation-codes';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 
@@ -65,16 +63,5 @@ const ContainerSchema = new Schema<IContainer>({
 });
 
 ContainerSchema.index({ name: 'text', image: 'text' });
-
-// Cascade delete logic (simplified for now, avoiding circular deps if possible)
-ContainerSchema.pre('deleteOne', { document: true, query: false }, async function () {
-    const container = this as any;
-    if (container.network) {
-        await DockerNetwork.deleteOne({ _id: container.network });
-    }
-    if (container.volume) {
-        await DockerVolume.deleteOne({ _id: container.volume });
-    }
-});
 
 export const ContainerModel = mongoose.model<IContainer>('Container', ContainerSchema);

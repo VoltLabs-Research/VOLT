@@ -14,6 +14,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import nativeStats from '@modules/trajectory/infrastructure/native/NativeStats';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
 import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/merge-chunked-value';
+import { getPropertyValues } from '@modules/trajectory/infrastructure/utilities/get-property-values';
 import {
     IAtomPropertiesService,
     FilterExpression,
@@ -23,6 +24,10 @@ import {
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import Plugin from '@modules/plugin/domain/entities/Plugin';
 import Analysis from '@modules/analysis/domain/entities/Analysis';
+import type { Readable } from 'node:stream';
+
+type PerAtomRow = Record<string, unknown>;
+type PerAtomColumnarData = Record<string, unknown[]>;
 
 @injectable()
 export default class AtomPropertiesService implements IAtomPropertiesService {
@@ -47,7 +52,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         const props: Record<string, string[]> = {};
 
         const exposureNodes = workflow.props.nodes.filter(
-            (node: Record<string, unknown>) => node.type === WorkflowNodeType.Exposure
+            (node) => node.type === WorkflowNodeType.Exposure
         );
 
         for (const exposureNode of exposureNodes) {
@@ -71,8 +76,8 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         const trajectoryId = analysis.props.trajectory;
 
         const exposureNode = workflow.props.nodes
-            .filter((node: Record<string, unknown>) => node.type === WorkflowNodeType.Exposure)
-            .find((node: Record<string, unknown>) => String(node.id) === String(exposureId));
+            .filter((node) => node.type === WorkflowNodeType.Exposure)
+            .find((node) => String(node.id) === String(exposureId));
 
         if (!exposureNode) throw new ApplicationError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404);
 
@@ -113,12 +118,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
         if (!decoded) return null;
 
-        const perAtomProperties = decoded['per-atom-properties'];
-        if (Array.isArray(perAtomProperties)) {
-            return perAtomProperties as Record<string, unknown>[];
-        }
-
-        return null;
+        return this.normalizePerAtomProperties(decoded['per-atom-properties']);
     }
 
     async buildPluginIndexForAtomIds(
@@ -143,8 +143,8 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             const decoded = message as Record<string, unknown> | null;
             if (!decoded || typeof decoded !== 'object') continue;
 
-            const perAtomData = decoded['per-atom-properties'];
-            if (!Array.isArray(perAtomData)) continue;
+            const perAtomData = this.normalizePerAtomProperties(decoded['per-atom-properties']);
+            if (!perAtomData) continue;
 
             let shouldBreak = false;
             for (const item of perAtomData) {
@@ -162,8 +162,9 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             }
 
             if (shouldBreak) {
-                if (typeof (pluginStream as Record<string, unknown> & { destroy?: () => void }).destroy === 'function') {
-                    (pluginStream as Record<string, unknown> & { destroy: () => void }).destroy();
+                const readableStream = pluginStream as unknown as Readable & { destroy?: () => void };
+                if (typeof readableStream.destroy === 'function') {
+                    readableStream.destroy();
                 }
                 return pluginIndex;
             }
@@ -371,45 +372,15 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
             const lowerProp = expression.property.toLowerCase();
             const isStandard = ['type', 'id', 'x', 'y', 'z'].includes(lowerProp);
-            let parsed;
 
-            if (isStandard) {
-                parsed = await TrajectoryParserFactory.parse(dumpFilePath, {
+            const parsed = isStandard
+                ? await TrajectoryParserFactory.parse(dumpFilePath, {
                     includeIds: lowerProp === 'id',
                     properties: []
-                });
-            } else {
-                parsed = await TrajectoryParserFactory.parse(dumpFilePath, { properties: [expression.property] });
-            }
+                })
+                : await TrajectoryParserFactory.parse(dumpFilePath, { properties: [expression.property] });
 
-            if (lowerProp === 'type') {
-                values = new Float32Array(parsed.types.length);
-                for (let i = 0; i < parsed.types.length; i++) {
-                    values[i] = parsed.types[i];
-                }
-            } else if (lowerProp === 'x') {
-                values = new Float32Array(parsed.positions.length / 3);
-                for (let i = 0; i < values.length; i++) {
-                    values[i] = parsed.positions[i * 3];
-                }
-            } else if (lowerProp === 'y') {
-                values = new Float32Array(parsed.positions.length / 3);
-                for (let i = 0; i < values.length; i++) {
-                    values[i] = parsed.positions[i * 3 + 1];
-                }
-            } else if (lowerProp === 'z') {
-                values = new Float32Array(parsed.positions.length / 3);
-                for (let i = 0; i < values.length; i++) {
-                    values[i] = parsed.positions[i * 3 + 2];
-                }
-            } else if (lowerProp === 'id' && parsed.ids) {
-                values = new Float32Array(parsed.ids.length);
-                for (let i = 0; i < parsed.ids.length; i++) {
-                    values[i] = parsed.ids[i];
-                }
-            } else {
-                values = parsed.properties?.[expression.property] || parsed.properties?.[lowerProp] || new Float32Array(0);
-            }
+            values = getPropertyValues(parsed, expression.property);
         }
 
         return this.evaluateFilter(values, expression.operator, expression.value);
@@ -443,11 +414,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
         if (!decoded) return [];
 
-        const perAtomProperties = decoded['per-atom-properties'];
-        if (!Array.isArray(perAtomProperties) || perAtomProperties.length === 0) return [];
-
-        const firstItem = perAtomProperties[0] as Record<string, unknown>;
-        return Object.keys(firstItem).filter((key) => key !== 'id');
+        return this.extractPerAtomPropertyNames(decoded['per-atom-properties']);
     }
 
     private getPluginMsgpackKey(trajectoryId: string, analysisId: string, exposureId: string, timestep: string): string {
@@ -458,9 +425,100 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         const analysis = await this.analysisRepository.findById(analysisId);
         if (!analysis) throw new ApplicationError(ErrorCodes.ANALYSIS_NOT_FOUND, ErrorCodes.ANALYSIS_NOT_FOUND, 404);
 
-        const plugin = await this.pluginRepository.findOne({ _id: analysis.props.plugin });
+        const plugin = await this.pluginRepository.findById(analysis.props.plugin);
         if (!plugin) throw new ApplicationError(ErrorCodes.PLUGIN_NOT_FOUND, ErrorCodes.PLUGIN_NOT_FOUND, 404);
 
         return { analysis, plugin };
+    }
+
+    private extractPerAtomPropertyNames(value: unknown): string[] {
+        const rows = this.normalizePerAtomProperties(value);
+        if (!rows || rows.length === 0) {
+            return [];
+        }
+
+        const keys = new Set<string>();
+        for (const row of rows) {
+            for (const key of Object.keys(row)) {
+                if (key !== 'id') {
+                    keys.add(key);
+                }
+            }
+        }
+
+        return Array.from(keys);
+    }
+
+    private normalizePerAtomProperties(value: unknown): PerAtomRow[] | null {
+        if (Array.isArray(value)) {
+            return value.map((item) => this.flattenPerAtomRow(item as PerAtomRow));
+        }
+
+        if (!this.isColumnarPerAtomData(value)) {
+            return null;
+        }
+
+        const entries = Object.entries(value);
+        if (entries.length === 0) {
+            return [];
+        }
+
+        const rowCount = entries[0]?.[1]?.length ?? 0;
+        const rows: PerAtomRow[] = Array.from({ length: rowCount }, () => ({}));
+
+        for (const [key, column] of entries) {
+            for (let index = 0; index < rowCount; index++) {
+                rows[index][key] = column[index];
+            }
+        }
+
+        return rows.map((row) => this.flattenPerAtomRow(row));
+    }
+
+    private flattenPerAtomRow(row: PerAtomRow): PerAtomRow {
+        const flattened: PerAtomRow = {};
+
+        for (const [key, value] of Object.entries(row)) {
+            if (key === 'id' || !Array.isArray(value)) {
+                flattened[key] = value;
+                continue;
+            }
+
+            for (let index = 0; index < value.length; index++) {
+                flattened[`${key}[${index}]`] = value[index];
+            }
+        }
+
+        return flattened;
+    }
+
+    private isColumnarPerAtomData(value: unknown): value is PerAtomColumnarData {
+        if (!value || Array.isArray(value) || typeof value !== 'object') {
+            return false;
+        }
+
+        const entries = Object.entries(value as Record<string, unknown>);
+        if (entries.length === 0) {
+            return false;
+        }
+
+        let expectedLength: number | null = null;
+
+        for (const [, column] of entries) {
+            if (!Array.isArray(column)) {
+                return false;
+            }
+
+            if (expectedLength === null) {
+                expectedLength = column.length;
+                continue;
+            }
+
+            if (column.length !== expectedLength) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

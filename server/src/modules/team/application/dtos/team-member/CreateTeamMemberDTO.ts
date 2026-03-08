@@ -1,3 +1,4 @@
+import { PersistedEntityDTO } from '@modules/team/application/dtos/common';
 import { TeamMemberProps } from '@modules/team/domain/entities/TeamMember';
 
 export interface CreateTeamMemberInputDTO{
@@ -6,4 +7,4 @@ export interface CreateTeamMemberInputDTO{
     roleId: string;
 };
 
-export interface CreateTeamMemberOutputDTO extends TeamMemberProps{}
+export type CreateTeamMemberOutputDTO = PersistedEntityDTO<TeamMemberProps>;

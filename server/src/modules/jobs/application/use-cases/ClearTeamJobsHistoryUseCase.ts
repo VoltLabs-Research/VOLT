@@ -1,36 +1,32 @@
 import { inject, injectable } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
-import TeamJobMaintenanceService from '@modules/jobs/infrastructure/services/TeamJobMaintenanceService';
+import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import {
     ClearTeamJobsHistoryInputDTO,
     ClearTeamJobsHistoryOutputDTO,
 } from '@modules/jobs/application/dtos/ClearTeamJobsHistoryDTO';
+import { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
+import BaseTeamJobActionUseCase from '@modules/jobs/application/use-cases/BaseTeamJobActionUseCase';
 
 @injectable()
-export default class ClearTeamJobsHistoryUseCase implements IUseCase<
+export default class ClearTeamJobsHistoryUseCase extends BaseTeamJobActionUseCase<
     ClearTeamJobsHistoryInputDTO,
-    ClearTeamJobsHistoryOutputDTO,
-    ApplicationError
-> {
+    ClearTeamJobsHistoryOutputDTO
+> implements IUseCase<ClearTeamJobsHistoryInputDTO, ClearTeamJobsHistoryOutputDTO, ApplicationError> {
     constructor(
-        @inject(TeamJobMaintenanceService)
-        private readonly teamJobMaintenanceService: TeamJobMaintenanceService
-    ){}
+        @inject(JOBS_TOKENS.TeamJobMaintenanceService)
+        private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
+    ) {
+        super();
+    }
 
-    async execute(
-        input: ClearTeamJobsHistoryInputDTO
-    ): Promise<Result<ClearTeamJobsHistoryOutputDTO, ApplicationError>> {
-        if (!input.teamId) {
-            return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.TEAM_ID_REQUIRED,
-                'Team id is required'
-            ));
-        }
+    protected async run(teamId: string): Promise<ClearTeamJobsHistoryOutputDTO> {
+        const result = await this.teamJobMaintenanceService.clearHistory(teamId);
 
-        const result = await this.teamJobMaintenanceService.clearHistory(input.teamId);
-        return Result.ok(result);
+        return {
+            deletedJobs: result.deletedJobs,
+            deletedAnalyses: result.deletedAnalyses
+        };
     }
 }

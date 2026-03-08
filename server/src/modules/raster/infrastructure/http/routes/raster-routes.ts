@@ -3,9 +3,9 @@ import { container } from 'tsyringe';
 import { TriggerRasterizationController } from '@modules/raster/infrastructure/http/controllers/TriggerRasterizationController';
 import { GetRasterMetadataController } from '@modules/raster/infrastructure/http/controllers/GetRasterMetadataController';
 import { GetRasterFramePNGController } from '@modules/raster/infrastructure/http/controllers/GetRasterFramePNGController';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import { Resource } from '@core/constants/resources';
-import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
@@ -18,10 +18,10 @@ const triggerController = container.resolve(TriggerRasterizationController);
 const metadataController = container.resolve(GetRasterMetadataController);
 const frameController = container.resolve(GetRasterFramePNGController);
 
-router.use(protect);
+const triggerRasterRateLimit = createStandardRateLimiter(3);
 
-router.post('/:trajectoryId/trigger', (req, res, next) => triggerController.handle(req, res, next));
-router.get('/:trajectoryId/metadata', (req, res, next) => metadataController.handle(req, res, next));
-router.get('/:trajectoryId/frame/:timestep', (req, res, next) => frameController.handle(req, res, next));
+router.post('/:trajectoryId/trigger', triggerRasterRateLimit, (req, res) => triggerController.handle(req, res));
+router.get('/:trajectoryId/metadata', (req, res) => metadataController.handle(req, res));
+router.get('/:trajectoryId/frame/:timestep', (req, res) => frameController.handle(req, res));
 
 export default module;

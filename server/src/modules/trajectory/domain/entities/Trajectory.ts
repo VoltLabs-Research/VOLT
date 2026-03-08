@@ -26,6 +26,7 @@ export interface TrajectoryProps {
     status: TrajectoryStatus,
     isPublic: boolean;
     frames: TrajectoryFrame[];
+    analysis?: string[];
     rasterSceneViews: number;
     stats: TrajectoryStats;
     updatedAt: Date;
@@ -34,9 +35,13 @@ export interface TrajectoryProps {
 
 export default class Trajectory {
     constructor(
-        public id: string,
+        public readonly _id: string,
         public props: TrajectoryProps
     ){}
+
+    get id(): string {
+        return this._id;
+    }
 
     updateStatus(status: TrajectoryStatus | string): void {
         this.props.status = status as TrajectoryStatus;

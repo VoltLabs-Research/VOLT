@@ -1,4 +1,4 @@
 export interface LeaveGroupInputDTO{
-    participantId: string;
+    userId: string;
     chatId: string;
 };

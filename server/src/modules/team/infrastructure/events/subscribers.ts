@@ -8,7 +8,7 @@ import TeamMemberLeaveEventHandler from '@modules/team/application/events/TeamMe
 
 export const registerTeamSubscribers = async (): Promise<void> => {
     await registerSubscribers({
-        'team.member.leave': TeamMemberLeaveEventHandler,
+        'team-member.left': TeamMemberLeaveEventHandler,
         'team.deleted': TeamDeletedEventHandler,
         'team.created': TeamCreatedEventHandler,
         'user.deleted': UserDeletedEventHandler,

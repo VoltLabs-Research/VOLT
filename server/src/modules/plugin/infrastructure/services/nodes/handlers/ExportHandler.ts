@@ -15,8 +15,9 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { decodeMultiStreamFromFile } from '@shared/infrastructure/utilities/msgpack';
 import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/merge-chunked-value';
 import getNestedValue from '@shared/infrastructure/utilities/get-nested-value';
+import { ErrorCodes } from '@core/constants/error-codes';
 
-import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utils/record-scene-artifact';
+import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utilities/record-scene-artifact';
 import logger from '@shared/infrastructure/logger';
 
 @injectable()
@@ -59,14 +60,14 @@ export default class ExportHandler implements INodeHandler{
     async execute(node: WorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
         const config = node.data.export!;
         const exposureNode = context.workflow.findAncestorByType(node.id, WorkflowNodeType.Exposure);
-        if(!exposureNode) throw new Error('ExportHandler: Orphaned export node');
+        if(!exposureNode) throw new Error(ErrorCodes.PLUGIN_EXPORT_EXPOSURE_REQUIRED);
 
         const exposureName = typeof exposureNode.data.exposure?.name === 'string'
             ? exposureNode.data.exposure.name.trim()
             : '';
 
         if (!exposureName) {
-            throw new Error(`ExportHandler: exposure node name is required (${exposureNode.id})`);
+            throw new Error(ErrorCodes.PLUGIN_EXPORT_EXPOSURE_NAME_REQUIRED);
         }
 
         const exposureOutput = context.outputs.get(exposureNode.id);
@@ -81,7 +82,11 @@ export default class ExportHandler implements INodeHandler{
         const iterableKey = exposureNode.data.exposure?.iterable;
 
         // Process items
-        for(const item of (exposureOutput?.results || [])){
+        const exposureResults = Array.isArray(exposureOutput?.results)
+            ? exposureOutput.results
+            : [];
+
+        for(const item of exposureResults){
             let data = item.data;
             if(isChart && item.localPath){
                 data = await this.loadExposureData(item, undefined); 
@@ -93,7 +98,9 @@ export default class ExportHandler implements INodeHandler{
                 results.push({
                     index: item.index,
                     success: false,
-                    error: item.error || 'No data'
+                    error: typeof item.error === 'string'
+                        ? item.error
+                        : ErrorCodes.PLUGIN_EXPORT_DATA_REQUIRED
                 });
                 continue;
             }
@@ -179,22 +186,22 @@ export default class ExportHandler implements INodeHandler{
                 }else if(typeof data === 'string'){
                     await this.atomisticExporter.toStorage(data, path);
                 }else{
-                    throw new Error('AtomisticExporter: missing export.AtomisticExporter data');
+                    throw new Error(ErrorCodes.PLUGIN_EXPORT_DATA_REQUIRED);
                 }
                 break;
             case Exporter.Chart:
                 await this.chartExporter.toStorage(data, path, options);
                 break;
             case Exporter.Dislocation:
-                if(!exportData) throw new Error('DislocationExporter: missing export.DislocationExporter data');
+                if(!exportData) throw new Error(ErrorCodes.PLUGIN_EXPORT_DATA_REQUIRED);
                 await this.dislocationExporter.toStorage(exportData, path, options);
                 break;
             case Exporter.Mesh:
-                if(!exportData) throw new Error('MeshExporter: missing export.MeshExporter data');
+                if(!exportData) throw new Error(ErrorCodes.PLUGIN_EXPORT_DATA_REQUIRED);
                 await this.meshExporter.toStorage(exportData, path, options);
                 break;
             default:
-                throw new Error(`Unknown exporter type: ${type}`);
+                throw new Error(ErrorCodes.PLUGIN_EXPORT_TYPE_UNSUPPORTED);
         }
     }
 

@@ -6,12 +6,17 @@ import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { injectable, inject } from 'tsyringe';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import UserDeletedEvent from '@modules/auth/domain/events/UserDeletedEvent';
 
 @injectable()
 export default class DeleteAccountUseCase implements IUseCase<DeleteAccountInputDTO, DeleteAccountOutputDTO, ApplicationError>{
     constructor(
         @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository
+        private readonly userRepository: IUserRepository,
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
     ){}
 
     async execute(input: DeleteAccountInputDTO): Promise<Result<DeleteAccountOutputDTO, ApplicationError>>{
@@ -23,7 +28,13 @@ export default class DeleteAccountUseCase implements IUseCase<DeleteAccountInput
             ));
         }
 
-        await this.userRepository.deleteById(input.userId);
+        const deleted = await this.userRepository.deleteById(input.userId);
+        if (deleted) {
+            await this.eventBus.publish(new UserDeletedEvent({
+                userId: input.userId
+            }));
+        }
+
         return Result.ok({ success: true });
     }
 };

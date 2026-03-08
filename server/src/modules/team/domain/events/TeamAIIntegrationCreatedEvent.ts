@@ -1,6 +1,5 @@
-import { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import { createTeamDomainEvent } from './createTeamDomainEvent';
 import { TeamAIProvider } from '@modules/team/domain/entities/TeamAIIntegration';
-import { v4 } from 'uuid';
 
 export interface TeamAIIntegrationCreatedEventPayload {
     teamAIIntegrationId: string;
@@ -10,15 +9,4 @@ export interface TeamAIIntegrationCreatedEventPayload {
     defaultModel?: string;
 }
 
-export default class TeamAIIntegrationCreatedEvent implements IDomainEvent {
-    public readonly name = 'team-ai-integration.created';
-    public readonly occurredOn: Date;
-    public readonly eventId: string;
-
-    constructor(
-        public readonly payload: TeamAIIntegrationCreatedEventPayload
-    ) {
-        this.occurredOn = new Date();
-        this.eventId = v4();
-    }
-}
+export default class TeamAIIntegrationCreatedEvent extends createTeamDomainEvent<TeamAIIntegrationCreatedEventPayload>('team-ai-integration.created') {}

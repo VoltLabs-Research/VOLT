@@ -1,8 +1,9 @@
-export interface ListSecretKeysByTeamIdInputDTO {
-    teamId: string;
-    page?: number;
-    limit?: number;
-}
+import {
+    PaginatedOutputDTO,
+    PaginatedTeamScopedInputDTO
+} from '@modules/team/application/dtos/common';
+
+export type ListSecretKeysByTeamIdInputDTO = PaginatedTeamScopedInputDTO;
 
 export interface SecretKeyListItemDTO {
     _id: string;
@@ -17,10 +18,4 @@ export interface SecretKeyListItemDTO {
     updatedAt: Date;
 }
 
-export interface ListSecretKeysByTeamIdOutputDTO {
-    data: SecretKeyListItemDTO[];
-    total: number;
-    page: number;
-    totalPages: number;
-    limit: number;
-}
+export type ListSecretKeysByTeamIdOutputDTO = PaginatedOutputDTO<SecretKeyListItemDTO>;

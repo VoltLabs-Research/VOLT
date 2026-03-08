@@ -1,12 +1,7 @@
-import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
 import { TriggerRasterizationUseCase } from '@modules/raster/application/use-cases/TriggerRasterizationUseCase';
+import { rasterValidation } from '@modules/raster/infrastructure/http/validation/raster-schemas';
 
-@injectable()
-export class TriggerRasterizationController extends BaseController<TriggerRasterizationUseCase> {
-    constructor(
-        @inject(TriggerRasterizationUseCase) useCase: TriggerRasterizationUseCase
-    ){
-        super(useCase);
-    }
-}
+export const TriggerRasterizationController = createController(TriggerRasterizationUseCase, {
+    validationSchema: rasterValidation.trigger
+});

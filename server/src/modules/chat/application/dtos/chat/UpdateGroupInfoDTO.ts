@@ -7,4 +7,6 @@ export interface UpdateGroupInfoInputDTO{
     groupDescription?: string;
 };
 
-export interface UpdateGroupInfoOutputDTO extends ChatProps{}
+export interface UpdateGroupInfoOutputDTO extends ChatProps{
+    _id: string;
+}

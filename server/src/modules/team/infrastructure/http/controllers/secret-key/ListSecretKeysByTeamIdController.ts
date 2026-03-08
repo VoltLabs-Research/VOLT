@@ -1,13 +1,5 @@
-import { injectable, inject } from 'tsyringe';
-import { PaginatedBaseController } from '@shared/infrastructure/http/PaginatedBaseController';
+import { createPaginatedController } from '@shared/infrastructure/http/controllers/createController';
 import ListSecretKeysByTeamIdUseCase from '@modules/team/application/use-cases/secret-key/ListSecretKeysByTeamIdUseCase';
 
-@injectable()
-export default class ListSecretKeysByTeamIdController extends PaginatedBaseController<ListSecretKeysByTeamIdUseCase> {
-    constructor(
-        @inject(ListSecretKeysByTeamIdUseCase)
-        useCase: ListSecretKeysByTeamIdUseCase
-    ) {
-        super(useCase);
-    }
-}
+const ListSecretKeysByTeamIdController = createPaginatedController(ListSecretKeysByTeamIdUseCase);
+export default ListSecretKeysByTeamIdController;

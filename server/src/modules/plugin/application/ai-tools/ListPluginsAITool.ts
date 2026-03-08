@@ -3,6 +3,13 @@ import { z } from 'zod';
 import { AITool } from '@shared/application/ai/AITool';
 import type { AIToolScope } from '@modules/ai/application/services/AIToolService';
 import { ListPluginsUseCase } from '@modules/plugin/application/use-cases/plugin/ListPluginsUseCase';
+import type { ListedPluginDTO } from '@modules/plugin/application/dtos/plugin/ListPluginsDTO';
+
+interface PluginExposureSummary {
+    _id: string;
+    name: string;
+    hasListing?: boolean;
+}
 
 @injectable()
 export class ListPluginsAITool extends AITool {
@@ -22,12 +29,15 @@ export class ListPluginsAITool extends AITool {
         if (!result.success) throw result.error;
         return {
             summary: `Found ${result.value.data.length} plugins.`,
-            data: result.value.data.map((plugin: any) => ({
-                pluginId: plugin._id, name: plugin.modifier?.name || plugin._id,
-                status: plugin.status, validated: plugin.validated,
-                exposures: Array.isArray(plugin.exposures) ? plugin.exposures.map((e: any) => ({
-                    exposureId: e._id, name: e.name,
-                    hasListing: Boolean(e.hasListing)
+            data: result.value.data.map((plugin: ListedPluginDTO) => ({
+                pluginId: plugin._id,
+                name: plugin.modifier?.name || plugin._id,
+                status: plugin.status,
+                validated: plugin.validated,
+                exposures: Array.isArray(plugin.exposures) ? plugin.exposures.map((exposure: PluginExposureSummary) => ({
+                    exposureId: exposure._id,
+                    name: exposure.name,
+                    hasListing: Boolean(exposure.hasListing)
                 })) : []
             }))
         };

@@ -1,7 +1,9 @@
+import {
+    EntityIdInputDTO,
+    EntityPropsOutputDTO
+} from '@modules/team/application/dtos/common';
 import { TeamProps } from '@modules/team/domain/entities/Team';
 
-export interface ListUserTeamsInputDTO{
-    userId: string;
-};
+export type ListUserTeamsInputDTO = EntityIdInputDTO<'userId'>;
 
-export interface ListUserTeamsOutputDTO extends TeamProps{};
+export type ListUserTeamsOutputDTO = EntityPropsOutputDTO<TeamProps>;

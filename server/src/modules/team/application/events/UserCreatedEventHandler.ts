@@ -19,7 +19,7 @@ export default class UserCreatedEventHandler implements IEventHandler<UserCreate
         const result = await this.createTeamUseCase.execute({
             name: `${firstName} ${lastName}'s Team`,
             description: `Default team for ${firstName} ${lastName}`,
-            ownerId: id
+            userId: id
         });
 
         if (result.success) {

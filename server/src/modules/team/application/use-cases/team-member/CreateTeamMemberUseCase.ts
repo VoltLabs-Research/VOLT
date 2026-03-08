@@ -3,13 +3,15 @@ import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { CreateTeamMemberInputDTO, CreateTeamMemberOutputDTO } from '@modules/team/application/dtos/team-member/CreateTeamMemberDTO';
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_TOKENS } from '@modules/team/application/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ITeamRoleRepository } from '@modules/team/domain/port/ITeamRoleRepository';
 import { ITeamMemberRepository } from '@modules/team/domain/port/ITeamMemberRepository';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import TeamMemberCreatedEvent from '@modules/team/domain/events/TeamMemberCreatedEvent';
+
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 
 @injectable()
 export default class CreateTeamMemberUseCase implements IUseCase<CreateTeamMemberInputDTO, CreateTeamMemberOutputDTO, ApplicationError>{
@@ -55,12 +57,12 @@ export default class CreateTeamMemberUseCase implements IUseCase<CreateTeamMembe
         });
 
         await this.eventBus.publish(new TeamMemberCreatedEvent({
-            teamMemberId: newMember.id,
+            teamMemberId: newMember._id,
             teamId,
             userId,
             roleId
         }));
 
-        return Result.ok(newMember.props);
+        return Result.ok(toPersistedOutput(newMember));
     }
 }

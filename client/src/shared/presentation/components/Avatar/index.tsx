@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { User } from '@/modules/auth/domain/entities/User';
+import type { User } from '@/modules/auth/api/entities/user';
 import { getInitialsFromUser } from '@/shared/utils/user';
 import { cn } from '@/shared/utils/cn';
 import Container from '@/shared/presentation/components/Container';

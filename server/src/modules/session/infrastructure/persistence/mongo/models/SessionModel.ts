@@ -1,16 +1,19 @@
-import mongoose, { Schema, Model, Document } from 'mongoose';
+import mongoose, { Schema, Model, Document, Types } from 'mongoose';
 import { ValidationCodes } from '@core/constants/validation-codes';
 import { SessionActivityType, SessionProps } from '@modules/session/domain/entities/Session';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-type SimulationCellRelations = 'user';
+type SessionPersistenceProps = Omit<Persistable<SessionProps>, 'user'> & {
+    user: Types.ObjectId | null;
+};
 
-export interface SessionDocument extends Persistable<SessionProps, SimulationCellRelations>, Document { }
+export interface SessionDocument extends SessionPersistenceProps, Document { }
 
 const SessionSchema: Schema<SessionDocument> = new Schema({
     user: {
         type: Schema.Types.ObjectId,
         ref: 'User',
+        default: null,
         required: [
             function(this){
                 return this.action !== SessionActivityType.FailedLogin;
@@ -20,6 +23,7 @@ const SessionSchema: Schema<SessionDocument> = new Schema({
     },
     token: {
         type: String,
+        default: null,
         required: [
             function(this){
                 return this.action !== SessionActivityType.FailedLogin

@@ -1,10 +1,11 @@
 import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '@modules/ssh/domain/di/SSHConnectionTokens';
+import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
-import { GetSSHConnectionsByTeamIdInputDTO, GetSSHConnectionsByTeamIdOutputDTO } from '@modules/ssh/application/dtos/GetSSHConnectionsByTeamId';
+import { GetSSHConnectionsByTeamIdInputDTO, GetSSHConnectionsByTeamIdOutputDTO } from '@modules/ssh/application/dtos/GetSSHConnectionsByTeamIdDTO';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { toSafeSSHConnectionDTO } from './ssh-error-utils';
 
 @injectable()
 export class GetSSHConnectionsByTeamIdUseCase implements IUseCase<GetSSHConnectionsByTeamIdInputDTO, GetSSHConnectionsByTeamIdOutputDTO, ApplicationError> {
@@ -18,7 +19,7 @@ export class GetSSHConnectionsByTeamIdUseCase implements IUseCase<GetSSHConnecti
         const results = await this.sshConnRepository.findAll({ filter: { team: teamId }, limit: input.limit, page: input.page });
         return Result.ok({
             ...results,
-            data: results.data.map(conn => conn.props)
+            data: results.data.map((connection) => toSafeSSHConnectionDTO(connection))
         });
     }
 };

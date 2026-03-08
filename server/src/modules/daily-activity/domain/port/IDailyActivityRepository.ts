@@ -1,5 +1,6 @@
 import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 import DailyActivity, { ActivityType, DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
+import type { PersistedDailyActivity } from '@modules/daily-activity/domain/types/PersistedDailyActivity';
 
 export interface IDailyActivityRepository extends IBaseRepository<DailyActivity, DailyActivityProps>{
     /**
@@ -16,9 +17,9 @@ export interface IDailyActivityRepository extends IBaseRepository<DailyActivity,
      * Get activity for the specified team.
      */
     findActivityByTeamId(
-        teamId: string, 
+        teamId: string,
         range: number
-    ): Promise<DailyActivityProps[]>;
+    ): Promise<PersistedDailyActivity[]>;
 
     updateOnlineMinutes(
         teamId: string,

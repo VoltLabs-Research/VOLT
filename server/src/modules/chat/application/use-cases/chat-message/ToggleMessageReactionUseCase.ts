@@ -6,12 +6,21 @@ import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { IChatMessageRepository } from '@modules/chat/domain/port/IChatMessageRepository';
 import { ToggleMessageReactionInputDTO, ToggleMessageReactionOutputDTO } from '@modules/chat/application/dtos/chat-message/ToggleMessageReactionDTO';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
+import { resolveAccessibleChat } from '@modules/chat/application/helpers/resolveAccessibleChat';
+import { toPersistedChatOutput } from '@modules/chat/application/helpers/toPersistedChatOutput';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 
 @injectable()
 export class ToggleMessageReactionUseCase implements IUseCase<ToggleMessageReactionInputDTO, ToggleMessageReactionOutputDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
-        private messageRepo: IChatMessageRepository
+        private messageRepo: IChatMessageRepository,
+        @inject(CHAT_TOKENS.ChatRepository)
+        private chatRepo: IChatRepository,
+        @inject(SOCKET_TOKENS.SocketEventEmitter)
+        private socketEmitter: ISocketEmitter
     ){}
 
     async execute(input: ToggleMessageReactionInputDTO): Promise<Result<ToggleMessageReactionOutputDTO, ApplicationError>> {
@@ -22,6 +31,11 @@ export class ToggleMessageReactionUseCase implements IUseCase<ToggleMessageReact
                 ErrorCodes.MESSAGE_NOT_FOUND,
                 'Message not found'
             ));
+        }
+
+        const chatResult = await resolveAccessibleChat(this.chatRepo, String(message.props.chat), userId);
+        if (!chatResult.success) {
+            return Result.fail(chatResult.error!);
         }
 
         message.toggleReaction(userId, emoji);
@@ -36,6 +50,13 @@ export class ToggleMessageReactionUseCase implements IUseCase<ToggleMessageReact
             ));
         }
 
-        return Result.ok(updatedMessage.props);
+        const persistedMessage = toPersistedChatOutput(updatedMessage);
+
+        this.socketEmitter.emitToRoom(`chat-${input.chatId}`, 'reaction_updated', {
+            chatId: input.chatId,
+            message: persistedMessage
+        });
+
+        return Result.ok(persistedMessage);
     }
 };

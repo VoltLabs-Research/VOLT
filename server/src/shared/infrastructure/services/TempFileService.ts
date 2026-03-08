@@ -1,6 +1,7 @@
 import { injectable } from 'tsyringe';
-import { ITempFileService, TempFileOptions, DeleteOptions } from '@shared/domain/port/ITempFileService';
+import type { ITempFileService, TempFileOptions, DeleteOptions } from '@shared/domain/port/ITempFileService';
 import { v4 } from 'uuid';
+import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import logger from '@shared/infrastructure/logger';
@@ -11,15 +12,43 @@ export default class TempFileService implements ITempFileService{
     
     constructor(){
         this.TEMP_DIR = path.resolve(process.cwd(), 'storage/temp');
-        this.initialize();
+        try{
+            fsSync.mkdirSync(this.TEMP_DIR, { recursive: true });
+        }catch(error){
+            logger.error(`@temp-file-manager: failed to initialize root temp dir: ${String(error)}`);
+        }
     }
 
-    private async initialize(){
-        try{
-            await this.ensureDir(this.TEMP_DIR);
-        }catch(error){
-            logger.error(`@temp-file-manager: failed to initialize root temp dir: ${error}`);
+    private isWithinTempDir(targetPath: string): boolean {
+        const relativePath = path.relative(this.TEMP_DIR, targetPath);
+
+        return relativePath !== ''
+            ? !relativePath.startsWith('..') && !path.isAbsolute(relativePath)
+            : true;
+    }
+
+    private resolveWithinTempDir(...pathSegments: string[]): string {
+        const resolvedPath = path.resolve(this.TEMP_DIR, ...pathSegments);
+
+        if (!this.isWithinTempDir(resolvedPath)) {
+            throw new Error(`Invalid temp path: ${resolvedPath}`);
         }
+
+        return resolvedPath;
+    }
+
+    private normalizePrefix(prefix: string): string {
+        return prefix.replace(/[^a-zA-Z0-9_-]+/g, '_');
+    }
+
+    private normalizeExtension(extension: string): string {
+        if (!extension) {
+            return '';
+        }
+
+        return extension.startsWith('.')
+            ? extension
+            : `.${extension}`;
     }
 
     get rootPath(): string{
@@ -27,41 +56,32 @@ export default class TempFileService implements ITempFileService{
     }
 
     async ensureDir(dirPath: string): Promise<void>{
-        try{
-            await fs.mkdir(dirPath, { recursive: true });
-        }catch(error: any){
-            if(error.code !== 'EEXIST'){
-                throw error;
-            }
-        }
+        await fs.mkdir(dirPath, { recursive: true });
     }
 
     generateFilePath(options: TempFileOptions): string{
         const { prefix = 'temp_', extension = '', subdir } = options;
-        const filename = `${prefix}${v4()}${extension}`;
-        
-        let dirPath = this.TEMP_DIR;
-        if(subdir){
-            dirPath = path.join(this.TEMP_DIR, subdir);
-        }
+        const filename = `${this.normalizePrefix(prefix)}${v4()}${this.normalizeExtension(extension)}`;
+        const dirPath = subdir
+            ? this.resolveWithinTempDir(subdir)
+            : this.TEMP_DIR;
 
         return path.join(dirPath, filename);
     }
 
     getDirPath(subdir: string): string{
-        return path.join(this.TEMP_DIR, subdir);
+        return this.resolveWithinTempDir(subdir);
     }
 
     async delete(targetPath: string, options?: DeleteOptions): Promise<boolean>{
         try{
-            // Ensure path is within temp dir to prevent accidental deletions!
             const resolvedPath = path.resolve(targetPath);
-            if(!resolvedPath.startsWith(this.TEMP_DIR)){
+            if(!this.isWithinTempDir(resolvedPath)){
                 logger.warn(`@temp-file-manager: refusing to delete path outside temp dir: ${resolvedPath}`);
                 return false;
             }
 
-            await fs.rm(targetPath, {
+            await fs.rm(resolvedPath, {
                 recursive: options?.recursive ?? false,
                 force: options?.force ?? true
             });

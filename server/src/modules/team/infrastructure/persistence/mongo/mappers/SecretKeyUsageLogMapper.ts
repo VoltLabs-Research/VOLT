@@ -1,11 +1,5 @@
 import SecretKeyUsageLog, { SecretKeyUsageLogProps } from '@modules/team/domain/entities/SecretKeyUsageLog';
-import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMapper';
 import { SecretKeyUsageLogDocument } from '@modules/team/infrastructure/persistence/mongo/models/SecretKeyUsageLogModel';
+import { createMongoMapper } from '@shared/infrastructure/persistence/mongo/createMongoMapper';
 
-class SecretKeyUsageLogMapper extends BaseMapper<SecretKeyUsageLog, SecretKeyUsageLogProps, SecretKeyUsageLogDocument> {
-    constructor() {
-        super(SecretKeyUsageLog, ['secretKey', 'team']);
-    }
-};
-
-export default new SecretKeyUsageLogMapper();
+export default createMongoMapper<SecretKeyUsageLog, SecretKeyUsageLogProps, SecretKeyUsageLogDocument>(SecretKeyUsageLog, ['secretKey', 'team']);

@@ -1,5 +1,5 @@
 import { Readable } from 'node:stream';
-import { PluginProps, PluginStatus } from '@modules/plugin/domain/entities/Plugin';
+import Plugin, { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 
 export interface BinaryUploadResult{
     objectPath: string;
@@ -8,7 +8,7 @@ export interface BinaryUploadResult{
 };
 
 export interface PluginImportResult{
-    plugin: PluginProps;
+    plugin: Plugin;
     binaryImported: boolean;
 };
 
