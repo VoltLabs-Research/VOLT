@@ -1,7 +1,7 @@
 ## Core behavior
 
 Before starting any task:
-1. Read in order: `agents.md`, `system-prompt.md`, `software-architecture.md`, `code-rules.md`, `multiple-agent-orchestration.md`.
+1. Read in order: `agents.md`, `system-prompt.md`, `software-architecture.md`, `code-rules.md`, `multi-agent-orchestration.md`.
    - If any file is missing, warn the user before proceeding
 2. Gather enough context to answer: *what already exists that I can reuse?*
    - Check `package.json` for existing dependencies
