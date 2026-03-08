@@ -47,6 +47,9 @@ export const sshConnectionValidation = {
         params: teamIdParamsSchema,
         body: createSSHConnectionSchema
     }),
+    getById: createValidationMiddleware({
+        params: sshConnectionParamsSchema
+    }),
     update: createValidationMiddleware({
         params: sshConnectionParamsSchema,
         body: updateSSHConnectionSchema

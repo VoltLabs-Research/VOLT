@@ -71,7 +71,7 @@ const SSHConnectionModal = ({ connection, mode, onSuccess }: SSHConnectionModalP
                     params.password = values.password;
                 }
                 await updateConnection.mutateAsync({
-                    connectionId: connection._id,
+                    sshConnectionId: connection._id,
                     ...params
                 });
             }

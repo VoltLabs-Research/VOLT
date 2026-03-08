@@ -7,7 +7,7 @@ import controllers from '@modules/team/infrastructure/http/controllers/team-role
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/team/:teamId/roles',
+    basePath: '/api/teams/:teamId/roles',
     router,
     resource: Resource.TEAM_ROLE
 };

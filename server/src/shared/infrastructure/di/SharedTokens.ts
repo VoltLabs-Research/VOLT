@@ -1,1 +1,7 @@
-export { SHARED_TOKENS } from '@shared/application/di/SharedTokens';
+export const SHARED_TOKENS = {
+    StorageService: Symbol.for('StorageService'),
+    TempFileService: Symbol.for('TempFileService'),
+    EventBus: Symbol.for('EventBus'),
+    RedisClient: Symbol.for('RedisClient'),
+    FileExtractorService: Symbol.for('FileExtractorService')
+} as const;

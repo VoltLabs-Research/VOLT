@@ -11,8 +11,8 @@ const requireExposureSelector = (params: { exposureId?: string; exposureName?: s
 const endpoints = {
     exportListing: download<ExportPluginListingInputDTO>('GET',
         ({ pluginId, trajectoryId }) => trajectoryId
-            ? `/listing/${pluginId}/trajectory/${trajectoryId}/export`
-            : `/listing/${pluginId}/export`,
+            ? `/${pluginId}/listings/trajectories/${trajectoryId}/export`
+            : `/${pluginId}/listings/export`,
         {
             query: ({ analysisId, exposureId, exposureName, format }) => ({
                 ...(analysisId ? { analysisId } : {}),
@@ -24,7 +24,7 @@ const endpoints = {
         }
     ),
     exportListingByAnalysis: download<ExportListingByAnalysisInputDTO>('GET',
-        '/listing/analysis/:analysisId/export',
+        '/listings/analyses/:analysisId/export',
         { query: ({ format }) => ({ format }) }
     )
 };

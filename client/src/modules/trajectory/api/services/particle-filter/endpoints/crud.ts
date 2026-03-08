@@ -7,14 +7,14 @@ import type { GetUniqueValuesInputDTO, GetUniqueValuesOutputDTO } from '../../..
 const endpoints = {
     getProperties: get<GetFilterPropertiesInputDTO, FilterPropertiesData>(
         ({ trajectoryId, analysisId }) => analysisId
-            ? `/properties/${trajectoryId}/${analysisId}`
-            : `/properties/${trajectoryId}`,
+            ? `/${trajectoryId}/properties/${analysisId}`
+            : `/${trajectoryId}/properties`,
         { query: ({ timestep }) => ({ timestep }) }
     ),
     preview: get<PreviewFilterInputDTO, PreviewFilterOutputDTO>(
         ({ trajectoryId, analysisId }) => analysisId
-            ? `/preview/${trajectoryId}/${analysisId}`
-            : `/preview/${trajectoryId}`,
+            ? `/${trajectoryId}/previews/${analysisId}`
+            : `/${trajectoryId}/previews`,
         { omit: ['trajectoryId', 'analysisId'] }
     ),
     applyAction: post<ApplyFilterInputDTO, ApplyFilterOutputDTO>(
@@ -34,8 +34,8 @@ const endpoints = {
     ),
     getUniqueValues: get<GetUniqueValuesInputDTO, GetUniqueValuesOutputDTO>(
         ({ trajectoryId, analysisId }) => analysisId
-            ? `/unique-values/${trajectoryId}/${analysisId}`
-            : `/unique-values/${trajectoryId}`,
+            ? `/${trajectoryId}/unique-values/${analysisId}`
+            : `/${trajectoryId}/unique-values`,
         { omit: ['trajectoryId', 'analysisId'] }
     )
 };

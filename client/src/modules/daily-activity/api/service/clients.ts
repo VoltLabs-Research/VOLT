@@ -1,6 +1,6 @@
 const clients = {
     default: {
-        basePath: '/daily-activity',
+        basePath: '/daily-activities',
         useRBAC: true
     }
 };

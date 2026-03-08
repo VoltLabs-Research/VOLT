@@ -9,7 +9,7 @@ const useRetryJobAnalysis = () => {
     return useCallback(async (analysisId: string) => {
         try {
             return await showPromise(
-                mutation.mutateAsync({ _id: analysisId }),
+                mutation.mutateAsync({ analysisId }),
                 {
                     loading: { title: 'Retrying failed frames...' },
                     success: (result) => ({

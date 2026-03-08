@@ -5,7 +5,6 @@ export interface TriggerRasterizationInputDTO {
 }
 
 export interface TriggerRasterizationOutputDTO {
-    message: string;
     trajectoryId: string;
     triggered: boolean;
 }

@@ -2,20 +2,11 @@ import type { Response } from 'express';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import type { Result } from '@shared/domain/port/Result';
-import type {
-    UseCaseError,
-    UseCaseInput,
-    UseCaseInstance,
-    UseCaseOutput
-} from '@shared/application/IUseCase';
+import type { UseCaseError, UseCaseInput, UseCaseInstance, UseCaseOutput } from '@shared/application/IUseCase';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import logger from '@shared/infrastructure/logger';
-import type {
-    RequestValidationState,
-    ValidationSchemaInput,
-    ValidatedRequest
-} from '@shared/infrastructure/http/middleware/validation';
+import type { RequestValidationState, ValidationSchemaInput, ValidatedRequest } from '@shared/infrastructure/http/middleware/validation';
 import { validateRequest } from '@shared/infrastructure/http/middleware/validation';
 
 export interface ControllerError {

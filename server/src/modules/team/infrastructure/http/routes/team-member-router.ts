@@ -6,7 +6,7 @@ import controllers from '@modules/team/infrastructure/http/controllers/team-memb
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/team/:teamId/members',
+    basePath: '/api/teams/:teamId/members',
     router,
     resource: Resource.TEAM_MEMBER
 };

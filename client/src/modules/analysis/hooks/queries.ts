@@ -19,7 +19,7 @@ export const analysisQuery = createPaginatedQuery<Analysis, GetAnalysesParams>({
     detailKey: KEYS.detail,
     service: {
         list: service.getAll,
-        delete: (id) => service.delete({ _id: id })
+        delete: (id) => service.delete({ analysisId: id })
     },
     onRemove: (id) => {
         patchPaginatedPage<Analysis>(KEYS.byTrajectory(), (page) => removeEntityFromList(page, id));
@@ -31,6 +31,6 @@ export const analysisQuery = createPaginatedQuery<Analysis, GetAnalysesParams>({
 });
 
 export const useAnalysesByTrajectoryQuery = createQuery(KEYS.byTrajectory, service.getByTrajectoryId);
-export const useRetryFailedFramesMutation = createMutation<RetryFailedFramesResponse, { _id: string }>(
+export const useRetryFailedFramesMutation = createMutation<RetryFailedFramesResponse, { analysisId: string }>(
     service.retryFailedFrames
 );

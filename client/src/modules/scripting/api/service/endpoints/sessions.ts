@@ -3,7 +3,7 @@ import type { CreateScriptingSessionParams } from '../../dtos/create-scripting-s
 import type { ScriptingSession } from '../../entities/scripting-session';
 
 const endpoints = {
-    createSession: post<CreateScriptingSessionParams, ScriptingSession>('/:trajectoryId/jupyter-session')
+    createSession: post<CreateScriptingSessionParams, ScriptingSession>('/:trajectoryId/sessions')
 };
 
 export default endpoints;

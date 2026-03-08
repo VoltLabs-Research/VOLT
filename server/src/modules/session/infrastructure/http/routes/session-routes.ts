@@ -5,16 +5,16 @@ import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/session',
+    basePath: '/api/sessions',
     router
 };
 
 router.use(protect);
 
 router.get('/', controllers.getActiveSessions.handle);
-router.patch('/:sessionId', controllers.revokeSessionById.handle);
+router.delete('/:sessionId', controllers.revokeSessionById.handle);
 
 router.get('/activity', controllers.getMyLoginActivity.handle);
-router.delete('/all/others', controllers.revokeAllSessions.handle);
+router.delete('/', controllers.revokeAllSessions.handle);
 
 export default module;

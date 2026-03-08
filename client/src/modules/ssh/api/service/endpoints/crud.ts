@@ -1,17 +1,17 @@
 import { paginated, get, post, patch, del } from '@/app/core/http/utilities/create-service';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { SSHConnection } from '../../entities/ssh-connection';
-import type { GetSSHConnectionsInputDTO } from '../../dtos/get-ssh-connections';
-import type { CreateSSHConnectionParams } from '../../dtos/create-ssh-connection';
-import type { UpdateSSHConnectionInputDTO } from '../../dtos/update-ssh-connection';
-import type { DeleteSSHConnectionInputDTO } from '../../dtos/delete-ssh-connection';
+import type { SSHConnection } from '@/modules/ssh/api/entities/ssh-connection';
+import type { GetSSHConnectionsInputDTO } from '@/modules/ssh/api/dtos/get-ssh-connections';
+import type { CreateSSHConnectionParams } from '@/modules/ssh/api/dtos/create-ssh-connection';
+import type { UpdateSSHConnectionInputDTO } from '@/modules/ssh/api/dtos/update-ssh-connection';
+import type { DeleteSSHConnectionInputDTO } from '@/modules/ssh/api/dtos/delete-ssh-connection';
 
 const endpoints = {
     getConnections: paginated<GetSSHConnectionsInputDTO | undefined, PaginatedResponse<SSHConnection>>('/'),
-    getById: get<{ connectionId: string }, SSHConnection>('/:connectionId'),
+    getById: get<{ sshConnectionId: string }, SSHConnection>('/:sshConnectionId'),
     createConnection: post<CreateSSHConnectionParams, SSHConnection>('/'),
-    updateConnection: patch<UpdateSSHConnectionInputDTO, SSHConnection>('/:connectionId'),
-    deleteConnection: del<DeleteSSHConnectionInputDTO, void>('/:connectionId')
+    updateConnection: patch<UpdateSSHConnectionInputDTO, SSHConnection>('/:sshConnectionId'),
+    deleteConnection: del<DeleteSSHConnectionInputDTO, void>('/:sshConnectionId')
 };
 
 export default endpoints;

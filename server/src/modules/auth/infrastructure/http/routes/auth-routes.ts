@@ -20,9 +20,9 @@ const authRateLimiter = createStandardRateLimiter(15);
 
 const passwordRateLimiter = createStandardRateLimiter(5, 'Too many password attempts, please try again later');
 
-router.post('/sign-in', authRateLimiter, controllers.signIn.handle);
-router.post('/sign-up', authRateLimiter, controllers.signUp.handle);
-router.post('/check-email', authRateLimiter, controllers.checkEmail.handle);
+router.post('/sessions', authRateLimiter, controllers.signIn.handle);
+router.post('/users', authRateLimiter, controllers.signUp.handle);
+router.get('/emails/:email/availability', authRateLimiter, controllers.checkEmail.handle);
 
 router.get('/guest-identity', controllers.getGuestIdentity.handle);
 
@@ -37,7 +37,7 @@ router.get('/microsoft/callback', createOAuthCallbackMiddleware(OAuthProvider.Mi
 
 router.use(protect);
 router.get('/password/info', controllers.getPasswordInfo.handle);
-router.patch('/me/update/password/', passwordRateLimiter, controllers.updatePassword.handle);
+router.patch('/me/password', passwordRateLimiter, controllers.updatePassword.handle);
 
 router.route('/me')
     .get(controllers.getMyAccount.handle)

@@ -21,7 +21,7 @@ const createJupyterSessionRateLimit = createStandardRateLimiter(5);
 
 router.get('/notebooks', listScriptingNotebooksController.handle);
 router.get('/:trajectoryId/notebooks', listScriptingNotebooksController.handle);
-router.post('/:trajectoryId/jupyter-session', createJupyterSessionRateLimit, createScriptingJupyterSessionController.handle);
+router.post('/:trajectoryId/sessions', createJupyterSessionRateLimit, createScriptingJupyterSessionController.handle);
 router.delete('/notebooks/:notebookId', deleteScriptingNotebookController.handle);
 
 export default module;

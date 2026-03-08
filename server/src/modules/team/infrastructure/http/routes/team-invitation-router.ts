@@ -7,19 +7,27 @@ import controllers from '@modules/team/infrastructure/http/controllers/team-invi
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/team/:teamId/invitations',
+    basePath: '/api/teams/:teamId/invitations',
     router,
     resource: Resource.TEAM_INVITATION
 };
 
 const sendInvitationRateLimit = createStandardRateLimiter(10);
 
-router.post('/invite', sendInvitationRateLimit, teamInvitationValidation.send, controllers.send.handle);
-router.get('/pending', controllers.listPendingByTeamId.handle);
+router.post('/', sendInvitationRateLimit, teamInvitationValidation.send, controllers.send.handle);
+router.get('/', controllers.listPendingByTeamId.handle);
 router.delete('/:invitationId', controllers.deleteById.handle);
 router.patch('/:invitationId', teamInvitationValidation.update, controllers.updateById.handle);
 
-router.post('/:invitationId/accept', controllers.accept.handle);
-router.post('/:invitationId/reject', controllers.reject.handle);
+router.patch('/:invitationId/status', (req, res) => {
+    const status = req.body?.status;
+    if (status === 'accepted') {
+        return controllers.accept.handle(req, res);
+    }
+    if (status === 'rejected') {
+        return controllers.reject.handle(req, res);
+    }
+    return res.status(400).json({ message: 'Invalid status. Must be "accepted" or "rejected".' });
+});
 
 export default module;

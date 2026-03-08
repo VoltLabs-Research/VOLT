@@ -5,7 +5,7 @@ import controllers from '@modules/team/infrastructure/http/controllers/secret-ke
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/team/secret-keys',
+    basePath: '/api/teams/secret-keys',
     router
 };
 

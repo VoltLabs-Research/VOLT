@@ -1,6 +1,6 @@
 const clients = {
     default: {
-        basePath: '/plugin',
+        basePath: '/plugins',
         useRBAC: true
     }
 };

@@ -7,22 +7,22 @@ import controllers from '@modules/trajectory/infrastructure/http/controllers/par
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/particle-filter/:teamId',
+    basePath: '/api/particle-filters/:teamId',
     router,
     resource: Resource.TRAJECTORY
 };
 
 const applyFilterRateLimit = createStandardRateLimiter(15);
 
-router.get('/properties/:trajectoryId', particleFilterValidation.getProperties, controllers.getProperties.handle);
-router.get('/preview/:trajectoryId', particleFilterValidation.preview, controllers.preview.handle);
-router.get('/unique-values/:trajectoryId', particleFilterValidation.getUniqueValues, controllers.getUniqueValues.handle);
+router.get('/:trajectoryId/properties', particleFilterValidation.getProperties, controllers.getProperties.handle);
+router.get('/:trajectoryId/previews', particleFilterValidation.preview, controllers.preview.handle);
+router.get('/:trajectoryId/unique-values', particleFilterValidation.getUniqueValues, controllers.getUniqueValues.handle);
 router.get('/:trajectoryId', particleFilterValidation.getModel, controllers.get.handle);
 router.post('/:trajectoryId', applyFilterRateLimit, particleFilterValidation.applyFilter, controllers.applyAction.handle);
 
-router.get('/properties/:trajectoryId/:analysisId', particleFilterValidation.getPropertiesByAnalysis, controllers.getProperties.handle);
-router.get('/preview/:trajectoryId/:analysisId', particleFilterValidation.previewByAnalysis, controllers.preview.handle);
-router.get('/unique-values/:trajectoryId/:analysisId', particleFilterValidation.getUniqueValuesByAnalysis, controllers.getUniqueValues.handle);
+router.get('/:trajectoryId/properties/:analysisId', particleFilterValidation.getPropertiesByAnalysis, controllers.getProperties.handle);
+router.get('/:trajectoryId/previews/:analysisId', particleFilterValidation.previewByAnalysis, controllers.preview.handle);
+router.get('/:trajectoryId/unique-values/:analysisId', particleFilterValidation.getUniqueValuesByAnalysis, controllers.getUniqueValues.handle);
 router.get('/:trajectoryId/:analysisId', particleFilterValidation.getModelByAnalysis, controllers.get.handle);
 router.post('/:trajectoryId/:analysisId', applyFilterRateLimit, particleFilterValidation.applyFilterByAnalysis, controllers.applyAction.handle);
 

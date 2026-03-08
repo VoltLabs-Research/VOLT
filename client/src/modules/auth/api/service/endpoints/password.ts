@@ -4,7 +4,7 @@ import type { ChangePasswordInputDTO, ChangePasswordOutputDTO } from '../../dtos
 
 const endpoints = {
     getPasswordInfo: get<EmptyParams, GetPasswordInfoOutputDTO>('/password/info'),
-    changePassword: patch<ChangePasswordInputDTO, ChangePasswordOutputDTO>('/me/update/password/')
+    changePassword: patch<ChangePasswordInputDTO, ChangePasswordOutputDTO>('/me/password')
 };
 
 export default endpoints;

@@ -6,18 +6,18 @@ import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/plugin/:teamId',
+    basePath: '/api/plugins/:teamId',
     router,
     resource: Resource.PLUGIN
 };
 
 const exportRateLimit = createExportRateLimiter(10);
 
-router.get('/listing/analysis/:analysisId', controllers.getListingRowsByAnalysisId.handle);
-router.get('/listing/analysis/:analysisId/export', exportRateLimit, controllers.exportListingRowsByAnalysisId.handle);
-router.get('/listing/analysis/:analysisId/sub-listing/:exposureId/:timestep/:subListingName', controllers.getSubListing.handle);
-router.get('/listing/:pluginId/export', exportRateLimit, controllers.exportPluginListingDocuments.handle);
-router.get('/listing/:pluginId/trajectory/:trajectoryId/export', exportRateLimit, controllers.exportPluginListingDocuments.handle);
-router.get('/listing/:pluginId', controllers.getPluginListingDocuments.handle);
+router.get('/listings/analyses/:analysisId', controllers.getListingRowsByAnalysisId.handle);
+router.get('/listings/analyses/:analysisId/export', exportRateLimit, controllers.exportListingRowsByAnalysisId.handle);
+router.get('/listings/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName', controllers.getSubListing.handle);
+router.get('/:pluginId/listings/export', exportRateLimit, controllers.exportPluginListingDocuments.handle);
+router.get('/:pluginId/listings/trajectories/:trajectoryId/export', exportRateLimit, controllers.exportPluginListingDocuments.handle);
+router.get('/:pluginId/listings', controllers.getPluginListingDocuments.handle);
 
 export default module;

@@ -51,7 +51,7 @@ const SSHConnectionsPage = () => {
     const handleTestConnection = async (connection: SSHConnection) => {
         try {
             await showPromise(
-                testConnectionMutation.mutateAsync({ connectionId: connection._id }),
+                testConnectionMutation.mutateAsync({ sshConnectionId: connection._id }),
                 {
                     loading: { title: `Testing connection to "${connection.name}"...` },
                     success: (data) => ({
@@ -74,7 +74,7 @@ const SSHConnectionsPage = () => {
 
     const handleDeleteConnection = async (connection: SSHConnection) => {
         await showPromise(
-            deleteConnectionMutation.mutateAsync({ connectionId: connection._id }),
+            deleteConnectionMutation.mutateAsync({ sshConnectionId: connection._id }),
             {
                 loading: { title: `Deleting "${connection.name}"...` },
                 success: { title: `Connection "${connection.name}" deleted` },

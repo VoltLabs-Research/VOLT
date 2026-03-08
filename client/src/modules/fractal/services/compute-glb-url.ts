@@ -43,7 +43,7 @@ const buildPluginUrl = (
 ): string | null => {
     const { analysisId, exposureId } = scene;
     if (!analysisId || !exposureId) return null;
-    return buildApiUrl(`/api/plugin/${teamId}/exposure/glb/${trajectoryId}/${analysisId}/${exposureId}/${timestep}`);
+    return buildApiUrl(`/api/plugins/${teamId}/exposures/glb/${trajectoryId}/${analysisId}/${exposureId}/${timestep}`);
 };
 
 const buildColorCodingUrl = (
@@ -62,7 +62,7 @@ const buildColorCodingUrl = (
         timestep: String(timestep)
     });
     if (exposureId) params.set('exposureId', exposureId);
-    return buildApiUrl(`/api/color-coding/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
+    return buildApiUrl(`/api/color-codings/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
 };
 
 const buildParticleFilterUrl = (
@@ -83,7 +83,7 @@ const buildParticleFilterUrl = (
         action
     });
     if (exposureId) params.set('exposureId', exposureId);
-    return buildApiUrl(`/api/particle-filter/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
+    return buildApiUrl(`/api/particle-filters/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
 };
 
 export const computeGlbUrl = ({
@@ -103,6 +103,6 @@ export const computeGlbUrl = ({
         case 'particle-filter':
             return buildParticleFilterUrl(teamId, trajectoryId, activeScene, currentTimestep);
         default:
-            return buildApiUrl(`/api/trajectory/${teamId}/${trajectoryId}/${currentTimestep}/${analysisId}`);
+            return buildApiUrl(`/api/trajectories/${teamId}/${trajectoryId}/glb/${currentTimestep}/${analysisId}`);
     }
 };

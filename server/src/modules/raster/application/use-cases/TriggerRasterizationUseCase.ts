@@ -29,7 +29,6 @@ export class TriggerRasterizationUseCase implements IUseCase<TriggerRasterizatio
             }
 
             return Result.ok({
-                message: 'Rasterization triggered successfully',
                 trajectoryId: input.trajectoryId,
                 triggered: true
             });

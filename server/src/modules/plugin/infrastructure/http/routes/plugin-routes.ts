@@ -8,7 +8,7 @@ import { pluginValidation } from '@modules/plugin/infrastructure/http/validation
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/plugin/:teamId',
+    basePath: '/api/plugins/:teamId',
     router,
     resource: Resource.PLUGIN
 };
@@ -29,7 +29,7 @@ const cloneRateLimit = createStandardRateLimiter(10);
 const exportRateLimit = createStandardRateLimiter(10);
 
 router.get('/schemas', controllers.getNodeSchemas.handle);
-router.post('/validate-workflow', pluginValidation.validateWorkflow, controllers.validateWorkflow.handle);
+router.post('/workflow-validation', pluginValidation.validateWorkflow, controllers.validateWorkflow.handle);
 
 router.get('/:pluginId/export', exportRateLimit, controllers.exportPlugin.handle);
 router.post('/import', importAndBinaryRateLimit, upload.single('file'), controllers.importPlugin.handle);
@@ -39,17 +39,16 @@ router.route('/')
     .post(createPluginRateLimit, pluginValidation.create, controllers.create.handle);
 
 router.route('/:pluginId/binary')
-    .post(importAndBinaryRateLimit, upload.single('file'), controllers.uploadBinary.handle)
     .patch(importAndBinaryRateLimit, upload.single('file'), controllers.uploadBinary.handle)
     .delete(controllers.deleteBinary.handle);
 
-router.post('/:pluginId/clone', cloneRateLimit, controllers.clone.handle);
+router.post('/:pluginId/clones', cloneRateLimit, controllers.clone.handle);
 
 router.route('/:pluginId')
     .get(controllers.getPluginById.handle)
     .patch(pluginValidation.update, controllers.updatePluginById.handle)
     .delete(controllers.deleteById.handle);
 
-router.post('/:pluginId/trajectory/:trajectoryId/execute', executeRateLimit, controllers.executePlugin.handle);
+router.post('/:pluginId/trajectories/:trajectoryId/executions', executeRateLimit, controllers.executePlugin.handle);
 
 export default module;

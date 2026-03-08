@@ -81,5 +81,5 @@ export const trajectoryValidation = {
     getById: createValidationMiddleware({
         params: trajectoryParamsSchema
     }),
-    update: createValidationMiddleware(updateTrajectorySchema)
+    update: createValidationMiddleware({ params: trajectoryParamsSchema, body: updateTrajectorySchema })
 };

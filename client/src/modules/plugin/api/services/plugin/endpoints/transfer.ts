@@ -7,7 +7,7 @@ import type { ImportPluginInputDTO } from '../../../dtos/plugin/import-plugin';
 
 const endpoints = {
     exportPlugin: download<ExportPluginInputDTO>('GET', '/:_id/export'),
-    exportAnalysisResults: download<ExportAnalysisResultsInputDTO>('GET', '/listing/analysis/:analysisId/export'),
+    exportAnalysisResults: download<ExportAnalysisResultsInputDTO>('GET', '/listings/analyses/:analysisId/export'),
     importPlugin: request<ImportPluginInputDTO, Plugin>('POST', '/import', {
         body: ({ file }) => buildFileFormData([{ name: 'file', file }]),
         headers: { 'Content-Type': 'multipart/form-data' }

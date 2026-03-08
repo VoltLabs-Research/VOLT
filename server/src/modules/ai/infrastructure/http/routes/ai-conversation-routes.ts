@@ -22,7 +22,6 @@ router.use(protect);
 
 router.get('/:teamId', controllers.listConversations.handle);
 router.post('/:teamId', createConversationLimiter, aiConversationValidation.createConversation, controllers.createConversation.handle);
-router.post('/:teamId/start', createConversationLimiter, aiConversationValidation.createConversation, controllers.createConversationWithMessage.handle);
 
 router.get('/:teamId/:conversationId/messages', controllers.listMessages.handle);
 router.post('/:teamId/:conversationId/messages', aiMessageLimiter, aiConversationValidation.sendMessage, controllers.sendMessage.handle);

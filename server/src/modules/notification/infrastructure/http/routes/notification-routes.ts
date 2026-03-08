@@ -7,7 +7,7 @@ import { notificationValidation } from '@modules/notification/infrastructure/htt
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/notification',
+    basePath: '/api/notifications',
     router
 };
 
@@ -17,6 +17,6 @@ router.use(protect);
 router.use(generalRateLimit);
 
 router.get('/', notificationValidation.listMyNotifications, controllers.getMyNotifications.handle);
-router.patch('/read-all', notificationValidation.markAllMyNotificationsAsRead, controllers.markAllAsRead.handle);
+router.patch('/read-status', notificationValidation.markAllMyNotificationsAsRead, controllers.markAllAsRead.handle);
 
 export default module;

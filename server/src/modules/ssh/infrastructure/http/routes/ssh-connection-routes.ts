@@ -20,11 +20,12 @@ router.get('/', sshConnectionValidation.listByTeamId, controllers.listByTeamId.h
 router.post('/', createConnectionLimiter, sshConnectionValidation.create, controllers.create.handle);
 
 router.route('/:sshConnectionId')
+    .get(sshConnectionValidation.getById, controllers.getById.handle)
     .patch(sshConnectionValidation.update, controllers.updateById.handle)
     .delete(sshConnectionValidation.deleteById, controllers.deleteById.handle);
 
 router.get('/:sshConnectionId/files', sshConnectionValidation.listFiles, controllers.listFiles.handle);
-router.get('/:sshConnectionId/test', testConnectionLimiter, sshConnectionValidation.testById, controllers.testById.handle);
-router.post('/:sshConnectionId/import', sshConnectionValidation.importTrajectory, controllers.importTrajectory.handle);
+router.post('/:sshConnectionId/connection-tests', testConnectionLimiter, sshConnectionValidation.testById, controllers.testById.handle);
+router.post('/:sshConnectionId/imports', sshConnectionValidation.importTrajectory, controllers.importTrajectory.handle);
 
 export default module;

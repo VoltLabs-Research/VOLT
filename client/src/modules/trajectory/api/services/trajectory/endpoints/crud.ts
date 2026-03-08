@@ -21,8 +21,8 @@ const endpoints = {
             : undefined,
         map: (result) => ({ trajectory: result as Trajectory })
     }),
-    update: patch<UpdateTrajectoryInputDTO, Trajectory>('/:_id'),
-    delete: del<DeleteTrajectoryInputDTO>('/:_id')
+    update: patch<UpdateTrajectoryInputDTO, Trajectory>('/:trajectoryId'),
+    delete: del<DeleteTrajectoryInputDTO>('/:trajectoryId')
 };
 
 export default endpoints;

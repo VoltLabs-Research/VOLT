@@ -27,22 +27,11 @@ router.route('/:chatId/messages/:messageId')
     .delete(chatMessageValidation.deleteMessage, controllers.delete.handle);
 
 router.patch('/:chatId/messages/read', chatMessageValidation.markMessagesAsRead, controllers.markMessagesAsRead.handle);
-router.patch('/:chatId/read', chatMessageValidation.markMessagesAsRead, controllers.markMessagesAsRead.handle);
 
-router.post('/:chatId/messages/:messageId/reactions', chatMessageValidation.toggleReaction, controllers.toggleMessageReaction.handle);
-router.post('/:chatId/messages/:messageId/reaction', chatMessageValidation.toggleReaction, controllers.toggleMessageReaction.handle);
+router.patch('/:chatId/messages/:messageId/reactions', chatMessageValidation.toggleReaction, controllers.toggleMessageReaction.handle);
 
 router.post(
     '/:chatId/messages/file',
-    sendFileLimiter,
-    chatMessageValidation.sendFileMessage,
-    uploadChatSingleFile('file'),
-    uploadToStorage,
-    controllers.sendFileMessage.handle
-);
-
-router.post(
-    '/:chatId/send-file',
     sendFileLimiter,
     chatMessageValidation.sendFileMessage,
     uploadChatSingleFile('file'),

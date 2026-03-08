@@ -1,6 +1,6 @@
 const clients = {
     default: {
-        basePath: '/particle-filter',
+        basePath: '/particle-filters',
         useRBAC: true
     }
 };

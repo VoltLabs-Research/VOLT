@@ -9,9 +9,9 @@ import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/raster/:teamId',
+    basePath: '/api/rasters/:teamId',
     router,
-    resource: Resource.TRAJECTORY
+    resource: Resource.RASTER
 };
 
 const triggerController = container.resolve(TriggerRasterizationController);
@@ -20,8 +20,8 @@ const frameController = container.resolve(GetRasterFramePNGController);
 
 const triggerRasterRateLimit = createStandardRateLimiter(3);
 
-router.post('/:trajectoryId/trigger', triggerRasterRateLimit, (req, res) => triggerController.handle(req, res));
-router.get('/:trajectoryId/metadata', (req, res) => metadataController.handle(req, res));
-router.get('/:trajectoryId/frame/:timestep', (req, res) => frameController.handle(req, res));
+router.post('/:trajectoryId/jobs', triggerRasterRateLimit, triggerController.handle);
+router.get('/:trajectoryId/metadata', metadataController.handle);
+router.get('/:trajectoryId/frames/:timestep', frameController.handle);
 
 export default module;
