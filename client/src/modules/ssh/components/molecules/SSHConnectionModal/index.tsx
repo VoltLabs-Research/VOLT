@@ -3,7 +3,7 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import { createSSHConnectionSchema, defaultValues } from '@/modules/ssh/utilities/ssh-connection-form-schema';
 import SSHConnectionTestButton from '@/modules/ssh/components/atoms/SSHConnectionTestButton';
 import SSHConnectionForm from '@/modules/ssh/components/molecules/SSHConnectionForm';
-import Button from '@/shared/presentation/components/Button';
+import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
 import useModalForm from '@/shared/presentation/hooks/use-modal-form';
 import useZodForm from '@/shared/presentation/hooks/use-zod-form';
@@ -14,6 +14,7 @@ import type { UpdateSSHConnectionParams } from '@/modules/ssh/api/dtos/update-ss
 import type { SSHConnectionFormData } from '@/modules/ssh/utilities/ssh-connection-form-schema';
 
 export const SSH_CONNECTION_MODAL_ID = 'ssh-connection-modal';
+const SSH_CONNECTION_FORM_ID = 'ssh-connection-form';
 
 interface SSHConnectionModalProps {
     connection: SSHConnection | null;
@@ -94,29 +95,24 @@ const SSHConnectionModal = ({ connection, mode, onSuccess }: SSHConnectionModalP
             title={mode === 'create' ? 'Add SSH Connection' : 'Edit SSH Connection'}
             width='460px'
             footer={
-                <>
-                    <Button
-                        variant='outline'
-                        intent='neutral'
-                        command='close'
-                        commandfor={SSH_CONNECTION_MODAL_ID}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type='submit'
-                        form='ssh-connection-form'
-                        variant='solid'
-                        intent='brand'
-                        disabled={form.formState.isSubmitting}
-                        isLoading={form.formState.isSubmitting}
-                    >
-                        {mode === 'create' ? 'Add Connection' : 'Save Changes'}
-                    </Button>
-                </>
+                <ModalFooterActions
+                    secondary={{
+                        label: 'Cancel',
+                        variant: 'outline',
+                        command: 'close',
+                        commandfor: SSH_CONNECTION_MODAL_ID
+                    }}
+                    primary={{
+                        label: mode === 'create' ? 'Add Connection' : 'Save Changes',
+                        type: 'submit',
+                        form: SSH_CONNECTION_FORM_ID,
+                        disabled: form.formState.isSubmitting,
+                        isLoading: form.formState.isSubmitting
+                    }}
+                />
             }
         >
-            <form id='ssh-connection-form' onSubmit={form.handleSubmit(onSubmit)} className='d-flex column gap-1 p-1-5'>
+            <form id={SSH_CONNECTION_FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className='d-flex column gap-1 p-1-5'>
                 <SSHConnectionForm control={form.control} mode={mode} />
 
                 {mode === 'edit' && connection && (

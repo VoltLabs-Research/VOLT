@@ -1,6 +1,7 @@
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import Title from '@/shared/presentation/components/Title';
 import WarningZone from '@/shared/presentation/components/WarningZone';
@@ -103,27 +104,19 @@ export const RoleEditorModal = ({
     };
 
     const footer = (
-        <>
-            <Button
-                variant='ghost'
-                intent='neutral'
-                onClick={() => closeModal(MODAL_ID)}
-                disabled={isSaving}
-            >
-                {isSystemRole ? 'Close' : 'Cancel'}
-            </Button>
-            {!isSystemRole && (
-                <Button
-                    variant='solid'
-                    intent='brand'
-                    onClick={handleSubmit}
-                    disabled={isSaving || !name.trim()}
-                    isLoading={isSaving}
-                >
-                    {isEditing ? 'Save Changes' : 'Create Role'}
-                </Button>
-            )}
-        </>
+        <ModalFooterActions
+            secondary={{
+                label: isSystemRole ? 'Close' : 'Cancel',
+                onClick: () => closeModal(MODAL_ID),
+                disabled: isSaving
+            }}
+            primary={isSystemRole ? undefined : {
+                label: isEditing ? 'Save Changes' : 'Create Role',
+                onClick: handleSubmit,
+                disabled: isSaving || !name.trim(),
+                isLoading: isSaving
+            }}
+        />
     );
 
     return (

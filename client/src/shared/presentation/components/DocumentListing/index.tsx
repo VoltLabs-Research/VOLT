@@ -14,6 +14,7 @@ import Container from '@/shared/presentation/components/Container';
 import DocumentListingGrid from '@/shared/presentation/components/DocumentListingGrid';
 import DocumentListingTable from '@/shared/presentation/components/DocumentListingTable';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
@@ -379,26 +380,20 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                 title='Export listing'
                 description='Choose a format to export all matching records with the current listing scope.'
                 footer={(
-                    <>
-                        <Button
-                            variant='ghost'
-                            intent='neutral'
-                            onClick={() => {
+                    <ModalFooterActions
+                        secondary={{
+                            label: 'Cancel',
+                            onClick: () => {
                                 closeModal(exportModalId);
                                 setActiveTab('list');
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant='solid'
-                            intent='brand'
-                            isLoading={isExporting}
-                            onClick={handleConfirmExport}
-                        >
-                            Export
-                        </Button>
-                    </>
+                            }
+                        }}
+                        primary={{
+                            label: 'Export',
+                            isLoading: isExporting,
+                            onClick: handleConfirmExport
+                        }}
+                    />
                 )}
             >
                 <Container className='p-1-5'>

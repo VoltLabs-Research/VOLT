@@ -1,7 +1,7 @@
 import { closeModal } from '@/shared/presentation/components/Modal';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
 import './EditMessageModal.css';
 
@@ -71,20 +71,18 @@ const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMe
             title='Edit Message'
             width='400px'
             footer={
-                <>
-                    <Button variant='ghost' onClick={handleCancel}>
-                        Cancel
-                    </Button>
-                    <Button
-                        variant='solid'
-                        intent='brand'
-                        onClick={handleSave}
-                        isLoading={isLoading}
-                        disabled={!content.trim() || content === initialContent}
-                    >
-                        Save
-                    </Button>
-                </>
+                <ModalFooterActions
+                    secondary={{
+                        label: 'Cancel',
+                        onClick: handleCancel
+                    }}
+                    primary={{
+                        label: 'Save',
+                        onClick: handleSave,
+                        isLoading: isLoading,
+                        disabled: !content.trim() || content === initialContent
+                    }}
+                />
             }
         >
             <Container className='edit-message-modal-content'>

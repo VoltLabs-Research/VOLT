@@ -2,6 +2,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
 import useCreateSecretKey from '@/modules/team/hooks/secret-key/use-create-secret-key';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
@@ -103,20 +104,21 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                     : 'Create a new secret key to access the VoltLabs API.'
             }
             footer={
-                generatedKey ? (
-                    <Button variant='solid' intent='brand' onClick={handleClose}>
-                        Done
-                    </Button>
-                ) : (
-                    <>
-                        <Button variant='ghost' intent='neutral' onClick={handleClose} disabled={isCreating}>
-                            Cancel
-                        </Button>
-                        <Button variant='solid' intent='brand' onClick={handleSubmit} isLoading={isCreating}>
-                            Create Key
-                        </Button>
-                    </>
-                )
+                <ModalFooterActions
+                    secondary={generatedKey ? undefined : {
+                        label: 'Cancel',
+                        onClick: handleClose,
+                        disabled: isCreating
+                    }}
+                    primary={generatedKey ? {
+                        label: 'Done',
+                        onClick: handleClose
+                    } : {
+                        label: 'Create Key',
+                        onClick: handleSubmit,
+                        isLoading: isCreating
+                    }}
+                />
             }
         >
             <Container className='p-1-5'>
