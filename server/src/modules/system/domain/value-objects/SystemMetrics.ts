@@ -52,6 +52,7 @@ export interface MongoDBMetrics {
 export interface SystemMetrics {
     timestamp: Date;
     serverId: string;
+    teamClusterId: string | null;
     cpu: CPUMetrics;
     memory: MemoryMetrics;
     disk: DiskMetrics;

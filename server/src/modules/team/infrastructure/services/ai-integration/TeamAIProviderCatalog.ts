@@ -1,10 +1,11 @@
-import { AI_PROVIDERS, AI_PROVIDER_NAMES } from '@modules/ai/domain/contracts/AIProviders';
+import { AI_PROVIDERS, AI_PROVIDER_NAMES, AI_PROVIDER_DESCRIPTIONS } from '@modules/ai/domain/contracts/AIProviders';
 import { TeamAIProvider } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
 import { injectable } from 'tsyringe';
 
 export interface TeamAIProviderMetadata {
     id: TeamAIProvider;
     name: string;
+    description: string;
 };
 
 export interface TeamAIModelMetadata {
@@ -17,7 +18,8 @@ const buildTeamAIProviderCatalog = (): Map<TeamAIProvider, TeamAIProviderMetadat
     const entries = AI_PROVIDERS.map((provider) => {
         const metadata: TeamAIProviderMetadata = {
             id: provider,
-            name: AI_PROVIDER_NAMES[provider]
+            name: AI_PROVIDER_NAMES[provider],
+            description: AI_PROVIDER_DESCRIPTIONS[provider]
         };
 
         return [provider, metadata] as const;

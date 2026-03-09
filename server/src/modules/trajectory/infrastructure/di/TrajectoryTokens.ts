@@ -11,6 +11,8 @@ export const TRAJECTORY_TOKENS = {
     TrajectoryProcessingQueue: Symbol.for('TrajectoryProcessingQueue'),
     TrajectoryBackgroundProcessor: Symbol.for('TrajectoryBackgroundProcessor'),
     CloudUploadQueue: Symbol.for('CloudUploadQueue'),
+    CloudUploadProcessor: Symbol.for('CloudUploadProcessor'),
+    TrajectoryNativeDaemonService: Symbol.for('TrajectoryNativeDaemonService'),
     AtomPropertiesService: Symbol.for('AtomPropertiesService'),
     ColorCodingService: Symbol.for('ColorCodingService'),
     ParticleFilterService: Symbol.for('ParticleFilterService')

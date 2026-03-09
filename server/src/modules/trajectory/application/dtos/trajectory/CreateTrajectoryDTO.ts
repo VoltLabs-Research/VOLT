@@ -7,6 +7,7 @@ export interface CreateTrajectoryInputDTO {
     files: TrajectoryUploadFile[];
     userId: string;
     teamId: string;
+    teamClusterId?: string;
 };
 
 export interface CreateTrajectoryOutputDTO extends TrajectoryProps {

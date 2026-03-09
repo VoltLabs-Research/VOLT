@@ -22,17 +22,20 @@ export default class TrajectoryProcessingQueue extends BaseProcessingQueue {
         @inject(JOBS_TOKENS.QueueRegistry)
         queueRegistry: IQueueRegistry
     ) {
-        const workerPath = path.join(__dirname, '../../workers/trajectory/TrajectoryProcessingWorker.ts');
+        const workerPath = path.join(__dirname, '../workers/TrajectoryProcessingWorker.ts');
         logger.info(`[TrajectoryProcessingQueue] Initializing with worker path: ${workerPath}`);
         super(
             {
                 queueName: 'trajectory_processing',
                 workerPath,
-                maxConcurrentJobs: QUEUE_CONFIG.trajectoryMaxConcurrentJobs
+                maxConcurrentJobs: QUEUE_CONFIG.trajectoryMaxConcurrentJobs,
+                withWorker: false
             },
-            redis,
-            eventBus,
-            queueRegistry
+            {
+                redis,
+                eventBus,
+                queueRegistry
+            }
         );
     }
 };

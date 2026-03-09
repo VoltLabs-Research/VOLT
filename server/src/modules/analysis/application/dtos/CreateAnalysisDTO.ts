@@ -4,6 +4,7 @@ interface CreateAnalysisOutputAnalysisDTO {
     _id: string;
     trajectory: string;
     plugin: string;
+    teamCluster?: string;
     config: AnalysisConfig;
     status: string;
     createdAt: Date;
@@ -15,6 +16,7 @@ export interface CreateAnalysisInputDTO {
     config: AnalysisConfig;
     userId: string;
     teamId: string;
+    teamClusterId?: string;
 };
 
 export interface CreateAnalysisOutputDTO {

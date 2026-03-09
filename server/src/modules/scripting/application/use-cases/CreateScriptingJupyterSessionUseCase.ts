@@ -3,6 +3,7 @@ import {
     CreateScriptingJupyterSessionOutputDTO
 } from '@modules/scripting/application/dtos/CreateScriptingJupyterSessionDTO';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -37,7 +38,10 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         private readonly scriptingSessionOrchestrator: IScriptingSessionOrchestrator,
 
         @inject(SCRIPTING_TOKENS.ScriptingSessionLock)
-        private readonly scriptingSessionLock: IScriptingSessionLock
+        private readonly scriptingSessionLock: IScriptingSessionLock,
+
+        @inject(TeamClusterSelectionService)
+        private readonly teamClusterSelectionService: TeamClusterSelectionService
     ) {}
 
     async execute(input: CreateScriptingJupyterSessionInputDTO): Promise<Result<CreateScriptingJupyterSessionOutputDTO, ApplicationError>> {
@@ -65,8 +69,10 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             const notebook = await this.resolveNotebookForSession(resolvedInput);
             const sessionInput: ScriptingSessionStartInput = {
                 teamId: resolvedInput.teamId,
+                teamClusterId: await this.resolveNotebookTeamClusterId(notebook, resolvedInput),
                 trajectoryId: resolvedInput.trajectoryId,
                 userId: resolvedInput.userId,
+                notebookId: notebook.id,
                 notebook: {
                     notebookPath: notebook.props.notebookPath,
                     content: notebook.props.content
@@ -140,6 +146,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         });
         const createData: Partial<ScriptingNotebookProps> = {
             team: input.teamId,
+            teamCluster: input.teamClusterId,
             title: 'Scripting Notebook',
             notebookPath,
             trajectories: [input.trajectoryId],
@@ -149,6 +156,23 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         };
 
         return this.scriptingNotebookRepository.create(createData);
+    }
+
+    private async resolveNotebookTeamClusterId(
+        notebook: ScriptingNotebook,
+        input: ResolveNotebookForSessionInput
+    ): Promise<string> {
+        const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(input.teamId, input.teamClusterId || notebook.props.teamCluster);
+        if (notebook.props.teamCluster !== teamClusterId) {
+            await this.scriptingNotebookRepository.updateById(notebook._id, {
+                teamCluster: teamClusterId,
+                runtimeNotebookId: undefined
+            });
+            notebook.props.teamCluster = teamClusterId;
+            notebook.props.runtimeNotebookId = undefined;
+        }
+
+        return teamClusterId;
     }
 
     private parseNotebookContent(templateRaw: string): Record<string, unknown> {

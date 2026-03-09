@@ -13,7 +13,6 @@ import type { MutationOptions } from '@/shared/infrastructure/query';
 import type { Notification } from '../api/entities/notification';
 
 export interface NotificationQueryParams {
-    teamId: string;
     limit: number;
 };
 

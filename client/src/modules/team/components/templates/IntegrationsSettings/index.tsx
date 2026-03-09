@@ -1,4 +1,3 @@
-import { AI_PROVIDER_CATALOG } from '@/modules/ai/utilities/ai-provider-catalog';
 import {
     AI_INTEGRATION_QUERY_KEYS,
     useDiscoverTeamAIProviderModelsQuery,
@@ -32,6 +31,7 @@ import type { AIProvider } from '@/modules/ai/api/entities/ai-provider';
 import type { CreateTeamAIIntegrationParams } from '@/modules/team/api/dtos/ai-integration/create-team-ai-integration';
 import type { UpdateTeamAIIntegrationParams } from '@/modules/team/api/dtos/ai-integration/update-team-ai-integration';
 import type {
+    AIProviderCatalogItem,
     TeamAIIntegration,
     TeamAIModelMetadata,
     TeamAIProviderModelsCatalog
@@ -62,10 +62,6 @@ const resolveOllamaBaseUrl = (metadata?: Record<string, unknown>): string => {
         return metadata.baseUrl;
     }
     return OLLAMA_DEFAULT_BASE_URL;
-};
-
-const isAIProvider = (value: string): value is AIProvider => {
-    return Object.values(AI_PROVIDER_CATALOG).some((provider) => provider.id === value);
 };
 
 const getSaveIntegrationToastOptions = (integration?: TeamAIIntegration): PromiseToastOptions => {
@@ -128,6 +124,11 @@ export default function IntegrationsSettings() {
     const [modalEnabled, setModalEnabled] = useState(true);
 
     const discoveryApiKey = modalApiKey.trim();
+
+    const integrations: TeamAIIntegration[] = integrationsData?.integrations ?? [];
+    const providerCatalog: AIProviderCatalogItem[] = integrationsData?.providers ?? [];
+    const providerModels: TeamAIProviderModelsCatalog[] = modelsData?.providers ?? [];
+
     const discoveryMetadata = useMemo(() => (
         modalProvider === 'ollama'
             ? { baseUrl: modalEndpoint.trim() || OLLAMA_DEFAULT_BASE_URL }
@@ -146,7 +147,7 @@ export default function IntegrationsSettings() {
 
     const discoveryQueryParams: TeamAIProviderDiscoveryInput = {
         teamId,
-        provider: modalProvider ?? AI_PROVIDER_CATALOG[0].id,
+        provider: modalProvider ?? (providerCatalog[0]?.id as AIProvider),
         apiKey: modalProvider === 'ollama' ? undefined : discoveryApiKey || undefined,
         metadata: discoveryMetadata
     };
@@ -172,9 +173,6 @@ export default function IntegrationsSettings() {
         sileo.error({ title: 'Failed to load integrations' });
     }, [integrationsError, modelsError]);
 
-    const integrations: TeamAIIntegration[] = integrationsData?.integrations ?? [];
-    const providerModels: TeamAIProviderModelsCatalog[] = modelsData?.providers ?? [];
-
     const integrationsByProvider = useMemo(() => {
         return new Map(integrations.map((integration) => [integration.provider, integration]));
     }, [integrations]);
@@ -188,11 +186,11 @@ export default function IntegrationsSettings() {
     }, [integrations]);
 
     const availableProviders = useMemo(() => {
-        return AI_PROVIDER_CATALOG.filter((provider) => {
-            const integration = integrationsByProvider.get(provider.id);
+        return providerCatalog.filter((provider) => {
+            const integration = integrationsByProvider.get(provider.id as AIProvider);
             return !integration?.hasApiKey;
         });
-    }, [integrationsByProvider]);
+    }, [integrationsByProvider, providerCatalog]);
 
     const providerSelectOptions: SelectOption[] = useMemo(() => (
         availableProviders.map((provider) => ({
@@ -289,7 +287,7 @@ export default function IntegrationsSettings() {
             return;
         }
 
-        const firstProvider = availableProviders[0]?.id;
+        const firstProvider = availableProviders[0]?.id as AIProvider | undefined;
         if (!firstProvider) {
             sileo.info({ title: 'All providers are already configured' });
             return;
@@ -321,11 +319,11 @@ export default function IntegrationsSettings() {
     };
 
     const handleModalProviderChange = (provider: string) => {
-        if (!isAIProvider(provider)) {
+        if (!providerCatalog.some((p) => p.id === provider)) {
             return;
         }
 
-        const nextProvider = provider;
+        const nextProvider = provider as AIProvider;
         const nextIntegration = integrationsByProvider.get(nextProvider);
         const ollamaBaseUrl = nextProvider === 'ollama'
             ? resolveOllamaBaseUrl(nextIntegration?.metadata)

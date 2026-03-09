@@ -51,9 +51,12 @@ const CreateContainer = () => {
         selectedTemplate,
         customImage,
         selectedTeamId,
+        selectedTeamClusterId,
         teams,
+        teamClusters,
         isLoading,
         setSelectedTeamId,
+        setSelectedTeamClusterId,
         updateConfig,
         handleTemplateSelect,
         setCustomImage,
@@ -95,9 +98,12 @@ const CreateContainer = () => {
                 <ConfigurationStep
                     config={config}
                     teams={teams}
+                    teamClusters={teamClusters}
                     selectedTeamId={selectedTeamId}
+                    selectedTeamClusterId={selectedTeamClusterId}
                     onConfigChange={updateConfig}
                     onTeamChange={setSelectedTeamId}
+                    onTeamClusterChange={setSelectedTeamClusterId}
                     onBack={() => goTo(StepKey.Image)}
                     onNext={() => goTo(StepKey.Review)}
                 />
@@ -109,7 +115,9 @@ const CreateContainer = () => {
                 <ReviewStep
                     config={config}
                     teams={teams}
+                    teamClusters={teamClusters}
                     selectedTeamId={selectedTeamId}
+                    selectedTeamClusterId={selectedTeamClusterId}
                     image={getSelectedImage()}
                     isLoading={isLoading}
                     onBack={() => goTo(StepKey.Config)}

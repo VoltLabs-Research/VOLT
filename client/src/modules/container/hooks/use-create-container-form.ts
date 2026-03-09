@@ -1,5 +1,6 @@
 import { CONTAINER_TEMPLATES } from '../services/container-templates';
 import { containerQuery } from './queries';
+import { teamClusterService } from '../api/service/team-cluster-service';
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
@@ -10,6 +11,7 @@ import type { Team } from '@/modules/team/api/entities/team/team';
 import type { EnvVariable } from '../api/entities/env-variable';
 import type { PortMapping } from '../api/entities/port-mapping';
 import type { ContainerTemplate } from '../api/entities/container-template';
+import type { TeamClusterOption } from '../api/entities/team-cluster-option';
 
 export type { EnvVariable } from '../api/entities/env-variable';
 export type { PortMapping } from '../api/entities/port-mapping';
@@ -31,9 +33,12 @@ export interface UseCreateContainerFormReturn {
     selectedTemplate: string | null;
     customImage: string;
     selectedTeamId: string | null;
+    selectedTeamClusterId: string | null;
     teams: Team[];
+    teamClusters: TeamClusterOption[];
     isLoading: boolean;
     setSelectedTeamId: (id: string | null) => void;
+    setSelectedTeamClusterId: (id: string | null) => void;
     updateConfig: <K extends keyof ContainerConfig>(key: K, value: ContainerConfig[K]) => void;
     handleTemplateSelect: (templateId: string) => void;
     setCustomImage: (image: string, goToConfig: () => void) => void;
@@ -53,6 +58,8 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
     const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
     const [customImage, setCustomImageState] = useState('');
     const [selectedTeamId, setSelectedTeamId] = useState<string | null>(selectedTeam?._id || null);
+    const [selectedTeamClusterId, setSelectedTeamClusterId] = useState<string | null>(null);
+    const [teamClusters, setTeamClusters] = useState<TeamClusterOption[]>([]);
 
     const [config, setConfig] = useState<ContainerConfig>({
         name: '',
@@ -68,6 +75,44 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
             setSelectedTeamId(selectedTeam._id);
         }
     }, [selectedTeam, selectedTeamId]);
+
+    useEffect(() => {
+        if (!selectedTeamId) {
+            setTeamClusters([]);
+            setSelectedTeamClusterId(null);
+            return;
+        }
+
+        let cancelled = false;
+
+        teamClusterService.listByTeamId(selectedTeamId)
+            .then((clusters) => {
+                if (cancelled) {
+                    return;
+                }
+
+                setTeamClusters(clusters);
+                setSelectedTeamClusterId((currentTeamClusterId) => {
+                    if (currentTeamClusterId && clusters.some((cluster) => cluster._id === currentTeamClusterId)) {
+                        return currentTeamClusterId;
+                    }
+
+                    return clusters[0]?._id || null;
+                });
+            })
+            .catch(() => {
+                if (cancelled) {
+                    return;
+                }
+
+                setTeamClusters([]);
+                setSelectedTeamClusterId(null);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedTeamId]);
 
     const updateConfig = useCallback(<K extends keyof ContainerConfig>(key: K, value: ContainerConfig[K]) => {
         setConfig((prev) => ({ ...prev, [key]: value }));
@@ -149,9 +194,15 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
             return;
         }
 
+        if (!selectedTeamClusterId) {
+            sileo.error({ title: 'Please select a cluster for this container' });
+            return;
+        }
+
         await showPromise(
             createContainerMutation.mutateAsync({
                 teamId: selectedTeamId,
+                teamClusterId: selectedTeamClusterId,
                 name: config.name,
                 image,
                 memory: config.memory,
@@ -169,16 +220,19 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
             }
         );
         navigate('/dashboard/containers');
-    }, [config, selectedTeamId, getSelectedImage, getSelectedTemplate, createContainerMutation, navigate]);
+    }, [config, selectedTeamClusterId, selectedTeamId, getSelectedImage, getSelectedTemplate, createContainerMutation, navigate]);
 
     return {
         config,
         selectedTemplate,
         customImage,
         selectedTeamId,
+        selectedTeamClusterId,
         teams,
+        teamClusters,
         isLoading: createContainerMutation.isPending,
         setSelectedTeamId,
+        setSelectedTeamClusterId,
         updateConfig,
         handleTemplateSelect,
         setCustomImage,

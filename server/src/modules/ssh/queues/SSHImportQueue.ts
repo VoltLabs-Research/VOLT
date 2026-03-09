@@ -30,11 +30,14 @@ export default class SSHImportQueue extends BaseProcessingQueue implements ISSHI
             {
                 queueName: 'ssh_import',
                 workerPath: path.join(__dirname, '../workers/SSHImportWorker.ts'),
-                maxConcurrentJobs: 2
+                maxConcurrentJobs: 2,
+                withWorker: false
             },
-            redis,
-            eventBus,
-            queueRegistry
+            {
+                redis,
+                eventBus,
+                queueRegistry
+            }
         );
     }
 

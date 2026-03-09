@@ -1,8 +1,9 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import Job from '@modules/jobs/domain/entities/Job';
 import TeamJobQueryService from '@modules/jobs/infrastructure/services/TeamJobQueryService';
@@ -42,19 +43,23 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         @inject(TRAJECTORY_TOKENS.CloudUploadQueue)
         cloudUploadQueue: IJobQueueService,
 
+        @inject(PLUGIN_TOKENS.AnalysisProcessingQueue)
+        analysisProcessingQueue: IJobQueueService,
+
         @inject(RASTER_TOKENS.RasterizerQueue)
         rasterizerQueue: IJobQueueService,
 
-        @inject(PLUGIN_TOKENS.AnalysisProcessingQueue)
-        analysisProcessingQueue: IJobQueueService,
+        @inject(SSH_TOKENS.SSHImportQueue)
+        sshImportQueue: IJobQueueService,
 
         private readonly teamJobQueryService: TeamJobQueryService
     ) {
         const queues = [
             trajectoryProcessingQueue,
             cloudUploadQueue,
+            analysisProcessingQueue,
             rasterizerQueue,
-            analysisProcessingQueue
+            sshImportQueue
         ];
 
         this.queueServices = new Map<string, IJobQueueService>();

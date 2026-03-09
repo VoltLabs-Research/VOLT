@@ -1,4 +1,3 @@
-import { CHAT_SOCKET_EVENTS } from '../../api/entities/shared/chat-constants';
 import { addChatToCache, removeChatFromCache, replaceChatInCache } from '../../hooks/chat/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import ApiError from '@/shared/errors/ApiError';
@@ -30,7 +29,7 @@ export const createGroupAction = async (
     createGroupMutation: (dto: CreateGroupChatDTO) => Promise<Chat>,
     dto: CreateGroupChatDTO
 ) => {
-    const { queryClient, socket, navigate } = dependencies;
+    const { queryClient, navigate } = dependencies;
 
     try {
         const chat = await showPromise(createGroupMutation(dto), {
@@ -40,7 +39,6 @@ export const createGroupAction = async (
         });
 
         addChatToCache(queryClient, chat);
-        socket.emit(CHAT_SOCKET_EVENTS.GROUP_CREATED, { chatId: chat._id });
         navigate(`/dashboard/messages/${chat._id}`);
 
         return chat;
@@ -55,7 +53,7 @@ export const addUsersToGroupAction = async (
     chatId: string,
     userIds: string[]
 ) => {
-    const { queryClient, socket } = dependencies;
+    const { queryClient } = dependencies;
 
     try {
         const chat = await showPromise(addUsersToGroupMutation({ chatId, userIds }), {
@@ -65,8 +63,6 @@ export const addUsersToGroupAction = async (
         });
 
         replaceChatInCache(queryClient, chat);
-        socket.emit(CHAT_SOCKET_EVENTS.USERS_ADDED_TO_GROUP, { chatId, userIds });
-
         return chat;
     } catch (error: unknown) {
         swallowRBACError(error);
@@ -79,7 +75,7 @@ export const removeUsersFromGroupAction = async (
     chatId: string,
     userIds: string[]
 ) => {
-    const { queryClient, socket } = dependencies;
+    const { queryClient } = dependencies;
 
     try {
         const chat = await showPromise(removeUsersFromGroupMutation({ chatId, userIds }), {
@@ -89,8 +85,6 @@ export const removeUsersFromGroupAction = async (
         });
 
         replaceChatInCache(queryClient, chat);
-        socket.emit(CHAT_SOCKET_EVENTS.USERS_REMOVED_FROM_GROUP, { chatId, userIds });
-
         return chat;
     } catch (error: unknown) {
         swallowRBACError(error);
@@ -103,7 +97,7 @@ export const updateGroupInfoAction = async (
     chatId: string,
     dto: UpdateGroupInfoDTO
 ) => {
-    const { queryClient, socket } = dependencies;
+    const { queryClient } = dependencies;
 
     try {
         const chat = await showPromise(updateGroupInfoMutation({ chatId, ...dto }), {
@@ -113,8 +107,6 @@ export const updateGroupInfoAction = async (
         });
 
         replaceChatInCache(queryClient, chat);
-        socket.emit(CHAT_SOCKET_EVENTS.GROUP_INFO_UPDATED, { chatId, ...dto });
-
         return chat;
     } catch (error: unknown) {
         swallowRBACError(error);
@@ -149,7 +141,7 @@ export const leaveGroupAction = async (
     leaveGroupMutation: (input: { chatId: string }) => Promise<void>,
     chatId: string
 ) => {
-    const { queryClient, socket, navigate } = dependencies;
+    const { queryClient, navigate } = dependencies;
 
     try {
         await showPromise(leaveGroupMutation({ chatId }), {
@@ -159,7 +151,6 @@ export const leaveGroupAction = async (
         });
 
         removeChatFromCache(queryClient, chatId);
-        socket.emit(CHAT_SOCKET_EVENTS.USER_LEFT_GROUP, { chatId });
         navigate('/dashboard/messages');
     } catch (error: unknown) {
         swallowRBACError(error);

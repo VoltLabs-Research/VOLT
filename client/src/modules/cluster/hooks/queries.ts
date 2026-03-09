@@ -2,6 +2,7 @@ import { buildKeys, createSocketQuery } from '@/shared/infrastructure/query';
 import type { QueryClient } from '@tanstack/react-query';
 import type { ClusterHistoryMetric, ClusterMetrics } from '../api/entities/cluster-metrics';
 import { MAX_HISTORY_POINTS } from '../utilities/history';
+import { resolveClusterMetricId } from '../utilities/resolve-cluster-metric-id';
 
 type ClusterQueryKeyMap = {
     metrics: void;
@@ -53,7 +54,7 @@ export const setClusterMetricsQueryData = (
     clusterMetricsQuery.set(undefined, clusters);
 
     for (const cluster of clusters) {
-        clusterHistoryQuery.update(cluster.clusterId, (previous = []) => {
+        clusterHistoryQuery.update(resolveClusterMetricId(cluster), (previous = []) => {
             return appendClusterHistoryMetric(previous, cluster);
         });
     }

@@ -3,6 +3,7 @@ interface ContainerTokens {
     readonly DockerNetworkRepository: symbol;
     readonly DockerVolumeRepository: symbol;
     readonly ContainerService: symbol;
+    readonly ContainerRuntimeService: symbol;
     readonly TerminalService: symbol;
     readonly ContainerSocketModule: symbol;
 };
@@ -12,6 +13,7 @@ export const CONTAINER_TOKENS: ContainerTokens = {
     DockerNetworkRepository: Symbol.for('DockerNetworkRepository'),
     DockerVolumeRepository: Symbol.for('DockerVolumeRepository'),
     ContainerService: Symbol.for('ContainerService'),
+    ContainerRuntimeService: Symbol.for('ContainerRuntimeService'),
     TerminalService: Symbol.for('TerminalService'),
     ContainerSocketModule: Symbol.for('ContainerSocketModule')
 };

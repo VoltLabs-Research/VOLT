@@ -13,7 +13,13 @@ import { ContainerRepository } from '@modules/container/infrastructure/persisten
 import { DockerNetworkRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/DockerNetworkRepository';
 import { DockerVolumeRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/DockerVolumeRepository';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-import { ContainerOwnershipService, DockerContainerService, TerminalService } from '@modules/container/infrastructure/services';
+import {
+    ContainerOwnershipService,
+    DaemonContainerRuntimeService,
+    DockerContainerService,
+    TeamClusterSelectionService,
+    TerminalService
+} from '@modules/container/infrastructure/services';
 import { ContainerSocketModule } from '@modules/container/socket';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import type { ClassProvider } from 'tsyringe';
@@ -36,8 +42,10 @@ export const registerContainerDependencies = (): void => {
     container.register(CONTAINER_TOKENS.DockerNetworkRepository, { useClass: DockerNetworkRepository });
     container.register(CONTAINER_TOKENS.DockerVolumeRepository, { useClass: DockerVolumeRepository });
     container.register(CONTAINER_TOKENS.ContainerService, { useClass: DockerContainerService });
+    container.register(CONTAINER_TOKENS.ContainerRuntimeService, { useClass: DaemonContainerRuntimeService });
     container.register(CONTAINER_TOKENS.TerminalService, { useClass: TerminalService });
     container.register(ContainerOwnershipService, { useClass: ContainerOwnershipService });
+    container.register(TeamClusterSelectionService, { useClass: TeamClusterSelectionService });
 
     container.register(CreateContainerUseCase, { useClass: CreateContainerUseCase });
     container.register(UpdateContainerUseCase, { useClass: UpdateContainerUseCase });

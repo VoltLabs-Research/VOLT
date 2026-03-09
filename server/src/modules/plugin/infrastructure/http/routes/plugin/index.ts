@@ -50,6 +50,11 @@ router.route('/:pluginId')
     .patch(pluginValidation.update, controllers.updatePluginById.handle)
     .delete(controllers.deleteById.handle);
 
-router.post('/:pluginId/trajectories/:trajectoryId/executions', executeRateLimit, controllers.executePlugin.handle);
+router.post(
+    '/:pluginId/trajectories/:trajectoryId/executions',
+    executeRateLimit,
+    pluginValidation.execute,
+    controllers.executePlugin.handle
+);
 
 export default module;

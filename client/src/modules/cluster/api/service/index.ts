@@ -44,7 +44,7 @@ export const observeClusterMetrics = (): ClusterObserver => {
     return new ClusterObserver();
 };
 
-export const requestClusterHistory = async (minutes?: number): Promise<void> => {
+export const requestClusterHistory = async (minutes?: number, clusterId?: string): Promise<void> => {
     const source = getClusterMetricsSource();
-    await source.requestHistory(minutes);
+    await source.requestHistory(minutes, clusterId);
 };

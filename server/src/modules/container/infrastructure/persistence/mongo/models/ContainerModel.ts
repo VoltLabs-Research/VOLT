@@ -14,11 +14,13 @@ export interface IContainer extends Document {
     network?: mongoose.Types.ObjectId;
     volume?: mongoose.Types.ObjectId;
     team?: mongoose.Types.ObjectId;
+    teamCluster?: mongoose.Types.ObjectId;
     status: string;
     memory: number;
     cpus: number;
     env: ContainerEnvironmentVariableDocument[];
     ports: ContainerPortMappingDocument[];
+    mountDockerSocket?: boolean;
     createdBy: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
@@ -84,11 +86,20 @@ const ContainerSchema = new Schema<IContainer>({
     team: {
         ...teamRefField(false)
     },
+    teamCluster: {
+        type: Schema.Types.ObjectId,
+        ref: 'TeamCluster',
+        required: false
+    },
     status: statusField,
     memory: memoryField,
     cpus: cpusField,
     env: [environmentVariableField],
     ports: [portMappingField],
+    mountDockerSocket: {
+        type: Boolean,
+        default: false
+    },
     createdBy: {
         ...userRefField([true, ValidationCodes.CONTAINER_CREATED_BY_REQUIRED])
     }

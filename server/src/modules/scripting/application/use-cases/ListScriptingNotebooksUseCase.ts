@@ -36,6 +36,7 @@ export class ListScriptingNotebooksUseCase implements IUseCase<ListScriptingNote
 
                 return {
                     _id: notebook._id,
+                    teamCluster: notebook.props.teamCluster,
                     title: notebook.props.title,
                     notebookPath: notebook.props.notebookPath,
                     trajectories,

@@ -9,6 +9,11 @@ import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEv
 import SystemMetricsSocketOrchestrator from '@modules/system/socket/SystemMetricsSocketOrchestrator';
 import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
 
+interface MetricsHistoryPayload {
+    minutes?: number;
+    clusterId?: string;
+};
+
 @singleton()
 export default class SystemSocketModule extends BaseSocketModule {
     public readonly name = 'SystemSocketModule';
@@ -31,10 +36,11 @@ export default class SystemSocketModule extends BaseSocketModule {
     }
 
     async onConnection(connection: ISocketConnection): Promise<void> {
-        this.on(connection.id, 'metrics:history', async (conn, minutes: number = 5) => {
+        this.on(connection.id, 'metrics:history', async (conn, payload: number | MetricsHistoryPayload = 5) => {
             try {
+                const minutes = typeof payload === 'number' ? payload : payload.minutes ?? 5;
                 logger.info(`[SystemSocketModule] Client ${conn.id} requested history for ${minutes} minutes`);
-                const history = await this.metricsOrchestrator.getHistory(minutes);
+                const history = await this.metricsOrchestrator.getHistory(payload);
                 this.emitToSocket(conn.id, 'metrics:history', history);
             } catch (error) {
                 logger.error(`[SystemSocketModule] Error fetching history: ${error}`);

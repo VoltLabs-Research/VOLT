@@ -2,6 +2,7 @@ import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { parseRasterTimestep } from '@modules/raster/utilities/raster-storage-paths';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
 import Job from '@modules/jobs/domain/entities/Job';
@@ -10,6 +11,7 @@ import { inject, injectable } from 'tsyringe';
 import { v4 } from 'uuid';
 import type { IRasterJobEnqueuer } from '@modules/raster/domain/port/IRasterJobEnqueuer';
 import type { IRasterStorage } from '@modules/raster/domain/port/IRasterStorage';
+import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 
 @injectable()
 export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
@@ -18,10 +20,18 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
         private readonly rasterStorage: IRasterStorage,
 
         @inject(RASTER_TOKENS.RasterizerQueue)
-        private readonly rasterizerQueue: RasterizerQueue
+        private readonly rasterizerQueue: RasterizerQueue,
+
+        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
+        private readonly teamClusterRepository: ITeamClusterRepository
     ) {}
 
     async triggerRasterization(trajectoryId: string, teamId: string, _config?: unknown): Promise<boolean> {
+        const teamCluster = await this.resolveTeamCluster(teamId);
+        if (teamCluster) {
+            return false;
+        }
+
         const glbFiles: string[] = [];
 
         try {
@@ -86,5 +96,13 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
                 500
             );
         }
+    }
+
+    private async resolveTeamCluster(teamId: string): Promise<string | null> {
+        const teamCluster = await this.teamClusterRepository.findOne({
+            team: teamId
+        } as Record<string, unknown>);
+
+        return teamCluster ? teamCluster.id : null;
     }
 };

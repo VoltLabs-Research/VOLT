@@ -135,7 +135,7 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
                     <Tooltip content={renderTooltip} />
                     <Legend
                         wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
-                        iconType='circle'
+                        iconType='plainline'
                     />
                     {coreColors.map((color, coreIndex) => (
                         <Line

@@ -7,6 +7,7 @@ import type { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { injectable } from 'tsyringe';
 import type { FileMetadata, IStorageService, UploadSource } from '@shared/domain/port/IStorageService';
+import type { MinioClientConfig } from '@core/config/minio';
 
 interface MinioError {
     code?: string;
@@ -21,10 +22,9 @@ export default class MinioStorageService implements IStorageService {
     private readonly client: Client;
     private urlBase: string;
 
-    constructor() {
-        this.client = getMinioClient();
-
-        const minioConfig = getMinioConfig();
+    constructor(client?: Client, config?: MinioClientConfig) {
+        const minioConfig = config || getMinioConfig();
+        this.client = client || getMinioClient();
         const protocol = minioConfig.useSSL ? 'https' : 'http';
         this.urlBase = `${protocol}://${minioConfig.endPoint}:${minioConfig.port}`;
     }

@@ -15,6 +15,11 @@
     margin: 0 auto;
 }
 
+.clusters-empty-state {
+    border: 1px solid var(--glass-border);
+    background: var(--color-surface-1);
+}
+
 @media (min-width: 768px) {
     .clusters-main {
         padding: 1rem 2rem;

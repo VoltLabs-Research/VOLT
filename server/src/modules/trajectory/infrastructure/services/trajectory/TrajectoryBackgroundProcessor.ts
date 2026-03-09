@@ -1,5 +1,4 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { IJobQueueService } from '@modules/jobs/domain/port/IJobQueueService';
 import { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
@@ -25,6 +24,7 @@ import path from 'node:path';
 
 import type { ErrorCode } from '@core/constants/error-codes';
 import type { ExtractedFile } from '@shared/domain/port/IFileExtractorService';
+import type { IJobQueueService } from '@modules/jobs/domain/port/IJobQueueService';
 
 type ParsedFrame = {
     timestep: number;
@@ -46,9 +46,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
         @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository)
         private readonly simulationCellRepo: ISimulationCellRepository,
-
-        @inject(TRAJECTORY_TOKENS.TrajectoryProcessingQueue)
-        private readonly processingQueue: IJobQueueService,
 
         @inject(TRAJECTORY_TOKENS.CloudUploadQueue)
         private readonly cloudUploadQueue: IJobQueueService,
@@ -186,8 +183,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         file: ExtractedFile
     ): Promise<ParsedFrame | null>{
         try{
-            const result = await TrajectoryParserFactory.parse(file.path as string);
-            const metadata = result?.metadata;
+            const metadata = await TrajectoryParserFactory.parseMetadata(file.path as string);
             if (!metadata) return null;
 
             const { simulationCell, ...frameMetadata } = metadata;
@@ -290,7 +286,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         trajectory: Trajectory,
         teamId: string
     ): Promise<void>{
-        await this.dispatchTrajectoryJobs(frames, trajectory, teamId);
         await this.dispatchCloudUploadJobs(frames, trajectory, teamId);
     }
 
@@ -316,41 +311,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
     }
 
     /**
-     * Dispatches trajectory processing jobs.
-     */
-    private async dispatchTrajectoryJobs(
-        frames: ParsedFrame[],
-        trajectory: Trajectory,
-        teamId: string
-    ): Promise<void>{
-        const jobs: Job[] = [];
-        const sessionId = v4();
-
-        for(const frame of frames){
-            const { cachePath, timestep, ...frameInfo } = frame;
-            jobs.push(Job.create({
-                jobId: v4(),
-                teamId,
-                message: trajectory.props.name,
-                sessionId,
-                queueType: 'trajectory_processing',
-                metadata: {
-                    trajectoryId: trajectory._id,
-                    trajectoryName: trajectory.props.name,
-                    timestep,
-                    file: {
-                        frameInfo,
-                        frameFilePath: cachePath
-                    }                    
-                }
-            }));
-        }
-
-        logger.info(`@trajectory-background-processor: Dispatching ${jobs.length} trajectory processing jobs`);
-        await this.processingQueue.addJobs(jobs);
-    }
-
-    /**
      * Dispatches cloud upload jobs.
      */    
     private async dispatchCloudUploadJobs(
@@ -372,6 +332,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                 metadata: {
                     trajectoryId: trajectory._id,
                     trajectoryName: trajectory.props.name,
+                    teamClusterId: trajectory.props.teamCluster,
                     timestep,
                     file: {
                         frameInfo,

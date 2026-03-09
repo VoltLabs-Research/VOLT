@@ -1,3 +1,4 @@
+import { getTeamClusterStatusLabel } from '@/modules/cluster/utilities/team-cluster-status';
 import { formatNetworkSpeedWithUnit } from '@/modules/cluster/utilities/format-network';
 import { ClusterStatus } from '@/modules/cluster/api/entities/cluster-metrics';
 import './MetricsCards.css';
@@ -70,15 +71,17 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
     const networkFormatted = formatNetworkSpeedWithUnit(networkTotal);
     const outgoingFormatted = formatNetworkSpeedWithUnit(metrics.network.outgoing);
     const incomingFormatted = formatNetworkSpeedWithUnit(metrics.network.incoming);
-    const statusLabel = getStatusLabel(metrics.status);
+    const lifecycleStatusLabel = metrics.teamClusterStatus
+        ? getTeamClusterStatusLabel(metrics.teamClusterStatus)
+        : getStatusLabel(metrics.status);
 
     const cards = [
         {
             icon: Server,
             title: 'Active Servers',
             value: '1',
-            unit: 'Server',
-            trend: statusLabel,
+            unit: 'Cluster',
+            trend: lifecycleStatusLabel,
             trendUp: metrics.status === ClusterStatus.Healthy,
             subtitle: metrics.status
         },

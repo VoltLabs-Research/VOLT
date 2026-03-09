@@ -3,7 +3,9 @@ import { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import BaseProcessingQueue from '@modules/jobs/infrastructure/services/BaseProcessingQueue';
+import CloudUploadProcessor from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadProcessor';
 
 import { injectable, inject } from 'tsyringe';
 import IORedis from 'ioredis';
@@ -19,18 +21,25 @@ export default class CloudUploadQueue extends BaseProcessingQueue {
         eventBus: IEventBus,
 
         @inject(JOBS_TOKENS.QueueRegistry)
-        queueRegistry: IQueueRegistry
+        queueRegistry: IQueueRegistry,
+
+        @inject(TRAJECTORY_TOKENS.CloudUploadProcessor)
+        cloudUploadProcessor: CloudUploadProcessor
     ) {
-        const workerPath = path.join(__dirname, '../../workers/trajectory/CloudUploadWorker.ts');
+        const workerPath = path.join(__dirname, '../workers/CloudUploadWorker.ts');
         super(
             {
                 queueName: 'cloud-upload',
                 workerPath,
-                maxConcurrentJobs: QUEUE_CONFIG.cloudUploadMaxConcurrentJobs
+                maxConcurrentJobs: QUEUE_CONFIG.cloudUploadMaxConcurrentJobs,
+                withWorker: true,
+                inlineProcessor: (job) => cloudUploadProcessor.process(job)
             },
-            redis,
-            eventBus,
-            queueRegistry
+            {
+                redis,
+                eventBus,
+                queueRegistry
+            }
         );
     }
 };

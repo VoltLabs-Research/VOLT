@@ -21,17 +21,20 @@ export default class AnalysisProcessingQueue extends BaseProcessingQueue {
         @inject(JOBS_TOKENS.QueueRegistry)
         queueRegistry: IQueueRegistry
     ) {
-        const workerPath = path.join(__dirname, '../workers/plugin/AnalysisWorker.ts');
+        const workerPath = path.join(__dirname, '../workers/AnalysisWorker.ts');
         logger.info(`[AnalysisProcessingQueue] Initializing with worker path: ${workerPath}`);
         super(
             {
                 queueName: 'analysis_processing',
                 workerPath,
-                maxConcurrentJobs: QUEUE_CONFIG.analysisMaxConcurrentJobs
+                maxConcurrentJobs: QUEUE_CONFIG.analysisMaxConcurrentJobs,
+                withWorker: false
             },
-            redis,
-            eventBus,
-            queueRegistry
+            {
+                redis,
+                eventBus,
+                queueRegistry
+            }
         );
     }
 };

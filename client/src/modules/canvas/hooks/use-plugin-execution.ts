@@ -14,6 +14,7 @@ export enum ExecState {
 interface ExecutePluginArgs {
     pluginId: string;
     trajectoryId: string;
+    teamClusterId: string;
     config: Record<string, unknown>;
     timestep?: number;
 };
@@ -22,6 +23,7 @@ interface UsePluginExecutionArgs {
     trajectoryId?: string;
     currentTimestep?: number;
     getPluginArguments: (pluginId: string) => IArgumentDefinition[];
+    getSelectedTeamClusterId: (option: ModifierOption) => string;
     executePlugin: (args: ExecutePluginArgs) => Promise<unknown>;
     pluginConfigs?: Record<string, Record<string, unknown>>;
 };
@@ -30,6 +32,7 @@ const usePluginExecution = ({
     trajectoryId,
     currentTimestep,
     getPluginArguments,
+    getSelectedTeamClusterId,
     executePlugin,
     pluginConfigs
 }: UsePluginExecutionArgs) => {
@@ -66,7 +69,12 @@ const usePluginExecution = ({
         try {
             const args = getPluginArguments(option.pluginModifierId);
             const userConfig = pluginConfigs?.[option.pluginModifierId] || {};
+            const selectedTeamClusterId = getSelectedTeamClusterId(option);
             const config: Record<string, unknown> = {};
+
+            if (!selectedTeamClusterId) {
+                throw new Error('Missing team cluster selection');
+            }
 
             args.forEach((arg) => {
                 const override = userConfig[arg.argument];
@@ -83,6 +91,7 @@ const usePluginExecution = ({
             await executePlugin({
                 pluginId: option.pluginModifierId,
                 trajectoryId,
+                teamClusterId: selectedTeamClusterId,
                 config,
                 timestep: currentTimestep
             });
@@ -94,7 +103,7 @@ const usePluginExecution = ({
             setExecStates((prev) => new Map(prev).set(modId, ExecState.Error));
             clearExecStateLater(modId);
         }
-    }, [trajectoryId, currentTimestep, getPluginArguments, executePlugin, pluginConfigs, clearExecStateLater]);
+    }, [trajectoryId, currentTimestep, getPluginArguments, getSelectedTeamClusterId, executePlugin, pluginConfigs, clearExecStateLater]);
 
     return { execStates, handleExecutePlugin };
 };

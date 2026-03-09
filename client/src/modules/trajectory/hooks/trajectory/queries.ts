@@ -64,7 +64,7 @@ export const trajectoryQuery = createPaginatedQuery<
         list: trajectoryService.getAll,
         create: trajectoryService.create,
         update: (id, params) => trajectoryService.update({ _id: id, ...params }),
-        delete: (id) => trajectoryService.delete({ _id: id })
+        delete: (id) => trajectoryService.delete({ trajectoryId: id })
     },
     onUpsert: () => {
         batchInvalidateQueries([

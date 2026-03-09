@@ -3,6 +3,8 @@ import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { setGetTeamId } from '@/app/core/http/client/VoltClient';
 import { resetTeamSessionState, useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
+import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import useTeamSocketSubscription from '@/modules/team/hooks/team/use-team-socket-subscription';
 import useSocketConnectionToast from '@/modules/socket/core/hooks/use-socket-connection-toast';
 import useTeamActivityHeartbeat from '@/modules/team/hooks/team/use-team-activity-heartbeat';
@@ -34,18 +36,30 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
     const selectedTeamId = useSelectedTeamId();
 
-    const { teams, fetchTeams, isTeamsLoading } = useTeamData();
+    const shouldLoadTeamData = mode === RouteMode.Protected && hasToken;
+    const { teams, fetchTeams, isTeamsLoading } = useTeamData({ enabled: shouldLoadTeamData });
 
     useTeamSocketSubscription();
     useSocketConnectionToast();
     useTeamPresenceSocket();
     useTeamActivityHeartbeat();
 
+    const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
+        enabled: Boolean(selectedTeamId)
+    });
+    const teamClusters = teamClustersQuery.data?.data ?? [];
+    const hasConnectedCluster = teamClusters.some((c) => c.status === TeamClusterStatus.Connected);
+    const isClusterCheckLoading = teamClustersQuery.isLoading;
+    const shouldRedirectToOnboarding = !isClusterCheckLoading && !hasConnectedCluster;
+
     const isAuthenticated = !!user;
     const hasTeam = !!selectedTeamId;
     const isStartRoute = location.pathname === '/start';
     const isTeamInvitationRoute = location.pathname.startsWith('/team-invitation/');
+    const isClusterOnboardingRoute = location.pathname === '/onboarding/cluster/setup';
+    const isDashboardRoute = location.pathname === '/dashboard' || location.pathname.startsWith('/dashboard/');
     const canAccessWithoutSelectedTeam = isStartRoute || isTeamInvitationRoute;
+    const canAccessWithoutCluster = canAccessWithoutSelectedTeam || isClusterOnboardingRoute;
 
     useEffect(() => {
         if(!isInitialized && !isLoading){
@@ -86,10 +100,24 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
         if(!hasTeam){
             if (teams.length === 0) {
-                return <Navigate to='/start' replace />;
+                if (isDashboardRoute) {
+                    return <Outlet />;
+                }
+
+                return <Navigate to='/dashboard' replace />;
             }
 
             return <Loader scale={0.6} />;
+        }
+
+        if (!canAccessWithoutCluster) {
+            if (isClusterCheckLoading) {
+                return <Loader scale={0.6} />;
+            }
+
+            if (shouldRedirectToOnboarding) {
+                return <Navigate to='/onboarding/cluster/setup' replace />;
+            }
         }
 
         return <Outlet />;
@@ -97,7 +125,7 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
     if(mode === RouteMode.Guest){
         if(isAuthenticated){
-            return <Navigate to={hasTeam ? '/dashboard' : '/start'} replace />;
+            return <Navigate to='/dashboard' replace />;
         }
 
         return <Outlet />;

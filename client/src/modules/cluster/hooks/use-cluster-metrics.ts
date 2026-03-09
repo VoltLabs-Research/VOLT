@@ -1,3 +1,4 @@
+import { DEFAULT_CLUSTER_ID } from '../stores/constants';
 import { useClusterStore } from '../stores/use-cluster-store';
 import {
     clusterHistoryLoadedQuery,
@@ -8,6 +9,7 @@ import {
     setClusterMetricsQueryData
 } from './queries';
 import { observeClusterMetrics, requestClusterHistory } from '../api/service';
+import { resolveClusterMetricId } from '../utilities/resolve-cluster-metric-id';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo, useCallback, useEffect, useRef } from 'react';
 
@@ -36,9 +38,9 @@ const useClusterMetrics = () => {
                 setClusterMetricsQueryData(queryClient, clusters);
 
                 const state = useClusterStore.getState();
-                const currentExists = clusters.some((cluster) => cluster.clusterId === state.selectedClusterId);
-                if (!currentExists && clusters.length > 0) {
-                    state.setSelectedClusterId(clusters[0].clusterId);
+                const currentExists = clusters.some((cluster) => resolveClusterMetricId(cluster) === state.selectedClusterId);
+                if (!currentExists && clusters.length > 0 && state.selectedClusterId === DEFAULT_CLUSTER_ID) {
+                    state.setSelectedClusterId(resolveClusterMetricId(clusters[0]));
                 }
             },
             onMetricsHistory: (history) => {
@@ -58,14 +60,14 @@ const useClusterMetrics = () => {
 
     const metrics = useMemo(() => {
         if (!clusters.length) return null;
-        return clusters.find((c) => c.clusterId === selectedClusterId) || null;
+        return clusters.find((cluster) => resolveClusterMetricId(cluster) === selectedClusterId) || null;
     }, [clusters, selectedClusterId]);
 
     const handleRequestHistory = useCallback((minutes: number = 5) => {
         if (!isConnected || isHistoryLoaded) return;
         requestedHistoryClusterIdRef.current = useClusterStore.getState().selectedClusterId;
-        requestClusterHistory(minutes).catch(console.warn);
-    }, [isConnected, isHistoryLoaded]);
+        requestClusterHistory(minutes, requestedHistoryClusterIdRef.current ?? undefined).catch(console.warn);
+    }, [isConnected, isHistoryLoaded, selectedClusterId]);
 
     return {
         metrics,

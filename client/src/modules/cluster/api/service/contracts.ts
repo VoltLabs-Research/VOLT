@@ -5,5 +5,5 @@ export interface IClusterMetricsSource {
     onMetricsHistory(callback: (history: ClusterHistoryMetric[]) => void): () => void;
     onConnectionChange(listener: (connected: boolean) => void): () => void;
     isConnected(): boolean;
-    requestHistory(minutes?: number): Promise<void>;
+    requestHistory(minutes?: number, clusterId?: string): Promise<void>;
 };

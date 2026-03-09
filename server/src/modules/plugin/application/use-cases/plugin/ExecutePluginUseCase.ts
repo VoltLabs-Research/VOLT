@@ -2,25 +2,28 @@ import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ExecutePluginInputDTO } from '@modules/plugin/application/dtos/plugin/ExecutePluginDTO';
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { IAnalysisJobFactory } from '@modules/plugin/domain/port/plugin/IAnalysisJobFactory';
+import { IPluginExecutionRouter } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { IPluginWorkflowEngine } from '@modules/plugin/domain/port/plugin/IPluginWorkflowEngine';
+import { IWorkflowValidatorService } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
 import PluginDisplayNameResolver from '@modules/plugin/utilities/plugin/PluginDisplayNameResolver';
 
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
 import AnalysisCreatedEvent from '@modules/analysis/domain/events/AnalysisCreatedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { inject, injectable } from 'tsyringe';
 
-import type { IAnalysisQueue } from '@modules/plugin/domain/port/plugin/IAnalysisQueue';
+import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 
 interface ExecutePluginOutputDTO {
     analysisId: string;
@@ -41,14 +44,20 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private analysisRepo: IAnalysisRepository,
 
+        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
+        private readonly teamClusterRepository: ITeamClusterRepository,
+
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private trajectoryRepo: ITrajectoryRepository,
 
         @inject(PLUGIN_TOKENS.AnalysisJobFactory)
         private jobFactory: IAnalysisJobFactory,
 
-        @inject(PLUGIN_TOKENS.AnalysisProcessingQueue)
-        private analysisQueue: IAnalysisQueue
+        @inject(PLUGIN_TOKENS.PluginExecutionRouter)
+        private readonly pluginExecutionRouter: IPluginExecutionRouter,
+
+        @inject(PLUGIN_TOKENS.WorkflowValidatorService)
+        private readonly workflowValidator: IWorkflowValidatorService
     ){}
 
     async execute(input: ExecutePluginInputDTO): Promise<Result<ExecutePluginOutputDTO, ApplicationError>> {
@@ -56,6 +65,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             this.trajectoryRepo.findById(input.trajectoryId),
             this.pluginRepo.findById(input.pluginId)
         ]);
+
         if (plugin && plugin.props.status !== PluginStatus.Published) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -69,10 +79,14 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             ));
         }
 
-        if (!plugin.props.validated) {
+        const { isValid, errors: validationErrors } = this.workflowValidator.validate(plugin.props.workflow.props);
+        if (!isValid) {
+            const detail = validationErrors?.length
+                ? `: ${validationErrors.join('; ')}`
+                : '';
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
-                'Plugin not validated'
+                `Plugin workflow is invalid${detail}`
             ));
         }
 
@@ -80,6 +94,27 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
                 'Trajectory not found'
+            ));
+        }
+
+        const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === 'entrypoint');
+        const binaryObjectPath = entrypointNode?.data.entrypoint?.binaryObjectPath;
+        if (binaryObjectPath && !plugin.props.teamCluster) {
+            return Result.fail(ApplicationError.conflict(
+                'Plugin::ClusterUnavailable',
+                'Plugin binary is not assigned to a team cluster yet'
+            ));
+        }
+
+        const teamCluster = await this.teamClusterRepository.findOne({
+            _id: input.teamClusterId,
+            team: input.teamId
+        } as Record<string, unknown>);
+
+        if (!teamCluster) {
+            return Result.fail(ApplicationError.notFound(
+                'TeamCluster::NotFound',
+                'Team cluster not found'
             ));
         }
 
@@ -103,7 +138,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
 
         const analysis = await this.analysisRepo.create({
             plugin: plugin._id,
-
+            clusterId: input.teamClusterId,
             config: input.config,
             team: input.teamId,
             trajectory: input.trajectoryId,
@@ -141,7 +176,6 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             ));
         }
 
-        // Create jobs from the ForEach items
         const jobs = this.jobFactory.create({
             analysisId: analysis.id,
             teamId: input.teamId,
@@ -152,13 +186,18 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             config: input.config
         });
 
-        // Update analysis with total frames count
         await this.analysisRepo.updateById(analysis.id, {
             totalFrames: jobs.length
         });
 
-        // Add jobs to the analysis queue for processing
-        await this.analysisQueue.addJobs(jobs);
+        await this.pluginExecutionRouter.route({
+            teamClusterId: input.teamClusterId,
+            analysisId: analysis.id,
+            trajectoryId: input.trajectoryId,
+            teamId: input.teamId,
+            plugin,
+            jobs
+        });
 
         return Result.ok({ analysisId: analysis.id });
     }

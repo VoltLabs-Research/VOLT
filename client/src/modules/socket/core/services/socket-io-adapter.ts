@@ -7,7 +7,7 @@ class SocketIOAdapter implements ISocketService {
     private subscriptions: EventSubscription[] = [];
     private connectionUrl: string;
     private options: SocketOptions;
-    private connecting: boolean = false;
+    private connectionPromise: Promise<void> | null = null;
     private connectionListeners: Array<(connected: boolean) => void> = [];
 
     constructor(baseUrl: string, options: SocketOptions = {}) {
@@ -25,14 +25,16 @@ class SocketIOAdapter implements ISocketService {
     }
 
     connect(): Promise<void> {
-        if (this.socket?.connected || this.connecting) {
+        if (this.socket?.connected) {
             return Promise.resolve();
         }
 
-        this.cleanupSocket();
-        this.connecting = true;
+        if (this.connectionPromise) {
+            return this.connectionPromise;
+        }
 
-        return new Promise((resolve, reject) => {
+        this.cleanupSocket();
+        this.connectionPromise = new Promise((resolve, reject) => {
             try {
                 this.socket = io(this.connectionUrl, {
                     path: this.options.path,
@@ -47,23 +49,25 @@ class SocketIOAdapter implements ISocketService {
                 });
 
                 this.socket.on(SOCKET_CONNECTION_EVENTS.CONNECT_ERROR, (error) => {
-                    this.connecting = false;
+                    this.connectionPromise = null;
                     reject(error);
                 });
 
                 this.socket.on(SOCKET_CONNECTION_EVENTS.DISCONNECT, () => {
-                    this.connecting = false;
+                    this.connectionPromise = null;
                     this.notifyConnectionListeners(false);
                 });
             } catch (error) {
-                this.connecting = false;
+                this.connectionPromise = null;
                 reject(error);
             }
         });
+
+        return this.connectionPromise;
     }
 
     disconnect(): void {
-        this.connecting = false;
+        this.connectionPromise = null;
         this.cleanupSocket();
         this.notifyConnectionListeners(false);
     }
@@ -142,7 +146,7 @@ class SocketIOAdapter implements ISocketService {
     }
 
     updateAuth(auth: Record<string, unknown>): void {
-        this.options.auth = { ...this.options.auth, ...auth };
+        this.options.auth = { ...auth };
 
         if (this.socket?.connected) {
             this.disconnect();
@@ -158,7 +162,7 @@ class SocketIOAdapter implements ISocketService {
     }
 
     private handleConnect(): void {
-        this.connecting = false;
+        this.connectionPromise = null;
         this.notifyConnectionListeners(true);
         this.resubscribeToEvents();
     }

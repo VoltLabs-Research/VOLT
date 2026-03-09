@@ -4,6 +4,7 @@ import type { ContainerEnvironmentVariable, ContainerPortMapping } from '@module
 export interface UpdateContainerInputDTO {
     teamId: string;
     containerId: string;
+    teamClusterId?: string;
     action?: 'start' | 'stop' | 'restart';
     env?: ContainerEnvironmentVariable[];
     ports?: ContainerPortMapping[];

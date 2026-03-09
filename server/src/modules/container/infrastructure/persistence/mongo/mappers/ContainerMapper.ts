@@ -5,6 +5,7 @@ import { createMongoMapper } from '@shared/infrastructure/persistence/mongo/crea
 export default createMongoMapper<Container, IContainerProps, IContainerDoc>(Container, [
     'createdBy',
     'team',
+    'teamCluster',
     'network',
     'volume'
 ]);

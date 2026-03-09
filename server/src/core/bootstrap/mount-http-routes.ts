@@ -18,6 +18,7 @@ import PluginHttpModule from '@modules/plugin/infrastructure/http/routes/plugin'
 import RasterHttpModule from '@modules/raster/infrastructure/http/routes/raster-routes';
 import SessionHttpModule from '@modules/session/infrastructure/http/routes/session-routes';
 import ScriptingHttpModule from '@modules/scripting/infrastructure/http/routes/scripting-routes';
+import ScriptingJupyterHttpModule from '@modules/scripting/infrastructure/http/routes/scripting-jupyter-routes';
 import SimulationCellHttpModule from '@modules/simulation-cell/infrastructure/http/routes/simulation-cell-routes';
 import SshConnectionHttpModule from '@modules/ssh/infrastructure/http/routes/ssh-connection-routes';
 import SystemHttpModule from '@modules/system/infrastructure/http/routes/system-routes';
@@ -31,6 +32,8 @@ import TeamSecretKeySelfHttpModule from '@modules/team/infrastructure/http/route
 import TeamSecretKeyHttpModule from '@modules/team/infrastructure/http/routes/secret-key';
 import TeamSelfHttpModule from '@modules/team/infrastructure/http/routes/team/self';
 import TeamHttpModule from '@modules/team/infrastructure/http/routes/team';
+import TeamClusterHttpModule from '@modules/team-cluster/infrastructure/http/routes/team-cluster-routes';
+import TeamClusterLifecycleHttpModule from '@modules/team-cluster/infrastructure/http/routes/team-cluster-lifecycle-routes';
 import ColorCodingHttpModule from '@modules/trajectory/infrastructure/http/routes/color-coding';
 import ParticleFilterHttpModule from '@modules/trajectory/infrastructure/http/routes/particle-filter';
 import TrajectoryHttpModule from '@modules/trajectory/infrastructure/http/routes/trajectory';
@@ -66,12 +69,15 @@ const HTTP_MODULES: HttpModule[] = [
     TeamSecretKeyHttpModule,
     TeamSecretKeySelfHttpModule,
     TeamAIIntegrationHttpModule,
+    TeamClusterHttpModule,
+    TeamClusterLifecycleHttpModule,
     ChatHttpModule,
     ChatMessageHttpModule,
     NotificationHttpModule,
     PluginListingRowHttpModule,
     PluginExposureHttpModule,
     ScriptingHttpModule,
+    ScriptingJupyterHttpModule,
     SshConnectionHttpModule,
     ContainerHttpModule,
     TrajectoryHttpModule,

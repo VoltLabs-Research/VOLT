@@ -20,7 +20,8 @@ const notebookParamsSchema = teamParamsSchema.extend({
 }).strict();
 
 const createJupyterSessionSchema = z.object({
-    notebookId: objectIdSchema.optional()
+    notebookId: objectIdSchema.optional(),
+    teamClusterId: objectIdSchema.optional()
 }).strict();
 
 export const scriptingValidation = {

@@ -5,6 +5,7 @@
 .debug-toolbar {
     padding: 0.375rem 0.75rem;
     white-space: nowrap;
+    background-color: var(--color-surface-1);
 }
 
 .debug-toolbar-divider {

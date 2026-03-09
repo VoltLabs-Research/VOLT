@@ -13,8 +13,8 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePluginOutputDTO> {
@@ -57,7 +57,7 @@ export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePl
         const plugin = await this.pluginRepository.create({
             workflow,
             team: input.teamId,
-            validated: original.props.validated,
+            teamCluster: original.props.teamCluster ?? null,
             status: PluginStatus.Draft,
             modifier: projection.modifier,
             exposures: projection.exposures,

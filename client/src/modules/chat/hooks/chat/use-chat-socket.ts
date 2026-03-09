@@ -1,5 +1,6 @@
 import { CHAT_SOCKET_EVENTS } from '../../api/entities/shared/chat-constants';
 import { PresenceStatus } from '../../api/entities/shared/chat-events';
+import { CHAT_QUERY_KEYS, invalidateChatsQuery } from './queries';
 import { updateChatInCache } from './queries';
 import { useChatPresenceStore } from '../../stores/chat/use-chat-presence-store';
 import { useQueryClient } from '@tanstack/react-query';
@@ -26,6 +27,10 @@ interface MessageDeletedEvent {
 interface ReactionUpdatedEvent {
     chatId: string;
     message: ChatMessage;
+};
+
+interface GroupChatEvent {
+    chatId: string;
 };
 
 interface UseChatSocketOptions {
@@ -90,6 +95,30 @@ const useChatSocket = ({ currentChatId, addMessage, updateMessage }: UseChatSock
             setUsersPresence(presenceMap);
         }
     );
+
+    useSocketEvent<GroupChatEvent>(CHAT_SOCKET_EVENTS.GROUP_CREATED, () => {
+        invalidateChatsQuery(queryClient).catch(() => undefined);
+    });
+
+    useSocketEvent<GroupChatEvent>(CHAT_SOCKET_EVENTS.USERS_ADDED_TO_GROUP, ({ chatId }) => {
+        invalidateChatsQuery(queryClient).catch(() => undefined);
+        queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.detail(chatId) }).catch(() => undefined);
+    });
+
+    useSocketEvent<GroupChatEvent>(CHAT_SOCKET_EVENTS.USERS_REMOVED_FROM_GROUP, ({ chatId }) => {
+        invalidateChatsQuery(queryClient).catch(() => undefined);
+        queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.detail(chatId) }).catch(() => undefined);
+    });
+
+    useSocketEvent<GroupChatEvent>(CHAT_SOCKET_EVENTS.GROUP_INFO_UPDATED, ({ chatId }) => {
+        invalidateChatsQuery(queryClient).catch(() => undefined);
+        queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.detail(chatId) }).catch(() => undefined);
+    });
+
+    useSocketEvent<GroupChatEvent>(CHAT_SOCKET_EVENTS.USER_LEFT_GROUP, ({ chatId }) => {
+        invalidateChatsQuery(queryClient).catch(() => undefined);
+        queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.detail(chatId) }).catch(() => undefined);
+    });
 };
 
 export default useChatSocket;

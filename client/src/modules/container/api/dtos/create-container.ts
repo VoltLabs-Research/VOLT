@@ -3,6 +3,7 @@ import type { PortMapping } from '@/modules/container/api/entities/port-mapping'
 
 export interface CreateContainerParams {
     teamId: string;
+    teamClusterId?: string;
     name: string;
     image: string;
     memory?: number;

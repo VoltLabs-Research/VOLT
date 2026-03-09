@@ -1,5 +1,6 @@
 export interface UploadBinaryInputDTO {
     pluginId: string;
+    teamId: string;
     file: File;
     onProgress?: (progress: number) => void;
 };

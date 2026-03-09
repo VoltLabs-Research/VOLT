@@ -31,8 +31,11 @@ export class ClusterSocketMetricsSource implements IClusterMetricsSource {
         return this.socketService.isConnected();
     }
 
-    async requestHistory(minutes: number = 5): Promise<void> {
-        await this.socketService.emit(CLUSTER_SOCKET_EVENTS.metricsHistory, minutes);
+    async requestHistory(minutes: number = 5, clusterId?: string): Promise<void> {
+        await this.socketService.emit(CLUSTER_SOCKET_EVENTS.metricsHistory, {
+            minutes,
+            clusterId
+        });
     }
 };
 

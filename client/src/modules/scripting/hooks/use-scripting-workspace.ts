@@ -4,8 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import {
     getJupyterStartErrorMessage,
-    pickActiveNotebook,
-    resolveJupyterUrlWithServerIp
+    pickActiveNotebook
 } from '../utilities/workspace';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ScriptingNotebook } from '../api/entities/scripting-notebook';
@@ -61,11 +60,12 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         try {
             const session = await createScriptingSession({
                 trajectoryId,
-                notebookId: activeNotebook?._id
+                notebookId: activeNotebook?._id,
+                teamClusterId: activeNotebook?.teamCluster
             });
 
             if (session.jupyter.ready) {
-                setJupyterUrl(resolveJupyterUrlWithServerIp(session.jupyter.url));
+                setJupyterUrl(session.jupyter.url);
                 sileo.success({ title: 'Jupyter session ready' });
             } else {
                 setJupyterError('Jupyter is still starting. Please retry in a moment.');

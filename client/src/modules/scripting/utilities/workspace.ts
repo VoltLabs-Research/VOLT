@@ -6,18 +6,6 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null;
 };
 
-export const resolveJupyterUrlWithServerIp = (url: string): string => {
-    try {
-        const parsedUrl = new URL(url);
-        const serverUrl = new URL(import.meta.env.VITE_API_URL);
-        parsedUrl.protocol = serverUrl.protocol;
-        parsedUrl.hostname = serverUrl.hostname;
-        return parsedUrl.toString();
-    } catch {
-        return url;
-    }
-};
-
 export const pickActiveNotebook = (notebooks: ScriptingNotebook[], notebookId?: string): ScriptingNotebook | undefined => {
     if (!notebookId) {
         return notebooks[0];

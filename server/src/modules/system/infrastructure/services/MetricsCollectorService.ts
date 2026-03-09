@@ -1,16 +1,17 @@
-import os from 'os';
-import { inject, injectable } from 'tsyringe';
-import type { IMetricsService } from '@modules/system/domain/port/IMetricsService';
-import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
-import type { SystemMetrics, SystemStatus } from '@modules/system/domain/value-objects/SystemMetrics';
 import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
+import { resolveSystemMetricsIdentity } from '@modules/system/utilities/resolveSystemMetricsIdentity';
 import CpuMetricsCollector from './CpuMetricsCollector';
+import ClusterMetricsAggregator from './ClusterMetricsAggregator';
 import MemoryMetricsCollector from './MemoryMetricsCollector';
 import DiskMetricsCollector from './DiskMetricsCollector';
 import NetworkMetricsCollector from './NetworkMetricsCollector';
 import MongoMetricsCollector from './MongoMetricsCollector';
 import ServiceHealthPinger from './ServiceHealthPinger';
-import ClusterMetricsAggregator from './ClusterMetricsAggregator';
+import os from 'node:os';
+import { inject, injectable } from 'tsyringe';
+import type { IMetricsService } from '@modules/system/domain/port/IMetricsService';
+import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
+import type { SystemMetrics, SystemStatus } from '@modules/system/domain/value-objects/SystemMetrics';
 
 @injectable()
 export default class MetricsCollector implements IMetricsService {
@@ -40,6 +41,7 @@ export default class MetricsCollector implements IMetricsService {
     }
 
     async collect(): Promise<SystemMetrics> {
+        const identity = resolveSystemMetricsIdentity();
         const cpu = {
             usage: this.cpuCollector.getUsage(),
             cores: os.cpus().length,
@@ -58,7 +60,8 @@ export default class MetricsCollector implements IMetricsService {
 
         const metrics: SystemMetrics = {
             timestamp: new Date(),
-            serverId: process.env.CLUSTER_ID || os.hostname(),
+            serverId: identity.serverId,
+            teamClusterId: identity.teamClusterId,
             cpu,
             memory,
             disk,
@@ -81,6 +84,10 @@ export default class MetricsCollector implements IMetricsService {
 
     async getHistory(minutes: number = 5): Promise<SystemMetrics[]> {
         return this.metricsRepository.getHistory(minutes);
+    }
+
+    async getHistoryByClusterId(clusterId: string, minutes: number = 5): Promise<SystemMetrics[]> {
+        return this.metricsRepository.getHistoryByClusterId(clusterId, minutes);
     }
 
     async cleanExpiredHistory(): Promise<number> {

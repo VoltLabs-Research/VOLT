@@ -18,6 +18,7 @@ import { registerSocketDependencies } from '@modules/socket/infrastructure/di/co
 import { registerSSHDependencies } from '@modules/ssh/infrastructure/di/container';
 import { registerSystemDependencies } from '@modules/system/infrastructure/di/container';
 import { registerTeamDependencies } from '@modules/team/infrastructure/di/container';
+import { registerTeamClusterDependencies } from '@modules/team-cluster/infrastructure/di/container';
 import { registerTrajectoryDependencies } from '@modules/trajectory/infrastructure/di/container';
 import FileExtractorService from '@shared/infrastructure/services/FileExtractorService';
 import RedisEventBus from '@shared/infrastructure/events/RedisEventBus';
@@ -33,16 +34,18 @@ export const registerAllDependencies = (): void => {
     }
 
     const redisClient = createRedisClient();
+    const storageService = new MinioStorageService();
 
     container.registerInstance(SHARED_TOKENS.RedisClient, redisClient);
     container.registerSingleton(SHARED_TOKENS.EventBus, RedisEventBus);
-    container.registerSingleton(SHARED_TOKENS.StorageService, MinioStorageService);
+    container.registerInstance(SHARED_TOKENS.StorageService, storageService);
     container.registerSingleton(SHARED_TOKENS.TempFileService, TempFileService);
     container.registerSingleton(SHARED_TOKENS.FileExtractorService, FileExtractorService);
     registerSharedDependencies();
 
     registerAuthDependencies();
     registerTeamDependencies();
+    registerTeamClusterDependencies();
     registerContainerDependencies();
     registerPluginDependencies();
     registerScriptingDependencies();

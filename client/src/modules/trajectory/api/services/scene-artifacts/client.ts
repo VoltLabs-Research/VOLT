@@ -1,6 +1,6 @@
 export default {
     default: {
-        basePath: '/trajectory',
+        basePath: '/trajectories',
         useRBAC: true
     }
 };

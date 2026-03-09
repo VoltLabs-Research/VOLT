@@ -1,7 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
-import { ContainerTerminalAttachment, IContainerService } from '@modules/container/domain/port/IContainerService';
+import type { ContainerTerminalAttachment } from '@modules/container/domain/port/IContainerService';
+import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
 import { ContainerTerminalError, ContainerTerminalResizePayload, ITerminalClient, ITerminalService } from '@modules/container/domain/port/ITerminalService';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
@@ -27,7 +28,7 @@ export class TerminalService implements ITerminalService {
     private readonly clientHandlers = new WeakMap<ITerminalClient, SocketTerminalHandlers>();
 
     constructor(
-        @inject(CONTAINER_TOKENS.ContainerService) private containerService: IContainerService,
+        @inject(CONTAINER_TOKENS.ContainerRuntimeService) private containerRuntimeService: ITeamClusterContainerRuntimeService,
         @inject(CONTAINER_TOKENS.ContainerRepository) private repository: IContainerRepository
     ) {}
 
@@ -43,7 +44,12 @@ export class TerminalService implements ITerminalService {
                     return;
                 }
 
-                const attachment = await this.containerService.attachTerminal(containerDoc.containerId);
+                if (!containerDoc.teamCluster) {
+                    this.emitError(client, ErrorCodes.CONTAINER_NOT_FOUND, 'Container is not assigned to a team cluster');
+                    return;
+                }
+
+                const attachment = await this.containerRuntimeService.attachTerminal(containerDoc.teamCluster, containerDoc.containerId);
                 session = {
                     attachment,
                     history: [],

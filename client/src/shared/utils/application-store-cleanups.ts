@@ -5,7 +5,11 @@ import { useChatPresenceStore } from '@/modules/chat/stores/chat/use-chat-presen
 import { useClusterStore } from '@/modules/cluster/stores/use-cluster-store';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
-import { registerManualAppCleanup, registerSharedAppCleanup } from '@/shared/utils/app-cleanup-registry';
+import {
+    registerErrorRecoveryCleanup,
+    registerManualAppCleanup,
+    registerSharedAppCleanup
+} from '@/shared/utils/app-cleanup-registry';
 import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
 import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import useTrajectoryStore from '@/modules/trajectory/stores/trajectory/use-trajectory-store';
@@ -90,6 +94,10 @@ export const ensureApplicationStoreCleanupsRegistered = (): void => {
     areApplicationStoreCleanupsRegistered = true;
 
     allStoreResetters.forEach(registerStoreCleanup);
+
+    registerErrorRecoveryCleanup(() => {
+        queryClient.clear();
+    });
 
     registerManualAppCleanup(() => {
         queryClient.clear();

@@ -17,6 +17,16 @@ const ScriptingNotebookSchema: Schema<ScriptingNotebookDocument> = new Schema({
         ...teamRefField(true),
         cascade: 'delete'
     },
+    teamCluster: {
+        type: Schema.Types.ObjectId,
+        ref: 'TeamCluster',
+        required: false
+    },
+    runtimeNotebookId: {
+        type: String,
+        required: false,
+        trim: true
+    },
     title: {
         type: String,
         required: true,

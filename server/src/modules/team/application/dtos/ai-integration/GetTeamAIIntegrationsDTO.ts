@@ -18,7 +18,14 @@ export interface TeamAIIntegrationItemDTO {
     updatedAt: Date;
 };
 
+export interface TeamAIProviderCatalogItemDTO {
+    id: TeamAIProvider;
+    name: string;
+    description: string;
+};
+
 export interface GetTeamAIIntegrationsOutputDTO {
     teamId: string;
     integrations: TeamAIIntegrationItemDTO[];
+    providers: TeamAIProviderCatalogItemDTO[];
 };

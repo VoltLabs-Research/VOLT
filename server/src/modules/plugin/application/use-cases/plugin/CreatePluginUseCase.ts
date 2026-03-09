@@ -6,6 +6,7 @@ import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRep
 import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import PluginCreatedEvent from '@modules/plugin/domain/events/PluginCreatedEvent';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
@@ -13,21 +14,28 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { injectable, inject } from 'tsyringe';
 
+import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+
 @injectable()
 export class CreatePluginUseCase implements IUseCase<CreatePluginInputDTO, CreatePluginOutputDTO> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
+
+        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
+        private readonly teamClusterRepository: ITeamClusterRepository,
+
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ){}
 
     async execute(input: CreatePluginInputDTO): Promise<Result<CreatePluginOutputDTO>> {
         const workflow = new Workflow('', input.workflow);
         const projection = WorkflowProjectionService.project(workflow, '');
+        const defaultTeamClusterId = await this.resolveDefaultTeamClusterId(input.teamId);
 
         const plugin = await this.pluginRepository.create({
             workflow,
             team: input.teamId,
-            validated: false,
+            teamCluster: defaultTeamClusterId,
             status: PluginStatus.Draft,
             modifier: projection.modifier,
             exposures: projection.exposures,
@@ -43,5 +51,20 @@ export class CreatePluginUseCase implements IUseCase<CreatePluginInputDTO, Creat
         return Result.ok({
             plugin: mapPluginToPersistedDTO(plugin)
         });
+    }
+
+    private async resolveDefaultTeamClusterId(teamId: string): Promise<string | null> {
+        const teamClusters = await this.teamClusterRepository.findAll({
+            filter: {
+                team: teamId
+            },
+            page: 1,
+            limit: 1,
+            sort: {
+                createdAt: 1
+            }
+        });
+
+        return teamClusters.data[0]?.id ?? null;
     }
 };

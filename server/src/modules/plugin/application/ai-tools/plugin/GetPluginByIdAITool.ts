@@ -57,7 +57,6 @@ export class GetPluginByIdAITool extends AITool {
             pluginId: plugin._id || params.pluginId,
             name: plugin.modifier?.name || params.pluginId,
             status: plugin.status,
-            validated: plugin.validated,
             exposures
         };
     }
