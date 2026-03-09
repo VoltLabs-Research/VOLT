@@ -7,11 +7,10 @@ import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { PluginStatus } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import Button from '@/shared/presentation/components/Button';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { dateColumn } from '@/shared/presentation/utilities/column-presets';
+import { dateColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GetPluginsInputDTO } from '@/modules/plugin/api/dtos/plugin/get-plugins';
@@ -226,7 +225,7 @@ const PluginsListing = () => {
         );
     }
 
-    const columns: ColumnConfig[] = useMemo(() => [
+    const columns: ColumnConfig<Plugin>[] = useMemo(() => [
         {
             key: 'modifier.name',
             title: 'Name',
@@ -251,17 +250,10 @@ const PluginsListing = () => {
             render: (_, row) => (row as PluginListingRow).modifier?.version,
             skeleton: { variant: 'text', width: 70 }
         },
-        {
-            key: 'status',
-            title: 'Status',
+        statusColumn<Plugin>('status', 'Status', {
             sortable: true,
-            render: (value) => <StatusBadge status={String(value)} />,
-            skeleton: {
-                variant: 'rounded',
-                width: 80,
-                height: 24
-            }
-        },
+            width: 80
+        }),
         {
             key: 'exposures',
             title: 'Exposures',
@@ -272,7 +264,7 @@ const PluginsListing = () => {
             ),
             skeleton: { variant: 'text', width: 60 }
         },
-        dateColumn('createdAt', 'Created', { width: 100 })
+        dateColumn<Plugin>('createdAt', 'Created', { width: 100 })
     ], [navigate]);
 
     return (

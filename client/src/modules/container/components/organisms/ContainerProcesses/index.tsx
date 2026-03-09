@@ -1,13 +1,10 @@
 import { useContainerProcessesQuery } from '../../../hooks/queries';
 import './ContainerProcesses.css';
-import { Activity } from 'lucide-react';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import Container from '@/shared/presentation/components/Container';
-import Button from '@/shared/presentation/components/Button';
-import Paragraph from '@/shared/presentation/components/Paragraph';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Table from '@/shared/presentation/components/Table';
 import type { Column } from '@/shared/presentation/components/Table';
 
@@ -95,7 +92,12 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
     if(accessDenied){
         return (
             <Container className='d-flex column flex-center h-max gap-1 p-2'>
-                <AccessDenied description={accessDeniedMessage} showBack={false} />
+                <RecoveryState
+                    title='Access denied'
+                    description={accessDeniedMessage ?? 'You do not have permission to view running processes.'}
+                    tone={RecoveryStateTone.AccessDenied}
+                    className='w-max'
+                />
             </Container>
         );
     }
@@ -104,9 +106,15 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch processes';
         return (
             <Container className='d-flex column flex-center h-max gap-1 p-2 text-center color-muted'>
-                <Activity size={48} />
-                <Paragraph>{errorMessage}</Paragraph>
-                <Button variant='ghost' intent='neutral' size='sm' onClick={() => refetch()}>Retry</Button>
+                <RecoveryState
+                    title='Unable to load running processes'
+                    description={errorMessage}
+                    tone={RecoveryStateTone.Error}
+                    onRetry={() => {
+                        refetch().catch(() => undefined);
+                    }}
+                    className='w-max'
+                />
             </Container>
         );
     }

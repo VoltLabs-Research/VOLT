@@ -59,7 +59,13 @@ export default function SimulationCardFooter({
     }, [navigate, trajectoryId]);
 
     const handleDelete = useCallback(async () => {
-        if (!await confirm(`Delete trajectory "${name}"? This action cannot be undone.`)) return;
+        const isConfirmed = await confirm({
+            title: `Delete trajectory "${name}"?`,
+            description: 'This action cannot be undone.',
+            confirmText: 'Delete'
+        });
+
+        if (!isConfirmed) return;
         setIsDeleting(true);
         try {
             onDelete?.(trajectoryId);

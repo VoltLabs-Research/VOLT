@@ -10,6 +10,7 @@ import Container from '@/shared/presentation/components/Container';
 import EditableTag from '@/shared/presentation/components/EditableTag';
 import Sidebar from '@/shared/presentation/components/Sidebar';
 import Tooltip from '@/shared/presentation/components/Tooltip';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import { ArrowLeft } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -29,6 +30,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const { confirm } = useConfirm();
 
     const { nodes, updateNodeData, selectedNode, selectNode, deleteNode, addNode, undo, redo } = usePluginBuilderStore(
         useShallow((state) => ({
@@ -143,7 +145,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
 
     const handlePluginNameChange = useCallback((newName: string) => {
         if (modifierNode) {
-            const currentModifier = modifierNode.data.modifier ?? {} as IModifierData;
+            const currentModifier: IModifierData = modifierNode.data.modifier ?? { name: pluginName };
             updateNodeData(modifierNode.id, {
                 modifier: {
                     ...currentModifier,
@@ -151,7 +153,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
                 }
             });
         }
-    }, [modifierNode, updateNodeData]);
+    }, [modifierNode, pluginName, updateNodeData]);
 
     const onDragStart = useCallback((event: DragEvent, nodeType: NodeType) => {
         event.dataTransfer.setData('application/reactflow', nodeType);
@@ -159,12 +161,24 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
     }, []);
 
     const handleBackClick = useCallback(() => {
-        if (hasUnsavedChanges && !window.confirm('You have unsaved changes. Leave anyway?')) {
-            return;
-        }
+        const goBack = async () => {
+            if (hasUnsavedChanges) {
+                const isConfirmed = await confirm({
+                    title: 'Leave with unsaved changes?',
+                    description: 'Your changes have not been saved yet.',
+                    confirmText: 'Leave'
+                });
 
-        onBack();
-    }, [hasUnsavedChanges, onBack]);
+                if (!isConfirmed) {
+                    return;
+                }
+            }
+
+            onBack();
+        };
+
+        goBack().catch(() => undefined);
+    }, [confirm, hasUnsavedChanges, onBack]);
 
     const SIDEBAR_TAGS = useMemo(() => [
         {

@@ -5,7 +5,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
-import { confirm } from '@/shared/presentation/hooks/use-confirm';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';
 import { MessageCircle, UserMinus } from 'lucide-react';
 import './MemberRow.css';
@@ -27,9 +27,17 @@ export const MemberRow = ({
     onRemove,
     onMessage
 }: MemberRowProps) => {
-    const handleRemove = () => {
+    const { confirm } = useConfirm();
+
+    const handleRemove = async () => {
         const memberName = `${member.user.firstName} ${member.user.lastName}`;
-        if(!confirm(`Are you sure you want to remove ${memberName} from this team? This action cannot be undone.`)) return;
+        const isConfirmed = await confirm({
+            title: `Remove ${memberName} from this team?`,
+            description: 'This action cannot be undone.',
+            confirmText: 'Remove'
+        });
+
+        if(!isConfirmed) return;
         onRemove(member);
     };
 

@@ -53,7 +53,7 @@ const COLUMNS: ColumnConfig<SimulationCell>[] = [
         render: (_, row) => formatPeriodicBoundary(row),
         skeleton: { variant: 'text', width: 120 }
     },
-    dateColumn('createdAt', 'Created At')
+    dateColumn<SimulationCell>('createdAt', 'Created At', { sortable: false })
 ];
 
 const SimulationCellsListing = () => {

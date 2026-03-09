@@ -4,7 +4,6 @@ import SSHBreadcrumbs from '@/modules/ssh/components/atoms/SSHBreadcrumbs';
 import SSHExplorerHeaderLeft from '@/modules/ssh/components/atoms/SSHExplorerHeaderLeft';
 import SSHExplorerHeaderRight from '@/modules/ssh/components/atoms/SSHExplorerHeaderRight';
 import useSSHFileExplorer from '@/modules/ssh/hooks/use-ssh-file-explorer';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import FileExplorer from '@/shared/presentation/components/FileExplorer';
 import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileExplorerRow';
 import { formatDistanceToNow } from 'date-fns';
@@ -37,10 +36,6 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
         goBack,
         refresh
     } = useSSHFileExplorer({ connectionId });
-
-    if (accessDenied) {
-        return <AccessDenied description={accessDeniedMessage} />;
-    }
 
     const handleEntryClick = (entry: SSHFileEntry) => {
         setSelectedPath(entry.relPath);
@@ -77,6 +72,9 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
             isLoading={isLoading}
             isEmpty={entries.length === 0}
             error={error}
+            accessDenied={accessDenied}
+            accessDeniedMessage={accessDeniedMessage}
+            onRetry={refresh}
             emptyMessage='No files found in this directory'
         >
             {entries.map((entry) => (

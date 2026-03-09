@@ -1,6 +1,7 @@
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { openModal } from '@/shared/presentation/components/Modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { dateColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
 import { SecretKeyCreationModal, SECRET_KEY_CREATION_MODAL_ID } from '../../organisms/SecretKeyCreationModal';
 import useDeleteSecretKey from '@/modules/team/hooks/secret-key/use-delete-secret-key';
 import useRevokeSecretKey from '@/modules/team/hooks/secret-key/use-revoke-secret-key';
@@ -10,8 +11,6 @@ import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
 import Button from '@/shared/presentation/components/Button';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
-import { formatDistanceToNow } from 'date-fns';
 import { PiKeyLight } from 'react-icons/pi';
 import { RiBarChartLine, RiFileCopyLine, RiLineChartLine, RiShieldKeyholeLine } from 'react-icons/ri';
 import { useCallback } from 'react';
@@ -39,13 +38,6 @@ type SecretKeyColumnSkeleton = NonNullable<ColumnConfig<SecretKey>['skeleton']>;
 const NAME_COLUMN_SKELETON: SecretKeyColumnSkeleton = { variant: 'text', width: 120 };
 const PREFIX_COLUMN_SKELETON: SecretKeyColumnSkeleton = { variant: 'text', width: 80 };
 const ROLE_COLUMN_SKELETON: SecretKeyColumnSkeleton = { variant: 'text', width: 100 };
-const STATUS_COLUMN_SKELETON: SecretKeyColumnSkeleton = {
-    variant: 'rounded',
-    width: 70,
-    height: 24
-};
-const DATE_COLUMN_SKELETON: SecretKeyColumnSkeleton = { variant: 'text', width: 90 };
-
 const getDeleteSecretKeyToastOptions = (key: SecretKey): PromiseToastOptions => ({
     loading: { title: `Deleting "${key.name}"...` },
     success: { title: `Secret key "${key.name}" deleted` },
@@ -71,26 +63,19 @@ const COLUMNS: ColumnConfig<SecretKey>[] = [
         render: (_value, key) => String(key.roleName || 'Unknown Role'),
         skeleton: ROLE_COLUMN_SKELETON
     },
-    {
-        key: 'isActive',
-        title: 'Status',
-        render: (_value, key) => (
-            <StatusBadge status={key.isActive ? 'active' : 'revoked'} />
-        ),
-        skeleton: STATUS_COLUMN_SKELETON
-    },
-    {
-        key: 'createdAt',
-        title: 'Created At',
-        render: (_value, key) => formatDistanceToNow(new Date(key.createdAt), { addSuffix: true }),
-        skeleton: DATE_COLUMN_SKELETON
-    },
-    {
-        key: 'lastUsedAt',
-        title: 'Last Used',
-        render: (_value, key) => key.lastUsedAt ? formatDistanceToNow(new Date(key.lastUsedAt), { addSuffix: true }) : 'Never',
-        skeleton: DATE_COLUMN_SKELETON
-    }
+    statusColumn<SecretKey>('isActive', 'Status', {
+        width: 70,
+        resolveStatus: (_value, key) => key.isActive ? 'active' : 'revoked'
+    }),
+    dateColumn<SecretKey>('createdAt', 'Created At', {
+        width: 90,
+        sortable: false
+    }),
+    dateColumn<SecretKey>('lastUsedAt', 'Last Used', {
+        width: 90,
+        sortable: false,
+        fallback: 'Never'
+    })
 ];
 
 export default function SecretKeysListing() {

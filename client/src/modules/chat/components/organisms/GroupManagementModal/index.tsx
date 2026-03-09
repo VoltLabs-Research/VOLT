@@ -11,6 +11,7 @@ import Container from '@/shared/presentation/components/Container';
 import Modal from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import type { User } from '@/modules/auth/api/entities/user';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 import './GroupManagementModal.css';
@@ -69,6 +70,7 @@ const GroupManagementModal = ({
     const [groupDescription, setGroupDescription] = useState('');
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
     const { isLoading, execute } = useAsyncAction();
+    const { confirm } = useConfirm();
 
     const isOwner = chat?.createdBy?._id === currentUserId;
     const isAdmin = chat?.admins?.some((a) => a._id === currentUserId) ?? false;
@@ -108,9 +110,16 @@ const GroupManagementModal = ({
     });
 
     const handleLeave = () => execute(async () => {
-        if (confirm('Are you sure you want to leave this group?')) {
-            await onLeaveGroup(chat._id);
+        const isConfirmed = await confirm({
+            title: 'Leave this group?',
+            confirmText: 'Leave'
+        });
+
+        if (!isConfirmed) {
+            return;
         }
+
+        await onLeaveGroup(chat._id);
     });
 
     const toggleSelectedMember = (id: string) => {

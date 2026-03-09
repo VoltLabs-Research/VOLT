@@ -47,7 +47,7 @@ const getDeleteConfirmationMessage = (selectedItems: Analysis[]): string => {
     return message;
 };
 
-const COLUMNS: ColumnConfig[] = [
+const COLUMNS: ColumnConfig<Analysis>[] = [
     {
         key: 'trajectory.name',
         title: 'Trajectory',
@@ -69,9 +69,9 @@ const COLUMNS: ColumnConfig[] = [
         render: renderTotalFrames,
         skeleton: { variant: 'text', width: 90 }
     },
-    dateColumn('startedAt', 'Started At'),
-    dateColumn('finishedAt', 'Finished At'),
-    dateColumn('createdAt', 'Created')
+    dateColumn<Analysis>('startedAt', 'Started At', { sortable: false }),
+    dateColumn<Analysis>('finishedAt', 'Finished At', { sortable: false }),
+    dateColumn<Analysis>('createdAt', 'Created', { sortable: false })
 ];
 
 const AnalysesListing = () => {

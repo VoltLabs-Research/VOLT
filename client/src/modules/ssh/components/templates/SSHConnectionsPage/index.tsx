@@ -5,12 +5,12 @@ import {
     useTestSSHConnectionMutation
 } from '@/modules/ssh/hooks/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useModalForm from '@/shared/presentation/hooks/use-modal-form';
 import usePermission from '@/shared/presentation/hooks/use-permission';
 import SSHConnectionModal, { SSH_CONNECTION_MODAL_ID } from '../../molecules/SSHConnectionModal';
-import { formatDistanceToNow } from 'date-fns';
 import { LuFolderOpen } from 'react-icons/lu';
 import { RiEditLine, RiWifiLine } from 'react-icons/ri';
 import { useNavigate } from 'react-router-dom';
@@ -133,7 +133,7 @@ const SSHConnectionsPage = () => {
         }
     });
 
-    const columns: ColumnConfig[] = useMemo(() => [
+    const columns: ColumnConfig<SSHConnection>[] = useMemo(() => [
         {
             key: 'name',
             title: 'Name',
@@ -158,13 +158,7 @@ const SSHConnectionsPage = () => {
             sortable: true,
             skeleton: { variant: 'text', width: 100 }
         },
-        {
-            key: 'createdAt',
-            title: 'Created',
-            sortable: true,
-            render: (value) => formatDistanceToNow(new Date(String(value)), { addSuffix: true }),
-            skeleton: { variant: 'text', width: 80 }
-        }
+        dateColumn<SSHConnection>('createdAt', 'Created', { width: 80 })
     ], []);
 
     let createNew;

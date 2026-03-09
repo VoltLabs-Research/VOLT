@@ -1,6 +1,7 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useDeleteMeMutation, useUpdateMeMutation } from '@/modules/auth/hooks/queries';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import AvatarUpload from '@/modules/auth/components/organisms/AvatarUpload';
 import ProfileForm from '@/modules/auth/components/organisms/ProfileForm';
@@ -19,6 +20,7 @@ const GeneralSettings = () => {
     const updateMe = useUpdateMeMutation();
     const deleteMe = useDeleteMeMutation();
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+    const { confirm } = useConfirm();
 
     const handleAvatarUpload = useCallback(async (file: File) => {
         setIsUploadingAvatar(true);
@@ -57,7 +59,13 @@ const GeneralSettings = () => {
     }), [user?.fullName, user?.email]);
 
     const handleDeleteAccount = useCallback(async () => {
-        if(!window.confirm('Are you sure you want to delete your account? This action cannot be undone.')){
+        const isConfirmed = await confirm({
+            title: 'Delete your account?',
+            description: 'This action cannot be undone.',
+            confirmText: 'Delete'
+        });
+
+        if(!isConfirmed){
             return;
         }
         await showPromise(
@@ -69,7 +77,7 @@ const GeneralSettings = () => {
             }
         );
         signOut();
-    }, [deleteMe, signOut]);
+    }, [confirm, deleteMe, signOut]);
 
     return (
         <SettingsPage title="General Settings">

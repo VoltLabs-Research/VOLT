@@ -4,7 +4,7 @@ import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useUpdateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
 import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';
-import { confirm } from '@/shared/presentation/hooks/use-confirm';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import ActivityHeatmap from '@/modules/daily-activity/components/molecules/ActivityHeatmap';
 import UserInfo from '@/modules/auth/components/atoms/UserInfo';
@@ -18,6 +18,7 @@ import EditableTag from '@/shared/presentation/components/EditableTag';
 import Select from '@/shared/presentation/components/Select';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { formatDistanceToNow } from 'date-fns';
 import { IoChatbubbleOutline, IoPersonRemoveOutline } from 'react-icons/io5';
 import { useCallback, useMemo } from 'react';
@@ -80,6 +81,7 @@ export default function MyTeamTemplate() {
     const navigate = useNavigate();
 
     const selectedTeam = useSelectedTeam()!;
+    const { confirm } = useConfirm();
     const { canAccess } = useTeamPermissions();
     const canInvite = canAccess(['team-invitation:create']);
 
@@ -121,14 +123,16 @@ export default function MyTeamTemplate() {
     const handleRemoveMembers = useCallback(async (members: TeamMemberStats[]) => {
         if (!members.length) return;
 
-        let confirmationMessage = `Are you sure you want to remove ${members.length} team members?`;
+        let confirmationTitle = `Remove ${members.length} team members?`;
         if (members.length === 1) {
-            confirmationMessage = `Are you sure you want to remove ${members[0].user.firstName}?`;
+            confirmationTitle = `Remove ${members[0].user.firstName} from this team?`;
         }
 
-        const isConfirmed = await confirm(
-            confirmationMessage
-        );
+        const isConfirmed = await confirm({
+            title: confirmationTitle,
+            description: 'This action cannot be undone.',
+            confirmText: 'Remove'
+        });
         if(!isConfirmed) return;
 
         for (const member of members) {
@@ -256,15 +260,7 @@ export default function MyTeamTemplate() {
                 );
             }
         },
-        {
-            key: 'joinedAt',
-            title: 'Joined',
-            render: (_value, member) => (
-                <span className='color-secondary font-size-2'>
-                    {formatDistanceToNow(new Date(member.joinedAt), { addSuffix: true })}
-                </span>
-            )
-        }
+        dateColumn<TeamMemberStats>('joinedAt', 'Joined', { sortable: false })
     ], [canInvite, user, selectedTeam, roleOptions, handleRoleChange, onlineUserIds, hasPresenceSnapshot]);
 
     const { getMenuOptions, getSelectionActionOptions } = useListingActions<TeamMemberStats>({
