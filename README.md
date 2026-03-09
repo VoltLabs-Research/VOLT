@@ -1,5 +1,3 @@
-The next-generation platform designed for high-performance research teams and enthusiastic materials scientists!
-
 ## Why Volt?
 ![Dashboard](screenshots/introducing-volt.png)
 
