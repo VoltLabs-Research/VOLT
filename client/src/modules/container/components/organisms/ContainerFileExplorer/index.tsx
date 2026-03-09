@@ -135,36 +135,44 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
                 icon={renderFileIcon(file.isDirectory)}
                 name={file.name}
                 type={file.isDirectory ? 'Folder' : 'File'}
-                size={file.size}
+                size={file.size ? String(file.size) : undefined}
                 date={file.date}
                 onClick={() => handleFileItemClick(file.name, file.isDirectory)}
             />
         ));
-    }, [files]);
+    }, [files, handleFileItemClick]);
+
+    const explorerHeaderLeft = useMemo(() => {
+        return (
+            <Container className='d-flex items-center gap-1 flex-1'>
+                <Tooltip content='Go to Parent Directory' placement='bottom'>
+                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleGoUp} disabled={path === '/'}>
+                        <IoArrowBack />
+                    </Button>
+                </Tooltip>
+                <span className='container-file-current-path'>{path}</span>
+            </Container>
+        );
+    }, [handleGoUp, path]);
+
+    const explorerHeaderRight = useMemo(() => {
+        return (
+            <RefreshButton
+                label='Refresh'
+                variant='outline'
+                intent='white'
+                onClick={() => {
+                    void refetchFiles();
+                }}
+                isLoading={isFetching && !isLoading}
+            />
+        );
+    }, [refetchFiles, isFetching, isLoading]);
 
     return (
         <FileExplorer
-            headerLeft={(
-                <Container className='d-flex items-center gap-1 flex-1'>
-                    <Tooltip content='Go to Parent Directory' placement='bottom'>
-                        <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleGoUp} disabled={path === '/'}>
-                            <IoArrowBack />
-                        </Button>
-                    </Tooltip>
-                    <span className='container-file-current-path'>{path}</span>
-                </Container>
-            )}
-            headerRight={(
-                <RefreshButton
-                    label='Refresh'
-                    variant='outline'
-                    intent='white'
-                    onClick={() => {
-                        void refetchFiles();
-                    }}
-                    isLoading={isFetching && !isLoading}
-                />
-            )}
+            headerLeft={explorerHeaderLeft}
+            headerRight={explorerHeaderRight}
             columns={columns}
             isLoading={isLoading}
             isEmpty={!filesErrorMessage && files.length === 0}

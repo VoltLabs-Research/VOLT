@@ -109,6 +109,7 @@ const DocumentListingTable = <T extends Identifiable>({
     const {
         isInitialLoading,
         hasNoData,
+        shouldShowContent,
         shouldShowEmptyState,
         shouldShowErrorState,
         shouldShowAccessDeniedState
@@ -168,7 +169,7 @@ const DocumentListingTable = <T extends Identifiable>({
 
     return (
         <Container className='d-flex column document-listing-table-container h-max'>
-            {columns.length > 0 && !shouldShowEmptyState && (
+            {columns.length > 0 && shouldShowContent && (
                 <Container
                     className='document-listing-table-header-container p-sticky top-0 d-flex'
                     style={{
@@ -197,7 +198,7 @@ const DocumentListingTable = <T extends Identifiable>({
             <Container
                 ref={bodyRef as React.RefObject<HTMLDivElement>}
                 className='d-flex column p-relative document-listing-table-body-container flex-1'
-                style={{ minWidth: (useFlexDistribution || shouldShowEmptyState) ? undefined : `${minContentWidth}px` }}
+                style={{ minWidth: (useFlexDistribution || !shouldShowContent) ? undefined : `${minContentWidth}px` }}
             >
                 {!hasNoData && data.map((item) => (
                     <TableRow

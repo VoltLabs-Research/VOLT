@@ -1,6 +1,6 @@
 import type { DragEvent } from 'react';
 import type { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import type { NodeTypeConfig } from '@/modules/plugin/utilities/plugin/node-types';
+import type { NodeTypeConfig } from '@/modules/plugin/utilities/plugin/node-registry';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import Container from '@/shared/presentation/components/Container';
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';

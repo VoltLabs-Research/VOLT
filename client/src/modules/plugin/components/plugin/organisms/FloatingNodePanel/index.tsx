@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useReactFlow, useViewport } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-types';
+import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import NodeEditor from '@/modules/plugin/components/plugin/molecules/NodeEditor';
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';

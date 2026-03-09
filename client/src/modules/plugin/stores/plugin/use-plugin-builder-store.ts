@@ -4,8 +4,7 @@ import type { Node, Edge, Connection, NodeChange, EdgeChange, XYPosition } from 
 import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
 import type { IWorkflow, INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-types';
-import { createNode } from '@/modules/plugin/utilities/plugin/node-factory';
+import { NODE_CONFIGS, createNode } from '@/modules/plugin/utilities/plugin/node-registry';
 
 type ValidationResult = {
     valid: boolean;

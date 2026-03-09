@@ -3,7 +3,7 @@ import CollapsibleSection from '@/shared/presentation/components/CollapsibleSect
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import CodeEditor from '@/shared/presentation/components/CodeEditor';
 import useNodeFormRHF from '@/modules/plugin/hooks/plugin/use-node-form-rhf';
-import { EXPORTER_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-types';
+import { EXPORTER_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
 import { Exporter, ExportType_ as ExportType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import type { IExportData } from '@/modules/plugin/api/entities/plugin/workflow';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';

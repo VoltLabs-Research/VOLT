@@ -1,6 +1,5 @@
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import EmptyState from '@/shared/presentation/components/EmptyState';
-import RefreshButton from '@/shared/presentation/components/RefreshButton';
 import { AlertTriangle, FileText } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -62,30 +61,6 @@ const RecoveryState = ({
             buttonOnClick={onRetry}
             buttonIsLoading={isRetrying}
             className={className}
-        />
-    );
-};
-
-export const RecoveryInlineAction = ({
-    onRetry,
-    isRetrying = false,
-    label = 'Retry'
-}: {
-    onRetry?: () => void;
-    isRetrying?: boolean;
-    label?: string;
-}) => {
-    if (!onRetry) {
-        return null;
-    }
-
-    return (
-        <RefreshButton
-            label={label}
-            onClick={onRetry}
-            isLoading={isRetrying}
-            variant='outline'
-            intent='neutral'
         />
     );
 };

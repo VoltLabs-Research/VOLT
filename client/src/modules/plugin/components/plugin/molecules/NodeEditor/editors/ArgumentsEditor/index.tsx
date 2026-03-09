@@ -7,7 +7,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import IconButton from '@/shared/presentation/components/IconButton';
 import { Plus, Trash2 } from 'lucide-react';
 import useNodeCollectionForm from '@/modules/plugin/hooks/plugin/use-node-collection-form';
-import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-types';
+import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
 import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import type { IArgumentDefinition, IArgumentOption } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { EditorProps } from '../types';
