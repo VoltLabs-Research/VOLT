@@ -259,28 +259,37 @@ done`, '--', normalizedDirectoryPath]);
     }
 
     async buildImage(imageName: string, contextPath: string): Promise<void> {
-        await new Promise<void>((resolve, reject) => {
-            const process = spawn('docker', ['build', '-t', imageName, contextPath], {
-                stdio: ['ignore', 'pipe', 'pipe']
-            });
-            let output = '';
+        const stream = await this.docker.buildImage({
+            context: contextPath,
+            src: ['Dockerfile', 'voltsdk']
+        }, {
+            t: imageName
+        });
 
-            process.stdout.on('data', (chunk: Buffer) => {
-                output += chunk.toString('utf8');
-            });
-            process.stderr.on('data', (chunk: Buffer) => {
-                output += chunk.toString('utf8');
-            });
-            process.on('error', (error: Error) => {
-                reject(error);
-            });
-            process.on('close', (exitCode) => {
-                if (exitCode === 0) {
+        await new Promise<void>((resolve, reject) => {
+            this.docker.modem.followProgress(stream, (error, output) => {
+                if (!error) {
                     resolve();
                     return;
                 }
 
-                reject(new Error(output.trim() || `Docker build failed with exit code ${exitCode}`));
+                const message = Array.isArray(output)
+                    ? output
+                        .map((entry) => {
+                            if (typeof entry?.error === 'string') {
+                                return entry.error;
+                            }
+
+                            if (typeof entry?.stream === 'string') {
+                                return entry.stream.trim();
+                            }
+
+                            return '';
+                        })
+                        .filter(Boolean)
+                        .join('\n')
+                    : '';
+                reject(new Error(message || error.message || 'Docker build failed'));
             });
         });
     }

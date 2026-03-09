@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
@@ -40,6 +41,21 @@ const CreateGroupModal = ({ teamMembers, currentUserId, onCreateGroup }: CreateG
             title='Create New Group'
             description='Create a group chat with your team members'
             width='500px'
+            footer={(
+                <ModalFooterActions
+                    secondary={{
+                        label: 'Cancel',
+                        commandfor: 'create-group-modal',
+                        command: 'close'
+                    }}
+                    primary={{
+                        label: 'Create Group',
+                        onClick: handleCreate,
+                        disabled: !groupName.trim() || selectedMembers.length === 0,
+                        isLoading: isLoading
+                    }}
+                />
+            )}
         >
             <Container className='d-flex column gap-1 p-2'>
                 <FormFieldRHF
@@ -68,25 +84,6 @@ const CreateGroupModal = ({ teamMembers, currentUserId, onCreateGroup }: CreateG
                     />
                 </Container>
 
-                <Container className='d-flex content-end gap-05 mt-1'>
-                    <Button
-                        variant='ghost'
-                        intent='neutral'
-                        commandfor='create-group-modal'
-                        command='close'
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        variant='solid'
-                        intent='brand'
-                        onClick={handleCreate}
-                        disabled={!groupName.trim() || selectedMembers.length === 0}
-                        isLoading={isLoading}
-                    >
-                        Create Group
-                    </Button>
-                </Container>
             </Container>
         </Modal>
     );

@@ -1,6 +1,7 @@
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal, { closeModal } from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
@@ -78,19 +79,22 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
             description={credentials
                 ? 'These credentials are sensitive. Rotate them if they are exposed outside your team.'
                 : 'Confirm your password to reveal the encrypted service credentials for this cluster.'}
-            footer={credentials ? (
-                <Button variant='solid' intent='brand' onClick={handleClose}>
-                    Done
-                </Button>
-            ) : (
-                <>
-                    <Button variant='ghost' intent='neutral' onClick={handleClose} disabled={isSubmitting}>
-                        Cancel
-                    </Button>
-                    <Button variant='solid' intent='brand' onClick={handleSubmit} isLoading={isSubmitting}>
-                        Reveal credentials
-                    </Button>
-                </>
+            footer={(
+                <ModalFooterActions
+                    secondary={credentials ? undefined : {
+                        label: 'Cancel',
+                        onClick: handleClose,
+                        disabled: isSubmitting
+                    }}
+                    primary={credentials ? {
+                        label: 'Done',
+                        onClick: handleClose
+                    } : {
+                        label: 'Reveal credentials',
+                        onClick: handleSubmit,
+                        isLoading: isSubmitting
+                    }}
+                />
             )}
         >
             <Container className='d-flex column gap-1'>

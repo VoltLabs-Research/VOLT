@@ -4,6 +4,7 @@ import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { getAccessDeniedMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
 import useModalForm from '@/shared/presentation/hooks/use-modal-form';
 import { showPromise } from '@/shared/presentation/hooks/toast';
@@ -14,6 +15,7 @@ import type { TeamCreatorForm } from './validation-schema';
 import './TeamCreatorModal.css';
 
 const MODAL_ID = 'team-creator-modal';
+const TEAM_CREATOR_FORM_ID = 'team-creator-form';
 
 interface TeamCreatorModalProps {
     isRequired?: boolean;
@@ -102,8 +104,24 @@ export const TeamCreatorModal = ({
             title='Create Team'
             description='Create a new workspace for your trajectories.'
             width='450px'
+            footer={(
+                <ModalFooterActions
+                    secondary={!isRequired ? {
+                        label: 'Cancel',
+                        onClick: handleClose,
+                        disabled: form.formState.isSubmitting
+                    } : undefined}
+                    primary={{
+                        label: 'Create Team',
+                        type: 'submit',
+                        form: TEAM_CREATOR_FORM_ID,
+                        isLoading: form.formState.isSubmitting,
+                        disabled: !nameValue.trim() || form.formState.isSubmitting
+                    }}
+                />
+            )}
         >
-            <form onSubmit={form.handleSubmit(onSubmit)} className='d-flex column gap-1-5 p-1-5'>
+            <form id={TEAM_CREATOR_FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className='d-flex column gap-1-5 p-1-5'>
                 <FormFieldRHF
                     name='name'
                     control={form.control}
@@ -126,30 +144,6 @@ export const TeamCreatorModal = ({
                         {apiError}
                     </Container>
                 )}
-
-                <Container className='d-flex content-end gap-05 mt-1'>
-                    {!isRequired && (
-                        <Button
-                            variant='ghost'
-                            intent='neutral'
-                            type='button'
-                            onClick={handleClose}
-                            disabled={form.formState.isSubmitting}
-                        >
-                            Cancel
-                        </Button>
-                    )}
-
-                    <Button
-                        type='submit'
-                        variant='solid'
-                        intent='brand'
-                        isLoading={form.formState.isSubmitting}
-                        disabled={!nameValue.trim() || form.formState.isSubmitting}
-                    >
-                        Create Team
-                    </Button>
-                </Container>
             </form>
         </Modal>
     );

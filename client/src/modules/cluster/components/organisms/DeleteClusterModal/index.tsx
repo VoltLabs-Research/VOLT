@@ -1,6 +1,7 @@
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal, { closeModal } from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { useState } from 'react';
@@ -64,16 +65,19 @@ const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterMod
             title={`Delete ${teamCluster?.name ?? 'cluster'}`}
             description={modalDescription}
             footer={(
-                <>
-                    <Button variant='ghost' intent='neutral' onClick={handleClose} disabled={isSubmitting}>
-                        {result ? 'Done' : 'Cancel'}
-                    </Button>
-                    {!result && (
-                        <Button variant='solid' intent='danger' onClick={handleSubmit} isLoading={isSubmitting}>
-                            Delete cluster
-                        </Button>
-                    )}
-                </>
+                <ModalFooterActions
+                    secondary={{
+                        label: result ? 'Done' : 'Cancel',
+                        onClick: handleClose,
+                        disabled: isSubmitting
+                    }}
+                    primary={result ? undefined : {
+                        label: 'Delete cluster',
+                        intent: 'danger',
+                        onClick: handleSubmit,
+                        isLoading: isSubmitting
+                    }}
+                />
             )}
         >
             <Container className='d-flex column gap-1'>

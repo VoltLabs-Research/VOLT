@@ -1,6 +1,7 @@
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { ConfirmActionTone, registerConfirmActionController } from '@/shared/presentation/hooks/use-confirm';
@@ -79,19 +80,18 @@ const ConfirmActionModal = () => {
         ? `This action requires an exact confirmation phrase: ${modalState.requireTypedText}`
         : '';
     const footer = (
-        <>
-            <Button variant='ghost' intent='neutral' onClick={handleCancel}>
-                {modalState?.cancelText ?? 'Cancel'}
-            </Button>
-            <Button
-                variant='solid'
-                intent={confirmIntent}
-                onClick={handleConfirm}
-                disabled={!isTypedConfirmationValid}
-            >
-                {modalState?.confirmText ?? 'Confirm'}
-            </Button>
-        </>
+        <ModalFooterActions
+            secondary={{
+                label: modalState?.cancelText ?? 'Cancel',
+                onClick: handleCancel
+            }}
+            primary={{
+                label: modalState?.confirmText ?? 'Confirm',
+                intent: confirmIntent,
+                onClick: handleConfirm,
+                disabled: !isTypedConfirmationValid
+            }}
+        />
     );
 
     return (
