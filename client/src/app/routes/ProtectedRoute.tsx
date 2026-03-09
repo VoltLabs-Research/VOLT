@@ -5,6 +5,7 @@ import { resetTeamSessionState, useTeamStore } from '@/modules/team/stores/team/
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
+import ConfirmActionModal from '@/shared/presentation/components/ConfirmActionModal';
 import useTeamSocketSubscription from '@/modules/team/hooks/team/use-team-socket-subscription';
 import useSocketConnectionToast from '@/modules/socket/core/hooks/use-socket-connection-toast';
 import useTeamActivityHeartbeat from '@/modules/team/hooks/team/use-team-activity-heartbeat';
@@ -13,6 +14,7 @@ import useTeamPresenceSocket from '@/modules/team/hooks/team/use-team-presence-s
 import Loader from '@/shared/presentation/components/Loader';
 import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import type { ReactNode } from 'react';
 
 export enum RouteMode {
     Protected = 'protected',
@@ -61,6 +63,15 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     const canAccessWithoutSelectedTeam = isStartRoute || isTeamInvitationRoute;
     const canAccessWithoutCluster = canAccessWithoutSelectedTeam || isClusterOnboardingRoute;
 
+    const renderProtectedContent = (content: ReactNode) => {
+        return (
+            <>
+                <ConfirmActionModal />
+                {content}
+            </>
+        );
+    };
+
     useEffect(() => {
         if(!isInitialized && !isLoading){
             initializeAuth();
@@ -82,56 +93,56 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     }, [hasToken, hasTeam, isTeamsLoading, fetchTeams]);
 
     if(!isInitialized || isLoading){
-        return <Loader scale={0.6} />;
+        return renderProtectedContent(<Loader scale={0.6} />);
     }
 
     if(mode === RouteMode.Protected){
         if(!isAuthenticated){
-            return <Navigate to='/auth/sign-in' state={{ from: location }} replace />;
+            return renderProtectedContent(<Navigate to='/auth/sign-in' state={{ from: location }} replace />);
         }
 
         if (canAccessWithoutSelectedTeam) {
-            return <Outlet />;
+            return renderProtectedContent(<Outlet />);
         }
 
         if(isTeamsLoading && teams.length === 0){
-            return <Loader scale={0.6} />;
+            return renderProtectedContent(<Loader scale={0.6} />);
         }
 
         if(!hasTeam){
             if (teams.length === 0) {
                 if (isDashboardRoute) {
-                    return <Outlet />;
+                    return renderProtectedContent(<Outlet />);
                 }
 
-                return <Navigate to='/dashboard' replace />;
+                return renderProtectedContent(<Navigate to='/dashboard' replace />);
             }
 
-            return <Loader scale={0.6} />;
+            return renderProtectedContent(<Loader scale={0.6} />);
         }
 
         if (!canAccessWithoutCluster) {
             if (isClusterCheckLoading) {
-                return <Loader scale={0.6} />;
+                return renderProtectedContent(<Loader scale={0.6} />);
             }
 
             if (shouldRedirectToOnboarding) {
-                return <Navigate to='/onboarding/cluster/setup' replace />;
+                return renderProtectedContent(<Navigate to='/onboarding/cluster/setup' replace />);
             }
         }
 
-        return <Outlet />;
+        return renderProtectedContent(<Outlet />);
     }
 
     if(mode === RouteMode.Guest){
         if(isAuthenticated){
-            return <Navigate to='/dashboard' replace />;
+            return renderProtectedContent(<Navigate to='/dashboard' replace />);
         }
 
-        return <Outlet />;
+        return renderProtectedContent(<Outlet />);
     }
 
-    return <Navigate to='/' replace />;
+    return renderProtectedContent(<Navigate to='/' replace />);
 };
 
 export default ProtectedRoute;

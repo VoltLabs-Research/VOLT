@@ -1,6 +1,6 @@
 import { simulationCellByTrajectoryQuery } from './queries';
 import type { SimulationCell } from '../api/entities/simulation-cell';
-import ApiError from '@/shared/errors/ApiError';
+import { getAccessDeniedMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 interface UseSimulationCellParams {
     trajectoryId?: string;
@@ -36,7 +36,7 @@ const useSimulationCell = (params: UseSimulationCellParams = {}): UseSimulationC
         {
             enabled: shouldFetch,
             retry: (failureCount, error) => {
-                if (ApiError.isRBACError(error)) {
+                if (isAccessDeniedError(error)) {
                     return false;
                 }
 
@@ -46,9 +46,9 @@ const useSimulationCell = (params: UseSimulationCellParams = {}): UseSimulationC
     );
 
     const simulationCell = data ?? null;
-    const accessDenied = ApiError.isRBACError(queryError);
-    const accessDeniedMessage = accessDenied && queryError instanceof ApiError
-        ? queryError.getFriendlyMessage()
+    const accessDenied = isAccessDeniedError(queryError);
+    const accessDeniedMessage = accessDenied
+        ? getAccessDeniedMessage(queryError)
         : undefined;
 
     let errorMessage: string | null = null;

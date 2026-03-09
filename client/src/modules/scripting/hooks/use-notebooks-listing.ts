@@ -1,3 +1,4 @@
+import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import {
     scriptingNotebooksQuery,
     scriptingNotebooksQueryKey,
@@ -5,7 +6,6 @@ import {
 } from '@/modules/scripting/hooks/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import ApiError from '@/shared/errors/ApiError';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import { FolderOpen } from 'lucide-react';
 import { useCallback } from 'react';
@@ -58,7 +58,7 @@ const useNotebooksListing = () => {
                 data: result.data || []
             };
         } catch (error) {
-            if (ApiError.isRBACError(error)) {
+            if (isAccessDeniedError(error)) {
                 throw error;
             }
 

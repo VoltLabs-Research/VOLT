@@ -27,7 +27,7 @@ export interface TeamClusterInstallManifestImagesDTO {
 export interface TeamClusterInstallManifestDTO {
     manifestVersion: string;
     composeProjectName: string;
-    buildContextArchiveBase64: string;
+    buildContextArchiveBase64?: string;
     files: TeamClusterInstallManifestFileDTO[];
     images: TeamClusterInstallManifestImagesDTO;
 };

@@ -13,7 +13,7 @@ import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
-import ApiError from '@/shared/errors/ApiError';
+import { getAccessDeniedMessage, notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import { z } from 'zod/v4';
 import type { IEntrypointData } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { EditorProps } from '../types';
@@ -95,9 +95,9 @@ const EntrypointEditor = ({ node }: EditorProps) => {
             setUploadProgress(100);
             sileo.success({ title: 'Binary uploaded successfully' });
         } catch (error) {
-            if(ApiError.isRBACError(error)){
-                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to upload binaries';
-                setUploadError(msg);
+            if(isAccessDeniedError(error)){
+                notifyApiError(error, { fallbackTitle: 'You do not have permission to upload binaries' });
+                setUploadError(getAccessDeniedMessage(error, 'You do not have permission to upload binaries') ?? 'You do not have permission to upload binaries');
                 return;
             }
             setUploadError(error instanceof Error ? error.message : 'Failed to upload binary');
@@ -125,9 +125,9 @@ const EntrypointEditor = ({ node }: EditorProps) => {
             form.reset(newData);
             updateNodeData(node.id, { entrypoint: newData as IEntrypointData });
         } catch (error) {
-            if(ApiError.isRBACError(error)){
-                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to delete binaries';
-                setUploadError(msg);
+            if(isAccessDeniedError(error)){
+                notifyApiError(error, { fallbackTitle: 'You do not have permission to delete binaries' });
+                setUploadError(getAccessDeniedMessage(error, 'You do not have permission to delete binaries') ?? 'You do not have permission to delete binaries');
                 return;
             }
             setUploadError(error instanceof Error ? error.message : 'Failed to delete binary');

@@ -1,7 +1,7 @@
 import { useRetryFailedFramesMutation } from './queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import ApiError from '@/shared/errors/ApiError';
 import { useCallback } from 'react';
+import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 const getRetryFailedFramesSuccessTitle = (retriedFrames: number): string => {
     if (retriedFrames === 0) {
@@ -30,7 +30,7 @@ const useRetryFailedFrames = () => {
                 }
             );
         } catch (error: unknown) {
-            if (ApiError.isRBACError(error)) return;
+            if (isAccessDeniedError(error)) return;
             throw error;
         }
     }, [mutation]);

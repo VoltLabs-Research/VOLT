@@ -1,4 +1,4 @@
-import ApiError from '@/shared/errors/ApiError';
+import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import { useState } from 'react';
 import { sileo } from 'sileo';
@@ -19,9 +19,8 @@ const AsyncMenuItemWrapper: React.FC<AsyncMenuItemWrapperProps> = ({ option, onS
             await option.onClick();
             onSuccess?.();
         }catch(error: unknown){
-            if(ApiError.isRBACError(error)){
-                const msg = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
-                sileo.error({ title: msg });
+            if(isAccessDeniedError(error)){
+                notifyApiError(error, { fallbackTitle: 'You do not have permission to perform this action.' });
             } else {
                 sileo.error({ title: `${option.label} failed` });
             }

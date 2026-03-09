@@ -6,7 +6,7 @@ import Tooltip from '@/shared/presentation/components/Tooltip';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
 import FileRowSkeleton from '@/shared/presentation/components/FileExplorer/FileRowSkeleton';
-import ApiError from '@/shared/errors/ApiError';
+import { getApiErrorMessage } from '@/shared/errors/notify-api-error';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import './ContainerFileExplorer.css';
 
@@ -99,12 +99,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     }
 
     if (viewingFile && fileContentError) {
-        let message = 'Failed to open file';
-        if (fileContentError instanceof ApiError) {
-            message = fileContentError.getFriendlyMessage();
-        } else if (fileContentError instanceof Error) {
-            message = fileContentError.message;
-        }
+        const message = getApiErrorMessage(fileContentError, 'Failed to open file');
 
         return (
             <Container className='d-flex column h-max gap-1'>

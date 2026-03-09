@@ -2,9 +2,9 @@ import { useCallback } from 'react';
 import { analysisQuery } from '@/modules/analysis/hooks/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
-import ApiError from '@/shared/errors/ApiError';
 import { sileo } from 'sileo';
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
+import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 const useDeletePluginListingAnalyses = () => {
     const deleteAnalysisMutation = analysisQuery.useDeleteMutation();
@@ -35,7 +35,7 @@ const useDeletePluginListingAnalyses = () => {
                 })
             ));
         } catch(error: unknown) {
-            if (ApiError.isRBACError(error)) return;
+            if (isAccessDeniedError(error)) return;
         }
     }, [deleteAnalysisMutation]);
 };

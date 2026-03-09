@@ -29,6 +29,11 @@ interface DaemonManifestFile {
     contents: string;
 };
 
+enum DaemonDistributionMode {
+    Build = 'build',
+    Image = 'image'
+};
+
 const TEAM_CLUSTER_INSTALL_MANIFEST_VERSION = '1.0.0';
 
 const TAR_BLOCK_SIZE = 512;
@@ -47,7 +52,16 @@ const sanitizeComposeProjectName = (teamClusterId: string): string => {
     return `voltcluster${suffix}`;
 };
 
-const buildComposeFile = (): string => {
+const buildComposeFile = (daemonDistributionMode: DaemonDistributionMode): string => {
+    let daemonBuildConfiguration: string[] = [];
+    if (daemonDistributionMode === DaemonDistributionMode.Build) {
+        daemonBuildConfiguration = [
+            '    build:',
+            '      context: ./cluster-daemon',
+            '    pull_policy: build'
+        ];
+    }
+
     return [
         'services:',
         '  minio:',
@@ -83,9 +97,7 @@ const buildComposeFile = (): string => {
         '      - ./redis.acl:/usr/local/etc/redis/users.acl:ro',
         '  daemon:',
         '    image: ${VOLT_CLUSTER_DAEMON_IMAGE}',
-        '    build:',
-        '      context: ./cluster-daemon',
-        '    pull_policy: build',
+        ...daemonBuildConfiguration,
         '    restart: unless-stopped',
         '    env_file:',
         '      - ./.env',
@@ -96,6 +108,8 @@ const buildComposeFile = (): string => {
         '      - redis',
         '    ports:',
         '      - "${DAEMON_PORT}:8080"',
+        '    volumes:',
+        '      - /var/run/docker.sock:/var/run/docker.sock',
         'volumes:',
         '  minio-data:',
         '  mongodb-data:',
@@ -140,6 +154,15 @@ const readDaemonManifestFiles = async (): Promise<DaemonManifestFile[]> => {
     return daemonFiles.sort((left, right) => {
         return left.relativePath.localeCompare(right.relativePath);
     });
+};
+
+const getDaemonDistributionMode = (): DaemonDistributionMode => {
+    const rawDistributionMode = process.env.TEAM_CLUSTER_DAEMON_DISTRIBUTION_MODE?.trim().toLowerCase();
+    if (rawDistributionMode === DaemonDistributionMode.Image) {
+        return DaemonDistributionMode.Image;
+    }
+
+    return DaemonDistributionMode.Build;
 };
 
 const writeTarString = (buffer: Buffer, value: string, offset: number, length: number): void => {
@@ -302,14 +325,24 @@ export default class TeamClusterInstallManifestService {
         const teamCluster = await this.requireTeamClusterByDaemonPassword(teamClusterId, daemonPassword);
         const cloudUrl = this.requireCloudUrl();
         const credentials = this.decryptCredentials(teamCluster);
-        const daemonFiles = await readDaemonManifestFiles();
+        const daemonDistributionMode = getDaemonDistributionMode();
 
         await this.persistPorts(teamCluster, ports);
+
+        let daemonFiles: TeamClusterInstallManifestFileDTO[] = [];
+        if (daemonDistributionMode === DaemonDistributionMode.Build) {
+            const daemonManifestFiles = await readDaemonManifestFiles();
+            daemonFiles = daemonManifestFiles.map((file): TeamClusterInstallManifestFileDTO => ({
+                path: path.posix.join('cluster-daemon', file.relativePath.split(path.sep).join(path.posix.sep)),
+                contents: file.contents,
+                mode: '0644'
+            }));
+        }
 
         const files: TeamClusterInstallManifestFileDTO[] = [
             {
                 path: 'docker-compose.yml',
-                contents: buildComposeFile(),
+                contents: buildComposeFile(daemonDistributionMode),
                 mode: '0644'
             },
             {
@@ -342,17 +375,18 @@ export default class TeamClusterInstallManifestService {
                 contents: buildDaemonEnvFile(teamCluster.id, credentials, cloudUrl),
                 mode: '0600'
             },
-            ...daemonFiles.map((file): TeamClusterInstallManifestFileDTO => ({
-                path: path.posix.join('cluster-daemon', file.relativePath.split(path.sep).join(path.posix.sep)),
-                contents: file.contents,
-                mode: '0644'
-            }))
+            ...daemonFiles
         ];
+
+        let buildContextArchiveBase64: string | undefined;
+        if (daemonDistributionMode === DaemonDistributionMode.Build) {
+            buildContextArchiveBase64 = createBuildContextArchiveBase64(files);
+        }
 
         return {
             manifestVersion: TEAM_CLUSTER_INSTALL_MANIFEST_VERSION,
             composeProjectName: sanitizeComposeProjectName(teamCluster.id),
-            buildContextArchiveBase64: createBuildContextArchiveBase64(files),
+            ...(buildContextArchiveBase64 ? { buildContextArchiveBase64 } : {}),
             files,
             images: TEAM_CLUSTER_IMAGES
         };

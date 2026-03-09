@@ -6,7 +6,7 @@ import WireframeBackground from '../../atoms/WireframeBackground';
 import EmailStep from '../../molecules/EmailStep';
 import PasswordStep from '../../molecules/PasswordStep';
 import RegisterStep from '../../molecules/RegisterStep';
-import ApiError from '@/shared/errors/ApiError';
+import { notifyApiError } from '@/shared/errors/notify-api-error';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Stepper from '@/shared/presentation/components/Stepper';
@@ -107,13 +107,11 @@ const SignInTemplate = () => {
             markAuthenticated(result.token);
             finalizeAuth();
         } catch (err) {
-            let message = 'Please check your credentials and try again.';
-
-            if (err instanceof ApiError) {
-                message = err.getFriendlyMessage();
+            if (notifyApiError(err, { fallbackDescription: 'Please check your credentials and try again.' })) {
+                return;
             }
 
-            sileo.error({ title: 'Sign in failed', description: message });
+            sileo.error({ title: 'Sign in failed', description: 'Please check your credentials and try again.' });
         } finally {
             setIsSubmitting(false);
         }
@@ -142,13 +140,11 @@ const SignInTemplate = () => {
             markAuthenticated(result.token);
             finalizeAuth();
         } catch (err) {
-            let message = 'Please check your details and try again.';
-
-            if (err instanceof ApiError) {
-                message = err.getFriendlyMessage();
+            if (notifyApiError(err, { fallbackDescription: 'Please check your details and try again.' })) {
+                return;
             }
 
-            sileo.error({ title: 'Registration failed', description: message });
+            sileo.error({ title: 'Registration failed', description: 'Please check your details and try again.' });
         } finally {
             setIsSubmitting(false);
         }

@@ -62,17 +62,64 @@ const GlobalSearch = () => {
         query,
         showResults,
         sections,
+        activeIndex,
         totalResults,
         isLoading,
         setQuery,
         handleFocus,
+        handleKeyDown,
         handleSelect
     } = useDashboardGlobalSearch();
     const floatingRoot = useFloatingRoot();
+    let itemIndex = -1;
+
+    const renderItem = (item: (typeof sections)[number]['items'][number]) => {
+        itemIndex += 1;
+        const isActive = itemIndex === activeIndex;
+
+        return (
+            <Button
+                key={item.id}
+                onClick={() => handleSelect(item)}
+                className={`global-search-item d-flex column items-start gap-025 p-075 w-max cursor-pointer${isActive ? ' global-search-item--active' : ''}`}
+                variant='ghost'
+                intent='neutral'
+                align='start'
+            >
+                <Paragraph className='font-size-2 font-weight-5'>{item.title}</Paragraph>
+                <Paragraph className='font-size-1 color-muted'>{item.subtitle}</Paragraph>
+            </Button>
+        );
+    };
+
+    const renderSection = ({ key, icon, title }: SectionConfig) => {
+        const section = sections.find((entry) => entry.key === key);
+        const items = section?.items ?? [];
+
+        if (!items.length) {
+            return null;
+        }
+
+        return (
+            <Container key={key} className='global-search-section'>
+                <Container className='global-search-section-header d-flex items-center gap-05 p-075 font-size-3 color-muted'>
+                    {icon}
+                    <Paragraph className='font-size-1 font-weight-5'>{title}</Paragraph>
+                </Container>
+                {items.map(renderItem)}
+            </Container>
+        );
+    };
 
     return (
         <Container className='global-search-wrapper w-max' ref={refs.setReference} {...getReferenceProps()}>
-            <SearchInput placeholder='Search...' value={query} onChange={(e) => setQuery(e.target.value)} onFocus={handleFocus} />
+            <SearchInput
+                placeholder='Search...'
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={handleFocus}
+                onKeyDown={handleKeyDown}
+            />
 
             {showResults && (
                 <FloatingPortal root={floatingRoot}>
@@ -86,25 +133,7 @@ const GlobalSearch = () => {
 
                         {!isLoading && totalResults === 0 && <EmptyState title='No results found' description='' />}
 
-                        {!isLoading && totalResults > 0 && SECTIONS.map(({ key, icon, title }) => {
-                            const section = sections.find((entry) => entry.key === key);
-                            const items = section?.items ?? [];
-                            if(!items?.length) return null;
-                            return (
-                                <Container key={key} className='global-search-section'>
-                                    <Container className='global-search-section-header d-flex items-center gap-05 p-075 font-size-3 color-muted'>
-                                        {icon}
-                                        <Paragraph className='font-size-1 font-weight-5'>{title}</Paragraph>
-                                    </Container>
-                                    {items.map((item) => (
-                                        <Button key={item.id} onClick={() => handleSelect(item.path)} className='global-search-item d-flex column items-start gap-025 p-075 w-max cursor-pointer' variant='ghost' intent='neutral' align='start'>
-                                            <Paragraph className='font-size-2 font-weight-5'>{item.title}</Paragraph>
-                                            <Paragraph className='font-size-1 color-muted'>{item.subtitle}</Paragraph>
-                                        </Button>
-                                    ))}
-                                </Container>
-                            );
-                        })}
+                        {!isLoading && totalResults > 0 && SECTIONS.map(renderSection)}
                     </Container>
                 </FloatingPortal>
             )}

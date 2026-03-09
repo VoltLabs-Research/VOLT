@@ -6,11 +6,11 @@ import Modal from '@/shared/presentation/components/Modal';
 import useCreateSecretKey from '@/modules/team/hooks/secret-key/use-create-secret-key';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
-import ApiError from '@/shared/errors/ApiError';
 import useModalForm from '@/shared/presentation/hooks/use-modal-form';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useState } from 'react';
 import './SecretKeyCreationModal.css';
+import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 export const SECRET_KEY_CREATION_MODAL_ID = 'secret-key-creation-modal';
 
@@ -82,7 +82,7 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                 onCreated?.(response.secretKey);
             }
         } catch(error: unknown) {
-            if(ApiError.isRBACError(error)) return;
+            if(isAccessDeniedError(error)) return;
         }
     };
 

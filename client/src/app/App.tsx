@@ -5,6 +5,7 @@ import { useRouteCleanup } from '@/shared/presentation/hooks/use-route-cleanup';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
 import { ensureApplicationStoreCleanupsRegistered } from '@/shared/utils/application-store-cleanups';
 import { buildErrorPath } from '@/shared/utils';
+import { notifyApiError } from '@/shared/errors/notify-api-error';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
 import GlobalErrorListener from '@/shared/presentation/components/GlobalErrorListener';
 import QueryProvider from '@/shared/presentation/components/QueryProvider';
@@ -51,6 +52,8 @@ const AppRoutes = () => {
     });
 
     const handleRenderError = useCallback((error: Error, info: ErrorInfo) => {
+        if(notifyApiError(error)) return;
+
         const stack = info.componentStack ?? error.stack;
         runErrorRecoveryCleanup(location.pathname, '/error');
         navigate(buildErrorPath(error.message, 'render', stack ?? undefined), { replace: true });

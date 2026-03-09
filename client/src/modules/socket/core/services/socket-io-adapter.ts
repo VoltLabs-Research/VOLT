@@ -1,4 +1,5 @@
 import { SOCKET_CONNECTION_EVENTS } from '../constants/socket-connection-events';
+import { SocketConnectionStatus } from '../socket-connection-status';
 import { io, Socket } from 'socket.io-client';
 import type { EventSubscription, ISocketService, SocketOptions } from './contracts/socket-service';
 
@@ -9,6 +10,9 @@ class SocketIOAdapter implements ISocketService {
     private options: SocketOptions;
     private connectionPromise: Promise<void> | null = null;
     private connectionListeners: Array<(connected: boolean) => void> = [];
+    private connectionStatus = SocketConnectionStatus.Disconnected;
+    private connectionStatusListeners: Array<(status: SocketConnectionStatus) => void> = [];
+    private hasConnectedOnce = false;
 
     constructor(baseUrl: string, options: SocketOptions = {}) {
         this.connectionUrl = options.url ?? baseUrl;
@@ -20,6 +24,7 @@ class SocketIOAdapter implements ISocketService {
         };
 
         if (this.options.autoConnect) {
+            this.setConnectionStatus(SocketConnectionStatus.Connecting);
             this.connect();
         }
     }
@@ -32,6 +37,8 @@ class SocketIOAdapter implements ISocketService {
         if (this.connectionPromise) {
             return this.connectionPromise;
         }
+
+        this.setConnectionStatus(this.hasConnectedOnce ? SocketConnectionStatus.Reconnecting : SocketConnectionStatus.Connecting);
 
         this.cleanupSocket();
         this.connectionPromise = new Promise((resolve, reject) => {
@@ -50,15 +57,17 @@ class SocketIOAdapter implements ISocketService {
 
                 this.socket.on(SOCKET_CONNECTION_EVENTS.CONNECT_ERROR, (error) => {
                     this.connectionPromise = null;
+                    this.handleConnectError();
                     reject(error);
                 });
 
                 this.socket.on(SOCKET_CONNECTION_EVENTS.DISCONNECT, () => {
                     this.connectionPromise = null;
-                    this.notifyConnectionListeners(false);
+                    this.handleDisconnect();
                 });
             } catch (error) {
                 this.connectionPromise = null;
+                this.setConnectionStatus(SocketConnectionStatus.Error);
                 reject(error);
             }
         });
@@ -69,11 +78,16 @@ class SocketIOAdapter implements ISocketService {
     disconnect(): void {
         this.connectionPromise = null;
         this.cleanupSocket();
+        this.setConnectionStatus(SocketConnectionStatus.Disconnected);
         this.notifyConnectionListeners(false);
     }
 
     isConnected(): boolean {
         return !!this.socket?.connected;
+    }
+
+    getConnectionStatus(): SocketConnectionStatus {
+        return this.connectionStatus;
     }
 
     on<TArgs extends unknown[]>(event: string, callback: (...args: TArgs) => void): () => void;
@@ -161,10 +175,33 @@ class SocketIOAdapter implements ISocketService {
         };
     }
 
+    onConnectionStatusChange(listener: (status: SocketConnectionStatus) => void): () => void {
+        this.connectionStatusListeners.push(listener);
+        return () => {
+            this.connectionStatusListeners = this.connectionStatusListeners.filter((currentListener) => currentListener !== listener);
+        };
+    }
+
     private handleConnect(): void {
         this.connectionPromise = null;
+        this.hasConnectedOnce = true;
+        this.setConnectionStatus(SocketConnectionStatus.Connected);
         this.notifyConnectionListeners(true);
         this.resubscribeToEvents();
+    }
+
+    private handleConnectError(): void {
+        this.setConnectionStatus(this.hasConnectedOnce ? SocketConnectionStatus.Reconnecting : SocketConnectionStatus.Error);
+        this.notifyConnectionListeners(false);
+    }
+
+    private handleDisconnect(): void {
+        const nextStatus = this.socket?.active
+            ? SocketConnectionStatus.Reconnecting
+            : SocketConnectionStatus.Disconnected;
+
+        this.setConnectionStatus(nextStatus);
+        this.notifyConnectionListeners(false);
     }
 
     private cleanupSocket(): void {
@@ -172,6 +209,7 @@ class SocketIOAdapter implements ISocketService {
             return;
         }
 
+        this.socket.io.removeAllListeners();
         this.socket.removeAllListeners();
         this.socket.disconnect();
         this.socket = null;
@@ -192,6 +230,20 @@ class SocketIOAdapter implements ISocketService {
         this.connectionListeners.forEach((listener) => {
             try {
                 listener(connected);
+            } catch {
+            }
+        });
+    }
+
+    private setConnectionStatus(status: SocketConnectionStatus): void {
+        if (this.connectionStatus === status) {
+            return;
+        }
+
+        this.connectionStatus = status;
+        this.connectionStatusListeners.forEach((listener) => {
+            try {
+                listener(status);
             } catch {
             }
         });

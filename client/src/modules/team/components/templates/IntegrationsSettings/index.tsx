@@ -20,7 +20,7 @@ import Modal, { closeModal, openModal } from '@/shared/presentation/components/M
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Select from '@/shared/presentation/components/Select';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
-import ApiError from '@/shared/errors/ApiError';
+import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { Skeleton } from '@mui/material';
 import { Settings2, Trash2 } from 'lucide-react';
@@ -165,9 +165,8 @@ export default function IntegrationsSettings() {
     useEffect(() => {
         const error = integrationsError || modelsError;
         if (!error) return;
-        if (ApiError.isRBACError(error)) {
-            const message = error instanceof ApiError ? error.getFriendlyMessage() : 'You do not have permission to perform this action.';
-            sileo.error({ title: message });
+        if (isAccessDeniedError(error)) {
+            notifyApiError(error, { fallbackTitle: 'You do not have permission to perform this action.' });
             return;
         }
         sileo.error({ title: 'Failed to load integrations' });
@@ -462,7 +461,7 @@ export default function IntegrationsSettings() {
             resetModalState();
             refreshData();
         } catch (error: unknown) {
-            if (ApiError.isRBACError(error)) return;
+            if (isAccessDeniedError(error)) return;
         } finally {
             setIsSaving(false);
         }
@@ -486,7 +485,7 @@ export default function IntegrationsSettings() {
             );
             refreshData();
         } catch (error: unknown) {
-            if (ApiError.isRBACError(error)) return;
+            if (isAccessDeniedError(error)) return;
         } finally {
             setBusyProvider(null);
         }

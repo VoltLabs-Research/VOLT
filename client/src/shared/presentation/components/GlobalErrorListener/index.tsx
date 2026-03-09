@@ -1,19 +1,22 @@
 import { buildErrorPath, shouldIgnoreError, isErrorPage } from '@/shared/utils';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
+import { notifyApiError } from '@/shared/errors/notify-api-error';
 import { useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 /**
  * Mounted inside the Router so it can use `useNavigate`.
- * Attaches window `error` and `unhandledrejection` listeners
- * and navigates to /error with the error details as URL params.
+ * Attaches window `error` and `unhandledrejection` listeners.
+ * API errors are surfaced as notifications and all other uncaught errors
+ * navigate to `/error` with the details encoded as URL params.
  */
 const GlobalErrorListener = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const navigatingRef = useRef(false);
 
-    const navigateToError = useCallback((message: string, source: 'window' | 'promise', stack?: string) => {
+    const navigateToError = useCallback((message: string, source: 'window' | 'promise', stack?: string, error?: unknown) => {
+        if(notifyApiError(error)) return;
         if(shouldIgnoreError(message)) return;
         if(isErrorPage(location.pathname)) return;
         if(navigatingRef.current) return;
@@ -32,7 +35,8 @@ const GlobalErrorListener = () => {
             navigateToError(
                 event.message || 'Uncaught error',
                 'window',
-                event.error?.stack
+                event.error?.stack,
+                event.error
             );
         };
 
@@ -48,7 +52,7 @@ const GlobalErrorListener = () => {
                 message = reason;
             }
 
-            navigateToError(message, 'promise', stack);
+            navigateToError(message, 'promise', stack, reason);
         };
 
         window.addEventListener('error', onError);

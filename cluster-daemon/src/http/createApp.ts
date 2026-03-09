@@ -1,6 +1,7 @@
 import {
     AnalysisStartRequest,
     ContainerAction,
+    DaemonHealthResponse,
     CreateContainerRequest,
     CreateNotebookRequest,
     CreateNotebookSessionRequest,
@@ -24,6 +25,7 @@ import {
     WriteContainerFileRequest
 } from '../contracts/http';
 import { DaemonConfig } from '../config/env';
+import { RuntimeLifecycleEvent, RuntimeLifecycleEventType } from '../contracts/events';
 import { DockerRuntimeService } from '../services/DockerRuntimeService';
 import { JupyterRuntimeService } from '../services/JupyterRuntimeService';
 import { LocalMinioService } from '../services/LocalMinioService';
@@ -248,17 +250,33 @@ const readProxyRequestBody = (req: Request): BodyInit | undefined => {
     return undefined;
 };
 
+const isDaemonReady = (latestLifecycleEvent: RuntimeLifecycleEvent | null): boolean => {
+    if (!latestLifecycleEvent) {
+        return false;
+    }
+
+    return latestLifecycleEvent.type === RuntimeLifecycleEventType.ServicesReady
+        || latestLifecycleEvent.type === RuntimeLifecycleEventType.HeartbeatSucceeded
+        || latestLifecycleEvent.type === RuntimeLifecycleEventType.HeartbeatFailed
+        || latestLifecycleEvent.type === RuntimeLifecycleEventType.CloudSocketConnected
+        || latestLifecycleEvent.type === RuntimeLifecycleEventType.CloudSocketDisconnected;
+};
+
 export const createApp = (dependencies: CreateAppDependencies) => {
     const app = express();
     app.use(express.json({ limit: '50mb' }));
 
     app.get('/health', async (_req, res) => {
         const metrics = await dependencies.metricsService.collectSnapshot();
-        sendSuccess(res, {
+        const latestLifecycleEvent = dependencies.eventBroker.getLatestLifecycleEvent();
+        const response: DaemonHealthResponse = {
             ok: true,
+            ready: isDaemonReady(latestLifecycleEvent),
             metrics,
-            lifecycle: dependencies.eventBroker.getLatestLifecycleEvent()
-        });
+            latestLifecycleEvent
+        };
+
+        sendSuccess(res, response);
     });
 
     app.use(createDaemonAuthMiddleware(dependencies.config.daemonPassword));

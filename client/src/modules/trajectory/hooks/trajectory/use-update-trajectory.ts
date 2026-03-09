@@ -1,5 +1,5 @@
 import { trajectoryQuery } from './queries';
-import ApiError from '@/shared/errors/ApiError';
+import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import { sileo } from 'sileo';
 import { useCallback } from 'react';
 
@@ -16,11 +16,8 @@ export default function useUpdateTrajectory() {
             await mutation.mutateAsync({ id: _id, params: data });
             sileo.success({ title: 'Trajectory updated' });
         } catch (error) {
-            if (ApiError.isRBACError(error)) {
-                const message = error instanceof ApiError
-                    ? error.getFriendlyMessage()
-                    : 'You do not have permission to update this trajectory';
-                sileo.error({ title: message });
+            if (isAccessDeniedError(error)) {
+                notifyApiError(error, { fallbackTitle: 'You do not have permission to update this trajectory' });
             } else {
                 sileo.error({ title: 'Failed to update trajectory' });
             }

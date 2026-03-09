@@ -1,10 +1,10 @@
 import { UseModifierBaseOptions } from './use-modifier-base';
 import useModifierBase from './use-modifier-base';
+import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 import { useApplyColorCodingMutation, colorCodingStatsQuery } from '@/modules/trajectory/hooks/color-coding/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import ApiError from '@/shared/errors/ApiError';
 
 import type { ColorCodingScene } from '@/modules/fractal/api/entities/scene';
 
@@ -106,7 +106,7 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
                 }
             }));
         } catch (error: unknown) {
-            if (ApiError.isRBACError(error)) return;
+            if (isAccessDeniedError(error)) return;
         } finally {
             setIsApplying(false);
         }

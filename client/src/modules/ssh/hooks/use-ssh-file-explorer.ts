@@ -1,9 +1,9 @@
 import { sshConnectionByIdQuery, sshFilesQuery } from './queries';
-import ApiError from '@/shared/errors/ApiError';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { sileo } from 'sileo';
+import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 interface UseSSHFileExplorerOptions {
     connectionId: string | undefined;
@@ -50,7 +50,7 @@ const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
             return;
         }
 
-        const isRbacError = ApiError.isRBACError(connectionQuery.error);
+        const isRbacError = isAccessDeniedError(connectionQuery.error);
         if (isRbacError) {
             checkRBACError(connectionQuery.error);
         } else if (!connectionQuery.isLoading) {

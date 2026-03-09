@@ -14,7 +14,7 @@ import {
 import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { sileo } from 'sileo';
-import ApiError from '@/shared/errors/ApiError';
+import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import type { ChatMessage } from '../../api/entities/message';
 
@@ -42,7 +42,7 @@ const useChatData = () => {
     useEffect(() => {
         if (chatsResult.error) {
             const error = chatsResult.error;
-            if (ApiError.isRBACError(error)) return;
+            if (isAccessDeniedError(error)) return;
             sileo.error({ title: 'Failed to load chats' });
         }
     }, [chatsResult.error]);
@@ -105,14 +105,8 @@ const useChatData = () => {
         await socket.emit(CHAT_SOCKET_EVENTS.JOIN_CHAT, chatId);
 
         markAsReadMutationResult.mutateAsync({ chatId }).catch((error: unknown) => {
-            if (ApiError.isRBACError(error)) {
-                let friendlyMessage = 'You do not have permission to perform this action.';
-
-                if (error instanceof ApiError) {
-                    friendlyMessage = error.getFriendlyMessage();
-                }
-
-                sileo.error({ title: friendlyMessage });
+            if (isAccessDeniedError(error)) {
+                notifyApiError(error, { fallbackTitle: 'You do not have permission to perform this action.' });
             }
         });
 

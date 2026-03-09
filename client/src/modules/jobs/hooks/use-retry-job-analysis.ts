@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useRetryFailedFramesMutation } from '@/modules/analysis/hooks/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import ApiError from '@/shared/errors/ApiError';
+import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 const useRetryJobAnalysis = () => {
     const mutation = useRetryFailedFramesMutation();
@@ -26,7 +26,7 @@ const useRetryJobAnalysis = () => {
                 }
             );
         } catch (error: unknown) {
-            if (ApiError.isRBACError(error)) {
+            if (isAccessDeniedError(error)) {
                 return;
             }
 

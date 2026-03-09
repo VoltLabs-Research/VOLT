@@ -1,4 +1,4 @@
-import ApiError from '@/shared/errors/ApiError';
+import { getApiErrorMessage, isApiError, markApiErrorHandled } from '@/shared/errors/notify-api-error';
 import { sileo } from 'sileo';
 import type { SileoOptions, SileoPosition } from 'sileo';
 
@@ -24,10 +24,19 @@ const DEFAULT_ERROR_DESCRIPTION = 'Please try again later.';
 
 const buildErrorHandler = (base: SileoOptions) =>
     (err: unknown): SileoOptions => {
-        const description = err instanceof ApiError
-            ? err.getFriendlyMessage()
-            : (base.description ?? DEFAULT_ERROR_DESCRIPTION);
-        return { ...base, description };
+        if(isApiError(err)){
+            markApiErrorHandled(err);
+            return {
+                ...base,
+                title: getApiErrorMessage(err, base.title),
+                description: base.description ?? base.title ?? DEFAULT_ERROR_DESCRIPTION
+            };
+        }
+
+        return {
+            ...base,
+            description: base.description ?? DEFAULT_ERROR_DESCRIPTION
+        };
     };
 
 export const showPromise = <T,>(

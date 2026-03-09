@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Skeleton } from '@mui/material';
 import { List } from 'react-window';
-import ApiError from '@/shared/errors/ApiError';
+import { getApiErrorMessage, isAccessDeniedError, isAccessDeniedCode } from '@/shared/errors/notify-api-error';
 import '@/modules/plugin/components/listing/organisms/PluginExposureTable/PluginExposureTable.css';
 
 export interface ColumnConfig {
@@ -61,24 +61,20 @@ interface PluginCompactTableProps {
 }
 
 const isPermissionDeniedError = (error: unknown): boolean => {
-    if (ApiError.isRBACError(error)) {
+    if (isAccessDeniedError(error)) {
         return true;
     }
 
     if (typeof error === 'string') {
-        return ApiError.isCodePermissionDenied(error);
+        return isAccessDeniedCode(error);
     }
 
     return false;
 };
 
 const getDisplayErrorMessage = (error: unknown): string => {
-    if (error instanceof ApiError) {
-        return error.getFriendlyMessage();
-    }
-
     if (error instanceof Error) {
-        return error.message;
+        return getApiErrorMessage(error, 'Failed to load data.');
     }
 
     if (typeof error === 'string' && error.length > 0) {

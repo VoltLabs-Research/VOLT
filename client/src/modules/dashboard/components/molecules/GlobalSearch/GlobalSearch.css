@@ -37,6 +37,10 @@
     background: var(--hover-bg);
 }
 
+.global-search-item--active {
+    background: var(--hover-bg);
+}
+
 .global-search-item p {
     margin: 0;
 }

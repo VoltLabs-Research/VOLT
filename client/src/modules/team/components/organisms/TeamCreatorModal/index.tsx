@@ -2,7 +2,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
-import ApiError from '@/shared/errors/ApiError';
+import { getAccessDeniedMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Modal from '@/shared/presentation/components/Modal';
 import useModalForm from '@/shared/presentation/hooks/use-modal-form';
@@ -76,10 +76,9 @@ export const TeamCreatorModal = ({
             modalForm.close();
             onSuccess?.();
         } catch (error: unknown) {
-            if (ApiError.isRBACError(error)) {
-                const message = error instanceof ApiError
-                    ? error.getFriendlyMessage()
-                    : 'You do not have permission to perform this action.';
+            if (isAccessDeniedError(error)) {
+                const message = getAccessDeniedMessage(error, 'You do not have permission to perform this action.')
+                    ?? 'You do not have permission to perform this action.';
                 setApiError(message);
                 return;
             }

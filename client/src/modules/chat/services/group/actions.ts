@@ -1,10 +1,10 @@
 import { addChatToCache, removeChatFromCache, replaceChatInCache } from '../../hooks/chat/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import ApiError from '@/shared/errors/ApiError';
 import type { QueryClient } from '@tanstack/react-query';
 import type { NavigateFunction } from 'react-router-dom';
 import type { Chat } from '../../api/entities/chat';
 import type { CreateGroupChatDTO, UpdateGroupAdminsDTO, UpdateGroupInfoDTO } from '../../api/dtos/group';
+import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 interface SocketLike {
     emit: (event: string, payload?: unknown) => unknown;
@@ -17,7 +17,7 @@ interface GroupActionDependencies {
 };
 
 const swallowRBACError = (error: unknown) => {
-    if (ApiError.isRBACError(error)) {
+    if (isAccessDeniedError(error)) {
         return;
     }
 

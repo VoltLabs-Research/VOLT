@@ -3,11 +3,10 @@ import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import { useEffect, useMemo } from 'react';
-import { sileo } from 'sileo';
 import usePluginCatalog from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
-import ApiError from '@/shared/errors/ApiError';
+import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 import type { IExposureComputed } from '@/modules/plugin/api/entities/plugin/exposure';
 import type { RenderableExposurePayload } from '@/modules/trajectory/api/dtos/scene-artifacts';
@@ -50,11 +49,8 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
 
     useEffect(() => {
         if (!sceneArtifactsQueryResult.error) return;
-        if (ApiError.isRBACError(sceneArtifactsQueryResult.error)) {
-            const message = sceneArtifactsQueryResult.error instanceof ApiError
-                ? sceneArtifactsQueryResult.error.getFriendlyMessage()
-                : 'You do not have permission to perform this action.';
-            sileo.error({ title: message });
+        if (isAccessDeniedError(sceneArtifactsQueryResult.error)) {
+            notifyApiError(sceneArtifactsQueryResult.error, { fallbackTitle: 'You do not have permission to perform this action.' });
         }
     }, [sceneArtifactsQueryResult.error]);
 
@@ -71,11 +67,8 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
     useEffect(() => {
         if (!pluginId || plugin || !hasRenderablePluginData) return;
         ensurePluginById(pluginId).catch((error: unknown) => {
-            if (ApiError.isRBACError(error)) {
-                const message = error instanceof ApiError
-                    ? error.getFriendlyMessage()
-                    : 'You do not have permission to perform this action.';
-                sileo.error({ title: message });
+            if (isAccessDeniedError(error)) {
+                notifyApiError(error, { fallbackTitle: 'You do not have permission to perform this action.' });
             }
         });
     }, [pluginId, plugin, ensurePluginById, hasRenderablePluginData]);
@@ -131,11 +124,8 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
     useEffect(() => {
         for (const result of subListingQueries) {
             if (!result.error) continue;
-            if (ApiError.isRBACError(result.error)) {
-                const message = result.error instanceof ApiError
-                    ? result.error.getFriendlyMessage()
-                    : 'You do not have permission to perform this action.';
-                sileo.error({ title: message });
+            if (isAccessDeniedError(result.error)) {
+                notifyApiError(result.error, { fallbackTitle: 'You do not have permission to perform this action.' });
             }
         }
     }, [subListingQueries]);
