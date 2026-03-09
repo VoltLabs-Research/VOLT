@@ -8,6 +8,8 @@ export interface RoutePluginExecutionInput {
     teamId: string;
     plugin: Plugin;
     jobs: Job[];
+    forEachNodeId: string;
+    nodeOutputSnapshots: Record<string, Record<string, unknown>>;
 };
 
 export interface IPluginExecutionRouter {

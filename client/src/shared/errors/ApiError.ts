@@ -27,6 +27,7 @@ export default class ApiError extends Error{
         public readonly originalError?: unknown
     ){
         super(getErrorMessage(code, code));
+        Object.setPrototypeOf(this, new.target.prototype);
         this.name = 'ApiError';
     }
 

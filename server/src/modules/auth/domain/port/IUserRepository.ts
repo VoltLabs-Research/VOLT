@@ -15,6 +15,14 @@ export interface IUserRepository extends IBaseRepository<User, UserProps>{
     ): Promise<UserWithPassword | null>;
 
     /**
+     * Add a team to the user's teams array (idempotent).
+     */
+    addTeamToUser(
+        userId: string,
+        teamId: string
+    ): Promise<void>;
+
+    /**
      * Delete the specified team from the user.
      */
     removeTeamFromUser(

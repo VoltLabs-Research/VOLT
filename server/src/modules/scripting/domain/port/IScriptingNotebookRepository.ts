@@ -10,5 +10,6 @@ export interface IScriptingNotebookRepository extends IBaseRepository<ScriptingN
     findByTeamAndNotebookId(teamId: string, notebookId: string): Promise<ScriptingNotebook | null>;
     findByTeamAndTrajectory(teamId: string, trajectoryId: string): Promise<ScriptingNotebook | null>;
     findAllByTeam(teamId: string, options: PaginationOptions, trajectoryId?: string): Promise<PaginatedResult<ScriptingNotebook>>;
+    findAllWithTrajectory(trajectoryId: string): Promise<ScriptingNotebook[]>;
     removeTrajectory(trajectoryId: string): Promise<void>;
 };

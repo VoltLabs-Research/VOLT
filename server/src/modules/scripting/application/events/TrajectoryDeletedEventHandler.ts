@@ -17,7 +17,7 @@ export default class TrajectoryDeletedEventHandler implements IEventHandler<Traj
 
     async handle(event: TrajectoryDeletedEvent): Promise<void> {
         const { trajectoryId } = event.payload;
-        await this.scriptingNotebookRepository.removeTrajectory(trajectoryId);
         await this.scriptingSessionOrchestrator.deleteSession(trajectoryId);
+        await this.scriptingNotebookRepository.removeTrajectory(trajectoryId);
     }
 };

@@ -43,9 +43,15 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
                 if(forEachOutput?.items && Array.isArray(forEachOutput.items)){
                     logger.info(`@plugin-workflow-engine: found ${forEachOutput.items.length} items to process`);
 
+                    const nodeOutputSnapshots: Record<string, Record<string, unknown>> = {};
+                    context.outputs.forEach((value, key) => {
+                        nodeOutputSnapshots[key] = value;
+                    });
+
                     return {
                         items: forEachOutput.items,
-                        forEachNodeId: node.id
+                        forEachNodeId: node.id,
+                        nodeOutputSnapshots
                     };
                 } 
             }

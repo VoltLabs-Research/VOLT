@@ -196,7 +196,9 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             trajectoryId: input.trajectoryId,
             teamId: input.teamId,
             plugin,
-            jobs
+            jobs,
+            forEachNodeId: planResult.forEachNodeId,
+            nodeOutputSnapshots: planResult.nodeOutputSnapshots
         });
 
         return Result.ok({ analysisId: analysis.id });

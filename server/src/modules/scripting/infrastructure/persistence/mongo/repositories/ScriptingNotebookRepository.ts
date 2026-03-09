@@ -81,6 +81,11 @@ export default class ScriptingNotebookRepository
         });
     }
 
+    async findAllWithTrajectory(trajectoryId: string): Promise<ScriptingNotebook[]> {
+        const docs = await this.model.find({ trajectories: trajectoryId }).exec();
+        return docs.map((doc) => this.mapper.toDomain(doc));
+    }
+
     private async findOneByQuery(query: ScriptingNotebookQuery): Promise<ScriptingNotebook | null> {
         const doc = await this.model.findOne(query).exec();
         return doc ? this.mapper.toDomain(doc) : null;

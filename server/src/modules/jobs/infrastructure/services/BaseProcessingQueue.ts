@@ -324,6 +324,16 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
             fallbackCode: ErrorCodes.WORKER_FAILURE
         });
 
+        const maxAttempts = bullJob.opts?.attempts ?? 1;
+        const isFinalFailure = bullJob.attemptsMade >= maxAttempts;
+
+        if (!isFinalFailure) {
+            logger.info(
+                `[${this.queueName}] Job ${jobData.jobId} failed (attempt ${bullJob.attemptsMade}/${maxAttempts}), will be retried`
+            );
+            return;
+        }
+
         try {
             await this.updateJobStatus(String(jobData.jobId), JobStatus.Failed, {
                 ...jobData,

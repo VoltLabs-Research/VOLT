@@ -133,8 +133,28 @@ export interface AnalysisQueueJobPayload {
     updatedAt: string;
 };
 
+export interface AnalysisExposureDefinition {
+    nodeId: string;
+    name: string;
+    results: string;
+    iterable?: string;
+};
+
+export interface AnalysisJobExecutionData {
+    binaryObjectPath: string;
+    binaryFileName?: string;
+    arguments: string;
+    pluginId: string;
+    trajectoryId: string;
+    analysisId: string;
+    exposures: AnalysisExposureDefinition[];
+    forEachNodeId: string;
+    nodeOutputSnapshots: Record<string, Record<string, unknown>>;
+};
+
 export interface AnalysisStartRequest {
     analysisId: string;
+    executionData: AnalysisJobExecutionData;
     payload: {
         teamId: string;
         trajectoryId: string;

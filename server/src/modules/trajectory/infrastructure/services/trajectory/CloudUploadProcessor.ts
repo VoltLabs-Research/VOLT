@@ -1,13 +1,14 @@
+import '@/src/core/config/env';
+
 import { SYS_BUCKETS } from '@core/config/minio';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { hasStringProperty, isRecord } from '@shared/infrastructure/utilities/type-guards';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import logger from '@shared/infrastructure/logger';
-
 import { injectable, inject } from 'tsyringe';
 import fs from 'node:fs/promises';
-import zlib from 'node:zlib';
+import zlib from 'node:zlib';   
 
 import type { Job as BullJob } from 'bullmq';
 import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';

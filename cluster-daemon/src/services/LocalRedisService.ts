@@ -38,4 +38,20 @@ export class LocalRedisService {
     async publish(channel: string, payload: Record<string, unknown>): Promise<void> {
         await this.client.publish(channel, JSON.stringify(payload));
     }
+
+    /**
+     * Blocking dequeue from a Redis list using BLPOP.
+     * Returns the parsed JSON payload, or null if the timeout expires.
+     * @param queueName Redis list key to dequeue from
+     * @param timeoutSeconds BLPOP timeout (0 = block forever)
+     */
+    async dequeue<T = Record<string, unknown>>(queueName: string, timeoutSeconds: number = 0): Promise<T | null> {
+        const result = await this.client.blpop(queueName, timeoutSeconds);
+        if (!result) {
+            return null;
+        }
+
+        const [, rawPayload] = result;
+        return JSON.parse(rawPayload) as T;
+    }
 }
