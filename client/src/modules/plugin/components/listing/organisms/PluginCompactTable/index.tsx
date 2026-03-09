@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Skeleton } from '@mui/material';
 import { List } from 'react-window';
-import { getApiErrorMessage, isAccessDeniedError, isAccessDeniedCode } from '@/shared/errors/notify-api-error';
+import { getApiErrorMessage } from '@/shared/errors/notify-api-error';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import '@/modules/plugin/components/listing/organisms/PluginExposureTable/PluginExposureTable.css';
 
 export interface ColumnConfig {
@@ -59,18 +60,6 @@ interface PluginCompactTableProps {
     rowHeight?: number;
     onDataReady?: (columns: ColumnConfig[], data: Record<string, unknown>[]) => void;
 }
-
-const isPermissionDeniedError = (error: unknown): boolean => {
-    if (isAccessDeniedError(error)) {
-        return true;
-    }
-
-    if (typeof error === 'string') {
-        return isAccessDeniedCode(error);
-    }
-
-    return false;
-};
 
 const getDisplayErrorMessage = (error: unknown): string => {
     if (error instanceof Error) {
@@ -236,15 +225,24 @@ const PluginCompactTable = ({
     }
 
     if (error) {
-        if (isPermissionDeniedError(error)) {
-            return <div className='plugin-exposure-error'>You do not have permission to view this data.</div>;
-        }
-
-        return <div className='plugin-exposure-error'>{getDisplayErrorMessage(error)}</div>;
+        return (
+            <RecoveryState
+                title='Unable to load this data'
+                description={getDisplayErrorMessage(error)}
+                tone={RecoveryStateTone.Error}
+                className='plugin-exposure-recovery-state'
+            />
+        );
     }
 
     if (data.length === 0) {
-        return <div className='plugin-exposure-empty'>No data available</div>;
+        return (
+            <RecoveryState
+                title='No data available'
+                description='There are no rows to display for this selection.'
+                className='plugin-exposure-recovery-state'
+            />
+        );
     }
 
     if (!isMeasured && data.length > 0) {

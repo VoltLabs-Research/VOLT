@@ -1,5 +1,5 @@
 import {
-    AI_INTEGRATION_QUERY_KEYS,
+    invalidateTeamAIIntegrationsQuery,
     useDiscoverTeamAIProviderModelsQuery,
     useTeamAIIntegrationsQuery,
     useTeamAIIntegrationModelsQuery
@@ -22,7 +22,6 @@ import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
-import queryClient from '@/shared/infrastructure/query/query-client';
 import { Skeleton } from '@mui/material';
 import { Settings2, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -53,6 +52,16 @@ interface PromiseToastOptions {
     loading: { title: string };
     success: { title: string };
     error: { title: string };
+};
+
+interface IntegrationModalStatePreset {
+    editingProvider?: AIProvider | null;
+    provider?: AIProvider | null;
+    apiKey?: string;
+    endpoint?: string;
+    defaultModel?: string | null;
+    enabledModels?: Iterable<string>;
+    enabled?: boolean;
 };
 
 const TEAM_AI_INTEGRATION_MODAL_ID = 'team-ai-integration-modal';
@@ -201,12 +210,8 @@ export default function IntegrationsSettings() {
         }))
     ), [availableProviders]);
 
-    const allModalModels: ModalModelOption[] = useMemo(() => {
-        if (!modalProvider) {
-            return [];
-        }
-
-        const discoveredModels = discoveredModelsData?.provider === modalProvider
+    const getProviderModels = useCallback((provider: AIProvider): ModalModelOption[] => {
+        const discoveredModels = discoveredModelsData?.provider === provider
             ? discoveredModelsData.models
             : null;
 
@@ -214,39 +219,33 @@ export default function IntegrationsSettings() {
             return discoveredModels;
         }
 
-        return modelsByProvider.get(modalProvider)?.models || discoveredModels || [];
-    }, [discoveredModelsData, modalProvider, modelsByProvider]);
+        return modelsByProvider.get(provider)?.models || discoveredModels || [];
+    }, [discoveredModelsData, modelsByProvider]);
 
-    const refreshData = useCallback(() => {
-        if (!teamId) return;
-        Promise.all([
-            queryClient.invalidateQueries({ queryKey: AI_INTEGRATION_QUERY_KEYS.teamAIIntegrations(teamId) }),
-            queryClient.invalidateQueries({ queryKey: AI_INTEGRATION_QUERY_KEYS.teamAIIntegrationModels(teamId) })
-        ]);
-    }, [teamId]);
+    const allModalModels: ModalModelOption[] = useMemo(() => {
+        if (!modalProvider) {
+            return [];
+        }
 
-    const modalModelOptions: SelectOption[] = useMemo(() => {
-        const models = modalEnabledModels.size > 0
+        return getProviderModels(modalProvider);
+    }, [getProviderModels, modalProvider]);
+
+    const selectableModalModels = useMemo(() => {
+        return modalEnabledModels.size > 0
             ? allModalModels.filter((model) => modalEnabledModels.has(model.id))
             : allModalModels;
+    }, [allModalModels, modalEnabledModels]);
 
-        return models.map((model) => ({
+    const modalModelOptions: SelectOption[] = useMemo(() => {
+        return selectableModalModels.map((model) => ({
             value: model.id,
             title: model.name,
             description: model.description
         }));
-    }, [allModalModels, modalEnabledModels]);
+    }, [selectableModalModels]);
 
     const resolveDefaultModel = useCallback((provider: AIProvider, enabledModels?: Set<string>): string | null => {
-        const discoveredCatalog = discoveredModelsData?.provider === provider
-            ? discoveredModelsData
-            : null;
-
-        const discoveredModels = discoveredCatalog?.models ?? [];
-        const catalog = modelsByProvider.get(provider);
-        const sourceModels = discoveredModels.length > 0
-            ? discoveredModels
-            : (catalog?.models || []);
+        const sourceModels = getProviderModels(provider);
 
         if (!sourceModels.length) {
             return null;
@@ -260,28 +259,35 @@ export default function IntegrationsSettings() {
             return null;
         }
 
-        const candidateDefault = discoveredModels.length > 0
-            ? discoveredCatalog?.defaultModel
-            : catalog?.defaultModel;
+        const discoveredCatalog = discoveredModelsData?.provider === provider
+            ? discoveredModelsData
+            : null;
+        const candidateDefault = discoveredCatalog?.models?.length
+            ? discoveredCatalog.defaultModel
+            : modelsByProvider.get(provider)?.defaultModel;
 
         if (candidateDefault && availableModels.some((model: ModalModelOption) => model.id === candidateDefault)) {
             return candidateDefault;
         }
 
         return availableModels[0]?.id || null;
-    }, [discoveredModelsData, modelsByProvider]);
+    }, [discoveredModelsData, getProviderModels, modelsByProvider]);
 
     useTeamAIIntegrationsSocketSync(teamId || null);
 
-    const resetModalState = () => {
-        setEditingProvider(null);
-        setModalProvider(null);
-        setModalApiKey('');
-        setModalEndpoint(OLLAMA_DEFAULT_BASE_URL);
-        setModalDefaultModel(null);
-        setModalEnabledModels(new Set());
-        setModalEnabled(true);
-    };
+    const applyModalState = useCallback((preset: IntegrationModalStatePreset = {}) => {
+        setEditingProvider(preset.editingProvider ?? null);
+        setModalProvider(preset.provider ?? null);
+        setModalApiKey(preset.apiKey ?? '');
+        setModalEndpoint(preset.endpoint ?? OLLAMA_DEFAULT_BASE_URL);
+        setModalDefaultModel(preset.defaultModel ?? null);
+        setModalEnabledModels(new Set(preset.enabledModels ?? []));
+        setModalEnabled(preset.enabled ?? true);
+    }, []);
+
+    const resetModalState = useCallback(() => {
+        applyModalState();
+    }, [applyModalState]);
 
     const openCreateProviderModal = () => {
         if (!teamId) {
@@ -294,13 +300,10 @@ export default function IntegrationsSettings() {
             return;
         }
 
-        setEditingProvider(null);
-        setModalProvider(firstProvider);
-        setModalApiKey('');
-        setModalEndpoint(OLLAMA_DEFAULT_BASE_URL);
-        setModalEnabled(true);
-        setModalEnabledModels(new Set());
-        setModalDefaultModel(resolveDefaultModel(firstProvider));
+        applyModalState({
+            provider: firstProvider,
+            defaultModel: resolveDefaultModel(firstProvider)
+        });
         openModal(TEAM_AI_INTEGRATION_MODAL_ID);
     };
 
@@ -309,13 +312,14 @@ export default function IntegrationsSettings() {
             ? resolveOllamaBaseUrl(integration.metadata)
             : OLLAMA_DEFAULT_BASE_URL;
 
-        setEditingProvider(integration.provider);
-        setModalProvider(integration.provider);
-        setModalApiKey('');
-        setModalEndpoint(ollamaBaseUrl);
-        setModalEnabled(integration.isEnabled);
-        setModalEnabledModels(new Set(integration.enabledModels || []));
-        setModalDefaultModel(integration.defaultModel || resolveDefaultModel(integration.provider));
+        applyModalState({
+            editingProvider: integration.provider,
+            provider: integration.provider,
+            endpoint: ollamaBaseUrl,
+            enabled: integration.isEnabled,
+            enabledModels: integration.enabledModels || [],
+            defaultModel: integration.defaultModel || resolveDefaultModel(integration.provider)
+        });
         openModal(TEAM_AI_INTEGRATION_MODAL_ID);
     };
 
@@ -330,10 +334,13 @@ export default function IntegrationsSettings() {
             ? resolveOllamaBaseUrl(nextIntegration?.metadata)
             : OLLAMA_DEFAULT_BASE_URL;
 
-        setModalProvider(nextProvider);
-        setModalEndpoint(ollamaBaseUrl);
-        setModalEnabledModels(new Set());
-        setModalDefaultModel(resolveDefaultModel(nextProvider));
+        applyModalState({
+            editingProvider,
+            provider: nextProvider,
+            endpoint: ollamaBaseUrl,
+            enabled: modalEnabled,
+            defaultModel: resolveDefaultModel(nextProvider)
+        });
     };
 
     const handleToggleModel = (modelId: string) => {
@@ -382,11 +389,7 @@ export default function IntegrationsSettings() {
             return;
         }
 
-        const availableModels = modalEnabledModels.size > 0
-            ? allModalModels.filter((model) => modalEnabledModels.has(model.id))
-            : allModalModels;
-
-        if (!availableModels.length) {
+        if (!selectableModalModels.length) {
             if (modalDefaultModel !== null) {
                 setModalDefaultModel(null);
             }
@@ -394,7 +397,7 @@ export default function IntegrationsSettings() {
         }
 
         const hasValidSelection = modalDefaultModel
-            ? availableModels.some((model) => model.id === modalDefaultModel)
+            ? selectableModalModels.some((model) => model.id === modalDefaultModel)
             : false;
 
         if (hasValidSelection) {
@@ -402,7 +405,7 @@ export default function IntegrationsSettings() {
         }
 
         setModalDefaultModel(resolveDefaultModel(modalProvider, modalEnabledModels));
-    }, [allModalModels, modalDefaultModel, modalEnabledModels, modalProvider, resolveDefaultModel]);
+    }, [modalDefaultModel, modalEnabledModels, modalProvider, resolveDefaultModel, selectableModalModels]);
 
     useEffect(() => {
         if (editingProvider || !modalProvider || modalEnabledModels.size > 0) {
@@ -461,7 +464,9 @@ export default function IntegrationsSettings() {
             );
             closeModal(TEAM_AI_INTEGRATION_MODAL_ID);
             resetModalState();
-            refreshData();
+            if (teamId) {
+                void invalidateTeamAIIntegrationsQuery(teamId);
+            }
         } catch (error: unknown) {
             if (isAccessDeniedError(error)) return;
         } finally {
@@ -490,7 +495,9 @@ export default function IntegrationsSettings() {
                 deleteTeamAIIntegration(provider),
                 getRemoveIntegrationToastOptions(integration)
             );
-            refreshData();
+            if (teamId) {
+                void invalidateTeamAIIntegrationsQuery(teamId);
+            }
         } catch (error: unknown) {
             if (isAccessDeniedError(error)) return;
         } finally {

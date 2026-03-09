@@ -1,7 +1,7 @@
 import './DashboardInAppActivity.css';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Container from '@/shared/presentation/components/Container';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
 import { useMemo } from 'react';
 import {
@@ -55,7 +55,7 @@ const toMondayIndex = (jsDay: number): number => {
 };
 
 const DashboardInAppActivity = () => {
-    const { activityData, isLoading, accessDenied, accessDeniedMessage } = useDailyActivityData();
+    const { activityData, isLoading, error, accessDenied, accessDeniedMessage, fetchActivity } = useDailyActivityData();
 
     const { radarData, totalMinutes, totalActions, peakDay } = useMemo(() => {
         const buckets = DAY_LABELS.map<DashboardInAppActivityBucket>(() => ({
@@ -146,7 +146,28 @@ const DashboardInAppActivity = () => {
     if (accessDenied) {
         return (
             <Container className='dashboard-inapp-activity-card'>
-                <AccessDenied description={accessDeniedMessage} showBack={false} />
+                <RecoveryState
+                    title='Access denied'
+                    description={accessDeniedMessage ?? 'You do not have permission to view in-app activity.'}
+                    tone={RecoveryStateTone.AccessDenied}
+                    className='dashboard-card-state'
+                />
+            </Container>
+        );
+    }
+
+    if (error) {
+        return (
+            <Container className='dashboard-inapp-activity-card'>
+                <RecoveryState
+                    title='Unable to load in-app activity'
+                    description={error}
+                    tone={RecoveryStateTone.Error}
+                    onRetry={() => {
+                        fetchActivity().catch(() => undefined);
+                    }}
+                    className='dashboard-card-state'
+                />
             </Container>
         );
     }

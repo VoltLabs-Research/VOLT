@@ -1,4 +1,3 @@
-import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';

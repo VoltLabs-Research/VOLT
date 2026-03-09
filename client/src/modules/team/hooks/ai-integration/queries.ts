@@ -40,7 +40,7 @@ export const AI_INTEGRATION_QUERY_KEYS = {
 
 /** Invalidates AI integration queries for a team. */
 
-const invalidateTeamAIIntegrationsQuery = (teamId: string) => {
+export const invalidateTeamAIIntegrationsQuery = (teamId: string) => {
     return Promise.all([
         queryClient.invalidateQueries({ queryKey: AI_INTEGRATION_QUERY_KEYS.teamAIIntegrations(teamId) }),
         queryClient.invalidateQueries({ queryKey: AI_INTEGRATION_QUERY_KEYS.teamAIIntegrationModels(teamId) })

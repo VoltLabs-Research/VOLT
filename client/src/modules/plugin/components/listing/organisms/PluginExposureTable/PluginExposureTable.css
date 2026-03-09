@@ -45,6 +45,10 @@
     font-size: 0.75rem;
 }
 
+.plugin-exposure-recovery-state {
+    min-height: 240px;
+}
+
 .plugin-exposure-load-more {
     padding: 0.375rem 0.75rem;
     background: var(--button-bg);

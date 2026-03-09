@@ -1,11 +1,10 @@
 import AIComposer from '@/modules/ai/components/organisms/AIComposer';
 import AIConversationThread from '@/modules/ai/components/organisms/AIConversationThread';
 import useAIPage from '@/modules/ai/hooks/use-ai-page';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import IconButton from '@/shared/presentation/components/IconButton';
-import Paragraph from '@/shared/presentation/components/Paragraph';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { IoAddOutline, IoCloseOutline, IoExpandOutline, IoSparklesOutline } from 'react-icons/io5';
@@ -41,6 +40,8 @@ const AIFloatingAssistantPanelContent = ({ onClose }: AIFloatingAssistantPanelCo
         canSendMessage,
         accessDenied,
         accessDeniedMessage,
+        loadConversations,
+        loadProviderCatalog,
         setSelectedModel,
         handleCreateConversation,
         addToolApprovalResponse,
@@ -176,7 +177,11 @@ const AIFloatingAssistantPanelContent = ({ onClose }: AIFloatingAssistantPanelCo
     if (accessDenied) {
         content = (
             <Container className='d-flex flex-center flex-1'>
-                <AccessDenied description={accessDeniedMessage} showBack={false} />
+                <RecoveryState
+                    title='Access denied'
+                    description={accessDeniedMessage ?? 'You do not have permission to use the AI assistant.'}
+                    tone={RecoveryStateTone.AccessDenied}
+                />
             </Container>
         );
     } else if (!selectedTeam?._id) {
@@ -230,13 +235,27 @@ const AIFloatingAssistantPanelContent = ({ onClose }: AIFloatingAssistantPanelCo
 
             {providerCatalogError && (
                 <Container className='ai-floating-assistant-alert'>
-                    <Paragraph className='font-size-1 color-danger'>{providerCatalogError}</Paragraph>
+                    <RecoveryState
+                        title='Unable to load AI providers'
+                        description={providerCatalogError}
+                        tone={RecoveryStateTone.Error}
+                        onRetry={() => {
+                            loadProviderCatalog().catch(() => undefined);
+                        }}
+                    />
                 </Container>
             )}
 
             {conversationsError && (
                 <Container className='ai-floating-assistant-alert'>
-                    <Paragraph className='font-size-1 color-danger'>{conversationsError}</Paragraph>
+                    <RecoveryState
+                        title='Unable to load conversations'
+                        description={conversationsError}
+                        tone={RecoveryStateTone.Error}
+                        onRetry={() => {
+                            loadConversations().catch(() => undefined);
+                        }}
+                    />
                 </Container>
             )}
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import DocumentListing, { type ColumnConfig as ListingColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/components/listing/organisms/PluginCompactTable';
@@ -7,8 +7,8 @@ import { LISTING_QUERY_KEYS, usePluginListingInfiniteQuery } from '@/modules/plu
 import usePluginListing from '@/modules/plugin/hooks/listing/use-plugin-listing';
 import usePluginSubListing from '@/modules/plugin/hooks/listing/use-plugin-sub-listing';
 import useDeletePluginListingAnalyses from '@/modules/plugin/hooks/listing/use-delete-plugin-listing-analyses';
-import { getAccessDeniedMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import { getApiErrorMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import { openModal } from '@/shared/presentation/components/Modal';
 import '@/modules/plugin/components/listing/organisms/PluginExposureTable/PluginExposureTable.css';
@@ -51,8 +51,6 @@ const CompactPluginExposureTable = ({
     onDataReady
 }: PluginExposureTableProps) => {
     const pageSize = 20;
-    const [accessDeniedState, setAccessDeniedState] = useState(false);
-    const [accessDeniedMessage, setAccessDeniedMessage] = useState<string>();
 
     const compactEnabled = Boolean(pluginId && (exposureName || exposureId) && (trajectoryId || teamId));
 
@@ -83,24 +81,6 @@ const CompactPluginExposureTable = ({
         }
     );
 
-    // Handle access denied errors from compact query
-    useEffect(() => {
-        if (!compactError) {
-            setAccessDeniedState(false);
-            setAccessDeniedMessage(undefined);
-            return;
-        }
-
-        if (isAccessDeniedError(compactError)) {
-            setAccessDeniedState(true);
-            setAccessDeniedMessage(getAccessDeniedMessage(compactError));
-            return;
-        }
-
-        setAccessDeniedState(false);
-        setAccessDeniedMessage(undefined);
-    }, [compactError]);
-
     const compactRows = useMemo(() => {
         if (!infiniteData?.pages) return [];
         return infiniteData.pages.flatMap((page) => page.data ?? []);
@@ -130,12 +110,19 @@ const CompactPluginExposureTable = ({
         onDataReady(compactColumns, compactRows);
     }, [compactColumns, compactRows, onDataReady]);
 
-    if (accessDeniedState) {
-        return <AccessDenied description={accessDeniedMessage} showBack={false} />;
+    if (compactError && isAccessDeniedError(compactError)) {
+        return (
+            <RecoveryState
+                title='Access denied'
+                description='You do not have permission to view this data.'
+                tone={RecoveryStateTone.AccessDenied}
+                className='plugin-exposure-recovery-state'
+            />
+        );
     }
 
     const compactErrorMessage = compactError && !isAccessDeniedError(compactError)
-        ? (compactError instanceof Error ? compactError.message : 'Failed to load listing.')
+        ? getApiErrorMessage(compactError, 'Failed to load listing.')
         : null;
 
     return (

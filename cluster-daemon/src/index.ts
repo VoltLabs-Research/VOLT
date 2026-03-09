@@ -88,8 +88,7 @@ const main = async (): Promise<void> => {
     await Promise.all([
         redisService.connect(),
         mongoService.connect(),
-        minioService.ensureBuckets(),
-        jupyterRuntimeService.initialize()
+        minioService.ensureBuckets()
     ]);
 
     eventBroker.emitLifecycle({
@@ -126,6 +125,10 @@ const main = async (): Promise<void> => {
 
     server.listen(config.port, config.host, () => {
         logger.info(`cluster-daemon listening on http://${config.host}:${config.port}`);
+    });
+
+    jupyterRuntimeService.initialize().catch((error: unknown) => {
+        logger.warn({ err: error }, 'Jupyter runtime image pre-warm failed (will retry on first session request)');
     });
 
     const shutdown = async () => {

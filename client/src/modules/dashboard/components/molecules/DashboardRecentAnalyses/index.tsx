@@ -1,9 +1,9 @@
 import './DashboardRecentAnalyses.css';
 import useDashboardRecentAnalyses from '@/modules/dashboard/hooks/use-dashboard-recent-analyses';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Title from '@/shared/presentation/components/Title';
 import { Skeleton } from '@mui/material';
@@ -11,7 +11,7 @@ import { FlaskConical } from 'lucide-react';
 import { GoArrowRight } from 'react-icons/go';
 
 const DashboardRecentAnalyses = () => {
-    const { accessDenied, accessDeniedMessage, isLoading, items, openAll, openAnalysis } = useDashboardRecentAnalyses();
+    const { accessDenied, accessDeniedMessage, error, isLoading, items, openAll, openAnalysis, refresh } = useDashboardRecentAnalyses();
     let content = items.map((item) => (
         <Button
             key={item.id}
@@ -40,7 +40,26 @@ const DashboardRecentAnalyses = () => {
 
     if (accessDenied) {
         content = [
-            <AccessDenied key='denied' description={accessDeniedMessage} showBack={false} />
+            <RecoveryState
+                key='denied'
+                title='Access denied'
+                description={accessDeniedMessage ?? 'You do not have permission to view recent analyses.'}
+                tone={RecoveryStateTone.AccessDenied}
+                className='dashboard-recent-analyses-empty flex-1'
+            />
+        ];
+    } else if (error) {
+        content = [
+            <RecoveryState
+                key='error'
+                title='Unable to load recent analyses'
+                description={error}
+                tone={RecoveryStateTone.Error}
+                onRetry={() => {
+                    refresh().catch(() => undefined);
+                }}
+                className='dashboard-recent-analyses-empty flex-1'
+            />
         ];
     } else if (isLoading) {
         content = Array.from({ length: 3 }).map((_, i) => (

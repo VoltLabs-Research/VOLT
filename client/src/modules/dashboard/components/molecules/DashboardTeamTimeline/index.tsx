@@ -1,8 +1,8 @@
 import './DashboardTeamTimeline.css';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
 import { useMemo } from 'react';
 import { Skeleton } from '@mui/material';
@@ -51,7 +51,7 @@ const getUserName = (user: string | PopulatedUser): string => {
 };
 
 const DashboardTeamTimeline = () => {
-    const { activityData, isLoading, accessDenied, accessDeniedMessage } = useDailyActivityData({ range: 7 });
+    const { activityData, isLoading, error, accessDenied, accessDeniedMessage, fetchActivity } = useDailyActivityData({ range: 7 });
 
     const entries = useMemo((): TimelineEntry[] => {
         const items: TimelineEntry[] = [];
@@ -76,7 +76,28 @@ const DashboardTeamTimeline = () => {
     if (accessDenied) {
         return (
             <Container className='dashboard-timeline-card'>
-                <AccessDenied description={accessDeniedMessage} showBack={false} />
+                <RecoveryState
+                    title='Access denied'
+                    description={accessDeniedMessage ?? 'You do not have permission to view team activity.'}
+                    tone={RecoveryStateTone.AccessDenied}
+                    className='dashboard-card-state dashboard-timeline-empty'
+                />
+            </Container>
+        );
+    }
+
+    if (error) {
+        return (
+            <Container className='dashboard-timeline-card'>
+                <RecoveryState
+                    title='Unable to load activity'
+                    description={error}
+                    tone={RecoveryStateTone.Error}
+                    onRetry={() => {
+                        fetchActivity().catch(() => undefined);
+                    }}
+                    className='dashboard-card-state dashboard-timeline-empty'
+                />
             </Container>
         );
     }

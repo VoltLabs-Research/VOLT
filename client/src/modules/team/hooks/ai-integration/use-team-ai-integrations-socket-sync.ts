@@ -1,8 +1,7 @@
 import { SOCKET_TEAM_AI_INTEGRATION_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
-import { AI_INTEGRATION_QUERY_KEYS } from './queries';
+import { invalidateTeamAIIntegrationsQuery } from './queries';
 import { useCallback } from 'react';
-import queryClient from '@/shared/infrastructure/query/query-client';
 
 interface TeamScopedPayload {
     teamId?: string;
@@ -21,10 +20,7 @@ export default function useTeamAIIntegrationsSocketSync(teamId: string | null | 
             return;
         }
 
-        Promise.all([
-            queryClient.invalidateQueries({ queryKey: AI_INTEGRATION_QUERY_KEYS.teamAIIntegrations(teamId) }),
-            queryClient.invalidateQueries({ queryKey: AI_INTEGRATION_QUERY_KEYS.teamAIIntegrationModels(teamId) })
-        ]);
+        void invalidateTeamAIIntegrationsQuery(teamId);
     }, [teamId]);
 
     useSocketEvent<TeamScopedPayload>(SOCKET_TEAM_AI_INTEGRATION_EVENTS.CREATED, handleSync, { enabled: !!teamId });
