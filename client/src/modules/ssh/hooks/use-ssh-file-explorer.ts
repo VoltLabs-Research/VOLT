@@ -12,7 +12,7 @@ interface UseSSHFileExplorerOptions {
 const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
+    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
     const [selectedPath, setSelectedPath] = useState<string | null>(null);
 
     const path = searchParams.get('path') || '.';
@@ -50,19 +50,19 @@ const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
             return;
         }
 
-        const isRbacError = isAccessDeniedError(connectionQuery.error);
-        if (isRbacError) {
-            checkRBACError(connectionQuery.error);
+        const isAccessDenied = isAccessDeniedError(connectionQuery.error);
+        if (isAccessDenied) {
+            checkAccessDeniedError(connectionQuery.error);
         } else if (!connectionQuery.isLoading) {
             sileo.error({ title: 'Failed to load connection' });
         }
-    }, [connectionQuery.error, connectionQuery.isLoading, checkRBACError]);
+    }, [connectionQuery.error, connectionQuery.isLoading, checkAccessDeniedError]);
 
     useEffect(() => {
         if (filesQuery.error) {
-            checkRBACError(filesQuery.error);
+            checkAccessDeniedError(filesQuery.error);
         }
-    }, [filesQuery.error, checkRBACError]);
+    }, [filesQuery.error, checkAccessDeniedError]);
 
     const entries = filesQuery.data?.entries || [];
     const cwd = filesQuery.data?.cwd || '';

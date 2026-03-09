@@ -1,6 +1,6 @@
 import Container from '@/shared/presentation/components/Container';
 import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
-import EmptyState from '@/shared/presentation/components/EmptyState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import TableRow from '@/shared/presentation/components/TableRow';
 import TableSkeletonRow from '@/shared/presentation/components/TableSkeletonRow';
 import Title from '@/shared/presentation/components/Title';
@@ -45,6 +45,10 @@ interface DocumentListingTableProps<T extends Identifiable> {
     scrollContainerRef?: React.RefObject<HTMLElement> | null;
     emptyButtonText?: string;
     onEmptyButtonClick?: () => void;
+    errorMessage?: string | null;
+    isAccessDenied?: boolean;
+    onRetry?: () => void;
+    retryButtonText?: string;
 };
 
 const getColumnWidth = <T,>(col: ColumnConfig<T>): number => {
@@ -69,7 +73,11 @@ const DocumentListingTable = <T extends Identifiable>({
     skeletonRowsCount = 8,
     scrollContainerRef = null,
     emptyButtonText,
-    onEmptyButtonClick
+    onEmptyButtonClick,
+    errorMessage,
+    isAccessDenied = false,
+    onRetry,
+    retryButtonText
 }: DocumentListingTableProps<T>) => {
     const bodyRef = useRef<HTMLDivElement | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -98,7 +106,18 @@ const DocumentListingTable = <T extends Identifiable>({
         onLoadMore
     });
 
-    const { isInitialLoading, hasNoData, shouldShowEmptyState } = getListingDisplayState(data.length, isLoading);
+    const {
+        isInitialLoading,
+        hasNoData,
+        shouldShowEmptyState,
+        shouldShowErrorState,
+        shouldShowAccessDeniedState
+    } = getListingDisplayState({
+        dataLength: data.length,
+        isLoading,
+        errorMessage,
+        isAccessDenied
+    });
 
     useEffect(() => {
         setSelectedIds((prev) => {
@@ -209,12 +228,31 @@ const DocumentListingTable = <T extends Identifiable>({
                 <Container ref={sentinelRef} style={{ height: 1 }} />
 
                 {shouldShowEmptyState && (
-                    <EmptyState
+                    <RecoveryState
                         icon={<FileText size={26} strokeWidth={1.5} />}
                         title='Nothing here yet'
                         description={emptyMessage}
-                        buttonText={emptyButtonText}
-                        buttonOnClick={onEmptyButtonClick}
+                        retryLabel={emptyButtonText}
+                        onRetry={onEmptyButtonClick}
+                    />
+                )}
+
+                {shouldShowErrorState && (
+                    <RecoveryState
+                        title='Unable to load this list'
+                        description={errorMessage ?? 'Something went wrong while loading this data.'}
+                        tone={RecoveryStateTone.Error}
+                        retryLabel={retryButtonText}
+                        isRetrying={isLoading}
+                        onRetry={onRetry}
+                    />
+                )}
+
+                {shouldShowAccessDeniedState && (
+                    <RecoveryState
+                        title='Access denied'
+                        description={errorMessage ?? 'You do not have permission to view this list.'}
+                        tone={RecoveryStateTone.AccessDenied}
                     />
                 )}
 

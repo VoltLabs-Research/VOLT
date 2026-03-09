@@ -15,16 +15,16 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
     const {
         simulationCell: cell,
         isLoading,
-        accessDenied: rbacDenied,
-        accessDeniedMessage: rbacMessage
+        accessDenied: accessDeniedState,
+        accessDeniedMessage: accessDeniedMessage
     } = useSimulationCell({
         trajectoryId: trajectory?._id,
         timestep: currentTimestep,
         enabled: !!trajectory?._id && !!teamId
     });
 
-    if (rbacDenied) {
-        return <AccessDenied description={rbacMessage} showBack={false} />;
+    if (accessDeniedState) {
+        return <AccessDenied description={accessDeniedMessage} showBack={false} />;
     }
 
     if (isLoading || !cell) {

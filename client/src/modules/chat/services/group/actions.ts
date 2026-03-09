@@ -16,7 +16,7 @@ interface GroupActionDependencies {
     navigate: NavigateFunction;
 };
 
-const swallowRBACError = (error: unknown) => {
+const swallowAccessDeniedError = (error: unknown) => {
     if (isAccessDeniedError(error)) {
         return;
     }
@@ -43,7 +43,7 @@ export const createGroupAction = async (
 
         return chat;
     } catch (error: unknown) {
-        swallowRBACError(error);
+        swallowAccessDeniedError(error);
     }
 };
 
@@ -65,7 +65,7 @@ export const addUsersToGroupAction = async (
         replaceChatInCache(queryClient, chat);
         return chat;
     } catch (error: unknown) {
-        swallowRBACError(error);
+        swallowAccessDeniedError(error);
     }
 };
 
@@ -87,7 +87,7 @@ export const removeUsersFromGroupAction = async (
         replaceChatInCache(queryClient, chat);
         return chat;
     } catch (error: unknown) {
-        swallowRBACError(error);
+        swallowAccessDeniedError(error);
     }
 };
 
@@ -109,7 +109,7 @@ export const updateGroupInfoAction = async (
         replaceChatInCache(queryClient, chat);
         return chat;
     } catch (error: unknown) {
-        swallowRBACError(error);
+        swallowAccessDeniedError(error);
     }
 };
 
@@ -132,7 +132,7 @@ export const updateGroupAdminsAction = async (
 
         return chat;
     } catch (error: unknown) {
-        swallowRBACError(error);
+        swallowAccessDeniedError(error);
     }
 };
 
@@ -153,6 +153,6 @@ export const leaveGroupAction = async (
         removeChatFromCache(queryClient, chatId);
         navigate('/dashboard/messages');
     } catch (error: unknown) {
-        swallowRBACError(error);
+        swallowAccessDeniedError(error);
     }
 };

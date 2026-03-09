@@ -283,7 +283,7 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     'AccessControlService::Strategy::NotFound': 'Access control strategy not found',
     'AccessControlService::Access::MissingPermissions': 'You do not have the required permissions',
 
-    // RBAC errors
+    // Access denied errors
     'RBAC::InsufficientPermissions': 'You do not have permission to perform this action',
 
     // OAuth errors

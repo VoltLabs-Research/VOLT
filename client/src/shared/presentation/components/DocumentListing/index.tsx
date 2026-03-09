@@ -9,7 +9,6 @@ import { getValueByPath } from '@/shared/utils/format';
 import { sortData } from '@/shared/utils/sort';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import queryClient from '@/shared/infrastructure/query/query-client';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListingGrid from '@/shared/presentation/components/DocumentListingGrid';
@@ -266,11 +265,6 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     const isAccessDenied = !!errorCode && isAccessDeniedCode(errorCode);
 
     const renderContent = () => {
-        if(isAccessDenied){
-            return <AccessDenied description={error || undefined} showBack={false} />;
-        }
-
-        const emptyMessageText = error ? error : emptyMessage;
         if(view === 'grid'){
             if(!renderGridItem) return null;
 
@@ -285,11 +279,15 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                     renderSkeleton={renderGridSkeleton}
                     emptyIcon={emptyIcon}
                     emptyTitle={emptyTitle}
-                    emptyMessage={emptyMessageText}
+                    emptyMessage={emptyMessage}
                     emptyButtonText={emptyButtonText}
                     emptyButtonIsLoading={emptyButtonIsLoading}
                     onEmptyButtonClick={onEmptyButtonClick}
                     className={gridClassName}
+                    errorMessage={error}
+                    isAccessDenied={isAccessDenied}
+                    onRetry={refresh}
+                    retryButtonText='Try again'
                 />
             );
         }
@@ -309,12 +307,16 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                         getCellTitle={(col) => <>{col.title} {getSortIndicator(col)}</>}
                         isLoading={isLoading}
                         getMenuOptions={wrappedGetMenuOptions}
-                        emptyMessage={emptyMessageText}
+                        emptyMessage={emptyMessage}
                         hasMore={hasMore}
                         isFetchingMore={isFetchingMore}
                         onLoadMore={handleLoadMore}
                         emptyButtonText={emptyButtonText}
                         onEmptyButtonClick={onEmptyButtonClick}
+                        errorMessage={error}
+                        isAccessDenied={isAccessDenied}
+                        onRetry={refresh}
+                        retryButtonText='Try again'
                     />
                 </motion.div>
             </Container>

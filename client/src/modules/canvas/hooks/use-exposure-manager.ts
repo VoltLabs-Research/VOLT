@@ -48,7 +48,7 @@ const buildParams = (trajectoryId: string, analysisId: string): ListSceneArtifac
 
 const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExposureManagerReturn => {
     const queryClient = useQueryClient();
-    const { checkRBACError } = useAccessDenied();
+    const { checkAccessDeniedError } = useAccessDenied();
     const [trackedAnalysisIds, setTrackedAnalysisIds] = useState<Set<string>>(new Set());
     const trackedIdsRef = useRef(trackedAnalysisIds);
     trackedIdsRef.current = trackedAnalysisIds;
@@ -72,7 +72,7 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
 
             if (result.isError && result.error && !reportedErrorsRef.current.has(analysisId)) {
                 reportedErrorsRef.current.add(analysisId);
-                if (!checkRBACError(result.error)) {
+                if (!checkAccessDeniedError(result.error)) {
                     sileo.error({ title: 'Failed to load exposures' });
                 }
             }
@@ -82,7 +82,7 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
                 reportedErrorsRef.current.delete(analysisId);
             }
         }
-    }, [analysisIdArray, queryResults, checkRBACError]);
+    }, [analysisIdArray, queryResults, checkAccessDeniedError]);
 
     // Invalidate scene artifacts queries when an analysis transitions to 'completed'
     // so stale empty results are replaced with actual exposure data.

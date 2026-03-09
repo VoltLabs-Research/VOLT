@@ -6,7 +6,7 @@ import { fetchPluginById, PLUGIN_QUERY_KEYS, syncPluginEntityCaches, useAllPlugi
 
 const usePluginCatalog = () => {
     const queryClient = useQueryClient();
-    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
+    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
 
     const allPluginsQuery = useAllPluginsQuery({ enabled: false });
 
@@ -17,10 +17,10 @@ const usePluginCatalog = () => {
         try {
             await allPluginsQuery.refetch();
         } catch (error) {
-            if (checkRBACError(error)) throw error;
+            if (checkAccessDeniedError(error)) throw error;
             throw error;
         }
-    }, [allPluginsQuery, queryClient, checkRBACError]);
+    }, [allPluginsQuery, queryClient, checkAccessDeniedError]);
 
     const ensurePluginById = useCallback(async (id: string): Promise<Plugin | null> => {
         if (!id) return null;
@@ -37,10 +37,10 @@ const usePluginCatalog = () => {
             }
             return plugin;
         }).catch((error) => {
-            if (checkRBACError(error)) throw error;
+            if (checkAccessDeniedError(error)) throw error;
             throw error;
         });
-    }, [queryClient, checkRBACError]);
+    }, [queryClient, checkAccessDeniedError]);
 
     return {
         loadAllPlugins,

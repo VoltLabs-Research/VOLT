@@ -1,6 +1,6 @@
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
-import SettingsSection from '@/modules/auth/components/atoms/SettingsSection';
-import SettingsSectionHeader from '@/modules/auth/components/molecules/SettingsSectionHeader';
+import SettingsSection from '@/shared/presentation/components/SettingsSection';
+import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import ThemeSelector from '@/modules/auth/components/organisms/ThemeSelector';
 
 const ThemeSettings = () => {

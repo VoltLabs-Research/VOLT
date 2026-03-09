@@ -51,8 +51,8 @@ const CompactPluginExposureTable = ({
     onDataReady
 }: PluginExposureTableProps) => {
     const pageSize = 20;
-    const [rbacDenied, setRbacDenied] = useState(false);
-    const [rbacMessage, setRbacMessage] = useState<string>();
+    const [accessDeniedState, setAccessDeniedState] = useState(false);
+    const [accessDeniedMessage, setAccessDeniedMessage] = useState<string>();
 
     const compactEnabled = Boolean(pluginId && (exposureName || exposureId) && (trajectoryId || teamId));
 
@@ -83,22 +83,22 @@ const CompactPluginExposureTable = ({
         }
     );
 
-    // Handle RBAC errors from compact query
+    // Handle access denied errors from compact query
     useEffect(() => {
         if (!compactError) {
-            setRbacDenied(false);
-            setRbacMessage(undefined);
+            setAccessDeniedState(false);
+            setAccessDeniedMessage(undefined);
             return;
         }
 
         if (isAccessDeniedError(compactError)) {
-            setRbacDenied(true);
-            setRbacMessage(getAccessDeniedMessage(compactError));
+            setAccessDeniedState(true);
+            setAccessDeniedMessage(getAccessDeniedMessage(compactError));
             return;
         }
 
-        setRbacDenied(false);
-        setRbacMessage(undefined);
+        setAccessDeniedState(false);
+        setAccessDeniedMessage(undefined);
     }, [compactError]);
 
     const compactRows = useMemo(() => {
@@ -130,8 +130,8 @@ const CompactPluginExposureTable = ({
         onDataReady(compactColumns, compactRows);
     }, [compactColumns, compactRows, onDataReady]);
 
-    if (rbacDenied) {
-        return <AccessDenied description={rbacMessage} showBack={false} />;
+    if (accessDeniedState) {
+        return <AccessDenied description={accessDeniedMessage} showBack={false} />;
     }
 
     const compactErrorMessage = compactError && !isAccessDeniedError(compactError)

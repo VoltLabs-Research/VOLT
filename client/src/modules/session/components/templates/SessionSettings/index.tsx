@@ -10,9 +10,9 @@ import {
     SESSION_ACTION_LABELS,
     SESSION_ACTION_VARIANTS
 } from '@/modules/session/utilities';
-import SettingsSection from '@/modules/session/components/atoms/SettingsSection';
-import SettingsSectionHeader from '@/modules/session/components/molecules/SettingsSectionHeader';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
+import SettingsSection from '@/shared/presentation/components/SettingsSection';
+import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import useSessionData from '@/modules/session/hooks/use-session-data';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
