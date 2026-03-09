@@ -20,7 +20,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
     const [jupyterUrl, setJupyterUrl] = useState<string | null>(null);
     const [jupyterError, setJupyterError] = useState<string | null>(null);
     const [startAttempt, setStartAttempt] = useState(0);
-    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
+    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
     const hasAutoStartedRef = useRef(false);
 
     const notebooksQuery = scriptingNotebooksQuery(
@@ -34,10 +34,10 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
 
     useEffect(() => {
         if (!notebooksQuery.error) return;
-        if (!checkRBACError(notebooksQuery.error)) {
+        if (!checkAccessDeniedError(notebooksQuery.error)) {
             sileo.error({ title: 'Failed to load notebooks' });
         }
-    }, [checkRBACError, notebooksQuery.error]);
+    }, [checkAccessDeniedError, notebooksQuery.error]);
 
     const notebooks = ((notebooksQuery.data as PaginatedResponse<ScriptingNotebook> | undefined)?.data) ?? [];
     const activeNotebook = useMemo(
@@ -75,12 +75,12 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                 });
             }
         } catch (error: unknown) {
-            if (!checkRBACError(error)) {
+            if (!checkAccessDeniedError(error)) {
                 setJupyterError(getJupyterStartErrorMessage(error));
                 sileo.error({ title: 'Failed to start Jupyter session' });
             }
         }
-    }, [activeNotebook?._id, checkRBACError, createScriptingSession, trajectoryId]);
+    }, [activeNotebook?._id, checkAccessDeniedError, createScriptingSession, trajectoryId]);
 
     useEffect(() => {
         if (!trajectoryId || notebooksQuery.isLoading) {

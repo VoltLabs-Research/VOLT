@@ -1,6 +1,7 @@
 import FileRowSkeleton from './FileRowSkeleton';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import './FileExplorer.css';
 import type { ReactNode } from 'react';
 
@@ -15,6 +16,10 @@ export interface FileExplorerProps {
     emptyMessage?: string;
     error?: string | null;
     skeletonCount?: number;
+    accessDenied?: boolean;
+    accessDeniedMessage?: string;
+    onRetry?: () => void;
+    isRetrying?: boolean;
 };
 
 const FileExplorer = ({
@@ -27,9 +32,23 @@ const FileExplorer = ({
     isEmpty = false,
     emptyMessage = 'No files found',
     error,
-    skeletonCount = 8
+    skeletonCount = 8,
+    accessDenied = false,
+    accessDeniedMessage,
+    onRetry,
+    isRetrying = false
 }: FileExplorerProps) => {
     const renderContent = () => {
+        if (accessDenied) {
+            return (
+                <AccessDenied
+                    description={accessDeniedMessage}
+                    showBack={false}
+                    className='file-explorer-state'
+                />
+            );
+        }
+
         if(isLoading){
             return Array.from({ length: skeletonCount }).map((_, i) => (
                 <FileRowSkeleton key={i} />
@@ -38,17 +57,25 @@ const FileExplorer = ({
 
         if(error){
             return (
-                <Container className='file-explorer-message p-2 text-center'>
-                    <Paragraph className='color-danger'>{error}</Paragraph>
-                </Container>
+                <RecoveryState
+                    title='Unable to load files'
+                    description={error}
+                    tone={RecoveryStateTone.Error}
+                    onRetry={onRetry}
+                    retryLabel='Try again'
+                    isRetrying={isRetrying}
+                    className='file-explorer-state'
+                />
             );
         }
 
         if(isEmpty){
             return (
-                <Container className='file-explorer-message p-2 text-center'>
-                    <Paragraph className='color-muted'>{emptyMessage}</Paragraph>
-                </Container>
+                <RecoveryState
+                    title='Nothing here yet'
+                    description={emptyMessage}
+                    className='file-explorer-state'
+                />
             );
         }
 

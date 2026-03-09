@@ -18,7 +18,7 @@ interface UseAIConversationsOptions {
     navigateOnConversationChange?: boolean;
     onConversationChange?: (conversationId?: string) => void;
     onConversationCreated?: () => void;
-    checkRBACError: (error: unknown) => boolean;
+    checkAccessDeniedError: (error: unknown) => boolean;
 };
 
 const sortConversations = (conversations: AIConversation[]) => {
@@ -119,12 +119,12 @@ const useAIConversations = (
             handleConversationChange(result.conversation._id);
             return result.conversation;
         } catch (error) {
-            if (options.checkRBACError(error)) throw error;
+            if (options.checkAccessDeniedError(error)) throw error;
             if (notifyApiError(error, { fallbackTitle: 'Failed to create conversation' })) throw error;
             sileo.error({ title: 'Failed to create conversation' });
             throw error;
         }
-    }, [getConversationTitle, handleConversationChange, createConversationMutationResult, options.checkRBACError, options.onConversationCreated]);
+    }, [getConversationTitle, handleConversationChange, createConversationMutationResult, options.checkAccessDeniedError, options.onConversationCreated]);
 
     const handleDeleteConversation = useCallback(async (targetConversationId: string) => {
         await showPromise(
@@ -150,12 +150,12 @@ const useAIConversations = (
                 title: normalizedTitle
             });
         } catch (error) {
-            if (options.checkRBACError(error)) throw error;
+            if (options.checkAccessDeniedError(error)) throw error;
             if (notifyApiError(error, { fallbackTitle: 'Failed to rename conversation' })) throw error;
             sileo.error({ title: 'Failed to rename conversation' });
             throw error;
         }
-    }, [renameConversationMutationResult, options.checkRBACError]);
+    }, [renameConversationMutationResult, options.checkAccessDeniedError]);
 
     const loadConversations = useCallback(async () => {
         await invalidateConversationsQueries();

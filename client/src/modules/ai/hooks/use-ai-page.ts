@@ -14,7 +14,7 @@ interface UseAIPageOptions {
 const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
     const selectedTeam = useSelectedTeam();
     const teamId = useSelectedTeamId();
-    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
+    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
     const skipNextMessageLoadRef = useRef(false);
 
     const modelSelection = useAIModelSelection(teamId);
@@ -34,7 +34,7 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
         onConversationCreated: () => {
             skipNextMessageLoadRef.current = true;
         },
-        checkRBACError
+        checkAccessDeniedError
     });
 
     const chatStream = useAIChatStream({

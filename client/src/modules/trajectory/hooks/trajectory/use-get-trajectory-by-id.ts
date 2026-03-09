@@ -19,7 +19,7 @@ interface UseGetTrajectoryByIdResult {
 
 export default function useGetTrajectoryById(params: UseGetTrajectoryByIdParams = {}): UseGetTrajectoryByIdResult {
     const { trajectoryId, enabled = true } = params;
-    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
+    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
 
     const shouldFetch = enabled && Boolean(trajectoryId);
 
@@ -33,7 +33,7 @@ export default function useGetTrajectoryById(params: UseGetTrajectoryByIdParams 
         {
             enabled: shouldFetch,
             retry: (failureCount, error) => {
-                if (checkRBACError(error)) {
+                if (checkAccessDeniedError(error)) {
                     return false;
                 }
                 return failureCount < 2;
@@ -45,7 +45,7 @@ export default function useGetTrajectoryById(params: UseGetTrajectoryByIdParams 
 
     let errorMessage: string | null = null;
     if (queryError) {
-        if (!checkRBACError(queryError)) {
+        if (!checkAccessDeniedError(queryError)) {
             errorMessage = queryError.message || 'Failed to fetch trajectory';
         }
     }

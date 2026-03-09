@@ -115,9 +115,9 @@ export default function useInvitePanel(): UseInvitePanelReturn {
             scheduleButtonReset(2500);
         } catch (error: unknown) {
             if (isAccessDeniedError(error)) {
-                const rbacMessage = getAccessDeniedMessage(error, 'You do not have permission to send invitations')
+                const accessDeniedMessage = getAccessDeniedMessage(error, 'You do not have permission to send invitations')
                     ?? 'You do not have permission to send invitations';
-                form.setError('email', { message: rbacMessage });
+                form.setError('email', { message: accessDeniedMessage });
                 notifyApiError(error, { fallbackTitle: 'You do not have permission to send invitations' });
                 setButtonState('error');
                 scheduleButtonReset(2000);

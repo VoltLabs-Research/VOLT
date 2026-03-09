@@ -22,18 +22,18 @@ const SettingsSectionHeader = ({
 
     return (
         <Container className={classes}>
-            <Container className="flex-1 d-flex column gap-025">
-                <Title className="font-size-3 font-weight-6">
+            <Container className='flex-1 d-flex column gap-025'>
+                <Title className='font-size-3 font-weight-6'>
                     {title}
                 </Title>
                 {description && (
-                    <Paragraph className="color-muted font-size-2">
+                    <Paragraph className='color-muted font-size-2'>
                         {description}
                     </Paragraph>
                 )}
             </Container>
             {action && (
-                <Container className="f-shrink-0">
+                <Container className='f-shrink-0'>
                     {action}
                 </Container>
             )}

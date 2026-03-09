@@ -1,12 +1,12 @@
 import { passwordInfoQuery, useChangePasswordMutation } from '@/modules/auth/hooks/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import SettingsSection from '@/modules/auth/components/atoms/SettingsSection';
 import LoginActivityRow from '@/modules/auth/components/molecules/LoginActivityRow';
 import PasswordStatusRow from '@/modules/auth/components/molecules/PasswordStatusRow';
 import PasswordChangeForm from '@/modules/auth/components/organisms/PasswordChangeForm';
-import SettingsSectionHeader from '@/modules/auth/components/molecules/SettingsSectionHeader';
 import Container from '@/shared/presentation/components/Container';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
+import SettingsSection from '@/shared/presentation/components/SettingsSection';
+import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ChangePasswordInputDTO } from '@/modules/auth/api/dtos/change-password';

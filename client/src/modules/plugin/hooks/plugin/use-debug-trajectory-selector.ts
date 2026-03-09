@@ -5,9 +5,9 @@ import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-d
 
 const useDebugTrajectorySelector = () => {
     const { selectedTrajectoryId, selectedTimestep, setSelectedTrajectory, setSelectedTimestep } = usePluginDebugStore();
-    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
+    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
     const trajectoryQuery = debugTrajectoriesQuery(undefined, {
-        meta: { checkRBACError }
+        meta: { checkAccessDeniedError }
     });
 
     const trajectories = trajectoryQuery.data ?? [];

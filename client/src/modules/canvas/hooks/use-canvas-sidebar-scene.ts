@@ -36,7 +36,7 @@ interface UseCanvasSidebarSceneProps {
 };
 
 const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: UseCanvasSidebarSceneProps) => {
-    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
+    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
 
     const trajectoryId = propTrajectoryId || trajectory?._id;
 
@@ -74,9 +74,9 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
     useEffect(() => {
         if (analysesQuery.error) {
-            checkRBACError(analysesQuery.error);
+            checkAccessDeniedError(analysesQuery.error);
         }
-    }, [analysesQuery.error, checkRBACError]);
+    }, [analysesQuery.error, checkAccessDeniedError]);
 
     useEffect(() => {
         setExpandedSections(new Set());

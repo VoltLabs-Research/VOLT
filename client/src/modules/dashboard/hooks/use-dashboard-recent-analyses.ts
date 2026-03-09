@@ -15,13 +15,13 @@ export interface DashboardRecentAnalysisItem {
 
 export const useDashboardRecentAnalyses = () => {
     const navigate = useNavigate();
-    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
+    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
 
     const recentAnalysesQuery = analysisQuery.useListQuery(
         { page: 1, limit: 5 },
         {
             retry: (failureCount, error) => {
-                if (checkRBACError(error)) {
+                if (checkAccessDeniedError(error)) {
                     return false;
                 }
 

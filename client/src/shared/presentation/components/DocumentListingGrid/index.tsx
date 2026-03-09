@@ -1,6 +1,6 @@
 import Container from '@/shared/presentation/components/Container';
 import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
-import EmptyState from '@/shared/presentation/components/EmptyState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
 import './DocumentListingGrid.css';
 import { FileText } from 'lucide-react';
@@ -22,6 +22,10 @@ interface DocumentListingGridProps<T extends { _id: string }> {
     emptyButtonIsLoading?: boolean;
     onEmptyButtonClick?: () => void;
     className?: string;
+    errorMessage?: string | null;
+    isAccessDenied?: boolean;
+    onRetry?: () => void;
+    retryButtonText?: string;
 };
 
 const DocumentListingGrid = <T extends { _id: string },>({
@@ -38,7 +42,11 @@ const DocumentListingGrid = <T extends { _id: string },>({
     emptyButtonText,
     emptyButtonIsLoading = false,
     onEmptyButtonClick,
-    className = ''
+    className = '',
+    errorMessage,
+    isAccessDenied = false,
+    onRetry,
+    retryButtonText
 }: DocumentListingGridProps<T>) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const { sentinelRef } = useInfiniteScroll({
@@ -48,7 +56,18 @@ const DocumentListingGrid = <T extends { _id: string },>({
         onLoadMore
     });
 
-    const { isInitialLoading, shouldShowEmptyState } = getListingDisplayState(data.length, isLoading);
+    const {
+        isInitialLoading,
+        shouldShowContent,
+        shouldShowEmptyState,
+        shouldShowErrorState,
+        shouldShowAccessDeniedState
+    } = getListingDisplayState({
+        dataLength: data.length,
+        isLoading,
+        errorMessage,
+        isAccessDenied
+    });
 
     return (
         <Container
@@ -59,18 +78,41 @@ const DocumentListingGrid = <T extends { _id: string },>({
 
             {shouldShowEmptyState && (
                 <Container className='document-listing-grid-empty flex-center'>  
-                    <EmptyState
+                    <RecoveryState
                         icon={emptyIcon ? emptyIcon : <FileText size={26} strokeWidth={1.5} />}
                         title={emptyTitle}
                         description={emptyMessage}
-                        buttonText={emptyButtonText}
-                        buttonOnClick={onEmptyButtonClick}
-                        buttonIsLoading={emptyButtonIsLoading}
+                        retryLabel={emptyButtonText}
+                        isRetrying={emptyButtonIsLoading}
+                        onRetry={onEmptyButtonClick}
                     />
                 </Container>
             )}
 
-            {!isInitialLoading && data.map((item, index) => (
+            {shouldShowErrorState && (
+                <Container className='document-listing-grid-empty flex-center'>
+                    <RecoveryState
+                        title='Unable to load these items'
+                        description={errorMessage ?? 'Something went wrong while loading this content.'}
+                        tone={RecoveryStateTone.Error}
+                        retryLabel={retryButtonText}
+                        isRetrying={isLoading}
+                        onRetry={onRetry}
+                    />
+                </Container>
+            )}
+
+            {shouldShowAccessDeniedState && (
+                <Container className='document-listing-grid-empty flex-center'>
+                    <RecoveryState
+                        title='Access denied'
+                        description={errorMessage ?? 'You do not have permission to view these items.'}
+                        tone={RecoveryStateTone.AccessDenied}
+                    />
+                </Container>
+            )}
+
+            {shouldShowContent && data.map((item, index) => (
                 <React.Fragment key={item._id}>
                     {renderItem(item, index)}
                 </React.Fragment>

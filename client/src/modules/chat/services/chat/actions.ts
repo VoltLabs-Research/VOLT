@@ -16,7 +16,7 @@ interface ChatActionDependencies {
     navigate: NavigateFunction;
 };
 
-const swallowRBACError = (error: unknown) => {
+const swallowAccessDeniedError = (error: unknown) => {
     if (isAccessDeniedError(error)) {
         return;
     }
@@ -44,6 +44,6 @@ export const getOrCreateChatAction = async (
 
         return chat;
     } catch (error: unknown) {
-        swallowRBACError(error);
+        swallowAccessDeniedError(error);
     }
 };

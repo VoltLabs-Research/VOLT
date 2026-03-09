@@ -68,7 +68,7 @@ const buildCard = (
  * when a team is selected. The actual team scoping is handled server-side via RBAC.
  */
 export const useDashboardMetrics = (teamId?: string) => {
-    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
+    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
     const [rotationIndex, setRotationIndex] = useState(0);
 
     const metricsQuery = useDashboardMetricsQuery(undefined, {
@@ -77,9 +77,9 @@ export const useDashboardMetrics = (teamId?: string) => {
 
     useEffect(() => {
         if (metricsQuery.error) {
-            checkRBACError(metricsQuery.error);
+            checkAccessDeniedError(metricsQuery.error);
         }
-    }, [metricsQuery.error, checkRBACError]);
+    }, [metricsQuery.error, checkAccessDeniedError]);
 
     useEffect(() => {
         const interval = setInterval(() => {

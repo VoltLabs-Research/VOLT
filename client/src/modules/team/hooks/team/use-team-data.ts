@@ -14,7 +14,7 @@ export default function useTeamData(options?: UseTeamDataOptions) {
     const hasHydratedSelection = useTeamStore((state) => state.hasHydratedSelection);
     const hydrateSelectedTeamId = useTeamStore((state) => state.hydrateSelectedTeamId);
 
-    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
+    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
 
     const teamsQuery = useTeamsQuery(undefined, { enabled });
 
@@ -24,8 +24,8 @@ export default function useTeamData(options?: UseTeamDataOptions) {
     const teamsQueryRef = useRef(teamsQuery);
     teamsQueryRef.current = teamsQuery;
 
-    const checkRBACErrorRef = useRef(checkRBACError);
-    checkRBACErrorRef.current = checkRBACError;
+    const checkAccessDeniedErrorRef = useRef(checkAccessDeniedError);
+    checkAccessDeniedErrorRef.current = checkAccessDeniedError;
 
     useEffect(() => {
         if (!enabled) {
@@ -37,9 +37,9 @@ export default function useTeamData(options?: UseTeamDataOptions) {
 
     useEffect(() => {
         if (teamsQuery.error) {
-            checkRBACError(teamsQuery.error);
+            checkAccessDeniedError(teamsQuery.error);
         }
-    }, [teamsQuery.error, checkRBACError]);
+    }, [teamsQuery.error, checkAccessDeniedError]);
 
     useEffect(() => {
         if (!hasHydratedSelection || !teamsQuery.data) return;
@@ -65,7 +65,7 @@ export default function useTeamData(options?: UseTeamDataOptions) {
 
         const result = await teamsQueryRef.current.refetch();
         if (result.error) {
-            checkRBACErrorRef.current(result.error);
+            checkAccessDeniedErrorRef.current(result.error);
         }
     }, [enabled]);
 

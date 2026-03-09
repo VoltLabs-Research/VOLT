@@ -2,12 +2,14 @@ import { useContainerFilesQuery, useContainerFileContentQuery } from '../../../h
 import { IoFolderOutline, IoDocumentOutline, IoArrowBack } from 'react-icons/io5';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
+import FileExplorer from '@/shared/presentation/components/FileExplorer';
+import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileExplorerRow';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
-import FileRowSkeleton from '@/shared/presentation/components/FileExplorer/FileRowSkeleton';
 import { getApiErrorMessage } from '@/shared/errors/notify-api-error';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import { useMemo } from 'react';
 import './ContainerFileExplorer.css';
 
 interface ContainerFileExplorerProps {
@@ -20,11 +22,12 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     const path = searchParams.get('path') || '/';
     const viewingFile = searchParams.get('file');
 
-    const { data: filesResponse, isLoading, refetch: refetchFiles } = useContainerFilesQuery(
+    const { data: filesResponse, isLoading, error: filesError, refetch: refetchFiles, isFetching } = useContainerFilesQuery(
         { containerId, path },
         { enabled: !!containerId }
     );
     const files = filesResponse?.files ?? [];
+    const filesErrorMessage = filesError ? getApiErrorMessage(filesError, 'Failed to load files') : null;
 
     let filePath = '';
     if (viewingFile) {
@@ -114,38 +117,34 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
         );
     }
 
-    let filesContent = null;
-    if (isLoading) {
-        filesContent = (
+    const columns = useMemo(() => {
+        return (
             <>
-                {Array.from({ length: 8 }).map((_, i) => <FileRowSkeleton key={i} className='container-file-item items-center' />)}
+                <span>Name</span>
+                <span>Type</span>
+                <span>Size</span>
+                <span>Modified</span>
             </>
         );
-    } else {
-        filesContent = (
-            <>
-                {files.length === 0 && <Paragraph className='container-file-empty-folder'>Empty folder</Paragraph>}
-                {files.map((file, index) => (
-                    <Container
-                        key={index}
-                        className='container-file-item items-center cursor-pointer'
-                        onClick={() => handleFileItemClick(file.name, file.isDirectory)}
-                    >
-                        <span className='d-flex items-center content-center container-file-icon'>
-                            {renderFileIcon(file.isDirectory)}
-                        </span>
-                        <span className='container-file-name font-weight-5'>{file.name}</span>
-                        <span className='container-file-size'>{file.size}</span>
-                        <span className='container-file-date'>{file.date}</span>
-                    </Container>
-                ))}
-            </>
-        );
-    }
+    }, []);
+
+    const fileRows = useMemo(() => {
+        return files.map((file) => (
+            <FileExplorerRow
+                key={`${file.name}-${file.isDirectory ? 'dir' : 'file'}`}
+                icon={renderFileIcon(file.isDirectory)}
+                name={file.name}
+                type={file.isDirectory ? 'Folder' : 'File'}
+                size={file.size}
+                date={file.date}
+                onClick={() => handleFileItemClick(file.name, file.isDirectory)}
+            />
+        ));
+    }, [files]);
 
     return (
-        <Container>
-            <Container className='d-flex content-between items-center container-file-explorer-header'>
+        <FileExplorer
+            headerLeft={(
                 <Container className='d-flex items-center gap-1 flex-1'>
                     <Tooltip content='Go to Parent Directory' placement='bottom'>
                         <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleGoUp} disabled={path === '/'}>
@@ -154,18 +153,30 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
                     </Tooltip>
                     <span className='container-file-current-path'>{path}</span>
                 </Container>
-                <RefreshButton 
-                    label='Refresh' 
-                    variant='outline' 
-                    intent='white' 
-                    onClick={() => refetchFiles()} 
+            )}
+            headerRight={(
+                <RefreshButton
+                    label='Refresh'
+                    variant='outline'
+                    intent='white'
+                    onClick={() => {
+                        void refetchFiles();
+                    }}
+                    isLoading={isFetching && !isLoading}
                 />
-            </Container>
-
-            <Container className='d-flex flex-1 y-scroll column'>
-                {filesContent}
-            </Container>
-        </Container>
+            )}
+            columns={columns}
+            isLoading={isLoading}
+            isEmpty={!filesErrorMessage && files.length === 0}
+            emptyMessage='Empty folder'
+            error={filesErrorMessage}
+            onRetry={() => {
+                void refetchFiles();
+            }}
+            isRetrying={isFetching && !isLoading}
+        >
+            {fileRows}
+        </FileExplorer>
     );
 };
 

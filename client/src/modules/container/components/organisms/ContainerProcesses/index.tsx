@@ -79,7 +79,7 @@ const COLUMNS: Column<ProcessInfo>[] = [
 ];
 
 const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
-    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
+    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
 
     const { data: processes = [], isLoading, isError, error, refetch } = useContainerProcessesQuery(containerId, {
         enabled: !!containerId,
@@ -87,7 +87,7 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
     });
 
     if(isError){
-        checkRBACError(error);
+        checkAccessDeniedError(error);
     }
 
     const mappedProcesses = processes.map(mapProcess);

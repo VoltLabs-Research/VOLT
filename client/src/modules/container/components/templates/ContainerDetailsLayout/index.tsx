@@ -31,7 +31,7 @@ const ContainerDetailsLayout = () => {
     });
 
     const actionLoading = updateContainerMutation.isPending || deleteContainerMutation.isPending;
-    const { accessDenied, checkRBACError } = useAccessDenied();
+    const { accessDenied, checkAccessDeniedError } = useAccessDenied();
 
     const isRunning = container?.status === 'running';
 
@@ -41,7 +41,7 @@ const ContainerDetailsLayout = () => {
     });
 
     if(isError){
-        if(!checkRBACError(error)){
+        if(!checkAccessDeniedError(error)){
             const message = error instanceof Error ? error.message : 'Failed to load container';
             sileo.error({ title: message });
         }

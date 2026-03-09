@@ -5,7 +5,7 @@ import Button from '@/shared/presentation/components/Button';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Slider from '@/shared/presentation/components/Slider';
 import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
-import SettingsSectionHeader from '@/modules/auth/components/molecules/SettingsSectionHeader';
+import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import Title from '@/shared/presentation/components/Title';
 import type { Team } from '@/modules/team/api/entities/team/team';
 import type { TeamClusterOption } from '@/modules/container/api/entities/team-cluster-option';

@@ -22,7 +22,7 @@ const DEFAULT_LIMIT = 20;
 
 export default function useTrajectorySelector(options: UseTrajectorySelectorOptions = {}): UseTrajectorySelectorReturn {
     const { allowEmpty = false, emptyLabel = 'All Trajectories' } = options;
-    const { checkRBACError } = useAccessDenied();
+    const { checkAccessDeniedError } = useAccessDenied();
 
     const {
         data,
@@ -47,10 +47,10 @@ export default function useTrajectorySelector(options: UseTrajectorySelectorOpti
     );
 
     useEffect(() => {
-        if (error && !checkRBACError(error)) {
+        if (error && !checkAccessDeniedError(error)) {
             sileo.error({ title: 'Failed to load trajectories' });
         }
-    }, [error, checkRBACError]);
+    }, [error, checkAccessDeniedError]);
 
     const allTrajectories = useMemo((): Trajectory[] => {
         if (!data) {

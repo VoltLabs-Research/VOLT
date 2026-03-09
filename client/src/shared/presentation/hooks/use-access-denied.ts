@@ -10,7 +10,7 @@ const useAccessDenied = () => {
         setAccessDeniedMessage(getAccessDeniedMessage(error));
     }, []);
 
-    const checkRBACError = useCallback((error: unknown): boolean => {
+    const checkAccessDeniedError = useCallback((error: unknown): boolean => {
         if(isAccessDeniedError(error)){
             setDeniedState(error);
             return true;
@@ -19,7 +19,7 @@ const useAccessDenied = () => {
         return false;
     }, [setDeniedState]);
 
-    return { accessDenied, accessDeniedMessage, checkRBACError };
+    return { accessDenied, accessDeniedMessage, checkAccessDeniedError };
 };
 
 export default useAccessDenied;

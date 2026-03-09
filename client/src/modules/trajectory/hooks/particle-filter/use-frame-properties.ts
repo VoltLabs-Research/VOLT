@@ -21,7 +21,7 @@ const INITIAL_PROPERTIES: FilterPropertiesData = {
 
 export default function useFrameProperties(params: UseFramePropertiesParams): UseFramePropertiesResult {
     const { trajectoryId, analysisId, timestep } = params;
-    const { checkRBACError } = useAccessDenied();
+    const { checkAccessDeniedError } = useAccessDenied();
 
     const shouldFetch = Boolean(trajectoryId) && timestep !== undefined;
 
@@ -38,7 +38,7 @@ export default function useFrameProperties(params: UseFramePropertiesParams): Us
         {
             enabled: shouldFetch,
             retry: (failureCount, error) => {
-                if (checkRBACError(error)) {
+                if (checkAccessDeniedError(error)) {
                     return false;
                 }
                 return failureCount < 2;
@@ -47,7 +47,7 @@ export default function useFrameProperties(params: UseFramePropertiesParams): Us
     );
 
     let errorMessage: string | null = null;
-    if (queryError && !checkRBACError(queryError)) {
+    if (queryError && !checkAccessDeniedError(queryError)) {
         errorMessage = queryError.message || 'Failed to fetch properties';
     }
 

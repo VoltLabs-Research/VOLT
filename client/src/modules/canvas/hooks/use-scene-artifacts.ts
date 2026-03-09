@@ -63,8 +63,8 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
     }, [colorCodingQuery.error, particleFilterQuery.error]);
 
     const accessDeniedMessage = useMemo(() => {
-        const rbacError = [colorCodingQuery.error, particleFilterQuery.error].find((queryError) => isAccessDeniedError(queryError));
-        return getAccessDeniedMessage(rbacError);
+        const firstAccessDeniedError = [colorCodingQuery.error, particleFilterQuery.error].find((queryError) => isAccessDeniedError(queryError));
+        return getAccessDeniedMessage(firstAccessDeniedError);
     }, [colorCodingQuery.error, particleFilterQuery.error]);
 
     useEffect(() => {

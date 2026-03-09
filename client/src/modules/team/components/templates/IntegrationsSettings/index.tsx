@@ -10,8 +10,6 @@ import useCreateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-
 import useDeleteTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-delete-team-ai-integration';
 import useTeamAIIntegrationsSocketSync from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-socket-sync';
 import useUpdateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-update-team-ai-integration';
-import SettingsSection from '@/modules/auth/components/atoms/SettingsSection';
-import SettingsSectionHeader from '@/modules/auth/components/molecules/SettingsSectionHeader';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
@@ -20,6 +18,8 @@ import Modal, { closeModal, openModal } from '@/shared/presentation/components/M
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Select from '@/shared/presentation/components/Select';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
+import SettingsSection from '@/shared/presentation/components/SettingsSection';
+import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { Skeleton } from '@mui/material';

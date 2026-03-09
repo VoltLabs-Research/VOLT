@@ -11,13 +11,13 @@ const useLoadPlugin = (id: string | undefined) => {
     );
 
     const loadWorkflow = usePluginBuilderStore((state) => state.loadWorkflow);
-    const { accessDenied, accessDeniedMessage, checkRBACError } = useAccessDenied();
+    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
 
     useEffect(() => {
         if (error) {
-            checkRBACError(error);
+            checkAccessDeniedError(error);
         }
-    }, [error, checkRBACError]);
+    }, [error, checkAccessDeniedError]);
 
     useEffect(() => {
         if (plugin) {
