@@ -124,6 +124,16 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
             return;
         }
 
+        // Daemon-processed analyses have listing rows precomputed on the daemon.
+        // DaemonAnalysisCompletionService handles finalization for those.
+        const analysis = await this.analysisRepo.findById(analysisId);
+        if (analysis?.props.teamCluster) {
+            logger.info(
+                `[SessionCompletedEventHandler] Skipping listing precomputation for daemon analysis ${analysisId} (handled by DaemonAnalysisCompletionService)`
+            );
+            return;
+        }
+
         logger.info(`[SessionCompletedEventHandler] Analysis processing completed for ${trajectoryId}. Marking as completed.`);
 
         let precomputationFailed = false;

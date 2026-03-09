@@ -46,4 +46,22 @@ export class LocalMinioService {
     async putObject(input: PutObjectInput): Promise<void> {
         await this.client.putObject(input.bucket, input.objectKey, input.body, input.body.length, input.metadata);
     }
+
+    async listObjects(bucket: string, prefix: string): Promise<string[]> {
+        return new Promise((resolve, reject) => {
+            const keys: string[] = [];
+            const stream = this.client.listObjectsV2(bucket, prefix, true);
+            stream.on('data', (item) => {
+                if (item.name) {
+                    keys.push(item.name);
+                }
+            });
+            stream.on('end', () => resolve(keys));
+            stream.on('error', (err) => reject(err));
+        });
+    }
+
+    async removeObject(bucket: string, objectKey: string): Promise<void> {
+        await this.client.removeObject(bucket, objectKey);
+    }
 }

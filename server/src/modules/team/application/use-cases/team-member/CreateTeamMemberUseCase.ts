@@ -1,5 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { CreateTeamMemberInputDTO, CreateTeamMemberOutputDTO } from '@modules/team/application/dtos/team-member/CreateTeamMemberDTO';
 import TeamMemberCreatedEvent from '@modules/team/domain/events/team-member/TeamMemberCreatedEvent';
 import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
@@ -11,6 +12,7 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { Result } from '@shared/domain/port/Result';
 import { injectable, inject } from 'tsyringe';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 
 @injectable()
 export default class CreateTeamMemberUseCase implements IUseCase<CreateTeamMemberInputDTO, CreateTeamMemberOutputDTO, ApplicationError>{
@@ -19,6 +21,8 @@ export default class CreateTeamMemberUseCase implements IUseCase<CreateTeamMembe
         private teamMemberRepository: ITeamMemberRepository,
         @inject(TEAM_TOKENS.TeamRoleRepository)
         private teamRoleRepository: ITeamRoleRepository,
+        @inject(AUTH_TOKENS.UserRepository)
+        private readonly userRepository: IUserRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}
@@ -54,6 +58,8 @@ export default class CreateTeamMemberUseCase implements IUseCase<CreateTeamMembe
             joinedAt: new Date(),
             updatedAt: new Date()
         });
+
+        await this.userRepository.addTeamToUser(userId, teamId);
 
         await this.eventBus.publish(new TeamMemberCreatedEvent({
             teamMemberId: newMember._id,

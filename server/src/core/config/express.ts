@@ -14,9 +14,10 @@ const corsOptions = {
     origin: function (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
         if (!origin) return callback(null, true);
 
-        const allowedOrigins = process.env.NODE_ENV === 'production'
-            ? [process.env.CLIENT_HOST]
-            : [process.env.CLIENT_DEV_HOST];
+        const allowedOrigins = [
+            process.env.CLIENT_HOST,
+            process.env.CLIENT_DEV_HOST
+        ].filter(Boolean);
 
         if (allowedOrigins.includes(origin)) {
             callback(null, true);

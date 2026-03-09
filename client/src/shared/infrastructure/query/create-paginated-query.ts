@@ -332,7 +332,7 @@ export const createPaginatedQuery = <
     const patchAllLists = (updater: (current: PaginatedResponse<TEntity>) => PaginatedResponse<TEntity>): void => {
         queryClient.setQueriesData<PaginatedResponse<TEntity>>({
             queryKey: QUERY_KEYS.lists()
-        }, (current) => current ? updater(current) : current);
+        }, (current) => current?.data ? updater(current) : current);
     };
 
     const patchAllInfiniteLists = (
@@ -340,7 +340,7 @@ export const createPaginatedQuery = <
     ): void => {
         queryClient.setQueriesData<InfiniteData<PaginatedResponse<TEntity>, number>>({
             queryKey: QUERY_KEYS.infiniteLists()
-        }, (current) => current ? updater(current) : current);
+        }, (current) => current?.pages ? updater(current) : current);
     };
 
     const upsert = (entity: TEntity): void => {

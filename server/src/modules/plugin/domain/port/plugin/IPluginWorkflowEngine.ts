@@ -37,6 +37,8 @@ export interface ExecutionPlanResult{
     items: Record<string, unknown>[];
     /** The ID of the ForEach node that generated these items */
     forEachNodeId: string;
+    /** Snapshot of node outputs computed during the planning phase (context, arguments, modifier, etc.) */
+    nodeOutputSnapshots: Record<string, Record<string, unknown>>;
 };
 
 /**

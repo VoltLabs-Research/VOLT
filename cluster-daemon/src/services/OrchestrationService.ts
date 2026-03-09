@@ -43,7 +43,10 @@ export class OrchestrationService {
         });
 
         for (const job of input.payload.jobs) {
-            await this.redisService.enqueue('analysis_processing', this.toQueuePayload(job));
+            await this.redisService.enqueue('analysis_processing', {
+                ...this.toQueuePayload(job),
+                executionData: input.executionData
+            });
         }
 
         this.emitProgress(OrchestrationAction.AnalysisStart, ProgressStage.Queued, {

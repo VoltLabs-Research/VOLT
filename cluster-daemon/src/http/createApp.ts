@@ -1,4 +1,6 @@
 import {
+    AnalysisExposureDefinition,
+    AnalysisJobExecutionData,
     AnalysisStartRequest,
     ContainerAction,
     DaemonHealthResponse,
@@ -129,6 +131,48 @@ const readAnalysisQueueJobs = (value: unknown): AnalysisStartRequest['payload'][
             updatedAt: readString(job.updatedAt, `payload.jobs[${index}].updatedAt`)
         };
     });
+};
+
+const readExposureDefinitions = (value: unknown): AnalysisExposureDefinition[] => {
+    if (!Array.isArray(value)) {
+        throw new Error('exposures must be an array');
+    }
+
+    return value.map((entry, index) => {
+        const item = readRecord(entry, `exposures[${index}]`);
+        return {
+            nodeId: readString(item.nodeId, `exposures[${index}].nodeId`),
+            name: readString(item.name, `exposures[${index}].name`),
+            results: readString(item.results, `exposures[${index}].results`),
+            iterable: readOptionalString(item.iterable)
+        };
+    });
+};
+
+const readExecutionData = (value: unknown): AnalysisJobExecutionData => {
+    const data = readRecord(value, 'executionData');
+
+    const rawSnapshots = data.nodeOutputSnapshots;
+    const nodeOutputSnapshots: Record<string, Record<string, unknown>> = {};
+    if (isRecord(rawSnapshots)) {
+        for (const [key, val] of Object.entries(rawSnapshots)) {
+            if (isRecord(val)) {
+                nodeOutputSnapshots[key] = val;
+            }
+        }
+    }
+
+    return {
+        binaryObjectPath: readString(data.binaryObjectPath, 'executionData.binaryObjectPath'),
+        binaryFileName: readOptionalString(data.binaryFileName),
+        arguments: readString(data.arguments, 'executionData.arguments'),
+        pluginId: readString(data.pluginId, 'executionData.pluginId'),
+        trajectoryId: readString(data.trajectoryId, 'executionData.trajectoryId'),
+        analysisId: readString(data.analysisId, 'executionData.analysisId'),
+        exposures: readExposureDefinitions(data.exposures),
+        forEachNodeId: readString(data.forEachNodeId, 'executionData.forEachNodeId'),
+        nodeOutputSnapshots
+    };
 };
 
 const readBucket = (value: unknown): ObjectBucketName => {
@@ -283,6 +327,17 @@ export const createApp = (dependencies: CreateAppDependencies) => {
 
     app.get('/api/metrics/snapshot', async (_req, res) => {
         sendSuccess(res, await dependencies.metricsService.collectSnapshot());
+    });
+
+    app.get('/api/objects/:bucket/list', async (req, res) => {
+        try {
+            const bucket = readBucket(req.params.bucket);
+            const prefix = readOptionalString(req.query.prefix) || '';
+            const keys = await dependencies.minioService.listObjects(bucket, prefix);
+            sendSuccess(res, { keys });
+        } catch (error: unknown) {
+            sendError(res, error);
+        }
     });
 
     app.get('/api/objects/:bucket', async (req, res) => {
@@ -674,6 +729,7 @@ export const createApp = (dependencies: CreateAppDependencies) => {
             const analysisPayload = readRecord(payload.payload, 'payload');
             const requestBody: AnalysisStartRequest = {
                 analysisId: readString(payload.analysisId, 'analysisId'),
+                executionData: readExecutionData(payload.executionData),
                 payload: {
                     teamId: readString(analysisPayload.teamId, 'payload.teamId'),
                     trajectoryId: readString(analysisPayload.trajectoryId, 'payload.trajectoryId'),

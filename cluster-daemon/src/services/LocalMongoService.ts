@@ -300,4 +300,37 @@ export class LocalMongoService {
         const notebook = await ScriptingNotebookModel.findById(notebookId).lean();
         return notebook ? toScriptingNotebookDocument(notebook) : null;
     }
+
+    async bulkUpsertListingRows(
+        operations: Array<{
+            filter: Record<string, unknown>;
+            update: Record<string, unknown>;
+        }>
+    ): Promise<void> {
+        if (operations.length === 0) {
+            return;
+        }
+
+        const bulkOps = operations.map((op) => ({
+            updateOne: {
+                filter: op.filter,
+                update: { $set: op.update },
+                upsert: true
+            }
+        }));
+
+        await PluginListingRowModel.bulkWrite(bulkOps);
+    }
+
+    async insertSubListingRows(documents: Array<Record<string, unknown>>): Promise<void> {
+        if (documents.length === 0) {
+            return;
+        }
+
+        await PluginSubListingRowModel.insertMany(documents);
+    }
+
+    async deleteSubListingRows(filter: Record<string, unknown>): Promise<void> {
+        await PluginSubListingRowModel.deleteMany(filter);
+    }
 }

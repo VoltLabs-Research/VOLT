@@ -142,8 +142,10 @@ export default class TeamClusterReverseChannelService {
     private readonly daemonSocketIdsByTeamClusterId = new Map<string, string>();
     private readonly teamClusterIdsBySocketId = new Map<string, string>();
     private readonly pendingEntries = new Map<string, PendingEntry>();
+    private readonly connectionWaiters = new Map<string, Array<(socketId: string) => void>>();
     private readonly requestTimeoutMs = 30_000;
     private readonly terminalTimeoutMs = 15_000;
+    private readonly daemonConnectionWaitTimeoutMs = 30_000;
 
     constructor(
         @inject(SOCKET_TOKENS.SocketEventEmitter)
@@ -160,6 +162,15 @@ export default class TeamClusterReverseChannelService {
         this.daemonSocketIdsByTeamClusterId.set(teamClusterId, socketId);
         this.teamClusterIdsBySocketId.set(socketId, teamClusterId);
         logger.info(`[ReverseChannel] Daemon registered: cluster=${teamClusterId} socket=${socketId} (total=${this.daemonSocketIdsByTeamClusterId.size})`);
+
+        const waiters = this.connectionWaiters.get(teamClusterId);
+        if (waiters) {
+            logger.info(`[ReverseChannel] Resolving ${waiters.length} pending waiter(s) for cluster=${teamClusterId}`);
+            for (const resolve of waiters) {
+                resolve(socketId);
+            }
+            this.connectionWaiters.delete(teamClusterId);
+        }
     }
 
     unregisterDaemonConnection(socketId: string): void {
@@ -188,7 +199,7 @@ export default class TeamClusterReverseChannelService {
         teamClusterId: string,
         payload: Omit<TeamClusterDaemonSocketRequestPayload, 'requestId'>
     ): Promise<TeamClusterDaemonSocketResponsePayload> {
-        const socketId = this.requireDaemonSocketId(teamClusterId);
+        const socketId = await this.requireDaemonSocketId(teamClusterId);
         const requestId = randomUUID();
 
         return new Promise((resolve, reject) => {
@@ -228,7 +239,7 @@ export default class TeamClusterReverseChannelService {
         teamClusterId: string,
         payload: Omit<TeamClusterDaemonSocketRequestPayload, 'requestId'>
     ): Promise<TeamClusterReverseChannelStreamAttachment> {
-        const socketId = this.requireDaemonSocketId(teamClusterId);
+        const socketId = await this.requireDaemonSocketId(teamClusterId);
         const requestId = randomUUID();
         const stream = new PassThrough();
 
@@ -259,7 +270,7 @@ export default class TeamClusterReverseChannelService {
     }
 
     async attachWebSocket(teamClusterId: string, targetUrl: string): Promise<TeamClusterReverseWebSocketStream> {
-        const socketId = this.requireDaemonSocketId(teamClusterId);
+        const socketId = await this.requireDaemonSocketId(teamClusterId);
         const sessionId = randomUUID();
         const stream = new TeamClusterReverseWebSocketStream((message) => {
             const inputPayload: TeamClusterDaemonWebSocketDataPayload = {
@@ -300,7 +311,7 @@ export default class TeamClusterReverseChannelService {
     }
 
     async attachTerminal(teamClusterId: string, containerId: string): Promise<ContainerTerminalAttachment> {
-        const socketId = this.requireDaemonSocketId(teamClusterId);
+        const socketId = await this.requireDaemonSocketId(teamClusterId);
         const sessionId = randomUUID();
         const stream = new PassThrough();
 
@@ -605,18 +616,41 @@ export default class TeamClusterReverseChannelService {
         }
     }
 
-    private requireDaemonSocketId(teamClusterId: string): string {
+    private async requireDaemonSocketId(teamClusterId: string): Promise<string> {
         const socketId = this.daemonSocketIdsByTeamClusterId.get(teamClusterId);
-        if (!socketId) {
-            const registeredIds = Array.from(this.daemonSocketIdsByTeamClusterId.keys());
-            logger.error(`[ReverseChannel] Daemon not connected for cluster=${teamClusterId}, registered clusters=[${registeredIds.join(', ')}]`);
-            throw ApplicationError.conflict(
-                'TeamCluster::DaemonUnavailable',
-                'Team cluster daemon reverse channel is not connected'
-            );
+        if (socketId) {
+            return socketId;
         }
 
-        return socketId;
+        logger.info(`[ReverseChannel] Daemon not connected for cluster=${teamClusterId}, waiting up to ${this.daemonConnectionWaitTimeoutMs}ms for reconnection`);
+
+        return new Promise<string>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                const waiters = this.connectionWaiters.get(teamClusterId);
+                if (waiters) {
+                    const idx = waiters.indexOf(onConnected);
+                    if (idx >= 0) waiters.splice(idx, 1);
+                    if (waiters.length === 0) this.connectionWaiters.delete(teamClusterId);
+                }
+
+                const registeredIds = Array.from(this.daemonSocketIdsByTeamClusterId.keys());
+                logger.error(`[ReverseChannel] Daemon did not reconnect within ${this.daemonConnectionWaitTimeoutMs}ms for cluster=${teamClusterId}, registered clusters=[${registeredIds.join(', ')}]`);
+                reject(ApplicationError.conflict(
+                    'TeamCluster::DaemonUnavailable',
+                    'Team cluster daemon reverse channel is not connected'
+                ));
+            }, this.daemonConnectionWaitTimeoutMs);
+
+            const onConnected = (socketId: string) => {
+                clearTimeout(timeout);
+                resolve(socketId);
+            };
+
+            if (!this.connectionWaiters.has(teamClusterId)) {
+                this.connectionWaiters.set(teamClusterId, []);
+            }
+            this.connectionWaiters.get(teamClusterId)!.push(onConnected);
+        });
     }
 
     private rejectPendingEntry(correlationId: string, entry: PendingEntry, error: Error): void {

@@ -31,6 +31,12 @@ export default class UserRepository
         return doc ? userMapper.toDomainWithPassword(doc) : null;
     }
 
+    async addTeamToUser(userId: string, teamId: string): Promise<void> {
+        await this.model.findByIdAndUpdate(userId, {
+            $addToSet: { teams: teamId }
+        });
+    }
+
     async removeTeamFromUser(userId: string, teamId: string): Promise<void> {
         await this.model.findByIdAndUpdate(userId, {
             $pull: {

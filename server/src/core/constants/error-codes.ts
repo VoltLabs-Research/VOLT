@@ -153,7 +153,12 @@ export const ErrorCodes = createErrorCodes({
     AI_CONVERSATION_NOT_FOUND: 'AI::Conversation::NotFound',
     AI_INTEGRATION_NOT_CONFIGURED: 'AI::Integration::NotConfigured',
     AI_PROVIDER_UNAVAILABLE: 'AI::Provider::Unavailable',
-    OAUTH_STRATEGY_ERROR: 'OAuth::Strategy::Error'
+    OAUTH_STRATEGY_ERROR: 'OAuth::Strategy::Error',
+
+    SCRIPTING_SESSION_FAILED: 'Scripting::Session::Failed',
+    SCRIPTING_DAEMON_UNAVAILABLE: 'Scripting::Daemon::Unavailable',
+    SCRIPTING_NOTEBOOK_NOT_FOUND: 'Scripting::Notebook::NotFound',
+    SCRIPTING_LOCK_FAILED: 'Scripting::Lock::Failed'
 });
 
 export const isErrorCode = (value: string): value is ErrorCode => {

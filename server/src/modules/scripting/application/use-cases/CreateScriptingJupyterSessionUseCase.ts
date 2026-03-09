@@ -52,16 +52,17 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             ));
         }
 
-        const lockKey = `lock:jupyter:${input.teamId}:${input.trajectoryId}`;
-        const lease = await this.scriptingSessionLock.acquire(lockKey, LOCK_TTL_MS);
-        if (!lease) {
-            return Result.fail(ApplicationError.conflict(
-                ErrorCodes.INTERNAL_SERVER_ERROR,
-                'Session creation already in progress'
-            ));
-        }
-
+        let lease: Awaited<ReturnType<IScriptingSessionLock['acquire']>> = null;
         try {
+            const lockKey = `lock:jupyter:${input.teamId}:${input.trajectoryId}`;
+            lease = await this.scriptingSessionLock.acquire(lockKey, LOCK_TTL_MS);
+            if (!lease) {
+                return Result.fail(ApplicationError.conflict(
+                    ErrorCodes.INTERNAL_SERVER_ERROR,
+                    'Session creation already in progress'
+                ));
+            }
+
             const resolvedInput: ResolveNotebookForSessionInput = {
                 ...input,
                 userId: input.userId
@@ -86,7 +87,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         } catch (error) {
             return this.mapError(error);
         } finally {
-            await lease.release();
+            await lease?.release();
         }
     }
 
@@ -195,15 +196,24 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         }
 
         if (error instanceof Error) {
+            const isDaemonError = error.message.includes('daemon') ||
+                error.message.includes('Daemon') ||
+                error.message.includes('Timed out') ||
+                error.message.includes('connection was lost');
+            const errorCode = isDaemonError
+                ? ErrorCodes.SCRIPTING_DAEMON_UNAVAILABLE
+                : ErrorCodes.SCRIPTING_SESSION_FAILED;
+            const statusCode = isDaemonError ? 502 : 500;
+
             return Result.fail(new ApplicationError(
-                ErrorCodes.INTERNAL_SERVER_ERROR,
+                errorCode,
                 error.message,
-                500
+                statusCode
             ));
         }
 
         return Result.fail(new ApplicationError(
-            ErrorCodes.INTERNAL_SERVER_ERROR,
+            ErrorCodes.SCRIPTING_SESSION_FAILED,
             'Unexpected scripting error',
             500
         ));

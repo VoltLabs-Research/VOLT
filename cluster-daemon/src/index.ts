@@ -1,6 +1,7 @@
 import { loadConfig } from './config/env';
 import { RuntimeLifecycleEventType } from './contracts/events';
 import { createApp } from './http/createApp';
+import { AnalysisWorkerService } from './services/AnalysisWorkerService';
 import { DockerRuntimeService } from './services/DockerRuntimeService';
 import { JupyterRuntimeService } from './services/JupyterRuntimeService';
 import { LocalMinioService } from './services/LocalMinioService';
@@ -10,6 +11,7 @@ import { logger } from './services/logger';
 import { MetricsService } from './services/MetricsService';
 import { NativeProcessingService } from './services/NativeProcessingService';
 import { OrchestrationService } from './services/OrchestrationService';
+import { PluginBinaryCacheService } from './services/PluginBinaryCacheService';
 import { RuntimeEventBroker } from './services/RuntimeEventBroker';
 import { VoltCloudConnection } from './services/VoltCloudConnection';
 import { DaemonSocketServer } from './websocket/DaemonSocketServer';
@@ -30,6 +32,7 @@ const main = async (): Promise<void> => {
     );
     const metricsService = new MetricsService();
     const nativeProcessingService = new NativeProcessingService(minioService);
+    const pluginBinaryCacheService = new PluginBinaryCacheService(minioService);
 
     let voltCloudConnection: VoltCloudConnection | null = null;
 
@@ -85,6 +88,15 @@ const main = async (): Promise<void> => {
         dockerRuntimeService
     );
 
+    const analysisWorkerService = new AnalysisWorkerService(
+        config,
+        redisService,
+        minioService,
+        mongoService,
+        pluginBinaryCacheService,
+        voltCloudConnection
+    );
+
     await Promise.all([
         redisService.connect(),
         mongoService.connect(),
@@ -122,6 +134,7 @@ const main = async (): Promise<void> => {
 
     socketServer.initialize();
     await voltCloudConnection.start();
+    analysisWorkerService.start();
 
     server.listen(config.port, config.host, () => {
         logger.info(`cluster-daemon listening on http://${config.host}:${config.port}`);
@@ -132,6 +145,7 @@ const main = async (): Promise<void> => {
     });
 
     const shutdown = async () => {
+        await analysisWorkerService.stop();
         await voltCloudConnection?.stop();
         await socketServer.close();
         await new Promise<void>((resolve, reject) => {

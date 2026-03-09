@@ -6,8 +6,6 @@ import {
 } from '@modules/team-cluster/utilities/teamClusterSocket';
 import { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import TeamClusterServiceResolver from '@shared/infrastructure/services/TeamClusterServiceResolver';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 import type { Readable } from 'node:stream';
 import type { TeamClusterDaemonSocketHeaders } from '@modules/team-cluster/utilities/teamClusterSocket';
@@ -43,16 +41,12 @@ const isTeamClusterDaemonResponseEnvelope = <T>(value: unknown): value is TeamCl
 @injectable()
 export default class TeamClusterDaemonClient {
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterServiceResolver)
-        private readonly teamClusterServiceResolver: TeamClusterServiceResolver,
-
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterReverseChannelService)
         private readonly teamClusterReverseChannelService: TeamClusterReverseChannelService
     ) {}
 
     async request<T>(teamClusterId: string, path: string, options: TeamClusterDaemonRequestOptions = {}): Promise<T> {
-        const resolvedServices = await this.teamClusterServiceResolver.resolve(teamClusterId);
-        const payload = await this.teamClusterReverseChannelService.request(resolvedServices.daemon.teamClusterId, {
+        const payload = await this.teamClusterReverseChannelService.request(teamClusterId, {
             method: options.method || 'GET',
             path,
             query: options.query,
@@ -71,9 +65,7 @@ export default class TeamClusterDaemonClient {
     }
 
     async stream(teamClusterId: string, path: string, options: TeamClusterDaemonRequestOptions = {}): Promise<Readable> {
-        const resolvedServices = await this.teamClusterServiceResolver.resolve(teamClusterId);
-
-        return this.teamClusterReverseChannelService.openStream(resolvedServices.daemon.teamClusterId, {
+        return this.teamClusterReverseChannelService.openStream(teamClusterId, {
             method: options.method || 'GET',
             path,
             headers: options.headers,
@@ -89,9 +81,7 @@ export default class TeamClusterDaemonClient {
         path: string,
         options: TeamClusterDaemonRequestOptions = {}
     ): Promise<TeamClusterReverseChannelStreamAttachment> {
-        const resolvedServices = await this.teamClusterServiceResolver.resolve(teamClusterId);
-
-        return this.teamClusterReverseChannelService.openHttpStream(resolvedServices.daemon.teamClusterId, {
+        return this.teamClusterReverseChannelService.openHttpStream(teamClusterId, {
             method: options.method || 'GET',
             path,
             headers: options.headers,
@@ -103,8 +93,7 @@ export default class TeamClusterDaemonClient {
     }
 
     async requestBuffer(teamClusterId: string, path: string, options: TeamClusterDaemonRequestOptions = {}): Promise<Buffer> {
-        const resolvedServices = await this.teamClusterServiceResolver.resolve(teamClusterId);
-        const payload = await this.teamClusterReverseChannelService.request(resolvedServices.daemon.teamClusterId, {
+        const payload = await this.teamClusterReverseChannelService.request(teamClusterId, {
             method: options.method || 'GET',
             path,
             query: options.query,
@@ -127,12 +116,10 @@ export default class TeamClusterDaemonClient {
     }
 
     async attachTerminal(teamClusterId: string, containerId: string): Promise<ContainerTerminalAttachment> {
-        const resolvedServices = await this.teamClusterServiceResolver.resolve(teamClusterId);
-        return this.teamClusterReverseChannelService.attachTerminal(resolvedServices.daemon.teamClusterId, containerId);
+        return this.teamClusterReverseChannelService.attachTerminal(teamClusterId, containerId);
     }
 
     async attachWebSocket(teamClusterId: string, targetUrl: string): Promise<TeamClusterReverseWebSocketStream> {
-        const resolvedServices = await this.teamClusterServiceResolver.resolve(teamClusterId);
-        return this.teamClusterReverseChannelService.attachWebSocket(resolvedServices.daemon.teamClusterId, targetUrl);
+        return this.teamClusterReverseChannelService.attachWebSocket(teamClusterId, targetUrl);
     }
 };

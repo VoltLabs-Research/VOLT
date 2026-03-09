@@ -5,6 +5,7 @@ import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastru
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import type {
     DefaultNotebookTemplateContext,
@@ -90,7 +91,28 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         };
     }
 
-    async deleteSession(_trajectoryId: string): Promise<void> {
+    async deleteSession(trajectoryId: string): Promise<void> {
+        const notebooks = await this.scriptingNotebookRepository.findAllWithTrajectory(trajectoryId);
+
+        for (const notebook of notebooks) {
+            const isOrphaned = notebook.props.trajectories.length <= 1;
+            if (!isOrphaned || !notebook.props.runtimeNotebookId || !notebook.props.teamCluster) {
+                continue;
+            }
+
+            try {
+                await this.teamClusterDaemonClient.request(
+                    notebook.props.teamCluster,
+                    `/api/notebooks/${notebook.props.runtimeNotebookId}`,
+                    { method: 'DELETE' }
+                );
+            } catch (error: unknown) {
+                logger.warn(
+                    { err: error, notebookId: notebook.id, runtimeNotebookId: notebook.props.runtimeNotebookId, trajectoryId },
+                    '[Scripting] Failed to delete orphaned Jupyter session on daemon'
+                );
+            }
+        }
     }
 
     async resolveDefaultNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<string> {

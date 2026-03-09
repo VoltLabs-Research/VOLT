@@ -1,8 +1,11 @@
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { ITempFileService } from '@shared/domain/port/ITempFileService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import logger from '@shared/infrastructure/logger';
 
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -28,7 +31,13 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         private readonly storageService: IStorageService,
 
         @inject(SHARED_TOKENS.TempFileService)
-        private readonly tempFileService: ITempFileService
+        private readonly tempFileService: ITempFileService,
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
+        private readonly trajectoryRepo: ITrajectoryRepository,
+
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ){
         this.cacheDir = this.tempFileService.getDirPath('trajectory-cache');
     }
@@ -233,6 +242,11 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
     }
 
     async listDumps(trajectoryId: string): Promise<string[]>{
+        const trajectory = await this.trajectoryRepo.findById(trajectoryId);
+        if(trajectory?.props.teamCluster){
+            return this.listDumpsFromDaemon(trajectory.props.teamCluster, trajectoryId);
+        }
+
         const prefix = this.getPrefix(trajectoryId);
         const timesteps: string[] = [];
         
@@ -244,6 +258,27 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         }
 
         logger.info(`@trajectory-dump-storage-service: Found ${timesteps.length} dumps for trajectory ${trajectoryId}`);
+        return timesteps.sort((a, b) => Number(a) - Number(b));
+    }
+
+    private async listDumpsFromDaemon(teamClusterId: string, trajectoryId: string): Promise<string[]>{
+        const prefix = this.getPrefix(trajectoryId);
+        logger.info(`@trajectory-dump-storage-service: Listing dumps from daemon for trajectory ${trajectoryId} (cluster: ${teamClusterId})`);
+
+        const result = await this.teamClusterDaemonClient.request<{ keys: string[] }>(
+            teamClusterId,
+            `/api/objects/${SYS_BUCKETS.DUMPS}/list`,
+            { query: { prefix } }
+        );
+
+        const timesteps: string[] = [];
+        for(const name of result.keys){
+            const match = name.match(/timestep-(\d+)\.dump\.gz$/);
+            if(!match) continue;
+            timesteps.push(match[1]);
+        }
+
+        logger.info(`@trajectory-dump-storage-service: Found ${timesteps.length} dumps from daemon for trajectory ${trajectoryId}`);
         return timesteps.sort((a, b) => Number(a) - Number(b));
     }
 
