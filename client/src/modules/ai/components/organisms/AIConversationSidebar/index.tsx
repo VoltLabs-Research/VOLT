@@ -3,9 +3,11 @@ import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import SearchInput from '@/shared/presentation/components/SearchInput';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import Tooltip from '@/shared/presentation/components/Tooltip';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';
 import { useMemo, useState } from 'react';
 import { CiChat1 } from 'react-icons/ci';
@@ -44,6 +46,7 @@ const AIConversationSidebar = ({
     const [query, setQuery] = useState('');
     const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
     const [draftTitle, setDraftTitle] = useState('');
+    const { confirm } = useConfirm();
 
     const filteredConversations = useMemo(() => {
         return conversations.filter((conversation) => (
@@ -71,7 +74,12 @@ const AIConversationSidebar = ({
     };
 
     const handleDeleteConversation = async (conversationId: string) => {
-        if (!window.confirm('Delete this conversation?')) {
+        const isConfirmed = await confirm({
+            title: 'Delete this conversation?',
+            confirmText: 'Delete'
+        });
+
+        if (!isConfirmed) {
             return;
         }
 
@@ -231,7 +239,11 @@ const AIConversationSidebar = ({
                 </Tooltip>
 
                 {error && (
-                    <Paragraph className='font-size-1 color-danger'>{error}</Paragraph>
+                    <RecoveryState
+                        title='Unable to load conversations'
+                        description={error}
+                        tone={RecoveryStateTone.Error}
+                    />
                 )}
             </Container>
 

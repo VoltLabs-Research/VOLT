@@ -5,13 +5,12 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play, Square, Box, RotateCcw } from 'lucide-react';
 import { RiTerminalLine } from 'react-icons/ri';
-import { formatDistanceToNow } from 'date-fns';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { dateColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
 import { sileo } from 'sileo';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
@@ -38,7 +37,7 @@ const STATUS_MAP: Record<string, string> = {
     unknown: 'processing'
 };
 
-const COLUMNS: ColumnConfig[] = [
+const COLUMNS: ColumnConfig<ContainerEntity>[] = [
     {
         key: 'name',
         title: 'Name',
@@ -62,20 +61,11 @@ const COLUMNS: ColumnConfig[] = [
         },
         skeleton: { variant: 'text', width: 180 }
     },
-    {
-        key: 'status',
-        title: 'Status',
+    statusColumn<ContainerEntity>('status', 'Status', {
         sortable: true,
-        render: (value) => {
-            const statusLower = String(value).toLowerCase();
-            return <StatusBadge status={STATUS_MAP[statusLower]} />;
-        },
-        skeleton: {
-            variant: 'rounded',
-            width: 80,
-            height: 24
-        }
-    },
+        width: 80,
+        resolveStatus: (value) => STATUS_MAP[String(value).toLowerCase()] ?? 'processing'
+    }),
     {
         key: 'image',
         title: 'Image',
@@ -109,21 +99,10 @@ const COLUMNS: ColumnConfig[] = [
         },
         skeleton: { variant: 'text', width: 100 }
     },
-    {
-        key: 'createdAt',
-        title: 'Created',
-        sortable: true,
-        render: (value) => {
-            const createdAt = String(value);
-
-            return (
-                <span className='font-size-2 color-muted' title={new Date(createdAt).toLocaleString()}>
-                    {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
-                </span>
-            );
-        },
-        skeleton: { variant: 'text', width: 90 }
-    }
+    dateColumn<ContainerEntity>('createdAt', 'Created', {
+        width: 90,
+        withTitle: true
+    })
 ];
 
 const ContainersListing = () => {

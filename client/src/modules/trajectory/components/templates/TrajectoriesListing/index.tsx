@@ -4,11 +4,10 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
+import { dateColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
 import { formatNumber, formatSize } from '@/shared/utils/format';
-import { formatDistanceToNow } from 'date-fns';
 import { RiTableLine } from 'react-icons/ri';
 import { useNavigate } from 'react-router-dom';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 
@@ -27,12 +26,6 @@ interface ColumnSkeletonText {
     width: number;
 };
 
-interface ColumnSkeletonRounded {
-    variant: 'rounded';
-    width: number;
-    height: number;
-};
-
 const DELETE_TRAJECTORY_TOAST: DeleteTrajectoryToastConfig = {
     loading: { title: 'Deleting trajectory...' },
     success: { title: 'Trajectory deleted' },
@@ -44,20 +37,9 @@ const NAME_SKELETON: ColumnSkeletonText = {
     width: 120
 };
 
-const STATUS_SKELETON: ColumnSkeletonRounded = {
-    variant: 'rounded',
-    width: 70,
-    height: 24
-};
-
 const SMALL_TEXT_SKELETON: ColumnSkeletonText = {
     variant: 'text',
     width: 70
-};
-
-const DATE_SKELETON: ColumnSkeletonText = {
-    variant: 'text',
-    width: 90
 };
 
 const getTrajectoryRow = (row: unknown): Trajectory | undefined => {
@@ -68,33 +50,20 @@ const getTrajectoryRow = (row: unknown): Trajectory | undefined => {
     return row as Trajectory;
 };
 
-const renderDateDistance = (value: unknown) => {
-    if (typeof value !== 'string') {
-        return '-';
-    }
-
-    return formatDistanceToNow(new Date(value), { addSuffix: true });
-};
-
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'trajectory.created', queryKeys: [TRAJECTORY_QUERY_KEYS.trajectoriesList({ page: 1, limit: 20 })] },
     { event: 'trajectory.deleted', queryKeys: [TRAJECTORY_QUERY_KEYS.trajectoriesList({ page: 1, limit: 20 })] },
     { event: 'trajectory.updated', queryKeys: [TRAJECTORY_QUERY_KEYS.trajectoriesList({ page: 1, limit: 20 })] }
 ];
 
-const COLUMNS: ColumnConfig[] = [
+const COLUMNS: ColumnConfig<Trajectory>[] = [
     {
         key: 'name',
         title: 'Name',
         render: String,
         skeleton: NAME_SKELETON
     },
-    {
-        key: 'status',
-        title: 'Status',
-        render: (v) => <StatusBadge status={String(v)} />,
-        skeleton: STATUS_SKELETON
-    },
+    statusColumn<Trajectory>('status', 'Status', { width: 70 }),
     {
         key: 'atoms',
         title: 'Atoms',
@@ -113,18 +82,14 @@ const COLUMNS: ColumnConfig[] = [
         render: (_value, row) => formatSize(getTrajectoryRow(row)?.stats.totalSize ?? 0),
         skeleton: SMALL_TEXT_SKELETON
     },
-    {
-        key: 'createdAt',
-        title: 'Created At',
-        render: renderDateDistance,
-        skeleton: DATE_SKELETON
-    },
-    {
-        key: 'updatedAt',
-        title: 'Updated At',
-        render: renderDateDistance,
-        skeleton: DATE_SKELETON
-    }
+    dateColumn<Trajectory>('createdAt', 'Created At', {
+        width: 90,
+        sortable: false
+    }),
+    dateColumn<Trajectory>('updatedAt', 'Updated At', {
+        width: 90,
+        sortable: false
+    })
 ];
 
 export default function TrajectoriesListing() {

@@ -1,6 +1,5 @@
-export enum ConfirmActionTone {
-    Default = 'default',
-    Danger = 'danger'
+interface ConfirmActionController {
+    open: (options: ConfirmActionOptions) => Promise<boolean>;
 };
 
 export interface ConfirmActionOptions {
@@ -12,8 +11,9 @@ export interface ConfirmActionOptions {
     requireTypedText?: string;
 };
 
-interface ConfirmActionController {
-    open: (options: ConfirmActionOptions) => Promise<boolean>;
+export enum ConfirmActionTone {
+    Default = 'default',
+    Danger = 'danger'
 };
 
 let confirmActionController: ConfirmActionController | null = null;
@@ -24,6 +24,15 @@ const getConfirmDeleteMessage = (itemName: string, customMessage?: string): stri
     }
 
     return `Are you sure you want to delete "${itemName}"? This action cannot be undone.`;
+};
+
+const getConfirmDeleteOptions = (itemName: string, customMessage?: string): ConfirmActionOptions => {
+    return {
+        title: getConfirmDeleteMessage(itemName, customMessage),
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        tone: ConfirmActionTone.Danger
+    };
 };
 
 const buildFallbackMessage = (options: ConfirmActionOptions): string => {
@@ -72,27 +81,18 @@ export const confirmAction = (input: string | ConfirmActionOptions): Promise<boo
     return confirmActionController.open(options);
 };
 
-export const confirm = (message: string): boolean => {
-    return window.confirm(message);
+export const confirm = (input: string | ConfirmActionOptions): Promise<boolean> => {
+    return confirmAction(input);
 };
 
-export const confirmDelete = (itemName: string, customMessage?: string): boolean => {
-    return window.confirm(getConfirmDeleteMessage(itemName, customMessage));
+export const confirmDelete = (itemName: string, customMessage?: string): Promise<boolean> => {
+    return confirmAction(getConfirmDeleteOptions(itemName, customMessage));
 };
 
 const useConfirm = () => {
-    const confirmDeleteAction = (itemName: string, customMessage?: string): Promise<boolean> => {
-        return confirmAction({
-            title: getConfirmDeleteMessage(itemName, customMessage),
-            confirmText: 'Delete',
-            cancelText: 'Cancel',
-            tone: ConfirmActionTone.Danger
-        });
-    };
-
     return {
-        confirm: confirmAction,
-        confirmDelete: confirmDeleteAction
+        confirm,
+        confirmDelete
     };
 };
 

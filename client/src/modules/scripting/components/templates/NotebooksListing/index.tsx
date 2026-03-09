@@ -1,8 +1,8 @@
 import useNotebooksListing from '@/modules/scripting/hooks/use-notebooks-listing';
+import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import './NotebooksListing.css';
-import { formatDistanceToNow } from 'date-fns';
 import { BookOpen } from 'lucide-react';
 import { getTrajectoryIds } from '@/modules/scripting/utilities/notebooks';
 import type { ScriptingNotebook } from '@/modules/scripting/api/entities/scripting-notebook';
@@ -59,21 +59,7 @@ const renderTrajectoryIds: NotebookColumnRender = (_value, row) => {
     return <span className='font-size-2 color-secondary notebooks-listing-trajectory'>{label}</span>;
 };
 
-const renderCreatedAt: NotebookColumnRender = (_value, row) => {
-    if (!isNotebookDocument(row) || !row.createdAt) {
-        return <span className='font-size-2 color-muted'>-</span>;
-    }
-
-    const createdAt = new Date(row.createdAt);
-
-    return (
-        <span className='font-size-2 color-muted' title={createdAt.toLocaleString()}>
-            {formatDistanceToNow(createdAt, { addSuffix: true })}
-        </span>
-    );
-};
-
-const COLUMNS: ColumnConfig[] = [
+const COLUMNS: ColumnConfig<NotebookDocument>[] = [
     {
         key: 'title',
         title: 'Title',
@@ -88,13 +74,10 @@ const COLUMNS: ColumnConfig[] = [
         render: renderTrajectoryIds,
         skeleton: { variant: 'text', width: 150 }
     },
-    {
-        key: 'createdAt',
-        title: 'Created',
-        sortable: true,
-        render: renderCreatedAt,
-        skeleton: { variant: 'text', width: 90 }
-    }
+    dateColumn<NotebookDocument>('createdAt', 'Created', {
+        width: 90,
+        withTitle: true
+    })
 ];
 
 const NotebooksListing = () => {

@@ -11,8 +11,8 @@ import { resolveTabularPayload } from '@/modules/ai/utilities/message-artifacts'
 import AutoScrollList from '@/shared/presentation/components/AutoScrollList';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
-import EmptyState from '@/shared/presentation/components/EmptyState';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import RecoveryState from '@/shared/presentation/components/RecoveryState';
 import { isToolUIPart } from 'ai';
 import { IoExpandOutline } from 'react-icons/io5';
 import { useCallback, useMemo, useRef } from 'react';
@@ -638,11 +638,11 @@ const AIConversationThread = ({
 
         return (
             <Container className='d-flex flex-center flex-1 ai-thread-empty'>
-                <EmptyState
+                <RecoveryState
                     title='Failed to load conversation'
                     description={error}
-                    buttonText={retryButtonText}
-                    buttonOnClick={onRetry}
+                    retryLabel={retryButtonText}
+                    onRetry={onRetry}
                 />
             </Container>
         );

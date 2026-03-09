@@ -37,6 +37,19 @@ const capitalize = (str: string): string => {
     return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
+const getItemId = (item: unknown): string | undefined => {
+    if (typeof item !== 'object' || item === null || !('_id' in item)) {
+        return undefined;
+    }
+
+    const itemId = item._id;
+    if (typeof itemId !== 'string' || itemId.length === 0) {
+        return undefined;
+    }
+
+    return itemId;
+};
+
 const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): UseListingActionsReturn<T> => {
     const { actions } = config;
 
@@ -78,33 +91,45 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
             return [item];
         }
 
-        const currentItemId = (item as { _id?: string })._id;
-        if(currentItemId && selectedItems.some((selectedItem) => (selectedItem as { _id?: string })._id === currentItemId)){
+        const currentItemId = getItemId(item);
+        const hasMatchingSelection = selectedItems.some((selectedItem) => getItemId(selectedItem) === currentItemId);
+
+        if(currentItemId && hasMatchingSelection){
             return selectedItems;
         }
 
         return [item];
     }, []);
 
-    const shouldConfirm = useCallback((actionConfig: ActionConfig<T>, item: T, selectedItems: T[]): boolean => {
+    const shouldConfirm = useCallback(async (actionConfig: ActionConfig<T>, item: T, selectedItems: T[]): Promise<boolean> => {
         if(!actionConfig.confirm) return true;
 
         if(typeof actionConfig.confirm === 'boolean'){
             if(selectedItems.length > 1){
-                return confirmDelete(`${selectedItems.length} selected items`);
+                return await confirmDelete(`${selectedItems.length} selected items`);
             }
 
-            const itemName = (item as Record<string, unknown>)?.name as string || 'this item';
-            return confirmDelete(itemName);
+            let itemName = 'this item';
+            if (
+                typeof item === 'object'
+                && item !== null
+                && 'name' in item
+                && typeof item.name === 'string'
+                && item.name.length > 0
+            ) {
+                itemName = item.name;
+            }
+
+            return await confirmDelete(itemName);
         }
 
         if(typeof actionConfig.confirm === 'string'){
-            return confirm(actionConfig.confirm);
+            return await confirm(actionConfig.confirm);
         }
 
         if(typeof actionConfig.confirm === 'function'){
             const message = actionConfig.confirm({ item, selectedItems });
-            return confirm(message);
+            return await confirm(message);
         }
 
         return true;
@@ -119,7 +144,8 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
         const targets = getActionTargets(item, selectedItems, scope);
         const primaryItem = targets[0] ?? item;
 
-        if(!shouldConfirm(actionConfig, primaryItem, targets)) return;
+        const isConfirmed = await shouldConfirm(actionConfig, primaryItem, targets);
+        if(!isConfirmed) return;
 
         try{
             if(scope === 'selection'){

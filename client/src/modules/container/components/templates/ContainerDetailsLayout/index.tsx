@@ -3,10 +3,10 @@ import ContainerSidebar from '../../molecules/ContainerSidebar';
 import { ContainerAction } from '../../../api/dtos/update-container';
 import useContainerStats from '../../../hooks/use-container-stats';
 import { containerQuery, useContainerByIdQuery } from '../../../hooks/queries';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { useParams, useNavigate, Outlet } from 'react-router-dom';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
-import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import Container from '@/shared/presentation/components/Container';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
@@ -22,6 +22,7 @@ interface ContainerDetailsRouteParams extends Record<string, string | undefined>
 const ContainerDetailsLayout = () => {
     const { id } = useParams<ContainerDetailsRouteParams>();
     const navigate = useNavigate();
+    const { confirm } = useConfirm();
 
     const updateContainerMutation = containerQuery.useUpdateMutation();
     const deleteContainerMutation = containerQuery.useDeleteMutation();
@@ -52,7 +53,11 @@ const ContainerDetailsLayout = () => {
 
         try{
             if(action === 'delete'){
-                const isConfirmed = confirm('Are you sure you want to delete this container?');
+                const isConfirmed = await confirm({
+                    title: 'Delete this container?',
+                    description: 'This action cannot be undone.',
+                    confirmText: 'Delete'
+                });
                 if(!isConfirmed) return;
                 await showPromise(
                     deleteContainerMutation.mutateAsync(id),

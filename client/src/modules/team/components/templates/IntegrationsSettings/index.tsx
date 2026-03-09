@@ -20,6 +20,7 @@ import Select from '@/shared/presentation/components/Select';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { Skeleton } from '@mui/material';
@@ -110,6 +111,7 @@ export default function IntegrationsSettings() {
     const createTeamAIIntegration = useCreateTeamAIIntegration();
     const updateTeamAIIntegration = useUpdateTeamAIIntegration();
     const deleteTeamAIIntegration = useDeleteTeamAIIntegration();
+    const { confirm } = useConfirm();
 
     const isLoading = isIntegrationsLoading || isModelsLoading;
     const [isSaving, setIsSaving] = useState(false);
@@ -473,7 +475,12 @@ export default function IntegrationsSettings() {
             return;
         }
 
-        if (!window.confirm(`Remove ${integration.providerName} from this team?`)) {
+        const isConfirmed = await confirm({
+            title: `Remove ${integration.providerName} from this team?`,
+            confirmText: 'Remove'
+        });
+
+        if (!isConfirmed) {
             return;
         }
 

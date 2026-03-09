@@ -2,8 +2,9 @@ import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useCreateTeamRoleMutation, useDeleteTeamRoleMutation, useUpdateTeamRoleMutation } from '@/modules/team/hooks/role/queries';
 import { rbacConfigQuery } from '@/modules/system/hooks/queries';
 import { RoleEditorModal, openRoleEditorModal } from '../../organisms/RoleEditorModal';
-import { confirm } from '@/shared/presentation/hooks/use-confirm';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
@@ -11,7 +12,6 @@ import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
 import useTeamRolesListing from '@/modules/team/hooks/role/use-team-roles-listing';
-import { formatDistanceToNow } from 'date-fns';
 import { IoShieldCheckmarkOutline } from 'react-icons/io5';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import { useCallback, useState } from 'react';
@@ -86,19 +86,12 @@ const COLUMNS: ColumnConfig<TeamRole>[] = [
             );
         }
     },
-    {
-        key: 'createdAt',
-        title: 'Created',
-        render: (_value, role) => (
-            <span className='color-secondary font-size-2'>
-                {formatDistanceToNow(new Date(role.createdAt), { addSuffix: true })}
-            </span>
-        )
-    }
+    dateColumn<TeamRole>('createdAt', 'Created', { sortable: false })
 ];
 
 export default function ManageRolesTemplate() {
     const [editingRole, setEditingRole] = useState<TeamRole | null>(null);
+    const { confirm } = useConfirm();
 
     const selectedTeam = useSelectedTeam()!;
     const canCreate = usePermission(['team-role:create']);
@@ -152,14 +145,16 @@ export default function ManageRolesTemplate() {
         const eligibleRoles = rolesToDelete.filter((role) => !role.isSystem);
         if (!eligibleRoles.length) return;
 
-        let confirmationMessage = `Are you sure you want to delete ${eligibleRoles.length} roles?`;
+        let confirmationTitle = `Delete ${eligibleRoles.length} roles?`;
         if (eligibleRoles.length === 1) {
-            confirmationMessage = `Are you sure you want to delete "${eligibleRoles[0].name}"?`;
+            confirmationTitle = `Delete "${eligibleRoles[0].name}"?`;
         }
 
-        const isConfirmed = await confirm(
-            confirmationMessage
-        );
+        const isConfirmed = await confirm({
+            title: confirmationTitle,
+            description: 'This action cannot be undone.',
+            confirmText: 'Delete'
+        });
         if(!isConfirmed) return;
 
         for (const role of eligibleRoles) {

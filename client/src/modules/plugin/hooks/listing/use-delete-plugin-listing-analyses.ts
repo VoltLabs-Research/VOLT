@@ -1,13 +1,14 @@
 import { useCallback } from 'react';
 import { analysisQuery } from '@/modules/analysis/hooks/queries';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import { sileo } from 'sileo';
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
 import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 const useDeletePluginListingAnalyses = () => {
     const deleteAnalysisMutation = analysisQuery.useDeleteMutation();
+    const { confirm } = useConfirm();
 
     return useCallback(async (rows: ListingRow[]) => {
         const analysisIds = rows
@@ -19,7 +20,7 @@ const useDeletePluginListingAnalyses = () => {
             return;
         }
 
-        const isConfirmed = confirm(
+        const isConfirmed = await confirm(
             analysisIds.length === 1
                 ? 'Delete this analysis? This cannot be undone.'
                 : `Delete ${analysisIds.length} analyses? This cannot be undone.`
