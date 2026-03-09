@@ -3,10 +3,10 @@ import useTeamMemberData from '@/modules/team/hooks/member/use-team-member-data'
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
 import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Avatar from '@/shared/presentation/components/Avatar';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -24,7 +24,7 @@ const DashboardTeamPresence = () => {
     const navigate = useNavigate();
     const selectedTeam = useSelectedTeam();
     const selectedTeamId = selectedTeam?._id;
-    const { members, isLoading, accessDenied, accessDeniedMessage } = useTeamMemberData({ teamId: selectedTeamId });
+    const { members, isLoading, error, accessDenied, accessDeniedMessage, refresh } = useTeamMemberData({ teamId: selectedTeamId });
     const onlineUserIds = useTeamPresenceStore((s) => s.onlineUserIds);
     const hasPresenceSnapshot = useTeamPresenceStore((s) => s.hasPresenceSnapshot);
 
@@ -56,7 +56,28 @@ const DashboardTeamPresence = () => {
     if (accessDenied) {
         return (
             <Container className='dashboard-presence-card'>
-                <AccessDenied description={accessDeniedMessage} showBack={false} />
+                <RecoveryState
+                    title='Access denied'
+                    description={accessDeniedMessage ?? 'You do not have permission to view team presence.'}
+                    tone={RecoveryStateTone.AccessDenied}
+                    className='dashboard-card-state'
+                />
+            </Container>
+        );
+    }
+
+    if (error) {
+        return (
+            <Container className='dashboard-presence-card'>
+                <RecoveryState
+                    title='Unable to load team presence'
+                    description={error}
+                    tone={RecoveryStateTone.Error}
+                    onRetry={() => {
+                        refresh().catch(() => undefined);
+                    }}
+                    className='dashboard-card-state'
+                />
             </Container>
         );
     }

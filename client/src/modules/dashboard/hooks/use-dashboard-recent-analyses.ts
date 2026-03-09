@@ -1,4 +1,5 @@
 import { analysisQuery } from '@/modules/analysis/hooks/queries';
+import { getApiErrorMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { formatDistanceToNow } from 'date-fns';
 import { useMemo } from 'react';
@@ -52,10 +53,14 @@ export const useDashboardRecentAnalyses = () => {
     return {
         accessDenied,
         accessDeniedMessage,
+        error: recentAnalysesQuery.error && !isAccessDeniedError(recentAnalysesQuery.error)
+            ? getApiErrorMessage(recentAnalysesQuery.error, 'Failed to load recent analyses')
+            : null,
         isLoading: recentAnalysesQuery.isLoading,
         items,
         openAll,
-        openAnalysis
+        openAnalysis,
+        refresh: recentAnalysesQuery.refetch
     };
 };
 

@@ -1,7 +1,6 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import DashboardOverviewCard from '@/modules/dashboard/components/atoms/DashboardOverviewCard';
 import DashboardOverviewSkeleton from '@/modules/dashboard/components/atoms/DashboardOverviewSkeleton';
 import { DashboardQuickActions } from '@/modules/dashboard/components/molecules/DashboardQuickActions';
@@ -19,6 +18,7 @@ import SimulationGrid from '@/modules/trajectory/components/molecules/Simulation
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
 import './Dashboard.css';
 import { useMemo } from 'react';
@@ -49,7 +49,7 @@ const DashboardPage = () => {
 
     const selectedTeam = useSelectedTeam();
     const user = useCurrentUser();
-    const { loading, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam?._id);
+    const { loading, error, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam?._id);
 
     const firstName = useMemo(() => {
         const name = user?.firstName || '';
@@ -74,7 +74,23 @@ const DashboardPage = () => {
     if (accessDenied) {
         statCards = [
             <Container key='denied' className='dashboard-stat-card' style={{ gridColumn: 'span 4' }}>
-                <AccessDenied description={accessDeniedMessage} showBack={false} />
+                <RecoveryState
+                    title='Access denied'
+                    description={accessDeniedMessage ?? 'You do not have permission to view dashboard metrics.'}
+                    tone={RecoveryStateTone.AccessDenied}
+                    className='dashboard-card-state'
+                />
+            </Container>
+        ];
+    } else if (error) {
+        statCards = [
+            <Container key='error' className='dashboard-stat-card' style={{ gridColumn: 'span 4' }}>
+                <RecoveryState
+                    title='Unable to load dashboard metrics'
+                    description={error}
+                    tone={RecoveryStateTone.Error}
+                    className='dashboard-card-state'
+                />
             </Container>
         ];
     } else if (loading) {

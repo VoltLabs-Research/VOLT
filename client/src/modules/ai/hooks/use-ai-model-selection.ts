@@ -145,6 +145,12 @@ const useAIModelSelection = (teamId: string | null) => {
         canSendMessage,
         isProviderCatalogLoading,
         providerCatalogError,
+        loadProviderCatalog: async () => {
+            await Promise.all([
+                teamAIIntegrationsQuery.refetch(),
+                teamAIIntegrationModelsQuery.refetch()
+            ]);
+        },
         selectedModelRef,
         setSelectedModel,
         setSelectedProvider

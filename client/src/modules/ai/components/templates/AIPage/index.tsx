@@ -5,10 +5,9 @@ import AIConversationThread from '@/modules/ai/components/organisms/AIConversati
 import ResizeHandle from '@/modules/canvas/components/atoms/ResizeHandle';
 import useResizable from '@/modules/canvas/hooks/use-resizable';
 import useAIPage from '@/modules/ai/hooks/use-ai-page';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
-import Paragraph from '@/shared/presentation/components/Paragraph';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import usePermission from '@/shared/presentation/hooks/use-permission';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -55,6 +54,7 @@ const AIPage = () => {
         canSendMessage,
         accessDenied,
         accessDeniedMessage,
+        loadProviderCatalog,
         setSelectedModel,
         handleSelectConversation,
         handleCreateConversation,
@@ -168,7 +168,13 @@ const AIPage = () => {
     }, [canSendMessage, conversationId, handleSendMessage]);
 
     if (accessDenied) {
-        return <AccessDenied description={accessDeniedMessage} />;
+        return (
+            <RecoveryState
+                title='Access denied'
+                description={accessDeniedMessage ?? 'You do not have permission to use AI conversations.'}
+                tone={RecoveryStateTone.AccessDenied}
+            />
+        );
     }
 
     let starterInput: ReactNode = null;
@@ -279,7 +285,14 @@ const AIPage = () => {
             <Container className='d-flex column h-max flex-1 ai-page-main'>
                 {providerCatalogError && (
                     <Container className='ai-page-inline-alert'>
-                        <Paragraph className='font-size-1 color-danger'>{providerCatalogError}</Paragraph>
+                        <RecoveryState
+                            title='Unable to load AI providers'
+                            description={providerCatalogError}
+                            tone={RecoveryStateTone.Error}
+                            onRetry={() => {
+                                loadProviderCatalog().catch(() => undefined);
+                            }}
+                        />
                     </Container>
                 )}
 

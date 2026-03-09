@@ -62,6 +62,7 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
         canSendMessage: modelSelection.canSendMessage,
         isProviderCatalogLoading: modelSelection.isProviderCatalogLoading,
         providerCatalogError: modelSelection.providerCatalogError,
+        loadProviderCatalog: modelSelection.loadProviderCatalog,
         setSelectedProvider: modelSelection.setSelectedProvider,
         setSelectedModel: modelSelection.setSelectedModel,
 

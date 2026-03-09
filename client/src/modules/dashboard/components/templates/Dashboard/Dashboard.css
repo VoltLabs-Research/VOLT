@@ -56,6 +56,10 @@
     height: 100%;
 }
 
+.dashboard-card-state {
+    min-height: 100%;
+}
+
 /* ---- Simulations Section ---- */
 .dashboard-simulations-section {
     grid-column: span 12;
