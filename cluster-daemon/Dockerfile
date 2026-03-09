@@ -8,7 +8,6 @@ RUN apt-get update \
 
 COPY package.json ./
 COPY native/package.json ./native/package.json
-COPY native/package-lock.json ./native/package-lock.json
 COPY native ./native
 RUN npm install
 RUN npm --prefix native install
