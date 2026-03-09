@@ -4,7 +4,7 @@ import { rbacConfigQuery } from '@/modules/system/hooks/queries';
 import { RoleEditorModal, openRoleEditorModal } from '../../organisms/RoleEditorModal';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import ApiError from '@/shared/errors/ApiError';
+import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
@@ -14,7 +14,6 @@ import useTeamRolesListing from '@/modules/team/hooks/role/use-team-roles-listin
 import { formatDistanceToNow } from 'date-fns';
 import { IoShieldCheckmarkOutline } from 'react-icons/io5';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
-import { sileo } from 'sileo';
 import { useCallback, useState } from 'react';
 import type { TeamRole } from '@/modules/team/api/entities/role/team-role';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
@@ -142,9 +141,8 @@ export default function ManageRolesTemplate() {
             }
             setEditingRole(null);
         }catch(err){
-            if(ApiError.isRBACError(err)){
-                const msg = err instanceof ApiError ? err.getFriendlyMessage() : 'You do not have permission to manage roles';
-                sileo.error({ title: msg });
+            if(isAccessDeniedError(err)){
+                notifyApiError(err, { fallbackTitle: 'You do not have permission to manage roles' });
             }
             throw err;
         }

@@ -2,7 +2,9 @@ import { routesConfig } from './config';
 import ProtectedRoute, { RouteMode } from './ProtectedRoute';
 import { canAccessByPermissions } from '@/modules/team/utilities/team/permission-evaluator';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import Loader from '@/shared/presentation/components/Loader';
 import PageTransition from '@/shared/presentation/components/PageTransition';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { Route } from 'react-router-dom';
@@ -22,6 +24,7 @@ const wrapWithPageTransition = (Component: ComponentType) => (
 
 const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) => {
     const selectedTeamId = useSelectedTeamId();
+    const hasHydratedSelection = useTeamStore((state) => state.hasHydratedSelection);
     const { scopedPermissions, isScopeReady, isLoading: isPermissionsLoading } = useTeamPermissions();
     const permissions = route.requiredPermissions ?? [];
     const mode = route.permissionMode ?? 'any';
@@ -30,16 +33,20 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
         return <>{children}</>;
     }
 
+    if (!hasHydratedSelection) {
+        return <Loader scale={0.6} />;
+    }
+
     if (!selectedTeamId) {
-        return <>{children}</>;
+        return <AccessDenied />;
+    }
+
+    if (isPermissionsLoading) {
+        return <Loader scale={0.6} />;
     }
 
     if (!isScopeReady) {
-        return <>{children}</>;
-    }
-
-    if (isPermissionsLoading && scopedPermissions.length === 0) {
-        return <>{children}</>;
+        return <AccessDenied />;
     }
 
     const isAllowed = canAccessByPermissions(scopedPermissions, permissions, mode);

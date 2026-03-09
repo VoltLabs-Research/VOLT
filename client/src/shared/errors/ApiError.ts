@@ -19,6 +19,8 @@ const PERMISSION_DENIED_CODES = new Set([
 ]);
 
 export default class ApiError extends Error{
+    private handled = false;
+
     constructor(
         public readonly code: string,
         public readonly status?: number,
@@ -30,6 +32,14 @@ export default class ApiError extends Error{
 
     getFriendlyMessage(): string{
         return getErrorMessage(this.code, 'Unknown error');
+    }
+
+    markHandled(): void{
+        this.handled = true;
+    }
+
+    isHandled(): boolean{
+        return this.handled;
     }
 
     isPermissionDenied(): boolean{

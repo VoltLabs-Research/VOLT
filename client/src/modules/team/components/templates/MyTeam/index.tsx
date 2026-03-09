@@ -12,7 +12,6 @@ import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activ
 import useTeamMembersListing from '@/modules/team/hooks/member/use-team-members-listing';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
-import ApiError from '@/shared/errors/ApiError';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import EditableTag from '@/shared/presentation/components/EditableTag';
@@ -26,6 +25,7 @@ import { useNavigate } from 'react-router-dom';
 import type { TeamMemberStats } from '@/modules/team/api/entities/member/team-member';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import './MyTeam.css';
+import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 const TEAM_MEMBERS_QUERY_KEY = ['team-members'] as const;
 
@@ -103,7 +103,7 @@ export default function MyTeamTemplate() {
                 updateTeamNameToastOptions
             );
         }catch(error: unknown){
-            if(ApiError.isRBACError(error)) return;
+            if(isAccessDeniedError(error)) return;
         }
     }, [selectedTeam._id, updateTeamMutation]);
 
@@ -114,7 +114,7 @@ export default function MyTeamTemplate() {
                 updateRoleToastOptions
             );
         }catch(error: unknown){
-            if(ApiError.isRBACError(error)) return;
+            if(isAccessDeniedError(error)) return;
         }
     }, [selectedTeam._id, updateTeamMemberMutation]);
 
@@ -138,7 +138,7 @@ export default function MyTeamTemplate() {
                     getRemoveMemberToastOptions(member)
                 );
             }catch(error: unknown){
-                if(ApiError.isRBACError(error)) return;
+                if(isAccessDeniedError(error)) return;
             }
         }
     }, [selectedTeam._id, removeTeamMemberMutation]);

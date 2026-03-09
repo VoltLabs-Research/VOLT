@@ -1,3 +1,13 @@
+import type { RuntimeLifecycleEvent } from './events';
+import type { MetricsSnapshot } from './metrics';
+
+export interface DaemonHealthResponse {
+    ok: boolean;
+    ready: boolean;
+    metrics: MetricsSnapshot;
+    latestLifecycleEvent: RuntimeLifecycleEvent | null;
+};
+
 export enum ObjectBucketName {
     Dumps = 'volt-dumps',
     Models = 'volt-models',

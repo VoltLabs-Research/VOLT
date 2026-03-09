@@ -1,4 +1,5 @@
 import useCanvasUrlState from './use-canvas-url-state';
+import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 import { useExportAnalysisResultsMutation } from '@/modules/plugin/hooks/plugin/queries';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
@@ -9,7 +10,6 @@ import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useMemo, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import ApiError from '@/shared/errors/ApiError';
 
 interface UsePluginResultsOptions {
     pluginId: string;
@@ -70,7 +70,7 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
                 }
             );
         } catch(error: unknown) {
-            if(ApiError.isRBACError(error)) return;
+            if(isAccessDeniedError(error)) return;
         }
     }, [pluginId, analysisId, exportResultsMutation]);
 

@@ -1,7 +1,7 @@
 import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import { deduplicateById } from '@/shared/domain/utils/deduplicateById';
 import usePaginationParams from './use-pagination-params';
-import ApiError from '@/shared/errors/ApiError';
+import { getApiErrorCode, getApiErrorMessage, isApiError } from '@/shared/errors/notify-api-error';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useCallback, useRef, useEffect, useMemo } from 'react';
@@ -94,7 +94,7 @@ export function useDocumentListingPagination<T extends { _id: string }, TContext
             lastPage.pagination.hasMore ? lastPage.pagination.page + 1 : undefined,
         enabled,
         retry: (failureCount, error) => {
-            if (error instanceof ApiError && error.status !== undefined && error.status < 500) {
+            if (isApiError(error) && error.status !== undefined && error.status < 500) {
                 return false;
             }
 
@@ -113,15 +113,12 @@ export function useDocumentListingPagination<T extends { _id: string }, TContext
     // Extract error info
     const error = useMemo<string | null>(() => {
         if (!queryError) return null;
-        if (queryError instanceof ApiError) return queryError.getFriendlyMessage();
-        if (queryError instanceof Error) return queryError.message;
-        return 'Failed to fetch data';
+        return getApiErrorMessage(queryError, 'Failed to fetch data');
     }, [queryError]);
 
     const errorCode = useMemo<string | null>(() => {
         if (!queryError) return null;
-        if (queryError instanceof ApiError) return queryError.code;
-        return null;
+        return getApiErrorCode(queryError);
     }, [queryError]);
 
     const hasMore = hasNextPage ?? false;

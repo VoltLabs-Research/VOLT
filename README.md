@@ -23,9 +23,7 @@ Managing different roles within your team? Volt includes granular permissions an
 
 **Volt itself has no built-in assumptions about atoms beyond them being points in 3D space.** That freedom lets you integrate new algorithms, build your own plugins, and share them with others. Volt is fully modular by design.
 
-## How Volt stays free
-Volt can remain free thanks to two flexible ways of using the platform:
-
+## Installation
 ### 1. Connecting your own cluster
 By connecting a cluster (for example your computer or a server) to app.voltcloud.dev, all heavy computations run on the cluster you configured, not on our infrastructure.
 

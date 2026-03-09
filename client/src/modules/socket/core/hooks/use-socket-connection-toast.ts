@@ -1,11 +1,12 @@
-import useSocket from './use-socket';
+import { SocketConnectionStatus } from '@/modules/socket/core/socket-connection-status';
+import useSocketConnectionStatus from './use-socket-connection-status';
 import { useEffect, useRef } from 'react';
 import { sileo } from 'sileo';
 
 const useSocketConnectionToast = (): void => {
-    const socketService = useSocket();
+    const connectionStatus = useSocketConnectionStatus();
     const toastIdRef = useRef<string | null>(null);
-    const hasConnectedOnceRef = useRef(false);
+    const previousStatusRef = useRef<SocketConnectionStatus | null>(null);
 
     useEffect(() => {
         const dismissActiveToast = () => {
@@ -15,38 +16,56 @@ const useSocketConnectionToast = (): void => {
             }
         };
 
-        if(!socketService.isConnected()){
+        if (connectionStatus === SocketConnectionStatus.Connected) {
+            dismissActiveToast();
+
+            if (
+                previousStatusRef.current === SocketConnectionStatus.Reconnecting
+                || previousStatusRef.current === SocketConnectionStatus.Error
+            ) {
+                sileo.success({ title: 'Reconnected to server' });
+            }
+        }
+
+        if (connectionStatus === SocketConnectionStatus.Connecting) {
+            dismissActiveToast();
             toastIdRef.current = sileo.show({
                 type: 'loading',
                 title: 'Establishing connection...',
                 duration: null
             });
-        }else{
-            hasConnectedOnceRef.current = true;
         }
 
-        const unsubscribe = socketService.onConnectionChange((connected) => {
-            if(connected){
-                dismissActiveToast();
-                if(hasConnectedOnceRef.current){
-                    sileo.success({ title: 'Reconnected to server' });
-                }
-                hasConnectedOnceRef.current = true;
-            }else{
-                dismissActiveToast();
-                toastIdRef.current = sileo.show({
-                    type: 'loading',
-                    title: 'Connection lost. Reconnecting...',
-                    duration: null
-                });
-            }
-        });
+        if (connectionStatus === SocketConnectionStatus.Reconnecting) {
+            dismissActiveToast();
+            toastIdRef.current = sileo.show({
+                type: 'loading',
+                title: 'Connection lost. Reconnecting...',
+                duration: null
+            });
+        }
+
+        if (connectionStatus === SocketConnectionStatus.Error) {
+            dismissActiveToast();
+            toastIdRef.current = sileo.show({
+                type: 'error',
+                title: 'Unable to connect to server',
+                duration: 5000
+            });
+        }
+
+        if (connectionStatus === SocketConnectionStatus.Disconnected) {
+            dismissActiveToast();
+        }
+
+        previousStatusRef.current = connectionStatus;
 
         return () => {
-            unsubscribe();
-            dismissActiveToast();
+            if (connectionStatus !== SocketConnectionStatus.Connected) {
+                dismissActiveToast();
+            }
         };
-    }, [socketService]);
+    }, [connectionStatus]);
 };
 
 export default useSocketConnectionToast;

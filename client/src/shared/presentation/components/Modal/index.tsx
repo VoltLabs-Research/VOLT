@@ -26,6 +26,7 @@ interface ModalProps {
     footer?: ReactNode;
     className?: string;
     width?: string;
+    onClose?: () => void;
 };
 
 const isDialogElement = (element: HTMLElement | null): element is HTMLDialogElement => {
@@ -40,7 +41,8 @@ const Modal = ({
     children,
     footer,
     className = '',
-    width
+    width,
+    onClose
 }: ModalProps) => {
     // Callback ref stored in state so the context value triggers a re-render
     // once the <dialog> element mounts, giving consumers the actual DOM node.
@@ -76,6 +78,7 @@ const Modal = ({
                 className={`volt-modal ${className}`}
                 style={width ? { maxWidth: width } : undefined}
                 onClick={handleBackdropClick}
+                onClose={onClose}
             >
                 <FloatingRootContext.Provider value={dialogElement ?? undefined}>
                     <Container className='d-flex column w-max'>
@@ -114,6 +117,10 @@ export default Modal;
 export const openModal = (id: string) => {
     const element = document.getElementById(id);
     if (isDialogElement(element)) {
+        if (element.open) {
+            return;
+        }
+
         element.showModal();
     }
 };
@@ -121,6 +128,10 @@ export const openModal = (id: string) => {
 export const closeModal = (id: string) => {
     const element = document.getElementById(id);
     if (isDialogElement(element)) {
+        if (!element.open) {
+            return;
+        }
+
         element.close();
     }
 };

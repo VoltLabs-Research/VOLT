@@ -1,7 +1,7 @@
 import { useAcceptInvitationMutation, useInvitationDetailsQuery, useRejectInvitationMutation } from '@/modules/team/hooks/invitation/queries';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import ApiError from '@/shared/errors/ApiError';
+import { getAccessDeniedMessage, getApiErrorMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
@@ -57,9 +57,9 @@ export default function TeamInvitationTemplate() {
     const queryError = invitationQuery.error;
 
     const displayError = error ?? (queryError
-        ? (ApiError.isRBACError(queryError)
-            ? (queryError instanceof ApiError ? queryError.getFriendlyMessage() : 'You do not have permission to perform this action.')
-            : queryError.message)
+        ? (isAccessDeniedError(queryError)
+            ? getAccessDeniedMessage(queryError, 'You do not have permission to perform this action.')
+            : getApiErrorMessage(queryError, 'An error occurred'))
         : (!invitationId ? 'Invalid invitation link' : null));
 
     const handleAccept = async () => {
@@ -71,10 +71,10 @@ export default function TeamInvitationTemplate() {
             setError(null);
             window.location.href = '/dashboard';
         }catch(err: unknown){
-            if(ApiError.isRBACError(err)){
-                setError(err instanceof ApiError ? err.getFriendlyMessage() : 'You do not have permission to perform this action.');
+            if(isAccessDeniedError(err)){
+                setError(getAccessDeniedMessage(err, 'You do not have permission to perform this action.') ?? 'You do not have permission to perform this action.');
             } else {
-                setError(err instanceof Error ? err.message : 'An error occurred');
+                setError(getApiErrorMessage(err, 'An error occurred'));
             }
         }
     };
@@ -87,10 +87,10 @@ export default function TeamInvitationTemplate() {
             setError(null);
             window.location.href = '/dashboard';
         }catch(err: unknown){
-            if(ApiError.isRBACError(err)){
-                setError(err instanceof ApiError ? err.getFriendlyMessage() : 'You do not have permission to perform this action.');
+            if(isAccessDeniedError(err)){
+                setError(getAccessDeniedMessage(err, 'You do not have permission to perform this action.') ?? 'You do not have permission to perform this action.');
             } else {
-                setError(err instanceof Error ? err.message : 'An error occurred');
+                setError(getApiErrorMessage(err, 'An error occurred'));
             }
         }
     };

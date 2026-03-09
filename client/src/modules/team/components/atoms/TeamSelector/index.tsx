@@ -3,7 +3,6 @@ import { useLeaveTeamMutation } from '@/modules/team/hooks/team/queries';
 import { resetTeamScopedApplicationState, useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
-import ApiError from '@/shared/errors/ApiError';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Select from '@/shared/presentation/components/Select';
 import { IoExitOutline } from 'react-icons/io5';
@@ -11,6 +10,7 @@ import { useCallback, useMemo } from 'react';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 import type { MouseEvent } from 'react';
 import './TeamSelector.css';
+import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 interface TeamSelectorProps {
     className?: string;
@@ -63,7 +63,7 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
                 }
             }
         } catch(error: unknown) {
-            if(ApiError.isRBACError(error)) return;
+            if(isAccessDeniedError(error)) return;
         }
     }, [leaveTeamMutation, teams]);
 

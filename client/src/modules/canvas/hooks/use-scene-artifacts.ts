@@ -3,7 +3,7 @@ import {
     SCENE_ARTIFACTS_QUERY_KEYS
 } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import { useEffect, useMemo } from 'react';
-import ApiError from '@/shared/errors/ApiError';
+import { getAccessDeniedMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import queryClient from '@/shared/infrastructure/query/query-client';
 
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
@@ -59,17 +59,12 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
     }, [colorCodingQuery.error, particleFilterQuery.error]);
 
     const accessDenied = useMemo(() => {
-        return ApiError.isRBACError(colorCodingQuery.error) || ApiError.isRBACError(particleFilterQuery.error);
+        return isAccessDeniedError(colorCodingQuery.error) || isAccessDeniedError(particleFilterQuery.error);
     }, [colorCodingQuery.error, particleFilterQuery.error]);
 
     const accessDeniedMessage = useMemo(() => {
-        const rbacError = [colorCodingQuery.error, particleFilterQuery.error].find(
-            (queryError) => queryError && ApiError.isRBACError(queryError)
-        );
-        if (rbacError instanceof ApiError) {
-            return rbacError.getFriendlyMessage();
-        }
-        return undefined;
+        const rbacError = [colorCodingQuery.error, particleFilterQuery.error].find((queryError) => isAccessDeniedError(queryError));
+        return getAccessDeniedMessage(rbacError);
     }, [colorCodingQuery.error, particleFilterQuery.error]);
 
     useEffect(() => {

@@ -1,7 +1,6 @@
 import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { useSavePluginMutation } from './queries';
-import ApiError from '@/shared/errors/ApiError';
-import { sileo } from 'sileo';
+import { getAccessDeniedMessage, notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback } from 'react';
@@ -42,13 +41,11 @@ const useSaveWorkflow = () => {
 
             return plugin;
         } catch (error) {
-            if (ApiError.isRBACError(error)) {
-                let message = 'You do not have permission to save this workflow';
-                if (error instanceof ApiError) {
-                    message = error.getFriendlyMessage();
-                }
+            if (isAccessDeniedError(error)) {
+                const message = getAccessDeniedMessage(error, 'You do not have permission to save this workflow')
+                    ?? 'You do not have permission to save this workflow';
                 setSaveError(message);
-                sileo.error({ title: message });
+                notifyApiError(error, { fallbackTitle: 'You do not have permission to save this workflow' });
                 return null;
             }
             const message = error instanceof Error ? error.message : 'Failed to save workflow';

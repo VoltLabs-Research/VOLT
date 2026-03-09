@@ -1,19 +1,11 @@
 import { ChatMessageType } from '../../api/entities/message';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import ApiError from '@/shared/errors/ApiError';
+import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import { sileo } from 'sileo';
 import type { ChatMessage } from '../../api/entities/message';
 
 interface MessageActionDependencies {
     chatId?: string;
-};
-
-const getFriendlyRBACMessage = (error: unknown, fallback: string) => {
-    if (error instanceof ApiError) {
-        return error.getFriendlyMessage();
-    }
-
-    return fallback;
 };
 
 export const sendTextMessageAction = async (
@@ -30,8 +22,8 @@ export const sendTextMessageAction = async (
             messageType: ChatMessageType.Text
         });
     } catch (error: unknown) {
-        if (ApiError.isRBACError(error)) {
-            sileo.error({ title: getFriendlyRBACMessage(error, 'You do not have permission to send messages') });
+        if (isAccessDeniedError(error)) {
+            notifyApiError(error, { fallbackTitle: 'You do not have permission to send messages' });
             return;
         }
 
@@ -49,8 +41,7 @@ export const sendFileMessageAction = async (
     try {
         return await sendFileMutation({ chatId, file });
     } catch (error: unknown) {
-        if (ApiError.isRBACError(error)) {
-            sileo.error({ title: getFriendlyRBACMessage(error, 'You do not have permission to send files') });
+        if (notifyApiError(error) || isAccessDeniedError(error)) {
             throw error;
         }
 

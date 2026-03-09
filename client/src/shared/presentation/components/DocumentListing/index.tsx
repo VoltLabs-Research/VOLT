@@ -8,7 +8,6 @@ import { triggerBrowserDownload } from '@/shared/utils/file';
 import { getValueByPath } from '@/shared/utils/format';
 import { sortData } from '@/shared/utils/sort';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
-import ApiError from '@/shared/errors/ApiError';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Button from '@/shared/presentation/components/Button';
@@ -33,6 +32,7 @@ import React from 'react';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { QueryKey } from '@tanstack/react-query';
+import { isAccessDeniedCode } from '@/shared/errors/notify-api-error';
 
 export type { ColumnConfig, MenuOption };
 export { getValueByPath };
@@ -263,7 +263,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         }
     }, [exportConfig, selectedExportType, context, search, sortConfig, exportModalId]);
 
-    const isAccessDenied = !!errorCode && ApiError.isCodePermissionDenied(errorCode);
+    const isAccessDenied = !!errorCode && isAccessDeniedCode(errorCode);
 
     const renderContent = () => {
         if(isAccessDenied){

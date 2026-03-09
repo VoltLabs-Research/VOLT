@@ -1,6 +1,6 @@
 import useTrajectoryStore from '../../stores/trajectory/use-trajectory-store';
 import { trajectoryQuery } from './queries';
-import ApiError from '@/shared/errors/ApiError';
+import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import { sileo } from 'sileo';
 import { v4 } from 'uuid';
 import { useCallback, useEffect, useRef } from 'react';
@@ -63,11 +63,8 @@ export default function useCreateTrajectory() {
 
             removeUploadTimersRef.current.set(uploadId, timer);
 
-            if (ApiError.isRBACError(error)) {
-                const message = error instanceof ApiError
-                    ? error.getFriendlyMessage()
-                    : 'You do not have permission to create trajectories';
-                sileo.error({ title: message });
+            if (isAccessDeniedError(error)) {
+                notifyApiError(error, { fallbackTitle: 'You do not have permission to create trajectories' });
                 return null;
             }
 

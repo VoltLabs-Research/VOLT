@@ -7,7 +7,7 @@ import { LISTING_QUERY_KEYS, usePluginListingInfiniteQuery } from '@/modules/plu
 import usePluginListing from '@/modules/plugin/hooks/listing/use-plugin-listing';
 import usePluginSubListing from '@/modules/plugin/hooks/listing/use-plugin-sub-listing';
 import useDeletePluginListingAnalyses from '@/modules/plugin/hooks/listing/use-delete-plugin-listing-analyses';
-import ApiError from '@/shared/errors/ApiError';
+import { getAccessDeniedMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import { openModal } from '@/shared/presentation/components/Modal';
@@ -91,9 +91,9 @@ const CompactPluginExposureTable = ({
             return;
         }
 
-        if (ApiError.isRBACError(compactError)) {
+        if (isAccessDeniedError(compactError)) {
             setRbacDenied(true);
-            if (compactError instanceof ApiError) setRbacMessage(compactError.getFriendlyMessage());
+            setRbacMessage(getAccessDeniedMessage(compactError));
             return;
         }
 
@@ -134,7 +134,7 @@ const CompactPluginExposureTable = ({
         return <AccessDenied description={rbacMessage} showBack={false} />;
     }
 
-    const compactErrorMessage = compactError && !ApiError.isRBACError(compactError)
+    const compactErrorMessage = compactError && !isAccessDeniedError(compactError)
         ? (compactError instanceof Error ? compactError.message : 'Failed to load listing.')
         : null;
 

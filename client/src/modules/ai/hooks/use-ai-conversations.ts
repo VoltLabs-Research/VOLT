@@ -6,6 +6,7 @@ import {
     useDeleteConversationMutation,
     useRenameConversationMutation
 } from '@/modules/ai/hooks/queries';
+import { notifyApiError } from '@/shared/errors/notify-api-error';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -119,6 +120,7 @@ const useAIConversations = (
             return result.conversation;
         } catch (error) {
             if (options.checkRBACError(error)) throw error;
+            if (notifyApiError(error, { fallbackTitle: 'Failed to create conversation' })) throw error;
             sileo.error({ title: 'Failed to create conversation' });
             throw error;
         }
@@ -149,6 +151,7 @@ const useAIConversations = (
             });
         } catch (error) {
             if (options.checkRBACError(error)) throw error;
+            if (notifyApiError(error, { fallbackTitle: 'Failed to rename conversation' })) throw error;
             sileo.error({ title: 'Failed to rename conversation' });
             throw error;
         }

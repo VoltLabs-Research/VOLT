@@ -1,6 +1,7 @@
 import SocketIOAdapter from './socket-io-adapter';
 import TokenStorage from '@/modules/auth/services/token-storage';
 import type { ISocketService } from './contracts/socket-service';
+import type { SocketConnectionStatus } from '@/modules/socket/core/socket-connection-status';
 
 type SocketAuth = Record<string, unknown>;
 
@@ -38,6 +39,10 @@ class SocketService implements ISocketService {
         return this.transport.isConnected();
     }
 
+    getConnectionStatus(): SocketConnectionStatus {
+        return this.transport.getConnectionStatus();
+    }
+
     on<TArgs extends unknown[]>(event: string, callback: (...args: TArgs) => void): () => void;
     on(event: string, callback: (...args: unknown[]) => void): () => void {
         return this.transport.on(event, callback);
@@ -67,6 +72,10 @@ class SocketService implements ISocketService {
 
     onConnectionChange(listener: (connected: boolean) => void): () => void {
         return this.transport.onConnectionChange(listener);
+    }
+
+    onConnectionStatusChange(listener: (status: SocketConnectionStatus) => void): () => void {
+        return this.transport.onConnectionStatusChange(listener);
     }
 
     private syncAuth(): void {

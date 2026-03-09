@@ -2,7 +2,7 @@ import useTeamInvitationData from '@/modules/team/hooks/invitation/use-team-invi
 import { useCancelInvitationMutation, useSendInvitationMutation } from '@/modules/team/hooks/invitation/queries';
 import type { TeamInvitation } from '@/modules/team/api/entities/invitation/team-invitation';
 import type { InviteButtonState } from '../../components/atoms/InviteButton';
-import ApiError from '@/shared/errors/ApiError';
+import { getAccessDeniedMessage, getApiErrorMessage, notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useZodForm from '@/shared/presentation/hooks/use-zod-form';
 import type { ChangeEvent } from 'react';
@@ -114,22 +114,16 @@ export default function useInvitePanel(): UseInvitePanelReturn {
             setButtonState('success');
             scheduleButtonReset(2500);
         } catch (error: unknown) {
-            if (ApiError.isRBACError(error)) {
-                let rbacMessage = 'You do not have permission to send invitations';
-                if (error instanceof ApiError) {
-                    rbacMessage = error.getFriendlyMessage();
-                }
+            if (isAccessDeniedError(error)) {
+                const rbacMessage = getAccessDeniedMessage(error, 'You do not have permission to send invitations')
+                    ?? 'You do not have permission to send invitations';
                 form.setError('email', { message: rbacMessage });
-                sileo.error({ title: rbacMessage });
+                notifyApiError(error, { fallbackTitle: 'You do not have permission to send invitations' });
                 setButtonState('error');
                 scheduleButtonReset(2000);
                 return;
             }
-            let message = 'An unexpected error occurred';
-            if (error instanceof ApiError) {
-                message = error.getFriendlyMessage();
-            }
-
+            const message = getApiErrorMessage(error, 'An unexpected error occurred');
             form.setError('email', { message });
             setButtonState('error');
             scheduleButtonReset(2000);

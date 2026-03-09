@@ -1,5 +1,7 @@
 import { useGlobalSearchQuery } from '@/modules/dashboard/hooks/queries';
 import { EMPTY_GLOBAL_SEARCH_RESULTS } from '@/modules/dashboard/api/dtos/global-search';
+import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
+import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import {
     autoUpdate,
     flip,
@@ -13,6 +15,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GlobalSearchOutputDTO, GlobalSearchSectionKey } from '@/modules/dashboard/api/dtos/global-search';
+import type { KeyboardEvent } from 'react';
 
 const SEARCH_DEBOUNCE_MS = 300;
 const SEARCH_RESULT_LIMIT = 5;
@@ -22,6 +25,7 @@ export interface DashboardGlobalSearchItem {
     title: string;
     subtitle: string;
     path: string;
+    teamId?: string;
 };
 
 export interface DashboardGlobalSearchSection {
@@ -47,7 +51,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
                 id: analysis._id,
                 title: analysis.pluginDisplayName || analysis.plugin,
                 subtitle: formatSearchDate(analysis.createdAt),
-                path: '/dashboard/analysis-configs'
+                path: `/canvas/${analysis.trajectory._id}?analysis=${analysis._id}`
             }))
         },
         {
@@ -56,7 +60,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
                 id: trajectory._id,
                 title: trajectory.name,
                 subtitle: trajectory.status || '',
-                path: `/dashboard/trajectories/${trajectory._id}`
+                path: `/canvas/${trajectory._id}`
             }))
         },
         {
@@ -65,17 +69,23 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
                 id: container._id,
                 title: container.name,
                 subtitle: container.image,
-                path: '/dashboard/containers'
+                path: `/dashboard/containers/${container._id}`
             }))
         },
         {
             key: 'plugins',
-            items: results.plugins.map((plugin) => ({
-                id: plugin._id,
-                title: plugin.modifier?.name || plugin._id,
-                subtitle: plugin.modifier?.description || '',
-                path: `/dashboard/plugins/${plugin._id}`
-            }))
+            items: results.plugins.map((plugin) => {
+                const listingExposure = plugin.listingExposures?.exposures[0] ?? getListingRelevantExposures(plugin.exposures)[0];
+
+                return {
+                    id: plugin._id,
+                    title: plugin.modifier?.name || plugin._id,
+                    subtitle: plugin.modifier?.description || '',
+                    path: listingExposure
+                        ? `/dashboard/plugins/${plugin._id}/exposure/${listingExposure.exposureId}/listing`
+                        : '/dashboard/plugins/list'
+                };
+            })
         },
         {
             key: 'teams',
@@ -83,7 +93,8 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
                 id: team._id,
                 title: team.name,
                 subtitle: team.description || '',
-                path: '/dashboard'
+                path: '/dashboard/my-team',
+                teamId: team._id
             }))
         },
         {
@@ -94,7 +105,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
                     .map((participant) => participant.firstName || participant.email)
                     .join(', ') || 'Chat',
                 subtitle: chat.lastMessage?.content?.substring(0, 50) || 'No messages',
-                path: '/dashboard/messages'
+                path: `/dashboard/messages/${chat._id}`
             }))
         }
     ];
@@ -102,10 +113,12 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
 
 export const useDashboardGlobalSearch = () => {
     const navigate = useNavigate();
+    const setSelectedTeamId = useTeamStore((state) => state.setSelectedTeamId);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [query, setQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
     const [showResults, setShowResults] = useState(false);
+    const [activeIndex, setActiveIndex] = useState(-1);
 
     const { refs, floatingStyles, context } = useFloating({
         open: showResults,
@@ -162,6 +175,9 @@ export const useDashboardGlobalSearch = () => {
 
     const results = searchQuery.data ?? EMPTY_GLOBAL_SEARCH_RESULTS;
     const sections = useMemo(() => buildSections(results), [results]);
+    const flattenedItems = useMemo<DashboardGlobalSearchItem[]>(() => {
+        return sections.flatMap((section) => section.items);
+    }, [sections]);
     const totalResults = useMemo(
         () => sections.reduce((count, section) => count + section.items.length, 0),
         [sections]
@@ -173,10 +189,15 @@ export const useDashboardGlobalSearch = () => {
         setQuery('');
         setDebouncedQuery('');
         setShowResults(false);
+        setActiveIndex(-1);
     };
 
-    const handleSelect = (path: string) => {
-        navigate(path);
+    const handleSelect = (item: DashboardGlobalSearchItem) => {
+        if (item.teamId) {
+            setSelectedTeamId(item.teamId);
+        }
+
+        navigate(item.path);
         resetSearch();
     };
 
@@ -186,6 +207,78 @@ export const useDashboardGlobalSearch = () => {
         }
     };
 
+    const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+        if (!showResults && event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Escape') {
+            return;
+        }
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            if (!flattenedItems.length) {
+                return;
+            }
+
+            if (!showResults) {
+                setShowResults(true);
+            }
+
+            setActiveIndex((currentIndex) => {
+                return currentIndex >= flattenedItems.length - 1 ? 0 : currentIndex + 1;
+            });
+            return;
+        }
+
+        if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            if (!flattenedItems.length) {
+                return;
+            }
+
+            if (!showResults) {
+                setShowResults(true);
+            }
+
+            setActiveIndex((currentIndex) => {
+                if (currentIndex <= 0) {
+                    return flattenedItems.length - 1;
+                }
+
+                return currentIndex - 1;
+            });
+            return;
+        }
+
+        if (event.key === 'Enter') {
+            if (activeIndex < 0 || activeIndex >= flattenedItems.length) {
+                return;
+            }
+
+            event.preventDefault();
+            handleSelect(flattenedItems[activeIndex]);
+            return;
+        }
+
+        if (event.key === 'Escape') {
+            setShowResults(false);
+            setActiveIndex(-1);
+        }
+    };
+
+    useEffect(() => {
+        if (!showResults || !flattenedItems.length) {
+            setActiveIndex(-1);
+            return;
+        }
+
+        setActiveIndex((currentIndex) => {
+            if (currentIndex >= flattenedItems.length) {
+                return flattenedItems.length - 1;
+            }
+
+            return currentIndex;
+        });
+    }, [flattenedItems, showResults]);
+
     return {
         refs,
         floatingStyles,
@@ -194,10 +287,12 @@ export const useDashboardGlobalSearch = () => {
         query,
         showResults,
         sections,
+        activeIndex,
         totalResults,
         isLoading,
         setQuery,
         handleFocus,
+        handleKeyDown,
         handleSelect
     };
 };

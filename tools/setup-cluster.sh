@@ -10,7 +10,6 @@ TEMP_DIR=""
 DAEMON_PASSWORD=""
 FAILURE_STATUS="dependency-installation-failed"
 FAILURE_REPORTED="0"
-VOLT_CLOUD_URL="http://192.168.1.85:8000"
 
 usage() {
     printf 'Usage: bash setup-cluster.sh <team-cluster-id> <enrollment-token>\n' >&2
@@ -333,28 +332,45 @@ materialize_manifest() {
     staging_dir="$(mktemp -d "$TEMP_DIR/staging.XXXXXX")"
 
     python3 - "$MANIFEST_FILE" "$staging_dir" <<'PY'
-import base64, gzip, io, json, os, pathlib, tarfile, sys
+import base64
+import gzip
+import io
+import json
+import os
+import pathlib
+import tarfile
+import sys
+
+
+def write_manifest_files(install_dir: pathlib.Path, files: list[dict[str, str]]) -> None:
+    for file_entry in files:
+        target_path = install_dir / file_entry['path']
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        target_path.write_text(file_entry['contents'] + '\n', encoding='utf-8')
+        os.chmod(target_path, int(file_entry['mode'], 8))
+
+
+def materialize_build_context(install_dir: pathlib.Path, manifest: dict) -> None:
+    archive_b64 = manifest.get('buildContextArchiveBase64')
+    if not archive_b64:
+        return
+
+    cluster_daemon_dir = install_dir / 'cluster-daemon'
+    cluster_daemon_dir.mkdir(parents=True, exist_ok=True)
+    archive_bytes = gzip.decompress(base64.b64decode(archive_b64))
+
+    with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode='r:') as tar:
+        tar.extractall(cluster_daemon_dir, filter='data')
 
 payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
 manifest = payload['data']['manifest']
 install_dir = pathlib.Path(sys.argv[2])
 
-for file_entry in manifest['files']:
-    target_path = install_dir / file_entry['path']
-    target_path.parent.mkdir(parents=True, exist_ok=True)
-    target_path.write_text(file_entry['contents'] + '\n', encoding='utf-8')
-    os.chmod(target_path, int(file_entry['mode'], 8))
+write_manifest_files(install_dir, manifest['files'])
 
 (install_dir / '.compose-project-name').write_text(manifest['composeProjectName'] + '\n')
 (install_dir / '.install-manifest-version').write_text(manifest['manifestVersion'] + '\n')
-
-archive_b64 = manifest.get('buildContextArchiveBase64', '')
-if archive_b64:
-    cluster_daemon_dir = install_dir / 'cluster-daemon'
-    cluster_daemon_dir.mkdir(parents=True, exist_ok=True)
-    archive_bytes = gzip.decompress(base64.b64decode(archive_b64))
-    with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode='r:') as tar:
-        tar.extractall(cluster_daemon_dir, filter='data')
+materialize_build_context(install_dir, manifest)
 PY
 
     $SUDO cp -r "$staging_dir/." "$INSTALL_DIR/"
@@ -374,6 +390,61 @@ PY
 
     log 'Starting Team Cluster stack'
     $SUDO -u "$DEPLOY_USER" sh -lc "cd '$INSTALL_DIR' && docker compose --project-name '$compose_project_name' --project-directory '$INSTALL_DIR' --file '$INSTALL_DIR/docker-compose.yml' up -d"
+}
+
+wait_for_daemon_ready() {
+    local daemon_port timeout_seconds started_at body_file status_code ready
+
+    daemon_port="$(python3 - "$PORTS_JSON" <<'PY'
+import json
+import sys
+
+print(json.loads(sys.argv[1])['daemon'])
+PY
+)"
+    timeout_seconds='60'
+    started_at="$(date +%s)"
+
+    log "Waiting for daemon readiness on port $daemon_port"
+
+    while :; do
+        ensure_temp_dir
+        body_file="$(mktemp "$TEMP_DIR/health.XXXXXX.json")"
+        status_code="$(curl -sS -o "$body_file" -w '%{http_code}' "http://127.0.0.1:${daemon_port}/health" || printf '000')"
+
+        if [ "$status_code" -ge 200 ] && [ "$status_code" -lt 300 ]; then
+            ready="$(python3 - "$body_file" <<'PY'
+import json
+import sys
+
+try:
+    payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
+except Exception:
+    print('false')
+    sys.exit(0)
+
+data = payload.get('data')
+if isinstance(data, dict) and data.get('ready') is True:
+    print('true')
+elif payload.get('ready') is True:
+    print('true')
+else:
+    print('false')
+PY
+)"
+
+            if [ "$ready" = 'true' ]; then
+                log 'Daemon is ready'
+                return
+            fi
+        fi
+
+        if [ $(( $(date +%s) - started_at )) -ge "$timeout_seconds" ]; then
+            fail "Daemon did not become ready within ${timeout_seconds}s"
+        fi
+
+        sleep 2
+    done
 }
 
 print_summary() {
@@ -426,6 +497,7 @@ main() {
     materialize_manifest
 
     start_stack
+    wait_for_daemon_ready
     FAILURE_REPORTED='1'
     print_summary
 }

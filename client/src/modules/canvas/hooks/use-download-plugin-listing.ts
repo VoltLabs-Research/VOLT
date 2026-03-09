@@ -3,7 +3,7 @@ import { ExportType } from '@/shared/domain/export/types';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback } from 'react';
-import ApiError from '@/shared/errors/ApiError';
+import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 export interface DownloadPluginListingParams {
     pluginId: string;
@@ -61,7 +61,7 @@ const useDownloadPluginListing = () => {
                 }
             );
         } catch(error: unknown) {
-            if(ApiError.isRBACError(error)) return;
+            if(isAccessDeniedError(error)) return;
         }
     }, [exportListingMutation]);
 
@@ -90,7 +90,7 @@ const useDownloadPluginListing = () => {
                 }
             );
         } catch(error: unknown) {
-            if(ApiError.isRBACError(error)) return;
+            if(isAccessDeniedError(error)) return;
         }
     }, [getExtensionFromBlob, exportListingByAnalysisMutation]);
 

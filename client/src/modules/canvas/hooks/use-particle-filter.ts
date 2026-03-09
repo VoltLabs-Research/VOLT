@@ -5,7 +5,7 @@ import { useApplyFilterMutation, uniqueValuesQuery, usePreviewFilterMutation } f
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback, useMemo, useState } from 'react';
 import { sileo } from 'sileo';
-import ApiError from '@/shared/errors/ApiError';
+import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 import type { ParticleFilterScene } from '@/modules/fractal/api/entities/scene';
 
@@ -131,12 +131,8 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 throw result.error;
             }
         } catch (fetchError: unknown) {
-            if (ApiError.isRBACError(fetchError)) {
-                let message = 'You do not have permission to perform this action.';
-                if (fetchError instanceof ApiError) {
-                    message = fetchError.getFriendlyMessage();
-                }
-                sileo.error({ title: message });
+            if (isAccessDeniedError(fetchError)) {
+                notifyApiError(fetchError, { fallbackTitle: 'You do not have permission to perform this action.' });
             } else {
                 sileo.error({ title: 'Failed to load suggestions' });
             }
