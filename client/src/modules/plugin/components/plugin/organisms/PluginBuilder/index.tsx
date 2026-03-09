@@ -4,7 +4,7 @@ import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import type { IModifierData } from '@/modules/plugin/api/entities/plugin/workflow';
 import useSaveWorkflow from '@/modules/plugin/hooks/plugin/use-save-workflow';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-types';
+import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import EditableTag from '@/shared/presentation/components/EditableTag';

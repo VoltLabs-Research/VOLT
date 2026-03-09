@@ -4,7 +4,7 @@ import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
-import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-types';
+import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { Handle, Position } from '@xyflow/react';
 import { AlertCircle, Database, SkipForward, Terminal } from 'lucide-react';

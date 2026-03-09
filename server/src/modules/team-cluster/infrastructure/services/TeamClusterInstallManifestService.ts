@@ -42,7 +42,7 @@ const TEAM_CLUSTER_IMAGES = {
     minio: 'minio/minio:RELEASE.2025-02-28T09-55-16Z',
     redis: 'redis:7.4.2-alpine',
     mongodb: 'mongo:8.0.5',
-    daemon: 'volt-cluster-daemon:1.0.0'
+    daemon: 'ghcr.io/voltlabs-research/volt-cluster-daemon:main'
 };
 
 const sanitizeComposeProjectName = (teamClusterId: string): string => {
@@ -158,11 +158,11 @@ const readDaemonManifestFiles = async (): Promise<DaemonManifestFile[]> => {
 
 const getDaemonDistributionMode = (): DaemonDistributionMode => {
     const rawDistributionMode = process.env.TEAM_CLUSTER_DAEMON_DISTRIBUTION_MODE?.trim().toLowerCase();
-    if (rawDistributionMode === DaemonDistributionMode.Image) {
-        return DaemonDistributionMode.Image;
+    if (rawDistributionMode === DaemonDistributionMode.Build) {
+        return DaemonDistributionMode.Build;
     }
 
-    return DaemonDistributionMode.Build;
+    return DaemonDistributionMode.Image;
 };
 
 const writeTarString = (buffer: Buffer, value: string, offset: number, length: number): void => {

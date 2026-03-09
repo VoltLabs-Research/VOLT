@@ -3,7 +3,7 @@ import type { Node } from '@xyflow/react';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
 import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-types';
+import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 
 interface NodeReferenceOption {
     value: string;

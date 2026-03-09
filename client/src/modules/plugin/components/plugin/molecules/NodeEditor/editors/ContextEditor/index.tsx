@@ -1,7 +1,7 @@
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import useNodeFormRHF from '@/modules/plugin/hooks/plugin/use-node-form-rhf';
-import { CONTEXT_OPTIONS } from '@/modules/plugin/utilities/plugin/node-types';
+import { CONTEXT_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
 import { ModifierContext } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { z } from 'zod/v4';
 import type { EditorProps } from '../types';

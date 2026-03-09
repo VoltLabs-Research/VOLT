@@ -1,2 +1,1 @@
-export * from './node-types';
-export * from './node-factory';
+export * from './node-registry';
