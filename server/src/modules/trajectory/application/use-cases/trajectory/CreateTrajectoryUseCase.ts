@@ -1,9 +1,11 @@
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO } from '@modules/trajectory/application/dtos/trajectory/CreateTrajectoryDTO';
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { ITrajectoryBackgroundProcessor } from '@modules/trajectory/domain/port/trajectory/ITrajectoryBackgroundProcessor';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { resolveConnectedTeamCluster } from '@modules/trajectory/utilities/team-cluster/resolve-connected-team-cluster';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
@@ -14,6 +16,8 @@ import logger from '@shared/infrastructure/logger';
 
 import { injectable, inject } from 'tsyringe';
 import path from 'node:path';
+
+import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 
 interface InitialTrajectoryStats {
     totalFiles: number;
@@ -26,6 +30,9 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepo: ITrajectoryRepository,
 
+        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
+        private readonly teamClusterRepository: ITeamClusterRepository,
+
         @inject(TRAJECTORY_TOKENS.TrajectoryBackgroundProcessor)
         private readonly backgroundProcessor: ITrajectoryBackgroundProcessor,
 
@@ -35,6 +42,10 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
 
     async execute(input: CreateTrajectoryInputDTO): Promise<Result<CreateTrajectoryOutputDTO, ApplicationError>> {
         const { name, teamId, userId, files } = input;
+        const teamCluster = await resolveConnectedTeamCluster(this.teamClusterRepository, {
+            teamId,
+            requestedTeamClusterId: input.teamClusterId
+        });
 
         const ext = path.extname(name);
         const cleanName = ext ? name.slice(0, -ext.length) : name;
@@ -46,6 +57,7 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
         const trajectory = await this.trajectoryRepo.create({
             name: cleanName,
             team: teamId,
+            teamCluster: teamCluster.id,
             createdBy: userId,
             status: TrajectoryStatus.WaitingForProcess,
             frames: [],

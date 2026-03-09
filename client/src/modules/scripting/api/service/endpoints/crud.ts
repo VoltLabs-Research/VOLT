@@ -6,7 +6,8 @@ import type { DeleteScriptingNotebookParams } from '../../dtos/delete-scripting-
 
 const endpoints = {
     listNotebooks: paginated<ListScriptingNotebooksParams, PaginatedResponse<ScriptingNotebook>>(
-        ({ trajectoryId }) => trajectoryId ? `/${trajectoryId}/notebooks` : '/notebooks'
+        ({ trajectoryId }) => trajectoryId ? `/${trajectoryId}/notebooks` : '/notebooks',
+        { omit: ['trajectoryId'] }
     ),
     deleteNotebook: del<DeleteScriptingNotebookParams>('/notebooks/:notebookId')
 };

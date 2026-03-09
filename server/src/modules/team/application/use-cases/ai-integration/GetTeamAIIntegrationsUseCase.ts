@@ -1,6 +1,7 @@
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { GetTeamAIIntegrationsInputDTO, GetTeamAIIntegrationsOutputDTO } from '@modules/team/application/dtos/ai-integration/GetTeamAIIntegrationsDTO';
 import TeamAIIntegrationSerializer from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationSerializer';
+import TeamAIProviderCatalog from '@modules/team/infrastructure/services/ai-integration/TeamAIProviderCatalog';
 import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -13,7 +14,10 @@ export default class GetTeamAIIntegrationsUseCase implements IUseCase<GetTeamAII
         private readonly integrationRepository: ITeamAIIntegrationRepository,
 
         @inject(TEAM_TOKENS.TeamAIIntegrationSerializer)
-        private readonly integrationSerializer: TeamAIIntegrationSerializer
+        private readonly integrationSerializer: TeamAIIntegrationSerializer,
+
+        @inject(TEAM_TOKENS.TeamAIProviderCatalog)
+        private readonly providerCatalog: TeamAIProviderCatalog
     ) {}
 
     async execute(input: GetTeamAIIntegrationsInputDTO): Promise<Result<GetTeamAIIntegrationsOutputDTO>> {
@@ -21,7 +25,8 @@ export default class GetTeamAIIntegrationsUseCase implements IUseCase<GetTeamAII
 
         return Result.ok({
             teamId: input.teamId,
-            integrations: integrations.map((i) => this.integrationSerializer.toDTO(i))
+            integrations: integrations.map((i) => this.integrationSerializer.toDTO(i)),
+            providers: this.providerCatalog.getAllProviderMetadata()
         });
     }
 };

@@ -5,7 +5,7 @@ import type { ScriptingNotebookDocument } from '@modules/scripting/infrastructur
 
 class ScriptingNotebookMapper extends BaseMapper<ScriptingNotebook, ScriptingNotebookProps, ScriptingNotebookDocument> {
     constructor() {
-        super(ScriptingNotebook, ['team', 'trajectories', 'createdBy']);
+        super(ScriptingNotebook, ['team', 'teamCluster', 'runtimeNotebookId', 'trajectories', 'createdBy']);
     }
 };
 

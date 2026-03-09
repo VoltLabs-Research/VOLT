@@ -46,6 +46,7 @@ export interface ModifierOption {
     title: string;
     Icon: ComponentType<any>;
     isPlugin: boolean;
+    plugin?: ResolvedModifier['plugin'];
     pluginId?: string;
     pluginModifierId?: string;
 };
@@ -73,6 +74,7 @@ export const buildCanvasModifierOptions = (pluginModifiers: ResolvedModifier[]):
         title: modifier.name,
         Icon: resolveIcon(modifier.icon),
         isPlugin: true,
+        plugin: modifier.plugin,
         pluginId: modifier.plugin?._id,
         pluginModifierId: modifier.pluginId
     }));

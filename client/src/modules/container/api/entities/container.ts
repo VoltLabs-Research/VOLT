@@ -11,9 +11,11 @@ export interface Container extends BaseEntity {
     cpus: number;
     internalIp?: string;
     team: string;
+    teamCluster?: string;
     createdBy: string;
     env: EnvVariable[];
     ports: PortMapping[];
     network?: string;
     volume?: string;
+    mountDockerSocket?: boolean;
 };

@@ -47,9 +47,9 @@ const getGreeting = (): string => {
 const DashboardPage = () => {
     usePageTitle('Dashboard');
 
-    const selectedTeam = useSelectedTeam()!;
+    const selectedTeam = useSelectedTeam();
     const user = useCurrentUser();
-    const { loading, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam._id);
+    const { loading, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam?._id);
 
     const firstName = useMemo(() => {
         const name = user?.firstName || '';
@@ -79,6 +79,32 @@ const DashboardPage = () => {
         ];
     } else if (loading) {
         statCards = [<DashboardOverviewSkeleton key='loading' count={3} />];
+    }
+
+    if (!selectedTeam) {
+        return (
+            <TrajectoryUploaderContainer>
+                <Container className='dashboard-bento'>
+                    <Container className='dashboard-welcome'>
+                        <Title className='font-size-5 color-primary font-weight-6'>
+                            {getGreeting()}, {firstName}
+                        </Title>
+                        <Paragraph className='font-size-2 color-muted dashboard-welcome-subtitle' style={{ marginTop: '0.25rem' }}>
+                            {today}
+                        </Paragraph>
+                    </Container>
+
+                    <Container className='dashboard-bottom-row'>
+                        <EmptyState
+                            icon={<HiOutlineServerStack size={20} />}
+                            title='Create your first team'
+                            description='Use the team creation dialog to finish setup and unlock the dashboard.'
+                            className='w-max'
+                        />
+                    </Container>
+                </Container>
+            </TrajectoryUploaderContainer>
+        );
     }
 
     return (

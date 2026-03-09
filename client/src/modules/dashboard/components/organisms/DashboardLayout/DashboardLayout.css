@@ -18,6 +18,10 @@
     transition: margin-left 0.2s ease;
 }
 
+.dashboard-content-main {
+    position: relative;
+}
+
 .sidebar-is-collapsed .dashboard-content-wrapper {
     margin-left: 64px;
 }

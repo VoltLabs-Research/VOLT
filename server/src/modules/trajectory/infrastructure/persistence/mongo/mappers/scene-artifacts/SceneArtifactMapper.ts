@@ -6,6 +6,7 @@ class SceneArtifactMapper extends BaseMapper<SceneArtifact, SceneArtifactProps, 
     constructor() {
         super(SceneArtifact, [
             'trajectory',
+            'teamCluster',
             'analysis',
             'plugin'
         ]);

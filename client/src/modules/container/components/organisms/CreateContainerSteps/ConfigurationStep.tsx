@@ -8,6 +8,7 @@ import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyVa
 import SettingsSectionHeader from '@/modules/auth/components/molecules/SettingsSectionHeader';
 import Title from '@/shared/presentation/components/Title';
 import type { Team } from '@/modules/team/api/entities/team/team';
+import type { TeamClusterOption } from '@/modules/container/api/entities/team-cluster-option';
 import type { ContainerConfig, EnvVariable, PortMapping } from '../../../hooks/use-create-container-form';
 
 const MAX_CPU = 8;
@@ -20,9 +21,12 @@ interface ValueChangeTarget {
 interface ConfigurationStepProps {
     config: ContainerConfig;
     teams: Team[];
+    teamClusters: TeamClusterOption[];
     selectedTeamId: string | null;
+    selectedTeamClusterId: string | null;
     onConfigChange: <K extends keyof ContainerConfig>(key: K, value: ContainerConfig[K]) => void;
     onTeamChange: (teamId: string | null) => void;
+    onTeamClusterChange: (teamClusterId: string | null) => void;
     onBack: () => void;
     onNext: () => void;
 };
@@ -34,9 +38,12 @@ const hasValueChangeTarget = (value: unknown): value is ValueChangeTarget => {
 const ConfigurationStep = ({
     config,
     teams,
+    teamClusters,
     selectedTeamId,
+    selectedTeamClusterId,
     onConfigChange,
     onTeamChange,
+    onTeamClusterChange,
     onBack,
     onNext
 }: ConfigurationStepProps) => {
@@ -70,6 +77,23 @@ const ConfigurationStep = ({
                             title: team.name
                         }))}
                         placeholder='Select a team'
+                    />
+                </Container>
+
+                <Container className='create-container-config-section select'>
+                    <SettingsSectionHeader title='Cluster' description={undefined} action={undefined} className='mb-1 pb-075' />
+                    <FormFieldRHF
+                        variant='inline'
+                        fieldType='select'
+                        label='Deploy to Cluster'
+                        name='teamCluster'
+                        value={selectedTeamClusterId || ''}
+                        onChange={(e) => onTeamClusterChange(e.target.value || null)}
+                        options={teamClusters.map((teamCluster) => ({
+                            value: teamCluster._id,
+                            title: teamCluster.name
+                        }))}
+                        placeholder='Select a cluster'
                     />
                 </Container>
 

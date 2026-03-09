@@ -39,6 +39,7 @@ import IfStatementHandler from '@modules/plugin/infrastructure/services/plugin/n
 import ModifierHandler from '@modules/plugin/infrastructure/services/plugin/nodes/handlers/ModifierHandler';
 import NodeRegistry from '@modules/plugin/infrastructure/services/plugin/nodes/NodeRegistry';
 import PluginBinaryCacheService from '@modules/plugin/infrastructure/services/plugin/PluginBinaryCacheService';
+import PluginExecutionRouter from '@modules/plugin/infrastructure/services/plugin/PluginExecutionRouter';
 import PluginStorageService from '@modules/plugin/infrastructure/services/plugin/PluginStorageService';
 import PluginWorkflowEngine from '@modules/plugin/infrastructure/services/plugin/PluginWorkflowEngine';
 import ProcessExecutorService from '@modules/plugin/infrastructure/services/plugin/ProcessExecutorService';
@@ -58,6 +59,7 @@ export const registerPluginDependencies = (): void => {
     container.registerSingleton(PLUGIN_TOKENS.PluginStorageService, PluginStorageService);
     container.registerSingleton(PLUGIN_TOKENS.DefaultPluginBootstrapService, DefaultPluginBootstrapService);
     container.registerSingleton(PLUGIN_TOKENS.PluginBinaryCacheService, PluginBinaryCacheService);
+    container.registerSingleton(PLUGIN_TOKENS.PluginExecutionRouter, PluginExecutionRouter);
     container.registerSingleton(PLUGIN_TOKENS.ListingRowsExportPresenter, ListingRowsExportPresenter);
     container.registerSingleton(PLUGIN_TOKENS.PluginExposureExportService, PluginExposureExportService);
     container.registerSingleton(PLUGIN_TOKENS.ProcessExecutorService, ProcessExecutorService);

@@ -21,6 +21,7 @@ export default {
     getAll: paginated<GetTrajectoriesInputDTO, PaginatedResponse<Trajectory>>('/'),
     getById: get<GetTrajectoryByIdParams, Trajectory>('/:trajectoryId'),
     create: request<CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO, Trajectory>('POST', '/', {
+        omit: ['formData', 'onProgress'],
         body: ({ formData }) => formData,
         headers: MULTIPART_FORM_HEADERS,
         onUploadProgress: ({ onProgress }) => onProgress

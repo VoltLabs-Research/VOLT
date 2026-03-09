@@ -6,7 +6,8 @@ class TrajectoryMapper extends BaseMapper<Trajectory, TrajectoryProps, Trajector
     constructor(){
         super(Trajectory, [
             'createdBy',
-            'team'
+            'team',
+            'teamCluster'
         ]);
     }
 };

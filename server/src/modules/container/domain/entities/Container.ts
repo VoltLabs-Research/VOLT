@@ -10,10 +10,12 @@ export interface IContainerProps {
     cpus: number;
     internalIp?: string;
     team?: string;
+    teamCluster?: string;
     env: ContainerEnvironmentVariable[];
     ports: ContainerPortMapping[];
     network?: string;
     volume?: string;
+    mountDockerSocket?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
 };
@@ -28,10 +30,12 @@ export class Container implements IContainerProps {
     public cpus!: number;
     public internalIp?: string;
     public team?: string;
+    public teamCluster?: string;
     public env!: ContainerEnvironmentVariable[];
     public ports!: ContainerPortMapping[];
     public network?: string;
     public volume?: string;
+    public mountDockerSocket?: boolean;
     public createdAt?: Date;
     public updatedAt?: Date;
 

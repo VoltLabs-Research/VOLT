@@ -5,6 +5,7 @@ export interface CreateContainerInputDTO {
     name: string;
     image: string;
     teamId: string;
+    teamClusterId?: string;
     userId: string;
     env?: ContainerEnvironmentVariable[];
     ports?: ContainerPortMapping[];

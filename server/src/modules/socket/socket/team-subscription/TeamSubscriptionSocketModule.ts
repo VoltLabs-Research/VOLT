@@ -38,6 +38,15 @@ export default class TeamSubscriptionSocketModule extends BaseSocketModule {
                 return;
             }
 
+            if (!conn.user || !conn.user.teams?.includes(parsed.data.teamId)) {
+                this.emitErrorToSocket(
+                    conn.id,
+                    ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
+                    'You are not a member of this team'
+                );
+                return;
+            }
+
             const previousTeamId = parsed.data.previousTeamId ?? this.teamSubscriptionService.getCurrentTeamId(conn);
             const previousRoomName = previousTeamId ? `team:${previousTeamId}` : undefined;
             const roomName = `team:${parsed.data.teamId}`;

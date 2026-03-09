@@ -5,6 +5,7 @@ export interface CreateScriptingJupyterSessionInputDTO {
     trajectoryId: string;
     userId?: string;
     notebookId?: string;
+    teamClusterId?: string;
 };
 
 export interface CreateScriptingJupyterSessionOutputDTO {

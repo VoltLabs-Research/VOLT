@@ -5,6 +5,7 @@ export interface GetAnalysesByTeamIdInputDTO {
     teamId: string;
     page?: number;
     limit?: number;
+    search?: string;
 };
 
 export interface GetAnalysesByTeamIdItemDTO extends Omit<AnalysisProps, 'plugin'> {

@@ -1,16 +1,14 @@
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import CopyableField from '@/shared/presentation/components/CopyableField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Modal from '@/shared/presentation/components/Modal';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import useCreateSecretKey from '@/modules/team/hooks/secret-key/use-create-secret-key';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
 import ApiError from '@/shared/errors/ApiError';
 import useModalForm from '@/shared/presentation/hooks/use-modal-form';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { MdCheck, MdContentCopy } from 'react-icons/md';
-import { sileo } from 'sileo';
 import { useState } from 'react';
 import './SecretKeyCreationModal.css';
 
@@ -43,7 +41,6 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
     const { create: createSecretKey, isPending: isCreating } = useCreateSecretKey();
 
     const [generatedKey, setGeneratedKey] = useState<string | null>(null);
-    const [copied, setCopied] = useState(false);
 
     const [name, setName] = useState('');
     const [roleId, setRoleId] = useState('');
@@ -54,22 +51,12 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
         setName('');
         setRoleId('');
         setErrors({});
-        setCopied(false);
     };
 
     const modalForm = useModalForm({
         modalId: SECRET_KEY_CREATION_MODAL_ID,
         reset: resetState
     });
-
-    const handleCopy = () => {
-        if (generatedKey) {
-            navigator.clipboard.writeText(generatedKey);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-            sileo.success({ title: 'Secret key copied to clipboard' });
-        }
-    };
 
     const handleClose = () => {
         modalForm.close();
@@ -135,20 +122,10 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
             <Container className='p-1-5'>
                 <form className='d-flex column gap-1-5' onSubmit={(e) => e.preventDefault()}>
                     {generatedKey ? (
-                        <Container className='p-1-5 secret-key-creation-modal-preview'>
-                            <Container className='d-flex items-center content-between gap-1'>
-                                <Paragraph className='color-primary secret-key-creation-modal-key-value'>
-                                    {generatedKey}
-                                </Paragraph>
-                                <Button
-                                    variant='ghost'
-                                    intent='neutral'
-                                    onClick={handleCopy}
-                                    leftIcon={copied ? <MdCheck className="secret-key-creation-modal-copy-success" /> : <MdContentCopy />}
-                                    aria-label="Copy secret key"
-                                />
-                            </Container>
-                        </Container>
+                        <CopyableField
+                            value={generatedKey}
+                            successMessage='Secret key copied to clipboard'
+                        />
                     ) : (
                         <>
                             <FormFieldRHF

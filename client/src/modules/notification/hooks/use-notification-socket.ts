@@ -11,19 +11,15 @@ interface NotificationSubscription {
 
 const subscriptionRegistry = new Map<string, NotificationSubscription>();
 
-const getSubscriptionKey = (teamId: string, limit: number): string => {
-    return `${teamId}:${limit}`;
+const getSubscriptionKey = (limit: number): string => {
+    return String(limit);
 };
 
-const useNotificationSocket = (teamId?: string, limit = 20): void => {
+const useNotificationSocket = (limit = 20): void => {
     const socketService = useSocket();
 
     useEffect(() => {
-        if (!teamId) {
-            return;
-        }
-
-        const subscriptionKey = getSubscriptionKey(teamId, limit);
+        const subscriptionKey = getSubscriptionKey(limit);
         const existingSubscription = subscriptionRegistry.get(subscriptionKey);
 
         if (existingSubscription) {
@@ -38,7 +34,7 @@ const useNotificationSocket = (teamId?: string, limit = 20): void => {
         }
 
         const handleNotification = (notification: Notification): void => {
-            prependNotificationToInfiniteCache({ teamId, limit }, notification);
+            prependNotificationToInfiniteCache({ limit }, notification);
         };
 
         const unsubscribe = socketService.on<[Notification]>(
@@ -63,7 +59,7 @@ const useNotificationSocket = (teamId?: string, limit = 20): void => {
                 subscriptionRegistry.delete(subscriptionKey);
             }
         };
-    }, [limit, socketService, teamId]);
+    }, [limit, socketService]);
 };
 
 export default useNotificationSocket;

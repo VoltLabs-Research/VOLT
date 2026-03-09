@@ -16,8 +16,6 @@ import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import Analysis from '@modules/analysis/domain/entities/Analysis';
 import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 import mergeChunkedValue from '@modules/plugin/utilities/exposure/merge-chunked-value';
-import nativeStats from '@modules/trajectory/infrastructure/native/trajectory/NativeStats';
-import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/trajectory/TrajectoryParserFactory';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 import { injectable, inject } from 'tsyringe';
@@ -26,6 +24,21 @@ import type { Readable } from 'node:stream';
 
 type PerAtomRow = Record<string, unknown>;
 type PerAtomColumnarData = Record<string, unknown[]>;
+
+/**
+ * Pure JS min/max for TypedArrays. Replaces nativeStats.getMinMaxFromTypedArray().
+ */
+function getMinMaxFromTypedArray(arr: Float32Array | Float64Array | Int32Array | Uint32Array): { min: number; max: number } | undefined {
+    if (arr.length === 0) return undefined;
+    let min = arr[0];
+    let max = arr[0];
+    for (let i = 1; i < arr.length; i++) {
+        const v = arr[i];
+        if (v < min) min = v;
+        if (v > max) max = v;
+    }
+    return { min, max };
+}
 
 @injectable()
 export default class AtomPropertiesService implements IAtomPropertiesService {
@@ -236,22 +249,18 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             const arr = dataRecord[property] instanceof Float32Array
                 ? dataRecord[property] as Float32Array
                 : new Float32Array(dataRecord[property] as Float64Array);
-            const result = nativeStats.getMinMaxFromTypedArray(arr);
-            return result || undefined;
+            return getMinMaxFromTypedArray(arr);
         }
 
         if (dataRecord && Array.isArray(dataRecord[property])) {
             const arr = new Float32Array(dataRecord[property] as number[]);
-            const result = nativeStats.getMinMaxFromTypedArray(arr);
-            return result || undefined;
+            return getMinMaxFromTypedArray(arr);
         }
 
         if (Array.isArray(data)) {
             const arr = this.toFloat32ByAtomId(data, property);
             if (!arr) return undefined;
-
-            const result = nativeStats.getMinMaxFromTypedArray(arr);
-            return result || undefined;
+            return getMinMaxFromTypedArray(arr);
         }
 
         return undefined;
@@ -334,56 +343,14 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         timestep: string,
         expression: FilterExpression
     ): Promise<FilterResult> {
-        let isPerAtomProperty = false;
-        if (analysisId && exposureId) {
-            try {
-                const config = await this.getExposureAtomConfig(analysisId, exposureId);
-                isPerAtomProperty = config.perAtomProperties.includes(expression.property);
-            } catch {
-                isPerAtomProperty = false;
-            }
-        }
-
-        let values: Float32Array;
-
-        if (isPerAtomProperty && exposureId && analysisId) {
-            const modifierData = await this.getModifierAnalysis(trajectoryId, analysisId, exposureId, timestep);
-            const idMap = this.toFloat32ByAtomId(modifierData, expression.property);
-
-            const dumpFilePath = await this.dumpStorage.getDump(trajectoryId, timestep);
-            if (!dumpFilePath) throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
-
-            const parsed = await TrajectoryParserFactory.parse(dumpFilePath, { includeIds: true, properties: [] });
-
-            if (!parsed.ids) {
-                values = new Float32Array(parsed.positions.length / 3);
-            } else {
-                values = new Float32Array(parsed.ids.length);
-                if (idMap) {
-                    for (let i = 0; i < parsed.ids.length; i++) {
-                        const atomId = parsed.ids[i];
-                        values[i] = idMap[atomId] || 0;
-                    }
-                }
-            }
-        } else {
-            const dumpFilePath = await this.dumpStorage.getDump(trajectoryId, timestep);
-            if (!dumpFilePath) throw new ApplicationError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
-
-            const lowerProp = expression.property.toLowerCase();
-            const isStandard = ['type', 'id', 'x', 'y', 'z'].includes(lowerProp);
-
-            const parsed = isStandard
-                ? await TrajectoryParserFactory.parse(dumpFilePath, {
-                    includeIds: lowerProp === 'id',
-                    properties: []
-                })
-                : await TrajectoryParserFactory.parse(dumpFilePath, { properties: [expression.property] });
-
-            values = getPropertyValues(parsed, expression.property);
-        }
-
-        return this.evaluateFilter(values, expression.operator, expression.value);
+        // This method previously relied on TrajectoryParserFactory.parse() (native).
+        // It is now only callable from cluster-side code paths.
+        // On the server, all callers should go through the cluster daemon instead.
+        throw new ApplicationError(
+            ErrorCodes.TRAJECTORY_DATA_PARSE_FAILED,
+            'Filter expression evaluation requires a team cluster. No local native modules available.',
+            501
+        );
     }
 
     private async discoverPerAtomPropertyNames(

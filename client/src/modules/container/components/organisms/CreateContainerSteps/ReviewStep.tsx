@@ -8,7 +8,9 @@ import type { ContainerConfig } from '../../../hooks/use-create-container-form';
 interface ReviewStepProps {
     config: ContainerConfig;
     teams: { _id: string; name: string }[];
+    teamClusters: { _id: string; name: string }[];
     selectedTeamId: string | null;
+    selectedTeamClusterId: string | null;
     image: string | undefined;
     isLoading: boolean;
     onBack: () => void;
@@ -18,7 +20,9 @@ interface ReviewStepProps {
 const ReviewStep = ({
     config,
     teams,
+    teamClusters,
     selectedTeamId,
+    selectedTeamClusterId,
     image,
     isLoading,
     onBack,
@@ -40,6 +44,7 @@ const ReviewStep = ({
             <Container className='create-container-review-card radius-md overflow-hidden'>
                 <ReviewItem label='Name' value={config.name} />
                 <ReviewItem label='Team' value={teams.find((t) => t._id === selectedTeamId)?.name || 'None'} />
+                <ReviewItem label='Cluster' value={teamClusters.find((cluster) => cluster._id === selectedTeamClusterId)?.name || 'None'} />
                 <ReviewItem label='Image' value={image} valueClassName='font-family-mono' />
                 <ReviewItem label='CPU' value={`${config.cpus} vCPU`} />
                 <ReviewItem label='Memory' value={`${config.memory} MB`} />

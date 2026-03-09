@@ -9,10 +9,10 @@ import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 
 import { ErrorCodes } from '@core/constants/error-codes';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { inject, injectable } from 'tsyringe';
 
 
 @injectable()
@@ -40,8 +40,12 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
         if(input.workflow){
             // Validate the provided workflow.
             const { isValid, errors } = this.workflowValidator.validate(input.workflow);
-            update.validated = isValid;
-            update.validationErrors = errors;
+            if(input.status === PluginStatus.Published && !isValid){
+                return Result.fail(ApplicationError.badRequest(
+                    ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
+                    `Plugin not valid, cannot publish: ${(errors ?? []).join(', ')}`
+                ));
+            }
 
             // Binary fields (binaryObjectPath, binaryFileName, binary) are managed
             // exclusively by PluginStorageService (upload/delete endpoints). 
@@ -73,11 +77,15 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
             update.listingExposures = projection.listingExposures;
         }
 
-        if(input.status === PluginStatus.Published && !(update.validated ?? plugin.props.validated)){
-            return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
-                'Plugin not valid, cannot publish'
-            ));
+        if(input.status === PluginStatus.Published && !input.workflow){
+            // No workflow provided with publish request — validate the existing workflow.
+            const { isValid, errors } = this.workflowValidator.validate(plugin.props.workflow.props);
+            if(!isValid){
+                return Result.fail(ApplicationError.badRequest(
+                    ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
+                    `Plugin not valid, cannot publish: ${(errors ?? []).join(', ')}`
+                ));
+            }
         }
 
         const updatedPlugin = await this.pluginRepository.updateById(input.pluginId, update);

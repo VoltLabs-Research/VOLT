@@ -1,4 +1,5 @@
 import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
+import { createTeamScopedParamsSchema } from '@shared/infrastructure/http/validation/shared-schemas';
 import { z } from 'zod/v4';
 
 const createTeamSchema = z.object({
@@ -8,12 +9,12 @@ const createTeamSchema = z.object({
 
 const updateTeamSchema = createTeamSchema.partial();
 
-const removeTeamMemberSchema = z.object({
-    userId: z.string().min(1)
-}).strict();
+const removeTeamMemberParamsSchema = createTeamScopedParamsSchema('userId');
 
 export const teamValidation = {
     create: createValidationMiddleware(createTeamSchema),
     update: createValidationMiddleware(updateTeamSchema),
-    removeMember: createValidationMiddleware(removeTeamMemberSchema)
+    removeMember: createValidationMiddleware({
+        params: removeTeamMemberParamsSchema
+    })
 };

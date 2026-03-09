@@ -2,6 +2,14 @@ import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 import logger from '@shared/infrastructure/logger';
 import { Client } from 'minio';
 
+export interface MinioClientConfig {
+    endPoint: string;
+    port: number;
+    useSSL: boolean;
+    accessKey?: string;
+    secretKey?: string;
+};
+
 let minioClient: Client | null = null;
 
 export const SYS_BUCKETS = {
@@ -13,20 +21,18 @@ export const SYS_BUCKETS = {
     CHAT: 'volt-chat'
 };
 
-export const getMinioConfig = () => {
-    const endPoint = process.env.MINIO_ENDPOINT || 'localhost';
-    const port = readNumberEnv('MINIO_PORT', 9000);
-    const useSSL = process.env.MINIO_USE_SSL === 'true';
-
-    const accessKey = process.env.MINIO_ACCESS_KEY;
-    const secretKey = process.env.MINIO_SECRET_KEY;
-
-    return { endPoint, port, useSSL, accessKey, secretKey };
-
+export const getMinioConfig = (): MinioClientConfig => {
+    return {
+        endPoint: process.env.MINIO_ENDPOINT || 'localhost',
+        port: readNumberEnv('MINIO_PORT', 9000),
+        useSSL: process.env.MINIO_USE_SSL === 'true',
+        accessKey: process.env.MINIO_ACCESS_KEY,
+        secretKey: process.env.MINIO_SECRET_KEY
+    };
 };
 
-const createClient = (): Client => {
-    const { endPoint, accessKey, port, secretKey, useSSL } = getMinioConfig();
+export const createMinioClient = (config: MinioClientConfig): Client => {
+    const { endPoint, accessKey, port, secretKey, useSSL } = config;
 
     if (!accessKey || !secretKey) {
         throw new Error('[MinIO] MINIO_ACCESS_KEY o MINIO_SECRET_KEY not in .env');
@@ -43,7 +49,7 @@ const createClient = (): Client => {
 
 export const getMinioClient = (): Client => {
     if (!minioClient) {
-        minioClient = createClient();
+        minioClient = createMinioClient(getMinioConfig());
     }
     return minioClient;
 };

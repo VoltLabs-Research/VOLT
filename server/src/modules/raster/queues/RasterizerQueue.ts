@@ -24,11 +24,14 @@ export default class RasterizerQueue extends BaseProcessingQueue {
             {
                 queueName: 'rasterizer',
                 workerPath: path.join(__dirname, '../workers/HeadlessRasterizerWorker.ts'),
-                maxConcurrentJobs: QUEUE_CONFIG.rasterizerMaxConcurrentJobs
+                maxConcurrentJobs: QUEUE_CONFIG.rasterizerMaxConcurrentJobs,
+                withWorker: false
             },
-            redis,
-            eventBus,
-            queueRegistry
+            {
+                redis,
+                eventBus,
+                queueRegistry
+            }
         );
     }
 };

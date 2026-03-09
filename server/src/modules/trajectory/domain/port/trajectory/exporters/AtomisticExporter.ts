@@ -27,7 +27,10 @@ export interface IAtomisticExporter {
         startValue: number,
         endValue: number,
         gradientName: string,
-        externalValues?: Float32Array
+        externalValues?: Float32Array,
+        teamClusterId?: string,
+        trajectoryId?: string,
+        timestep?: number
     ): Promise<void>;
 
     exportAtomsTypeToGLBBuffer(

@@ -1,5 +1,7 @@
 export interface ScriptingNotebookProps {
     team: string;
+    teamCluster?: string;
+    runtimeNotebookId?: string;
     title: string;
     notebookPath: string;
     trajectories: string[];

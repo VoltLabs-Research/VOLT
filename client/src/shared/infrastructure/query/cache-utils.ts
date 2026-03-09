@@ -45,7 +45,11 @@ export const patchPaginatedPage = <T extends WithId>(
 ): void => {
     queryClient.setQueriesData<PaginatedResponse<T>>(
         { queryKey: keyPrefix },
-        (current) => (current ? updater(current) : current)
+        (current) => {
+            // Guard: skip InfiniteData entries that also match the prefix
+            if (!current || !Array.isArray(current.data)) return current;
+            return updater(current);
+        }
     );
 };
 

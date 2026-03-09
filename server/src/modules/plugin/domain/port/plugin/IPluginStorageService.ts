@@ -22,29 +22,18 @@ export interface PluginImportResult{
 };
 
 export interface IPluginStorageService{
-    /**
-     * Upload a binary file for a plugin.
-     */
     uploadBinary(
         pluginId: string,
+        teamId: string,
         file: PluginBinaryFile
     ): Promise<BinaryUploadResult>;
 
-    /**
-     * Delete a plugin's binary from storage.
-     */
     deleteBinary(
         pluginId: string,
     ): Promise<void>;
 
-    /**
-     * Export a plugin as a ZIP file streamed response.
-     */
     exportPlugin(pluginId: string): Promise<Readable>;
 
-    /**
-     * Import a plugin from a ZIP file buffer.
-     */
     importPlugin(
         fileBuffer: Buffer, 
         teamId: string,

@@ -1,9 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { Result } from '@shared/domain/port/Result';
 import { RetryFailedFramesInputDTO, RetryFailedFramesOutputDTO } from '@modules/analysis/application/dtos/RetryFailedFramesDTO';
-import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
@@ -29,19 +27,11 @@ export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFra
         trajectoryProcessingQueue: IJobQueueService,
 
         @inject(TRAJECTORY_TOKENS.CloudUploadQueue)
-        cloudUploadQueue: IJobQueueService,
-
-        @inject(RASTER_TOKENS.RasterizerQueue)
-        rasterizerQueue: IJobQueueService,
-
-        @inject(PLUGIN_TOKENS.AnalysisProcessingQueue)
-        analysisProcessingQueue: IJobQueueService
+        cloudUploadQueue: IJobQueueService
     ) {
         const queues = [
             trajectoryProcessingQueue,
-            cloudUploadQueue,
-            rasterizerQueue,
-            analysisProcessingQueue
+            cloudUploadQueue
         ];
 
         this.queueServices = new Map<string, IJobQueueService>();

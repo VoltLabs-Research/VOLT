@@ -1,13 +1,13 @@
-import os from 'os';
-import { injectable } from 'tsyringe';
 import { redis } from '@core/config/redis';
-import logger from '@shared/infrastructure/logger';
 import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
 import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
 import {
     deserializeSystemMetrics,
     serializeSystemMetrics
 } from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisMapper';
+import { resolveSystemMetricsIdentity } from '@modules/system/utilities/resolveSystemMetricsIdentity';
+import logger from '@shared/infrastructure/logger';
+import { injectable } from 'tsyringe';
 
 const ACTIVE_CLUSTERS_KEY = 'active_clusters';
 
@@ -18,7 +18,7 @@ export default class SystemMetricsRedisRepository implements ISystemMetricsRepos
     private readonly clusterId: string;
 
     constructor(metricsKey: string = 'metrics-history', ttl: number = 60) {
-        this.clusterId = process.env.CLUSTER_ID || os.hostname();
+        this.clusterId = resolveSystemMetricsIdentity().clusterId;
         this.metricsHistoryKey = metricsKey;
         this.metricsTTL = ttl;
     }
@@ -36,9 +36,10 @@ export default class SystemMetricsRedisRepository implements ISystemMetricsRepos
 
             const timestamp = metrics.timestamp.getTime();
             const metricsJson = serializeSystemMetrics(metrics);
+            const clusterId = metrics.teamClusterId ?? this.clusterId;
 
-            await redis.zadd(this.getMetricsKey(), timestamp, metricsJson);
-            await redis.zadd(ACTIVE_CLUSTERS_KEY, timestamp, this.clusterId);
+            await redis.zadd(this.getMetricsKey(clusterId), timestamp, metricsJson);
+            await redis.zadd(ACTIVE_CLUSTERS_KEY, timestamp, clusterId);
         } catch (error: unknown) {
             logger.error(`Error saving to Redis: ${error}`);
         }
@@ -64,6 +65,10 @@ export default class SystemMetricsRedisRepository implements ISystemMetricsRepos
     }
 
     async getHistory(minutes: number = 5): Promise<SystemMetrics[]> {
+        return this.getHistoryByClusterId(this.clusterId, minutes);
+    }
+
+    async getHistoryByClusterId(clusterId: string, minutes: number = 5): Promise<SystemMetrics[]> {
         try {
             if (!redis) {
                 logger.warn('Redis not available');
@@ -71,7 +76,7 @@ export default class SystemMetricsRedisRepository implements ISystemMetricsRepos
             }
 
             const startTime = Date.now() - (minutes * 60 * 1000);
-            const metricsData = await redis.zrangebyscore(this.getMetricsKey(), startTime, '+inf');
+            const metricsData = await redis.zrangebyscore(this.getMetricsKey(clusterId), startTime, '+inf');
 
             return metricsData.map(deserializeSystemMetrics);
         } catch (error: unknown) {

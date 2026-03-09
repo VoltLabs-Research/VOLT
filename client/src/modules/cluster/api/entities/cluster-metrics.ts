@@ -1,3 +1,5 @@
+import type { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
+
 export interface CpuMetrics {
     usage: number;
     cores: number;
@@ -52,6 +54,9 @@ export enum ClusterStatus {
 export interface ClusterMetrics {
     timestamp?: Date | string;
     clusterId: string;
+    teamClusterId?: string;
+    teamClusterName?: string;
+    teamClusterStatus?: TeamClusterStatus;
     serverId?: string;
     status: ClusterStatus;
     cpu: CpuMetrics;

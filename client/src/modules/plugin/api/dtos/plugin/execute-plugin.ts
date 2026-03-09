@@ -1,6 +1,7 @@
 export interface ExecutePluginInputDTO {
     pluginId: string;
     trajectoryId: string;
+    teamClusterId: string;
     config: Record<string, unknown>;
     selectedFrameOnly?: boolean;
     timestep?: number;

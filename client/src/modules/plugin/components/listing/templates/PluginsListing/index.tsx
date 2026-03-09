@@ -263,17 +263,6 @@ const PluginsListing = () => {
             }
         },
         {
-            key: 'validated',
-            title: 'Validated',
-            sortable: true,
-            render: (value) => (
-                <span className={`validation-badge ${value ? 'validated' : 'not-validated'} font-size-1 font-weight-5`}>
-                    {value ? 'Yes' : 'No'}
-                </span>
-            ),
-            skeleton: { variant: 'text', width: 50 }
-        },
-        {
             key: 'exposures',
             title: 'Exposures',
             render: (_, row) => (

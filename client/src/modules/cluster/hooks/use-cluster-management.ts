@@ -1,0 +1,169 @@
+import { DEFAULT_CLUSTER_ID } from '@/modules/cluster/stores/constants';
+import { useClusterStore } from '@/modules/cluster/stores/use-cluster-store';
+import { useTeamClusterSocket } from '@/modules/cluster/hooks/team-cluster/use-team-cluster-socket';
+import {
+    useCreateTeamClusterMutation,
+    useDeleteTeamClusterMutation,
+    useRevealTeamClusterCredentialsMutation,
+    useTeamClustersQuery
+} from '@/modules/cluster/hooks/team-cluster/queries';
+import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { useMemo, useEffect } from 'react';
+import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
+import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
+
+interface ClusterCreateToastOptions {
+    loading: { title: string };
+    success: { title: string };
+    error: { title: string };
+};
+
+interface DeleteClusterToastOptions {
+    loading: { title: string };
+    success: (result: DeleteTeamClusterOutputDTO) => {
+        title: string;
+        description: string;
+    };
+    error: {
+        title: string;
+    };
+};
+
+const CREATE_CLUSTER_TOAST_OPTIONS: ClusterCreateToastOptions = {
+    loading: { title: 'Creating cluster...' },
+    success: { title: 'Cluster created' },
+    error: { title: 'Failed to create cluster' }
+};
+
+const REVEAL_CREDENTIALS_TOAST_OPTIONS: ClusterCreateToastOptions = {
+    loading: { title: 'Revealing credentials...' },
+    success: { title: 'Credentials revealed' },
+    error: { title: 'Failed to reveal credentials' }
+};
+
+const DELETE_CLUSTER_TOAST_OPTIONS: DeleteClusterToastOptions = {
+    loading: { title: 'Deleting cluster...' },
+    success: (result) => ({
+        title: result.deleted ? 'Cluster deleted' : 'Remote uninstall requested',
+        description: result.message
+    }),
+    error: { title: 'Failed to delete cluster' }
+};
+
+export interface ClusterManagementResult {
+    clusters: TeamCluster[];
+    selectedTeamId: string | null;
+    selectedCluster: TeamCluster | null;
+    selectedClusterId: string;
+    setSelectedClusterId: (clusterId: string) => void;
+    waitingCluster: TeamCluster | null;
+    isLoading: boolean;
+    createCluster: (name: string) => Promise<{ teamCluster: TeamCluster; enrollmentToken: string }>;
+    revealCredentials: (teamClusterId: string, password: string) => Promise<TeamClusterCredentialServices>;
+    deleteCluster: (teamClusterId: string, password: string) => Promise<DeleteTeamClusterOutputDTO>;
+};
+
+const useClusterManagement = (): ClusterManagementResult => {
+    const selectedTeamId = useSelectedTeamId();
+    const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
+    const setSelectedClusterId = useClusterStore((state) => state.setSelectedClusterId);
+
+    const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
+        enabled: Boolean(selectedTeamId),
+        refetchInterval: (query) => {
+            const data = query.state.data?.data ?? [];
+            return data.some((cluster) => isTeamClusterWaiting(cluster.status)) ? 3000 : false;
+        }
+    });
+    const createMutation = useCreateTeamClusterMutation();
+    const revealCredentialsMutation = useRevealTeamClusterCredentialsMutation();
+    const deleteMutation = useDeleteTeamClusterMutation();
+
+    const clusters = teamClustersQuery.data?.data ?? [];
+
+    useEffect(() => {
+        if (!clusters.length) {
+            if (selectedClusterId !== DEFAULT_CLUSTER_ID) {
+                setSelectedClusterId(DEFAULT_CLUSTER_ID);
+            }
+            return;
+        }
+
+        const hasSelectedCluster = clusters.some((cluster) => cluster._id === selectedClusterId);
+
+        if (!hasSelectedCluster) {
+            setSelectedClusterId(clusters[0]._id);
+        }
+    }, [clusters, selectedClusterId, setSelectedClusterId]);
+
+    const selectedCluster = useMemo(() => {
+        return clusters.find((cluster) => cluster._id === selectedClusterId) ?? clusters[0] ?? null;
+    }, [clusters, selectedClusterId]);
+
+    const waitingCluster = useMemo(() => {
+        return clusters.find((cluster) => isTeamClusterWaiting(cluster.status)) ?? null;
+    }, [clusters]);
+
+    const allClusterIds = useMemo(() => {
+        return clusters.map((cluster) => cluster._id);
+    }, [clusters]);
+
+    useTeamClusterSocket(allClusterIds);
+
+    const createCluster = async (name: string) => {
+        if (!selectedTeamId) {
+            throw new Error('Missing selected team');
+        }
+
+        const result = await showPromise(createMutation.mutateAsync({
+            teamId: selectedTeamId,
+            name
+        }), CREATE_CLUSTER_TOAST_OPTIONS);
+
+        setSelectedClusterId(result.teamCluster._id);
+        return result;
+    };
+
+    const revealCredentials = async (teamClusterId: string, password: string) => {
+        if (!selectedTeamId) {
+            throw new Error('Missing selected team');
+        }
+
+        const result = await showPromise(revealCredentialsMutation.mutateAsync({
+            teamId: selectedTeamId,
+            teamClusterId,
+            password
+        }), REVEAL_CREDENTIALS_TOAST_OPTIONS);
+
+        return result.services;
+    };
+
+    const deleteCluster = async (teamClusterId: string, password: string) => {
+        if (!selectedTeamId) {
+            throw new Error('Missing selected team');
+        }
+
+        return showPromise(deleteMutation.mutateAsync({
+            teamId: selectedTeamId,
+            teamClusterId,
+            password
+        }), DELETE_CLUSTER_TOAST_OPTIONS);
+    };
+
+    return {
+        clusters,
+        selectedTeamId,
+        selectedCluster,
+        selectedClusterId,
+        setSelectedClusterId,
+        waitingCluster,
+        isLoading: teamClustersQuery.isLoading,
+        createCluster,
+        revealCredentials,
+        deleteCluster
+    };
+};
+
+export default useClusterManagement;

@@ -22,8 +22,6 @@ import { promisify } from 'node:util';
 import { injectable } from 'tsyringe';
 
 const MAX_EXEC_BUFFER_SIZE = 10 * 1024 * 1024;
-const LOCAL_SCRIPTING_IMAGE_NAME = 'volt-scripting-env:latest';
-const LOCAL_SCRIPTING_IMAGE_BUILD_COMMAND = 'cd server/docker/scripting && docker build -t volt-scripting-env:latest .';
 const execFileAsync = promisify(execFile);
 
 interface DockerApiError {
@@ -416,13 +414,6 @@ export class DockerContainerService implements IContainerService {
             const dockerError = this.getDockerError(error);
 
             if (dockerError.statusCode === 404) {
-                if (imageName === LOCAL_SCRIPTING_IMAGE_NAME) {
-                    throw ApplicationError.notFound(
-                        ErrorCodes.RESOURCE_NOT_FOUND,
-                        `Local image ${LOCAL_SCRIPTING_IMAGE_NAME} not found. Please build it first: ${LOCAL_SCRIPTING_IMAGE_BUILD_COMMAND}`
-                    );
-                }
-
                 try {
                     await this.pullImage(imageName);
                 } catch (pullError: unknown) {

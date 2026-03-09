@@ -1,10 +1,9 @@
 import { CreateContainerInputDTO, CreateContainerOutputDTO } from '@modules/container/application/dtos/CreateContainerDTO';
 import ContainerCreatedEvent from '@modules/container/domain/events/ContainerCreatedEvent';
 import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
-import { IContainerService } from '@modules/container/domain/port/IContainerService';
-import { IDockerNetworkRepository } from '@modules/container/domain/port/IDockerNetworkRepository';
-import { IDockerVolumeRepository } from '@modules/container/domain/port/IDockerVolumeRepository';
+import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -15,9 +14,8 @@ import { inject, injectable } from 'tsyringe';
 export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO, CreateContainerOutputDTO> {
     constructor(
         @inject(CONTAINER_TOKENS.ContainerRepository) private repository: IContainerRepository,
-        @inject(CONTAINER_TOKENS.ContainerService) private containerService: IContainerService,
-        @inject(CONTAINER_TOKENS.DockerNetworkRepository) private networkRepository: IDockerNetworkRepository,
-        @inject(CONTAINER_TOKENS.DockerVolumeRepository) private volumeRepository: IDockerVolumeRepository,
+        @inject(CONTAINER_TOKENS.ContainerRuntimeService) private containerRuntimeService: ITeamClusterContainerRuntimeService,
+        @inject(TeamClusterSelectionService) private readonly teamClusterSelectionService: TeamClusterSelectionService,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 
@@ -47,6 +45,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
 
     async execute(input: CreateContainerInputDTO): Promise<Result<CreateContainerOutputDTO>> {
         const { name, image, env, ports, cmd, mountDockerSocket, useImageCmd, memory, cpus } = input;
+        const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(input.teamId, input.teamClusterId);
 
         let containerCmd = cmd && Array.isArray(cmd) && cmd.length > 0 ? cmd : undefined;
         if (!containerCmd && !useImageCmd) {
@@ -56,13 +55,12 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         const memoryInMegabytes = memory || 512;
         const cpuCount = cpus || 1;
 
-        const { id: dockerVolumeId, name: volumeName } = await this.containerService.createVolume(name);
-        const binds: string[] = [`${volumeName}:/data`];
+        const sanitizedName = name.replace(/\s+/g, '-').toLowerCase();
+        const binds: string[] = [`Volt-${sanitizedName}-data:/data`];
         const groupAdd: string[] = [];
 
         if (mountDockerSocket) {
             binds.push('/var/run/docker.sock:/var/run/docker.sock');
-            groupAdd.push(...await this.containerService.resolveDockerSocketGroupAdd());
         }
 
         const dockerConfig = this.buildContainerRuntimeConfig({
@@ -78,41 +76,23 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             cmd: containerCmd
         });
 
-        await this.containerService.ensureImage(image);
-        const containerInfo = await this.containerService.createContainer(dockerConfig);
+        const containerInfo = await this.containerRuntimeService.createContainer(teamClusterId, dockerConfig);
         const dockerId = containerInfo.Id;
-
-        await this.containerService.startContainer(dockerId);
-
-        // Network
-        const { id: dockerNetworkId, name: networkName } = await this.containerService.createNetwork(name);
-        await this.containerService.connectNetwork(dockerNetworkId, dockerId);
-
-        // Persist network and volume documents via repositories
-        const networkDocument = await this.networkRepository.findOrCreateByNetworkId(
-            dockerNetworkId,
-            { name: networkName, driver: 'bridge' }
-        );
-
-        const volumeDocument = await this.volumeRepository.findOrCreateByVolumeId(
-            dockerVolumeId,
-            { name: volumeName, driver: 'local' }
-        );
 
         const container = await this.repository.create({
             name,
             image,
             containerId: dockerId,
-            status: 'running',
+            status: containerInfo.State?.Status || 'running',
             memory: memoryInMegabytes,
             cpus: cpuCount,
             env: env || [],
             ports: ports || [],
             createdBy: input.userId,
             team: input.teamId,
-            network: networkDocument._id,
-            volume: volumeDocument._id,
-            internalIp: '0.0.0.0'
+            teamCluster: teamClusterId,
+            mountDockerSocket: mountDockerSocket || false,
+            internalIp: containerInfo.NetworkSettings?.IPAddress || '0.0.0.0'
         });
 
         await this.eventBus.publish(new ContainerCreatedEvent({

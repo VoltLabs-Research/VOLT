@@ -3,6 +3,7 @@ export interface ExecutePluginInputDTO {
     trajectoryId: string;
     userId: string;
     teamId: string;
+    teamClusterId: string;
     selectedFrameOnly?: boolean;
     config: Record<string, unknown>;
     timestep?: number;

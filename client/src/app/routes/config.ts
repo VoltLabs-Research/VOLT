@@ -16,6 +16,7 @@ import PluginsListing from '@/modules/plugin/components/listing/templates/Plugin
 import PluginBuilderPage from '@/modules/plugin/components/plugin/templates/PluginBuilderPage';
 import PluginListingPage from '@/modules/plugin/components/listing/templates/PluginListingPage';
 import ClustersPage from '@/modules/cluster/components/templates/ClustersPage';
+import ClusterOnboardingPage from '@/modules/cluster/components/templates/ClusterOnboardingPage';
 import ContainersListing from '@/modules/container/components/templates/ContainersListing';
 import ContainerDetailsLayout from '@/modules/container/components/templates/ContainerDetailsLayout';
 import ContainerOverviewPage from '@/modules/container/components/templates/ContainerDetailsRoutes/container-overview-route';
@@ -147,6 +148,10 @@ export const routesConfig: RouteGroup = {
             component: PluginListingPage,
             requiredPermissions: ['plugin:read', 'trajectory:read'],
             permissionMode: 'all'
+        },
+        {
+            path: '/onboarding/cluster/setup',
+            component: ClusterOnboardingPage
         },
         {
             path: '/dashboard/clusters',

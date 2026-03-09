@@ -25,7 +25,7 @@ export interface ResolvedModifier {
     pluginId: string;
     name: string;
     icon?: string;
-}
+};
 
 const buildPluginsById = (plugins: Plugin[]): Record<string, Plugin> => {
     return Object.fromEntries(plugins.map((plugin) => [plugin._id, plugin]));

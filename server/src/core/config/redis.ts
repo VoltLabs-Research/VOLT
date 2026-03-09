@@ -1,19 +1,47 @@
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 import logger from '@shared/infrastructure/logger';
 import Redis from 'ioredis';
+import type { ConnectionOptions } from 'bullmq';
 
-const getRedisConfig = () => {
-    const redisConfig = {
+export interface RedisClientConfig {
+    host: string;
+    port: number;
+    username?: string;
+    password?: string;
+    db?: number;
+};
+
+export const getRedisConfig = (): RedisClientConfig => {
+    return {
         host: process.env.REDIS_HOST || 'localhost',
         port: readNumberEnv('REDIS_PORT', 6379),
+        username: process.env.REDIS_USERNAME || undefined,
         password: process.env.REDIS_PASSWORD || undefined,
-        db: readNumberEnv('REDIS_DB', 0),
+        db: readNumberEnv('REDIS_DB', 0)
+    };
+};
+
+export const createRedisClientConfig = (config: RedisClientConfig): RedisClientConfig => {
+    return {
+        host: config.host,
+        port: config.port,
+        username: config.username,
+        password: config.password,
+        db: config.db ?? 0
+    };
+};
+
+export const createBullMQRedisConnectionOptions = (config: RedisClientConfig): ConnectionOptions => {
+    return {
+        host: config.host,
+        port: config.port,
+        username: config.username,
+        password: config.password,
+        db: config.db ?? 0,
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
         maxRetriesPerRequest: null
     };
-
-    return redisConfig;
 };
 
 export let redis: Redis | null = null;
@@ -25,7 +53,7 @@ export const initializeRedis = (): Promise<void> => {
             return;
         }
 
-        redis = new Redis(getRedisConfig());
+        redis = new Redis(createRedisClientConfig(getRedisConfig()));
 
         redis.on('connect', () => {
             logger.info('Redis connected successfully');
@@ -51,5 +79,5 @@ export const initializeRedis = (): Promise<void> => {
 };
 
 export const createRedisClient = () => {
-    return new Redis(getRedisConfig());
+    return new Redis(createRedisClientConfig(getRedisConfig()));
 };

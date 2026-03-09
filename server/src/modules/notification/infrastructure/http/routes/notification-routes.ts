@@ -17,6 +17,6 @@ router.use(protect);
 router.use(generalRateLimit);
 
 router.get('/', notificationValidation.listMyNotifications, controllers.getMyNotifications.handle);
-router.patch('/read-status', notificationValidation.markAllMyNotificationsAsRead, controllers.markAllAsRead.handle);
+router.patch('/read-status', controllers.markAllAsRead.handle);
 
 export default module;

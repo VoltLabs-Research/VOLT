@@ -8,5 +8,6 @@ interface UploadBinaryFile {
 
 export interface UploadBinaryInputDTO {
     pluginId: string;
+    teamId: string;
     file: UploadBinaryFile;
 };

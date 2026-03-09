@@ -7,6 +7,7 @@ import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { TbUpload, TbFile, TbTrash, TbCheck } from 'react-icons/tb';
 import { useUploadBinaryMutation, useDeleteBinaryMutation } from '@/modules/plugin/hooks/plugin/queries';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useNodeFormRHF from '@/modules/plugin/hooks/plugin/use-node-form-rhf';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
@@ -46,6 +47,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
     const { searchParams } = useSearchParamsState();
     const nodeReferenceOptions = useNodeReferenceAutocomplete(node.id);
     const currentPluginId = searchParams.get('id');
+    const selectedTeamId = useSelectedTeamId();
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
     const uploadBinaryMutation = useUploadBinaryMutation();
     const deleteBinaryMutation = useDeleteBinaryMutation();
@@ -64,6 +66,11 @@ const EntrypointEditor = ({ node }: EditorProps) => {
             return;
         }
 
+        if (!selectedTeamId) {
+            setUploadError('Select a team before uploading a binary');
+            return;
+        }
+
         setIsUploading(true);
         setUploadProgress(0);
         setUploadError(null);
@@ -71,6 +78,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
         try {
             const result = await uploadBinaryMutation.mutateAsync({
                 pluginId: currentPluginId,
+                teamId: selectedTeamId,
                 file,
                 onProgress: (progress: number) => setUploadProgress(Math.round(progress * 100))
             });
@@ -96,7 +104,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
         } finally {
             setIsUploading(false);
         }
-    }, [currentPluginId, uploadBinaryMutation, form, updateNodeData, node.id]);
+    }, [currentPluginId, selectedTeamId, uploadBinaryMutation, form, updateNodeData, node.id]);
 
     const handleRemoveBinary = useCallback(async () => {
         const currentValues = form.getValues();

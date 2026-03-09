@@ -1,8 +1,7 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import { createQueueConnectionFromRedisClient } from '@modules/jobs/infrastructure/services/redis-queue-connection';
 import { JOB_STATUS_KEY_PREFIX, hasJobProps } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import {
     WorkerFailureError,
@@ -17,7 +16,6 @@ import ProcessingQueueRuntime from '@modules/jobs/infrastructure/services/Proces
 import ProcessingQueueSessionCompletionService from '@modules/jobs/infrastructure/services/ProcessingQueueSessionCompletionService';
 import ProcessingQueueSessionStore from '@modules/jobs/infrastructure/services/ProcessingQueueSessionStore';
 import ProcessingQueueStatusProjectionService from '@modules/jobs/infrastructure/services/ProcessingQueueStatusProjectionService';
-import { inject } from 'tsyringe';
 import IORedis from 'ioredis';
 import os from 'node:os';
 import logger from '@shared/infrastructure/logger';
@@ -26,7 +24,13 @@ import type { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
 import type { QueueBulkJob } from '@modules/jobs/infrastructure/services/ProcessingQueueRuntime';
 import type { QueueJobData } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { ConnectionOptions, Job as BullJob, JobProgress } from 'bullmq';
+import type { Job as BullJob, JobProgress } from 'bullmq';
+
+interface BaseProcessingQueueDependencies {
+    redis: IORedis;
+    eventBus: IEventBus;
+    queueRegistry: IQueueRegistry;
+};
 
 export default abstract class BaseProcessingQueue<T extends Job = Job> implements IJobQueueService {
     protected readonly queueName: string;
@@ -35,7 +39,6 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
     protected readonly options: QueueOptions;
 
     private readonly mapping: Record<string, string>;
-    private readonly connection: ConnectionOptions;
     private readonly runtime: ProcessingQueueRuntime;
     private readonly jobFactory: ProcessingQueueJobFactory;
     private readonly eventPublisher: ProcessingQueueEventPublisher;
@@ -45,14 +48,7 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
 
     constructor(
         options: QueueOptions,
-        @inject(SHARED_TOKENS.RedisClient)
-        protected readonly redis: IORedis,
-
-        @inject(SHARED_TOKENS.EventBus)
-        protected readonly eventBus: IEventBus,
-
-        @inject(JOBS_TOKENS.QueueRegistry)
-        private readonly queueRegistry: IQueueRegistry
+        protected readonly dependencies: BaseProcessingQueueDependencies
     ) {
         this.queueName = options.queueName;
         this.workerPath = options.workerPath;
@@ -65,18 +61,17 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
             failed: 'failed'
         };
 
-        this.connection = this.createConnectionOptions();
         this.jobFactory = new ProcessingQueueJobFactory(this.queueName);
-        this.eventPublisher = new ProcessingQueueEventPublisher(this.eventBus, this.queueName);
-        this.sessionStore = new ProcessingQueueSessionStore(this.redis);
+        this.eventPublisher = new ProcessingQueueEventPublisher(this.dependencies.eventBus, this.queueName);
+        this.sessionStore = new ProcessingQueueSessionStore(this.dependencies.redis);
         this.sessionCompletionService = new ProcessingQueueSessionCompletionService(
             this.queueName,
             this.sessionStore,
             this.eventPublisher
         );
-        this.statusProjectionService = new ProcessingQueueStatusProjectionService(this.redis, this.queueName);
+        this.statusProjectionService = new ProcessingQueueStatusProjectionService(this.dependencies.redis, this.queueName);
 
-        this.queueRegistry.registerQueue({
+        this.dependencies.queueRegistry.registerQueue({
             queueName: this.queueName,
             queueKey: `bull:${this.queueName}:wait`,
             processingKey: `bull:${this.queueName}:active`,
@@ -88,7 +83,10 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
                 queueName: this.queueName,
                 workerPath: this.workerPath,
                 maxConcurrentJobs: this.maxConcurrentJobs,
-                connection: this.connection
+                connection: this.createConnectionOptions(),
+                withWorker: this.options.withWorker,
+                workerExecArgv: this.options.workerExecArgv,
+                inlineProcessor: this.options.inlineProcessor
             },
             {
                 onActive: this.onJobActive.bind(this),
@@ -222,14 +220,8 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
         logger.info(`[${this.queueName}] BullMQ queue and worker stopped`);
     }
 
-    private createConnectionOptions(): ConnectionOptions {
-        return {
-            host: process.env.REDIS_HOST || 'localhost',
-            port: Number(process.env.REDIS_PORT) || 6379,
-            password: process.env.REDIS_PASSWORD || undefined,
-            db: Number(process.env.REDIS_DB) || 0,
-            maxRetriesPerRequest: null
-        };
+    private createConnectionOptions() {
+        return createQueueConnectionFromRedisClient(this.dependencies.redis);
     }
 
     private async enqueueJobs(jobs: Job[], sessionId: string): Promise<void> {
@@ -246,8 +238,12 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
             }
         }));
 
+        logger.info(`[${this.queueName}] Enqueueing ${bullJobs.length} jobs (session=${sessionId}, firstJobId=${firstJob.props.jobId})`);
+
         await this.eventPublisher.publishQueuedJobs(jobs, sessionId);
         await this.runtime.addBulk(bullJobs);
+
+        logger.info(`[${this.queueName}] Jobs added to BullMQ queue successfully`);
 
         await Promise.all(jobs.map((job) =>
             this.updateJobStatus(job.props.jobId, JobStatus.Queued, job.props)

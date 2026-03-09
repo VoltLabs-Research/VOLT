@@ -18,27 +18,27 @@ interface ResourceItem {
 };
 
 const getLoadColor = (value: number): string => {
-    if(value >= 80) return '#FF453A';
-    if(value >= 60) return '#FF9F0A';
-    return '#32D74B';
+    if(value >= 80) return 'var(--status-error)';
+    if(value >= 60) return 'var(--status-warning)';
+    return 'var(--status-success)';
 };
 
 const getLoadGlow = (value: number): string => {
-    if(value >= 80) return '0 0 20px rgba(255, 69, 58, 0.4)';
-    if(value >= 60) return '0 0 20px rgba(255, 159, 10, 0.4)';
-    return '0 0 20px rgba(50, 215, 75, 0.4)';
+    if(value >= 80) return '0 0 20px color-mix(in srgb, var(--status-error) 40%, transparent)';
+    if(value >= 60) return '0 0 20px color-mix(in srgb, var(--status-warning) 40%, transparent)';
+    return '0 0 20px color-mix(in srgb, var(--status-success) 40%, transparent)';
 };
 
 const getAvailableSpaceColor = (value: number): string => {
-    if(value <= 20) return '#FF453A';
-    if(value <= 40) return '#FF9F0A';
-    return '#32D74B';
+    if(value <= 20) return 'var(--status-error)';
+    if(value <= 40) return 'var(--status-warning)';
+    return 'var(--status-success)';
 };
 
 const getAvailableSpaceGlow = (value: number): string => {
-    if(value <= 20) return '0 0 20px rgba(255, 69, 58, 0.4)';
-    if(value <= 40) return '0 0 20px rgba(255, 159, 10, 0.4)';
-    return '0 0 20px rgba(50, 215, 75, 0.4)';
+    if(value <= 20) return '0 0 20px color-mix(in srgb, var(--status-error) 40%, transparent)';
+    if(value <= 40) return '0 0 20px color-mix(in srgb, var(--status-warning) 40%, transparent)';
+    return '0 0 20px color-mix(in srgb, var(--status-success) 40%, transparent)';
 };
 
 const getCpuLoad = (metrics: ClusterMetrics): number => {

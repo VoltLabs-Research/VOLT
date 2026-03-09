@@ -1,5 +1,6 @@
 import { buildCanvasModifierOptions, LEGACY_MODIFIERS } from '../../../utilities/modifier-registry';
 import { ArgumentField } from '../../molecules/ModifierConfig';
+import PluginClusterField from '../../molecules/PluginClusterField';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import usePluginExecution from '../../../hooks/use-plugin-execution';
 import { ExecState } from '../../../hooks/use-plugin-execution';
@@ -7,8 +8,10 @@ import ModifierConfig from '../../molecules/ModifierConfig';
 import ModifiersSection from '../../molecules/ModifiersSection';
 import CanvasRenderSections from '../CanvasRenderSections';
 
-import { useExecutePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
+import { useExecutePluginMutation, usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import Paragraph from '@/shared/presentation/components/Paragraph';
 import { Wrench, Monitor } from 'lucide-react';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
@@ -18,12 +21,17 @@ import Container from '@/shared/presentation/components/Container';
 import type { ModifierOption } from '../../../utilities/modifier-registry';
 import type { LegacyActionRef } from '../ColorCoding';
 import type { ComponentType, ReactNode } from 'react';
+import type { SelectOption } from '@/shared/presentation/components/Select';
 
 import './RightPanel.css';
 
 const LEGACY_COMPONENT_MAP = new Map<string, ComponentType<any> | undefined>(
     LEGACY_MODIFIERS.map((m) => [m.id, m.component] as const)
 );
+
+interface PluginExecutionClusterConfig {
+    selectedTeamClusterId?: string;
+};
 
 interface RightPanelProps {
     trajectoryId?: string;
@@ -33,18 +41,36 @@ interface RightPanelProps {
 
 const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelProps) => {
     const { activeModifiers, toggleModifier, pluginParam } = useCanvasUrlState();
+    const selectedTeamId = useSelectedTeamId();
     const executePluginMutation = useExecutePluginMutation();
     const { modifiers, getPluginArguments, isLoading: pluginLoading } = usePluginSelectors();
+    const { data: teamClustersResponse } = usePluginTeamClustersQuery({
+        teamId: selectedTeamId ?? '',
+        page: 1,
+        limit: 100
+    }, {
+        enabled: !!selectedTeamId
+    });
     useEnsurePluginCatalogLoaded();
     const [openModifierIds, setOpenModifierIds] = useState<Set<string>>(new Set());
     const [modifiersOpen, setModifiersOpen] = useState(true);
     const [renderOpen, setRenderOpen] = useState(false);
     const [legacyExecStates, setLegacyExecStates] = useState<Map<string, ExecState>>(new Map());
     const legacyActionRef = useRef<Map<string, () => void>>(new Map());
-    const [pluginConfigs, setPluginConfigs] = useState<Record<string, Record<string, any>>>({});
+    const [pluginConfigs, setPluginConfigs] = useState<Record<string, Record<string, unknown>>>({});
+    const [pluginExecutionClusters, setPluginExecutionClusters] = useState<Record<string, PluginExecutionClusterConfig>>({});
 
-    const handlePluginConfigChange = useCallback((pluginId: string, key: string, value: any) => {
-        setPluginConfigs(prev => ({
+    const teamClusterOptions = useMemo<SelectOption[]>(() => {
+        return (teamClustersResponse?.data ?? []).map((teamCluster) => ({
+            value: teamCluster._id,
+            title: teamCluster.name
+        }));
+    }, [teamClustersResponse?.data]);
+
+    const hasTeamClusterOptions = teamClusterOptions.length > 0;
+
+    const handlePluginConfigChange = useCallback((pluginId: string, key: string, value: string | number | boolean) => {
+        setPluginConfigs((prev) => ({
             ...prev,
             [pluginId]: {
                 ...(prev[pluginId] || {}),
@@ -52,6 +78,28 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
             }
         }));
     }, []);
+
+    const handlePluginClusterChange = useCallback((pluginId: string, value: string | number | boolean) => {
+        setPluginExecutionClusters((prev) => ({
+            ...prev,
+            [pluginId]: {
+                selectedTeamClusterId: typeof value === 'string' ? value : String(value)
+            }
+        }));
+    }, []);
+
+    const getSelectedClusterId = useCallback((pluginId: string, pluginTeamClusterId?: string | null): string => {
+        const selectedClusterId = pluginExecutionClusters[pluginId]?.selectedTeamClusterId;
+        if (selectedClusterId) {
+            return selectedClusterId;
+        }
+
+        if (pluginTeamClusterId) {
+            return pluginTeamClusterId;
+        }
+
+        return teamClusterOptions[0]?.value ?? '';
+    }, [pluginExecutionClusters, teamClusterOptions]);
 
     const updateLegacyExecState = useCallback((id: string, state: ExecState) => {
         setLegacyExecStates((prev) => {
@@ -70,6 +118,13 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
         trajectoryId,
         currentTimestep,
         getPluginArguments,
+        getSelectedTeamClusterId: (option) => {
+            if (!option.pluginModifierId) {
+                return '';
+            }
+
+            return getSelectedClusterId(option.pluginModifierId, option.plugin?.teamCluster);
+        },
         executePlugin: executePluginMutation.mutateAsync,
         pluginConfigs
     });
@@ -105,15 +160,19 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
     }, [execStates, legacyExecStates]);
 
     const shouldShowAction = useCallback((option: ModifierOption): boolean => {
+        if (option.isPlugin && !hasTeamClusterOptions) {
+            return false;
+        }
+
         return option.modifierId !== 'slice-plane';
-    }, []);
+    }, [hasTeamClusterOptions]);
 
     const modifierHasContent = useCallback((option: ModifierOption): boolean => {
         if (option.isPlugin && option.pluginModifierId) {
-            return getPluginArguments(option.pluginModifierId).filter((a) => a.value === undefined).length > 0;
+            return true;
         }
         return LEGACY_COMPONENT_MAP.has(option.modifierId);
-    }, [getPluginArguments]);
+    }, []);
 
     const handleAction = useCallback((option: ModifierOption) => {
         if (option.isPlugin) {
@@ -132,11 +191,31 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
         let content: ReactNode = null;
         if(option.isPlugin && option.pluginModifierId){
             const args = getPluginArguments(option.pluginModifierId).filter((a) => a.value === undefined);
+            const selectedClusterId = getSelectedClusterId(option.pluginModifierId, option.plugin?.teamCluster);
+            const clusterField = (
+                hasTeamClusterOptions
+                    ? (
+                        <PluginClusterField
+                            fieldKey={`plugin-cluster-${option.pluginModifierId}`}
+                            fieldValue={selectedClusterId}
+                            options={teamClusterOptions}
+                            onFieldChange={(_, value) => handlePluginClusterChange(option.pluginModifierId!, value)}
+                        />
+                    )
+                    : (
+                        <Paragraph className='font-size-1 color-muted'>No team clusters available</Paragraph>
+                    )
+            );
+
             if(args.length > 0){
                 content = (
                     <Container className="d-flex column gap-05">
+                        {clusterField}
                         {args.map((arg, i) => {
-                            const val = pluginConfigs[option.pluginModifierId!]?.[arg.argument];
+                            const rawValue = pluginConfigs[option.pluginModifierId!]?.[arg.argument];
+                            const val = typeof rawValue === 'string' || typeof rawValue === 'number' || typeof rawValue === 'boolean'
+                                ? rawValue
+                                : undefined;
                             return (
                                 <ArgumentField 
                                     key={`${arg.argument}-${i}`} 
@@ -149,6 +228,8 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
                         })}
                     </Container>
                 );
+            } else {
+                content = clusterField;
             }
         }else{
             const LegacyComponent = LEGACY_COMPONENT_MAP.get(option.modifierId);
@@ -169,7 +250,7 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
                 {content}
             </ModifierConfig>
         );
-    }, [getPluginArguments, trajectoryId, analysisId, currentTimestep, legacyRef, pluginConfigs, handlePluginConfigChange]);
+    }, [getPluginArguments, getSelectedClusterId, hasTeamClusterOptions, trajectoryId, analysisId, currentTimestep, legacyRef, pluginConfigs, handlePluginClusterChange, handlePluginConfigChange, teamClusterOptions]);
 
     return (
         <Container className="d-flex h-max overflow-hidden">

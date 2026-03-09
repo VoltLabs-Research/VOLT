@@ -1,0 +1,14 @@
+.copyable-field {
+    background: color-mix(in srgb, var(--color-surface-2) 55%, transparent);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+}
+
+.copyable-field-value {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    word-break: break-all;
+}
+
+.copyable-field-copy-success {
+    color: var(--status-success);
+}

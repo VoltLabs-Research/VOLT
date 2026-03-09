@@ -25,6 +25,7 @@ import type { ExportPluginInputDTO } from '../../api/dtos/plugin/export-plugin';
 import type { GetPluginInputDTO } from '../../api/dtos/plugin/get-plugin';
 import type { GetPluginsInputDTO } from '../../api/dtos/plugin/get-plugins';
 import type { ImportPluginInputDTO } from '../../api/dtos/plugin/import-plugin';
+import type { ListPluginTeamClustersInputDTO, ListPluginTeamClustersOutputDTO } from '../../api/dtos/plugin/list-team-clusters';
 import type { SavePluginInputDTO } from '../../api/dtos/plugin/save-plugin';
 import type { UpdatePluginInputDTO } from '../../api/dtos/plugin/update-plugin';
 import type { UploadBinaryInputDTO, UploadBinaryOutputDTO } from '../../api/dtos/plugin/upload-binary';
@@ -49,6 +50,10 @@ const catalogInfiniteKeys = buildKeys<{
     list: { limit: number };
 }>(['plugins', 'catalog', 'infinite']);
 
+const teamClusterKeys = buildKeys<{
+    list: ListPluginTeamClustersInputDTO;
+}>(['plugins', 'team-clusters']);
+
 // ---------------------------------------------------------------------------
 // PLUGIN_QUERY_KEYS — public facade
 // ---------------------------------------------------------------------------
@@ -62,7 +67,9 @@ export const PLUGIN_QUERY_KEYS = {
     catalog: catalogKeys.prefix,
     catalogInfinite: catalogInfiniteKeys.prefix,
     catalogList: catalogKeys.list,
-    catalogInfiniteList: catalogInfiniteKeys.list
+    catalogInfiniteList: catalogInfiniteKeys.list,
+    teamClusters: teamClusterKeys.prefix,
+    teamClustersList: teamClusterKeys.list
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -165,6 +172,21 @@ export const usePluginCatalogInfiniteQuery = (
         initialPageParam: 1,
         getNextPageParam: options.getNextPageParam,
         enabled: options.enabled
+    });
+};
+
+export const buildPluginTeamClustersQueryOptions = (params: ListPluginTeamClustersInputDTO) => ({
+    queryKey: PLUGIN_QUERY_KEYS.teamClustersList(params),
+    queryFn: () => pluginService.listTeamClusters(params)
+});
+
+export const usePluginTeamClustersQuery = (
+    params: ListPluginTeamClustersInputDTO,
+    options?: QueryOptions<ListPluginTeamClustersOutputDTO, ListPluginTeamClustersOutputDTO>
+) => {
+    return useQuery<ListPluginTeamClustersOutputDTO, Error, ListPluginTeamClustersOutputDTO, QueryKey>({
+        ...buildPluginTeamClustersQueryOptions(params),
+        ...options
     });
 };
 

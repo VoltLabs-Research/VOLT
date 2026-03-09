@@ -1,106 +1,10 @@
-import { ErrorCodes } from '@core/constants/error-codes';
-import { ParseResult, FrameMetadata, ParseOptions } from '@modules/trajectory/domain/contracts/trajectory';
-import nativeStats from '@modules/trajectory/infrastructure/native/trajectory/NativeStats';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-
-import path from 'path';
-
-interface NativeDumpResult {
-    positions: Float32Array;
-    types: Uint16Array;
-    ids?: Uint32Array;
-    properties?: { [name: string]: Float32Array };
-    metadata: {
-        timestep: number;
-        natoms: number;
-        headers: string[];
-    };
-    min: [number, number, number];
-    max: [number, number, number];
-};
-
-interface NativeModule {
-    parseDump(filePath: string, options: { includeIds?: boolean; properties?: string[] }): NativeDumpResult | undefined;
-};
-
-const nativePath = path.join(process.cwd(), 'native/build/Release/dump_parser.node');
-const nativeModule: NativeModule = require(nativePath);
+import { FrameMetadata } from '@modules/trajectory/domain/contracts/trajectory';
 
 /**
- * High-performance LAMMPS dump parser using native C++ addon.
+ * LAMMPS dump header parser (metadata-only, pure JS).
+ * Full parsing and stats computation are delegated to cluster daemons.
  */
 export default class LammpsDumpParser {
-    public parse(filePath: string, options: ParseOptions = {}): ParseResult {
-        const result = nativeModule.parseDump(filePath, {
-            includeIds: options.includeIds,
-            properties: options.properties
-        });
-
-        if (!result) {
-            throw ApplicationError.badRequest(
-                ErrorCodes.TRAJECTORY_DUMP_PARSE_FAILED,
-                'Failed to parse trajectory dump file'
-            );
-        }
-
-        const width = result.max[0] - result.min[0];
-        const height = result.max[1] - result.min[1];
-        const length = result.max[2] - result.min[2];
-
-        const metadataWithCell = {
-            ...result.metadata,
-            simulationCell: {
-                boundingBox: { width, height, length },
-                geometry: {
-                    cell_vectors: [[width, 0, 0], [0, height, 0], [0, 0, length]],
-                    cell_origin: result.min,
-                    periodic_boundary_conditions: { x: true, y: true, z: true }
-                }
-            }
-        } as FrameMetadata;
-
-        return {
-            metadata: metadataWithCell,
-            positions: result.positions,
-            types: result.types,
-            ids: result.ids,
-            properties: result.properties,
-            min: result.min,
-            max: result.max
-        };
-    }
-
-    public getStatsForProperty(filePath: string, property: string): { min: number; max: number } {
-        const result = nativeModule.parseDump(filePath, { properties: [] });
-        if (!result) {
-            throw ApplicationError.badRequest(
-                ErrorCodes.TRAJECTORY_DUMP_PARSE_FAILED,
-                'Failed to parse trajectory dump file'
-            );
-        }
-
-        const propIdx = result.metadata.headers.findIndex(
-            (h: string) => h === property.toLowerCase()
-        );
-
-        if (propIdx === -1) {
-            throw ApplicationError.badRequest(
-                ErrorCodes.VALIDATION_INVALID_INPUT,
-                `Property '${property}' not found in trajectory dump`
-            );
-        }
-
-        const stats = nativeStats.getStatsForProperty(filePath, propIdx);
-        if (!stats) {
-            throw new ApplicationError(
-                ErrorCodes.TRAJECTORY_STATS_PARSE_FAILED,
-                'Failed to calculate trajectory property stats',
-                500
-            );
-        }
-        return stats;
-    }
-
     public canParse(headerLines: string[]): boolean {
         return headerLines.some((line) => line.includes('ITEM: TIMESTEP'));
     }

@@ -8,10 +8,9 @@ import type {
 } from '@/modules/plugin/api/entities/plugin/exposure';
 
 export interface Plugin extends BaseEntity {
+    teamCluster?: string | null;
     workflow: IWorkflow;
     status: PluginStatus;
-    validated: boolean;
-    validationErrors: string[];
     modifier?: IModifierData | null;
     exposures?: IExposureComputed[];
     arguments?: IComputedArgumentDefinition[];

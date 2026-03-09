@@ -1,6 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 import { injectable, inject } from 'tsyringe';
@@ -17,7 +19,10 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
         private readonly trajectoryRepo: ITrajectoryRepository,
 
         @inject(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
-        private readonly dumpStorage: ITrajectoryDumpStorageService
+        private readonly dumpStorage: ITrajectoryDumpStorageService,
+
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
     async execute(input: DownloadTrajectoryInputDTO): Promise<Result<DownloadTrajectoryOutputDTO, ApplicationError>> {
@@ -31,9 +36,28 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
             ));
         }
 
-        // TODO: Currently downloads the first available timestep dump.
-        // A more complete implementation could bundle all timesteps into a zip archive
-        // or allow the client to specify which timestep to download.
+        if (trajectory.props.teamCluster) {
+            const firstFrame = [...trajectory.props.frames].sort((left, right) => left.timestep - right.timestep)[0];
+            if (!firstFrame) {
+                return Result.fail(ApplicationError.notFound(
+                    'Trajectory::Dump::NotFound',
+                    'No dump data available for this trajectory'
+                ));
+            }
+
+            const objectName = this.dumpStorage.getObjectName(trajectoryId, String(firstFrame.timestep));
+            const stream = await this.teamClusterDaemonClient.stream(trajectory.props.teamCluster, '/api/objects/volt-dumps', {
+                query: {
+                    objectKey: objectName
+                }
+            });
+            const filename = input.name
+                ? `${input.name}.dump.gz`
+                : `${trajectory.props.name}.dump.gz`;
+
+            return Result.ok({ stream, filename });
+        }
+
         const timesteps = await this.dumpStorage.listDumps(trajectoryId);
         if (timesteps.length === 0) {
             return Result.fail(ApplicationError.notFound(

@@ -3,7 +3,10 @@ import { z } from 'zod/v4';
 
 const identifierSchema = z.string().min(1);
 
-const paginationQuerySchema = createPaginationQuerySchema({ maxLimit: 100 });
+const paginationQuerySchema = createPaginationQuerySchema({
+    maxLimit: 100,
+    includeSearch: true
+});
 
 const byTeamParamsSchema = z.object({
     teamId: identifierSchema
@@ -34,6 +37,7 @@ const portMappingSchema = z.object({
 const createContainerSchema = z.object({
     name: z.string().min(1),
     image: z.string().min(1),
+    teamClusterId: identifierSchema.optional(),
     env: z.array(environmentVariableSchema).optional(),
     ports: z.array(portMappingSchema).optional(),
     cmd: z.array(z.string()).optional(),

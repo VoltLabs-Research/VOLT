@@ -17,6 +17,7 @@ import GetTeamMetricsUseCase from '@modules/trajectory/application/use-cases/tra
 import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import CloudUploadQueue from '@modules/trajectory/queues/CloudUploadQueue';
+import CloudUploadProcessor from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadProcessor';
 import TrajectoryProcessingQueue from '@modules/trajectory/queues/TrajectoryProcessingQueue';
 import AtomPropertiesService from '@modules/trajectory/infrastructure/services/trajectory/AtomPropertiesService';
 import ColorCodingService from '@modules/trajectory/infrastructure/services/color-coding/ColorCodingService';
@@ -25,6 +26,7 @@ import ChartExporter from '@modules/trajectory/infrastructure/services/trajector
 import DislocationExporter from '@modules/trajectory/infrastructure/services/trajectory/exporters/DislocationExporter';
 import MeshExporter from '@modules/trajectory/infrastructure/services/trajectory/exporters/MeshExporter';
 import ParticleFilterService from '@modules/trajectory/infrastructure/services/particle-filter/ParticleFilterService';
+import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
 import TeamMetricsQueryService from '@modules/trajectory/infrastructure/services/trajectory/TeamMetricsQueryService';
 import TrajectoryBackgroundProcessor from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryBackgroundProcessor';
 import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
@@ -41,6 +43,8 @@ export const registerTrajectoryDependencies = (): void => {
     container.registerSingleton(TRAJECTORY_TOKENS.SceneArtifactRepository, SceneArtifactRepository);
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryProcessingQueue, TrajectoryProcessingQueue);
     container.registerSingleton(TRAJECTORY_TOKENS.CloudUploadQueue, CloudUploadQueue);
+    container.registerSingleton(TRAJECTORY_TOKENS.CloudUploadProcessor, CloudUploadProcessor);
+    container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService, TrajectoryNativeDaemonService);
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryDumpStorageService, TrajectoryDumpStorageService);
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryReader, TrajectoryReader);
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryBackgroundProcessor, TrajectoryBackgroundProcessor);

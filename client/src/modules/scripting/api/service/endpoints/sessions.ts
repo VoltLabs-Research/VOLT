@@ -3,7 +3,9 @@ import type { CreateScriptingSessionParams } from '../../dtos/create-scripting-s
 import type { ScriptingSession } from '../../entities/scripting-session';
 
 const endpoints = {
-    createSession: post<CreateScriptingSessionParams, ScriptingSession>('/:trajectoryId/sessions')
+    createSession: post<CreateScriptingSessionParams, ScriptingSession>('/:trajectoryId/sessions', {
+        body: ({ notebookId, teamClusterId }) => ({ notebookId, teamClusterId })
+    })
 };
 
 export default endpoints;

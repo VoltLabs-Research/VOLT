@@ -1,94 +1,10 @@
-import { ErrorCodes } from '@core/constants/error-codes';
-import { ParseResult, FrameMetadata, ParseOptions } from '@modules/trajectory/domain/contracts/trajectory';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { FrameMetadata } from '@modules/trajectory/domain/contracts/trajectory';
 
-import fs from 'fs';
-import path from 'path';
-
-interface NativeDataResult {
-    positions: Float32Array;
-    types: Uint16Array;
-    ids?: Uint32Array;
-    metadata: {
-        timestep: number;
-        natoms: number;
-        headers: string[];
-    };
-    min: [number, number, number];
-    max: [number, number, number];
-};
-
-interface NativeModule {
-    parseData(filePath: string, options: { includeIds?: boolean }): NativeDataResult | undefined;
-};
-
-const nativePath = path.join(process.cwd(), 'native/build/Release/data_parser.node');
-const nativeModule: NativeModule = require(nativePath);
-
+/**
+ * LAMMPS data file header parser (metadata-only, pure JS).
+ * Full parsing is delegated to cluster daemons.
+ */
 export default class LammpsDataParser {
-    public parse(filePath: string, options: ParseOptions = {}): ParseResult {
-        const result = nativeModule.parseData(filePath, {
-            includeIds: options.includeIds
-        });
-
-        if (!result) {
-            throw ApplicationError.badRequest(
-                ErrorCodes.TRAJECTORY_DATA_PARSE_FAILED,
-                'Failed to parse trajectory data file'
-            );
-        }
-
-        let metadataWithCell = result.metadata as FrameMetadata;
-
-        try {
-            const fd = fs.openSync(filePath, 'r');
-            const buffer = Buffer.alloc(1024);
-            fs.readSync(fd, buffer, 0, 1024, 0);
-            fs.closeSync(fd);
-
-            const headerContent = buffer.toString('utf-8');
-            const headerLines = headerContent.split('\n');
-            const metaOnly = this.parseMetadataOnly(headerLines);
-
-            if (metaOnly && metaOnly.simulationCell) {
-                metadataWithCell.simulationCell = metaOnly.simulationCell;
-            } else {
-                const width = result.max[0] - result.min[0];
-                const height = result.max[1] - result.min[1];
-                const length = result.max[2] - result.min[2];
-                metadataWithCell.simulationCell = {
-                    boundingBox: { width, height, length },
-                    geometry: {
-                        cell_vectors: [[width, 0, 0], [0, height, 0], [0, 0, length]],
-                        cell_origin: result.min,
-                        periodic_boundary_conditions: { x: true, y: true, z: true }
-                    }
-                };
-            }
-        } catch (e) {
-            const width = result.max[0] - result.min[0];
-            const height = result.max[1] - result.min[1];
-            const length = result.max[2] - result.min[2];
-            metadataWithCell.simulationCell = {
-                boundingBox: { width, height, length },
-                geometry: {
-                    cell_vectors: [[width, 0, 0], [0, height, 0], [0, 0, length]],
-                    cell_origin: result.min,
-                    periodic_boundary_conditions: { x: true, y: true, z: true }
-                }
-            };
-        }
-
-        return {
-            metadata: metadataWithCell,
-            positions: result.positions,
-            types: result.types,
-            ids: result.ids,
-            min: result.min,
-            max: result.max
-        };
-    }
-
     public canParse(headerLines: string[]): boolean {
         const content = headerLines.join('\n');
         const hasAtomsDef = /^\s*\d+\s+atoms/m.test(content);

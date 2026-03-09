@@ -35,3 +35,9 @@ export interface TeamAIModelListItem extends TeamAIModelMetadata {
     providerName: string;
     isDefault: boolean;
 };
+
+export interface AIProviderCatalogItem {
+    id: string;
+    name: string;
+    description: string;
+};

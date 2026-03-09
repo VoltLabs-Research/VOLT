@@ -13,15 +13,27 @@ interface ApiResponse<T> {
     data: T;
 };
 
+interface SearchQueryParams extends Record<string, unknown> {
+    search: string;
+    limit: number;
+};
+
 interface CollectionClient {
     get: <TResponse>(path: string, query?: Record<string, unknown>) => Promise<TResponse>;
 };
 
 const fetchCollection = <T>(client: CollectionClient, query: string, limit: number): Promise<T[]> => {
+    const params: SearchQueryParams = {
+        search: query,
+        limit
+    };
+
     return client
-        .get<ApiResponse<T[]>>('/', { q: query, limit })
+        .get<ApiResponse<T[]>>('/', params)
         .then((response) => response.data)
-        .catch(() => []);
+        .catch((error: unknown) => {
+            throw error;
+        });
 };
 
 export default {

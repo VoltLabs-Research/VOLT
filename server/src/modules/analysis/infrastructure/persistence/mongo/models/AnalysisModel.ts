@@ -9,7 +9,8 @@ enum AnalysisRelation {
     Plugin = 'plugin',
     Trajectory = 'trajectory',
     CreatedBy = 'createdBy',
-    Team = 'team'
+    Team = 'team',
+    TeamCluster = 'teamCluster'
 };
 
 type AnalysisRelations = `${AnalysisRelation}`;
@@ -37,6 +38,12 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
     },
     clusterId: {
         type: String,
+        index: true
+    },
+    teamCluster: {
+        type: Schema.Types.ObjectId,
+        ref: 'TeamCluster',
+        required: false,
         index: true
     },
     config: {

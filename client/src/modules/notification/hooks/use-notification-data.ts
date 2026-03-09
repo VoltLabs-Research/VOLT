@@ -1,22 +1,16 @@
 import { useMarkAllReadMutation, useNotificationsInfiniteQuery } from './queries';
 import useNotificationSocket from './use-notification-socket';
 import { useCallback, useMemo } from 'react';
-import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { sileo } from 'sileo';
 import type { Notification } from '../api/entities/notification';
 
 const DEFAULT_LIMIT = 20;
 
 const useNotificationData = () => {
-    const selectedTeamId = useSelectedTeamId() ?? undefined;
-
-    useNotificationSocket(selectedTeamId, DEFAULT_LIMIT);
+    useNotificationSocket(DEFAULT_LIMIT);
 
     const infiniteQuery = useNotificationsInfiniteQuery(
-        { teamId: selectedTeamId ?? '', limit: DEFAULT_LIMIT },
-        {
-            enabled: !!selectedTeamId
-        }
+        { limit: DEFAULT_LIMIT }
     );
 
     const allNotifications = useMemo((): Notification[] => {
@@ -32,7 +26,6 @@ const useNotificationData = () => {
     }, [allNotifications]);
 
     const markAllReadMutation = useMarkAllReadMutation({
-        teamId: selectedTeamId ?? '',
         limit: DEFAULT_LIMIT
     });
 
@@ -47,17 +40,13 @@ const useNotificationData = () => {
     }, [infiniteQuery]);
 
     const markAllAsRead = useCallback(async () => {
-        if (!selectedTeamId) {
-            return;
-        }
-
         try {
             await markAllReadMutation.mutateAsync();
             sileo.success({ title: 'All notifications marked as read' });
         } catch {
             sileo.error({ title: 'Failed to mark notifications as read' });
         }
-    }, [markAllReadMutation, selectedTeamId]);
+    }, [markAllReadMutation]);
 
     return {
         notifications: allNotifications,

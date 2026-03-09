@@ -1,7 +1,8 @@
 import { createPaginationQuerySchema, createTeamScopedParamsSchema, teamParamsSchema } from '@shared/infrastructure/http/validation/shared-schemas';
 
 const paginationQuerySchema = createPaginationQuerySchema({
-    maxLimit: 100
+    maxLimit: 100,
+    includeSearch: true
 });
 
 const analysisParamsSchema = createTeamScopedParamsSchema('analysisId');

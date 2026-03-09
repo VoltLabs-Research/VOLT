@@ -8,7 +8,8 @@ import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMa
 class PluginMapper extends BaseMapper<Plugin, PluginProps, PluginDocument> {
     constructor() {
         super(Plugin, [
-            'team'
+            'team',
+            'teamCluster'
         ]);
     }
 
@@ -18,6 +19,8 @@ class PluginMapper extends BaseMapper<Plugin, PluginProps, PluginDocument> {
             _id: ignoredId,
             __v: ignoredVersion,
             workflow: workflowProps,
+            validated: _ignoredValidated,
+            validationErrors: _ignoredValidationErrors,
             ...props
         } = rawProps;
         const workflow = new Workflow(doc._id.toString(), workflowProps);

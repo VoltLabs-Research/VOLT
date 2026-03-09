@@ -1,6 +1,6 @@
 const client = {
     analysis: {
-        basePath: '/analysis-config',
+        basePath: '/analyses',
         useRBAC: true
     },
     container: {
@@ -8,10 +8,14 @@ const client = {
         useRBAC: true
     },
     trajectory: {
-        basePath: '/trajectory',
+        basePath: '/trajectories',
         useRBAC: true
     },
     team: {
+        basePath: '/teams',
+        useRBAC: false
+    },
+    teamCluster: {
         basePath: '/teams',
         useRBAC: false
     },
@@ -21,10 +25,10 @@ const client = {
     },
     chat: {
         basePath: '/chats',
-        useRBAC: true
+        useRBAC: false
     },
     metrics: {
-        basePath: '/trajectory',
+        basePath: '/trajectories',
         useRBAC: true
     }
 };

@@ -1,5 +1,6 @@
 import { del, request } from '@/app/core/http/utilities/create-service';
 import { buildFileFormData } from '@/shared/utils/file';
+
 import type { UploadBinaryInputDTO, UploadBinaryOutputDTO } from '../../../dtos/plugin/upload-binary';
 
 interface DeleteBinaryInputDTO {
@@ -27,7 +28,11 @@ const createUploadProgressHandler = ({ onProgress }: UploadBinaryInputDTO) => {
 
 const endpoints = {
     uploadBinary: request<UploadBinaryInputDTO, UploadBinaryOutputDTO>('PATCH', '/:pluginId/binary', {
-        body: ({ file }) => buildFileFormData([{ name: 'file', file }]),
+        body: ({ file, teamId }) => {
+            const formData = buildFileFormData([{ name: 'file', file }]);
+            formData.append('teamId', teamId);
+            return formData;
+        },
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: createUploadProgressHandler
     }),

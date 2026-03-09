@@ -422,6 +422,43 @@ export default class SSHConnectionService implements ISSHConnectionService {
             );
         }
 
+        if (error instanceof Error) {
+            const msg = error.message.toLowerCase();
+            const sshError = error as Error & { code?: unknown; level?: string };
+
+            if (msg.includes('timed out') || msg.includes('timeout') || sshError.code === 'ETIMEDOUT') {
+                return new SSHServiceError(
+                    ErrorCodes.SSH_CONNECTION_TIMEOUT,
+                    408,
+                    `SSH connection timed out: ${error.message}`
+                );
+            }
+
+            if (msg.includes('authentication') || sshError.level === 'client-authentication') {
+                return new SSHServiceError(
+                    ErrorCodes.SSH_AUTH_FAILED,
+                    401,
+                    `SSH authentication failed: ${error.message}`
+                );
+            }
+
+            if (msg.includes('econnrefused') || sshError.code === 'ECONNREFUSED') {
+                return new SSHServiceError(
+                    ErrorCodes.SSH_CONNECTION_REFUSED,
+                    502,
+                    `SSH connection refused: ${error.message}`
+                );
+            }
+
+            if (msg.includes('ehostunreach') || msg.includes('enetunreach') || sshError.code === 'EHOSTUNREACH' || sshError.code === 'ENETUNREACH') {
+                return new SSHServiceError(
+                    ErrorCodes.SSH_HOST_UNREACHABLE,
+                    502,
+                    `SSH host unreachable: ${error.message}`
+                );
+            }
+        }
+
         return new SSHServiceError(
             ErrorCodes.INTERNAL_SERVER_ERROR,
             500,

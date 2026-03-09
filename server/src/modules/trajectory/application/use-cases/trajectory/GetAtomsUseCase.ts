@@ -11,6 +11,7 @@ import { injectable, inject } from 'tsyringe';
 import type { ITrajectoryReader } from '@modules/trajectory/domain/port/trajectory/ITrajectoryReader';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 interface ExposureFetchResult {
     exposureName: string;
@@ -40,6 +41,9 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
         @inject(TRAJECTORY_TOKENS.TrajectoryReader)
         private readonly trajectoryReader: ITrajectoryReader,
 
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
+        private readonly trajectoryRepository: ITrajectoryRepository,
+
         @inject(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
         private readonly dumpStorage: ITrajectoryDumpStorageService,
         
@@ -61,10 +65,12 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
                 return Result.fail(buildDumpNotFoundError());
             }
 
+            const trajectory = await this.trajectoryRepository.findById(trajectoryId);
+
             const parsed = await this.trajectoryReader.read(dumpFilePath, {
                 includeIds: true,
                 properties: []
-            });
+            }, trajectory?.props.teamCluster, trajectoryId, String(timestep));
 
             const totalAtoms = parsed.ids?.length || parsed.positions.length / 3;
             const atomCount = parsed.ids?.length || parsed.positions.length / 3;

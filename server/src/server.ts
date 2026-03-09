@@ -11,12 +11,14 @@ import { readNumberEnv } from './shared/infrastructure/utilities/env';
 import app from './core/config/express';
 import startQueues from './core/bootstrap/start-queues';
 import SocketGateway from './modules/socket/socket/SocketGateway';
+import { ScriptingJupyterProxyService } from './modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
 import logger from './shared/infrastructure/logger';
 import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
 import http from 'http';
 import os from 'node:os';
 import { container } from 'tsyringe';
 import type { ISocketModule } from './modules/socket/domain/port/ISocketModule';
+import type { Duplex } from 'node:stream';
 
 const SERVER_PORT = readNumberEnv('SERVER_PORT', 8000);
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
@@ -51,6 +53,18 @@ const startServer = async () => {
 
     server.on('error', (error) => {
         logger.error(`@server: http server error: ${error}`)
+    });
+
+    server.on('upgrade', (request, socket, head) => {
+        const proxyService = container.resolve(ScriptingJupyterProxyService);
+        if (!proxyService.isJupyterUpgradeRequest(request)) {
+            return;
+        }
+
+        proxyService.handleUpgrade(request, socket as Duplex, head).catch((error: unknown) => {
+            logger.error(`@server: jupyter upgrade failed: ${error instanceof Error ? error.message : String(error)}`);
+            (socket as Duplex).destroy();
+        });
     });
 
     server.listen(SERVER_PORT, SERVER_HOST, async () => {

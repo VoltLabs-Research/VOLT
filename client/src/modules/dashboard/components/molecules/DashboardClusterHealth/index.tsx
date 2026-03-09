@@ -1,80 +1,20 @@
 import './DashboardClusterHealth.css';
+import DashboardClusterHealthGauge from '@/modules/dashboard/components/molecules/DashboardClusterHealthGauge';
+import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
+import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-cluster-metric-id';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
+import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Select from '@/shared/presentation/components/Select';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@mui/material';
 import { Cpu, HardDrive, MemoryStick } from 'lucide-react';
 import { GoArrowRight } from 'react-icons/go';
-import type { ReactNode } from 'react';
 import type { SelectOption } from '@/shared/presentation/components/Select';
-
-interface GaugeProps {
-    label: string;
-    percent: number;
-    icon: ReactNode;
-    detail: string;
-};
-
-const GAUGE_RADIUS = 28;
-const GAUGE_STROKE = 4;
-const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
-
-const getGaugeColor = (percent: number): string => {
-    if (percent >= 90) return 'var(--accent-red)';
-    if (percent >= 70) return 'var(--accent-yellow, #f5a623)';
-    return 'var(--accent-green)';
-};
-
-const GaugeRing = ({ label, percent, icon, detail }: GaugeProps) => {
-    const clamped = Math.min(100, Math.max(0, percent));
-    const offset = GAUGE_CIRCUMFERENCE - (clamped / 100) * GAUGE_CIRCUMFERENCE;
-    const color = getGaugeColor(clamped);
-
-    return (
-        <Container className='cluster-gauge d-flex column items-center gap-05'>
-            <Container className='cluster-gauge-ring p-relative d-flex flex-center'>
-                <svg width={68} height={68} viewBox='0 0 68 68'>
-                    <circle
-                        cx='34'
-                        cy='34'
-                        r={GAUGE_RADIUS}
-                        fill='none'
-                        stroke='var(--color-border-soft)'
-                        strokeWidth={GAUGE_STROKE}
-                    />
-                    <circle
-                        cx='34'
-                        cy='34'
-                        r={GAUGE_RADIUS}
-                        fill='none'
-                        stroke={color}
-                        strokeWidth={GAUGE_STROKE}
-                        strokeLinecap='round'
-                        strokeDasharray={GAUGE_CIRCUMFERENCE}
-                        strokeDashoffset={offset}
-                        transform='rotate(-90 34 34)'
-                        className='cluster-gauge-progress'
-                    />
-                </svg>
-                <Container className='cluster-gauge-center p-absolute d-flex flex-center'>
-                    <span className='font-size-2 font-weight-6 color-primary'>
-                        {Math.round(clamped)}%
-                    </span>
-                </Container>
-            </Container>
-
-            <Container className='d-flex items-center gap-025'>
-                <span className='cluster-gauge-icon color-muted'>{icon}</span>
-                <span className='font-size-1 font-weight-5 color-primary'>{label}</span>
-            </Container>
-            <span className='font-size-1 color-muted cluster-gauge-detail'>{detail}</span>
-        </Container>
-    );
-};
 
 const statusToVariant = (status: string): string => {
     switch (status) {
@@ -87,6 +27,11 @@ const statusToVariant = (status: string): string => {
 
 const DashboardClusterHealth = () => {
     const navigate = useNavigate();
+    const selectedTeamId = useSelectedTeamId();
+    const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
+        enabled: Boolean(selectedTeamId)
+    });
+    const teamClusters = teamClustersQuery.data?.data ?? [];
     const {
         metrics,
         clusters,
@@ -101,15 +46,23 @@ const DashboardClusterHealth = () => {
     }, [requestHistory]);
 
     const clusterOptions = useMemo<SelectOption[]>(() => {
-        if (!clusters.length) {
-            return [{ value: 'main-cluster', title: 'Main Cluster' }];
+        if (!teamClusters.length) {
+            return [{ value: 'main-cluster', title: 'No clusters yet' }];
         }
-        return clusters.map((cluster) => ({
-            value: cluster.clusterId,
-            title: cluster.clusterId,
-            description: `${cluster.analysisCount ?? 0} analyzes`
+        return teamClusters.map((cluster) => ({
+            value: cluster._id,
+            title: cluster.name,
+            description: getTeamClusterStatusLabel(cluster.status)
         }));
-    }, [clusters]);
+    }, [teamClusters]);
+
+    const selectedTeamCluster = useMemo(() => {
+        return teamClusters.find((cluster) => cluster._id === selectedClusterId) ?? null;
+    }, [teamClusters, selectedClusterId]);
+
+    const isSelectedClusterConnected = useMemo(() => {
+        return clusters.some((cluster) => resolveClusterMetricId(cluster) === selectedClusterId);
+    }, [clusters, selectedClusterId]);
 
     const gauges = useMemo(() => {
         if (!metrics) return null;
@@ -135,7 +88,7 @@ const DashboardClusterHealth = () => {
         ];
     }, [metrics]);
 
-    if (!isConnected || !metrics) {
+    if (!isConnected || !metrics || !isSelectedClusterConnected) {
         return (
             <Container className='dashboard-cluster-card'>
                 <Container className='dashboard-cluster-header'>
@@ -145,6 +98,18 @@ const DashboardClusterHealth = () => {
                         onChange={setSelectedClusterId}
                         className='dashboard-cluster-select'
                     />
+                </Container>
+                {selectedTeamCluster && (
+                    <Container className='dashboard-cluster-status-row'>
+                        <StatusBadge variant={getTeamClusterStatusVariant(selectedTeamCluster.status)} size='compact'>
+                            {getTeamClusterStatusLabel(selectedTeamCluster.status)}
+                        </StatusBadge>
+                    </Container>
+                )}
+                <Container className='dashboard-cluster-footer'>
+                    <StatusBadge variant='inactive' size='compact'>
+                        Metrics unavailable
+                    </StatusBadge>
                 </Container>
                 <Container className='dashboard-cluster-gauges d-flex items-center content-around flex-1'>
                     {Array.from({ length: 3 }, (_, i) => (
@@ -179,9 +144,17 @@ const DashboardClusterHealth = () => {
                 </Button>
             </Container>
 
+            {selectedTeamCluster && (
+                <Container className='dashboard-cluster-status-row'>
+                    <StatusBadge variant={getTeamClusterStatusVariant(selectedTeamCluster.status)} size='compact'>
+                        {getTeamClusterStatusLabel(selectedTeamCluster.status)}
+                    </StatusBadge>
+                </Container>
+            )}
+
             <Container className='dashboard-cluster-gauges d-flex items-center content-around flex-1'>
                 {gauges!.map((g) => (
-                    <GaugeRing
+                    <DashboardClusterHealthGauge
                         key={g.label}
                         label={g.label}
                         percent={g.percent}

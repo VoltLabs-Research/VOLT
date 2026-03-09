@@ -1,3 +1,4 @@
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import Workflow, { WorkflowProps } from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
@@ -9,17 +10,19 @@ import WorkflowProjectionService from '@modules/plugin/utilities/plugin/Workflow
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
-import { PassThrough, Readable } from 'node:stream';
-import { injectable, inject } from 'tsyringe';
-import { v4 } from 'uuid';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import logger from '@shared/infrastructure/logger';
 import archiver from 'archiver';
+import logger from '@shared/infrastructure/logger';
 import path from 'node:path';
+import { PassThrough, Readable } from 'node:stream';
+import { inject, injectable } from 'tsyringe';
 import unzipper from 'unzipper';
+import { v4 } from 'uuid';
+
+import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 
 const isWorkflowProps = (value: unknown): value is WorkflowProps => {
     if (!isRecord(value)) {
@@ -42,6 +45,9 @@ export default class PluginStorageService implements IPluginStorageService {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository)
         private pluginRepo: IPluginRepository,
+
+        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
+        private readonly teamClusterRepository: ITeamClusterRepository,
 
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService,
@@ -100,7 +106,7 @@ export default class PluginStorageService implements IPluginStorageService {
         logger.info(`@plugin-storage-service: binary deleted: ${pathToDelete}`);
     }
 
-    async uploadBinary(pluginId: string, file: any): Promise<BinaryUploadResult> {
+    async uploadBinary(pluginId: string, teamId: string, file: any): Promise<BinaryUploadResult> {
         const plugin = await this.pluginRepo.findById(pluginId);
         if (!plugin) {
             throw ApplicationError.notFound(
@@ -114,7 +120,6 @@ export default class PluginStorageService implements IPluginStorageService {
         const uniqueName = `${v4()}${fileExtension}`;
         const objectPath = `plugin-binaries/${pluginId}/${uniqueName}`;
 
-        // Delete the old binary from storage if one exists (prevents orphaned files)
         const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
         const oldBinaryPath = entrypointNode?.data.entrypoint?.binaryObjectPath;
         if(oldBinaryPath){
@@ -124,6 +129,13 @@ export default class PluginStorageService implements IPluginStorageService {
         }
 
         await this.binaryCacheService.evictByPluginId(pluginId);
+        const teamClusterId = await this.resolveDefaultTeamClusterId(teamId);
+        if (!teamClusterId) {
+            throw ApplicationError.conflict(
+                'Plugin::TeamClusterRequired',
+                'Connect a team cluster before uploading plugin binaries'
+            );
+        }
 
         await this.storageService.upload(
             SYS_BUCKETS.PLUGINS,
@@ -142,6 +154,11 @@ export default class PluginStorageService implements IPluginStorageService {
         });
 
         await this.persistWorkflow(pluginId, plugin.props.workflow);
+        if (teamClusterId !== plugin.props.teamCluster) {
+            await this.pluginRepo.updateById(pluginId, {
+                teamCluster: teamClusterId
+            });
+        }
 
         logger.info(`@plugin-storage-service: binary uploaded: ${objectPath} (${file.size} bytes)`);
         return {
@@ -163,7 +180,6 @@ export default class PluginStorageService implements IPluginStorageService {
         const exportData = {
             workflow: plugin.props.workflow.props,
             status: plugin.props.status,
-            validated: plugin.props.validated,
             exportedAt: new Date().toISOString()
         };
 
@@ -228,13 +244,13 @@ export default class PluginStorageService implements IPluginStorageService {
 
         const workflow = new Workflow('', importData.workflow);
         const projection = WorkflowProjectionService.project(workflow, '');
+        const defaultTeamClusterId = await this.resolveDefaultTeamClusterId(teamId);
 
         const newPlugin = await this.pluginRepo.create({
             workflow,
-            status: status ?? PluginStatus.Draft,
+            status: status ?? PluginStatus.Published,
             team: teamId,
-            validated: Boolean(importData.validated),
-            validationErrors: Array.isArray(importData.validationErrors) ? importData.validationErrors : [],
+            teamCluster: defaultTeamClusterId,
             modifier: projection.modifier,
             exposures: projection.exposures,
             arguments: projection.arguments,
@@ -274,5 +290,20 @@ export default class PluginStorageService implements IPluginStorageService {
             plugin: newPlugin,
             binaryImported
         };
+    }
+
+    private async resolveDefaultTeamClusterId(teamId: string): Promise<string | null> {
+        const teamClusters = await this.teamClusterRepository.findAll({
+            filter: {
+                team: teamId
+            },
+            page: 1,
+            limit: 1,
+            sort: {
+                createdAt: 1
+            }
+        });
+
+        return teamClusters.data[0]?.id ?? null;
     }
 };

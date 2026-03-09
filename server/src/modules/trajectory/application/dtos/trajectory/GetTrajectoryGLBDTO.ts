@@ -7,6 +7,6 @@ export interface GetTrajectoryGLBInputDTO {
 
 export interface GetTrajectoryGLBOutputDTO {
     stream: Readable;
-    size: number;
+    size?: number;
     objectName: string;
 };

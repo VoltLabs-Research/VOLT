@@ -1,10 +1,16 @@
 import Job from '@modules/jobs/domain/entities/Job';
+import type { Job as BullJob } from 'bullmq';
+
+export type InlineProcessor = (job: BullJob) => Promise<void>;
 
 export interface QueueOptions {
     queueName: string;
     workerPath: string;
     maxConcurrentJobs?: number;
     customStatusMapping?: Record<string, string>;
+    withWorker?: boolean;
+    workerExecArgv?: string[];
+    inlineProcessor?: InlineProcessor;
 };
 
 export interface IJobQueueService {

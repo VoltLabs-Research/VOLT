@@ -40,6 +40,8 @@ const workflowSchema = z.object({
     viewport: workflowViewportSchema.optional()
 }).strict();
 
+const objectIdSchema = z.string().trim().regex(/^[a-fA-F0-9]{24}$/);
+
 const createPluginSchema = z.object({
     workflow: workflowSchema
 }).strict();
@@ -53,8 +55,16 @@ const validateWorkflowSchema = z.object({
     workflow: workflowSchema
 }).strict();
 
+const executePluginSchema = z.object({
+    teamClusterId: objectIdSchema,
+    selectedFrameOnly: z.boolean().optional(),
+    timestep: z.number().optional(),
+    config: z.record(z.string(), z.unknown())
+}).strict();
+
 export const pluginValidation = {
     create: createValidationMiddleware(createPluginSchema),
     update: createValidationMiddleware(updatePluginSchema),
-    validateWorkflow: createValidationMiddleware(validateWorkflowSchema)
+    validateWorkflow: createValidationMiddleware(validateWorkflowSchema),
+    execute: createValidationMiddleware(executePluginSchema)
 };

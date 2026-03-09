@@ -9,6 +9,7 @@ import { inject, injectable } from 'tsyringe';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 @injectable()
 export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingNotebookInputDTO, DeleteScriptingNotebookOutputDTO, ApplicationError> {
@@ -17,7 +18,10 @@ export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingN
         private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
 
         @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
+        private readonly eventBus: IEventBus,
+
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
     async execute(input: DeleteScriptingNotebookInputDTO): Promise<Result<DeleteScriptingNotebookOutputDTO, ApplicationError>> {
@@ -28,6 +32,19 @@ export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingN
                     ErrorCodes.RESOURCE_NOT_FOUND,
                     'Notebook not found'
                 ));
+            }
+
+            if (notebook.props.teamCluster && notebook.props.runtimeNotebookId) {
+                try {
+                    await this.teamClusterDaemonClient.request<{ deleted: boolean; }>(
+                        notebook.props.teamCluster,
+                        `/api/notebooks/${notebook.props.runtimeNotebookId}`,
+                        {
+                        method: 'DELETE'
+                        }
+                    );
+                } catch {
+                }
             }
 
             await this.scriptingNotebookRepository.deleteById(input.notebookId);

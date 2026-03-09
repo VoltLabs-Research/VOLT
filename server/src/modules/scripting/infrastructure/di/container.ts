@@ -4,10 +4,10 @@ import { DeleteScriptingNotebookUseCase } from '@modules/scripting/application/u
 import { ListScriptingNotebooksUseCase } from '@modules/scripting/application/use-cases/ListScriptingNotebooksUseCase';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
-import { JupyterContainerManager } from '@modules/scripting/infrastructure/services/JupyterContainerManager';
+import { DaemonScriptingSessionOrchestrator } from '@modules/scripting/infrastructure/services/DaemonScriptingSessionOrchestrator';
+import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
-import { JupyterServerService } from '@modules/scripting/infrastructure/services/JupyterServerService';
-import { JupyterSessionOrchestrator } from '@modules/scripting/infrastructure/services/JupyterSessionOrchestrator';
+import { ScriptingJupyterProxyService } from '@modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
 import { RedisScriptingSessionLock } from '@modules/scripting/infrastructure/services/RedisScriptingSessionLock';
 import { SCRIPTING_TOKENS } from './ScriptingTokens';
 import type { ClassProvider } from 'tsyringe';
@@ -17,11 +17,11 @@ const SCRIPTING_AI_TOOL_CLASSES: ClassProvider<unknown>[] = scriptingAiTools.map
 
 export const registerScriptingDependencies = (): void => {
     container.registerSingleton(SCRIPTING_TOKENS.ScriptingNotebookRepository, ScriptingNotebookRepository);
-    container.registerSingleton(SCRIPTING_TOKENS.ScriptingSessionOrchestrator, JupyterSessionOrchestrator);
+    container.registerSingleton(SCRIPTING_TOKENS.ScriptingSessionOrchestrator, DaemonScriptingSessionOrchestrator);
     container.registerSingleton(SCRIPTING_TOKENS.ScriptingSessionLock, RedisScriptingSessionLock);
-    container.registerSingleton(JupyterContainerManager);
     container.registerSingleton(JupyterNotebookService);
-    container.registerSingleton(JupyterServerService);
+    container.registerSingleton(ScriptingJupyterAccessTokenService);
+    container.registerSingleton(ScriptingJupyterProxyService);
 
     container.registerSingleton(CreateScriptingJupyterSessionUseCase);
     container.registerSingleton(ListScriptingNotebooksUseCase);

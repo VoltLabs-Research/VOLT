@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { ParseResult, FrameMetadata, ParseOptions } from '@modules/trajectory/domain/contracts/trajectory';
+import { FrameMetadata } from '@modules/trajectory/domain/contracts/trajectory';
 import LammpsDataParser from './LammpsDataParser';
 import LammpsDumpParser from './LammpsDumpParser';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -38,29 +38,18 @@ export default class TrajectoryParserFactory {
     private static dumpParser = new LammpsDumpParser();
     private static dataParser = new LammpsDataParser();
 
-    public static async parse(filePath: string, options?: ParseOptions): Promise<ParseResult> {
-        const headerLines = await peekFileHeader(filePath, 200);
-
-        if (this.dumpParser.canParse(headerLines)) {
-            return this.dumpParser.parse(filePath, options);
-        } else if (this.dataParser.canParse(headerLines)) {
-            return this.dataParser.parse(filePath, options);
-        } else {
-            throw ApplicationError.badRequest(
-                ErrorCodes.TRAJECTORY_FORMAT_UNSUPPORTED,
-                'Unsupported trajectory format'
-            );
-        }
-    }
-
     public static async parseMetadata(filePath: string): Promise<FrameMetadata> {
         const headerLines = await peekFileHeader(filePath, 200);
 
         if (this.dumpParser.canParse(headerLines)) {
             return this.dumpParser.parseMetadataOnly(headerLines);
+        } else if (this.dataParser.canParse(headerLines)) {
+            return this.dataParser.parseMetadataOnly(headerLines);
         } else {
-            const result = await this.parse(filePath);
-            return result.metadata;
+            throw ApplicationError.badRequest(
+                ErrorCodes.TRAJECTORY_FORMAT_UNSUPPORTED,
+                'Unsupported trajectory format'
+            );
         }
     }
 };
