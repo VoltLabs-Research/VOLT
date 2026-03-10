@@ -90,9 +90,16 @@ export const listPluginListings = async (filter: PluginListingFilter): Promise<L
 
     const columnSet = new Set<string>();
     for (const doc of docs) {
-        for (const key of Object.keys(doc)) {
-            if (!SYSTEM_KEYS.has(key)) {
+        const rowData = (doc as Record<string, unknown>).row;
+        if (rowData && typeof rowData === 'object' && !Array.isArray(rowData)) {
+            for (const key of Object.keys(rowData as Record<string, unknown>)) {
                 columnSet.add(key);
+            }
+        } else {
+            for (const key of Object.keys(doc)) {
+                if (!SYSTEM_KEYS.has(key)) {
+                    columnSet.add(key);
+                }
             }
         }
     }

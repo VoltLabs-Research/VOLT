@@ -44,9 +44,16 @@ export const deriveColumns = (rows: DaemonListingRow[]): ColumnDef[] => {
     const seen = new Set<string>();
 
     for (const row of rows) {
-        for (const key of Object.keys(row)) {
-            if (!SYSTEM_KEYS.has(key)) {
+        const nestedRow = row.row;
+        if (nestedRow && typeof nestedRow === 'object' && !Array.isArray(nestedRow)) {
+            for (const key of Object.keys(nestedRow)) {
                 seen.add(key);
+            }
+        } else {
+            for (const key of Object.keys(row)) {
+                if (!SYSTEM_KEYS.has(key)) {
+                    seen.add(key);
+                }
             }
         }
     }
@@ -58,11 +65,18 @@ export const deriveColumns = (rows: DaemonListingRow[]): ColumnDef[] => {
 };
 
 export const mapDaemonRow = (row: DaemonListingRow): ListingRowData => {
+    const nestedRow = row.row;
     const rowFields: Record<string, unknown> = {};
 
-    for (const [key, value] of Object.entries(row)) {
-        if (!SYSTEM_KEYS.has(key)) {
+    if (nestedRow && typeof nestedRow === 'object' && !Array.isArray(nestedRow)) {
+        for (const [key, value] of Object.entries(nestedRow)) {
             rowFields[key] = value;
+        }
+    } else {
+        for (const [key, value] of Object.entries(row)) {
+            if (!SYSTEM_KEYS.has(key)) {
+                rowFields[key] = value;
+            }
         }
     }
 
