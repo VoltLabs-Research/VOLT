@@ -18,10 +18,6 @@ import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence
 import CloudUploadProcessor from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadProcessor';
 import AtomPropertiesService from '@modules/trajectory/infrastructure/services/trajectory/AtomPropertiesService';
 import ColorCodingService from '@modules/trajectory/infrastructure/services/color-coding/ColorCodingService';
-import AtomisticExporter from '@modules/trajectory/infrastructure/services/trajectory/exporters/AtomisticExporter';
-import ChartExporter from '@modules/trajectory/infrastructure/services/trajectory/exporters/ChartExporter';
-import DislocationExporter from '@modules/trajectory/infrastructure/services/trajectory/exporters/DislocationExporter';
-import MeshExporter from '@modules/trajectory/infrastructure/services/trajectory/exporters/MeshExporter';
 import ParticleFilterService from '@modules/trajectory/infrastructure/services/particle-filter/ParticleFilterService';
 import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
 import TeamMetricsQueryService from '@modules/trajectory/infrastructure/services/trajectory/TeamMetricsQueryService';
@@ -46,10 +42,6 @@ export const registerTrajectoryDependencies = (): void => {
             [TRAJECTORY_TOKENS.TrajectoryDumpStorageService, TrajectoryDumpStorageService],
             [TRAJECTORY_TOKENS.TrajectoryReader, TrajectoryReader],
             [TRAJECTORY_TOKENS.TrajectoryBackgroundProcessor, TrajectoryBackgroundProcessor],
-            [TRAJECTORY_TOKENS.AtomisticExporter, AtomisticExporter],
-            [TRAJECTORY_TOKENS.DislocationExporter, DislocationExporter],
-            [TRAJECTORY_TOKENS.MeshExporter, MeshExporter],
-            [TRAJECTORY_TOKENS.ChartExporter, ChartExporter],
             [TRAJECTORY_TOKENS.AtomPropertiesService, AtomPropertiesService],
             [TRAJECTORY_TOKENS.ColorCodingService, ColorCodingService],
             [TRAJECTORY_TOKENS.ParticleFilterService, ParticleFilterService],

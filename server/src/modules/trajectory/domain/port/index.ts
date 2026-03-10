@@ -8,4 +8,3 @@ export * from './trajectory/ITrajectoryDumpStorageService';
 export * from './trajectory/ITrajectoryReader';
 export * from './trajectory/ITrajectoryRepository';
 export * from './trajectory/ParserTypes';
-export * from './trajectory/exporters';

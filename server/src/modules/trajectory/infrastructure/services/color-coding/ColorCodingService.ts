@@ -3,7 +3,6 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { IAtomisticExporter } from '@modules/trajectory/domain/port/trajectory/exporters/AtomisticExporter';
 import { IAtomPropertiesService } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
 import { IColorCodingService } from '@modules/trajectory/domain/port/color-coding/IColorCodingService';
 import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
@@ -48,9 +47,6 @@ export default class ColorCodingService implements IColorCodingService {
 
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
-
-        @inject(TRAJECTORY_TOKENS.AtomisticExporter)
-        private readonly atomisticExporter: IAtomisticExporter,
 
         @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
         private readonly sceneArtifactRepository: ISceneArtifactRepository,
