@@ -50,7 +50,6 @@ export class AnalysisDispatchService {
                 ...job,
                 executionData: {
                     binaryObjectPath: this.resolveEntrypoint(input.workflow).binaryObjectPath,
-                    binaryFileName: this.resolveEntrypoint(input.workflow).binaryFileName,
                     arguments: this.resolveEntrypoint(input.workflow).arguments,
                     pluginId: input.pluginId,
                     trajectoryId: input.trajectoryId,
@@ -117,12 +116,11 @@ export class AnalysisDispatchService {
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
-        });
+            });
     }
 
     private resolveEntrypoint(workflow: AnalysisStartRequest['workflow']): {
         binaryObjectPath: string;
-        binaryFileName?: string;
         arguments: string;
     } {
         const entrypoint = workflow.nodes.find((node) => node.type === 'entrypoint');
@@ -133,7 +131,6 @@ export class AnalysisDispatchService {
 
         return {
             binaryObjectPath: String(entrypointData.binaryObjectPath),
-            binaryFileName: typeof entrypointData.binaryFileName === 'string' ? entrypointData.binaryFileName : undefined,
             arguments: String(entrypointData.arguments)
         };
     }

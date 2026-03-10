@@ -45,6 +45,7 @@ export class JupyterRuntimeService {
     async ensureSession(input: EnsureNotebookSessionInput): Promise<CreateNotebookSessionResponse> {
         const runtimeContainer = await this.ensureContainer(input);
         const notebookFilePath = this.getNotebookFilePath(input.notebook.notebookPath);
+        const internalPath = this.buildJupyterPath(input.notebook.notebookPath);
 
         await this.dockerRuntimeService.writeContainerFile(
             runtimeContainer.containerId,
@@ -55,7 +56,8 @@ export class JupyterRuntimeService {
         const ready = await this.ensureJupyterServer(runtimeContainer.containerId, runtimeContainer.hostPort);
         return {
             jupyter: {
-                url: this.buildJupyterUrl(input.notebook._id, input.notebook.notebookPath),
+                internalPath,
+                url: internalPath,
                 ready
             }
         };
@@ -213,18 +215,15 @@ export class JupyterRuntimeService {
         return false;
     }
 
-    private buildJupyterUrl(notebookId: string, notebookPath?: string): string {
-        let encodedNotebookPath = '';
-        if (notebookPath) {
-            encodedNotebookPath = notebookPath.split('/').map(encodeURIComponent).join('/');
-        }
+    private buildJupyterPath(notebookPath?: string): string {
+        const encodedNotebookPath = notebookPath
+            ? notebookPath.split('/').map(encodeURIComponent).join('/')
+            : '';
+        const basePath = encodedNotebookPath
+            ? path.posix.join(this.config.jupyter.uiPath, 'tree', encodedNotebookPath)
+            : this.config.jupyter.uiPath;
 
-        let labPath = `${this.config.jupyter.publicBasePath}/${encodeURIComponent(notebookId)}${this.config.jupyter.uiPath}`;
-        if (encodedNotebookPath) {
-            labPath = `${labPath}/tree/${encodedNotebookPath}`;
-        }
-
-        return `${labPath}?token=${encodeURIComponent(this.config.jupyter.token)}`;
+        return `${basePath}?token=${encodeURIComponent(this.config.jupyter.token)}`;
     }
 
     private getNotebookFilePath(notebookPath?: string): string {

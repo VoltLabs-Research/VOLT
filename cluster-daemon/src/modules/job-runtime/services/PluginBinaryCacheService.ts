@@ -7,6 +7,10 @@ import type { Readable } from 'node:stream';
 
 const PLUGINS_BUCKET = 'volt-plugins';
 
+const buildCacheKey = (binaryObjectPath: string): string => {
+    return path.basename(binaryObjectPath);
+};
+
 const writeStreamToFile = (stream: Readable, filePath: string): Promise<void> => {
     return new Promise((resolve, reject) => {
         const chunks: Buffer[] = [];
@@ -24,13 +28,13 @@ const writeStreamToFile = (stream: Readable, filePath: string): Promise<void> =>
 };
 
 export interface PluginBinaryCacheService {
-    getBinaryPath(binaryObjectPath: string, binaryFileName?: string): Promise<string>;
+    getBinaryPath(binaryObjectPath: string): Promise<string>;
 };
 
 export const createPluginBinaryCacheService = (minioService: MinioService): PluginBinaryCacheService => ({
-    async getBinaryPath(binaryObjectPath, binaryFileName) {
-        const fileName = binaryFileName || path.basename(binaryObjectPath);
-        const localPath = path.join(DAEMON_PATHS.pluginBinCache, fileName);
+    async getBinaryPath(binaryObjectPath) {
+        const cacheKey = buildCacheKey(binaryObjectPath);
+        const localPath = path.join(DAEMON_PATHS.pluginBinCache, cacheKey);
 
         try {
             await fs.access(localPath, fs.constants.X_OK);

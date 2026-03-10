@@ -135,10 +135,7 @@ export class AnalysisWorker {
                 timestamp: runningTimestamp
             });
 
-            const binaryPath = await this.pluginBinaryCacheService.getBinaryPath(
-                executionData.binaryObjectPath,
-                executionData.binaryFileName
-            );
+            const binaryPath = await this.pluginBinaryCacheService.getBinaryPath(executionData.binaryObjectPath);
             const dumpLocalPath = await this.downloadDump(inputFile);
             const outputDir = path.join(DAEMON_PATHS.analysisOutput, `${executionData.analysisId}-${forEachIndex}-${Date.now()}`);
             await fs.mkdir(outputDir, { recursive: true });

@@ -17,10 +17,14 @@ import type { IScriptingNotebookRepository } from '@modules/scripting/domain/por
 
 interface DaemonNotebookSessionResponse {
     jupyter?: {
-        url: string;
+        internalPath?: string;
+        path?: string;
+        url?: string;
         ready: boolean;
     };
 };
+
+const LEGACY_DAEMON_PROXY_BASE_PATH = '/api/notebooks/proxy';
 
 const buildServerBaseUrl = (): string => {
     const configuredServerUrl = process.env.SERVER_ENDPOINT?.trim();
@@ -70,7 +74,8 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         );
 
         if (response.jupyter) {
-            const jupyterUrl = this.buildProxyJupyterUrl(input.teamId, runtimeNotebookId, response.jupyter.url, input.userId);
+            const daemonPath = this.resolveDaemonJupyterPath(response.jupyter);
+            const jupyterUrl = this.buildProxyJupyterUrl(input.teamId, runtimeNotebookId, daemonPath, input.userId);
             return {
                 jupyter: response.jupyter
                     ? {
@@ -151,8 +156,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         return createdNotebook._id;
     }
 
-    private buildProxyJupyterUrl(teamId: string, runtimeNotebookId: string, daemonUrl: string, userId: string): string {
-        const daemonPath = this.extractDaemonPath(daemonUrl);
+    private buildProxyJupyterUrl(teamId: string, runtimeNotebookId: string, daemonPath: string, userId: string): string {
         const accessToken = this.accessTokenService.create({
             teamId,
             runtimeNotebookId,
@@ -164,21 +168,47 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         return proxyUrl.toString();
     }
 
-    private extractDaemonPath(daemonUrl: string): string {
-        if (!daemonUrl) {
+    private resolveDaemonJupyterPath(jupyter: NonNullable<DaemonNotebookSessionResponse['jupyter']>): string {
+        if (jupyter.internalPath) {
+            return this.normalizeDaemonPath(jupyter.internalPath);
+        }
+
+        if (jupyter.path) {
+            return this.normalizeDaemonPath(jupyter.path);
+        }
+
+        return this.normalizeDaemonPath(jupyter.url || '/');
+    }
+
+    private normalizeDaemonPath(value: string): string {
+        if (!value) {
             return '/';
         }
 
-        if (daemonUrl.startsWith('/')) {
-            return daemonUrl;
+        if (value.startsWith('/')) {
+            return this.stripLegacyDaemonProxyPrefix(value);
         }
 
         try {
-            const parsedUrl = new URL(daemonUrl);
+            const parsedUrl = new URL(value);
             const search = parsedUrl.search || '';
-            return `${parsedUrl.pathname}${search}`;
+            return `${this.stripLegacyDaemonProxyPrefix(parsedUrl.pathname)}${search}`;
         } catch {
-            return daemonUrl.startsWith('/') ? daemonUrl : `/${daemonUrl.replace(/^\/+/, '')}`;
+            const normalizedValue = value.startsWith('/') ? value : `/${value.replace(/^\/+/, '')}`;
+            return this.stripLegacyDaemonProxyPrefix(normalizedValue);
         }
+    }
+
+    private stripLegacyDaemonProxyPrefix(pathname: string): string {
+        const normalizedPathname = pathname.startsWith('/') ? pathname : `/${pathname}`;
+        if (normalizedPathname === LEGACY_DAEMON_PROXY_BASE_PATH) {
+            return '/';
+        }
+
+        if (normalizedPathname.startsWith(`${LEGACY_DAEMON_PROXY_BASE_PATH}/`)) {
+            return normalizedPathname.slice(LEGACY_DAEMON_PROXY_BASE_PATH.length);
+        }
+
+        return normalizedPathname;
     }
 };
