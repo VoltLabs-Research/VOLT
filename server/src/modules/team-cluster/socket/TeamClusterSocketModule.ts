@@ -3,6 +3,7 @@ import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import CompleteTeamClusterDeletionUseCase from '@modules/team-cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
 import ProcessDaemonJobCompletionUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonJobCompletionUseCase';
+import ProcessDaemonSceneArtifactUpsertUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
 import ProcessDaemonTrajectoryImportUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonTrajectoryImportUseCase';
 import ProcessTeamClusterHealthcheckUseCase from '@modules/team-cluster/application/use-cases/ProcessTeamClusterHealthcheckUseCase';
 import RecordTeamClusterHeartbeatUseCase from '@modules/team-cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
@@ -79,6 +80,9 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
         @inject(ProcessDaemonJobCompletionUseCase)
         private readonly processDaemonJobCompletionUseCase: ProcessDaemonJobCompletionUseCase,
+
+        @inject(ProcessDaemonSceneArtifactUpsertUseCase)
+        private readonly processDaemonSceneArtifactUpsertUseCase: ProcessDaemonSceneArtifactUpsertUseCase,
 
         @inject(ProcessDaemonTrajectoryImportUseCase)
         private readonly processDaemonTrajectoryImportUseCase: ProcessDaemonTrajectoryImportUseCase
@@ -211,6 +215,12 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
         if (payload.command === 'analysis.job-complete') {
             const result = await this.processDaemonJobCompletionUseCase.execute(payload.payload as never);
+            this.emitUseCaseResult(socketId, payload.requestId, result);
+            return;
+        }
+
+        if (payload.command === 'trajectory.scene-artifact.upsert') {
+            const result = await this.processDaemonSceneArtifactUpsertUseCase.execute(payload.payload as never);
             this.emitUseCaseResult(socketId, payload.requestId, result);
             return;
         }

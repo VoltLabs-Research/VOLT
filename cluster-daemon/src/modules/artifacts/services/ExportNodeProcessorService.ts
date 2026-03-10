@@ -1,9 +1,9 @@
 import { ObjectBucketName, type AnalysisExposureDefinition, type AnalysisJobExecutionData } from '../../../shared/contracts';
 import { logger } from '../../../core/logger';
 import { MinioService } from '../../platform/services';
-import { upsertSceneArtifactByObjectName } from '../repositories/SceneArtifactRepository';
 import { NativeModuleLoader } from '../../trajectory-native/services';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
+import type { DaemonArtifactReporterService } from '../../cloud-control/services';
 
 type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
 
@@ -437,7 +437,8 @@ export interface ExportNodeProcessorService {
 
 export const createExportNodeProcessorService = (
     minioService: MinioService,
-    nativeModuleLoader: NativeModuleLoader
+    nativeModuleLoader: NativeModuleLoader,
+    daemonArtifactReporterService: DaemonArtifactReporterService
 ): ExportNodeProcessorService => {
     const exportAtomistic = async (decodedPayload: Record<string, unknown>, objectPath: string): Promise<void> => {
         const exportData = getNestedValue(decodedPayload, 'export.AtomisticExporter');
@@ -678,7 +679,7 @@ export const createExportNodeProcessorService = (
             }
 
             if (exporter !== 'ChartExporter') {
-                await upsertSceneArtifactByObjectName(objectPath, {
+                await daemonArtifactReporterService.reportArtifact({
                     trajectory: input.executionData.trajectoryId,
                     teamCluster: input.teamClusterId,
                     analysis: input.executionData.analysisId,

@@ -1,13 +1,12 @@
 import { createObjectSyncService, type MinioService } from '../../platform/services';
 import type { RuntimeEventBroker } from '../../../shared/contracts';
-import type { PluginListingRepository, SceneArtifactRepository } from '../../artifacts/repositories';
+import type { PluginListingRepository } from '../../artifacts/repositories';
 import type { ReverseChannelCommandHandler } from '../services';
 
 interface PluginHandlersDependencies {
     minioService: MinioService;
     eventBroker: RuntimeEventBroker;
     pluginListingRepository: PluginListingRepository;
-    sceneArtifactRepository: SceneArtifactRepository;
 }
 
 export const createPluginHandlers = (deps: PluginHandlersDependencies): ReverseChannelCommandHandler[] => [
@@ -27,12 +26,6 @@ export const createPluginHandlers = (deps: PluginHandlersDependencies): ReverseC
         command: 'plugin.sub-listings.list',
         execute: async (payload) => ({
             data: await deps.pluginListingRepository.listPluginSubListings(payload as never)
-        })
-    },
-    {
-        command: 'plugin.scene-artifacts.list',
-        execute: async (payload) => ({
-            data: await deps.sceneArtifactRepository.listSceneArtifacts(payload as never)
         })
     }
 ];

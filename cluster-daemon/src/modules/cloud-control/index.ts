@@ -1,10 +1,10 @@
 import { notebookRepository } from '../jupyter/repositories';
-import { pluginListingRepository, sceneArtifactRepository } from '../artifacts/repositories';
+import { pluginListingRepository } from '../artifacts/repositories';
 import type { DaemonConfig } from '../../core/config';
 import type { RuntimeEventBroker } from '../../shared/services';
 import type { DockerRuntimeService, MinioService, QueueService, RedisConnectionService } from '../platform/services';
 import type { AnalysisDispatchService } from '../job-runtime/services';
-import { createDaemonJobReporterService, ReverseChannelSocketBridge, VoltCloudConnection, type DaemonJobReporterService } from './services';
+import { createDaemonArtifactReporterService, createDaemonJobReporterService, ReverseChannelSocketBridge, VoltCloudConnection, type DaemonArtifactReporterService, type DaemonJobReporterService } from './services';
 import type { JupyterRuntimeService } from '../jupyter/services';
 import type { MetricsService } from '../metrics/services';
 import type { FilterEvaluatorService, GlbExporterService, RasterizerService, TrajectoryParserService } from '../trajectory-native/services';
@@ -22,6 +22,7 @@ import {
 export interface CloudControlModule {
     reverseChannelSocketBridge: ReverseChannelSocketBridge;
     voltCloudConnection: VoltCloudConnection;
+    daemonArtifactReporterService: DaemonArtifactReporterService;
     daemonJobReporterService: DaemonJobReporterService;
 }
 
@@ -55,8 +56,7 @@ export const createCloudControlModule = (deps: {
         ...createPluginHandlers({
             minioService: deps.minioService,
             eventBroker: deps.eventBroker,
-            pluginListingRepository,
-            sceneArtifactRepository
+            pluginListingRepository
         }),
         ...createContainerHandlers({ dockerRuntimeService: deps.dockerRuntimeService }),
         ...createNotebookHandlers({ notebookRepository, jupyterRuntimeService: deps.jupyterRuntimeService }),
@@ -77,6 +77,7 @@ export const createCloudControlModule = (deps: {
     return {
         reverseChannelSocketBridge,
         voltCloudConnection,
+        daemonArtifactReporterService: createDaemonArtifactReporterService(voltCloudConnection),
         daemonJobReporterService: createDaemonJobReporterService(voltCloudConnection)
     };
 };

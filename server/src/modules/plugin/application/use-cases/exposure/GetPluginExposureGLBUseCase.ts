@@ -22,28 +22,6 @@ import type { IUseCase } from '@shared/application/IUseCase';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
-interface DaemonSceneArtifact {
-    _id: string;
-    objectName: string;
-    storageBucket?: string;
-    params: Record<string, unknown>;
-};
-
-interface PaginatedDaemonSceneArtifactResult {
-    data: DaemonSceneArtifact[];
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-};
-
-interface ResolvedSceneArtifact {
-    props: {
-        objectName: string;
-        storageBucket?: string;
-    };
-};
-
 @injectable()
 export class GetPluginExposureGLBUseCase implements IUseCase<
     GetPluginExposureGLBInputDTO,
@@ -90,10 +68,7 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
             }
         };
 
-        const teamClusterId = analysis.props.teamCluster ? String(analysis.props.teamCluster) : undefined;
-        const artifact = teamClusterId
-            ? await this.findRemoteArtifact(teamClusterId, input)
-            : await this.sceneArtifactRepository.findOne(artifactFilter);
+        const artifact = await this.sceneArtifactRepository.findOne(artifactFilter);
 
         if (!artifact) {
             return Result.fail(ApplicationError.notFound(
@@ -104,6 +79,7 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
 
         const objectName = artifact.props.objectName;
         const bucket = artifact.props.storageBucket || SYS_BUCKETS.MODELS;
+        const teamClusterId = artifact.props.teamCluster ? String(artifact.props.teamCluster) : undefined;
 
         if (teamClusterId) {
             try {
@@ -153,48 +129,5 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
             filename: objectName,
             cacheControl: 'public, max-age=31536000, immutable'
         }));
-    }
-
-    private async findRemoteArtifact(
-        teamClusterId: string,
-        input: GetPluginExposureGLBInputDTO
-    ): Promise<ResolvedSceneArtifact | null> {
-        const limit = 100;
-        const exposureId = String(input.exposureId);
-        let page = 1;
-
-        while (true) {
-            const artifacts = await this.teamClusterDaemonClient.command<PaginatedDaemonSceneArtifactResult>(
-                teamClusterId,
-                'plugin.scene-artifacts.list',
-                {
-                    trajectoryId: input.trajectoryId,
-                    analysisId: input.analysisId,
-                    sourceType: SceneArtifactSourceType.PluginExposure,
-                    timestep: Number(input.timestep),
-                    page,
-                    limit
-                }
-            );
-
-            const artifact = artifacts.data.find((candidate) => {
-                return String(candidate.params.exposureId) === exposureId;
-            });
-
-            if (artifact) {
-                return {
-                    props: {
-                        objectName: artifact.objectName,
-                        storageBucket: artifact.storageBucket
-                    }
-                };
-            }
-
-            if (page >= artifacts.totalPages) {
-                return null;
-            }
-
-            page += 1;
-        }
     }
 };

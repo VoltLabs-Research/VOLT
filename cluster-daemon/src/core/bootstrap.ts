@@ -17,7 +17,6 @@ export const bootstrap = async (): Promise<void> => {
     const platform = createPlatformModule(config);
     const metricsService = new MetricsService();
     const trajectoryNative = createTrajectoryNativeModule(platform.minioService);
-    const artifacts = createArtifactsModule(platform.minioService, trajectoryNative.nativeModuleLoader);
     const workflowRuntime = createWorkflowRuntimeModule();
     const jupyterRuntimeService = new JupyterRuntimeService(config, platform.dockerRuntimeService);
     const sshConnectionService = new SSHConnectionService();
@@ -55,6 +54,11 @@ export const bootstrap = async (): Promise<void> => {
         eventBroker: platform.eventBroker
     });
     const cloudControl = bootstrapCloudControl(jobRuntime.analysisDispatchService);
+    const artifacts = createArtifactsModule(
+        platform.minioService,
+        trajectoryNative.nativeModuleLoader,
+        cloudControl.daemonArtifactReporterService
+    );
     const analysisWorker = createAnalysisWorker({
         queueService: platform.queueService,
         redisConnectionService: platform.redisConnectionService,
