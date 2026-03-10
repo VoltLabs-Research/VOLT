@@ -1,5 +1,4 @@
 FROM node:22
-
 WORKDIR /app
 
 RUN apt-get update \
@@ -10,7 +9,7 @@ COPY package.json ./
 COPY native/package.json ./native/package.json
 COPY native ./native
 RUN npm install
-RUN npm --prefix native in  stall
+RUN npm --prefix native install
 
 COPY tsconfig.json ./
 COPY src ./src
