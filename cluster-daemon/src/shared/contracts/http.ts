@@ -35,7 +35,7 @@ export interface ContainerEnvironmentVariable {
 
 export interface ContainerPortMapping {
     private: number;
-    public: number;
+    public?: number;
 };
 
 export interface CreateContainerRequest {

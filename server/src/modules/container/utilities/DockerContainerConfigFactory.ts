@@ -38,7 +38,7 @@ const buildPortConfig = (ports: ContainerPortMapping[]): PortConfig => {
     for (const portMapping of ports) {
         const portKey = `${portMapping.private}/tcp`;
         exposedPorts[portKey] = {};
-        portBindings[portKey] = [{ HostPort: String(portMapping.public) }];
+        portBindings[portKey] = [{ HostPort: typeof portMapping.public === 'number' && portMapping.public > 0 ? String(portMapping.public) : '' }];
     }
 
     return {

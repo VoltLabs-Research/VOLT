@@ -4,7 +4,9 @@ import {
     type ContainerPortMapping,
     type CreateContainerRequest
 } from '../../../shared/contracts';
+import { DAEMON_PATHS } from '../../../core/paths';
 import Docker from 'dockerode';
+import { readdir } from 'node:fs/promises';
 import net from 'node:net';
 import path from 'node:path';
 import { Writable } from 'node:stream';
@@ -37,6 +39,11 @@ export interface RuntimeTerminalAttachment {
 
 const MAX_EXEC_BUFFER_SIZE = 10 * 1024 * 1024;
 
+const LOCAL_IMAGE_BUILD_CONTEXTS: Record<string, string> = {
+    'volt-scripting-env:latest': DAEMON_PATHS.scriptingDockerContext,
+    'volt-ubuntu-algorithms:latest': DAEMON_PATHS.ubuntuAlgorithmsDockerContext
+};
+
 const toEnvPairs = (environmentVariables: ContainerEnvironmentVariable[] = []): string[] => {
     return environmentVariables.map((entry) => `${entry.key}=${entry.value}`);
 };
@@ -57,7 +64,7 @@ interface HostPortBinding {
 const toPortBindings = (ports: ContainerPortMapping[] = []): Record<string, HostPortBinding[]> => {
     const portBindings: Record<string, HostPortBinding[]> = {};
     for (const port of ports) {
-        portBindings[`${port.private}/tcp`] = [{ HostPort: String(port.public) }];
+        portBindings[`${port.private}/tcp`] = [{ HostPort: typeof port.public === 'number' && port.public > 0 ? String(port.public) : '' }];
     }
 
     return portBindings;
@@ -253,18 +260,44 @@ done`, '--', normalizedDirectoryPath]);
         return null;
     }
 
+    async getPublishedPort(containerId: string, privatePort: number): Promise<number | null> {
+        try {
+            const container = await this.getContainer(containerId);
+            const bindingKey = `${privatePort}/tcp`;
+            const bindings = container?.NetworkSettings?.Ports?.[bindingKey];
+            if (!Array.isArray(bindings) || bindings.length === 0) {
+                return null;
+            }
+
+            const hostPort = Number(bindings[0]?.HostPort);
+            return Number.isFinite(hostPort) ? hostPort : null;
+        } catch {
+            return null;
+        }
+    }
+
     async ensureImage(imageName: string): Promise<void> {
         try {
             await this.docker.getImage(imageName).inspect();
         } catch {
+            const localBuildContext = this.resolveLocalImageBuildContext(imageName);
+            if (localBuildContext) {
+                try {
+                    await this.buildImage(imageName, localBuildContext);
+                    return;
+                } catch {
+                }
+            }
+
             await this.pullImage(imageName);
         }
     }
 
     async buildImage(imageName: string, contextPath: string): Promise<void> {
+        const contextSources = await this.collectBuildContextSources(contextPath);
         const stream = await this.docker.buildImage({
             context: contextPath,
-            src: ['Dockerfile', 'voltsdk']
+            src: contextSources
         }, {
             t: imageName
         });
@@ -330,6 +363,27 @@ done`, '--', normalizedDirectoryPath]);
                 server.close(() => resolve(true));
             });
         });
+    }
+
+    private resolveLocalImageBuildContext(imageName: string): string | undefined {
+        return LOCAL_IMAGE_BUILD_CONTEXTS[imageName];
+    }
+
+    private async collectBuildContextSources(contextPath: string): Promise<string[]> {
+        const entries = await readdir(contextPath, {
+            recursive: true,
+            withFileTypes: true
+        });
+
+        return ['Dockerfile', ...entries
+            .filter((entry) => entry.isFile())
+            .map((entry) => {
+                const parentPath = typeof entry.parentPath === 'string'
+                    ? entry.parentPath
+                    : contextPath;
+                return path.relative(contextPath, path.join(parentPath, entry.name));
+            })
+            .filter((relativePath) => relativePath.length > 0 && relativePath !== 'Dockerfile')];
     }
 
     private normalizeContainerPath(targetPath: string): string {
