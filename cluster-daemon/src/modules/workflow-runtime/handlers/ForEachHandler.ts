@@ -18,7 +18,10 @@ export class WorkflowForEachHandler implements WorkflowNodeHandler {
         const cleanRef = String(rawRef).replace(/^\{\{\s*|\s*\}\}$/g, '');
         const items = this.registry.resolveReference(cleanRef, context);
         if (!Array.isArray(items)) {
-            throw new Error('ForEach iterable source is invalid');
+            const availableNodes = Array.from(context.outputs.keys()).join(', ');
+            throw new Error(
+                `ForEach iterable source is invalid: "${cleanRef}" resolved to ${typeof items}. Available nodes: [${availableNodes}]`
+            );
         }
 
         return {

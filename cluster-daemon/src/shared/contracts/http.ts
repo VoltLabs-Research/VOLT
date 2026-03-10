@@ -157,6 +157,7 @@ export interface AnalysisStartRequest {
     teamId: string;
     teamClusterId: string;
     trajectoryId: string;
+    trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
     workflow: WorkflowDefinition;
     config: Record<string, unknown>;
     selectedFrameOnly?: boolean;

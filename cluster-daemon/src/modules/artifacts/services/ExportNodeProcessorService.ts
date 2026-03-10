@@ -89,7 +89,7 @@ const getNestedValue = (data: unknown, key: string): unknown => {
         return data;
     }
 
-    return key.split('../../analysis').reduce<unknown>((current, segment) => {
+    return key.split('.').reduce<unknown>((current, segment) => {
         if (!isRecord(current)) {
             return undefined;
         }

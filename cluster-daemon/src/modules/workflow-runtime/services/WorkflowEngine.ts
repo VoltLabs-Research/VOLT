@@ -12,6 +12,7 @@ export interface WorkflowPlanResult {
 export interface WorkflowExecutionRequest {
     workflow: WorkflowDefinition;
     trajectoryId: string;
+    trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
     analysisId: string;
     pluginId: string;
     userConfig: Record<string, unknown>;
@@ -59,6 +60,7 @@ export class WorkflowEngine {
             outputs: new Map(),
             userConfig: request.userConfig,
             trajectoryId: request.trajectoryId,
+            trajectoryFrames: request.trajectoryFrames,
             analysisId: request.analysisId,
             generatedFiles: [],
             pluginId: request.pluginId,

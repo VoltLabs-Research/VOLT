@@ -29,6 +29,7 @@ export class AnalysisDispatchService {
         const plan = await this.workflowEngine.planExecutionStrategy({
             workflow: input.workflow,
             trajectoryId: input.trajectoryId,
+            trajectoryFrames: input.trajectoryFrames,
             analysisId: input.analysisId,
             pluginId: input.pluginId,
             userConfig: input.config,

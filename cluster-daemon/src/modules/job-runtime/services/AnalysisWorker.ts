@@ -34,7 +34,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
 
 const resolveTemplate = (template: string, outputs: Map<string, Record<string, unknown>>): string => {
     return template.replace(/\{\{\s*([^}]+)\s*\}\}/g, (_, ref: string) => {
-        const parts = ref.trim().split('../../analysis');
+        const parts = ref.trim().split('.');
         const nodeId = parts[0];
         const propertyPath = parts.slice(1);
         const nodeOutput = outputs.get(nodeId);
@@ -253,19 +253,19 @@ export class AnalysisWorker {
             ? objectKey.slice(1)
             : objectKey;
 
-        if (!normalizedObjectKey.endsWith('../../analysis/.dump')) {
+        if (!normalizedObjectKey.endsWith('.dump') && !normalizedObjectKey.endsWith('.dump.gz')) {
             throw new Error(`Invalid dump object key received: ${objectKey}`);
         }
 
         const fileName = path.basename(normalizedObjectKey);
-        const localFileName = fileName.endsWith('../../analysis/.gz')
+        const localFileName = fileName.endsWith('.gz')
             ? fileName.slice(0, -3)
             : fileName;
         const localPath = path.join(DAEMON_PATHS.analysisDumps, `${localFileName}-${Date.now()}`);
         await fs.mkdir(path.dirname(localPath), { recursive: true });
 
         const stream = await this.minioService.getObjectStream(DUMPS_BUCKET, normalizedObjectKey);
-        await this.writeStreamToFile(stream, localPath, normalizedObjectKey.endsWith('../../analysis/.gz'));
+        await this.writeStreamToFile(stream, localPath, normalizedObjectKey.endsWith('.gz'));
 
         logger.info(`Dump downloaded: ${normalizedObjectKey} -> ${localPath}`);
         return localPath;

@@ -153,6 +153,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             teamClusterId: input.teamClusterId,
             analysisId: analysis.id,
             trajectoryId: input.trajectoryId,
+            trajectoryFrames: trajectory.props.frames,
             teamId: input.teamId,
             plugin,
             config: input.config,
