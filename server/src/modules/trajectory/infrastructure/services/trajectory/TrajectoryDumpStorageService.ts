@@ -265,10 +265,10 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         const prefix = this.getPrefix(trajectoryId);
         logger.info(`@trajectory-dump-storage-service: Listing dumps from daemon for trajectory ${trajectoryId} (cluster: ${teamClusterId})`);
 
-        const result = await this.teamClusterDaemonClient.request<{ keys: string[] }>(
+        const result = await this.teamClusterDaemonClient.command<{ keys: string[] }>(
             teamClusterId,
-            `/api/objects/${SYS_BUCKETS.DUMPS}/list`,
-            { query: { prefix } }
+            'object.list',
+            { bucket: SYS_BUCKETS.DUMPS, prefix }
         );
 
         const timesteps: string[] = [];

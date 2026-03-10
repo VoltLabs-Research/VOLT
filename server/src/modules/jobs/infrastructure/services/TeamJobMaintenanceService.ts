@@ -30,12 +30,9 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         const analysisIds = this.collectAnalysisIds(teamJobs);
         const jobIdsByCluster = this.groupJobIdsByCluster(teamJobs);
         const affectedClusters = await this.callPerCluster(jobIdsByCluster, (teamClusterId, jobIds) => {
-            return this.teamClusterDaemonClient.request<ClusterActionResponse>(teamClusterId, '/api/jobs/history', {
-                method: 'DELETE',
-                body: {
-                    teamId,
-                    jobIds
-                }
+            return this.teamClusterDaemonClient.command<ClusterActionResponse>(teamClusterId, 'jobs.clear-history', {
+                teamId,
+                jobIds
             });
         });
 
@@ -52,11 +49,8 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         const analysisIds = this.collectAnalysisIds(runningJobs);
         const jobIdsByCluster = this.groupJobIdsByCluster(runningJobs);
         const affectedClusters = await this.callPerCluster(jobIdsByCluster, (teamClusterId, jobIds) => {
-            return this.teamClusterDaemonClient.request<ClusterActionResponse>(teamClusterId, '/api/jobs/remove-running', {
-                method: 'POST',
-                body: {
-                    jobIds
-                }
+            return this.teamClusterDaemonClient.command<ClusterActionResponse>(teamClusterId, 'jobs.remove-running', {
+                jobIds
             });
         });
 
@@ -82,11 +76,8 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         });
         const jobIdsByCluster = this.groupJobIdsByCluster(failedJobs);
         const affectedClusters = await this.callPerCluster(jobIdsByCluster, (teamClusterId, jobIds) => {
-            return this.teamClusterDaemonClient.request<ClusterActionResponse>(teamClusterId, '/api/jobs/retry', {
-                method: 'POST',
-                body: {
-                    jobIds
-                }
+            return this.teamClusterDaemonClient.command<ClusterActionResponse>(teamClusterId, 'jobs.retry', {
+                jobIds
             });
         });
 

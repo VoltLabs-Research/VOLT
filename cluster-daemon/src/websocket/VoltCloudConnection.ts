@@ -1,9 +1,11 @@
-import { postJson } from '../utilities/http';
 import { RuntimeLifecycleEventType } from '../contracts/events';
 import {
+    TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
-    type TeamClusterDaemonRegisterPayload
+    TeamClusterDaemonResponseType,
+    type TeamClusterDaemonRegisterPayload,
+    type TeamClusterDaemonSocketResponsePayload
 } from '../contracts/reverseChannel';
 import { TeamClusterStatus, type ProcessTeamClusterHealthcheckOutputDTO } from './voltCloudTypes';
 import { logger } from '../core/logger';
@@ -11,26 +13,46 @@ import { DAEMON_TOKENS } from '../core/tokens';
 import { DockerRuntimeService } from '../infrastructure/docker/DockerRuntimeService';
 import { RuntimeEventBroker } from '../infrastructure/RuntimeEventBroker';
 import { MetricsService } from '../modules/metrics/MetricsService';
+import { registerDaemonCommands } from './DaemonCommandRegistry';
 import { ReverseChannelSocketBridge } from './ReverseChannelSocketBridge';
 import { inject, injectable } from 'tsyringe';
+import crypto from 'node:crypto';
 import { io, Socket } from 'socket.io-client';
 import type { DaemonConfig } from '../core/config';
 import type { MetricsSnapshot } from '../contracts/metrics';
+import type { FilterEvaluatorService } from '../modules/native/FilterEvaluatorService';
+import type { GlbExporterService } from '../modules/native/GlbExporterService';
+import type { RasterizerService } from '../modules/native/RasterizerService';
+import type { TrajectoryParserService } from '../modules/native/TrajectoryParserService';
+import type { NotebookRepository } from '../infrastructure/mongo/repositories/NotebookRepository';
+import type { PluginListingRepository } from '../infrastructure/mongo/repositories/PluginListingRepository';
+import type { QueueService } from '../infrastructure/redis/QueueService';
+import type { RedisConnectionService } from '../infrastructure/redis/RedisConnectionService';
+import type { MinioService } from '../infrastructure/minio/MinioService';
+import type { JupyterRuntimeService } from '../modules/jupyter/JupyterRuntimeService';
 
 interface RuntimeLifecycleUpdateRequest {
+    teamClusterId: string;
     daemonPassword: string;
     status: TeamClusterStatus;
     installedVersion?: string;
 };
 
 interface HeartbeatRequest {
+    teamClusterId: string;
     daemonPassword: string;
     installedVersion?: string;
     metrics?: MetricsSnapshot;
 };
 
 interface DeleteCompletionRequest {
+    teamClusterId: string;
     daemonPassword: string;
+};
+
+interface CommandResponseEnvelope<T> {
+    status: string;
+    data: T;
 };
 
 @injectable()
@@ -38,6 +60,7 @@ export class VoltCloudConnection {
     private daemonPassword: string;
     private heartbeatTimer: NodeJS.Timeout | null = null;
     private controlSocket: Socket | null = null;
+    private controlSocketRegistered = false;
     private connectedToCloud = false;
     private latestLatencyMs: number | null = null;
     private stopped = false;
@@ -53,17 +76,52 @@ export class VoltCloudConnection {
         @inject(DAEMON_TOKENS.RuntimeEventBroker)
         private readonly eventBroker: RuntimeEventBroker,
         @inject(DAEMON_TOKENS.DockerRuntimeService)
-        dockerRuntimeService: DockerRuntimeService
+        dockerRuntimeService: DockerRuntimeService,
+        @inject(DAEMON_TOKENS.MinioService)
+        minioService: MinioService,
+        @inject(DAEMON_TOKENS.NotebookRepository)
+        notebookRepository: NotebookRepository,
+        @inject(DAEMON_TOKENS.TrajectoryRepository)
+        pluginListingRepository: PluginListingRepository,
+        @inject(DAEMON_TOKENS.QueueService)
+        queueService: QueueService,
+        @inject(DAEMON_TOKENS.RedisConnection)
+        redisConnectionService: RedisConnectionService,
+        @inject(DAEMON_TOKENS.TrajectoryParserService)
+        trajectoryParserService: TrajectoryParserService,
+        @inject(DAEMON_TOKENS.GlbExporterService)
+        glbExporterService: GlbExporterService,
+        @inject(DAEMON_TOKENS.RasterizerService)
+        rasterizerService: RasterizerService,
+        @inject(DAEMON_TOKENS.FilterEvaluatorService)
+        filterEvaluatorService: FilterEvaluatorService,
+        @inject(DAEMON_TOKENS.JupyterRuntimeService)
+        jupyterRuntimeService: JupyterRuntimeService
     ) {
         this.daemonPassword = config.daemonPassword;
         this.reverseChannelSocketBridge = new ReverseChannelSocketBridge(config, dockerRuntimeService);
+        registerDaemonCommands(this.reverseChannelSocketBridge, {
+            config,
+            eventBroker,
+            dockerRuntimeService,
+            jupyterRuntimeService,
+            minioService,
+            notebookRepository,
+            pluginListingRepository,
+            queueService,
+            redisConnectionService,
+            trajectoryParserService,
+            glbExporterService,
+            rasterizerService,
+            filterEvaluatorService
+        });
     }
 
     async start(): Promise<void> {
         await this.authenticate();
         this.emitLifecycle(RuntimeLifecycleEventType.Starting, 'Cluster daemon starting');
-        this.startHeartbeatLoop();
         this.connectControlSocket();
+        this.startHeartbeatLoop();
     }
 
     async stop(): Promise<void> {
@@ -104,20 +162,15 @@ export class VoltCloudConnection {
     }
 
     async reportDeleteCompleted(details: string): Promise<void> {
-        if (!this.config.deleteCompletionPath) {
+        if (!this.controlSocket) {
             return;
         }
 
         try {
-            const url = `${this.config.voltCloudUrl}${this.config.deleteCompletionPath}`;
-            const requestBody: DeleteCompletionRequest = {
+            await this.sendServerCommand('runtime.delete-completed', {
+                teamClusterId: this.config.teamClusterId,
                 daemonPassword: this.daemonPassword
-            };
-
-            await postJson(url, {
-                method: 'POST',
-                body: requestBody
-            });
+            } satisfies DeleteCompletionRequest as unknown as Record<string, unknown>);
         } catch (error: unknown) {
             logger.warn({ err: error, details }, 'Failed to report completed team cluster deletion to VoltCloud');
         }
@@ -128,34 +181,37 @@ export class VoltCloudConnection {
             return;
         }
 
-        const url = `${this.config.voltCloudUrl}${this.config.healthcheckPath}`;
-        const response = await postJson(url, {
+        const response = await fetch(`${this.config.voltCloudUrl}${this.config.healthcheckPath}`, {
             method: 'POST',
-            body: {
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({
                 enrollmentToken: this.config.enrollmentToken,
                 installedVersion: this.config.installedVersion
-            }
+            })
         });
+        const payload = await response.json();
+        if (!response.ok || !payload || typeof payload !== 'object' || !('data' in payload)) {
+            throw new Error('Unexpected healthcheck response');
+        }
 
-        const payload = this.readHealthcheckResponse(response.data);
-        this.daemonPassword = payload.daemonPassword;
+        const parsed = this.readHealthcheckResponse((payload as { data: unknown }).data);
+        this.daemonPassword = parsed.daemonPassword;
     }
 
     private startHeartbeatLoop(): void {
         const sendHeartbeat = async () => {
             const startTime = Date.now();
             try {
-                const url = `${this.config.voltCloudUrl}${this.config.heartbeatPath}`;
                 const requestBody: HeartbeatRequest = {
+                    teamClusterId: this.config.teamClusterId,
                     daemonPassword: this.daemonPassword,
                     installedVersion: this.config.installedVersion,
                     metrics: await this.metricsService.collectSnapshot()
                 };
 
-                await postJson(url, {
-                    method: 'POST',
-                    body: requestBody
-                });
+                await this.sendServerCommand('runtime.heartbeat', requestBody as unknown as Record<string, unknown>);
                 this.latestLatencyMs = Date.now() - startTime;
                 this.connectedToCloud = true;
                 this.metricsService.updateCloudLatency(this.latestLatencyMs);
@@ -168,7 +224,7 @@ export class VoltCloudConnection {
                 this.metricsService.updateCloudLatency(null);
                 this.metricsService.updateCloudConnectionState(false);
                 this.emitLifecycle(RuntimeLifecycleEventType.HeartbeatFailed, details);
-                logger.warn('Failed to send team cluster heartbeat');
+                logger.warn('Failed to send team cluster heartbeat: ' + error);
             }
         };
 
@@ -188,6 +244,7 @@ export class VoltCloudConnection {
             return;
         }
 
+        this.controlSocketRegistered = false;
         this.controlSocket?.removeAllListeners();
         this.controlSocket?.close();
 
@@ -218,6 +275,7 @@ export class VoltCloudConnection {
                 return;
             }
 
+            this.controlSocketRegistered = true;
             this.controlSocket = socket;
             this.emitLifecycle(RuntimeLifecycleEventType.CloudSocketConnected, 'Outbound cloud socket connected');
         });
@@ -235,6 +293,7 @@ export class VoltCloudConnection {
             if (this.controlSocket === socket) {
                 this.controlSocket = null;
             }
+            this.controlSocketRegistered = false;
             this.reverseChannelSocketBridge.cleanup();
             this.emitLifecycle(RuntimeLifecycleEventType.CloudSocketDisconnected, `Outbound cloud socket disconnected (${reason})`);
         });
@@ -251,17 +310,14 @@ export class VoltCloudConnection {
 
     private async sendLifecycleStatus(status: TeamClusterStatus, details: string): Promise<void> {
         try {
-            const url = `${this.config.voltCloudUrl}${this.config.lifecyclePath}`;
             const requestBody: RuntimeLifecycleUpdateRequest = {
+                teamClusterId: this.config.teamClusterId,
                 daemonPassword: this.daemonPassword,
                 status,
                 installedVersion: this.config.installedVersion
             };
 
-            await postJson(url, {
-                method: 'POST',
-                body: requestBody
-            });
+            await this.sendServerCommand('runtime.lifecycle', requestBody as unknown as Record<string, unknown>);
             this.emitLifecycle(RuntimeLifecycleEventType.ServicesReady, details);
         } catch (error: unknown) {
             logger.warn({ err: error, status }, 'Failed to send lifecycle status to VoltCloud');
@@ -293,5 +349,54 @@ export class VoltCloudConnection {
             daemonPassword,
             teamCluster
         };
+    }
+
+    private async sendServerCommand<T>(command: string, payload: Record<string, unknown>): Promise<T | undefined> {
+        if (!this.controlSocket) {
+            throw new Error('VoltCloud control socket is not connected');
+        }
+
+        if (!this.controlSocketRegistered) {
+            throw new Error('VoltCloud control socket is not registered yet');
+        }
+
+        const requestId = crypto.randomUUID();
+
+        return new Promise<T | undefined>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                this.controlSocket?.off(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, onMessage);
+                reject(new Error(`Timed out waiting for response to ${command}`));
+            }, 30_000);
+
+            const onMessage = (message: unknown) => {
+                if (typeof message !== 'object' || message === null || Array.isArray(message)) {
+                    return;
+                }
+
+                const typedMessage = message as TeamClusterDaemonSocketResponsePayload<CommandResponseEnvelope<T>>;
+                if (typedMessage.type !== 'response' || typedMessage.requestId !== requestId) {
+                    return;
+                }
+
+                clearTimeout(timeout);
+                this.controlSocket?.off(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, onMessage);
+
+                if (!typedMessage.ok) {
+                    reject(new Error(typedMessage.message || `Socket command failed: ${command}`));
+                    return;
+                }
+
+                resolve(typedMessage.data?.data);
+            };
+
+            this.controlSocket?.on(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, onMessage);
+            this.controlSocket?.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
+                type: 'command',
+                requestId,
+                command,
+                responseType: TeamClusterDaemonResponseType.Json,
+                payload
+            });
+        });
     }
 };

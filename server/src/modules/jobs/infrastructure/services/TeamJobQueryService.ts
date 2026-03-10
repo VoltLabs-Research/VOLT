@@ -56,11 +56,11 @@ export default class TeamJobQueryService {
 
         for (const teamCluster of teamClusters.data) {
             try {
-                const response = await this.teamClusterDaemonClient.request<DaemonTeamJobsResponse>(
+                const response = await this.teamClusterDaemonClient.command<DaemonTeamJobsResponse>(
                     teamCluster.id,
-                    '/api/jobs',
+                    'jobs.list',
                     {
-                        query: { teamId }
+                        teamId
                     }
                 );
 

@@ -23,7 +23,6 @@ import { TrajectoryParserService } from '../modules/native/TrajectoryParserServi
 import { FileExtractorService } from '../modules/ssh-import/FileExtractorService';
 import { SSHConnectionService } from '../modules/ssh-import/SSHConnectionService';
 import { SSHImportWorkerService } from '../modules/ssh-import/SSHImportWorkerService';
-import { DaemonSocketServer } from '../websocket/DaemonSocketServer';
 import { VoltCloudConnection } from '../websocket/VoltCloudConnection';
 import { container } from 'tsyringe';
 
@@ -56,7 +55,6 @@ export const registerDaemonDependencies = () => {
     container.registerSingleton(DAEMON_TOKENS.MetricsService, MetricsService);
     container.registerSingleton(DAEMON_TOKENS.JupyterRuntimeService, JupyterRuntimeService);
     container.registerSingleton(DAEMON_TOKENS.VoltCloudConnection, VoltCloudConnection);
-    container.registerSingleton(DAEMON_TOKENS.DaemonSocketServer, DaemonSocketServer);
 };
 
 export { container };

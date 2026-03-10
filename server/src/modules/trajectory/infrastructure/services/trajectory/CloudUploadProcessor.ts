@@ -53,17 +53,14 @@ export default class CloudUploadProcessor {
         });
         const objectKey = this.dumpStorage.getObjectName(trajectoryId, String(timestep));
 
-        await this.teamClusterDaemonClient.request(teamClusterId, '/api/orchestration/object-upload', {
-            method: 'POST',
-            body: {
-                bucket: SYS_BUCKETS.DUMPS,
-                objectKey,
-                content: compressedDump.toString('base64'),
-                encoding: 'base64',
-                metadata: {
-                    'Content-Type': 'application/gzip',
-                    'Content-Encoding': 'gzip'
-                }
+        await this.teamClusterDaemonClient.command(teamClusterId, 'object.upload', {
+            bucket: SYS_BUCKETS.DUMPS,
+            objectKey,
+            content: compressedDump.toString('base64'),
+            encoding: 'base64',
+            metadata: {
+                'Content-Type': 'application/gzip',
+                'Content-Encoding': 'gzip'
             }
         });
     }
@@ -75,13 +72,10 @@ export default class CloudUploadProcessor {
     ): Promise<void> {
         const objectKey = this.dumpStorage.getObjectName(trajectoryId, String(timestep));
 
-        await this.teamClusterDaemonClient.request(teamClusterId, '/api/orchestration/native/trajectory/preprocess', {
-            method: 'POST',
-            body: {
-                trajectoryId,
-                timestep,
-                objectKey
-            }
+        await this.teamClusterDaemonClient.command(teamClusterId, 'trajectory.native.preprocess', {
+            trajectoryId,
+            timestep,
+            objectKey
         });
     }
 };

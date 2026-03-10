@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
+// TODO: Fix this
 export enum ScriptingNotebookRelation {
     Team = 'team',
     Trajectories = 'trajectories',

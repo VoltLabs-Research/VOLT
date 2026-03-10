@@ -1,24 +1,12 @@
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
-import {
-    TeamClusterDaemonResponseType,
-    type TeamClusterDaemonSocketResponsePayload
-} from '@modules/team-cluster/utilities/teamClusterSocket';
 import { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
+import { TeamClusterDaemonResponseType } from '@modules/team-cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
 import type { Readable } from 'node:stream';
-import type { TeamClusterDaemonSocketHeaders } from '@modules/team-cluster/utilities/teamClusterSocket';
 import type { TeamClusterReverseChannelStreamAttachment } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import type { ContainerTerminalAttachment } from '@modules/container/domain/port/IContainerService';
-
-interface TeamClusterDaemonRequestOptions {
-    method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
-    query?: Record<string, string | number | boolean | undefined>;
-    headers?: TeamClusterDaemonSocketHeaders;
-    targetUrl?: string;
-    body?: Record<string, unknown>;
-};
 
 interface TeamClusterDaemonResponseEnvelope<T> {
     status: string;
@@ -30,12 +18,8 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
-const isTeamClusterDaemonResponseEnvelope = <T>(value: unknown): value is TeamClusterDaemonResponseEnvelope<T> => {
-    if (!isRecord(value)) {
-        return false;
-    }
-
-    return typeof value.status === 'string' && 'data' in value;
+const isResponseEnvelope = <T>(value: unknown): value is TeamClusterDaemonResponseEnvelope<T> => {
+    return isRecord(value) && typeof value.status === 'string' && 'data' in value;
 };
 
 @injectable()
@@ -45,74 +29,62 @@ export default class TeamClusterDaemonClient {
         private readonly teamClusterReverseChannelService: TeamClusterReverseChannelService
     ) {}
 
-    async request<T>(teamClusterId: string, path: string, options: TeamClusterDaemonRequestOptions = {}): Promise<T> {
-        const payload = await this.teamClusterReverseChannelService.request(teamClusterId, {
-            method: options.method || 'GET',
-            path,
-            query: options.query,
-            body: options.body,
+    async command<T>(teamClusterId: string, command: string, payload?: Record<string, unknown>): Promise<T> {
+        const response = await this.teamClusterReverseChannelService.command(teamClusterId, {
+            command,
+            payload,
             responseType: TeamClusterDaemonResponseType.Json
         });
 
-        if (!payload.ok || !isTeamClusterDaemonResponseEnvelope<T>(payload.data)) {
+        if (!response.ok || !isResponseEnvelope<T>(response.data)) {
             throw ApplicationError.badRequest(
                 'TeamCluster::DaemonRequestFailed',
-                payload.message || `Daemon request failed with status ${payload.status}`
+                response.message || `Daemon command failed with status ${response.status}`
             );
         }
 
-        return payload.data.data;
+        return response.data.data;
     }
 
-    async stream(teamClusterId: string, path: string, options: TeamClusterDaemonRequestOptions = {}): Promise<Readable> {
+    async commandStream(teamClusterId: string, command: string, payload?: Record<string, unknown>): Promise<Readable> {
         return this.teamClusterReverseChannelService.openStream(teamClusterId, {
-            method: options.method || 'GET',
-            path,
-            headers: options.headers,
-            targetUrl: options.targetUrl,
-            query: options.query,
-            body: options.body,
+            command,
+            payload,
             responseType: TeamClusterDaemonResponseType.Stream
         });
     }
 
-    async openHttpStream(
+    async commandResponseStream(
         teamClusterId: string,
-        path: string,
-        options: TeamClusterDaemonRequestOptions = {}
+        command: string,
+        payload?: Record<string, unknown>
     ): Promise<TeamClusterReverseChannelStreamAttachment> {
-        return this.teamClusterReverseChannelService.openHttpStream(teamClusterId, {
-            method: options.method || 'GET',
-            path,
-            headers: options.headers,
-            targetUrl: options.targetUrl,
-            query: options.query,
-            body: options.body,
+        return this.teamClusterReverseChannelService.openCommandStream(teamClusterId, {
+            command,
+            payload,
             responseType: TeamClusterDaemonResponseType.Stream
         });
     }
 
-    async requestBuffer(teamClusterId: string, path: string, options: TeamClusterDaemonRequestOptions = {}): Promise<Buffer> {
-        const payload = await this.teamClusterReverseChannelService.request(teamClusterId, {
-            method: options.method || 'GET',
-            path,
-            query: options.query,
-            body: options.body,
+    async commandBuffer(teamClusterId: string, command: string, payload?: Record<string, unknown>): Promise<Buffer> {
+        const response = await this.teamClusterReverseChannelService.command(teamClusterId, {
+            command,
+            payload,
             responseType: TeamClusterDaemonResponseType.Buffer
         });
 
-        if (!payload.ok) {
+        if (!response.ok) {
             throw ApplicationError.badRequest(
                 'TeamCluster::DaemonRequestFailed',
-                payload.message || `Daemon request failed with status ${payload.status}`
+                response.message || `Daemon command failed with status ${response.status}`
             );
         }
 
-        if (!payload.bodyBase64) {
+        if (!response.bodyBase64) {
             throw ApplicationError.internalServerError('Daemon buffer response body is empty');
         }
 
-        return Buffer.from(payload.bodyBase64, 'base64');
+        return Buffer.from(response.bodyBase64, 'base64');
     }
 
     async attachTerminal(teamClusterId: string, containerId: string): Promise<ContainerTerminalAttachment> {

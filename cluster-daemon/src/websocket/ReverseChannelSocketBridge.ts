@@ -1,45 +1,38 @@
+import { DockerRuntimeService, type RuntimeTerminalAttachment } from '../infrastructure/docker/DockerRuntimeService';
 import {
-    TEAM_CLUSTER_DAEMON_RESPONSE_EVENT,
-    TEAM_CLUSTER_DAEMON_STREAM_END_EVENT,
-    TEAM_CLUSTER_DAEMON_STREAM_ERROR_EVENT,
-    TEAM_CLUSTER_DAEMON_STREAM_EVENT,
-    TEAM_CLUSTER_DAEMON_REQUEST_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_ATTACH_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_ATTACHED_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_DATA_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_DETACH_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_END_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_ERROR_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_INPUT_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_RESIZE_EVENT,
-    TEAM_CLUSTER_DAEMON_WEBSOCKET_ATTACH_EVENT,
-    TEAM_CLUSTER_DAEMON_WEBSOCKET_ATTACHED_EVENT,
-    TEAM_CLUSTER_DAEMON_WEBSOCKET_DATA_EVENT,
-    TEAM_CLUSTER_DAEMON_WEBSOCKET_DETACH_EVENT,
-    TEAM_CLUSTER_DAEMON_WEBSOCKET_END_EVENT,
-    TEAM_CLUSTER_DAEMON_WEBSOCKET_ERROR_EVENT,
-    TEAM_CLUSTER_DAEMON_WEBSOCKET_INPUT_EVENT,
+    TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     TeamClusterDaemonResponseType,
+    TeamClusterDaemonSessionKind,
+    type TeamClusterDaemonMessage,
+    type TeamClusterDaemonSessionAttachPayload,
+    type TeamClusterDaemonSessionDataPayload,
+    type TeamClusterDaemonSessionDetachPayload,
+    type TeamClusterDaemonSessionEndPayload,
+    type TeamClusterDaemonSessionInputPayload,
+    type TeamClusterDaemonSessionResizePayload,
     type TeamClusterDaemonSocketHeaders,
-    type TeamClusterDaemonSocketRequestPayload,
     type TeamClusterDaemonSocketResponsePayload,
     type TeamClusterDaemonSocketStreamPayload,
-    type TeamClusterDaemonSocketStreamStatePayload,
-    type TeamClusterDaemonTerminalAttachPayload,
-    type TeamClusterDaemonTerminalDetachPayload,
-    type TeamClusterDaemonTerminalInputPayload,
-    type TeamClusterDaemonTerminalResizePayload,
-    type TeamClusterDaemonWebSocketAttachPayload,
-    type TeamClusterDaemonWebSocketDataPayload,
-    type TeamClusterDaemonWebSocketDetachPayload,
-    type TeamClusterDaemonWebSocketStatePayload
+    type TeamClusterDaemonSocketStreamStatePayload
 } from '../contracts/reverseChannel';
-import { DockerRuntimeService, type RuntimeTerminalAttachment } from '../infrastructure/docker/DockerRuntimeService';
 import type { DaemonConfig } from '../core/config';
 
 interface ReverseChannelSocketEmitter {
     emit(event: string, payload: unknown): void;
-    on(event: string, listener: (payload: never) => void): void;
+    on(event: string, listener: (payload: TeamClusterDaemonMessage) => void): void;
+};
+
+interface ReverseChannelCommandHandler {
+    command: string;
+    execute: (payload: Record<string, unknown> | undefined) => Promise<ReverseChannelCommandResult>;
+};
+
+interface ReverseChannelCommandResult {
+    status?: number;
+    data?: unknown;
+    body?: Buffer;
+    headers?: TeamClusterDaemonSocketHeaders;
+    stream?: ReadableStream<Uint8Array>;
 };
 
 interface WebSocketMessageResult {
@@ -58,7 +51,6 @@ interface ReverseChannelTerminalState {
 interface ReverseChannelWebSocketState {
     sessionId: string;
     socket: WebSocket;
-    onOpen: () => void;
     onMessage: (event: MessageEvent) => void;
     onError: () => void;
     onClose: (event: CloseEvent) => void;
@@ -67,101 +59,162 @@ interface ReverseChannelWebSocketState {
 export class ReverseChannelSocketBridge {
     private readonly terminalStates = new Map<string, ReverseChannelTerminalState>();
     private readonly webSocketStates = new Map<string, ReverseChannelWebSocketState>();
+    private readonly handlers = new Map<string, ReverseChannelCommandHandler>();
 
     constructor(
-        private readonly config: DaemonConfig,
+        private readonly _config: DaemonConfig,
         private readonly dockerRuntimeService?: DockerRuntimeService
     ) {}
 
-    async handleRequest(socket: ReverseChannelSocketEmitter, payload: TeamClusterDaemonSocketRequestPayload): Promise<void> {
-        try {
-            const url = this.buildRequestUrl(payload);
-            const response = await fetch(url, {
-                method: payload.method,
-                headers: this.buildRequestHeaders(payload.headers, payload.body),
-                body: payload.body ? JSON.stringify(payload.body) : undefined
-            });
-
-            if (payload.responseType === TeamClusterDaemonResponseType.Stream) {
-                await this.handleStreamResponse(socket, payload.requestId, response);
-                return;
-            }
-
-            if (payload.responseType === TeamClusterDaemonResponseType.Buffer) {
-                const bodyBase64 = Buffer.from(await response.arrayBuffer()).toString('base64');
-                const responsePayload: TeamClusterDaemonSocketResponsePayload = {
-                    requestId: payload.requestId,
-                    ok: response.ok,
-                    status: response.status,
-                    headers: this.readResponseHeaders(response.headers),
-                    bodyBase64,
-                    message: response.ok ? undefined : 'Daemon buffer request failed'
-                };
-                socket.emit(TEAM_CLUSTER_DAEMON_RESPONSE_EVENT, responsePayload);
-                return;
-            }
-
-            const jsonPayload = await response.json();
-
-            const responsePayload: TeamClusterDaemonSocketResponsePayload = {
-                requestId: payload.requestId,
-                ok: response.ok,
-                status: response.status,
-                headers: this.readResponseHeaders(response.headers),
-                data: jsonPayload,
-                message: response.ok ? undefined : this.readEnvelopeMessage(jsonPayload)
-            };
-            socket.emit(TEAM_CLUSTER_DAEMON_RESPONSE_EVENT, responsePayload);
-        } catch (error: unknown) {
-            const responsePayload: TeamClusterDaemonSocketResponsePayload = {
-                requestId: payload.requestId,
-                ok: false,
-                status: 500,
-                message: error instanceof Error ? error.message : 'Reverse channel request failed'
-            };
-            socket.emit(TEAM_CLUSTER_DAEMON_RESPONSE_EVENT, responsePayload);
-        }
+    registerHandler(handler: ReverseChannelCommandHandler): void {
+        this.handlers.set(handler.command, handler);
     }
 
     bindToSocket(socket: ReverseChannelSocketEmitter): void {
-        socket.on(TEAM_CLUSTER_DAEMON_REQUEST_EVENT, async (payload) => {
-            await this.handleRequest(socket, payload as TeamClusterDaemonSocketRequestPayload);
-        });
+        socket.on(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, async (message) => {
+            if (message.type === 'command') {
+                await this.handleCommand(socket, message.requestId, message.command, message.responseType, message.payload);
+                return;
+            }
 
-        socket.on(TEAM_CLUSTER_DAEMON_TERMINAL_ATTACH_EVENT, async (payload) => {
-            await this.handleTerminalAttach(socket, payload as TeamClusterDaemonTerminalAttachPayload);
-        });
+            if (message.type === 'session-input') {
+                this.handleSessionInput(message);
+                return;
+            }
 
-        socket.on(TEAM_CLUSTER_DAEMON_TERMINAL_INPUT_EVENT, (payload) => {
-            this.handleTerminalInput(payload as TeamClusterDaemonTerminalInputPayload);
-        });
+            if (message.type === 'session-resize') {
+                this.handleSessionResize(message);
+                return;
+            }
 
-        socket.on(TEAM_CLUSTER_DAEMON_TERMINAL_RESIZE_EVENT, (payload) => {
-            this.handleTerminalResize(payload as TeamClusterDaemonTerminalResizePayload);
-        });
-
-        socket.on(TEAM_CLUSTER_DAEMON_TERMINAL_DETACH_EVENT, (payload) => {
-            this.handleTerminalDetach(payload as TeamClusterDaemonTerminalDetachPayload);
-        });
-
-        socket.on(TEAM_CLUSTER_DAEMON_WEBSOCKET_ATTACH_EVENT, (payload) => {
-            this.handleWebSocketAttach(socket, payload as TeamClusterDaemonWebSocketAttachPayload);
-        });
-
-        socket.on(TEAM_CLUSTER_DAEMON_WEBSOCKET_INPUT_EVENT, (payload) => {
-            this.handleWebSocketInput(payload as TeamClusterDaemonWebSocketDataPayload);
-        });
-
-        socket.on(TEAM_CLUSTER_DAEMON_WEBSOCKET_DETACH_EVENT, (payload) => {
-            this.handleWebSocketDetach(payload as TeamClusterDaemonWebSocketDetachPayload);
+            if (message.type === 'session-detach') {
+                this.handleSessionDetach(message);
+            }
         });
     }
 
-    async handleTerminalAttach(socket: ReverseChannelSocketEmitter, payload: TeamClusterDaemonTerminalAttachPayload): Promise<void> {
-        if (!this.dockerRuntimeService) {
-            socket.emit(TEAM_CLUSTER_DAEMON_TERMINAL_ERROR_EVENT, {
+    cleanup(): void {
+        for (const sessionId of Array.from(this.terminalStates.keys())) {
+            this.cleanupTerminalSession(sessionId);
+        }
+
+        for (const sessionId of Array.from(this.webSocketStates.keys())) {
+            this.cleanupWebSocketSession(sessionId);
+        }
+    }
+
+    private async handleCommand(
+        socket: ReverseChannelSocketEmitter,
+        requestId: string,
+        command: string,
+        responseType: TeamClusterDaemonResponseType | undefined,
+        payload: Record<string, unknown> | undefined
+    ): Promise<void> {
+        if (command === 'session.attach') {
+            await this.handleSessionAttach(socket, requestId, payload);
+            return;
+        }
+
+        const handler = this.handlers.get(command);
+        if (!handler) {
+            this.emitResponse(socket, {
+                type: 'response',
+                requestId,
+                ok: false,
+                status: 404,
+                message: `Unknown daemon command: ${command}`
+            });
+            return;
+        }
+
+        try {
+            const result = await handler.execute(payload);
+
+            if (responseType === TeamClusterDaemonResponseType.Stream && result.stream) {
+                await this.emitStreamResponse(socket, requestId, result.stream, result.status || 200, result.headers);
+                return;
+            }
+
+            if (responseType === TeamClusterDaemonResponseType.Buffer && result.body) {
+                this.emitResponse(socket, {
+                    type: 'response',
+                    requestId,
+                    ok: true,
+                    status: result.status || 200,
+                    headers: result.headers,
+                    bodyBase64: result.body.toString('base64')
+                });
+                return;
+            }
+
+            this.emitResponse(socket, {
+                type: 'response',
+                requestId,
+                ok: true,
+                status: result.status || 200,
+                headers: result.headers,
+                data: {
+                    status: 'success',
+                    data: result.data
+                }
+            });
+        } catch (error: unknown) {
+            this.emitResponse(socket, {
+                type: 'response',
+                requestId,
+                ok: false,
+                status: 500,
+                message: error instanceof Error ? error.message : 'Daemon command failed'
+            });
+        }
+    }
+
+    private async handleSessionAttach(
+        socket: ReverseChannelSocketEmitter,
+        requestId: string,
+        payload: Record<string, unknown> | undefined
+    ): Promise<void> {
+        const attachPayload = payload as TeamClusterDaemonSessionAttachPayload | undefined;
+        if (!attachPayload?.sessionId || !attachPayload.kind) {
+            this.emitResponse(socket, {
+                type: 'response',
+                requestId,
+                ok: false,
+                status: 400,
+                message: 'Invalid session attach payload'
+            });
+            return;
+        }
+
+        if (attachPayload.kind === TeamClusterDaemonSessionKind.Terminal) {
+            await this.attachTerminal(socket, requestId, attachPayload);
+            return;
+        }
+
+        if (attachPayload.kind === TeamClusterDaemonSessionKind.WebSocket) {
+            this.attachWebSocket(socket, requestId, attachPayload);
+            return;
+        }
+
+        this.emitResponse(socket, {
+            type: 'response',
+            requestId,
+            ok: false,
+            status: 400,
+            message: 'Unsupported session kind'
+        });
+    }
+
+    private async attachTerminal(
+        socket: ReverseChannelSocketEmitter,
+        requestId: string,
+        payload: TeamClusterDaemonSessionAttachPayload
+    ): Promise<void> {
+        if (!this.dockerRuntimeService || !payload.containerId) {
+            this.emitSessionEnd(socket, {
+                type: 'session-end',
                 sessionId: payload.sessionId,
-                message: 'Docker runtime not available'
+                error: 'Docker runtime not available'
             });
             return;
         }
@@ -169,21 +222,26 @@ export class ReverseChannelSocketBridge {
         try {
             const attachment = await this.dockerRuntimeService.attachTerminal(payload.containerId);
             const onData = (chunk: Buffer) => {
-                socket.emit(TEAM_CLUSTER_DAEMON_TERMINAL_DATA_EVENT, {
+                const message: TeamClusterDaemonSessionDataPayload = {
+                    type: 'session-data',
                     sessionId: payload.sessionId,
-                    chunkBase64: chunk.toString('base64')
-                });
+                    chunkBase64: chunk.toString('base64'),
+                    isBinary: true
+                };
+                socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, message);
             };
             const onEnd = () => {
-                socket.emit(TEAM_CLUSTER_DAEMON_TERMINAL_END_EVENT, {
+                this.emitSessionEnd(socket, {
+                    type: 'session-end',
                     sessionId: payload.sessionId
                 });
                 this.cleanupTerminalSession(payload.sessionId);
             };
             const onError = (error: Error) => {
-                socket.emit(TEAM_CLUSTER_DAEMON_TERMINAL_ERROR_EVENT, {
+                this.emitSessionEnd(socket, {
+                    type: 'session-end',
                     sessionId: payload.sessionId,
-                    message: error.message
+                    error: error.message
                 });
                 this.cleanupTerminalSession(payload.sessionId);
             };
@@ -200,77 +258,74 @@ export class ReverseChannelSocketBridge {
                 onError
             });
 
-            socket.emit(TEAM_CLUSTER_DAEMON_TERMINAL_ATTACHED_EVENT, {
+            this.emitSessionEnd(socket, {
+                type: 'session-end',
                 sessionId: payload.sessionId
             });
+            this.emitResponse(socket, {
+                type: 'response',
+                requestId,
+                ok: true,
+                status: 200,
+                data: {
+                    status: 'success',
+                    data: {
+                        attached: true
+                    }
+                }
+            });
         } catch (error: unknown) {
-            socket.emit(TEAM_CLUSTER_DAEMON_TERMINAL_ERROR_EVENT, {
+            this.emitSessionEnd(socket, {
+                type: 'session-end',
                 sessionId: payload.sessionId,
-                message: error instanceof Error ? error.message : 'Failed to attach terminal'
+                error: error instanceof Error ? error.message : 'Failed to attach terminal'
             });
         }
     }
 
-    handleTerminalInput(payload: TeamClusterDaemonTerminalInputPayload): void {
-        const terminalState = this.terminalStates.get(payload.sessionId);
-        if (!terminalState) {
+    private attachWebSocket(
+        socket: ReverseChannelSocketEmitter,
+        requestId: string,
+        payload: TeamClusterDaemonSessionAttachPayload
+    ): void {
+        if (!payload.targetUrl) {
+            this.emitSessionEnd(socket, {
+                type: 'session-end',
+                sessionId: payload.sessionId,
+                error: 'targetUrl is required'
+            });
             return;
         }
 
-        terminalState.attachment.stream.write(payload.input);
-    }
-
-    handleTerminalResize(payload: TeamClusterDaemonTerminalResizePayload): void {
-        const terminalState = this.terminalStates.get(payload.sessionId);
-        if (!terminalState) {
-            return;
-        }
-
-        terminalState.attachment.exec.resize({
-            h: payload.rows,
-            w: payload.cols
-        }).catch(() => {
-        });
-    }
-
-    handleTerminalDetach(payload: TeamClusterDaemonTerminalDetachPayload): void {
-        this.cleanupTerminalSession(payload.sessionId);
-    }
-
-    handleWebSocketAttach(socket: ReverseChannelSocketEmitter, payload: TeamClusterDaemonWebSocketAttachPayload): void {
         try {
             const webSocket = new WebSocket(payload.targetUrl);
-            const onOpen = () => {
-                socket.emit(TEAM_CLUSTER_DAEMON_WEBSOCKET_ATTACHED_EVENT, {
-                    sessionId: payload.sessionId
-                });
-            };
             const onMessage = (event: MessageEvent) => {
                 this.handleWebSocketMessage(socket, payload.sessionId, event).catch((error: unknown) => {
-                    const message = error instanceof Error ? error.message : 'Failed to proxy websocket message';
-                    socket.emit(TEAM_CLUSTER_DAEMON_WEBSOCKET_ERROR_EVENT, {
+                    this.emitSessionEnd(socket, {
+                        type: 'session-end',
                         sessionId: payload.sessionId,
-                        message
-                    } satisfies TeamClusterDaemonWebSocketStatePayload);
+                        error: error instanceof Error ? error.message : 'Failed to proxy websocket message'
+                    });
                 });
             };
             const onError = () => {
-                socket.emit(TEAM_CLUSTER_DAEMON_WEBSOCKET_ERROR_EVENT, {
+                this.emitSessionEnd(socket, {
+                    type: 'session-end',
                     sessionId: payload.sessionId,
-                    message: 'Reverse channel websocket failed'
-                } satisfies TeamClusterDaemonWebSocketStatePayload);
+                    error: 'Reverse channel websocket failed'
+                });
             };
             const onClose = (event: CloseEvent) => {
-                socket.emit(TEAM_CLUSTER_DAEMON_WEBSOCKET_END_EVENT, {
+                this.emitSessionEnd(socket, {
+                    type: 'session-end',
                     sessionId: payload.sessionId,
                     code: event.code,
                     message: event.reason || undefined
-                } satisfies TeamClusterDaemonWebSocketStatePayload);
+                });
                 this.cleanupWebSocketSession(payload.sessionId);
             };
 
             webSocket.binaryType = 'arraybuffer';
-            webSocket.addEventListener('open', onOpen);
             webSocket.addEventListener('message', onMessage);
             webSocket.addEventListener('error', onError);
             webSocket.addEventListener('close', onClose);
@@ -278,20 +333,39 @@ export class ReverseChannelSocketBridge {
             this.webSocketStates.set(payload.sessionId, {
                 sessionId: payload.sessionId,
                 socket: webSocket,
-                onOpen,
                 onMessage,
                 onError,
                 onClose
             });
+
+            this.emitResponse(socket, {
+                type: 'response',
+                requestId,
+                ok: true,
+                status: 200,
+                data: {
+                    status: 'success',
+                    data: {
+                        attached: true
+                    }
+                }
+            });
         } catch (error: unknown) {
-            socket.emit(TEAM_CLUSTER_DAEMON_WEBSOCKET_ERROR_EVENT, {
+            this.emitSessionEnd(socket, {
+                type: 'session-end',
                 sessionId: payload.sessionId,
-                message: error instanceof Error ? error.message : 'Failed to attach websocket'
-            } satisfies TeamClusterDaemonWebSocketStatePayload);
+                error: error instanceof Error ? error.message : 'Failed to attach websocket'
+            });
         }
     }
 
-    handleWebSocketInput(payload: TeamClusterDaemonWebSocketDataPayload): void {
+    private handleSessionInput(payload: TeamClusterDaemonSessionInputPayload): void {
+        const terminalState = this.terminalStates.get(payload.sessionId);
+        if (terminalState) {
+            terminalState.attachment.stream.write(Buffer.from(payload.chunkBase64, 'base64').toString('utf8'));
+            return;
+        }
+
         const webSocketState = this.webSocketStates.get(payload.sessionId);
         if (!webSocketState) {
             return;
@@ -305,55 +379,41 @@ export class ReverseChannelSocketBridge {
         webSocketState.socket.send(Buffer.from(payload.chunkBase64, 'base64').toString('utf8'));
     }
 
-    handleWebSocketDetach(payload: TeamClusterDaemonWebSocketDetachPayload): void {
-        const webSocketState = this.webSocketStates.get(payload.sessionId);
-        if (!webSocketState) {
+    private handleSessionResize(payload: TeamClusterDaemonSessionResizePayload): void {
+        const terminalState = this.terminalStates.get(payload.sessionId);
+        if (!terminalState) {
             return;
         }
 
-        webSocketState.socket.close(1000, 'Detached');
+        terminalState.attachment.exec.resize({
+            h: payload.rows,
+            w: payload.cols
+        }).catch(() => {});
+    }
+
+    private handleSessionDetach(payload: TeamClusterDaemonSessionDetachPayload): void {
+        this.cleanupTerminalSession(payload.sessionId);
         this.cleanupWebSocketSession(payload.sessionId);
     }
 
-    cleanup(): void {
-        for (const sessionId of Array.from(this.terminalStates.keys())) {
-            this.cleanupTerminalSession(sessionId);
-        }
-
-        for (const sessionId of Array.from(this.webSocketStates.keys())) {
-            this.cleanupWebSocketSession(sessionId);
-        }
-    }
-
-    private async handleStreamResponse(
+    private async emitStreamResponse(
         socket: ReverseChannelSocketEmitter,
         requestId: string,
-        response: Response
+        stream: ReadableStream<Uint8Array>,
+        status: number,
+        headers?: TeamClusterDaemonSocketHeaders
     ): Promise<void> {
-        if (!response.ok || !response.body) {
-            const message = await this.readResponseMessage(response);
-            const errorPayload: TeamClusterDaemonSocketResponsePayload = {
-                requestId,
-                ok: false,
-                status: response.status,
-                headers: this.readResponseHeaders(response.headers),
-                message
-            };
-            socket.emit(TEAM_CLUSTER_DAEMON_RESPONSE_EVENT, errorPayload);
-            return;
-        }
-
         const streamId = requestId;
-        const responsePayload: TeamClusterDaemonSocketResponsePayload = {
+        this.emitResponse(socket, {
+            type: 'response',
             requestId,
             ok: true,
-            status: response.status,
-            headers: this.readResponseHeaders(response.headers),
+            status,
+            headers,
             streamId
-        };
-        socket.emit(TEAM_CLUSTER_DAEMON_RESPONSE_EVENT, responsePayload);
+        });
 
-        const reader = response.body.getReader();
+        const reader = stream.getReader();
         try {
             while (true) {
                 const chunk = await reader.read();
@@ -362,28 +422,39 @@ export class ReverseChannelSocketBridge {
                 }
 
                 const streamPayload: TeamClusterDaemonSocketStreamPayload = {
+                    type: 'stream',
                     requestId,
                     streamId,
                     chunkBase64: Buffer.from(chunk.value).toString('base64')
                 };
-                socket.emit(TEAM_CLUSTER_DAEMON_STREAM_EVENT, streamPayload);
+                socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, streamPayload);
             }
 
             const endPayload: TeamClusterDaemonSocketStreamStatePayload = {
+                type: 'stream-end',
                 requestId,
                 streamId
             };
-            socket.emit(TEAM_CLUSTER_DAEMON_STREAM_END_EVENT, endPayload);
+            socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, endPayload);
         } catch (error: unknown) {
-            const errorPayload: TeamClusterDaemonSocketStreamStatePayload = {
+            const endPayload: TeamClusterDaemonSocketStreamStatePayload = {
+                type: 'stream-end',
                 requestId,
                 streamId,
-                message: error instanceof Error ? error.message : 'Failed to proxy daemon stream'
+                message: error instanceof Error ? error.message : 'Failed to stream response'
             };
-            socket.emit(TEAM_CLUSTER_DAEMON_STREAM_ERROR_EVENT, errorPayload);
+            socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, endPayload);
         } finally {
             reader.releaseLock();
         }
+    }
+
+    private emitResponse(socket: ReverseChannelSocketEmitter, payload: TeamClusterDaemonSocketResponsePayload): void {
+        socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, payload);
+    }
+
+    private emitSessionEnd(socket: ReverseChannelSocketEmitter, payload: TeamClusterDaemonSessionEndPayload): void {
+        socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, payload);
     }
 
     private async handleWebSocketMessage(
@@ -392,12 +463,13 @@ export class ReverseChannelSocketBridge {
         event: MessageEvent
     ): Promise<void> {
         const message = await this.readWebSocketMessage(event.data);
-        const payload: TeamClusterDaemonWebSocketDataPayload = {
+        const payload: TeamClusterDaemonSessionDataPayload = {
+            type: 'session-data',
             sessionId,
             chunkBase64: message.data.toString('base64'),
             isBinary: message.isBinary
         };
-        socket.emit(TEAM_CLUSTER_DAEMON_WEBSOCKET_DATA_EVENT, payload);
+        socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, payload);
     }
 
     private async readWebSocketMessage(data: unknown): Promise<WebSocketMessageResult> {
@@ -451,7 +523,6 @@ export class ReverseChannelSocketBridge {
             return;
         }
 
-        webSocketState.socket.removeEventListener('open', webSocketState.onOpen);
         webSocketState.socket.removeEventListener('message', webSocketState.onMessage);
         webSocketState.socket.removeEventListener('error', webSocketState.onError);
         webSocketState.socket.removeEventListener('close', webSocketState.onClose);
@@ -461,85 +532,5 @@ export class ReverseChannelSocketBridge {
         }
 
         this.webSocketStates.delete(sessionId);
-    }
-
-    private buildRequestUrl(payload: TeamClusterDaemonSocketRequestPayload): URL {
-        if (payload.targetUrl) {
-            return new URL(payload.targetUrl);
-        }
-
-        const normalizedPath = this.buildPathWithQuery(payload.path, payload.query);
-        return new URL(normalizedPath, `http://${this.config.host}:${this.config.port}`);
-    }
-
-    private buildRequestHeaders(
-        headers?: TeamClusterDaemonSocketHeaders,
-        body?: Record<string, unknown>
-    ): HeadersInit {
-        const requestHeaders: TeamClusterDaemonSocketHeaders = {
-            authorization: `Bearer ${this.config.daemonPassword}`
-        };
-
-        if (body) {
-            requestHeaders['content-type'] = 'application/json';
-        }
-
-        if (headers) {
-            for (const [key, value] of Object.entries(headers)) {
-                requestHeaders[key] = value;
-            }
-        }
-
-        return requestHeaders;
-    }
-
-    private readResponseHeaders(headers: Headers): TeamClusterDaemonSocketHeaders {
-        const responseHeaders: TeamClusterDaemonSocketHeaders = {};
-        headers.forEach((value, key) => {
-            responseHeaders[key] = value;
-        });
-        return responseHeaders;
-    }
-
-    private buildPathWithQuery(
-        path: string,
-        query?: Record<string, string | number | boolean | undefined>
-    ): string {
-        const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-        const url = new URL(normalizedPath, 'http://daemon.local');
-
-        if (query) {
-            for (const [key, value] of Object.entries(query)) {
-                if (value === undefined) {
-                    continue;
-                }
-
-                url.searchParams.set(key, String(value));
-            }
-        }
-
-        return `${url.pathname}${url.search}`;
-    }
-
-    private async readResponseMessage(response: Response): Promise<string> {
-        try {
-            const payload = await response.json();
-            return this.readEnvelopeMessage(payload) || `Daemon request failed with status ${response.status}`;
-        } catch {
-            return `Daemon request failed with status ${response.status}`;
-        }
-    }
-
-    private readEnvelopeMessage(payload: unknown): string | undefined {
-        if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
-            return undefined;
-        }
-
-        const message = Reflect.get(payload, 'message');
-        if (typeof message === 'string') {
-            return message;
-        }
-
-        return undefined;
     }
 };

@@ -10,6 +10,7 @@ import { ResultProcessorService } from './ResultProcessorService';
 import { inject, injectable } from 'tsyringe';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import type { AnalysisJobExecutionData } from '../../contracts/http';
 import type { Job as BullMQJob, Worker } from 'bullmq';
 import type { Readable } from 'node:stream';
@@ -251,11 +252,14 @@ export class AnalysisWorker {
         }
 
         const fileName = path.basename(normalizedObjectKey);
-        const localPath = path.join(DAEMON_PATHS.analysisDumps, `${fileName}-${Date.now()}`);
+        const localFileName = fileName.endsWith('.gz')
+            ? fileName.slice(0, -3)
+            : fileName;
+        const localPath = path.join(DAEMON_PATHS.analysisDumps, `${localFileName}-${Date.now()}`);
         await fs.mkdir(path.dirname(localPath), { recursive: true });
 
         const stream = await this.minioService.getObjectStream(DUMPS_BUCKET, normalizedObjectKey);
-        await this.writeStreamToFile(stream, localPath);
+        await this.writeStreamToFile(stream, localPath, normalizedObjectKey.endsWith('.gz'));
 
         logger.info(`Dump downloaded: ${normalizedObjectKey} -> ${localPath}`);
         return localPath;
@@ -282,13 +286,15 @@ export class AnalysisWorker {
         await Promise.all(tasks);
     }
 
-    private writeStreamToFile(stream: Readable, filePath: string): Promise<void> {
+    private writeStreamToFile(stream: Readable, filePath: string, decompressGzip: boolean): Promise<void> {
         return new Promise((resolve, reject) => {
             const chunks: Buffer[] = [];
             stream.on('data', (chunk: Buffer) => chunks.push(chunk));
             stream.on('end', async () => {
                 try {
-                    await fs.writeFile(filePath, Buffer.concat(chunks));
+                    const buffer = Buffer.concat(chunks);
+                    const output = decompressGzip ? zlib.gunzipSync(buffer) : buffer;
+                    await fs.writeFile(filePath, output);
                     resolve();
                 } catch (error) {
                     reject(error);

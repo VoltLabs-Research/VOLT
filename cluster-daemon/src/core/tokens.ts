@@ -23,6 +23,5 @@ export const DAEMON_TOKENS = Object.freeze({
     FileExtractorService: Symbol.for('FileExtractorService'),
     MetricsService: Symbol.for('MetricsService'),
     JupyterRuntimeService: Symbol.for('JupyterRuntimeService'),
-    VoltCloudConnection: Symbol.for('VoltCloudConnection'),
-    DaemonSocketServer: Symbol.for('DaemonSocketServer')
+    VoltCloudConnection: Symbol.for('VoltCloudConnection')
 });

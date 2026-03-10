@@ -55,11 +55,8 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
         }
 
         try {
-            await this.teamClusterDaemonClient.request<{ triggered: boolean }>(teamCluster, '/api/orchestration/rasterize', {
-                method: 'POST',
-                body: {
-                    trajectoryId
-                }
+            await this.teamClusterDaemonClient.command<{ triggered: boolean }>(teamCluster, 'trajectory.rasterize', {
+                trajectoryId
             });
             return true;
         } catch (error) {

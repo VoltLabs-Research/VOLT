@@ -37,10 +37,9 @@ export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGL
             }
 
             if (trajectory.props.teamCluster) {
-                const stream = await this.teamClusterDaemonClient.stream(trajectory.props.teamCluster, '/api/objects/volt-models', {
-                    query: {
-                        objectKey: objectName
-                    }
+                const stream = await this.teamClusterDaemonClient.commandStream(trajectory.props.teamCluster, 'object.get', {
+                    bucket: 'volt-models',
+                    objectKey: objectName
                 });
 
                 return Result.ok({ stream, objectName });

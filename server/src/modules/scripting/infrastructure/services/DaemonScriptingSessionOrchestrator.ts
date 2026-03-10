@@ -60,14 +60,12 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
 
         const runtimeNotebookId = await this.ensureRemoteNotebook(teamClusterId, input.notebookId, input);
 
-        const response = await this.teamClusterDaemonClient.request<DaemonNotebookSessionResponse>(
+        const response = await this.teamClusterDaemonClient.command<DaemonNotebookSessionResponse>(
             teamClusterId,
-            `/api/notebooks/${runtimeNotebookId}/sessions`,
+            'notebook.session.create',
             {
-                method: 'POST',
-                body: {
-                    requestedBy: input.userId
-                }
+                notebookId: runtimeNotebookId,
+                requestedBy: input.userId
             }
         );
 
@@ -101,10 +99,12 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
             }
 
             try {
-                await this.teamClusterDaemonClient.request(
+                await this.teamClusterDaemonClient.command(
                     notebook.props.teamCluster,
-                    `/api/notebooks/${notebook.props.runtimeNotebookId}`,
-                    { method: 'DELETE' }
+                    'notebook.delete',
+                    {
+                        notebookId: notebook.props.runtimeNotebookId
+                    }
                 );
             } catch (error: unknown) {
                 logger.warn(
@@ -133,17 +133,14 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
             return notebook.props.runtimeNotebookId;
         }
 
-        const createdNotebook = await this.teamClusterDaemonClient.request<{ _id: string; }>(teamClusterId, '/api/notebooks', {
-            method: 'POST',
-            body: {
-                _id: notebook.id,
-                teamId: input.teamId,
-                title: notebook.props.title,
-                notebookPath: notebook.props.notebookPath,
-                trajectories: notebook.props.trajectories,
-                createdBy: notebook.props.createdBy,
-                content: notebook.props.content
-            }
+        const createdNotebook = await this.teamClusterDaemonClient.command<{ _id: string; }>(teamClusterId, 'notebook.create', {
+            _id: notebook.id,
+            teamId: input.teamId,
+            title: notebook.props.title,
+            notebookPath: notebook.props.notebookPath,
+            trajectories: notebook.props.trajectories,
+            createdBy: notebook.props.createdBy,
+            content: notebook.props.content
         });
 
         await this.scriptingNotebookRepository.updateById(notebookId, {

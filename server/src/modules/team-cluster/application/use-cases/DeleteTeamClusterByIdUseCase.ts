@@ -81,11 +81,8 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
 
         if (teamCluster.props.status === TeamClusterStatus.Connected) {
             try {
-                await this.teamClusterDaemonClient.request<{ accepted: boolean; }>(input.teamClusterId, '/api/orchestration/uninstall', {
-                    method: 'POST',
-                    body: {
-                        reason: `Delete requested by user ${input.userId}`
-                    }
+                await this.teamClusterDaemonClient.command<{ accepted: boolean; }>(input.teamClusterId, 'runtime.uninstall', {
+                    reason: `Delete requested by user ${input.userId}`
                 });
             } catch (error: unknown) {
                 logger.warn({

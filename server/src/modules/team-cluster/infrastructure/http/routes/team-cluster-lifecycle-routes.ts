@@ -20,23 +20,6 @@ router.post(
     controllers.processHealthcheck.handle
 );
 router.post(
-    '/lifecycle',
-    lifecycleRateLimiter,
-    teamClusterValidation.updateLifecycle,
-    controllers.updateLifecycle.handle
-);
-router.post(
-    '/heartbeats',
-    teamClusterValidation.recordHeartbeat,
-    controllers.recordHeartbeat.handle
-);
-router.post(
-    '/delete-completions',
-    lifecycleRateLimiter,
-    teamClusterValidation.completeDeletion,
-    controllers.completeDeletion.handle
-);
-router.post(
     '/install-manifest',
     lifecycleRateLimiter,
     teamClusterValidation.generateInstallManifest,
