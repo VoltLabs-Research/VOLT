@@ -42,9 +42,12 @@ interface TeamMemberRolePopulate {
 };
 
 const JUPYTER_PROXY_BASE_PATH = '/api/jupyter';
+const LEGACY_DAEMON_PROXY_BASE_PATH = '/api/notebooks/proxy';
 const ACCESS_TOKEN_QUERY_PARAM = 'access_token';
 const ACCESS_TOKEN_COOKIE_NAME = 'voltScriptingJupyterAccessToken';
 const UPGRADE_ACTION = Action.READ;
+const PROXY_URL_ORIGIN = 'http://volt.local';
+const UPSTREAM_URL_ORIGIN = 'http://upstream.local';
 
 const METHOD_ACTION_MAP: Record<string, Action> = {
     'GET': Action.READ,
@@ -85,6 +88,18 @@ const writeUpgradeError = (socket: Duplex, statusCode: number, message: string):
     socket.destroy();
 };
 
+const buildFrameAncestorsDirective = (): string => {
+    const frameAncestors = new Set<string>(['\'self\'']);
+
+    for (const origin of [process.env.CLIENT_HOST, process.env.CLIENT_DEV_HOST]) {
+        if (origin?.trim()) {
+            frameAncestors.add(origin.trim());
+        }
+    }
+
+    return `frame-ancestors ${Array.from(frameAncestors).join(' ')}`;
+};
+
 @injectable()
 export class ScriptingJupyterProxyService {
     private readonly webSocketServer = new WebSocketServer({
@@ -119,7 +134,7 @@ export class ScriptingJupyterProxyService {
                 body
             });
 
-            this.prepareProxyResponse(res, response);
+            this.prepareProxyResponse(req.originalUrl, res, response, context);
             response.stream.on('error', (error: Error) => {
                 if (!res.headersSent) {
                     BaseResponse.fromError(res, ApplicationError.internalServerError(error.message));
@@ -286,37 +301,27 @@ export class ScriptingJupyterProxyService {
     }
 
     private buildDaemonProxyPayload(requestUrl: string, context: AuthorizedProxyContext): Record<string, unknown> {
-        const url = new URL(requestUrl, 'http://volt.local');
-        const proxyBasePath = `${JUPYTER_PROXY_BASE_PATH}/${encodeURIComponent(context.teamId)}/notebooks/${encodeURIComponent(context.runtimeNotebookId)}`;
-        const proxiedPath = url.pathname.startsWith(proxyBasePath)
-            ? url.pathname.slice(proxyBasePath.length) || '/'
-            : '/';
-
-        url.searchParams.delete(ACCESS_TOKEN_QUERY_PARAM);
-
-        const search = url.searchParams.toString();
+        const target = this.extractProxyTarget(requestUrl, context);
         return {
-            proxiedPath,
-            rawQuery: search ? `?${search}` : ''
+            proxiedPath: target.proxiedPath,
+            rawQuery: target.rawQuery
         };
     }
 
     private buildDaemonWebSocketTargetUrl(requestUrl: string, context: AuthorizedProxyContext, hostPort: number): string {
-        const url = new URL(requestUrl, 'http://volt.local');
-        const proxyBasePath = `${JUPYTER_PROXY_BASE_PATH}/${encodeURIComponent(context.teamId)}/notebooks/${encodeURIComponent(context.runtimeNotebookId)}`;
-        const proxiedPath = url.pathname.startsWith(proxyBasePath)
-            ? url.pathname.slice(proxyBasePath.length) || '/'
-            : '/';
-
-        url.searchParams.delete(ACCESS_TOKEN_QUERY_PARAM);
-
-        const search = url.searchParams.toString();
+        const target = this.extractProxyTarget(requestUrl, context);
+        const search = target.rawQuery.replace(/^\?/, '');
         return search
-            ? `ws://127.0.0.1:${hostPort}${proxiedPath}?${search}`
-            : `ws://127.0.0.1:${hostPort}${proxiedPath}`;
+            ? `ws://127.0.0.1:${hostPort}${target.proxiedPath}?${search}`
+            : `ws://127.0.0.1:${hostPort}${target.proxiedPath}`;
     }
 
-    private prepareProxyResponse(res: Response, response: TeamClusterReverseChannelStreamAttachment): void {
+    private prepareProxyResponse(
+        requestUrl: string,
+        res: Response,
+        response: TeamClusterReverseChannelStreamAttachment,
+        context: AuthorizedProxyContext
+    ): void {
         res.removeHeader('x-frame-options');
         res.removeHeader('content-security-policy');
         res.status(response.status);
@@ -331,8 +336,15 @@ export class ScriptingJupyterProxyService {
                 continue;
             }
 
+            if (normalizedHeaderName === 'location') {
+                res.setHeader(headerName, this.rewriteProxyLocation(headerValue, requestUrl, context));
+                continue;
+            }
+
             res.setHeader(headerName, headerValue);
         }
+
+        res.setHeader('Content-Security-Policy', buildFrameAncestorsDirective());
     }
 
     private readProxyRequestHeaders(req: Request): Record<string, string> {
@@ -375,8 +387,78 @@ export class ScriptingJupyterProxyService {
         return METHOD_ACTION_MAP[method] || Action.READ;
     }
 
+    private extractProxyTarget(
+        requestUrl: string,
+        context: AuthorizedProxyContext
+    ): { proxiedPath: string; rawQuery: string; } {
+        const url = new URL(requestUrl, PROXY_URL_ORIGIN);
+        const proxyBasePath = this.buildPublicProxyBasePath(context.teamId, context.runtimeNotebookId);
+        const proxiedPath = url.pathname.startsWith(proxyBasePath)
+            ? url.pathname.slice(proxyBasePath.length) || '/'
+            : '/';
+
+        url.searchParams.delete(ACCESS_TOKEN_QUERY_PARAM);
+
+        const search = url.searchParams.toString();
+        return {
+            proxiedPath,
+            rawQuery: search ? `?${search}` : ''
+        };
+    }
+
+    private rewriteProxyLocation(requestLocation: string, requestUrl: string, context: AuthorizedProxyContext): string {
+        const publicProxyBasePath = this.buildPublicProxyBasePath(context.teamId, context.runtimeNotebookId);
+        const requestUrlObject = new URL(requestUrl, PROXY_URL_ORIGIN);
+        const currentProxyTarget = this.extractProxyTarget(requestUrl, context);
+        const upstreamRequestUrl = new URL(
+            `${currentProxyTarget.proxiedPath}${currentProxyTarget.rawQuery}`,
+            UPSTREAM_URL_ORIGIN
+        );
+        const resolvedLocation = new URL(requestLocation, upstreamRequestUrl);
+        const rewrittenUrl = new URL(PROXY_URL_ORIGIN);
+        const normalizedPathname = this.normalizeUpstreamProxyPath(resolvedLocation.pathname, publicProxyBasePath);
+
+        rewrittenUrl.pathname = normalizedPathname.startsWith(publicProxyBasePath)
+            ? normalizedPathname
+            : `${publicProxyBasePath}${normalizedPathname === '/' ? '' : normalizedPathname}`;
+        rewrittenUrl.search = resolvedLocation.search;
+        rewrittenUrl.hash = resolvedLocation.hash;
+
+        const accessToken = requestUrlObject.searchParams.get(ACCESS_TOKEN_QUERY_PARAM);
+        if (accessToken && !rewrittenUrl.searchParams.has(ACCESS_TOKEN_QUERY_PARAM)) {
+            rewrittenUrl.searchParams.set(ACCESS_TOKEN_QUERY_PARAM, accessToken);
+        }
+
+        return `${rewrittenUrl.pathname}${rewrittenUrl.search}${rewrittenUrl.hash}`;
+    }
+
+    private normalizeUpstreamProxyPath(pathname: string, publicProxyBasePath: string): string {
+        const normalizedPathname = pathname.startsWith('/') ? pathname : `/${pathname}`;
+        if (normalizedPathname === LEGACY_DAEMON_PROXY_BASE_PATH) {
+            return '/';
+        }
+
+        if (normalizedPathname.startsWith(`${LEGACY_DAEMON_PROXY_BASE_PATH}/`)) {
+            return normalizedPathname.slice(LEGACY_DAEMON_PROXY_BASE_PATH.length);
+        }
+
+        if (normalizedPathname === publicProxyBasePath) {
+            return '/';
+        }
+
+        if (normalizedPathname.startsWith(`${publicProxyBasePath}/`)) {
+            return normalizedPathname.slice(publicProxyBasePath.length);
+        }
+
+        return normalizedPathname;
+    }
+
+    private buildPublicProxyBasePath(teamId: string, runtimeNotebookId: string): string {
+        return `${JUPYTER_PROXY_BASE_PATH}/${encodeURIComponent(teamId)}/notebooks/${encodeURIComponent(runtimeNotebookId)}`;
+    }
+
     private matchProxyPath(requestUrl: string): ProxyPathMatch | null {
-        const url = new URL(requestUrl, 'http://volt.local');
+        const url = new URL(requestUrl, PROXY_URL_ORIGIN);
         const match = url.pathname.match(/^\/api\/jupyter\/([^/]+)\/notebooks\/([^/]+)(\/.*)?$/);
         if (!match) {
             return null;
@@ -390,7 +472,7 @@ export class ScriptingJupyterProxyService {
     }
 
     private readAccessTokenFromUrl(requestUrl: string): string | null {
-        const url = new URL(requestUrl, 'http://volt.local');
+        const url = new URL(requestUrl, PROXY_URL_ORIGIN);
         return url.searchParams.get(ACCESS_TOKEN_QUERY_PARAM);
     }
 

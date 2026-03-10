@@ -1,12 +1,63 @@
 import { ScriptingNotebookModel, type ScriptingNotebookDocument } from '../models/ScriptingNotebookModel';
 import type { CreateNotebookRequest, UpdateNotebookRequest } from '../../../shared/contracts';
 
+interface HexStringSerializable {
+    toHexString(): string;
+};
+
+interface StringSerializable {
+    toString(): string;
+};
+
 const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
+const hasToHexString = (value: unknown): value is HexStringSerializable => {
+    return isRecord(value) && typeof value.toHexString === 'function';
+};
+
+const hasToString = (value: unknown): value is StringSerializable => {
+    return isRecord(value) && typeof value.toString === 'function';
+};
+
 const readString = (value: unknown): string => {
     return typeof value === 'string' ? value : '';
+};
+
+const readObjectIdProperty = (value: unknown, propertyName: string): string => {
+    if (!isRecord(value)) {
+        return '';
+    }
+
+    return readString(value[propertyName]);
+};
+
+const readDocumentId = (value: unknown): string => {
+    if (typeof value === 'string') {
+        return value;
+    }
+
+    const oidValue = readObjectIdProperty(value, '$oid');
+    if (oidValue) {
+        return oidValue;
+    }
+
+    const idValue = readObjectIdProperty(value, 'id');
+    if (idValue) {
+        return idValue;
+    }
+
+    if (hasToHexString(value)) {
+        return value.toHexString();
+    }
+
+    if (hasToString(value)) {
+        const serializedValue = value.toString();
+        return serializedValue === '[object Object]' ? '' : serializedValue;
+    }
+
+    return '';
 };
 
 const readOptionalDate = (value: unknown): Date | undefined => {
@@ -38,7 +89,7 @@ const toScriptingNotebookDocument = (value: unknown): ScriptingNotebookDocument 
     const updatedAt = readOptionalDate(record.updatedAt) || createdAt;
 
     return {
-        _id: readString(record._id),
+        _id: readDocumentId(record._id),
         team: readString(record.team),
         title: readString(record.title),
         notebookPath: readString(record.notebookPath),

@@ -68,6 +68,7 @@ export interface UpdateNotebookRequest {
 
 export interface CreateNotebookSessionResponse {
     jupyter: {
+        internalPath: string;
         url: string;
         ready: boolean;
     };
@@ -140,7 +141,6 @@ export interface WorkflowDefinition {
 
 export interface AnalysisJobExecutionData {
     binaryObjectPath: string;
-    binaryFileName?: string;
     arguments: string;
     pluginId: string;
     trajectoryId: string;
