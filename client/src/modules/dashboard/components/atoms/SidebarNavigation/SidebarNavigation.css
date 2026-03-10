@@ -20,7 +20,7 @@
 
 /* Divider */
 .sidebar-divider {
-    margin: 0.75rem;
+    margin: 0.75rem 0;
     border-color: var(--color-border-soft);
 }
 

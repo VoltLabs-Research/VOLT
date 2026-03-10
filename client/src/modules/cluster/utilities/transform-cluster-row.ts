@@ -5,6 +5,8 @@ import type { ClusterMetrics } from '../api/entities/cluster-metrics';
 import type { TeamCluster, TeamClusterStatus } from '../api/entities/team-cluster';
 
 export interface ServerRow {
+    _id: string;
+    teamCluster: TeamCluster;
     id: string;
     name: string;
     status: ClusterStatus;
@@ -62,6 +64,8 @@ const getMetricsStatus = (metrics: ClusterMetrics | null): ClusterStatus => {
 };
 
 export const transformClusterToRow = ({ teamCluster, metrics }: TransformClusterToRowParams): ServerRow => ({
+    _id: teamCluster._id,
+    teamCluster,
     id: teamCluster._id,
     name: teamCluster.name,
     status: getMetricsStatus(metrics),

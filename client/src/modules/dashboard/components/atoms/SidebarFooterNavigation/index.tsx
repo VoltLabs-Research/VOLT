@@ -55,7 +55,7 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
                 />
 
                 <SidebarNavItem
-                    label='Support'
+                    label='Report a bug'
                     icon={TbHelp}
                 />
             </Container>
@@ -74,7 +74,7 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
             />
 
             <SidebarNavItem
-                label='Support'
+                label='Report a bug'
                 icon={TbHelp}
             />
         </Container>

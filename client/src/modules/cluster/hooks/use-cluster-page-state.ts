@@ -1,10 +1,7 @@
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
-import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
-import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-cluster-metric-id';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
-import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 import type {
     TeamClusterRemoteAccessSession,
     TeamClusterRemoteAccessTarget,
@@ -26,14 +23,11 @@ interface RemoteExplorerState extends RemoteTerminalState {
     target: TeamClusterRemoteAccessTarget;
 };
 
-export interface ClustersPageViewModel {
+export interface ClusterPageState {
     clusters: TeamCluster[];
     selectedCluster: TeamCluster | null;
     selectedClusterId: string;
     setSelectedClusterId: (clusterId: string) => void;
-    metrics: ClusterMetrics | null;
-    history: ClusterMetrics[];
-    metricsByClusterId: Record<string, ClusterMetrics>;
     revealCredentials: (password: string) => Promise<void>;
     deleteCluster: (password: string) => Promise<DeleteTeamClusterOutputDTO>;
     credentials: TeamClusterCredentialServices | null;
@@ -63,32 +57,14 @@ export interface ClustersPageViewModel {
     isLoading: boolean;
 };
 
-const useClustersPage = (): ClustersPageViewModel => {
+const useClusterPageState = (): ClusterPageState => {
     const management = useClusterManagement();
-    const metricsState = useClusterMetrics();
-
     const [credentials, setCredentials] = useState<TeamClusterCredentialServices | null>(null);
     const [credentialsCluster, setCredentialsCluster] = useState<TeamCluster | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<TeamCluster | null>(null);
     const [remoteAccessRequest, setRemoteAccessRequest] = useState<RemoteAccessRequestState | null>(null);
     const [remoteTerminal, setRemoteTerminal] = useState<RemoteTerminalState | null>(null);
     const [remoteExplorer, setRemoteExplorer] = useState<RemoteExplorerState | null>(null);
-
-    const metricsByClusterId = useMemo<Record<string, ClusterMetrics>>(() => {
-        return metricsState.clusters.reduce<Record<string, ClusterMetrics>>((acc, cluster) => {
-            const clusterId = resolveClusterMetricId(cluster);
-            acc[clusterId] = cluster;
-            return acc;
-        }, {});
-    }, [metricsState.clusters]);
-
-    const selectedMetrics = useMemo(() => {
-        if (!management.selectedCluster) {
-            return null;
-        }
-
-        return metricsByClusterId[management.selectedCluster._id] ?? null;
-    }, [management.selectedCluster, metricsByClusterId]);
 
     const revealCredentials = async (password: string) => {
         if (!credentialsCluster) {
@@ -142,9 +118,6 @@ const useClustersPage = (): ClustersPageViewModel => {
         selectedCluster: management.selectedCluster,
         selectedClusterId: management.selectedClusterId,
         setSelectedClusterId: management.setSelectedClusterId,
-        metrics: selectedMetrics,
-        history: metricsState.history,
-        metricsByClusterId,
         revealCredentials,
         deleteCluster,
         credentials,
@@ -168,4 +141,4 @@ const useClustersPage = (): ClustersPageViewModel => {
     };
 };
 
-export default useClustersPage;
+export default useClusterPageState;

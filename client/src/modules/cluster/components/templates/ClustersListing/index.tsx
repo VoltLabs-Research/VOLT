@@ -1,0 +1,291 @@
+import ClusterCredentialsModal, { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterCredentialsModal';
+import ClusterRemoteAccessPasswordModal, {
+    CLUSTER_REMOTE_ACCESS_PASSWORD_MODAL_ID
+} from '@/modules/cluster/components/organisms/ClusterRemoteAccessPasswordModal';
+import ClusterRemoteExplorerModal, {
+    CLUSTER_REMOTE_EXPLORER_MODAL_ID
+} from '@/modules/cluster/components/organisms/ClusterRemoteExplorerModal';
+import ClusterRemoteTerminal, {
+    CLUSTER_REMOTE_TERMINAL_MODAL_ID
+} from '@/modules/cluster/components/organisms/ClusterRemoteTerminal';
+import ClustersEmptyState from '@/modules/cluster/components/organisms/ClustersEmptyState';
+import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/DeleteClusterModal';
+import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
+import useClustersListingPage from '@/modules/cluster/hooks/use-clusters-listing-page';
+import { TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
+import { formatClusterTimestamp } from '@/modules/cluster/utilities/format-cluster-timestamp';
+import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
+import { TeamClusterRemoteAccessTarget } from '@/modules/cluster/api/entities/team-cluster-remote-access';
+import { TEAM_CLUSTER_SOCKET_EVENTS } from '@/modules/cluster/api/service/endpoints/team-cluster-socket-events';
+import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import MetricBars from '@/modules/cluster/components/organisms/MetricBars';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import StatusBadge from '@/shared/presentation/components/StatusBadge';
+import Container from '@/shared/presentation/components/Container';
+import { openModal } from '@/shared/presentation/components/Modal';
+import { Database, FolderOpen, KeyRound, Monitor, Terminal, Trash2 } from 'lucide-react';
+import { useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
+import type { ColumnConfig, MenuOption, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
+import '@/modules/cluster/components/organisms/ServerTable/ServerTable.css';
+
+const ClustersListing = () => {
+    const navigate = useNavigate();
+    const state = useClusterPageState();
+    const vm = useClustersListingPage();
+    const createNew = useMemo(() => {
+        return {
+            buttonTitle: 'Add new Cluster',
+            onCreate: () => navigate('/onboarding/cluster/setup')
+        };
+    }, [navigate]);
+
+    const handleRevealCredentials = useCallback((cluster: TeamCluster) => {
+        state.setCredentialsCluster(cluster);
+        openModal(CLUSTER_CREDENTIALS_MODAL_ID);
+    }, [state]);
+
+    const handleDeleteCluster = useCallback((cluster: TeamCluster) => {
+        state.setDeleteTarget(cluster);
+        openModal(DELETE_CLUSTER_MODAL_ID);
+    }, [state]);
+
+    const handleRemoteAccessAction = useCallback((cluster: TeamCluster, target: TeamClusterRemoteAccessTarget) => {
+        state.setRemoteAccessRequest({
+            teamCluster: cluster,
+            target
+        });
+        openModal(CLUSTER_REMOTE_ACCESS_PASSWORD_MODAL_ID);
+    }, [state]);
+
+    const handleSubmitRemoteAccess = useCallback(async (password: string) => {
+        const target = await state.submitRemoteAccessRequest(password);
+
+        if (target === TeamClusterRemoteAccessTarget.HostTerminal) {
+            openModal(CLUSTER_REMOTE_TERMINAL_MODAL_ID);
+            return;
+        }
+
+        openModal(CLUSTER_REMOTE_EXPLORER_MODAL_ID);
+    }, [state]);
+
+    const socketInvalidation = useMemo<SocketInvalidationConfig[] | undefined>(() => {
+        if (!vm.selectedTeamId) {
+            return undefined;
+        }
+
+        return [
+            {
+                event: TEAM_CLUSTER_SOCKET_EVENTS.lifecycleUpdated,
+                queryKeys: [TEAM_CLUSTER_QUERY_KEYS.byTeam(vm.selectedTeamId)]
+            }
+        ];
+    }, [vm.selectedTeamId]);
+
+    const columns = useMemo<ColumnConfig<ServerRow>[]>(() => [
+        {
+            key: 'name',
+            title: 'Cluster',
+            sortable: true,
+            width: 240,
+            render: (_, row) => (
+                <Container className='d-flex column gap-025'>
+                    <Container className='d-flex items-center gap-05'>
+                        <Container className='server-table-status-dot' />
+                        <Paragraph className='font-size-2 color-primary'>{row.name}</Paragraph>
+                    </Container>
+                    <Paragraph className='font-size-1 color-muted font-family-mono'>{row.id}</Paragraph>
+                </Container>
+            )
+        },
+        {
+            key: 'lifecycleStatus',
+            title: 'Lifecycle',
+            sortable: true,
+            width: 180,
+            render: (_, row) => (
+                <StatusBadge variant={getTeamClusterStatusVariant(row.lifecycleStatus)} size='compact'>
+                    {getTeamClusterStatusLabel(row.lifecycleStatus)}
+                </StatusBadge>
+            )
+        },
+        {
+            key: 'status',
+            title: 'Metrics',
+            sortable: true,
+            width: 160,
+            render: (_, row) => (
+                <Paragraph className={`server-table-status ${row.statusClass} font-size-1 font-weight-5`}>
+                    {row.status}
+                </Paragraph>
+            )
+        },
+        {
+            key: 'installedVersion',
+            title: 'Version',
+            sortable: true,
+            width: 140,
+            render: (_, row) => <Paragraph className='font-size-2 color-secondary'>{row.installedVersion ?? '--'}</Paragraph>
+        },
+        {
+            key: 'lastHeartbeatAt',
+            title: 'Last Heartbeat',
+            sortable: true,
+            width: 180,
+            render: (_, row) => <Paragraph className='font-size-1 color-secondary'>{formatClusterTimestamp(row.lastHeartbeatAt)}</Paragraph>
+        },
+        {
+            key: 'daemonPort',
+            title: 'Daemon Port',
+            sortable: true,
+            width: 140,
+            render: (_, row) => <Paragraph className='font-size-2 color-secondary font-family-mono'>{row.daemonPort ?? '--'}</Paragraph>
+        },
+        {
+            key: 'cpu',
+            title: 'CPU',
+            sortable: true,
+            width: 180,
+            render: (_, row) => (
+                <Container className='d-flex items-center gap-05'>
+                    <MetricBars percentage={row.cpu} />
+                    <Paragraph className='font-size-1 color-muted'>{row.cpu}%</Paragraph>
+                </Container>
+            )
+        },
+        {
+            key: 'memory',
+            title: 'Memory',
+            sortable: true,
+            width: 180,
+            render: (_, row) => (
+                <Container className='d-flex items-center gap-05'>
+                    <MetricBars percentage={row.memory} />
+                    <Paragraph className='font-size-1 color-muted'>{row.memory}%</Paragraph>
+                </Container>
+            )
+        },
+        {
+            key: 'diskUsagePercent',
+            title: 'Disk',
+            sortable: true,
+            width: 220,
+            render: (_, row) => (
+                <Container className='d-flex items-center gap-05'>
+                    <MetricBars percentage={row.diskUsagePercent} />
+                    <Paragraph className='font-size-1 color-muted'>{row.diskFree.toFixed(1)}GB Available</Paragraph>
+                </Container>
+            )
+        },
+        {
+            key: 'network',
+            title: 'Network',
+            sortable: true,
+            width: 180
+        },
+        {
+            key: 'analysisCount',
+            title: 'Computed Analyzes',
+            sortable: true,
+            width: 180
+        },
+        {
+            key: 'uptime',
+            title: 'Uptime',
+            sortable: true,
+            width: 140,
+            render: (_, row) => <Paragraph className='font-size-2 font-weight-5 color-secondary'>{row.uptime}</Paragraph>
+        }
+    ], []);
+
+    const getMenuOptions = useCallback((row: ServerRow): MenuOption[] => [
+        {
+            label: 'Monitor',
+            icon: Monitor,
+            onClick: () => navigate(`/dashboard/clusters/${row.id}`)
+        },
+        {
+            label: 'Reveal credentials',
+            icon: KeyRound,
+            onClick: () => handleRevealCredentials(row.teamCluster)
+        },
+        {
+            label: 'Open terminal',
+            icon: Terminal,
+            onClick: () => handleRemoteAccessAction(row.teamCluster, TeamClusterRemoteAccessTarget.HostTerminal)
+        },
+        {
+            label: 'Explore Mongo Documents',
+            icon: Database,
+            onClick: () => handleRemoteAccessAction(row.teamCluster, TeamClusterRemoteAccessTarget.MongoDocuments)
+        },
+        {
+            label: 'Explore Redis Data',
+            icon: Database,
+            onClick: () => handleRemoteAccessAction(row.teamCluster, TeamClusterRemoteAccessTarget.RedisData)
+        },
+        {
+            label: 'Explore MinIO',
+            icon: FolderOpen,
+            onClick: () => handleRemoteAccessAction(row.teamCluster, TeamClusterRemoteAccessTarget.Minio)
+        },
+        {
+            label: 'Delete cluster',
+            icon: Trash2,
+            destructive: true,
+            onClick: () => handleDeleteCluster(row.teamCluster)
+        }
+    ], [handleDeleteCluster, handleRemoteAccessAction, handleRevealCredentials, navigate]);
+
+    return (
+        <>
+            <ClusterCredentialsModal
+                teamCluster={state.credentialsCluster}
+                credentials={state.credentials}
+                onReveal={state.revealCredentials}
+            />
+            <DeleteClusterModal
+                teamCluster={state.deleteTarget}
+                onDelete={state.deleteCluster}
+                onClose={() => state.setDeleteTarget(null)}
+            />
+            <ClusterRemoteAccessPasswordModal
+                teamCluster={state.remoteAccessRequest?.teamCluster ?? null}
+                target={state.remoteAccessRequest?.target ?? null}
+                onSubmit={handleSubmitRemoteAccess}
+                onClose={() => state.setRemoteAccessRequest(null)}
+            />
+            <ClusterRemoteTerminal
+                teamCluster={state.remoteTerminal?.teamCluster ?? null}
+                session={state.remoteTerminal?.session ?? null}
+                onClose={state.closeRemoteTerminal}
+            />
+            <ClusterRemoteExplorerModal
+                teamCluster={state.remoteExplorer?.teamCluster ?? null}
+                target={state.remoteExplorer?.target ?? null}
+                session={state.remoteExplorer?.session ?? null}
+                onClose={state.closeRemoteExplorer}
+                listEntries={state.listRemoteExplorerEntries}
+                getNode={state.getRemoteExplorerNode}
+            />
+            <DocumentListing<ServerRow>
+                title='Clusters'
+                queryKey={TEAM_CLUSTER_QUERY_KEYS.byTeam(vm.selectedTeamId ?? '')}
+                columns={columns}
+                fetchData={vm.fetchClusters}
+                getMenuOptions={getMenuOptions}
+                defaultLimit={20}
+                emptyMessage='No clusters found.'
+                emptyIcon={<ClustersEmptyState />}
+                createNew={createNew}
+                hideTabs
+                enabled={Boolean(vm.selectedTeamId)}
+                socketInvalidation={socketInvalidation}
+            />
+        </>
+    );
+};
+
+export default ClustersListing;
