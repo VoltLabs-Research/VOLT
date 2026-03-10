@@ -10,6 +10,7 @@ import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTok
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { TeamClusterDaemonStreamError } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import { Result } from '@shared/domain/port/Result';
 import { injectable, inject } from 'tsyringe';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -19,6 +20,29 @@ import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/sce
 import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
+import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+
+interface DaemonSceneArtifact {
+    _id: string;
+    objectName: string;
+    storageBucket?: string;
+    params: Record<string, unknown>;
+};
+
+interface PaginatedDaemonSceneArtifactResult {
+    data: DaemonSceneArtifact[];
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+};
+
+interface ResolvedSceneArtifact {
+    props: {
+        objectName: string;
+        storageBucket?: string;
+    };
+};
 
 @injectable()
 export class GetPluginExposureGLBUseCase implements IUseCase<
@@ -32,7 +56,9 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private readonly analysisRepository: IAnalysisRepository,
         @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
-        private readonly sceneArtifactRepository: ISceneArtifactRepository
+        private readonly sceneArtifactRepository: ISceneArtifactRepository,
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
     async execute(
@@ -64,7 +90,10 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
             }
         };
 
-        const artifact = await this.sceneArtifactRepository.findOne(artifactFilter);
+        const teamClusterId = analysis.props.teamCluster ? String(analysis.props.teamCluster) : undefined;
+        const artifact = teamClusterId
+            ? await this.findRemoteArtifact(teamClusterId, input)
+            : await this.sceneArtifactRepository.findOne(artifactFilter);
 
         if (!artifact) {
             return Result.fail(ApplicationError.notFound(
@@ -75,6 +104,42 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
 
         const objectName = artifact.props.objectName;
         const bucket = artifact.props.storageBucket || SYS_BUCKETS.MODELS;
+
+        if (teamClusterId) {
+            try {
+                const response = await this.teamClusterDaemonClient.commandResponseStream(teamClusterId, 'object.get', {
+                    bucket,
+                    objectKey: objectName
+                });
+                const contentLengthHeader = response.headers['content-length'];
+                const contentLength = typeof contentLengthHeader === 'string'
+                    ? Number(contentLengthHeader)
+                    : undefined;
+
+                return Result.ok(createDownloadStreamResponse({
+                    stream: response.stream,
+                    contentType: response.headers['content-type'] || 'model/gltf-binary',
+                    contentLength: typeof contentLength === 'number' && Number.isFinite(contentLength)
+                        ? contentLength
+                        : undefined,
+                    disposition: 'inline',
+                    filename: objectName,
+                    cacheControl: 'public, max-age=31536000, immutable'
+                }));
+            } catch (error) {
+                if (error instanceof TeamClusterDaemonStreamError && error.status === 404) {
+                    return Result.fail(ApplicationError.notFound(
+                        ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND,
+                        ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND
+                    ));
+                }
+
+                return Result.fail(ApplicationError.internalServerError(
+                    'Failed to read plugin exposure GLB from team cluster daemon'
+                ));
+            }
+        }
+
         const [stat, stream] = await Promise.all([
             this.storageService.getStat(bucket, objectName),
             this.storageService.getStream(bucket, objectName)
@@ -88,5 +153,48 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
             filename: objectName,
             cacheControl: 'public, max-age=31536000, immutable'
         }));
+    }
+
+    private async findRemoteArtifact(
+        teamClusterId: string,
+        input: GetPluginExposureGLBInputDTO
+    ): Promise<ResolvedSceneArtifact | null> {
+        const limit = 100;
+        const exposureId = String(input.exposureId);
+        let page = 1;
+
+        while (true) {
+            const artifacts = await this.teamClusterDaemonClient.command<PaginatedDaemonSceneArtifactResult>(
+                teamClusterId,
+                'plugin.scene-artifacts.list',
+                {
+                    trajectoryId: input.trajectoryId,
+                    analysisId: input.analysisId,
+                    sourceType: SceneArtifactSourceType.PluginExposure,
+                    timestep: Number(input.timestep),
+                    page,
+                    limit
+                }
+            );
+
+            const artifact = artifacts.data.find((candidate) => {
+                return String(candidate.params.exposureId) === exposureId;
+            });
+
+            if (artifact) {
+                return {
+                    props: {
+                        objectName: artifact.objectName,
+                        storageBucket: artifact.storageBucket
+                    }
+                };
+            }
+
+            if (page >= artifacts.totalPages) {
+                return null;
+            }
+
+            page += 1;
+        }
     }
 };

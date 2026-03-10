@@ -69,7 +69,8 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
             'notebook.session.create',
             {
                 notebookId: runtimeNotebookId,
-                requestedBy: input.userId
+                requestedBy: input.userId,
+                publicBasePath: this.buildPublicProxyBasePath(input.teamId, runtimeNotebookId)
             }
         );
 
@@ -166,6 +167,10 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         const proxyUrl = new URL(`/api/jupyter/${encodeURIComponent(teamId)}/notebooks/${encodeURIComponent(runtimeNotebookId)}${daemonPath}`, serverBaseUrl);
         proxyUrl.searchParams.set('access_token', accessToken);
         return proxyUrl.toString();
+    }
+
+    private buildPublicProxyBasePath(teamId: string, runtimeNotebookId: string): string {
+        return `/api/jupyter/${encodeURIComponent(teamId)}/notebooks/${encodeURIComponent(runtimeNotebookId)}`;
     }
 
     private resolveDaemonJupyterPath(jupyter: NonNullable<DaemonNotebookSessionResponse['jupyter']>): string {

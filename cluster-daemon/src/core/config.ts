@@ -153,7 +153,7 @@ export const loadConfig = (): DaemonConfig => {
             notebookRoot: normalizePath(process.env.JUPYTER_NOTEBOOK_ROOT?.trim() || '/home/jovyan/work/volt-notebooks'),
             port: readNumber('JUPYTER_PORT', 8888),
             token: process.env.JUPYTER_TOKEN?.trim() || 'volt-scripting',
-            uiPath: normalizePath(process.env.JUPYTER_UI_PATH?.trim() || '/doc'),
+            uiPath: normalizePath(process.env.JUPYTER_UI_PATH?.trim() || '/lab'),
             frameAncestors: process.env.JUPYTER_FRAME_ANCESTORS?.trim() || '*',
             startTimeoutMs: readNumber('JUPYTER_START_TIMEOUT_MS', 30_000),
             hostPortRange: {

@@ -116,7 +116,7 @@ export class AnalysisDispatchService {
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
-            });
+        });
     }
 
     private resolveEntrypoint(workflow: AnalysisStartRequest['workflow']): {

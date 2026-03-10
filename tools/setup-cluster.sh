@@ -8,8 +8,6 @@ DEPLOY_USER="volt"
 INSTALL_ROOT="/opt/volt/team-clusters"
 TEMP_DIR=""
 DAEMON_PASSWORD=""
-FAILURE_STATUS="dependency-installation-failed"
-FAILURE_REPORTED="0"
 
 usage() {
     printf 'Usage: bash setup-cluster.sh <team-cluster-id> <enrollment-token>\n' >&2
@@ -112,40 +110,8 @@ else:
 PY
 }
 
-report_lifecycle_status() {
-    local status="$1"
-
-    if [ -z "$DAEMON_PASSWORD" ] || [ -z "${VOLT_CLOUD_URL:-}" ]; then
-        return
-    fi
-
-    local payload
-    payload="$(python3 - "$DAEMON_PASSWORD" "$status" "$INSTALL_VERSION" <<'PY'
-import json
-import sys
-
-print(json.dumps({
-    'daemonPassword': sys.argv[1],
-    'status': sys.argv[2],
-    'installedVersion': sys.argv[3]
-}))
-PY
-)"
-
-    http_post_json "${VOLT_CLOUD_URL}/api/team-clusters/${TEAM_CLUSTER_ID}/lifecycle" "$payload" >/dev/null
-}
-
-report_failure() {
-    if [ "$FAILURE_REPORTED" = '1' ]; then
-        return
-    fi
-
-    FAILURE_REPORTED='1'
-    report_lifecycle_status "$FAILURE_STATUS" || true
-}
-
 on_error() {
-    report_failure
+    log 'Installation failed'
 }
 
 detect_os() {
@@ -185,7 +151,6 @@ ensure_supported_architecture() {
             ;;
     esac
 
-    FAILURE_STATUS='operating-system-not-supported'
     fail "Unsupported architecture: $architecture"
 }
 
@@ -234,12 +199,10 @@ ensure_runtime_capabilities() {
 
     detect_os
     if ! is_debian_based; then
-        FAILURE_STATUS='operating-system-not-supported'
         fail "Automatic provisioning is only supported on Debian-based hosts when Docker is missing (detected: ${OS_ID})"
     fi
 
     if [ -z "${VERSION_CODENAME:-}" ]; then
-        FAILURE_STATUS='operating-system-not-supported'
         fail 'Unable to determine Debian release codename for Docker repository setup'
     fi
 
@@ -485,7 +448,6 @@ main() {
     send_healthcheck
 
     log 'Checking runtime capabilities'
-    report_lifecycle_status 'preparing-environment'
     ensure_runtime_capabilities
     ensure_deploy_user
     choose_ports
@@ -498,7 +460,6 @@ main() {
 
     start_stack
     wait_for_daemon_ready
-    FAILURE_REPORTED='1'
     print_summary
 }
 

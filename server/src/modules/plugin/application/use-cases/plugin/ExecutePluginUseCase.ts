@@ -131,6 +131,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         const analysis = await this.analysisRepo.create({
             plugin: plugin._id,
             clusterId: input.teamClusterId,
+            teamCluster: input.teamClusterId,
             config: input.config,
             team: input.teamId,
             trajectory: input.trajectoryId,

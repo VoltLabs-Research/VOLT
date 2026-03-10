@@ -46,7 +46,8 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
             return {
                 data: await deps.jupyterRuntimeService.ensureSession({
                     notebook,
-                    requestedBy: readString(payload?.requestedBy, 'requestedBy')
+                    requestedBy: readString(payload?.requestedBy, 'requestedBy'),
+                    publicBasePath: readString(payload?.publicBasePath, 'publicBasePath')
                 }),
                 status: 201
             };
@@ -70,9 +71,11 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
             const response = await fetch(targetUrl, {
                 method: typeof payload?.method === 'string' ? payload.method : 'GET',
                 headers,
-                body: typeof payload?.body === 'object' && payload.body !== null
-                    ? JSON.stringify(payload.body)
-                    : undefined
+                body: typeof payload?.body === 'string'
+                    ? payload.body
+                    : typeof payload?.body === 'object' && payload.body !== null
+                        ? JSON.stringify(payload.body)
+                        : undefined
             });
             const responseHeaders: Record<string, string> = {};
             response.headers.forEach((value, key) => {

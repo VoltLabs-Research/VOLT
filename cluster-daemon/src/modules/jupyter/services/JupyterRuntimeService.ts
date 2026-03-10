@@ -9,6 +9,7 @@ import type { ScriptingNotebookDocument } from '../models/ScriptingNotebookModel
 interface EnsureNotebookSessionInput {
     notebook: ScriptingNotebookDocument;
     requestedBy: string;
+    publicBasePath: string;
 };
 
 interface NotebookRuntimeContainer {
@@ -46,6 +47,7 @@ export class JupyterRuntimeService {
         const runtimeContainer = await this.ensureContainer(input);
         const notebookFilePath = this.getNotebookFilePath(input.notebook.notebookPath);
         const internalPath = this.buildJupyterPath(input.notebook.notebookPath);
+        const publicBasePath = this.normalizePublicBasePath(input.publicBasePath);
 
         await this.dockerRuntimeService.writeContainerFile(
             runtimeContainer.containerId,
@@ -53,7 +55,7 @@ export class JupyterRuntimeService {
             JSON.stringify(input.notebook.content, null, 2)
         );
 
-        const ready = await this.ensureJupyterServer(runtimeContainer.containerId, runtimeContainer.hostPort);
+        const ready = await this.ensureJupyterServer(runtimeContainer.containerId, runtimeContainer.hostPort, publicBasePath);
         return {
             jupyter: {
                 internalPath,
@@ -170,26 +172,24 @@ export class JupyterRuntimeService {
         await this.dockerRuntimeService.startContainer(containerId);
     }
 
-    private async ensureJupyterServer(containerId: string, hostPort: number): Promise<boolean> {
-        if (await this.isJupyterReady(hostPort, JUPYTER_HEALTH_CHECK_INTERVAL_MS)) {
-            return true;
-        }
-
+    private async ensureJupyterServer(containerId: string, hostPort: number, publicBasePath: string): Promise<boolean> {
         try {
-            await this.dockerRuntimeService.exec(containerId, ['/bin/sh', '-lc', this.getStartCommand()]);
+            await this.dockerRuntimeService.exec(containerId, ['/bin/sh', '-lc', this.getStopCommand()]);
+            await this.dockerRuntimeService.exec(containerId, ['/bin/sh', '-lc', this.getStartCommand(publicBasePath)]);
         } catch (error: unknown) {
             logger.warn({ err: error, containerId }, 'Failed to start Jupyter server inside container');
         }
 
-        return this.waitForJupyterReady(hostPort, this.config.jupyter.startTimeoutMs);
+        return this.waitForJupyterReady(hostPort, publicBasePath, this.config.jupyter.startTimeoutMs);
     }
 
-    private async isJupyterReady(hostPort: number, timeoutMs: number): Promise<boolean> {
+    private async isJupyterReady(hostPort: number, publicBasePath: string, timeoutMs: number): Promise<boolean> {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
         try {
-            const response = await fetch(`http://127.0.0.1:${hostPort}/api?token=${encodeURIComponent(this.config.jupyter.token)}`, {
+            const apiPath = path.posix.join(publicBasePath, 'api');
+            const response = await fetch(`http://127.0.0.1:${hostPort}${apiPath}?token=${encodeURIComponent(this.config.jupyter.token)}`, {
                 signal: controller.signal
             });
             return response.status < 500;
@@ -200,10 +200,10 @@ export class JupyterRuntimeService {
         }
     }
 
-    private async waitForJupyterReady(hostPort: number, timeoutMs: number): Promise<boolean> {
+    private async waitForJupyterReady(hostPort: number, publicBasePath: string, timeoutMs: number): Promise<boolean> {
         const maxAttempts = Math.max(1, Math.ceil(Math.max(timeoutMs, 0) / JUPYTER_HEALTH_CHECK_INTERVAL_MS));
         for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-            if (await this.isJupyterReady(hostPort, JUPYTER_HEALTH_CHECK_INTERVAL_MS)) {
+            if (await this.isJupyterReady(hostPort, publicBasePath, JUPYTER_HEALTH_CHECK_INTERVAL_MS)) {
                 return true;
             }
 
@@ -216,14 +216,25 @@ export class JupyterRuntimeService {
     }
 
     private buildJupyterPath(notebookPath?: string): string {
+        const uiPath = this.resolveUiPath();
         const encodedNotebookPath = notebookPath
             ? notebookPath.split('/').map(encodeURIComponent).join('/')
             : '';
         const basePath = encodedNotebookPath
-            ? path.posix.join(this.config.jupyter.uiPath, 'tree', encodedNotebookPath)
-            : this.config.jupyter.uiPath;
+            ? path.posix.join(uiPath, 'tree', encodedNotebookPath)
+            : uiPath;
 
         return `${basePath}?token=${encodeURIComponent(this.config.jupyter.token)}`;
+    }
+
+    private resolveUiPath(): string {
+        return this.config.jupyter.uiPath === '/doc' ? '/lab' : this.config.jupyter.uiPath;
+    }
+
+    private normalizePublicBasePath(value: string): string {
+        const trimmedValue = value.trim();
+        const normalizedValue = trimmedValue.startsWith('/') ? trimmedValue : `/${trimmedValue}`;
+        return normalizedValue.endsWith('/') ? normalizedValue.slice(0, -1) : normalizedValue;
     }
 
     private getNotebookFilePath(notebookPath?: string): string {
@@ -234,7 +245,11 @@ export class JupyterRuntimeService {
         return `volt-jupyter-${notebookId}`;
     }
 
-    private getStartCommand(): string {
+    private getStopCommand(): string {
+        return "pkill -f 'python3 -m jupyter lab' >/dev/null 2>&1 || true";
+    }
+
+    private getStartCommand(publicBasePath: string): string {
         return [
             `mkdir -p "${this.config.jupyter.notebookRoot}"`,
             '&&',
@@ -243,6 +258,7 @@ export class JupyterRuntimeService {
             `--port=${this.config.jupyter.port}`,
             '--no-browser',
             `--ServerApp.token="${this.config.jupyter.token}"`,
+            `--ServerApp.base_url="${publicBasePath}/"`,
             "--ServerApp.allow_origin='*'",
             '--ServerApp.disable_check_xsrf=True',
             '--ServerApp.allow_remote_access=True',

@@ -6,6 +6,7 @@ export interface PluginListingFilter {
     trajectoryId?: string;
     analysisId?: string;
     exposureId?: string;
+    exposureName?: string;
     page: number;
     limit: number;
 };
@@ -30,6 +31,11 @@ export interface PaginatedResult<T> {
     limit: number;
     total: number;
     totalPages: number;
+};
+
+export interface ListingPaginatedResult extends PaginatedResult<PluginListingRowDocument> {
+    columns: string[];
+    subListingNames: string[];
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
@@ -58,12 +64,19 @@ const toPluginSubListingRowDocument = (value: unknown): PluginSubListingRowDocum
     };
 };
 
-export const listPluginListings = async (filter: PluginListingFilter): Promise<PaginatedResult<PluginListingRowDocument>> => {
+const SYSTEM_KEYS = new Set([
+    '_id', 'plugin', 'team', 'trajectory', 'analysis',
+    'exposureId', 'exposureName', 'trajectoryName',
+    'timestep', 'subListingNames', '__v', 'row'
+]);
+
+export const listPluginListings = async (filter: PluginListingFilter): Promise<ListingPaginatedResult> => {
     const query = {
         ...(filter.pluginId ? { plugin: filter.pluginId } : {}),
         ...(filter.trajectoryId ? { trajectory: filter.trajectoryId } : {}),
         ...(filter.analysisId ? { analysis: filter.analysisId } : {}),
-        ...(filter.exposureId ? { exposureId: filter.exposureId } : {})
+        ...(filter.exposureId ? { exposureId: filter.exposureId } : {}),
+        ...(filter.exposureName ? { exposureName: filter.exposureName } : {})
     };
     const skip = (filter.page - 1) * filter.limit;
     const total = await PluginListingRowModel.countDocuments(query);
@@ -73,12 +86,35 @@ export const listPluginListings = async (filter: PluginListingFilter): Promise<P
         .limit(filter.limit)
         .lean();
 
+    const docs = data.map(toPluginListingRowDocument);
+
+    const columnSet = new Set<string>();
+    for (const doc of docs) {
+        for (const key of Object.keys(doc)) {
+            if (!SYSTEM_KEYS.has(key)) {
+                columnSet.add(key);
+            }
+        }
+    }
+    const columns = Array.from(columnSet);
+
+    let subListingNames: string[] = [];
+    for (const doc of docs) {
+        const names = (doc as Record<string, unknown>).subListingNames;
+        if (Array.isArray(names) && names.length > 0) {
+            subListingNames = names.map(String);
+            break;
+        }
+    }
+
     return {
-        data: data.map(toPluginListingRowDocument),
+        data: docs,
         page: filter.page,
         limit: filter.limit,
         total,
-        totalPages: Math.max(1, Math.ceil(total / filter.limit))
+        totalPages: Math.max(1, Math.ceil(total / filter.limit)),
+        columns,
+        subListingNames
     };
 };
 
