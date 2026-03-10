@@ -1,5 +1,5 @@
 export interface UpdateTrajectoryInputDTO {
-    _id: string;
+    trajectoryId: string;
     name?: string;
     isPublic?: boolean;
 };

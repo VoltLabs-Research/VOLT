@@ -63,15 +63,11 @@ export const trajectoryQuery = createPaginatedQuery<
     service: {
         list: trajectoryService.getAll,
         create: trajectoryService.create,
-        update: (id, params) => trajectoryService.update({ _id: id, ...params }),
+        update: (id, params) => trajectoryService.update({ trajectoryId: id, ...params }),
         delete: (id) => trajectoryService.delete({ trajectoryId: id })
     },
     onUpsert: () => {
-        batchInvalidateQueries([
-            [BASE_KEY, 'list'],
-            KEYS.detail(),
-            KEYS.simulationGrid()
-        ]);
+        batchInvalidateQueries([KEYS.simulationGrid()]);
     },
     onRemove: (id) => {
         queryClient.removeQueries({

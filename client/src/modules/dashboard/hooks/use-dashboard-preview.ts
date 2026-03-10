@@ -1,4 +1,7 @@
-import { getFrameBoxBounds, getTrajectoryFrameByTimestep } from '@/modules/fractal/utilities/frame-box-bounds';
+import {
+    getFirstTrajectoryFrameWithBoxBounds,
+    getFrameBoxBounds
+} from '@/modules/fractal/utilities/frame-box-bounds';
 import useFirstCompletedTrajectory from '@/modules/dashboard/hooks/use-first-completed-trajectory';
 import { useTrajectoryByIdQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { useMemo } from 'react';
@@ -16,24 +19,7 @@ export const useDashboardPreview = () => {
     const trajectory = trajectoryQuery.data ?? null;
     const isLoadingPreview = trajectoryQuery.isLoading && Boolean(completedTrajectory?._id);
 
-    const currentTimestep = useMemo(() => {
-        if (!trajectory) {
-            return undefined;
-        }
-
-        const timesteps = trajectory.frames.map((frame) => frame.timestep);
-        let firstTimestep: number | undefined;
-        if (timesteps.length > 0) {
-            firstTimestep = Math.min(...timesteps);
-        }
-
-        return firstTimestep;
-    }, [trajectory]);
-
-    const previewFrame = useMemo(
-        () => getTrajectoryFrameByTimestep(trajectory, currentTimestep),
-        [trajectory, currentTimestep]
-    );
+    const previewFrame = useMemo(() => getFirstTrajectoryFrameWithBoxBounds(trajectory), [trajectory]);
 
     const previewBoxBounds = useMemo(() => {
         if (!previewFrame) {
@@ -44,15 +30,15 @@ export const useDashboardPreview = () => {
     }, [previewFrame]);
 
     const atomCount = useMemo(() => previewFrame?.natoms ?? 0, [previewFrame]);
-    const hasPreviewData = Boolean(trajectory?._id) && currentTimestep !== undefined;
+    const hasPreviewData = Boolean(trajectory?._id) && Boolean(previewFrame) && Boolean(previewBoxBounds);
     let readyTrajectory = null;
     if (hasPreviewData && !isLoadingPreview) {
         readyTrajectory = trajectory;
     }
 
-    let readyTimestep = undefined;
+    let readyTimestep: number | undefined;
     if (readyTrajectory) {
-        readyTimestep = currentTimestep;
+        readyTimestep = previewFrame?.timestep;
     }
 
     const openCanvas = () => {

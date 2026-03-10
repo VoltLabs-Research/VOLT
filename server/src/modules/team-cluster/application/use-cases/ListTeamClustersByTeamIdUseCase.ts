@@ -10,6 +10,10 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
+interface ListTeamClustersFilter extends Record<string, unknown> {
+    team: string;
+};
+
 @injectable()
 export default class ListTeamClustersByTeamIdUseCase implements IUseCase<ListTeamClustersInputDTO, ListTeamClustersOutputDTO, ApplicationError> {
     constructor(
@@ -18,10 +22,41 @@ export default class ListTeamClustersByTeamIdUseCase implements IUseCase<ListTea
     ){}
 
     async execute(input: ListTeamClustersInputDTO): Promise<Result<ListTeamClustersOutputDTO, ApplicationError>> {
+        const filter: ListTeamClustersFilter = {
+            team: input.teamId
+        };
+
+        const search = input.search?.trim();
+        if (search) {
+            filter.$or = [
+                {
+                    name: {
+                        $regex: search,
+                        $options: 'i'
+                    }
+                },
+                {
+                    installedVersion: {
+                        $regex: search,
+                        $options: 'i'
+                    }
+                },
+                {
+                    $expr: {
+                        $regexMatch: {
+                            input: {
+                                $toString: '$_id'
+                            },
+                            regex: search,
+                            options: 'i'
+                        }
+                    }
+                }
+            ];
+        }
+
         const result = await this.teamClusterRepository.findAll({
-            filter: {
-                team: input.teamId
-            },
+            filter,
             page: input.page,
             limit: input.limit,
             sort: {

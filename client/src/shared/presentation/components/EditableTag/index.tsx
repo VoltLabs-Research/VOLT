@@ -35,6 +35,15 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
         setIsEditing(true);
     };
 
+    const stopPropagation = (event: React.MouseEvent<HTMLElement>): void => {
+        event.stopPropagation();
+    };
+
+    const handleDoubleClick = (event: React.MouseEvent<HTMLElement>): void => {
+        event.stopPropagation();
+        enableEditing();
+    };
+
     const handleSave = (): void => {
         setIsEditing(false);
         const newText = elementRef.current?.innerText.trim();
@@ -63,7 +72,9 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
             ref: composeRefs(elementRef, ref) as React.Ref<HTMLElement>,
             className: `${className || ''} ${isEditing ? 'is-editing radius-xs' : ''}`,
             contentEditable: isEditing,
-            onDoubleClick: enableEditing,
+            onClick: stopPropagation,
+            onMouseDown: stopPropagation,
+            onDoubleClick: handleDoubleClick,
             onBlur: handleSave,
             onKeyDown: handleKeyDown,
             suppressContentEditableWarning: true,

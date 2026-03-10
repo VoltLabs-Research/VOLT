@@ -15,7 +15,8 @@ import SimulationCellsListing from '@/modules/simulation-cell/components/templat
 import PluginsListing from '@/modules/plugin/components/listing/templates/PluginsListing';
 import PluginBuilderPage from '@/modules/plugin/components/plugin/templates/PluginBuilderPage';
 import PluginListingPage from '@/modules/plugin/components/listing/templates/PluginListingPage';
-import ClustersPage from '@/modules/cluster/components/templates/ClustersPage';
+import ClustersListing from '@/modules/cluster/components/templates/ClustersListing';
+import ClusterMonitoringPage from '@/modules/cluster/components/templates/ClusterMonitoringPage';
 import ClusterOnboardingPage from '@/modules/cluster/components/templates/ClusterOnboardingPage';
 import ContainersListing from '@/modules/container/components/templates/ContainersListing';
 import ContainerDetailsLayout from '@/modules/container/components/templates/ContainerDetailsLayout';
@@ -155,7 +156,11 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/dashboard/clusters',
-            component: ClustersPage
+            component: ClustersListing
+        },
+        {
+            path: '/dashboard/clusters/:clusterId',
+            component: ClusterMonitoringPage
         },
         {
             path: '/dashboard/containers',

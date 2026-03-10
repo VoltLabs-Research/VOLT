@@ -42,7 +42,8 @@ const daemonPasswordSchema = z.object({
 }).strict();
 
 const listTeamClustersQuerySchema = createPaginationQuerySchema({
-    maxLimit: 100
+    maxLimit: 100,
+    includeSearch: true
 });
 
 const publicStatusSchema = z.union([
