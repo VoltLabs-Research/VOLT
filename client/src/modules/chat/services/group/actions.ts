@@ -1,10 +1,10 @@
 import { addChatToCache, removeChatFromCache, replaceChatInCache } from '../../hooks/chat/queries';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { runHandledAction } from '@/shared/errors/handled-action';
+import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import type { QueryClient } from '@tanstack/react-query';
 import type { NavigateFunction } from 'react-router-dom';
 import type { Chat } from '../../api/entities/chat';
 import type { CreateGroupChatDTO, UpdateGroupAdminsDTO, UpdateGroupInfoDTO } from '../../api/dtos/group';
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 interface SocketLike {
     emit: (event: string, payload?: unknown) => unknown;
@@ -16,14 +16,6 @@ interface GroupActionDependencies {
     navigate: NavigateFunction;
 };
 
-const swallowAccessDeniedError = (error: unknown) => {
-    if (isAccessDeniedError(error)) {
-        return;
-    }
-
-    throw error;
-};
-
 export const createGroupAction = async (
     dependencies: GroupActionDependencies,
     createGroupMutation: (dto: CreateGroupChatDTO) => Promise<Chat>,
@@ -31,20 +23,19 @@ export const createGroupAction = async (
 ) => {
     const { queryClient, navigate } = dependencies;
 
-    try {
-        const chat = await showPromise(createGroupMutation(dto), {
-            loading: { title: 'Creating group...' },
-            success: { title: 'Group created' },
-            error: { title: 'Failed to create group' }
-        });
-
-        addChatToCache(queryClient, chat);
-        navigate(`/dashboard/messages/${chat._id}`);
-
-        return chat;
-    } catch (error: unknown) {
-        swallowAccessDeniedError(error);
-    }
+    return await runHandledAction({
+        action: () => createGroupMutation(dto),
+        toast: createPromiseToastOptions({
+            loading: 'Creating group...',
+            success: 'Group created',
+            error: 'Failed to create group'
+        }),
+        afterSuccess: (chat) => {
+            addChatToCache(queryClient, chat);
+            navigate(`/dashboard/messages/${chat._id}`);
+        },
+        rethrow: false
+    });
 };
 
 export const addUsersToGroupAction = async (
@@ -55,18 +46,18 @@ export const addUsersToGroupAction = async (
 ) => {
     const { queryClient } = dependencies;
 
-    try {
-        const chat = await showPromise(addUsersToGroupMutation({ chatId, userIds }), {
-            loading: { title: 'Adding members...' },
-            success: { title: 'Members added to group' },
-            error: { title: 'Failed to add members' }
-        });
-
-        replaceChatInCache(queryClient, chat);
-        return chat;
-    } catch (error: unknown) {
-        swallowAccessDeniedError(error);
-    }
+    return await runHandledAction({
+        action: () => addUsersToGroupMutation({ chatId, userIds }),
+        toast: createPromiseToastOptions({
+            loading: 'Adding members...',
+            success: 'Members added to group',
+            error: 'Failed to add members'
+        }),
+        afterSuccess: (chat) => {
+            replaceChatInCache(queryClient, chat);
+        },
+        rethrow: false
+    });
 };
 
 export const removeUsersFromGroupAction = async (
@@ -77,18 +68,18 @@ export const removeUsersFromGroupAction = async (
 ) => {
     const { queryClient } = dependencies;
 
-    try {
-        const chat = await showPromise(removeUsersFromGroupMutation({ chatId, userIds }), {
-            loading: { title: 'Removing members...' },
-            success: { title: 'Members removed from group' },
-            error: { title: 'Failed to remove members' }
-        });
-
-        replaceChatInCache(queryClient, chat);
-        return chat;
-    } catch (error: unknown) {
-        swallowAccessDeniedError(error);
-    }
+    return await runHandledAction({
+        action: () => removeUsersFromGroupMutation({ chatId, userIds }),
+        toast: createPromiseToastOptions({
+            loading: 'Removing members...',
+            success: 'Members removed from group',
+            error: 'Failed to remove members'
+        }),
+        afterSuccess: (chat) => {
+            replaceChatInCache(queryClient, chat);
+        },
+        rethrow: false
+    });
 };
 
 export const updateGroupInfoAction = async (
@@ -99,18 +90,18 @@ export const updateGroupInfoAction = async (
 ) => {
     const { queryClient } = dependencies;
 
-    try {
-        const chat = await showPromise(updateGroupInfoMutation({ chatId, ...dto }), {
-            loading: { title: 'Updating group...' },
-            success: { title: 'Group updated' },
-            error: { title: 'Failed to update group' }
-        });
-
-        replaceChatInCache(queryClient, chat);
-        return chat;
-    } catch (error: unknown) {
-        swallowAccessDeniedError(error);
-    }
+    return await runHandledAction({
+        action: () => updateGroupInfoMutation({ chatId, ...dto }),
+        toast: createPromiseToastOptions({
+            loading: 'Updating group...',
+            success: 'Group updated',
+            error: 'Failed to update group'
+        }),
+        afterSuccess: (chat) => {
+            replaceChatInCache(queryClient, chat);
+        },
+        rethrow: false
+    });
 };
 
 export const updateGroupAdminsAction = async (
@@ -121,19 +112,18 @@ export const updateGroupAdminsAction = async (
 ) => {
     const { queryClient } = dependencies;
 
-    try {
-        const chat = await showPromise(updateGroupAdminsMutation({ chatId, ...dto }), {
-            loading: { title: 'Updating admins...' },
-            success: { title: 'Group admins updated' },
-            error: { title: 'Failed to update admins' }
-        });
-
-        replaceChatInCache(queryClient, chat);
-
-        return chat;
-    } catch (error: unknown) {
-        swallowAccessDeniedError(error);
-    }
+    return await runHandledAction({
+        action: () => updateGroupAdminsMutation({ chatId, ...dto }),
+        toast: createPromiseToastOptions({
+            loading: 'Updating admins...',
+            success: 'Group admins updated',
+            error: 'Failed to update admins'
+        }),
+        afterSuccess: (chat) => {
+            replaceChatInCache(queryClient, chat);
+        },
+        rethrow: false
+    });
 };
 
 export const leaveGroupAction = async (
@@ -143,16 +133,17 @@ export const leaveGroupAction = async (
 ) => {
     const { queryClient, navigate } = dependencies;
 
-    try {
-        await showPromise(leaveGroupMutation({ chatId }), {
-            loading: { title: 'Leaving group...' },
-            success: { title: 'You left the group' },
-            error: { title: 'Failed to leave group' }
-        });
-
-        removeChatFromCache(queryClient, chatId);
-        navigate('/dashboard/messages');
-    } catch (error: unknown) {
-        swallowAccessDeniedError(error);
-    }
+    await runHandledAction({
+        action: () => leaveGroupMutation({ chatId }),
+        toast: createPromiseToastOptions({
+            loading: 'Leaving group...',
+            success: 'You left the group',
+            error: 'Failed to leave group'
+        }),
+        afterSuccess: () => {
+            removeChatFromCache(queryClient, chatId);
+            navigate('/dashboard/messages');
+        },
+        rethrow: false
+    });
 };

@@ -1,39 +1,32 @@
 import { Resource } from '@core/constants/resources';
 import controllers from '@modules/team/infrastructure/http/controllers/team';
 import { teamValidation } from '@modules/team/infrastructure/http/validation/team';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
-import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
-import { HttpModule, HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
-import { Router } from 'express';
+import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
+import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 
-const router = Router({ mergeParams: true });
-
-const module: HttpModule = {
+export default createHttpModule({
     basePath: '/api/teams',
-    router,
     resource: Resource.TEAM,
-    teamScope: HttpModuleTeamScope.Param
-};
+    teamScope: HttpModuleTeamScope.Param,
+    protected: true,
+    routes: (router) => {
+        router.route('/')
+            .get(controllers.listUserTeams.handle)
+            .post(RATE_LIMIT_POLICIES.teamCreate, teamValidation.create, controllers.create.handle);
 
-const createTeamRateLimit = createStandardRateLimiter(5);
+        router.route('/:teamId')
+            .get(controllers.getById.handle)
+            .patch(teamValidation.update, controllers.updateById.handle)
+            .delete(RATE_LIMIT_POLICIES.teamDelete, controllers.deleteById.handle);
 
-const deleteTeamRateLimit = createStandardRateLimiter(5);
+        router.delete(
+            '/:teamId/members/:userId',
+            RATE_LIMIT_POLICIES.teamMemberRemoval,
+            teamValidation.removeMember,
+            controllers.removeUserFromTeam.handle
+        );
 
-const removeMemberRateLimit = createStandardRateLimiter(10);
-
-router.use(protect);
-
-router.route('/')
-    .get(controllers.listUserTeams.handle)
-    .post(createTeamRateLimit, teamValidation.create, controllers.create.handle);
-
-router.route('/:teamId')
-    .get(controllers.getById.handle)
-    .patch(teamValidation.update, controllers.updateById.handle)
-    .delete(deleteTeamRateLimit, controllers.deleteById.handle);
-
-router.delete('/:teamId/members/:userId', removeMemberRateLimit, teamValidation.removeMember, controllers.removeUserFromTeam.handle);
-
-router.get('/:teamId/invite-permission', controllers.checkInvitePermission.handle);
-
-export default module;
+        router.get('/:teamId/invite-permission', controllers.checkInvitePermission.handle);
+    }
+});

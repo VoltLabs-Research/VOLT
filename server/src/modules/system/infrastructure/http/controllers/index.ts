@@ -1,8 +1,8 @@
 import GetRBACConfigController from './GetRBACConfigController';
 import GetSystemStatsController from './GetSystemStatsController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    getRbacConfig: container.resolve(GetRBACConfigController),
-    getSystemStats: container.resolve(GetSystemStatsController)
-};
+export default createControllerRegistry({
+    getRbacConfig: GetRBACConfigController,
+    getSystemStats: GetSystemStatsController
+});

@@ -1,28 +1,25 @@
 import { Resource } from '@core/constants/resources';
 import { colorCodingValidation } from '@modules/trajectory/infrastructure/http/validation/color-coding';
-import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
-import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
 import controllers from '@modules/trajectory/infrastructure/http/controllers/color-coding';
+import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 
-import { Router } from 'express';
-
-const router = Router({ mergeParams: true });
-const module: HttpModule = {
+export default createHttpModule({
     basePath: '/api/color-codings/:teamId',
-    router,
-    resource: Resource.TRAJECTORY
-};
-
-const applyColorCodingRateLimit = createStandardRateLimiter(15);
-
-router.get('/:trajectoryId/properties', colorCodingValidation.getProperties, controllers.getProperties.handle);
-router.get('/:trajectoryId/stats', colorCodingValidation.getStats, controllers.getStats.handle);
-router.get('/:trajectoryId', colorCodingValidation.getModel, controllers.get.handle);
-router.post('/:trajectoryId', applyColorCodingRateLimit, colorCodingValidation.applyColorCoding, controllers.create.handle);
-
-router.get('/:trajectoryId/properties/:analysisId', colorCodingValidation.getPropertiesByAnalysis, controllers.getProperties.handle);
-router.get('/:trajectoryId/stats/:analysisId', colorCodingValidation.getStatsByAnalysis, controllers.getStats.handle);
-router.get('/:trajectoryId/:analysisId', colorCodingValidation.getModelByAnalysis, controllers.get.handle);
-router.post('/:trajectoryId/:analysisId', applyColorCodingRateLimit, colorCodingValidation.applyColorCodingByAnalysis, controllers.create.handle);
-
-export default module;
+    resource: Resource.TRAJECTORY,
+    routes: (router) => {
+        router.get('/:trajectoryId/properties', colorCodingValidation.getProperties, controllers.getProperties.handle);
+        router.get('/:trajectoryId/stats', colorCodingValidation.getStats, controllers.getStats.handle);
+        router.get('/:trajectoryId', colorCodingValidation.getModel, controllers.get.handle);
+        router.post('/:trajectoryId', RATE_LIMIT_POLICIES.colorCodingApply, colorCodingValidation.applyColorCoding, controllers.create.handle);
+        router.get('/:trajectoryId/properties/:analysisId', colorCodingValidation.getPropertiesByAnalysis, controllers.getProperties.handle);
+        router.get('/:trajectoryId/stats/:analysisId', colorCodingValidation.getStatsByAnalysis, controllers.getStats.handle);
+        router.get('/:trajectoryId/:analysisId', colorCodingValidation.getModelByAnalysis, controllers.get.handle);
+        router.post(
+            '/:trajectoryId/:analysisId',
+            RATE_LIMIT_POLICIES.colorCodingApply,
+            colorCodingValidation.applyColorCodingByAnalysis,
+            controllers.create.handle
+        );
+    }
+});

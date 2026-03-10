@@ -1,20 +1,15 @@
 import controllers from '@modules/plugin/infrastructure/http/controllers/exposure';
 
 import { Resource } from '@core/constants/resources';
-import { createExportRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
-import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
-import { Router } from 'express';
+import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 
-const router = Router({ mergeParams: true });
-const module: HttpModule = {
+// TODO: PROTECTED!?
+export default createHttpModule({
     basePath: '/api/plugins/:teamId',
-    router,
-    resource: Resource.PLUGIN
-};
-
-const exportRateLimit = createExportRateLimiter(10);
-
-router.get('/exposures/glb/:trajectoryId/:analysisId/:exposureId/:timestep', controllers.getPluginExposureGLB.handle);
-router.get('/exposures/analyses/:analysisId/export', exportRateLimit, controllers.getPluginExposureExport.handle);
-
-export default module;
+    resource: Resource.PLUGIN,
+    routes: (router) => {
+        router.get('/exposures/glb/:trajectoryId/:analysisId/:exposureId/:timestep', controllers.getPluginExposureGLB.handle);
+        router.get('/exposures/analyses/:analysisId/export', RATE_LIMIT_POLICIES.pluginExport, controllers.getPluginExposureExport.handle);
+    }
+});

@@ -4,10 +4,9 @@ import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository'
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import teamMapper from '@modules/team/infrastructure/persistence/mongo/mappers/team/TeamMapper';
 import TeamModel, { TeamDocument } from '@modules/team/infrastructure/persistence/mongo/models/team/TeamModel';
-import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { toPersistedEntity, type PersistedEntityOutput } from '@shared/domain/persisted/to-persisted-entity';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import { injectable, inject } from 'tsyringe';
-import type { PersistedEntity } from '@modules/team/domain/contracts/team/PersistedEntity';
 
 interface TeamMembersPushUpdate {
     $push: {
@@ -107,7 +106,7 @@ export default class TeamRepository
         });
     }
 
-    async findUserTeams(userId: string): Promise<PersistedEntity<TeamProps>[]> {
+    async findUserTeams(userId: string): Promise<PersistedEntityOutput<TeamProps>[]> {
         const teamIdsFromMembership = await this.teamMemberRepository.getTeamIdsByUserId(userId);
         const membershipFilter: TeamMembershipIdFilter = {
             _id: {
@@ -122,6 +121,6 @@ export default class TeamRepository
             ]
         }).populate('owner');
 
-        return docs.map((doc) => toPersistedOutput(this.mapper.toDomain(doc)));
+        return docs.map((doc) => toPersistedEntity(this.mapper.toDomain(doc)));
     }
 };

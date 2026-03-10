@@ -2,6 +2,7 @@ import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import Title from '@/shared/presentation/components/Title';
 import WarningZone from '@/shared/presentation/components/WarningZone';
 import type { TeamRole } from '@/modules/team/api/entities/role/team-role';
@@ -94,12 +95,13 @@ export const RoleEditorModal = ({
     const handleSubmit = async () => {
         if(!name.trim()) return;
 
-        await onSave({
-            name: name.trim(),
-            permissions: Array.from(permissions)
+        await runAction({
+            action: () => onSave({
+                name: name.trim(),
+                permissions: Array.from(permissions)
+            }),
+            modalId: MODAL_ID
         });
-
-        closeModal(MODAL_ID);
     };
 
     const footer = (

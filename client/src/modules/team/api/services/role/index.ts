@@ -1,5 +1,8 @@
-import { createService } from '@/app/core/http/utilities/create-service';
+import { defineServiceModule } from '@/shared/api/service-module';
 import client from './client';
 import endpoints from './endpoints';
 
-export default createService({ clients: client }, endpoints);
+export default defineServiceModule({
+    clients: client,
+    endpoints
+});

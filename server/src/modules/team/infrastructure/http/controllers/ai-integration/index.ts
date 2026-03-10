@@ -4,13 +4,13 @@ import DiscoverTeamAIProviderModelsController from './DiscoverTeamAIProviderMode
 import GetTeamAIIntegrationModelsController from './GetTeamAIIntegrationModelsController';
 import GetTeamAIIntegrationsController from './GetTeamAIIntegrationsController';
 import UpdateTeamAIIntegrationController from './UpdateTeamAIIntegrationController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    listByTeamId: container.resolve(GetTeamAIIntegrationsController),
-    createByProvider: container.resolve(CreateTeamAIIntegrationController),
-    updateByProvider: container.resolve(UpdateTeamAIIntegrationController),
-    deleteByProvider: container.resolve(DeleteTeamAIIntegrationController),
-    listModels: container.resolve(GetTeamAIIntegrationModelsController),
-    discoverModels: container.resolve(DiscoverTeamAIProviderModelsController)
-};
+export default createControllerRegistry({
+    listByTeamId: GetTeamAIIntegrationsController,
+    createByProvider: CreateTeamAIIntegrationController,
+    updateByProvider: UpdateTeamAIIntegrationController,
+    deleteByProvider: DeleteTeamAIIntegrationController,
+    listModels: GetTeamAIIntegrationModelsController,
+    discoverModels: DiscoverTeamAIProviderModelsController
+});

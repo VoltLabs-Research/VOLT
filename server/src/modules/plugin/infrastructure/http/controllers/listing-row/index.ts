@@ -5,7 +5,7 @@ import { GetPluginListingDocumentsUseCase } from '@modules/plugin/application/us
 import { GetSubListingUseCase } from '@modules/plugin/application/use-cases/listing-row/GetSubListingUseCase';
 
 import { createController, createStreamController } from '@shared/infrastructure/http/controllers/createController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
 const GetPluginListingDocumentsController = createController(GetPluginListingDocumentsUseCase);
 const GetListingRowsByAnalysisIdController = createController(GetListingRowsByAnalysisIdUseCase);
@@ -23,10 +23,10 @@ const ExportListingRowsByAnalysisIdController = createStreamController(ExportLis
     }
 });
 
-export default {
-    getPluginListingDocuments: container.resolve(GetPluginListingDocumentsController),
-    exportPluginListingDocuments: container.resolve(ExportPluginListingDocumentsController),
-    getListingRowsByAnalysisId: container.resolve(GetListingRowsByAnalysisIdController),
-    exportListingRowsByAnalysisId: container.resolve(ExportListingRowsByAnalysisIdController),
-    getSubListing: container.resolve(GetSubListingController)
-};
+export default createControllerRegistry({
+    getPluginListingDocuments: GetPluginListingDocumentsController,
+    exportPluginListingDocuments: ExportPluginListingDocumentsController,
+    getListingRowsByAnalysisId: GetListingRowsByAnalysisIdController,
+    exportListingRowsByAnalysisId: ExportListingRowsByAnalysisIdController,
+    getSubListing: GetSubListingController
+});

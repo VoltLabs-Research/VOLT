@@ -5,5 +5,5 @@ import { getSessionRequestContext } from '@modules/session/infrastructure/http/h
 
 export default createController(RevokeAllSessionsUseCase, {
     validationSchema: sessionValidation.revokeAllOthers,
-    getRequestValidationContext: getSessionRequestContext
+    contextProviders: [getSessionRequestContext]
 });

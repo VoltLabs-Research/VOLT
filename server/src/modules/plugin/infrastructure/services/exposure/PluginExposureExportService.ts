@@ -2,7 +2,7 @@ import {
     createZipArchiveStream,
     createZipDownloadResponse,
     sanitizeDownloadName
-} from '@modules/plugin/utilities/plugin/create-download-response';
+} from '@shared/infrastructure/http/responses/download-response';
 import {
     groupAnalysisFilesByTimestep,
     listAnalysisFiles

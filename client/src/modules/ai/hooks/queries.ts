@@ -1,7 +1,6 @@
 import { createConversationStreamTransport } from '../services/stream-transport';
 import service from '../api/service';
-import { buildKeys, createQuery, queryClient, withSuccess } from '@/shared/infrastructure/query';
-import { useMutation } from '@tanstack/react-query';
+import { buildKeys, createManagedMutation, createQuery, queryClient } from '@/shared/infrastructure/query';
 import type { AIConversation } from '@/modules/ai/api/entities/ai-conversation';
 import type { CreateAIConversationParams, CreateAIConversationResult } from '@/modules/ai/api/dtos/create-ai-conversation';
 import type {
@@ -107,87 +106,78 @@ export const invalidateConversationsQueries = () => {
 export const useCreateConversationMutation = (
     { conversationsQueryParams }: ConversationMutationOptions = {},
     options?: MutationOptions<CreateAIConversationResult, CreateAIConversationParams>
-) => {
-    return useMutation({
-        ...options,
-        mutationFn: service.createConversation,
-        onSuccess: withSuccess(({ conversation, userMessage }) => {
-            patchConversations(conversationsQueryParams, (current) => ({
-                ...current,
-                data: sortConversations([
-                    conversation,
-                    ...current.data.filter((item) => item._id !== conversation._id)
-                ])
-            }));
+) => createManagedMutation<CreateAIConversationResult, CreateAIConversationParams>(
+    service.createConversation,
+    ({ conversation, userMessage }) => {
+        patchConversations(conversationsQueryParams, (current) => ({
+            ...current,
+            data: sortConversations([
+                conversation,
+                ...current.data.filter((item) => item._id !== conversation._id)
+            ])
+        }));
 
-            if (!userMessage) return;
+        if (!userMessage) return;
 
-            messagesQuery.set(
-                buildConversationMessagesQueryParams(conversation.teamId, conversation._id, {
+        messagesQuery.set(
+            buildConversationMessagesQueryParams(conversation.teamId, conversation._id, {
+                page: 1,
+                limit: 200
+            }),
+            {
+                status: 'success',
+                data: [userMessage],
+                pagination: {
                     page: 1,
-                    limit: 200
-                }),
-                {
-                    status: 'success',
-                    data: [userMessage],
-                    pagination: {
-                        page: 1,
-                        limit: 200,
-                        total: 1,
-                        totalPages: 1,
-                        hasMore: false
-                    }
+                    limit: 200,
+                    total: 1,
+                    totalPages: 1,
+                    hasMore: false
                 }
-            );
-        }, options)
-    });
-};
+            }
+        );
+    }
+)(options);
 
 export const useDeleteConversationMutation = (
     { conversationsQueryParams }: ConversationMutationOptions = {},
     options?: MutationOptions<void, DeleteConversationVariables>
-) => {
-    return useMutation({
-        ...options,
-        mutationFn: service.deleteConversation,
-        onSuccess: withSuccess((_data, variables) => {
-            patchConversations(conversationsQueryParams, (current) => ({
-                ...current,
-                data: current.data.filter((conversation) => conversation._id !== variables.conversationId)
-            }));
-        }, options)
-    });
-};
+) => createManagedMutation<void, DeleteConversationVariables>(
+    service.deleteConversation,
+    (_data, variables) => {
+        patchConversations(conversationsQueryParams, (current) => ({
+            ...current,
+            data: current.data.filter((conversation) => conversation._id !== variables.conversationId)
+        }));
+    }
+)(options);
 
 export const useRenameConversationMutation = (
     { conversationsQueryParams }: ConversationMutationOptions = {},
     options?: MutationOptions<AIConversation, UpdateConversationVariables>
-) => {
-    return useMutation({
-        ...options,
-        mutationFn: service.updateConversation,
-        onSuccess: withSuccess((updatedConversation, variables) => {
-            const updatedConversations = (current: PaginatedResponse<AIConversation>) => {
-                const conversations = current.data.map((conversation) => {
-                    if (conversation._id === variables.conversationId) {
-                        return updatedConversation;
-                    }
+) => createManagedMutation<AIConversation, UpdateConversationVariables>(
+    service.updateConversation,
+    (updatedConversation, variables) => {
+        const updatedConversations = (current: PaginatedResponse<AIConversation>) => {
+            const conversations = current.data.map((conversation) => {
+                if (conversation._id === variables.conversationId) {
+                    return updatedConversation;
+                }
 
-                    return conversation;
-                });
+                return conversation;
+            });
 
-                return {
-                    ...current,
-                    data: sortConversations(conversations)
-                };
+            return {
+                ...current,
+                data: sortConversations(conversations)
             };
+        };
 
-            patchConversations(conversationsQueryParams, (current) => ({
-                ...updatedConversations(current)
-            }));
-        }, options)
-    });
-};
+        patchConversations(conversationsQueryParams, (current) => ({
+            ...updatedConversations(current)
+        }));
+    }
+)(options);
 
 export const resolveConversationStreamTransport = (
     params: CreateConversationStreamTransportParams

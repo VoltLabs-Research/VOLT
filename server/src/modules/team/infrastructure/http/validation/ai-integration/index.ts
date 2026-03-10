@@ -1,4 +1,4 @@
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
+import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
 import { z } from 'zod/v4';
 
 const createTeamAIIntegrationSchema = z.object({
@@ -17,8 +17,8 @@ const discoverTeamAIProviderModelsSchema = z.object({
     metadata: z.record(z.string(), z.unknown()).optional()
 }).strict();
 
-export const teamAIIntegrationValidation = {
-    create: createValidationMiddleware(createTeamAIIntegrationSchema),
-    update: createValidationMiddleware(updateTeamAIIntegrationSchema),
-    discoverModels: createValidationMiddleware(discoverTeamAIProviderModelsSchema)
-};
+export const teamAIIntegrationValidation = createResourceValidation({
+    create: createTeamAIIntegrationSchema,
+    update: updateTeamAIIntegrationSchema,
+    discoverModels: discoverTeamAIProviderModelsSchema
+});

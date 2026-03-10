@@ -1,39 +1,17 @@
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import useNodeFormRHF from '@/modules/plugin/hooks/plugin/use-node-form-rhf';
-import { z } from 'zod/v4';
+import { createNodeEditorForm } from '@/shared/forms';
 import type { EditorProps } from '../types';
+import { EXPOSURE_EDITOR_DEFAULT_VALUES, exposureEditorSchema, type ExposureEditorFormValues } from './schema';
 
-const exposureEditorSchema = z.object({
-    name: z.string().default(''),
-    icon: z.string().default(''),
-    results: z.string().default(''),
-    iterable: z.string().default(''),
-    iterableChunkSize: z.union([z.number(), z.string()]).default(''),
-    canvas: z.boolean().default(false),
-    raster: z.boolean().default(false)
-}).strict();
-
-type ExposureEditorFormValues = z.infer<typeof exposureEditorSchema>;
-
-const DEFAULT_VALUES: ExposureEditorFormValues = {
-    name: '',
-    icon: '',
-    results: '',
-    iterable: '',
-    iterableChunkSize: '',
-    canvas: false,
-    raster: false
-};
+const useExposureEditorForm = createNodeEditorForm<ExposureEditorFormValues, 'exposure'>({
+    schema: exposureEditorSchema,
+    defaults: EXPOSURE_EDITOR_DEFAULT_VALUES,
+    dataKey: 'exposure'
+});
 
 const ExposureEditor = ({ node }: EditorProps) => {
-    const form = useNodeFormRHF<ExposureEditorFormValues>({
-        schema: exposureEditorSchema,
-        nodeId: node.id,
-        dataKey: 'exposure',
-        node,
-        defaultValue: DEFAULT_VALUES
-    });
+    const form = useExposureEditorForm(node);
 
     return (
         <CollapsibleSection title='Results Exposure' defaultExpanded>

@@ -1,10 +1,10 @@
 import CreateScriptingJupyterSessionController from './CreateScriptingJupyterSessionController';
 import DeleteScriptingNotebookController from './DeleteScriptingNotebookController';
 import ListScriptingNotebooksController from './ListScriptingNotebooksController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    createJupyterSession: container.resolve(CreateScriptingJupyterSessionController),
-    deleteNotebook: container.resolve(DeleteScriptingNotebookController),
-    listNotebooks: container.resolve(ListScriptingNotebooksController)
-};
+export default createControllerRegistry({
+    createJupyterSession: CreateScriptingJupyterSessionController,
+    deleteNotebook: DeleteScriptingNotebookController,
+    listNotebooks: ListScriptingNotebooksController
+});

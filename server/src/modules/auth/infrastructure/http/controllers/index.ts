@@ -8,17 +8,17 @@ import SignInController from '@modules/auth/infrastructure/http/controllers/Sign
 import SignUpController from '@modules/auth/infrastructure/http/controllers/SignUpController';
 import UpdateMyAccountController from '@modules/auth/infrastructure/http/controllers/UpdateMyAccountController';
 import UpdatePasswordController from '@modules/auth/infrastructure/http/controllers/UpdatePasswordController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    checkEmail: container.resolve(CheckEmailController),
-    deleteMyAccount: container.resolve(DeleteMyAccountController),
-    getGuestIdentity: container.resolve(GetGuestIdentityController),
-    getMyAccount: container.resolve(GetMyAccountController),
-    getPasswordInfo: container.resolve(GetPasswordInfoController),
-    oauthLoginCallback: container.resolve(OAuthLoginCallbackController),
-    signIn: container.resolve(SignInController),
-    signUp: container.resolve(SignUpController),
-    updateMyAccount: container.resolve(UpdateMyAccountController),
-    updatePassword: container.resolve(UpdatePasswordController)
-};
+export default createControllerRegistry({
+    checkEmail: CheckEmailController,
+    deleteMyAccount: DeleteMyAccountController,
+    getGuestIdentity: GetGuestIdentityController,
+    getMyAccount: GetMyAccountController,
+    getPasswordInfo: GetPasswordInfoController,
+    oauthLoginCallback: OAuthLoginCallbackController,
+    signIn: SignInController,
+    signUp: SignUpController,
+    updateMyAccount: UpdateMyAccountController,
+    updatePassword: UpdatePasswordController
+});

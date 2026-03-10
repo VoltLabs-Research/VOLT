@@ -3,7 +3,7 @@ import {
     ExportPluginListingDocumentsInputDTO,
     ExportPluginListingDocumentsOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
-import { createSerializedDownloadResponse } from '@modules/plugin/utilities/plugin/create-download-response';
+import { createSerializedDownloadResponse } from '@shared/infrastructure/http/responses/download-response';
 import { toPluginListingOptions } from '@modules/plugin/utilities/listing-row/toPluginListingOptions';
 import { IPluginListingExportService } from '@modules/plugin/domain/port/listing-row/IPluginListingExportService';
 

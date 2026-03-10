@@ -1,6 +1,6 @@
 import { z } from 'zod/v4';
 import { AIConversationMessageRole } from '@modules/ai/domain/contracts/AIConversationMessage';
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
+import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
 import { aiConversationMessagesSchema } from './ai-message-schemas';
 import { AIProvider } from '@modules/ai/domain/contracts/AIProviders';
 
@@ -55,9 +55,9 @@ const updateConversationSchema = z.object({
     isArchived: z.boolean()
 }).strict().partial();
 
-export const aiConversationValidation = {
-    createConversation: createValidationMiddleware(createConversationSchema),
-    sendMessage: createValidationMiddleware(sendMessageSchema),
-    sendStreamMessage: createValidationMiddleware(streamMessageSchema),
-    updateConversation: createValidationMiddleware(updateConversationSchema)
-};
+export const aiConversationValidation = createResourceValidation({
+    createConversation: createConversationSchema,
+    sendMessage: sendMessageSchema,
+    sendStreamMessage: streamMessageSchema,
+    updateConversation: updateConversationSchema
+});

@@ -1,17 +1,13 @@
 import controllers from '@modules/team/infrastructure/http/controllers/team';
-import { HttpModule, HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
-import { Router } from 'express';
+import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
+import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 
-const router = Router({ mergeParams: true });
-
-const module: HttpModule = {
+export default createHttpModule({
     basePath: '/api/teams/:teamId/self',
-    router,
-    teamScope: HttpModuleTeamScope.BasePath
-};
-
-router.get('/permissions', controllers.getMyPermissions.handle);
-
-router.delete('/membership', controllers.leave.handle);
-
-export default module;
+    teamScope: HttpModuleTeamScope.BasePath,
+    protected: true,
+    routes: (router) => {
+        router.get('/permissions', controllers.getMyPermissions.handle);
+        router.delete('/membership', controllers.leave.handle);
+    }
+});

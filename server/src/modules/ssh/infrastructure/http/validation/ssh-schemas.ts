@@ -1,8 +1,7 @@
 import { z } from 'zod/v4';
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
+import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
 import { createPaginationQuerySchema } from '@shared/infrastructure/http/validation/shared-schemas';
-
-const requiredTextSchema = z.string().trim().min(1);
+import { requiredTextSchema } from '@shared/infrastructure/http/validation/resource-schemas';
 
 const teamIdParamsSchema = z.object({
     teamId: requiredTextSchema
@@ -38,34 +37,34 @@ const importTrajectoryFromSSHSchema = z.object({
     remotePath: requiredTextSchema
 }).strict();
 
-export const sshConnectionValidation = {
-    listByTeamId: createValidationMiddleware({
+export const sshConnectionValidation = createResourceValidation({
+    listByTeamId: {
         params: teamIdParamsSchema,
         query: listSSHConnectionsQuerySchema
-    }),
-    create: createValidationMiddleware({
+    },
+    create: {
         params: teamIdParamsSchema,
         body: createSSHConnectionSchema
-    }),
-    getById: createValidationMiddleware({
+    },
+    getById: {
         params: sshConnectionParamsSchema
-    }),
-    update: createValidationMiddleware({
+    },
+    update: {
         params: sshConnectionParamsSchema,
         body: updateSSHConnectionSchema
-    }),
-    deleteById: createValidationMiddleware({
+    },
+    deleteById: {
         params: sshConnectionParamsSchema
-    }),
-    listFiles: createValidationMiddleware({
+    },
+    listFiles: {
         params: sshConnectionParamsSchema,
         query: listSSHFilesQuerySchema
-    }),
-    testById: createValidationMiddleware({
+    },
+    testById: {
         params: sshConnectionParamsSchema
-    }),
-    importTrajectory: createValidationMiddleware({
+    },
+    importTrajectory: {
         params: sshConnectionParamsSchema,
         body: importTrajectoryFromSSHSchema
-    })
-};
+    }
+});

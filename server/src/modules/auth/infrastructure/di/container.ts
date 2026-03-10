@@ -5,12 +5,16 @@ import AuthSessionService from '@modules/auth/infrastructure/services/AuthSessio
 import AvatarService from '@modules/auth/infrastructure/services/AvatarService';
 import BcryptPasswordHasher from '@modules/auth/infrastructure/services/BcryptPasswordHasher';
 import JwtTokenService from '@modules/auth/infrastructure/services/JwtTokenService';
-import { container } from 'tsyringe';
+import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 
 export const registerAuthDependencies = () => {
-    container.registerSingleton(AUTH_TOKENS.UserRepository, UserRepository);
-    container.registerSingleton(AUTH_TOKENS.AvatarService, AvatarService);
-    container.registerSingleton(AUTH_TOKENS.PasswordHasher, BcryptPasswordHasher);
-    container.registerSingleton(AUTH_TOKENS.TokenService, JwtTokenService);
-    container.registerSingleton(AUTH_TOKENS.AuthSessionService, AuthSessionService);
+    registerModuleDependencies({
+        singletons: [
+            [AUTH_TOKENS.UserRepository, UserRepository],
+            [AUTH_TOKENS.AvatarService, AvatarService],
+            [AUTH_TOKENS.PasswordHasher, BcryptPasswordHasher],
+            [AUTH_TOKENS.TokenService, JwtTokenService],
+            [AUTH_TOKENS.AuthSessionService, AuthSessionService]
+        ]
+    });
 };

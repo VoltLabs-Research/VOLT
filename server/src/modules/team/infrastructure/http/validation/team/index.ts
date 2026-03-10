@@ -1,20 +1,17 @@
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
+import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
+import { createNamedResourceSchema } from '@shared/infrastructure/http/validation/resource-schemas';
 import { createTeamScopedParamsSchema } from '@shared/infrastructure/http/validation/shared-schemas';
-import { z } from 'zod/v4';
 
-const createTeamSchema = z.object({
-    name: z.string().min(1).max(100),
-    description: z.string().max(500)
-}).strict();
+const createTeamSchema = createNamedResourceSchema();
 
 const updateTeamSchema = createTeamSchema.partial();
 
 const removeTeamMemberParamsSchema = createTeamScopedParamsSchema('userId');
 
-export const teamValidation = {
-    create: createValidationMiddleware(createTeamSchema),
-    update: createValidationMiddleware(updateTeamSchema),
-    removeMember: createValidationMiddleware({
+export const teamValidation = createResourceValidation({
+    create: createTeamSchema,
+    update: updateTeamSchema,
+    removeMember: {
         params: removeTeamMemberParamsSchema
-    })
-};
+    }
+});

@@ -6,15 +6,15 @@ import LeaveGroupController from './LeaveGroupController';
 import RemoveUsersFromGroupController from './RemoveUsersFromGroupController';
 import UpdateGroupAdminsController from './UpdateGroupAdminsController';
 import UpdateGroupInfoController from './UpdateGroupInfoController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    addUsersToGroup: container.resolve(AddUsersToGroupController),
-    createGroup: container.resolve(CreateGroupChatController),
-    getOrCreate: container.resolve(GetOrCreateChatController),
-    getUserChats: container.resolve(GetUserChatsController),
-    leaveGroup: container.resolve(LeaveGroupController),
-    removeUsersFromGroup: container.resolve(RemoveUsersFromGroupController),
-    updateGroupAdmins: container.resolve(UpdateGroupAdminsController),
-    updateGroupInfo: container.resolve(UpdateGroupInfoController)
-};
+export default createControllerRegistry({
+    addUsersToGroup: AddUsersToGroupController,
+    createGroup: CreateGroupChatController,
+    getOrCreate: GetOrCreateChatController,
+    getUserChats: GetUserChatsController,
+    leaveGroup: LeaveGroupController,
+    removeUsersFromGroup: RemoveUsersFromGroupController,
+    updateGroupAdmins: UpdateGroupAdminsController,
+    updateGroupInfo: UpdateGroupInfoController
+});

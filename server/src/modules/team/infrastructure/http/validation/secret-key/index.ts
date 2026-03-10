@@ -1,5 +1,5 @@
 import { secretKeyNameSchema, secretKeyRoleIdSchema } from '@modules/team/application/dtos/secret-key/CreateSecretKeyDTO';
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
+import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
 import { z } from 'zod/v4';
 
 const createSecretKeySchema = z.object({
@@ -7,6 +7,6 @@ const createSecretKeySchema = z.object({
     roleId: secretKeyRoleIdSchema
 }).strict();
 
-export const teamSecretKeyValidation = {
-    create: createValidationMiddleware(createSecretKeySchema)
-};
+export const teamSecretKeyValidation = createResourceValidation({
+    create: createSecretKeySchema
+});

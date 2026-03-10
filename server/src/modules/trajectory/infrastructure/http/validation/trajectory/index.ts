@@ -1,4 +1,4 @@
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
+import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
 import { createPaginationLimitSchema, createPaginationQuerySchema, createTeamScopedParamsSchema, objectIdSchema, paginationPageSchema, teamParamsSchema } from '@shared/infrastructure/http/validation/shared-schemas';
 
 import { z } from 'zod/v4';
@@ -43,37 +43,40 @@ const updateTrajectorySchema = z.object({
     isPublic: z.boolean().optional()
 }).strict();
 
-export const trajectoryValidation = {
-    listByTeamId: createValidationMiddleware({
+export const trajectoryValidation = createResourceValidation({
+    listByTeamId: {
         params: teamParamsSchema,
         query: paginationQuerySchema
-    }),
-    getMetrics: createValidationMiddleware({
+    },
+    getMetrics: {
         params: teamParamsSchema
-    }),
-    getPreview: createValidationMiddleware({
+    },
+    getPreview: {
         params: trajectoryParamsSchema
-    }),
-    downloadTrajectory: createValidationMiddleware({
+    },
+    downloadTrajectory: {
         params: trajectoryParamsSchema
-    }),
-    getAtoms: createValidationMiddleware({
+    },
+    getAtoms: {
         params: trajectoryParamsSchema,
         query: getAtomsQuerySchema
-    }),
-    getAtomsByAnalysis: createValidationMiddleware({
+    },
+    getAtomsByAnalysis: {
         params: trajectoryAnalysisParamsSchema,
         query: getAtomsQuerySchema
-    }),
-    getSceneArtifacts: createValidationMiddleware({
+    },
+    getSceneArtifacts: {
         params: trajectoryParamsSchema,
         query: getSceneArtifactsQuerySchema
-    }),
-    getGLB: createValidationMiddleware({
+    },
+    getGLB: {
         params: trajectoryGlbParamsSchema
-    }),
-    getById: createValidationMiddleware({
+    },
+    getById: {
         params: trajectoryParamsSchema
-    }),
-    update: createValidationMiddleware({ params: trajectoryParamsSchema, body: updateTrajectorySchema })
-};
+    },
+    update: {
+        params: trajectoryParamsSchema,
+        body: updateTrajectorySchema
+    }
+});

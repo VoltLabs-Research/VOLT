@@ -1,10 +1,8 @@
-import type Job from '@modules/jobs/domain/entities/Job';
 import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 import type { IPluginExecutionRouter, RoutePluginExecutionInput } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
-import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -15,17 +13,25 @@ interface DaemonPluginSyncResponse {
     objectKey: string;
 };
 
-interface DaemonExposureDefinition {
-    nodeId: string;
-    name: string;
-    results: string;
-    iterable?: string;
-    export?: {
-        exporter: string;
+interface DaemonAnalysisStartResponse {
+    queued: boolean;
+    totalJobs: number;
+}
+
+interface WorkflowSerializable {
+    nodes: Array<{
+        id: string;
         type: string;
-        options?: Record<string, unknown>;
-    };
-};
+        position: { x: number; y: number; };
+        data: Record<string, unknown>;
+    }>;
+    edges: Array<{
+        source: string;
+        target: string;
+        sourceHandle?: string;
+        targetHandle?: string;
+    }>;
+}
 
 @injectable()
 export default class PluginExecutionRouter implements IPluginExecutionRouter {
@@ -43,49 +49,21 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
     async route(input: RoutePluginExecutionInput): Promise<void> {
         await this.syncPluginBinaryIfNeeded(input.teamClusterId, input.plugin);
 
-        const entrypointNode = input.plugin.props.workflow.props.nodes.find(
-            (node) => node.type === WorkflowNodeType.Entrypoint
-        );
-        const entrypointData = entrypointNode?.data.entrypoint;
-
-        const exposures: DaemonExposureDefinition[] = (input.plugin.props.exposures || []).map((exposure) => ({
-            nodeId: exposure._id,
-            name: exposure.name,
-            results: exposure.results,
-            iterable: exposure.iterable,
-            export: exposure.export
-                ? {
-                    exporter: exposure.export.exporter,
-                    type: exposure.export.type,
-                    options: exposure.export.options || {}
-                }
-                : undefined
-        }));
-
-        await this.teamClusterDaemonClient.command(input.teamClusterId, 'analysis.start', {
+        const response = await this.teamClusterDaemonClient.command<DaemonAnalysisStartResponse>(input.teamClusterId, 'analysis.start', {
             analysisId: input.analysisId,
-            executionData: {
-                binaryObjectPath: entrypointData?.binaryObjectPath || '',
-                binaryFileName: entrypointData?.binaryFileName,
-                arguments: entrypointData?.arguments || '',
-                pluginId: input.plugin.id,
-                trajectoryId: input.trajectoryId,
-                analysisId: input.analysisId,
-                teamClusterId: input.teamClusterId,
-                exposures,
-                forEachNodeId: input.forEachNodeId,
-                nodeOutputSnapshots: input.nodeOutputSnapshots
-            },
-            payload: {
-                teamId: input.teamId,
-                trajectoryId: input.trajectoryId,
-                jobs: input.jobs.map((job) => job.props)
-            }
+            pluginId: input.plugin.id,
+            teamId: input.teamId,
+            teamClusterId: input.teamClusterId,
+            trajectoryId: input.trajectoryId,
+            workflow: input.plugin.props.workflow.props as unknown as WorkflowSerializable,
+            config: input.config,
+            selectedFrameOnly: input.selectedFrameOnly,
+            timestep: input.timestep
         });
 
         await this.daemonAnalysisCompletionService.initializeSession(
             input.analysisId,
-            input.jobs.length
+            response.totalJobs
         );
     }
 

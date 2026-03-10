@@ -2,7 +2,7 @@ import {
     GetPluginExposureGLBInputDTO,
     GetPluginExposureGLBOutputDTO
 } from '@modules/plugin/application/dtos/exposure/GetPluginExposureGLBDTO';
-import { createStreamResponse } from '@modules/plugin/utilities/plugin/create-download-response';
+import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -80,7 +80,7 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
             this.storageService.getStream(bucket, objectName)
         ]);
 
-        return Result.ok(createStreamResponse({
+        return Result.ok(createDownloadStreamResponse({
             stream,
             contentType: 'model/gltf-binary',
             contentLength: stat.size,

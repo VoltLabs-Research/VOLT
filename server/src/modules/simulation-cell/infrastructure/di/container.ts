@@ -6,20 +6,26 @@ import GetSimulationCellByIdController from '@modules/simulation-cell/infrastruc
 import GetSimulationCellByTrajectoryController from '@modules/simulation-cell/infrastructure/http/controllers/GetSimulationCellByTrajectoryController';
 import ListSimulationCellsByTeamIdController from '@modules/simulation-cell/infrastructure/http/controllers/ListSimulationCellsByTeamIdController';
 import SimulationCellRepository from '@modules/simulation-cell/infrastructure/persistence/mongo/repositories/SimulationCellRepository';
-import { container } from 'tsyringe';
+import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 
 export const registerSimulationCellDependencies = () => {
-    container.registerSingleton(SIMULATION_CELL_TOKENS.SimulationCellRepository, SimulationCellRepository);
-    container.registerSingleton(SIMULATION_CELL_TOKENS.GetSimulationCellByIdUseCase, GetSimulationCellByIdUseCase);
-    container.registerSingleton(SIMULATION_CELL_TOKENS.GetSimulationCellByTrajectoryUseCase, GetSimulationCellByTrajectoryUseCase);
-    container.registerSingleton(SIMULATION_CELL_TOKENS.ListSimulationCellsByTeamIdUseCase, ListSimulationCellsByTeamIdUseCase);
-    container.registerSingleton(SIMULATION_CELL_TOKENS.GetSimulationCellByIdController, GetSimulationCellByIdController);
-    container.registerSingleton(SIMULATION_CELL_TOKENS.GetSimulationCellByTrajectoryController, GetSimulationCellByTrajectoryController);
-    container.registerSingleton(SIMULATION_CELL_TOKENS.ListSimulationCellsByTeamIdController, ListSimulationCellsByTeamIdController);
+    registerModuleDependencies({
+        singletons: [
+            [SIMULATION_CELL_TOKENS.SimulationCellRepository, SimulationCellRepository],
+            [SIMULATION_CELL_TOKENS.GetSimulationCellByIdUseCase, GetSimulationCellByIdUseCase],
+            [SIMULATION_CELL_TOKENS.GetSimulationCellByTrajectoryUseCase, GetSimulationCellByTrajectoryUseCase],
+            [SIMULATION_CELL_TOKENS.ListSimulationCellsByTeamIdUseCase, ListSimulationCellsByTeamIdUseCase],
+            [SIMULATION_CELL_TOKENS.GetSimulationCellByIdController, GetSimulationCellByIdController],
+            [SIMULATION_CELL_TOKENS.GetSimulationCellByTrajectoryController, GetSimulationCellByTrajectoryController],
+            [SIMULATION_CELL_TOKENS.ListSimulationCellsByTeamIdController, ListSimulationCellsByTeamIdController]
+        ]
+    });
 
     const toolClasses = [ListSimulationCellsAITool];
 
     for (const ToolClass of toolClasses) {
-        container.registerSingleton(AI_TOKENS.AITool, ToolClass);
+        registerModuleDependencies({
+            singletons: [[AI_TOKENS.AITool, ToolClass]]
+        });
     }
 };

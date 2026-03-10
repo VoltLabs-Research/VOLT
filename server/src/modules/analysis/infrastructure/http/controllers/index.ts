@@ -3,12 +3,12 @@ import GetAnalysesByTeamIdController from './GetAnalysesByTeamIdController';
 import GetAnalysesByTrajectoryIdController from './GetAnalysesByTrajectoryIdController';
 import GetAnalysisByIdController from './GetAnalysisByIdController';
 import RetryFailedFramesController from './RetryFailedFramesController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    deleteById: container.resolve(DeleteAnalysisByIdController),
-    getById: container.resolve(GetAnalysisByIdController),
-    listByTeamId: container.resolve(GetAnalysesByTeamIdController),
-    listByTrajectoryId: container.resolve(GetAnalysesByTrajectoryIdController),
-    retryFailedFrames: container.resolve(RetryFailedFramesController)
-};
+export default createControllerRegistry({
+    deleteById: DeleteAnalysisByIdController,
+    getById: GetAnalysisByIdController,
+    listByTeamId: GetAnalysesByTeamIdController,
+    listByTrajectoryId: GetAnalysesByTrajectoryIdController,
+    retryFailedFrames: RetryFailedFramesController
+});

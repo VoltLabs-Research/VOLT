@@ -4,7 +4,6 @@ export * from './DeleteBinaryUseCase';
 export * from './DeletePluginByIdUseCase';
 export * from './ExecutePluginUseCase';
 export * from './ExportPluginUseCase';
-export * from './GetNodeSchemasUseCase';
 export * from './GetPluginByIdUseCase';
 export * from './ImportPluginUseCase';
 export * from './ListPluginsUseCase';

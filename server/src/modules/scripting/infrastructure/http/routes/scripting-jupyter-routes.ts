@@ -1,16 +1,13 @@
 import { ScriptingJupyterProxyService } from '@modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
-import type { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
-import { Router } from 'express';
+import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import { container } from 'tsyringe';
 
-const router = Router();
 const proxyService = container.resolve(ScriptingJupyterProxyService);
 
-const module: HttpModule = {
+export default createHttpModule({
     basePath: '/api/jupyter',
-    router
-};
-
-router.use('/:teamId/notebooks/:runtimeNotebookId', proxyService.proxyHttpRequest);
-
-export default module;
+    routerOptions: { mergeParams: false },
+    routes: (router) => {
+        router.use('/:teamId/notebooks/:runtimeNotebookId', proxyService.proxyHttpRequest);
+    }
+});

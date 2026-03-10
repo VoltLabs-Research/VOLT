@@ -1,10 +1,10 @@
 import {
     useInfiniteQuery,
-    useMutation,
     useQuery,
     type QueryKey,
     type UseQueryOptions
 } from '@tanstack/react-query';
+import { createEntityCacheResource } from '@/shared/api/query-resources';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import {
     upsertEntityInList,
@@ -13,7 +13,7 @@ import {
     patchInfinitePages,
     batchInvalidateQueries
 } from '@/shared/infrastructure/query/cache-utils';
-import { createMutation, buildKeys } from '@/shared/infrastructure/query';
+import { createManagedMutation, createMutation, buildKeys } from '@/shared/infrastructure/query';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import pluginService from '../../api/services/plugin';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
@@ -192,48 +192,38 @@ export const usePluginTeamClustersQuery = (
 
 // ─── Cache sync helpers ──────────────────────────────────────────────────────
 
-export const syncPluginEntityCaches = (plugin: Plugin): void => {
-    queryClient.setQueryData<Plugin[]>(PLUGIN_QUERY_KEYS.allList(), (currentPlugins = []) => {
-        const existingPluginIndex = currentPlugins.findIndex((currentPlugin) => currentPlugin._id === plugin._id);
+const pluginEntityCache = createEntityCacheResource<Plugin>({
+    listKey: PLUGIN_QUERY_KEYS.allList,
+    detailKey: (id) => PLUGIN_QUERY_KEYS.pluginById({ _id: id }),
+    onUpsert: (plugin) => {
+        patchPaginatedPage<Plugin>(PLUGIN_QUERY_KEYS.catalog(), (page) => {
+            if (!page.data.some((currentPlugin) => currentPlugin._id === plugin._id)) {
+                return page;
+            }
 
-        if (existingPluginIndex === -1) {
-            return [plugin, ...currentPlugins];
-        }
-
-        return currentPlugins.map((currentPlugin) => {
-            return currentPlugin._id === plugin._id ? plugin : currentPlugin;
+            return upsertEntityInList(page, plugin);
         });
-    });
 
-    queryClient.setQueryData(PLUGIN_QUERY_KEYS.pluginById({ _id: plugin._id }), plugin);
+        patchInfinitePages<Plugin>(PLUGIN_QUERY_KEYS.catalogInfinite(), (page) => {
+            if (!page.data.some((currentPlugin) => currentPlugin._id === plugin._id)) {
+                return page;
+            }
 
-    patchPaginatedPage<Plugin>(PLUGIN_QUERY_KEYS.catalog(), (page) => {
-        if (!page.data.some((currentPlugin) => currentPlugin._id === plugin._id)) {
-            return page;
-        }
+            return upsertEntityInList(page, plugin);
+        });
+    },
+    onRemove: (pluginId) => {
+        patchPaginatedPage<Plugin>(PLUGIN_QUERY_KEYS.catalog(), (page) => removeEntityFromList(page, pluginId));
+        patchInfinitePages<Plugin>(PLUGIN_QUERY_KEYS.catalogInfinite(), (page) => removeEntityFromList(page, pluginId));
+    }
+});
 
-        return upsertEntityInList(page, plugin);
-    });
-
-    patchInfinitePages<Plugin>(PLUGIN_QUERY_KEYS.catalogInfinite(), (page) => {
-        if (!page.data.some((currentPlugin) => currentPlugin._id === plugin._id)) {
-            return page;
-        }
-
-        return upsertEntityInList(page, plugin);
-    });
+export const syncPluginEntityCaches = (plugin: Plugin): void => {
+    pluginEntityCache.upsert(plugin);
 };
 
 export const removePluginEntityCaches = (pluginId: string): void => {
-    queryClient.setQueryData<Plugin[]>(PLUGIN_QUERY_KEYS.allList(), (currentPlugins = []) => {
-        return currentPlugins.filter((currentPlugin) => currentPlugin._id !== pluginId);
-    });
-
-    queryClient.removeQueries({ queryKey: PLUGIN_QUERY_KEYS.pluginById({ _id: pluginId }) });
-
-    patchPaginatedPage<Plugin>(PLUGIN_QUERY_KEYS.catalog(), (page) => removeEntityFromList(page, pluginId));
-
-    patchInfinitePages<Plugin>(PLUGIN_QUERY_KEYS.catalogInfinite(), (page) => removeEntityFromList(page, pluginId));
+    pluginEntityCache.remove(pluginId);
 };
 
 export const invalidatePluginCatalogQueries = async (): Promise<void> => {
@@ -248,61 +238,44 @@ export const invalidatePluginEntityQueries = async (): Promise<void> => {
     await queryClient.invalidateQueries({ queryKey: PLUGIN_QUERY_KEYS.byId() });
 };
 
+const managePluginEntityMutation = <TVariables, TData = Plugin>(
+    mutationFn: (variables: TVariables) => Promise<TData>,
+    applySuccess: (data: TData, variables: TVariables) => void
+) => createManagedMutation<TData, TVariables>(mutationFn, async (data, variables) => {
+    applySuccess(data, variables);
+    await invalidatePluginEntityQueries();
+});
+
 // ─── Mutation hooks ──────────────────────────────────────────────────────────
 
-export const useSavePluginMutation = () => {
-    return useMutation<Plugin, Error, SavePluginInputDTO>({
-        mutationFn: savePlugin,
-        onSuccess: async (plugin) => {
-            syncPluginEntityCaches(plugin);
-            await invalidatePluginEntityQueries();
-        }
-    });
-};
+export const useSavePluginMutation = managePluginEntityMutation<SavePluginInputDTO>(
+    savePlugin,
+    (plugin) => syncPluginEntityCaches(plugin)
+);
 
-export const useDeletePluginMutation = () => {
-    return useMutation<void, Error, DeletePluginInputDTO>({
-        mutationFn: pluginService.delete,
-        onSuccess: async (_data, { _id }) => {
-            removePluginEntityCaches(_id);
-            await invalidatePluginEntityQueries();
-        }
-    });
-};
+export const useDeletePluginMutation = managePluginEntityMutation<DeletePluginInputDTO, void>(
+    pluginService.delete,
+    (_data, { _id }) => removePluginEntityCaches(_id)
+);
 
 export const useExportPluginMutation = createMutation<Blob, ExportPluginInputDTO>(pluginService.exportPlugin);
 
-export const useImportPluginMutation = () => {
-    return useMutation<Plugin, Error, ImportPluginInputDTO>({
-        mutationFn: pluginService.importPlugin,
-        onSuccess: async (plugin) => {
-            syncPluginEntityCaches(plugin);
-            await invalidatePluginEntityQueries();
-        }
-    });
-};
+export const useImportPluginMutation = managePluginEntityMutation<ImportPluginInputDTO>(
+    pluginService.importPlugin,
+    (plugin) => syncPluginEntityCaches(plugin)
+);
 
 export const useExecutePluginMutation = createMutation<ExecutePluginOutputDTO, ExecutePluginInputDTO>(pluginService.execute);
 
-export const useClonePluginMutation = () => {
-    return useMutation<Plugin, Error, ClonePluginInputDTO>({
-        mutationFn: pluginService.clone,
-        onSuccess: async (plugin) => {
-            syncPluginEntityCaches(plugin);
-            await invalidatePluginEntityQueries();
-        }
-    });
-};
+export const useClonePluginMutation = managePluginEntityMutation<ClonePluginInputDTO>(
+    pluginService.clone,
+    (plugin) => syncPluginEntityCaches(plugin)
+);
 
-export const useUpdatePluginMutation = () => {
-    return useMutation<Plugin, Error, UpdatePluginInputDTO>({
-        mutationFn: pluginService.update,
-        onSuccess: async (plugin) => {
-            syncPluginEntityCaches(plugin);
-            await invalidatePluginEntityQueries();
-        }
-    });
-};
+export const useUpdatePluginMutation = managePluginEntityMutation<UpdatePluginInputDTO>(
+    pluginService.update,
+    (plugin) => syncPluginEntityCaches(plugin)
+);
 
 export const useUploadBinaryMutation = createMutation<UploadBinaryOutputDTO, UploadBinaryInputDTO>(pluginService.uploadBinary);
 

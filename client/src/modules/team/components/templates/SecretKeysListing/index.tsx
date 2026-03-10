@@ -1,7 +1,8 @@
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { openModal } from '@/shared/presentation/components/Modal';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { runHandledAction } from '@/shared/errors/handled-action';
 import { dateColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
+import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { SecretKeyCreationModal, SECRET_KEY_CREATION_MODAL_ID } from '../../organisms/SecretKeyCreationModal';
 import useDeleteSecretKey from '@/modules/team/hooks/secret-key/use-delete-secret-key';
 import useRevokeSecretKey from '@/modules/team/hooks/secret-key/use-revoke-secret-key';
@@ -27,21 +28,15 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'secret-key.deleted', queryKeys: [SECRET_KEYS_QUERY_KEY] }
 ];
 
-interface PromiseToastOptions {
-    loading: { title: string };
-    success: { title: string };
-    error: { title: string };
-};
-
 type SecretKeyColumnSkeleton = NonNullable<ColumnConfig<SecretKey>['skeleton']>;
 
 const NAME_COLUMN_SKELETON: SecretKeyColumnSkeleton = { variant: 'text', width: 120 };
 const PREFIX_COLUMN_SKELETON: SecretKeyColumnSkeleton = { variant: 'text', width: 80 };
 const ROLE_COLUMN_SKELETON: SecretKeyColumnSkeleton = { variant: 'text', width: 100 };
-const getDeleteSecretKeyToastOptions = (key: SecretKey): PromiseToastOptions => ({
-    loading: { title: `Deleting "${key.name}"...` },
-    success: { title: `Secret key "${key.name}" deleted` },
-    error: { title: 'Failed to delete secret key' }
+const getDeleteSecretKeyToastOptions = (key: SecretKey) => createPromiseToastOptions({
+    loading: `Deleting "${key.name}"...`,
+    success: `Secret key "${key.name}" deleted`,
+    error: 'Failed to delete secret key'
 });
 
 const COLUMNS: ColumnConfig<SecretKey>[] = [
@@ -131,7 +126,11 @@ export default function SecretKeysListing() {
             delete: {
                 label: 'Delete',
                 handler: async ({ item: key }) => {
-                    await showPromise(deleteSecretKey(key._id), getDeleteSecretKeyToastOptions(key));
+                    await runHandledAction({
+                        action: () => deleteSecretKey(key._id),
+                        toast: getDeleteSecretKeyToastOptions(key),
+                        rethrow: false
+                    });
                 },
                 confirm: ({ selectedItems }) => (
                     selectedItems.length === 1

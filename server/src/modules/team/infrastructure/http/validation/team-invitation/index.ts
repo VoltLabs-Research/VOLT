@@ -1,4 +1,4 @@
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
+import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
 import { z } from 'zod/v4';
 
 const sendInvitationSchema = z.object({
@@ -10,7 +10,7 @@ const updateInvitationSchema = z.object({
     status: z.enum(['pending', 'accepted', 'rejected'])
 }).strict();
 
-export const teamInvitationValidation = {
-    send: createValidationMiddleware(sendInvitationSchema),
-    update: createValidationMiddleware(updateInvitationSchema)
-};
+export const teamInvitationValidation = createResourceValidation({
+    send: sendInvitationSchema,
+    update: updateInvitationSchema
+});

@@ -3,11 +3,15 @@ import { RasterMetadataService } from '@modules/raster/infrastructure/services/R
 import { RasterFrameService } from '@modules/raster/infrastructure/services/RasterFrameService';
 import { RasterJobEnqueuerService } from '@modules/raster/infrastructure/services/RasterJobEnqueuerService';
 import { RASTER_TOKENS } from './RasterTokens';
-import { container } from 'tsyringe';
+import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 
 export const registerRasterDependencies = (): void => {
-    container.registerSingleton(RASTER_TOKENS.RasterStorage, RasterStorageService);
-    container.registerSingleton(RASTER_TOKENS.RasterMetadataReader, RasterMetadataService);
-    container.registerSingleton(RASTER_TOKENS.RasterFrameReader, RasterFrameService);
-    container.registerSingleton(RASTER_TOKENS.RasterJobEnqueuer, RasterJobEnqueuerService);
+    registerModuleDependencies({
+        singletons: [
+            [RASTER_TOKENS.RasterStorage, RasterStorageService],
+            [RASTER_TOKENS.RasterMetadataReader, RasterMetadataService],
+            [RASTER_TOKENS.RasterFrameReader, RasterFrameService],
+            [RASTER_TOKENS.RasterJobEnqueuer, RasterJobEnqueuerService]
+        ]
+    });
 };

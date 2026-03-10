@@ -2,7 +2,7 @@ import { AddUsersToGroupInputDTO, AddUsersToGroupOutputDTO } from '@modules/chat
 import { ensureTeamMembersExist } from '@modules/chat/utilities/chat/ensureTeamMembersExist';
 import { resolveGroupChat } from '@modules/chat/utilities/chat/resolveGroupChat';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { toPersistedChatOutput } from '@modules/chat/utilities/toPersistedChatOutput';
+import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
@@ -56,6 +56,6 @@ export class AddUsersToGroupUseCase implements IUseCase<AddUsersToGroupInputDTO,
             addedBy: userId
         });
 
-        return Result.ok(toPersistedChatOutput(updatedChat));
+        return Result.ok(toPersistedEntity(updatedChat));
     }
 };

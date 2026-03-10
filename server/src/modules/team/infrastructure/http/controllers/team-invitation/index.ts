@@ -5,14 +5,14 @@ import GetPendingInvitationsController from './GetPendingInvitationsController';
 import UpdateTeamInvitationByIdController from './UpdateTeamInvitationByIdController';
 import AcceptTeamInvitationController from './AcceptTeamInvitationController';
 import RejectTeamInvitationController from './RejectTeamInvitationController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    send: container.resolve(SendTeamInvitationController),
-    deleteById: container.resolve(DeleteTeamInvitationByIdController),
-    getById: container.resolve(GetTeamInvitationByIdController),
-    listPendingByTeamId: container.resolve(GetPendingInvitationsController),
-    updateById: container.resolve(UpdateTeamInvitationByIdController),
-    accept: container.resolve(AcceptTeamInvitationController),
-    reject: container.resolve(RejectTeamInvitationController)
-};
+export default createControllerRegistry({
+    send: SendTeamInvitationController,
+    deleteById: DeleteTeamInvitationByIdController,
+    getById: GetTeamInvitationByIdController,
+    listPendingByTeamId: GetPendingInvitationsController,
+    updateById: UpdateTeamInvitationByIdController,
+    accept: AcceptTeamInvitationController,
+    reject: RejectTeamInvitationController
+});

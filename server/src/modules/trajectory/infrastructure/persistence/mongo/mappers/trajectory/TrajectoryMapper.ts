@@ -1,15 +1,9 @@
 import { TrajectoryDocument } from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryModel';
-import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMapper';
+import { createMongoMapper } from '@shared/infrastructure/persistence/mongo/createMongoMapper';
 import Trajectory, { TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 
-class TrajectoryMapper extends BaseMapper<Trajectory, TrajectoryProps, TrajectoryDocument>{
-    constructor(){
-        super(Trajectory, [
-            'createdBy',
-            'team',
-            'teamCluster'
-        ]);
-    }
-};
-
-export default new TrajectoryMapper();
+export default createMongoMapper<Trajectory, TrajectoryProps, TrajectoryDocument>(Trajectory, [
+    'createdBy',
+    'team',
+    'teamCluster'
+]);

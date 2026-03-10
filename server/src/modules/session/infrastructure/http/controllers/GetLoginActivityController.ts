@@ -5,5 +5,5 @@ import { getSessionRequestContext } from '@modules/session/infrastructure/http/h
 
 export default createController(GetLoginActivityUseCase, {
     validationSchema: sessionValidation.getLoginActivity,
-    getRequestValidationContext: getSessionRequestContext
+    contextProviders: [getSessionRequestContext]
 });

@@ -1,9 +1,8 @@
 import { createPaginationQuerySchema, createTeamScopedParamsSchema, teamParamsSchema } from '@shared/infrastructure/http/validation/shared-schemas';
 import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
+import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
+import { requiredTextSchema } from '@shared/infrastructure/http/validation/resource-schemas';
 import { z } from 'zod/v4';
-
-const requiredTextSchema = z.string().trim().min(1);
 
 const teamClusterParamsSchema = createTeamScopedParamsSchema('teamClusterId');
 
@@ -109,44 +108,44 @@ const teamClusterInstallManifestSchema = z.object({
     })
 }).strict();
 
-export const teamClusterValidation = {
-    create: createValidationMiddleware({
+export const teamClusterValidation = createResourceValidation({
+    create: {
         params: teamParamsSchema,
         body: createTeamClusterSchema
-    }),
-    listByTeamId: createValidationMiddleware({
+    },
+    listByTeamId: {
         params: teamParamsSchema,
         query: listTeamClustersQuerySchema
-    }),
-    getById: createValidationMiddleware({
+    },
+    getById: {
         params: teamClusterParamsSchema
-    }),
-    deleteById: createValidationMiddleware({
+    },
+    deleteById: {
         params: teamClusterParamsSchema,
         body: passwordConfirmationSchema
-    }),
-    revealCredentials: createValidationMiddleware({
+    },
+    revealCredentials: {
         params: teamClusterParamsSchema,
         body: passwordConfirmationSchema
-    }),
-    processHealthcheck: createValidationMiddleware({
+    },
+    processHealthcheck: {
         params: publicTeamClusterParamsSchema,
         body: teamClusterHealthcheckSchema
-    }),
-    updateLifecycle: createValidationMiddleware({
+    },
+    updateLifecycle: {
         params: publicTeamClusterParamsSchema,
         body: teamClusterLifecycleSchema
-    }),
-    recordHeartbeat: createValidationMiddleware({
+    },
+    recordHeartbeat: {
         params: publicTeamClusterParamsSchema,
         body: teamClusterHeartbeatSchema
-    }),
-    completeDeletion: createValidationMiddleware({
+    },
+    completeDeletion: {
         params: publicTeamClusterParamsSchema,
         body: daemonPasswordSchema
-    }),
-    generateInstallManifest: createValidationMiddleware({
+    },
+    generateInstallManifest: {
         params: publicTeamClusterParamsSchema,
         body: teamClusterInstallManifestSchema
-    })
-};
+    }
+});

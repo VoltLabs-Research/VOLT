@@ -1,32 +1,26 @@
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useLeaveTeamMutation } from '@/modules/team/hooks/team/queries';
 import { resetTeamScopedApplicationState, useTeamStore } from '@/modules/team/stores/team/use-team-store';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { runHandledAction } from '@/shared/errors/handled-action';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Select from '@/shared/presentation/components/Select';
+import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { IoExitOutline } from 'react-icons/io5';
 import { useCallback, useMemo } from 'react';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 import type { MouseEvent } from 'react';
 import './TeamSelector.css';
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 interface TeamSelectorProps {
     className?: string;
 };
 
-interface PromiseToastOptions {
-    loading: { title: string };
-    success: { title: string };
-    error: { title: string };
-};
-
-const LEAVE_TEAM_TOAST_OPTIONS: PromiseToastOptions = {
-    loading: { title: 'Leaving team...' },
-    success: { title: 'Left team successfully' },
-    error: { title: 'Failed to leave team' }
-};
+const LEAVE_TEAM_TOAST_OPTIONS = createPromiseToastOptions({
+    loading: 'Leaving team...',
+    success: 'Left team successfully',
+    error: 'Failed to leave team'
+});
 
 export default function TeamSelector({ className = '' }: TeamSelectorProps) {
     const { teams } = useTeamData();
@@ -44,27 +38,28 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
         event.preventDefault();
         event.stopPropagation();
 
-        try {
-            await showPromise(leaveTeamMutation.mutateAsync({ teamId }), LEAVE_TEAM_TOAST_OPTIONS);
+        await runHandledAction({
+            action: () => leaveTeamMutation.mutateAsync({ teamId }),
+            toast: LEAVE_TEAM_TOAST_OPTIONS,
+            afterSuccess: () => {
+                const state = useTeamStore.getState();
+                const currentSelectedTeamId = state.selectedTeamId;
 
-            const state = useTeamStore.getState();
-            const currentSelectedTeamId = state.selectedTeamId;
+                if (currentSelectedTeamId === teamId) {
+                    const remainingTeams = teams.filter((team) => team._id !== teamId);
+                    const nextTeam = remainingTeams[0] ?? null;
 
-            if (currentSelectedTeamId === teamId) {
-                const remainingTeams = teams.filter((team) => team._id !== teamId);
-                const nextTeam = remainingTeams[0] ?? null;
-
-                if (nextTeam) {
-                    resetTeamScopedApplicationState();
-                    state.setSelectedTeamId(nextTeam._id);
-                } else {
-                    resetTeamScopedApplicationState();
-                    state.setSelectedTeamId(null);
+                    if (nextTeam) {
+                        resetTeamScopedApplicationState();
+                        state.setSelectedTeamId(nextTeam._id);
+                    } else {
+                        resetTeamScopedApplicationState();
+                        state.setSelectedTeamId(null);
+                    }
                 }
-            }
-        } catch(error: unknown) {
-            if(isAccessDeniedError(error)) return;
-        }
+            },
+            rethrow: false
+        });
     }, [leaveTeamMutation, teams]);
 
     const teamOptions = useMemo(() =>

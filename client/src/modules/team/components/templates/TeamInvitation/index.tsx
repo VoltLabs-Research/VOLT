@@ -1,11 +1,12 @@
 import { useAcceptInvitationMutation, useInvitationDetailsQuery, useRejectInvitationMutation } from '@/modules/team/hooks/invitation/queries';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { runHandledAction } from '@/shared/errors/handled-action';
 import { getAccessDeniedMessage, getApiErrorMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
+import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { AlertCircle, CheckCircle, Clock, Mail, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -16,23 +17,17 @@ interface TeamInvitationRouteParams extends Params {
     invitationId: string;
 };
 
-interface PromiseToastOptions {
-    loading: { title: string };
-    success: { title: string };
-    error: { title: string };
-};
+const ACCEPT_INVITATION_TOAST_OPTIONS = createPromiseToastOptions({
+    loading: 'Accepting invitation...',
+    success: 'Invitation accepted!',
+    error: 'Failed to accept invitation'
+});
 
-const ACCEPT_INVITATION_TOAST_OPTIONS: PromiseToastOptions = {
-    loading: { title: 'Accepting invitation...' },
-    success: { title: 'Invitation accepted!' },
-    error: { title: 'Failed to accept invitation' }
-};
-
-const REJECT_INVITATION_TOAST_OPTIONS: PromiseToastOptions = {
-    loading: { title: 'Rejecting invitation...' },
-    success: { title: 'Invitation rejected' },
-    error: { title: 'Failed to reject invitation' }
-};
+const REJECT_INVITATION_TOAST_OPTIONS = createPromiseToastOptions({
+    loading: 'Rejecting invitation...',
+    success: 'Invitation rejected',
+    error: 'Failed to reject invitation'
+});
 
 export default function TeamInvitationTemplate() {
     const { invitationId } = useParams<TeamInvitationRouteParams>();
@@ -65,34 +60,42 @@ export default function TeamInvitationTemplate() {
     const handleAccept = async () => {
         if(!invitationId || !invitation) return;
 
-        try{
-            setSelectedTeamId(invitation.team._id);
-            await showPromise(acceptMutation.mutateAsync({ invitationId, teamId: invitation.team._id }), ACCEPT_INVITATION_TOAST_OPTIONS);
-            setError(null);
-            window.location.href = '/dashboard';
-        }catch(err: unknown){
-            if(isAccessDeniedError(err)){
-                setError(getAccessDeniedMessage(err, 'You do not have permission to perform this action.') ?? 'You do not have permission to perform this action.');
-            } else {
-                setError(getApiErrorMessage(err, 'An error occurred'));
-            }
-        }
+        await runHandledAction({
+            action: () => acceptMutation.mutateAsync({ invitationId, teamId: invitation.team._id }),
+            toast: ACCEPT_INVITATION_TOAST_OPTIONS,
+            afterSuccess: () => {
+                setSelectedTeamId(invitation.team._id);
+                setError(null);
+                window.location.href = '/dashboard';
+            },
+            accessDeniedTitle: 'You do not have permission to perform this action.',
+            onAccessDenied: setError,
+            onError: (message) => {
+                setError(getApiErrorMessage(message, 'An error occurred'));
+            },
+            errorToast: false,
+            rethrow: false
+        });
     };
 
     const handleReject = async () => {
         if(!invitationId || !invitation) return;
 
-        try{
-            await showPromise(rejectMutation.mutateAsync({ invitationId, teamId: invitation.team._id }), REJECT_INVITATION_TOAST_OPTIONS);
-            setError(null);
-            window.location.href = '/dashboard';
-        }catch(err: unknown){
-            if(isAccessDeniedError(err)){
-                setError(getAccessDeniedMessage(err, 'You do not have permission to perform this action.') ?? 'You do not have permission to perform this action.');
-            } else {
-                setError(getApiErrorMessage(err, 'An error occurred'));
-            }
-        }
+        await runHandledAction({
+            action: () => rejectMutation.mutateAsync({ invitationId, teamId: invitation.team._id }),
+            toast: REJECT_INVITATION_TOAST_OPTIONS,
+            afterSuccess: () => {
+                setError(null);
+                window.location.href = '/dashboard';
+            },
+            accessDeniedTitle: 'You do not have permission to perform this action.',
+            onAccessDenied: setError,
+            onError: (message) => {
+                setError(getApiErrorMessage(message, 'An error occurred'));
+            },
+            errorToast: false,
+            rethrow: false
+        });
     };
 
     if(loading){

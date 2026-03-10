@@ -1,8 +1,8 @@
 import { updateSocketAuthToken } from '@/modules/socket/core/services/socket-auth-session';
-import { buildKeys, createQuery, withSuccess } from '@/shared/infrastructure/query/create-paginated-query';
+import { buildKeys, createManagedMutation, createMutation, createQuery, withSuccess } from '@/shared/infrastructure/query';
 import service from '../api/service';
 import queryClient from '@/shared/infrastructure/query/query-client';
-import TokenStorage from '../services/token-storage';
+import TokenStorage from '@/shared/auth/token-storage';
 import { useMutation } from '@tanstack/react-query';
 import type { ChangePasswordInputDTO, ChangePasswordOutputDTO } from '../api/dtos/change-password';
 import type { CheckEmailInputDTO, CheckEmailOutputDTO } from '../api/dtos/check-email';
@@ -11,7 +11,7 @@ import type { SignUpInputDTO, SignUpOutputDTO } from '../api/dtos/sign-up';
 import type { UpdateAvatarInputDTO } from '../api/dtos/update-avatar';
 import type { UpdateProfileInputDTO } from '../api/dtos/update-profile';
 import type { User } from '../api/entities/user';
-import type { QueryOptions, MutationOptions } from '@/shared/infrastructure/query/create-paginated-query';
+import type { QueryOptions, MutationOptions } from '@/shared/infrastructure/query';
 
 type AuthQueryKeyMap = Record<'currentUser' | 'passwordInfo', void>;
 
@@ -29,44 +29,27 @@ export const clearCurrentUserQueryData = async () => {
     currentUser.clear(undefined);
 };
 
-export const useSignInMutation = (options?: MutationOptions<SignInOutputDTO, SignInInputDTO>) => {
-    return useMutation({
-        ...options,
-        mutationFn: service.signIn,
-        onSuccess: withSuccess((data) => currentUser.set(undefined, data.user), options)
-    });
-};
+export const useSignInMutation = createManagedMutation<SignInOutputDTO, SignInInputDTO>(
+    service.signIn,
+    (data) => currentUser.set(undefined, data.user)
+);
 
-export const useSignUpMutation = (options?: MutationOptions<SignUpOutputDTO, SignUpInputDTO>) => {
-    return useMutation({
-        ...options,
-        mutationFn: service.signUp,
-        onSuccess: withSuccess((data) => currentUser.set(undefined, data.user), options)
-    });
-};
+export const useSignUpMutation = createManagedMutation<SignUpOutputDTO, SignUpInputDTO>(
+    service.signUp,
+    (data) => currentUser.set(undefined, data.user)
+);
 
-export const useCheckEmailMutation = (options?: MutationOptions<CheckEmailOutputDTO, CheckEmailInputDTO>) => {
-    return useMutation({
-        ...options,
-        mutationFn: service.checkEmail
-    });
-};
+export const useCheckEmailMutation = createMutation<CheckEmailOutputDTO, CheckEmailInputDTO>(service.checkEmail);
 
-export const useUpdateMeMutation = (options?: MutationOptions<User, UpdateProfileInputDTO | UpdateAvatarInputDTO>) => {
-    return useMutation({
-        ...options,
-        mutationFn: service.updateMe,
-        onSuccess: withSuccess((data) => currentUser.set(undefined, data), options)
-    });
-};
+export const useUpdateMeMutation = createManagedMutation<User, UpdateProfileInputDTO | UpdateAvatarInputDTO>(
+    service.updateMe,
+    (data) => currentUser.set(undefined, data)
+);
 
-export const useDeleteMeMutation = (options?: MutationOptions<void, void>) => {
-    return useMutation({
-        ...options,
-        mutationFn: () => service.deleteMe({}),
-        onSuccess: withSuccess(() => currentUser.clear(undefined), options)
-    });
-};
+export const useDeleteMeMutation = createManagedMutation<void, void>(
+    () => service.deleteMe({}),
+    () => currentUser.clear(undefined)
+);
 
 export const useChangePasswordMutation = (options?: MutationOptions<ChangePasswordOutputDTO, ChangePasswordInputDTO>) => {
     const tokenStorage = new TokenStorage();

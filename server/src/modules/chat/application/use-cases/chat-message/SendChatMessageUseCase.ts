@@ -1,7 +1,7 @@
 import { SendChatMessageInputDTO, SendChatMessageOutputDTO } from '@modules/chat/application/dtos/chat-message/SendChatMessageDTO';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
-import { toPersistedChatOutput } from '@modules/chat/utilities/toPersistedChatOutput';
+import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -44,7 +44,7 @@ export class SendChatMessageUseCase implements IUseCase<SendChatMessageInputDTO,
 
         await this.chatRepo.updateLastMessage(chatId, message._id);
 
-        const persistedMessage = toPersistedChatOutput(message);
+        const persistedMessage = toPersistedEntity(message);
 
         this.socketEmitter.emitToRoom(`chat-${chatId}`, 'new_message', {
             message: persistedMessage,

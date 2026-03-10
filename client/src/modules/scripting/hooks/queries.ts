@@ -1,13 +1,11 @@
 import service from '../api/service';
 import {
     buildKeys,
+    createCachePolicy,
+    createManagedMutation,
     createMutation,
-    createQuery,
-    withSuccess
-} from '@/shared/infrastructure/query/create-paginated-query';
-import queryClient from '@/shared/infrastructure/query/query-client';
-import { useMutation } from '@tanstack/react-query';
-import type { MutationOptions } from '@/shared/infrastructure/query/create-paginated-query';
+    createQuery
+} from '@/shared/infrastructure/query';
 import type { CreateScriptingSessionParams } from '../api/dtos/create-scripting-session';
 import type { DeleteScriptingNotebookParams } from '../api/dtos/delete-scripting-notebook';
 import type { ListScriptingNotebooksParams } from '../api/dtos/list-scripting-notebooks';
@@ -26,22 +24,14 @@ export const scriptingNotebooksQueryKey = KEYS.notebooks;
 
 export const scriptingNotebooksQuery = createQuery(KEYS.notebooks, listNotebooks);
 
+const scriptingNotebooksCache = createCachePolicy<void>(() => KEYS.notebooks());
 
-export const invalidateScriptingNotebooksQuery = () => {
-    return queryClient.invalidateQueries({ queryKey: KEYS.notebooks() });
-};
+export const invalidateScriptingNotebooksQuery = () => scriptingNotebooksCache.invalidate(undefined);
 
-export const useDeleteScriptingNotebookMutation = (
-    options?: MutationOptions<void, DeleteScriptingNotebookParams>
-) => {
-    return useMutation({
-        ...options,
-        mutationFn: deleteNotebook,
-        onSuccess: withSuccess(() => {
-            invalidateScriptingNotebooksQuery();
-        }, options)
-    });
-};
+export const useDeleteScriptingNotebookMutation = createManagedMutation<void, DeleteScriptingNotebookParams>(
+    deleteNotebook,
+    () => invalidateScriptingNotebooksQuery()
+);
 
 export const useCreateScriptingSessionMutation = createMutation<ScriptingSession, CreateScriptingSessionParams>(
     createSession

@@ -1,12 +1,12 @@
 import Container from '@/shared/presentation/components/Container';
 import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
-import { getAccessDeniedMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import { runHandledAction } from '@/shared/errors/handled-action';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
 import useModalForm from '@/shared/presentation/hooks/use-modal-form';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import useZodForm from '@/shared/presentation/hooks/use-zod-form';
 import { useState } from 'react';
 import { teamCreatorSchema } from './validation-schema';
@@ -22,17 +22,11 @@ interface TeamCreatorModalProps {
     onClose?: () => void;
 };
 
-interface PromiseToastOptions {
-    loading: { title: string };
-    success: { title: string };
-    error: { title: string };
-};
-
-const TEAM_CREATOR_TOAST_OPTIONS: PromiseToastOptions = {
-    loading: { title: 'Creating team...' },
-    success: { title: 'Team created successfully' },
-    error: { title: 'Failed to create team' }
-};
+const TEAM_CREATOR_TOAST_OPTIONS = createPromiseToastOptions({
+    loading: 'Creating team...',
+    success: 'Team created successfully',
+    error: 'Failed to create team'
+});
 
 export const TeamCreatorModal = ({
     isRequired = false,
@@ -65,31 +59,22 @@ export const TeamCreatorModal = ({
 
     const onSubmit = async (data: TeamCreatorForm) => {
         setApiError(null);
-        try {
-            const team = await showPromise(
-                createTeamMutation.mutateAsync({
-                    name: data.name.trim(),
-                    description: data.description?.trim() || ''
-                }),
-                TEAM_CREATOR_TOAST_OPTIONS
-            );
-            setSelectedTeamId(team._id);
-            modalForm.close();
-            onSuccess?.();
-        } catch (error: unknown) {
-            if (isAccessDeniedError(error)) {
-                const message = getAccessDeniedMessage(error, 'You do not have permission to perform this action.')
-                    ?? 'You do not have permission to perform this action.';
-                setApiError(message);
-                return;
-            }
-            if (error instanceof Error) {
-                setApiError(error.message);
-            } else {
-                setApiError('Failed to create team');
-            }
-            throw error;
-        }
+        await runHandledAction({
+            action: () => createTeamMutation.mutateAsync({
+                name: data.name.trim(),
+                description: data.description?.trim() || ''
+            }),
+            toast: TEAM_CREATOR_TOAST_OPTIONS,
+            afterSuccess: (team) => {
+                setSelectedTeamId(team._id);
+                modalForm.close();
+                onSuccess?.();
+            },
+            accessDeniedTitle: 'You do not have permission to perform this action.',
+            onAccessDenied: setApiError,
+            onError: setApiError,
+            rethrow: false
+        });
     };
 
     const handleClose = () => {

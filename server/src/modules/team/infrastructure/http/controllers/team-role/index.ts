@@ -3,12 +3,12 @@ import DeleteTeamRoleByIdController from './DeleteTeamRoleByIdController';
 import GetTeamRoleByIdController from './GetTeamRoleByIdController';
 import ListTeamRolesByTeamIdController from './ListTeamRolesByTeamIdController';
 import UpdateTeamRoleByIdController from './UpdateTeamRoleByIdController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    create: container.resolve(CreateTeamRoleController),
-    deleteById: container.resolve(DeleteTeamRoleByIdController),
-    getById: container.resolve(GetTeamRoleByIdController),
-    listByTeamId: container.resolve(ListTeamRolesByTeamIdController),
-    updateById: container.resolve(UpdateTeamRoleByIdController)
-};
+export default createControllerRegistry({
+    create: CreateTeamRoleController,
+    deleteById: DeleteTeamRoleByIdController,
+    getById: GetTeamRoleByIdController,
+    listByTeamId: ListTeamRolesByTeamIdController,
+    updateById: UpdateTeamRoleByIdController
+});

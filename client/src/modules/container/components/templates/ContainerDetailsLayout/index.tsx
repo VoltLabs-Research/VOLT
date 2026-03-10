@@ -3,13 +3,12 @@ import ContainerSidebar from '../../molecules/ContainerSidebar';
 import { ContainerAction } from '../../../api/dtos/update-container';
 import useContainerStats from '../../../hooks/use-container-stats';
 import { containerQuery, useContainerByIdQuery } from '../../../hooks/queries';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { handleActionError, runHandledAction } from '@/shared/errors/handled-action';
 import { useParams, useNavigate, Outlet } from 'react-router-dom';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import { sileo } from 'sileo';
 import Container from '@/shared/presentation/components/Container';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import type { EnvVariable } from '@/modules/container/api/entities/env-variable';
 import type { PortMapping } from '@/modules/container/api/entities/port-mapping';
 import type { ContainerDetailsContext } from '../../../hooks/use-container-details-context';
@@ -22,7 +21,6 @@ interface ContainerDetailsRouteParams extends Record<string, string | undefined>
 const ContainerDetailsLayout = () => {
     const { id } = useParams<ContainerDetailsRouteParams>();
     const navigate = useNavigate();
-    const { confirm } = useConfirm();
 
     const updateContainerMutation = containerQuery.useUpdateMutation();
     const deleteContainerMutation = containerQuery.useDeleteMutation();
@@ -43,8 +41,9 @@ const ContainerDetailsLayout = () => {
 
     if(isError){
         if(!checkAccessDeniedError(error)){
-            const message = error instanceof Error ? error.message : 'Failed to load container';
-            sileo.error({ title: message });
+            handleActionError(error, {
+                errorToast: { title: error instanceof Error ? error.message : 'Failed to load container' }
+            });
         }
     }
 
@@ -53,32 +52,35 @@ const ContainerDetailsLayout = () => {
 
         try{
             if(action === 'delete'){
-                const isConfirmed = await confirm({
-                    title: 'Delete this container?',
-                    description: 'This action cannot be undone.',
-                    confirmText: 'Delete'
+                await runHandledAction({
+                    action: () => deleteContainerMutation.mutateAsync(id),
+                    confirm: {
+                        title: 'Delete this container?',
+                        description: 'This action cannot be undone.',
+                        confirmText: 'Delete'
+                    },
+                    toast: createPromiseToastOptions({
+                        loading: 'Deleting container...',
+                        success: 'Container deleted',
+                        error: 'Failed to delete container'
+                    }),
+                    afterSuccess: () => {
+                        navigate('/dashboard/containers');
+                    },
+                    rethrow: false
                 });
-                if(!isConfirmed) return;
-                await showPromise(
-                    deleteContainerMutation.mutateAsync(id),
-                    {
-                        loading: { title: 'Deleting container...' },
-                        success: { title: 'Container deleted' },
-                        error: { title: 'Failed to delete container' }
-                    }
-                );
-                navigate('/dashboard/containers');
                 return;
             }
 
-            await showPromise(
-                updateContainerMutation.mutateAsync({ id, params: { action } }),
-                {
-                    loading: { title: `${action.charAt(0).toUpperCase() + action.slice(1)}ing container...` },
-                    success: { title: `Container ${action}ed successfully` },
-                    error: { title: `Failed to ${action} container` }
-                }
-            );
+            await runHandledAction({
+                action: () => updateContainerMutation.mutateAsync({ id, params: { action } }),
+                toast: createPromiseToastOptions({
+                    loading: `${action.charAt(0).toUpperCase() + action.slice(1)}ing container...`,
+                    success: `Container ${action}ed successfully`,
+                    error: `Failed to ${action} container`
+                }),
+                rethrow: false
+            });
         }catch{
             // Error handled by showPromise
         }
@@ -86,26 +88,28 @@ const ContainerDetailsLayout = () => {
 
     const handleUpdateEnv = async (env: EnvVariable[]) => {
         if(!id) return;
-        await showPromise(
-            updateContainerMutation.mutateAsync({ id, params: { env } }),
-            {
-                loading: { title: 'Updating environment variables...' },
-                success: { title: 'Environment variables updated' },
-                error: { title: 'Failed to update environment variables' }
-            }
-        );
+        await runHandledAction({
+            action: () => updateContainerMutation.mutateAsync({ id, params: { env } }),
+            toast: createPromiseToastOptions({
+                loading: 'Updating environment variables...',
+                success: 'Environment variables updated',
+                error: 'Failed to update environment variables'
+            }),
+            rethrow: false
+        });
     };
 
     const handleUpdatePorts = async (ports: PortMapping[]) => {
         if(!id) return;
-        await showPromise(
-            updateContainerMutation.mutateAsync({ id, params: { ports } }),
-            {
-                loading: { title: 'Updating port bindings...' },
-                success: { title: 'Port bindings updated - container will be recreated' },
-                error: { title: 'Failed to update ports' }
-            }
-        );
+        await runHandledAction({
+            action: () => updateContainerMutation.mutateAsync({ id, params: { ports } }),
+            toast: createPromiseToastOptions({
+                loading: 'Updating port bindings...',
+                success: 'Port bindings updated - container will be recreated',
+                error: 'Failed to update ports'
+            }),
+            rethrow: false
+        });
     };
 
     if(isLoading && !container){

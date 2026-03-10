@@ -5,7 +5,7 @@ import {
     useTeamAIIntegrationModelsQuery
 } from '@/modules/team/hooks/ai-integration/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { handleActionError, runHandledAction } from '@/shared/errors/handled-action';
 import useCreateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-create-team-ai-integration';
 import useDeleteTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-delete-team-ai-integration';
 import useTeamAIIntegrationsSocketSync from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-socket-sync';
@@ -14,14 +14,15 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import LiquidToggle from '@/shared/presentation/components/LiquidToggle';
-import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import Modal, { openModal } from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Select from '@/shared/presentation/components/Select';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
-import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import { runAction } from '@/shared/presentation/actions/run-action';
+import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { Skeleton } from '@mui/material';
 import { Settings2, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -48,12 +49,6 @@ interface TeamAIProviderDiscoveryInput {
     metadata?: Record<string, unknown>;
 };
 
-interface PromiseToastOptions {
-    loading: { title: string };
-    success: { title: string };
-    error: { title: string };
-};
-
 interface IntegrationModalStatePreset {
     editingProvider?: AIProvider | null;
     provider?: AIProvider | null;
@@ -74,21 +69,17 @@ const resolveOllamaBaseUrl = (metadata?: Record<string, unknown>): string => {
     return OLLAMA_DEFAULT_BASE_URL;
 };
 
-const getSaveIntegrationToastOptions = (integration?: TeamAIIntegration): PromiseToastOptions => {
-    return {
-        loading: { title: integration ? 'Updating provider...' : 'Creating provider...' },
-        success: { title: integration ? 'Provider configuration updated' : 'Provider configuration created' },
-        error: { title: integration ? 'Failed to update provider' : 'Failed to create provider' }
-    };
-};
+const getSaveIntegrationToastOptions = (integration?: TeamAIIntegration) => createPromiseToastOptions({
+    loading: integration ? 'Updating provider...' : 'Creating provider...',
+    success: integration ? 'Provider configuration updated' : 'Provider configuration created',
+    error: integration ? 'Failed to update provider' : 'Failed to create provider'
+});
 
-const getRemoveIntegrationToastOptions = (integration: TeamAIIntegration): PromiseToastOptions => {
-    return {
-        loading: { title: `Removing ${integration.providerName}...` },
-        success: { title: `${integration.providerName} removed` },
-        error: { title: 'Failed to remove provider' }
-    };
-};
+const getRemoveIntegrationToastOptions = (integration: TeamAIIntegration) => createPromiseToastOptions({
+    loading: `Removing ${integration.providerName}...`,
+    success: `${integration.providerName} removed`,
+    error: 'Failed to remove provider'
+});
 
 const getDefaultModelPlaceholder = (isDiscoveringModels: boolean, options: SelectOption[]): string => {
     let placeholder = 'No models available';
@@ -176,11 +167,10 @@ export default function IntegrationsSettings() {
     useEffect(() => {
         const error = integrationsError || modelsError;
         if (!error) return;
-        if (isAccessDeniedError(error)) {
-            notifyApiError(error, { fallbackTitle: 'You do not have permission to perform this action.' });
-            return;
-        }
-        sileo.error({ title: 'Failed to load integrations' });
+        handleActionError(error, {
+            accessDeniedTitle: 'You do not have permission to perform this action.',
+            errorToast: { title: 'Failed to load integrations' }
+        });
     }, [integrationsError, modelsError]);
 
     const integrationsByProvider = useMemo(() => {
@@ -455,20 +445,20 @@ export default function IntegrationsSettings() {
 
         setIsSaving(true);
         try {
-            const action = integration
-                ? updateTeamAIIntegration(modalProvider, payload)
-                : createTeamAIIntegration(modalProvider, payload);
-            await showPromise(
-                action,
-                getSaveIntegrationToastOptions(integration)
-            );
-            closeModal(TEAM_AI_INTEGRATION_MODAL_ID);
-            resetModalState();
-            if (teamId) {
-                void invalidateTeamAIIntegrationsQuery(teamId);
-            }
-        } catch (error: unknown) {
-            if (isAccessDeniedError(error)) return;
+            await runAction({
+                action: integration
+                    ? () => updateTeamAIIntegration(modalProvider, payload)
+                    : () => createTeamAIIntegration(modalProvider, payload),
+                toast: getSaveIntegrationToastOptions(integration),
+                modalId: TEAM_AI_INTEGRATION_MODAL_ID,
+                afterSuccess: async () => {
+                    resetModalState();
+                    if (teamId) {
+                        await invalidateTeamAIIntegrationsQuery(teamId);
+                    }
+                }
+            });
+        } catch {
         } finally {
             setIsSaving(false);
         }
@@ -491,15 +481,16 @@ export default function IntegrationsSettings() {
 
         setBusyProvider(provider);
         try {
-            await showPromise(
-                deleteTeamAIIntegration(provider),
-                getRemoveIntegrationToastOptions(integration)
-            );
-            if (teamId) {
-                void invalidateTeamAIIntegrationsQuery(teamId);
-            }
-        } catch (error: unknown) {
-            if (isAccessDeniedError(error)) return;
+            await runHandledAction({
+                action: () => deleteTeamAIIntegration(provider),
+                toast: getRemoveIntegrationToastOptions(integration),
+                afterSuccess: async () => {
+                    if (teamId) {
+                        await invalidateTeamAIIntegrationsQuery(teamId);
+                    }
+                },
+                rethrow: false
+            });
         } finally {
             setBusyProvider(null);
         }

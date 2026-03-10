@@ -3,14 +3,14 @@ import CopyableField from '@/shared/presentation/components/CopyableField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
+import { runHandledAction } from '@/shared/errors/handled-action';
 import useCreateSecretKey from '@/modules/team/hooks/secret-key/use-create-secret-key';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
 import useModalForm from '@/shared/presentation/hooks/use-modal-form';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { useState } from 'react';
 import './SecretKeyCreationModal.css';
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 export const SECRET_KEY_CREATION_MODAL_ID = 'secret-key-creation-modal';
 
@@ -23,17 +23,11 @@ interface SecretKeyFormErrors {
     roleId?: string;
 };
 
-interface PromiseToastOptions {
-    loading: { title: string };
-    success: { title: string };
-    error: { title: string };
-};
-
-const SECRET_KEY_CREATION_TOAST_OPTIONS: PromiseToastOptions = {
-    loading: { title: 'Creating secret key...' },
-    success: { title: 'Secret key created successfully' },
-    error: { title: 'Failed to create secret key' }
-};
+const SECRET_KEY_CREATION_TOAST_OPTIONS = createPromiseToastOptions({
+    loading: 'Creating secret key...',
+    success: 'Secret key created successfully',
+    error: 'Failed to create secret key'
+});
 
 export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProps) => {
     const selectedTeam = useSelectedTeam();
@@ -72,18 +66,17 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
             return;
         }
 
-        try {
-            const response = await showPromise(
-                createSecretKey(name, roleId),
-                SECRET_KEY_CREATION_TOAST_OPTIONS
-            );
-            if (response?.secretKey) {
-                setGeneratedKey(response.secretKey);
-                onCreated?.(response.secretKey);
-            }
-        } catch(error: unknown) {
-            if(isAccessDeniedError(error)) return;
-        }
+        await runHandledAction({
+            action: () => createSecretKey(name, roleId),
+            toast: SECRET_KEY_CREATION_TOAST_OPTIONS,
+            afterSuccess: (result) => {
+                if (result?.secretKey) {
+                    setGeneratedKey(result.secretKey);
+                    onCreated?.(result.secretKey);
+                }
+            },
+            rethrow: false
+        });
     };
 
     const roleOptions = roles

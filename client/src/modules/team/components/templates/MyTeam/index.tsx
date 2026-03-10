@@ -4,8 +4,8 @@ import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useUpdateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
 import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';
+import { runHandledAction } from '@/shared/errors/handled-action';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
-import { showPromise } from '@/shared/presentation/hooks/toast';
 import ActivityHeatmap from '@/modules/daily-activity/components/molecules/ActivityHeatmap';
 import UserInfo from '@/modules/auth/components/atoms/UserInfo';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
@@ -19,6 +19,7 @@ import Select from '@/shared/presentation/components/Select';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
+import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { formatDistanceToNow } from 'date-fns';
 import { IoChatbubbleOutline, IoPersonRemoveOutline } from 'react-icons/io5';
 import { useCallback, useMemo } from 'react';
@@ -26,7 +27,6 @@ import { useNavigate } from 'react-router-dom';
 import type { TeamMemberStats } from '@/modules/team/api/entities/member/team-member';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import './MyTeam.css';
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 const TEAM_MEMBERS_QUERY_KEY = ['team-members'] as const;
 
@@ -36,28 +36,22 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'team-member.left', queryKeys: [TEAM_MEMBERS_QUERY_KEY] }
 ];
 
-interface PromiseToastOptions {
-    loading: { title: string };
-    success: { title: string };
-    error: { title: string };
-};
+const updateTeamNameToastOptions = createPromiseToastOptions({
+    loading: 'Updating team name...',
+    success: 'Team name updated',
+    error: 'Failed to update team name'
+});
 
-const updateTeamNameToastOptions: PromiseToastOptions = {
-    loading: { title: 'Updating team name...' },
-    success: { title: 'Team name updated' },
-    error: { title: 'Failed to update team name' }
-};
+const updateRoleToastOptions = createPromiseToastOptions({
+    loading: 'Updating role...',
+    success: 'Member role updated',
+    error: 'Failed to update role'
+});
 
-const updateRoleToastOptions: PromiseToastOptions = {
-    loading: { title: 'Updating role...' },
-    success: { title: 'Member role updated' },
-    error: { title: 'Failed to update role' }
-};
-
-const getRemoveMemberToastOptions = (member: TeamMemberStats): PromiseToastOptions => ({
-    loading: { title: `Removing ${member.user.firstName}...` },
-    success: { title: `${member.user.firstName} removed from team` },
-    error: { title: `Failed to remove ${member.user.firstName}` }
+const getRemoveMemberToastOptions = (member: TeamMemberStats) => createPromiseToastOptions({
+    loading: `Removing ${member.user.firstName}...`,
+    success: `${member.user.firstName} removed from team`,
+    error: `Failed to remove ${member.user.firstName}`
 });
 
 const formatTrackedMinutes = (minutes: number): string => {
@@ -99,25 +93,19 @@ export default function MyTeamTemplate() {
     const hasPresenceSnapshot = useTeamPresenceStore((s) => s.hasPresenceSnapshot);
 
     const handleSaveTeamName = useCallback(async (newName: string) => {
-        try{
-            await showPromise(
-                updateTeamMutation.mutateAsync({ teamId: selectedTeam._id, name: newName }),
-                updateTeamNameToastOptions
-            );
-        }catch(error: unknown){
-            if(isAccessDeniedError(error)) return;
-        }
+        await runHandledAction({
+            action: () => updateTeamMutation.mutateAsync({ teamId: selectedTeam._id, name: newName }),
+            toast: updateTeamNameToastOptions,
+            rethrow: false
+        });
     }, [selectedTeam._id, updateTeamMutation]);
 
     const handleRoleChange = useCallback(async (memberId: string, roleId: string) => {
-        try{
-            await showPromise(
-                updateTeamMemberMutation.mutateAsync({ teamId: selectedTeam._id, memberId, role: roleId }),
-                updateRoleToastOptions
-            );
-        }catch(error: unknown){
-            if(isAccessDeniedError(error)) return;
-        }
+        await runHandledAction({
+            action: () => updateTeamMemberMutation.mutateAsync({ teamId: selectedTeam._id, memberId, role: roleId }),
+            toast: updateRoleToastOptions,
+            rethrow: false
+        });
     }, [selectedTeam._id, updateTeamMemberMutation]);
 
     const handleRemoveMembers = useCallback(async (members: TeamMemberStats[]) => {
@@ -136,14 +124,11 @@ export default function MyTeamTemplate() {
         if(!isConfirmed) return;
 
         for (const member of members) {
-            try{
-                await showPromise(
-                    removeTeamMemberMutation.mutateAsync({ teamId: selectedTeam._id, userId: member.user._id }),
-                    getRemoveMemberToastOptions(member)
-                );
-            }catch(error: unknown){
-                if(isAccessDeniedError(error)) return;
-            }
+            await runHandledAction({
+                action: () => removeTeamMemberMutation.mutateAsync({ teamId: selectedTeam._id, userId: member.user._id }),
+                toast: getRemoveMemberToastOptions(member),
+                rethrow: false
+            });
         }
     }, [selectedTeam._id, removeTeamMemberMutation]);
 

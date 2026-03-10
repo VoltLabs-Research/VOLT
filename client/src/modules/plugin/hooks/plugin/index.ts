@@ -9,6 +9,5 @@ export type { RenderableExposure, ResolvedModifier } from './use-plugin-selector
 export { default as usePluginDebugSocket } from './use-plugin-debug-socket';
 export { default as useDebugTrajectorySelector } from './use-debug-trajectory-selector';
 export { default as useCanvasHandlers } from './use-canvas-handlers';
-export { default as useNodeFormRHF } from './use-node-form-rhf';
 export { default as useNodeCollectionForm } from './use-node-collection-form';
 export { default as useNodeReferenceAutocomplete } from './use-node-reference-autocomplete';

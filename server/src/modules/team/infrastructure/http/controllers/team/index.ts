@@ -7,16 +7,16 @@ import RemoveUserFromTeamController from './RemoveUserFromTeamController';
 import UpdateTeamByIdController from './UpdateTeamByIdController';
 import CheckInvitePermissionController from './CheckInvitePermissionController';
 import GetMyTeamPermissionsController from './GetMyTeamPermissionsController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    create: container.resolve(CreateTeamController),
-    deleteById: container.resolve(DeleteTeamByIdController),
-    getById: container.resolve(GetTeamByIdController),
-    leave: container.resolve(LeaveTeamController),
-    listUserTeams: container.resolve(ListUserTeamsController),
-    removeUserFromTeam: container.resolve(RemoveUserFromTeamController),
-    updateById: container.resolve(UpdateTeamByIdController),
-    checkInvitePermission: container.resolve(CheckInvitePermissionController),
-    getMyPermissions: container.resolve(GetMyTeamPermissionsController)
-};
+export default createControllerRegistry({
+    create: CreateTeamController,
+    deleteById: DeleteTeamByIdController,
+    getById: GetTeamByIdController,
+    leave: LeaveTeamController,
+    listUserTeams: ListUserTeamsController,
+    removeUserFromTeam: RemoveUserFromTeamController,
+    updateById: UpdateTeamByIdController,
+    checkInvitePermission: CheckInvitePermissionController,
+    getMyPermissions: GetMyTeamPermissionsController
+});

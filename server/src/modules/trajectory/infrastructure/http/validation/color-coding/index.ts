@@ -1,4 +1,4 @@
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
+import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
 import { createTeamScopedParamsSchema, objectIdSchema } from '@shared/infrastructure/http/validation/shared-schemas';
 
 import { z } from 'zod/v4';
@@ -41,37 +41,37 @@ const applyColorCodingBodySchema = z.object({
     exposureId: objectIdSchema.optional()
 }).strict();
 
-export const colorCodingValidation = {
-    getProperties: createValidationMiddleware({
+export const colorCodingValidation = createResourceValidation({
+    getProperties: {
         params: colorCodingParamsSchema,
         query: colorCodingPropertiesQuerySchema
-    }),
-    getPropertiesByAnalysis: createValidationMiddleware({
+    },
+    getPropertiesByAnalysis: {
         params: colorCodingAnalysisParamsSchema,
         query: colorCodingPropertiesQuerySchema
-    }),
-    getStats: createValidationMiddleware({
+    },
+    getStats: {
         params: colorCodingParamsSchema,
         query: colorCodingStatsQuerySchema
-    }),
-    getStatsByAnalysis: createValidationMiddleware({
+    },
+    getStatsByAnalysis: {
         params: colorCodingAnalysisParamsSchema,
         query: colorCodingStatsQuerySchema
-    }),
-    getModel: createValidationMiddleware({
+    },
+    getModel: {
         params: colorCodingParamsSchema,
         query: colorCodingModelQuerySchema
-    }),
-    getModelByAnalysis: createValidationMiddleware({
+    },
+    getModelByAnalysis: {
         params: colorCodingAnalysisParamsSchema,
         query: colorCodingModelQuerySchema
-    }),
-    applyColorCoding: createValidationMiddleware({
+    },
+    applyColorCoding: {
         params: colorCodingParamsSchema,
         body: applyColorCodingBodySchema
-    }),
-    applyColorCodingByAnalysis: createValidationMiddleware({
+    },
+    applyColorCodingByAnalysis: {
         params: colorCodingAnalysisParamsSchema,
         body: applyColorCodingBodySchema
-    })
-};
+    }
+});

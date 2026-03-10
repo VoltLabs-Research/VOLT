@@ -14,22 +14,26 @@ import ProcessDaemonTrajectoryImportUseCase from '@modules/team-cluster/applicat
 import ProcessTeamClusterHealthcheckUseCase from '@modules/team-cluster/application/use-cases/ProcessTeamClusterHealthcheckUseCase';
 import RecordTeamClusterHeartbeatUseCase from '@modules/team-cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
 import UpdateTeamClusterLifecycleUseCase from '@modules/team-cluster/application/use-cases/UpdateTeamClusterLifecycleUseCase';
-import { container } from 'tsyringe';
+import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 
 export const registerTeamClusterDependencies = () => {
-    container.registerSingleton(TEAM_CLUSTER_TOKENS.TeamClusterRepository, TeamClusterRepository);
-    container.registerSingleton(TEAM_CLUSTER_TOKENS.TeamClusterCredentialsCipher, TeamClusterCredentialsCipher);
-    container.registerSingleton(TEAM_CLUSTER_TOKENS.TeamClusterInstallManifestService, TeamClusterInstallManifestService);
-    container.registerSingleton(TEAM_CLUSTER_TOKENS.TeamClusterLifecycleService, TeamClusterLifecycleService);
-    container.registerSingleton(TEAM_CLUSTER_TOKENS.TeamClusterHeartbeatMonitor, TeamClusterHeartbeatMonitor);
-    container.registerSingleton(TEAM_CLUSTER_TOKENS.TeamClusterReverseChannelService, TeamClusterReverseChannelService);
-    container.registerSingleton(TEAM_CLUSTER_TOKENS.TeamClusterSocketModule, TeamClusterSocketModule);
-    container.registerSingleton(TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService, DaemonAnalysisCompletionService);
-    container.registerSingleton(CompleteTeamClusterDeletionUseCase);
-    container.registerSingleton(ProcessDaemonJobCompletionUseCase);
-    container.registerSingleton(ProcessDaemonTrajectoryImportUseCase);
-    container.registerSingleton(ProcessTeamClusterHealthcheckUseCase);
-    container.registerSingleton(RecordTeamClusterHeartbeatUseCase);
-    container.registerSingleton(UpdateTeamClusterLifecycleUseCase);
-    container.register(SOCKET_TOKENS.SocketModule, { useToken: TEAM_CLUSTER_TOKENS.TeamClusterSocketModule });
+    registerModuleDependencies({
+        singletons: [
+            [TEAM_CLUSTER_TOKENS.TeamClusterRepository, TeamClusterRepository],
+            [TEAM_CLUSTER_TOKENS.TeamClusterCredentialsCipher, TeamClusterCredentialsCipher],
+            [TEAM_CLUSTER_TOKENS.TeamClusterInstallManifestService, TeamClusterInstallManifestService],
+            [TEAM_CLUSTER_TOKENS.TeamClusterLifecycleService, TeamClusterLifecycleService],
+            [TEAM_CLUSTER_TOKENS.TeamClusterHeartbeatMonitor, TeamClusterHeartbeatMonitor],
+            [TEAM_CLUSTER_TOKENS.TeamClusterReverseChannelService, TeamClusterReverseChannelService],
+            [TEAM_CLUSTER_TOKENS.TeamClusterSocketModule, TeamClusterSocketModule],
+            [TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService, DaemonAnalysisCompletionService],
+            CompleteTeamClusterDeletionUseCase,
+            ProcessDaemonJobCompletionUseCase,
+            ProcessDaemonTrajectoryImportUseCase,
+            ProcessTeamClusterHealthcheckUseCase,
+            RecordTeamClusterHeartbeatUseCase,
+            UpdateTeamClusterLifecycleUseCase
+        ],
+        aliases: [[SOCKET_TOKENS.SocketModule, TEAM_CLUSTER_TOKENS.TeamClusterSocketModule]]
+    });
 };

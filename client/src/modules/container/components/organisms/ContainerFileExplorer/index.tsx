@@ -1,4 +1,5 @@
 import { useContainerFilesQuery, useContainerFileContentQuery } from '../../../hooks/queries';
+import { useRemoteExplorer } from '@/shared/api/remote-explorer';
 import { IoFolderOutline, IoDocumentOutline, IoArrowBack } from 'react-icons/io5';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
@@ -8,8 +9,9 @@ import Tooltip from '@/shared/presentation/components/Tooltip';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
 import { getApiErrorMessage } from '@/shared/errors/notify-api-error';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import type { ContainerFile } from '@/modules/container/api/entities/container-file';
 import './ContainerFileExplorer.css';
 
 interface ContainerFileExplorerProps {
@@ -17,26 +19,32 @@ interface ContainerFileExplorerProps {
 };
 
 const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
-    const { searchParams, updateSearchParams, setParam, removeParam } = useSearchParamsState();
-
-    const path = searchParams.get('path') || '/';
+    const [searchParams, setSearchParams] = useSearchParams();
     const viewingFile = searchParams.get('file');
 
+    const remoteExplorer = useRemoteExplorer({
+        initialPath: '/',
+        normalizeRootPath: (path) => path || '/',
+        resetParamKeys: ['file']
+    });
+
     const { data: filesResponse, isLoading, error: filesError, refetch: refetchFiles, isFetching } = useContainerFilesQuery(
-        { containerId, path },
+        { containerId, path: remoteExplorer.path },
         { enabled: !!containerId }
     );
     const files = filesResponse?.files ?? [];
     const filesErrorMessage = filesError ? getApiErrorMessage(filesError, 'Failed to load files') : null;
 
-    let filePath = '';
-    if (viewingFile) {
-        if (path === '/') {
-            filePath = `/${viewingFile}`;
-        } else {
-            filePath = `${path}/${viewingFile}`;
-        }
-    }
+    const explorer = remoteExplorer.bindState<ContainerFile>({
+        entries: files,
+        cwd: remoteExplorer.path,
+        isLoading,
+        error: filesErrorMessage,
+        refresh: refetchFiles,
+        isRefreshing: isFetching && !isLoading
+    });
+
+    const filePath = viewingFile ? explorer.joinPath(viewingFile) : '';
 
     const { data: fileContentResponse, error: fileContentError } = useContainerFileContentQuery(
         { containerId, path: filePath },
@@ -44,39 +52,32 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     );
     const fileContent = fileContentResponse?.content;
 
-    const handleNavigate = (folderName: string) => {
-        let newPath = '';
-        if (path === '/') {
-            newPath = `/${folderName}`;
-        } else {
-            newPath = `${path}/${folderName}`;
-        }
-        updateSearchParams({ path: newPath });
-    };
-
-    const handleGoUp = () => {
-        if(path === '/') return;
-        const parts = path.split('/');
-        parts.pop();
-        const newPath = parts.join('/') || '/';
-        updateSearchParams({ path: newPath === '/' ? null : newPath });
-    };
-
     const handleFileClick = (fileName: string) => {
-        setParam('file', fileName);
+        setSearchParams((previousParams) => {
+            const nextParams = new URLSearchParams(previousParams);
+            nextParams.set('file', fileName);
+            return nextParams;
+        });
     };
 
     const closeFileViewer = () => {
-        removeParam('file');
+        setSearchParams((previousParams) => {
+            const nextParams = new URLSearchParams(previousParams);
+            nextParams.delete('file');
+            return nextParams;
+        });
     };
 
-    const handleFileItemClick = (fileName: string, isDirectory: boolean) => {
-        if (isDirectory) {
-            handleNavigate(fileName);
+    const handleFileItemClick = (file: ContainerFile) => {
+        const entryPath = explorer.joinPath(file.name);
+        explorer.setSelectedPath(entryPath);
+
+        if (file.isDirectory) {
+            explorer.navigateTo(entryPath);
             return;
         }
 
-        handleFileClick(fileName);
+        handleFileClick(file.name);
     };
 
     const renderFileIcon = (isDirectory: boolean) => {
@@ -128,32 +129,18 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
         );
     }, []);
 
-    const fileRows = useMemo(() => {
-        return files.map((file) => (
-            <FileExplorerRow
-                key={`${file.name}-${file.isDirectory ? 'dir' : 'file'}`}
-                icon={renderFileIcon(file.isDirectory)}
-                name={file.name}
-                type={file.isDirectory ? 'Folder' : 'File'}
-                size={file.size ? String(file.size) : undefined}
-                date={file.date}
-                onClick={() => handleFileItemClick(file.name, file.isDirectory)}
-            />
-        ));
-    }, [files, handleFileItemClick]);
-
     const explorerHeaderLeft = useMemo(() => {
         return (
             <Container className='d-flex items-center gap-1 flex-1'>
                 <Tooltip content='Go to Parent Directory' placement='bottom'>
-                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleGoUp} disabled={path === '/'}>
+                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={explorer.goUp} disabled={explorer.isAtRoot}>
                         <IoArrowBack />
                     </Button>
                 </Tooltip>
-                <span className='container-file-current-path'>{path}</span>
+                <span className='container-file-current-path'>{explorer.cwd}</span>
             </Container>
         );
-    }, [handleGoUp, path]);
+    }, [explorer.cwd, explorer.goUp, explorer.isAtRoot]);
 
     const explorerHeaderRight = useMemo(() => {
         return (
@@ -162,28 +149,43 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
                 variant='outline'
                 intent='white'
                 onClick={() => {
-                    void refetchFiles();
+                    void explorer.refresh();
                 }}
-                isLoading={isFetching && !isLoading}
+                isLoading={explorer.isRefreshing}
             />
         );
-    }, [refetchFiles, isFetching, isLoading]);
+    }, [explorer.isRefreshing, explorer.refresh]);
 
     return (
         <FileExplorer
             headerLeft={explorerHeaderLeft}
             headerRight={explorerHeaderRight}
             columns={columns}
-            isLoading={isLoading}
-            isEmpty={!filesErrorMessage && files.length === 0}
+            isLoading={explorer.isLoading}
+            isEmpty={!explorer.error && explorer.entries.length === 0}
             emptyMessage='Empty folder'
-            error={filesErrorMessage}
+            error={explorer.error}
             onRetry={() => {
-                void refetchFiles();
+                void explorer.refresh();
             }}
-            isRetrying={isFetching && !isLoading}
+            isRetrying={explorer.isRefreshing}
         >
-            {fileRows}
+            {explorer.entries.map((file) => {
+                const entryPath = explorer.joinPath(file.name);
+
+                return (
+                    <FileExplorerRow
+                        key={`${file.name}-${file.isDirectory ? 'dir' : 'file'}`}
+                        icon={renderFileIcon(file.isDirectory)}
+                        name={file.name}
+                        type={file.isDirectory ? 'Folder' : 'File'}
+                        size={file.size ? String(file.size) : undefined}
+                        date={file.date}
+                        isSelected={explorer.selectedPath === entryPath}
+                        onClick={() => handleFileItemClick(file)}
+                    />
+                );
+            })}
         </FileExplorer>
     );
 };

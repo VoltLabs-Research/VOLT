@@ -1,5 +1,5 @@
 import AxiosHttpClient from '../client/AxiosHttpClient';
-import TokenStorage from '@/modules/auth/services/token-storage';
+import TokenStorage from '@/shared/auth/token-storage';
 import VoltClient from '@/app/core/http/client/VoltClient';
 
 interface CreateApiClientOptions {

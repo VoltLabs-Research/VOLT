@@ -1,5 +1,5 @@
 import teamService from '../../api/services/team';
-import { buildKeys } from '@/shared/infrastructure/query';
+import { buildKeys, createCachePolicy } from '@/shared/infrastructure/query';
 import type { UseQueryOptions } from '@tanstack/react-query';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { Team } from '../../api/entities/team/team';
@@ -76,13 +76,13 @@ const matchesTeamScopedQuery = (queryKey: readonly unknown[], teamId: string) =>
 
 /** Team cache helpers. */
 
+const teamsCache = createCachePolicy<void>(TEAM_QUERY_KEYS.teams);
+
 const setTeamsQueryData = (updater: (previous?: Team[]) => Team[] | undefined) => {
-    queryClient.setQueryData<Team[]>(TEAM_QUERY_KEYS.teams(), updater);
+    teamsCache.set<Team[]>(undefined, updater);
 };
 
-export const invalidateTeamsQuery = () => {
-    return queryClient.invalidateQueries({ queryKey: TEAM_QUERY_KEYS.teams() });
-};
+export const invalidateTeamsQuery = () => teamsCache.invalidate(undefined);
 
 const invalidateTeamScopedQueries = (teamId: string) => {
     return queryClient.invalidateQueries({
@@ -170,7 +170,7 @@ export const useLeaveTeamMutation = () => {
         },
         onError: (_error, _variables, context) => {
             if (context?.previousTeams) {
-                queryClient.setQueryData(TEAM_QUERY_KEYS.teams(), context.previousTeams);
+                teamsCache.restore(undefined, context.previousTeams);
             }
         },
         onSuccess: (_data, variables) => {

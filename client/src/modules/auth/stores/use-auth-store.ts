@@ -1,7 +1,7 @@
 import { clearCurrentUserQueryData, fetchCurrentUser } from '@/modules/auth/hooks/queries';
 import { clearSocketSession, updateSocketAuthToken } from '@/modules/socket/core/services/socket-auth-session';
 import { resetTeamSessionState } from '@/modules/team/stores/team/use-team-store';
-import TokenStorage from '@/modules/auth/services/token-storage';
+import TokenStorage from '@/shared/auth/token-storage';
 import { create } from 'zustand';
 
 const tokenStorage = new TokenStorage();

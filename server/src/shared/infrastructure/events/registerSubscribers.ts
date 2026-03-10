@@ -7,8 +7,10 @@ import type { InjectionToken } from 'tsyringe';
 
 type HandlerToken = InjectionToken<IEventHandler<IDomainEvent>>;
 
+export type SubscriberManifest = Record<string, HandlerToken>;
+
 export async function registerSubscribers(
-    subscriptions: Record<string, HandlerToken>
+    subscriptions: SubscriberManifest
 ): Promise<void> {
     const eventBus = container.resolve<IEventBus>(SHARED_TOKENS.EventBus);
     for (const [event, handlerToken] of Object.entries(subscriptions)) {

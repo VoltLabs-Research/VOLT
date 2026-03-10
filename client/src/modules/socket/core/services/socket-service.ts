@@ -1,5 +1,5 @@
 import SocketIOAdapter from './socket-io-adapter';
-import TokenStorage from '@/modules/auth/services/token-storage';
+import TokenStorage from '@/shared/auth/token-storage';
 import type { ISocketService } from './contracts/socket-service';
 import type { SocketConnectionStatus } from '@/modules/socket/core/socket-connection-status';
 
