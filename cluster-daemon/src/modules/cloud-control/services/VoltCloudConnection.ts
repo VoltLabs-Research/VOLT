@@ -1,18 +1,14 @@
-import { type RuntimeLifecycleEventType, EventType } from '../../../shared/contracts';
-import {
-    REVERSE_CHANNEL,
-    type TeamClusterDaemonRegisterPayload,
-    type TeamClusterDaemonSocketResponsePayload
-} from '../../../shared/contracts';
-import { TeamClusterStatus, type ProcessTeamClusterHealthcheckOutputDTO } from '../contracts/voltCloudTypes';
-import { logger } from '../../../core/logger';
-import { RuntimeEventBroker } from '../../../shared/services';
-import { MetricsService } from '../../metrics/services';
+import { logger } from '@/core/logger';
+import { MetricsService } from '@/modules/metrics/services';
+import { EventType, REVERSE_CHANNEL } from '@/shared/contracts';
+import { RuntimeEventBroker } from '@/shared/services';
 import crypto from 'node:crypto';
 import { io, Socket } from 'socket.io-client';
-import type { DaemonConfig } from '../../../core/config';
-import type { MetricsSnapshot } from '../../../shared/contracts';
+import type { DaemonConfig } from '@/core/config';
+import type { MetricsSnapshot, RuntimeLifecycleEventType, TeamClusterDaemonRegisterPayload, TeamClusterDaemonSocketResponsePayload } from '@/shared/contracts';
 import type { ReverseChannelSocketBridge } from './ReverseChannelSocketBridge';
+import { TeamClusterStatus } from '../contracts/voltCloudTypes';
+import type { ProcessTeamClusterHealthcheckOutputDTO } from '../contracts/voltCloudTypes';
 
 interface RuntimeLifecycleUpdateRequest {
     teamClusterId: string;

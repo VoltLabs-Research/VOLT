@@ -1,4 +1,4 @@
-import { ObjectBucketName } from '../shared/contracts';
+import { ObjectBucketName } from '@/shared/contracts';
 
 interface MinioConfig {
     endpoint: string;

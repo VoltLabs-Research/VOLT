@@ -11,6 +11,7 @@ import { readNumberEnv } from './shared/infrastructure/utilities/env';
 import app from './core/config/express';
 import SocketGateway from './modules/socket/socket/SocketGateway';
 import { ScriptingJupyterProxyService } from './modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
+import TeamClusterTcpExposureRelayService from './modules/team-cluster/infrastructure/services/TeamClusterTcpExposureRelayService';
 import logger from './shared/infrastructure/logger';
 import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
 import http from 'http';
@@ -24,8 +25,10 @@ const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
 const SERVER_TIMEOUT = readNumberEnv('SERVER_TIMEOUT', 1800000);
 
 registerAllDependencies();
+const tcpExposureRelayService = container.resolve(TeamClusterTcpExposureRelayService);
 
 const shutdown = async () => {
+    await tcpExposureRelayService.stop();
     process.exit(0);
 };
 
@@ -87,6 +90,7 @@ const startServer = async () => {
             socketGateway.register(module);
         }
         await socketGateway.initialize(server);
+        tcpExposureRelayService.start();
 
         logger.info(`@server: running at http://${SERVER_HOST}:${SERVER_PORT}/`);
 

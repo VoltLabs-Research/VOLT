@@ -1,10 +1,11 @@
-import { pluginListingRepository } from './repositories';
+import { createPluginListingRepository, type PluginListingRepository } from './repositories';
 import { createExportNodeProcessorService, type ExportNodeProcessorService, type ResultProcessorService, createResultProcessorService } from './services';
-import type { MinioService } from '../platform/services';
-import type { NativeModuleLoader } from '../trajectory-native/services';
-import type { DaemonArtifactReporterService } from '../cloud-control/services';
+import type { MinioService } from '@/modules/platform/services';
+import type { NativeModuleLoader } from '@/modules/trajectory-native/services';
+import type { DaemonArtifactReporterService } from '@/modules/cloud-control/services';
 
 export interface ArtifactsModule {
+    pluginListingRepository: PluginListingRepository;
     exportNodeProcessorService: ExportNodeProcessorService;
     resultProcessorService: ResultProcessorService;
 }
@@ -12,7 +13,8 @@ export interface ArtifactsModule {
 export const createArtifactsModule = (
     minioService: MinioService,
     nativeModuleLoader: NativeModuleLoader,
-    daemonArtifactReporterService: DaemonArtifactReporterService
+    daemonArtifactReporterService: DaemonArtifactReporterService,
+    pluginListingRepository: PluginListingRepository = createPluginListingRepository()
 ): ArtifactsModule => {
     const exportNodeProcessorService = createExportNodeProcessorService(
         minioService,
@@ -26,7 +28,11 @@ export const createArtifactsModule = (
     );
 
     return {
+        pluginListingRepository,
         exportNodeProcessorService,
         resultProcessorService
     };
 };
+
+export type { PluginListingFilter, PluginListingRepository, PluginSubListingFilter } from './repositories';
+export { createPluginListingRepository } from './repositories';

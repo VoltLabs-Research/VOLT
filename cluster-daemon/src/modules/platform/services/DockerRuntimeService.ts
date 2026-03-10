@@ -1,15 +1,11 @@
-import {
-    ContainerAction,
-    type ContainerEnvironmentVariable,
-    type ContainerPortMapping,
-    type CreateContainerRequest
-} from '../../../shared/contracts';
-import { DAEMON_PATHS } from '../../../core/paths';
+import { DAEMON_PATHS } from '@/core/paths';
+import { ContainerAction } from '@/shared/contracts';
 import Docker from 'dockerode';
 import { readdir } from 'node:fs/promises';
 import net from 'node:net';
 import path from 'node:path';
 import { Writable } from 'node:stream';
+import type { ContainerEnvironmentVariable, ContainerPortMapping, CreateContainerRequest } from '@/shared/contracts';
 import type { ContainerInfo } from 'dockerode';
 import type { Duplex, Readable } from 'node:stream';
 
@@ -34,7 +30,14 @@ export interface RuntimeContainerFileEntry {
 
 export interface RuntimeTerminalAttachment {
     stream: Duplex;
-    exec: Docker.Exec;
+    exec: RuntimeTerminalExec;
+};
+
+export interface RuntimeTerminalExec {
+    resize(size: {
+        rows: number;
+        cols: number;
+    }): Promise<void>;
 };
 
 const MAX_EXEC_BUFFER_SIZE = 10 * 1024 * 1024;
@@ -202,7 +205,7 @@ done`, '--', normalizedDirectoryPath]);
 
     async attachTerminal(containerId: string): Promise<RuntimeTerminalAttachment> {
         const container = this.docker.getContainer(containerId);
-        const exec = await container.exec({
+        const dockerExec = await container.exec({
             AttachStdin: true,
             AttachStdout: true,
             AttachStderr: true,
@@ -210,11 +213,16 @@ done`, '--', normalizedDirectoryPath]);
             Cmd: ['/bin/sh'],
             Env: ['TERM=xterm-256color']
         });
-        const stream = await exec.start({ hijack: true, stdin: true });
+        const stream = await dockerExec.start({ hijack: true, stdin: true });
 
         return {
             stream,
-            exec
+            exec: {
+                resize: ({ rows, cols }) => dockerExec.resize({
+                    h: rows,
+                    w: cols
+                })
+            }
         };
     }
 

@@ -1,21 +1,27 @@
-import { EventType } from '../../../shared/contracts';
-import { DockerRuntimeService, type RuntimeTerminalAttachment } from '../../platform/services';
-import {
-    REVERSE_CHANNEL,
-    type TeamClusterDaemonMessage,
-    type TeamClusterDaemonResponseType,
-    type TeamClusterDaemonSessionAttachPayload,
-    type TeamClusterDaemonSessionDataPayload,
-    type TeamClusterDaemonSessionDetachPayload,
-    type TeamClusterDaemonSessionEndPayload,
-    type TeamClusterDaemonSessionInputPayload,
-    type TeamClusterDaemonSessionResizePayload,
-    type TeamClusterDaemonSocketHeaders,
-    type TeamClusterDaemonSocketResponsePayload,
-    type TeamClusterDaemonSocketStreamPayload,
-    type TeamClusterDaemonSocketStreamStatePayload
-} from '../../../shared/contracts';
-import type { DaemonConfig } from '../../../core/config';
+import { DockerRuntimeService, HostShellService } from '@/modules/platform/services';
+import { EventType, REVERSE_CHANNEL, TeamClusterServiceExposureAccessMode } from '@/shared/contracts';
+import type { RuntimeTerminalAttachment } from '@/modules/platform/services';
+import type { DaemonConfig } from '@/core/config';
+import type {
+    TeamClusterDaemonMessage,
+    TeamClusterDaemonResponseType,
+    TeamClusterDaemonTunnelClosePayload,
+    TeamClusterDaemonTunnelDataPayload,
+    TeamClusterDaemonTunnelOpenPayload,
+    TeamClusterDaemonTunnelStatePayload,
+    TeamClusterDaemonSessionAttachPayload,
+    TeamClusterDaemonSessionDataPayload,
+    TeamClusterDaemonSessionDetachPayload,
+    TeamClusterDaemonSessionEndPayload,
+    TeamClusterDaemonSessionInputPayload,
+    TeamClusterDaemonSessionResizePayload,
+    TeamClusterDaemonSocketHeaders,
+    TeamClusterDaemonSocketResponsePayload,
+    TeamClusterDaemonSocketStreamPayload,
+    TeamClusterDaemonSocketStreamStatePayload
+} from '@/shared/contracts';
+import net from 'node:net';
+import type { DaemonExposureRegistryService } from './DaemonExposureRegistryService';
 
 interface ReverseChannelSocketEmitter {
     emit(event: string, payload: unknown): void;
@@ -56,18 +62,34 @@ interface ReverseChannelWebSocketState {
     onClose: (event: CloseEvent) => void;
 };
 
+interface ReverseChannelTunnelState {
+    sessionId: string;
+    socket: net.Socket;
+    onConnect: () => void;
+    onData: (chunk: Buffer) => void;
+    onError: (error: Error) => void;
+    onClose: () => void;
+};
+
 export class ReverseChannelSocketBridge {
     private readonly terminalStates = new Map<string, ReverseChannelTerminalState>();
     private readonly webSocketStates = new Map<string, ReverseChannelWebSocketState>();
+    private readonly tunnelStates = new Map<string, ReverseChannelTunnelState>();
     private readonly handlers = new Map<string, ReverseChannelCommandHandler>();
+    private exposureRegistryService?: DaemonExposureRegistryService;
 
     constructor(
         private readonly _config: DaemonConfig,
-        private readonly dockerRuntimeService?: DockerRuntimeService
+        private readonly dockerRuntimeService?: DockerRuntimeService,
+        private readonly hostShellService?: HostShellService
     ) {}
 
     registerHandler(handler: ReverseChannelCommandHandler): void {
         this.handlers.set(handler.command, handler);
+    }
+
+    setExposureRegistryService(exposureRegistryService: DaemonExposureRegistryService): void {
+        this.exposureRegistryService = exposureRegistryService;
     }
 
     bindToSocket(socket: ReverseChannelSocketEmitter): void {
@@ -89,6 +111,21 @@ export class ReverseChannelSocketBridge {
 
             if (message.type === 'session-detach') {
                 this.handleSessionDetach(message);
+                return;
+            }
+
+            if (message.type === 'tunnel-open') {
+                this.handleTunnelOpen(socket, message);
+                return;
+            }
+
+            if (message.type === 'tunnel-data') {
+                this.handleTunnelData(message);
+                return;
+            }
+
+            if (message.type === 'tunnel-close') {
+                this.handleTunnelClose(message);
             }
         });
     }
@@ -100,6 +137,10 @@ export class ReverseChannelSocketBridge {
 
         for (const sessionId of Array.from(this.webSocketStates.keys())) {
             this.cleanupWebSocketSession(sessionId);
+        }
+
+        for (const sessionId of Array.from(this.tunnelStates.keys())) {
+            this.cleanupTunnelSession(sessionId);
         }
     }
 
@@ -217,7 +258,18 @@ export class ReverseChannelSocketBridge {
         requestId: string,
         payload: TeamClusterDaemonSessionAttachPayload
     ): Promise<void> {
-        if (!this.dockerRuntimeService || !payload.containerId) {
+        const wantsHostTerminal = payload.terminalTarget === REVERSE_CHANNEL.TerminalTarget.Host;
+
+        if (wantsHostTerminal && !this.hostShellService) {
+            this.emitSessionEnd(socket, {
+                type: 'session-end',
+                sessionId: payload.sessionId,
+                error: 'Host shell service is not available'
+            });
+            return;
+        }
+
+        if (!wantsHostTerminal && (!this.dockerRuntimeService || !payload.containerId)) {
             this.emitSessionEnd(socket, {
                 type: 'session-end',
                 sessionId: payload.sessionId,
@@ -227,7 +279,9 @@ export class ReverseChannelSocketBridge {
         }
 
         try {
-            const attachment = await this.dockerRuntimeService.attachTerminal(payload.containerId);
+            const attachment = wantsHostTerminal
+                ? await this.hostShellService!.attachTerminal()
+                : await this.dockerRuntimeService!.attachTerminal(payload.containerId!);
             const onData = (chunk: Buffer) => {
                 const message: TeamClusterDaemonSessionDataPayload = {
                     type: 'session-data',
@@ -393,14 +447,120 @@ export class ReverseChannelSocketBridge {
         }
 
         terminalState.attachment.exec.resize({
-            h: payload.rows,
-            w: payload.cols
+            rows: payload.rows,
+            cols: payload.cols
         }).catch(() => {});
     }
 
     private handleSessionDetach(payload: TeamClusterDaemonSessionDetachPayload): void {
         this.cleanupTerminalSession(payload.sessionId);
         this.cleanupWebSocketSession(payload.sessionId);
+    }
+
+    private handleTunnelOpen(socket: ReverseChannelSocketEmitter, payload: TeamClusterDaemonTunnelOpenPayload): void {
+        if (!this.exposureRegistryService) {
+            this.emitTunnelState(socket, {
+                type: 'tunnel-state',
+                sessionId: payload.sessionId,
+                status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
+                error: 'Exposure registry is not available'
+            });
+            return;
+        }
+
+        const exposure = this.exposureRegistryService.getExposure(payload.exposureId);
+        if (!exposure) {
+            this.emitTunnelState(socket, {
+                type: 'tunnel-state',
+                sessionId: payload.sessionId,
+                status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
+                error: 'Exposure not found'
+            });
+            return;
+        }
+
+        if (!exposure.accessModes.includes(payload.accessMode)) {
+            this.emitTunnelState(socket, {
+                type: 'tunnel-state',
+                sessionId: payload.sessionId,
+                status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
+                error: 'Exposure access mode is not supported'
+            });
+            return;
+        }
+
+        const tunnelSocket = net.createConnection({
+            host: exposure.targetHost,
+            port: exposure.targetPort
+        });
+        tunnelSocket.setNoDelay(true);
+
+        const onConnect = () => {
+            this.emitTunnelState(socket, {
+                type: 'tunnel-state',
+                sessionId: payload.sessionId,
+                status: REVERSE_CHANNEL.TunnelSessionStatus.Open
+            });
+        };
+        const onData = (chunk: Buffer) => {
+            const dataPayload: TeamClusterDaemonTunnelDataPayload = {
+                type: 'tunnel-data',
+                sessionId: payload.sessionId,
+                chunkBase64: chunk.toString('base64'),
+                isBinary: payload.accessMode !== TeamClusterServiceExposureAccessMode.Http
+            };
+            socket.emit(EventType.TeamClusterDaemonMessage, dataPayload);
+        };
+        const onError = (error: Error) => {
+            this.emitTunnelState(socket, {
+                type: 'tunnel-state',
+                sessionId: payload.sessionId,
+                status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
+                error: error.message
+            });
+            this.cleanupTunnelSession(payload.sessionId);
+        };
+        const onClose = () => {
+            const closePayload: TeamClusterDaemonTunnelClosePayload = {
+                type: 'tunnel-close',
+                sessionId: payload.sessionId
+            };
+            socket.emit(EventType.TeamClusterDaemonMessage, closePayload);
+            this.cleanupTunnelSession(payload.sessionId);
+        };
+
+        tunnelSocket.on('connect', onConnect);
+        tunnelSocket.on('data', onData);
+        tunnelSocket.on('error', onError);
+        tunnelSocket.on('close', onClose);
+
+        this.tunnelStates.set(payload.sessionId, {
+            sessionId: payload.sessionId,
+            socket: tunnelSocket,
+            onConnect,
+            onData,
+            onError,
+            onClose
+        });
+
+        this.emitTunnelState(socket, {
+            type: 'tunnel-state',
+            sessionId: payload.sessionId,
+            status: REVERSE_CHANNEL.TunnelSessionStatus.Opening
+        });
+    }
+
+    private handleTunnelData(payload: TeamClusterDaemonTunnelDataPayload): void {
+        const tunnelState = this.tunnelStates.get(payload.sessionId);
+        if (!tunnelState) {
+            return;
+        }
+
+        tunnelState.socket.write(Buffer.from(payload.chunkBase64, 'base64'));
+    }
+
+    private handleTunnelClose(payload: TeamClusterDaemonTunnelClosePayload): void {
+        this.cleanupTunnelSession(payload.sessionId);
     }
 
     private async emitStreamResponse(
@@ -461,6 +621,10 @@ export class ReverseChannelSocketBridge {
     }
 
     private emitSessionEnd(socket: ReverseChannelSocketEmitter, payload: TeamClusterDaemonSessionEndPayload): void {
+        socket.emit(EventType.TeamClusterDaemonMessage, payload);
+    }
+
+    private emitTunnelState(socket: ReverseChannelSocketEmitter, payload: TeamClusterDaemonTunnelStatePayload): void {
         socket.emit(EventType.TeamClusterDaemonMessage, payload);
     }
 
@@ -539,5 +703,22 @@ export class ReverseChannelSocketBridge {
         }
 
         this.webSocketStates.delete(sessionId);
+    }
+
+    private cleanupTunnelSession(sessionId: string): void {
+        const tunnelState = this.tunnelStates.get(sessionId);
+        if (!tunnelState) {
+            return;
+        }
+
+        tunnelState.socket.removeListener('connect', tunnelState.onConnect);
+        tunnelState.socket.removeListener('data', tunnelState.onData);
+        tunnelState.socket.removeListener('error', tunnelState.onError);
+        tunnelState.socket.removeListener('close', tunnelState.onClose);
+        if (!tunnelState.socket.destroyed) {
+            tunnelState.socket.destroy();
+        }
+
+        this.tunnelStates.delete(sessionId);
     }
 };

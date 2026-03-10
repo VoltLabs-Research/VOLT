@@ -1,4 +1,4 @@
-import type { AnalysisRepository } from '../repositories/AnalysisRepository';
+import type { AnalysisLookup } from '../factories';
 import type { WorkflowNodeHandler } from '../services';
 import { WorkflowNodeType } from '../contracts';
 
@@ -7,11 +7,11 @@ export class WorkflowModifierHandler implements WorkflowNodeHandler {
     readonly outputSchema = { properties: {} };
 
     constructor(
-        private readonly analysisRepository: AnalysisRepository
+        private readonly analysisLookup: AnalysisLookup
     ) {}
 
     async execute(node: any, context: any): Promise<Record<string, unknown>> {
-        const analysis = await this.analysisRepository.findById(context.analysisId);
+        const analysis = await this.analysisLookup.findById(context.analysisId);
 
         return {
             ...(node.data.modifier as Record<string, unknown> || {}),

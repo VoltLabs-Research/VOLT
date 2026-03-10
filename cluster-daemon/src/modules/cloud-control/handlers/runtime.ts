@@ -1,6 +1,6 @@
-import type { DaemonConfig } from '../../../core/config';
-import type { DockerRuntimeService } from '../../platform/services';
-import type { RuntimeEventBroker } from '../../../shared/services';
+import type { DaemonConfig } from '@/core/config';
+import type { DockerRuntimeService } from '@/modules/platform/services';
+import type { RuntimeEventBroker } from '@/shared/services';
 import type { ReverseChannelCommandHandler } from '../services';
 import fs from 'node:fs/promises';
 import path from 'node:path';

@@ -1,42 +1,38 @@
 import { logger } from './logger';
 import { loadConfig } from './config';
-import { JupyterRuntimeService } from '../modules/jupyter/services/JupyterRuntimeService';
-import { MetricsService } from '../modules/metrics/services/MetricsService';
-import { FileExtractorService } from '../modules/ssh-import/services/FileExtractorService';
-import { SSHConnectionService } from '../modules/ssh-import/services/SSHConnectionService';
-import { SSHImportWorkerService } from '../modules/ssh-import/services/SSHImportWorkerService';
-import { createPlatformModule } from '../modules/platform';
-import { createTrajectoryNativeModule } from '../modules/trajectory-native';
-import { createArtifactsModule } from '../modules/artifacts';
-import { createWorkflowRuntimeModule } from '../modules/workflow-runtime';
-import { createCloudControlModule } from '../modules/cloud-control';
-import { createAnalysisWorker, createJobRuntimeModule } from '../modules/job-runtime';
+import { createJupyterModule } from '@/modules/jupyter';
+import { createMetricsModule } from '@/modules/metrics';
+import { createSSHImportModule } from '@/modules/ssh-import';
+import { createPlatformModule } from '@/modules/platform';
+import { createTrajectoryNativeModule } from '@/modules/trajectory-native';
+import { createArtifactsModule, createPluginListingRepository } from '@/modules/artifacts';
+import { createWorkflowRuntimeModule } from '@/modules/workflow-runtime';
+import { createCloudControlModule } from '@/modules/cloud-control';
+import { createAnalysisWorker, createJobRuntimeModule } from '@/modules/job-runtime';
 
 export const bootstrap = async (): Promise<void> => {
     const config = loadConfig();
     const platform = createPlatformModule(config);
-    const metricsService = new MetricsService();
+    const metrics = createMetricsModule();
     const trajectoryNative = createTrajectoryNativeModule(platform.minioService);
     const workflowRuntime = createWorkflowRuntimeModule();
-    const jupyterRuntimeService = new JupyterRuntimeService(config, platform.dockerRuntimeService);
-    const sshConnectionService = new SSHConnectionService();
-    const fileExtractorService = new FileExtractorService();
-    const sshImportWorkerService = new SSHImportWorkerService(
+    const jupyter = createJupyterModule(config, platform.dockerRuntimeService);
+    const pluginListingRepository = createPluginListingRepository();
+    const sshImport = createSSHImportModule({
         config,
-        platform.queueService,
-        platform.redisConnectionService,
-        platform.minioService,
-        trajectoryNative.glbExporterService,
-        sshConnectionService,
-        fileExtractorService
-    );
+        queueService: platform.queueService,
+        redisConnectionService: platform.redisConnectionService,
+        minioService: platform.minioService,
+        glbExporterService: trajectoryNative.glbExporterService
+    });
     const bootstrapCloudControl = (
         analysisDispatchService: ReturnType<typeof createJobRuntimeModule>['analysisDispatchService']
     ) => createCloudControlModule({
         config,
-        metricsService,
+        metricsService: metrics.metricsService,
         eventBroker: platform.eventBroker,
         dockerRuntimeService: platform.dockerRuntimeService,
+        hostShellService: platform.hostShellService,
         minioService: platform.minioService,
         queueService: platform.queueService,
         redisConnectionService: platform.redisConnectionService,
@@ -44,7 +40,9 @@ export const bootstrap = async (): Promise<void> => {
         glbExporterService: trajectoryNative.glbExporterService,
         rasterizerService: trajectoryNative.rasterizerService,
         filterEvaluatorService: trajectoryNative.filterEvaluatorService,
-        jupyterRuntimeService,
+        jupyterRuntimeService: jupyter.jupyterRuntimeService,
+        notebookRepository: jupyter.notebookRepository,
+        pluginListingRepository,
         analysisDispatchService
     });
     const jobRuntime = createJobRuntimeModule({
@@ -57,7 +55,8 @@ export const bootstrap = async (): Promise<void> => {
     const artifacts = createArtifactsModule(
         platform.minioService,
         trajectoryNative.nativeModuleLoader,
-        cloudControl.daemonArtifactReporterService
+        cloudControl.daemonArtifactReporterService,
+        pluginListingRepository
     );
     const analysisWorker = createAnalysisWorker({
         queueService: platform.queueService,
@@ -78,17 +77,19 @@ export const bootstrap = async (): Promise<void> => {
     });
 
     await cloudControl.voltCloudConnection.start();
+    cloudControl.daemonExposureRegistryService.start();
     analysisWorker.start();
-    sshImportWorkerService.start();
+    sshImport.sshImportWorkerService.start();
     logger.info(`cluster-daemon started for team cluster ${config.teamClusterId}`);
 
-    jupyterRuntimeService.initialize().catch((error: unknown) => {
+    jupyter.jupyterRuntimeService.initialize().catch((error: unknown) => {
         logger.warn({ err: error }, 'Jupyter runtime image pre-warm failed (will retry on first session request)');
     });
 
     const shutdown = async () => {
         await analysisWorker.stop();
-        await sshImportWorkerService.stop();
+        await sshImport.sshImportWorkerService.stop();
+        cloudControl.daemonExposureRegistryService.stop();
         await cloudControl.voltCloudConnection.stop();
         await platform.queueService.close();
         await platform.disconnect();

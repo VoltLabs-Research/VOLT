@@ -1,4 +1,4 @@
-import { ObjectBucketName, OrchestrationAction, PluginSyncRequest, ProgressStageType, TextEncoding, type ObjectUploadRequest, type RuntimeEventBroker } from '../../../shared/contracts';
+import { ObjectBucketName, OrchestrationAction, PluginSyncRequest, ProgressStageType, TextEncoding, type ObjectUploadRequest, type RuntimeEventBroker } from '@/shared/contracts';
 import type { MinioService } from './MinioService';
 
 const emitProgress = (

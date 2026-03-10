@@ -1,8 +1,11 @@
 import CompleteTeamClusterDeletionController from '@modules/team-cluster/infrastructure/http/controllers/CompleteTeamClusterDeletionController';
 import CreateTeamClusterController from '@modules/team-cluster/infrastructure/http/controllers/CreateTeamClusterController';
+import CreateTeamClusterRemoteAccessSessionController from '@modules/team-cluster/infrastructure/http/controllers/CreateTeamClusterRemoteAccessSessionController';
 import DeleteTeamClusterByIdController from '@modules/team-cluster/infrastructure/http/controllers/DeleteTeamClusterByIdController';
 import GenerateTeamClusterInstallManifestController from '@modules/team-cluster/infrastructure/http/controllers/GenerateTeamClusterInstallManifestController';
+import GetTeamClusterRemoteExplorerNodeController from '@modules/team-cluster/infrastructure/http/controllers/GetTeamClusterRemoteExplorerNodeController';
 import GetTeamClusterByIdController from '@modules/team-cluster/infrastructure/http/controllers/GetTeamClusterByIdController';
+import ListTeamClusterRemoteExplorerEntriesController from '@modules/team-cluster/infrastructure/http/controllers/ListTeamClusterRemoteExplorerEntriesController';
 import ListTeamClustersByTeamIdController from '@modules/team-cluster/infrastructure/http/controllers/ListTeamClustersByTeamIdController';
 import ProcessTeamClusterHealthcheckController from '@modules/team-cluster/infrastructure/http/controllers/ProcessTeamClusterHealthcheckController';
 import RecordTeamClusterHeartbeatController from '@modules/team-cluster/infrastructure/http/controllers/RecordTeamClusterHeartbeatController';
@@ -13,10 +16,13 @@ import { createControllerRegistry } from '@shared/infrastructure/di/create-contr
 export default createControllerRegistry({
     completeDeletion: CompleteTeamClusterDeletionController,
     create: CreateTeamClusterController,
+    createRemoteAccessSession: CreateTeamClusterRemoteAccessSessionController,
     deleteById: DeleteTeamClusterByIdController,
     generateInstallManifest: GenerateTeamClusterInstallManifestController,
     getById: GetTeamClusterByIdController,
+    getRemoteExplorerNode: GetTeamClusterRemoteExplorerNodeController,
     listByTeamId: ListTeamClustersByTeamIdController,
+    listRemoteExplorerEntries: ListTeamClusterRemoteExplorerEntriesController,
     processHealthcheck: ProcessTeamClusterHealthcheckController,
     recordHeartbeat: RecordTeamClusterHeartbeatController,
     revealCredentials: RevealTeamClusterCredentialsController,

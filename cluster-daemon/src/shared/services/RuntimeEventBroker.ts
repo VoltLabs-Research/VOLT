@@ -1,5 +1,6 @@
-import { type RuntimeLifecycleEvent, type RuntimeProgressEvent, EventType } from '../contracts/events';
+import { EventType } from '../contracts/events';
 import { EventEmitter } from 'node:events';
+import type { RuntimeLifecycleEvent, RuntimeProgressEvent } from '../contracts/events';
 
 type RuntimeLifecycleListener = (event: RuntimeLifecycleEvent) => void;
 type RuntimeProgressListener = (event: RuntimeProgressEvent) => void;

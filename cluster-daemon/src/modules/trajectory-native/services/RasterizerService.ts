@@ -1,5 +1,5 @@
-import { ObjectBucketName } from '../../../shared/contracts';
-import { MinioService } from '../../platform/services';
+import { ObjectBucketName } from '@/shared/contracts';
+import { MinioService } from '@/modules/platform/services';
 import { NativeModuleLoader, type RasterizePreviewInput } from './NativeModuleLoader';
 import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';

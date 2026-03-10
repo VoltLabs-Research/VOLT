@@ -1,4 +1,4 @@
-import type { WorkflowDefinition } from '../../../shared/contracts';
+import type { WorkflowDefinition } from '@/shared/contracts';
 
 export enum WorkflowNodeType {
     Modifier = 'modifier',

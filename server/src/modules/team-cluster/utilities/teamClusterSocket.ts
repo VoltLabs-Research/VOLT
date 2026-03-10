@@ -1,3 +1,9 @@
+import {
+    TeamClusterServiceExposureAccessMode,
+    TeamClusterServiceExposureStatus,
+    type TeamClusterServiceExposure
+} from '@modules/team-cluster/domain/contracts/TeamClusterServiceExposure';
+
 export enum TeamClusterDaemonResponseType {
     Json = 'json',
     Buffer = 'buffer',
@@ -6,7 +12,14 @@ export enum TeamClusterDaemonResponseType {
 
 export enum TeamClusterDaemonSessionKind {
     Terminal = 'terminal',
+    Tunnel = 'tunnel',
     WebSocket = 'websocket'
+};
+
+export enum TeamClusterTunnelSessionStatus {
+    Opening = 'opening',
+    Open = 'open',
+    Closed = 'closed'
 };
 
 export interface TeamClusterDaemonSocketHeaders {
@@ -90,6 +103,80 @@ export interface TeamClusterDaemonSessionEndPayload {
     error?: string;
 };
 
+/**
+ * Replaces the full exposure registry stored in volt/server for a connected team cluster.
+ */
+export interface TeamClusterDaemonExposureSnapshotPayload {
+    type: 'exposure-snapshot';
+    exposures: TeamClusterServiceExposure[];
+};
+
+/**
+ * Applies additive exposure changes without replacing the full registry.
+ */
+export interface TeamClusterDaemonExposureUpsertPayload {
+    type: 'exposure-upsert';
+    exposures: TeamClusterServiceExposure[];
+};
+
+/**
+ * Removes exposures that are no longer published by the daemon.
+ */
+export interface TeamClusterDaemonExposureRemovePayload {
+    type: 'exposure-remove';
+    exposureIds: string[];
+};
+
+/**
+ * Opens a generic tunnel session against a persistent exposure.
+ */
+export interface TeamClusterDaemonTunnelOpenPayload {
+    type: 'tunnel-open';
+    sessionId: string;
+    exposureId: string;
+    accessMode: TeamClusterServiceExposureAccessMode;
+};
+
+/**
+ * Acknowledges the final state of a tunnel session transition.
+ */
+export interface TeamClusterDaemonTunnelStatePayload {
+    type: 'tunnel-state';
+    sessionId: string;
+    status: TeamClusterTunnelSessionStatus;
+    message?: string;
+    error?: string;
+};
+
+/**
+ * Carries raw tunnel bytes for HTTP, WebSocket or arbitrary TCP sessions.
+ */
+export interface TeamClusterDaemonTunnelDataPayload {
+    type: 'tunnel-data';
+    sessionId: string;
+    chunkBase64: string;
+    isBinary: boolean;
+};
+
+/**
+ * Closes a generic tunnel session on either side of the reverse channel.
+ */
+export interface TeamClusterDaemonTunnelClosePayload {
+    type: 'tunnel-close';
+    sessionId: string;
+    code?: number;
+    message?: string;
+};
+
+/**
+ * Keeps long-lived tunnel sessions observable without transferring business data.
+ */
+export interface TeamClusterDaemonTunnelHeartbeatPayload {
+    type: 'tunnel-heartbeat';
+    sessionId: string;
+    occurredAt: string;
+};
+
 export type TeamClusterDaemonMessage =
     | TeamClusterDaemonCommandMessage
     | TeamClusterDaemonSocketResponsePayload
@@ -99,7 +186,24 @@ export type TeamClusterDaemonMessage =
     | TeamClusterDaemonSessionResizePayload
     | TeamClusterDaemonSessionDetachPayload
     | TeamClusterDaemonSessionDataPayload
-    | TeamClusterDaemonSessionEndPayload;
+    | TeamClusterDaemonSessionEndPayload
+    | TeamClusterDaemonExposureSnapshotPayload
+    | TeamClusterDaemonExposureUpsertPayload
+    | TeamClusterDaemonExposureRemovePayload
+    | TeamClusterDaemonTunnelOpenPayload
+    | TeamClusterDaemonTunnelStatePayload
+    | TeamClusterDaemonTunnelDataPayload
+    | TeamClusterDaemonTunnelClosePayload
+    | TeamClusterDaemonTunnelHeartbeatPayload;
+
+export {
+    TeamClusterServiceExposureAccessMode,
+    TeamClusterServiceExposureStatus
+};
+
+export type {
+    TeamClusterServiceExposure
+};
 
 export const TEAM_CLUSTER_LIFECYCLE_EVENT = 'team-cluster.updated';
 export const TEAM_CLUSTER_SUBSCRIPTION_EVENT = 'subscribe_to_team_cluster';

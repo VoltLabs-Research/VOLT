@@ -1,5 +1,7 @@
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
+import { TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
+import { TeamClusterReverseTunnelStream } from '@modules/team-cluster/utilities/TeamClusterReverseTunnelStream';
 import { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
 import { TeamClusterDaemonResponseType } from '@modules/team-cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -91,7 +93,19 @@ export default class TeamClusterDaemonClient {
         return this.teamClusterReverseChannelService.attachTerminal(teamClusterId, containerId);
     }
 
+    async attachHostTerminal(teamClusterId: string): Promise<ContainerTerminalAttachment> {
+        return this.teamClusterReverseChannelService.attachHostTerminal(teamClusterId);
+    }
+
     async attachWebSocket(teamClusterId: string, targetUrl: string): Promise<TeamClusterReverseWebSocketStream> {
         return this.teamClusterReverseChannelService.attachWebSocket(teamClusterId, targetUrl);
+    }
+
+    async openTunnel(
+        teamClusterId: string,
+        exposureId: string,
+        accessMode: TeamClusterServiceExposureAccessMode
+    ): Promise<TeamClusterReverseTunnelStream> {
+        return this.teamClusterReverseChannelService.openTunnel(teamClusterId, exposureId, accessMode);
     }
 };

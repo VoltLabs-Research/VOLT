@@ -5,19 +5,20 @@ import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import TeamClusterExposureRegistryService from '@modules/team-cluster/infrastructure/services/TeamClusterExposureRegistryService';
+import { TeamClusterServiceExposureAccessMode, type TeamClusterServiceExposure } from '@modules/team-cluster/utilities/teamClusterSocket';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { inject, injectable } from 'tsyringe';
 import { WebSocketServer, WebSocket } from 'ws';
-import type { TeamClusterReverseChannelStreamAttachment } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
-import type { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { Request, Response } from 'express';
-import type { IncomingMessage } from 'node:http';
+import http, { type IncomingMessage, type IncomingHttpHeaders, type RequestOptions } from 'node:http';
 import type { Duplex } from 'node:stream';
 
 interface ProxyPathMatch {
@@ -30,10 +31,6 @@ interface AuthorizedProxyContext {
     teamId: string;
     runtimeNotebookId: string;
     teamClusterId: string;
-};
-
-interface DaemonNotebookRuntimeResponse {
-    hostPort: number | null;
 };
 
 interface TeamMemberRolePopulate {
@@ -132,6 +129,9 @@ export class ScriptingJupyterProxyService {
         @inject(TEAM_TOKENS.TeamMemberRepository)
         private readonly teamMemberRepository: ITeamMemberRepository,
 
+        @inject(TEAM_CLUSTER_TOKENS.TeamClusterExposureRegistryService)
+        private readonly exposureRegistryService: TeamClusterExposureRegistryService,
+
         @inject(ScriptingJupyterAccessTokenService)
         private readonly accessTokenService: ScriptingJupyterAccessTokenService
     ) {}
@@ -139,27 +139,33 @@ export class ScriptingJupyterProxyService {
     public proxyHttpRequest = async (req: Request, res: Response): Promise<void> => {
         try {
             const context = await this.authorizeHttpRequest(req);
+            const exposure = this.requireNotebookExposure(context, TeamClusterServiceExposureAccessMode.Http);
             this.persistAccessTokenCookie(req, res, context);
-            const body = this.readRequestBody(req.body);
-            const headers = this.readProxyRequestHeaders(req);
-            const response = await this.teamClusterDaemonClient.commandResponseStream(context.teamClusterId, 'notebook.proxy.http', {
-                notebookId: context.runtimeNotebookId,
-                ...this.buildDaemonProxyPayload(req.originalUrl, context),
-                method: this.readRequestMethod(req.method),
-                headers,
-                body
+            const target = this.extractProxyTarget(req.originalUrl, context);
+            const tunnel = await this.teamClusterDaemonClient.openTunnel(
+                context.teamClusterId,
+                exposure.id,
+                TeamClusterServiceExposureAccessMode.Http
+            );
+            const upstreamRequest = http.request(this.buildUpstreamHttpRequestOptions(req, exposure, target, tunnel as unknown as Duplex), (upstreamResponse) => {
+                this.prepareProxyResponse(req.originalUrl, res, upstreamResponse.headers, upstreamResponse.statusCode || 502, context);
+                upstreamResponse.on('error', (error: Error) => {
+                    res.destroy(error);
+                });
+                upstreamResponse.pipe(res);
             });
 
-            this.prepareProxyResponse(req.originalUrl, res, response, context);
-            response.stream.on('error', (error: Error) => {
+            upstreamRequest.on('error', (error: Error) => {
                 if (!res.headersSent) {
+                    this.applyProxyResponseSecurityHeaders(res);
                     BaseResponse.fromError(res, ApplicationError.internalServerError(error.message));
                     return;
                 }
 
                 res.destroy(error);
             });
-            response.stream.pipe(res);
+
+            this.writeProxyRequestBody(req, upstreamRequest);
         } catch (error: unknown) {
             this.applyProxyResponseSecurityHeaders(res);
             BaseResponse.fromError(res, error);
@@ -178,23 +184,26 @@ export class ScriptingJupyterProxyService {
 
         try {
             const context = await this.authorizeUpgradeRequest(request);
-            const runtime = await this.teamClusterDaemonClient.command<DaemonNotebookRuntimeResponse>(
+            const exposure = this.requireNotebookExposure(
+                context,
+                TeamClusterServiceExposureAccessMode.WebSocket
+            );
+            const target = this.extractProxyTarget(request.url || '', context);
+            const tunnel = await this.teamClusterDaemonClient.openTunnel(
                 context.teamClusterId,
-                'notebook.runtime.get',
+                exposure.id,
+                TeamClusterServiceExposureAccessMode.WebSocket
+            );
+            const upstreamWebSocket = new WebSocket(
+                `ws://volt.internal${target.proxiedPath}${target.rawQuery}`,
                 {
-                    notebookId: context.runtimeNotebookId
+                    createConnection: () => tunnel as unknown as Duplex,
+                    headers: this.readUpgradeRequestHeaders(request)
                 }
             );
 
-            if (!runtime.hostPort) {
-                throw ApplicationError.conflict('Scripting::JupyterUnavailable', 'Jupyter runtime is not available');
-            }
-
-            const targetUrl = this.buildDaemonWebSocketTargetUrl(request.url || '', context, runtime.hostPort);
-            const reverseWebSocket = await this.teamClusterDaemonClient.attachWebSocket(context.teamClusterId, targetUrl);
-
             this.webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
-                this.bindWebSocketProxy(webSocket, reverseWebSocket);
+                this.bindWebSocketProxy(webSocket, upstreamWebSocket);
             });
         } catch (error: unknown) {
             const statusCode = error instanceof ApplicationError ? error.statusCode : 500;
@@ -292,58 +301,50 @@ export class ScriptingJupyterProxyService {
         });
     }
 
-    private bindWebSocketProxy(webSocket: WebSocket, reverseWebSocket: TeamClusterReverseWebSocketStream): void {
-        reverseWebSocket.on('data', (payload) => {
-            webSocket.send(payload.data, {
-                binary: payload.isBinary
+    private bindWebSocketProxy(webSocket: WebSocket, upstreamWebSocket: WebSocket): void {
+        upstreamWebSocket.on('message', (data, isBinary) => {
+            const payload = typeof data === 'string' ? data : Buffer.from(data as Buffer);
+            webSocket.send(payload, {
+                binary: isBinary
             });
         });
-        reverseWebSocket.on('end', (payload) => {
-            webSocket.close(payload.code || 1000, payload.message);
+        upstreamWebSocket.on('close', (code, reason) => {
+            webSocket.close(code || 1000, reason.toString() || undefined);
         });
-        reverseWebSocket.on('error', () => {
+        upstreamWebSocket.on('error', () => {
             webSocket.close(1011, 'Remote Jupyter websocket failed');
         });
 
         webSocket.on('message', (data: Buffer, isBinary: boolean) => {
             const message = typeof data === 'string' ? data : Buffer.from(data);
-            reverseWebSocket.send(message, isBinary);
+            upstreamWebSocket.send(message, {
+                binary: isBinary
+            });
         });
         webSocket.on('close', () => {
-            reverseWebSocket.destroy();
+            upstreamWebSocket.close();
         });
         webSocket.on('error', () => {
-            reverseWebSocket.destroy();
+            upstreamWebSocket.close();
         });
-    }
-
-    private buildDaemonProxyPayload(requestUrl: string, context: AuthorizedProxyContext): Record<string, unknown> {
-        const target = this.extractProxyTarget(requestUrl, context);
-        return {
-            proxiedPath: target.proxiedPath,
-            rawQuery: target.rawQuery
-        };
-    }
-
-    private buildDaemonWebSocketTargetUrl(requestUrl: string, context: AuthorizedProxyContext, hostPort: number): string {
-        const target = this.extractProxyTarget(requestUrl, context);
-        const search = target.rawQuery.replace(/^\?/, '');
-        return search
-            ? `ws://127.0.0.1:${hostPort}${target.proxiedPath}?${search}`
-            : `ws://127.0.0.1:${hostPort}${target.proxiedPath}`;
     }
 
     private prepareProxyResponse(
         requestUrl: string,
         res: Response,
-        response: TeamClusterReverseChannelStreamAttachment,
+        headers: IncomingHttpHeaders,
+        status: number,
         context: AuthorizedProxyContext
     ): void {
-        const upstreamContentSecurityPolicy = this.readHeaderValue(response.headers['content-security-policy']);
+        const upstreamContentSecurityPolicy = this.readHeaderValue(headers['content-security-policy']);
         this.applyProxyResponseSecurityHeaders(res, upstreamContentSecurityPolicy);
-        res.status(response.status);
+        res.status(status);
 
-        for (const [headerName, headerValue] of Object.entries(response.headers)) {
+        for (const [headerName, headerValue] of Object.entries(headers)) {
+            if (typeof headerValue === 'undefined') {
+                continue;
+            }
+
             const normalizedHeaderName = headerName.toLowerCase();
             if (normalizedHeaderName === 'transfer-encoding' || normalizedHeaderName === 'content-encoding') {
                 continue;
@@ -354,11 +355,11 @@ export class ScriptingJupyterProxyService {
             }
 
             if (normalizedHeaderName === 'location') {
-                res.setHeader(headerName, this.rewriteProxyLocation(headerValue, requestUrl, context));
+                res.setHeader(headerName, this.rewriteProxyLocation(this.readHeaderValue(headerValue) || '', requestUrl, context));
                 continue;
             }
 
-            res.setHeader(headerName, headerValue);
+            res.setHeader(headerName, Array.isArray(headerValue) ? headerValue.join(', ') : headerValue);
         }
     }
 
@@ -368,10 +369,10 @@ export class ScriptingJupyterProxyService {
         res.setHeader('Content-Security-Policy', rewriteFrameAncestorsDirective(upstreamContentSecurityPolicy));
     }
 
-    private readProxyRequestHeaders(req: Request): Record<string, string> {
+    private readProxyRequestHeaders(headersInput: IncomingHttpHeaders): Record<string, string> {
         const headers: Record<string, string> = {};
 
-        for (const [headerName, headerValue] of Object.entries(req.headers)) {
+        for (const [headerName, headerValue] of Object.entries(headersInput)) {
             const normalizedHeaderName = headerName.toLowerCase();
             if (!headerValue || normalizedHeaderName === 'host' || normalizedHeaderName === 'content-length') {
                 continue;
@@ -406,6 +407,68 @@ export class ScriptingJupyterProxyService {
 
     private resolveAction(method: string): Action {
         return METHOD_ACTION_MAP[method] || Action.READ;
+    }
+
+    private requireNotebookExposure(
+        context: AuthorizedProxyContext,
+        accessMode: TeamClusterServiceExposureAccessMode
+    ): TeamClusterServiceExposure {
+        const exposure = this.exposureRegistryService.findTeamClusterExposure(context.teamClusterId, (candidate) => {
+            return candidate.labels['volt.notebook.id'] === context.runtimeNotebookId
+                && candidate.accessModes.includes(accessMode);
+        });
+
+        if (!exposure) {
+            throw ApplicationError.conflict('Scripting::JupyterUnavailable', 'Jupyter runtime exposure is not available');
+        }
+
+        return exposure;
+    }
+
+    private buildUpstreamHttpRequestOptions(
+        req: Request,
+        exposure: TeamClusterServiceExposure,
+        target: { proxiedPath: string; rawQuery: string; },
+        tunnel: Duplex
+    ): RequestOptions {
+        const headers = this.readProxyRequestHeaders(req.headers);
+        headers.host = `127.0.0.1:${exposure.containerPort}`;
+
+        return {
+            protocol: 'http:',
+            method: this.readRequestMethod(req.method),
+            path: `${target.proxiedPath}${target.rawQuery}`,
+            headers,
+            agent: false,
+            createConnection: () => tunnel
+        };
+    }
+
+    private writeProxyRequestBody(req: Request, upstreamRequest: http.ClientRequest): void {
+        const body = this.readRequestBody(req.body);
+        if (body) {
+            upstreamRequest.end(JSON.stringify(body));
+            return;
+        }
+
+        req.pipe(upstreamRequest);
+    }
+
+    private readUpgradeRequestHeaders(request: IncomingMessage): Record<string, string> {
+        const headers = this.readProxyRequestHeaders(request.headers);
+
+        for (const headerName of Object.keys(headers)) {
+            const normalizedHeaderName = headerName.toLowerCase();
+            if (
+                normalizedHeaderName === 'connection'
+                || normalizedHeaderName === 'upgrade'
+                || normalizedHeaderName.startsWith('sec-websocket-')
+            ) {
+                delete headers[headerName];
+            }
+        }
+
+        return headers;
     }
 
     private extractProxyTarget(

@@ -1,5 +1,10 @@
-import { PluginListingRowModel, type PluginListingRowDocument } from '../models/PluginListingRowModel';
-import { PluginSubListingRowModel, type PluginSubListingRowDocument } from '../models/PluginSubListingRowModel';
+import { PluginListingRowModel } from '../models/PluginListingRowModel';
+import { PluginSubListingRowModel } from '../models/PluginSubListingRowModel';
+import { calculatePaginationOffset, calculateTotalPages, normalizePagination } from '@/shared/contracts';
+import { readString, toRecord } from '@/shared/utils';
+import type { PluginListingRowDocument } from '../models/PluginListingRowModel';
+import type { PluginSubListingRowDocument } from '../models/PluginSubListingRowModel';
+import type { PaginatedResult } from '@/shared/contracts';
 
 export interface PluginListingFilter {
     pluginId?: string;
@@ -25,29 +30,81 @@ export interface BulkUpsertOperation {
     update: Record<string, unknown>;
 };
 
-export interface PaginatedResult<T> {
-    data: T[];
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-};
-
 export interface ListingPaginatedResult extends PaginatedResult<PluginListingRowDocument> {
     columns: string[];
     subListingNames: string[];
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
+export interface PluginListingRepository {
+    listPluginListings(filter: PluginListingFilter): Promise<ListingPaginatedResult>;
+    listPluginSubListings(filter: PluginSubListingFilter): Promise<PaginatedResult<PluginSubListingRowDocument>>;
+    bulkUpsertListingRows(operations: BulkUpsertOperation[]): Promise<void>;
+    insertSubListingRows(documents: Array<Record<string, unknown>>): Promise<void>;
+    deleteSubListingRows(filter: Record<string, unknown>): Promise<void>;
 };
 
-const readString = (value: unknown): string => {
-    return typeof value === 'string' ? value : '';
+interface PluginListingQuery {
+    plugin?: string;
+    trajectory?: string;
+    analysis?: string;
+    exposureId?: string;
+    exposureName?: string;
 };
+
+interface PluginSubListingQuery {
+    analysis?: string;
+    exposureId?: string;
+    timestep?: number;
+    subListingName?: string;
+};
+
+interface PagedDocumentsRequest<TDocument> {
+    page: number;
+    limit: number;
+    count(): Promise<number>;
+    read(skip: number, limit: number): Promise<TDocument[]>;
+};
+
+interface PagedDocumentsResult<TDocument> {
+    documents: TDocument[];
+    page: number;
+    limit: number;
+    total: number;
+};
+
+const readPagedDocuments = async <TDocument>(input: PagedDocumentsRequest<TDocument>): Promise<PagedDocumentsResult<TDocument>> => {
+    const pagination = normalizePagination(input.page, input.limit);
+    const skip = calculatePaginationOffset(pagination.page, pagination.limit);
+    const [total, documents] = await Promise.all([
+        input.count(),
+        input.read(skip, pagination.limit)
+    ]);
+
+    return {
+        documents,
+        page: pagination.page,
+        limit: pagination.limit,
+        total
+    };
+};
+
+const SYSTEM_KEYS = new Set([
+    '_id',
+    'plugin',
+    'team',
+    'trajectory',
+    'analysis',
+    'exposureId',
+    'exposureName',
+    'trajectoryName',
+    'timestep',
+    'subListingNames',
+    '__v',
+    'row'
+]);
 
 const toPluginListingRowDocument = (value: unknown): PluginListingRowDocument => {
-    const record = isRecord(value) ? value : {};
+    const record = toRecord(value);
 
     return {
         _id: readString(record._id),
@@ -56,7 +113,7 @@ const toPluginListingRowDocument = (value: unknown): PluginListingRowDocument =>
 };
 
 const toPluginSubListingRowDocument = (value: unknown): PluginSubListingRowDocument => {
-    const record = isRecord(value) ? value : {};
+    const record = toRecord(value);
 
     return {
         _id: readString(record._id),
@@ -64,131 +121,179 @@ const toPluginSubListingRowDocument = (value: unknown): PluginSubListingRowDocum
     };
 };
 
-const SYSTEM_KEYS = new Set([
-    '_id', 'plugin', 'team', 'trajectory', 'analysis',
-    'exposureId', 'exposureName', 'trajectoryName',
-    'timestep', 'subListingNames', '__v', 'row'
-]);
+const buildPluginListingQuery = (filter: PluginListingFilter): PluginListingQuery => {
+    const query: PluginListingQuery = {};
 
-export const listPluginListings = async (filter: PluginListingFilter): Promise<ListingPaginatedResult> => {
-    const query = {
-        ...(filter.pluginId ? { plugin: filter.pluginId } : {}),
-        ...(filter.trajectoryId ? { trajectory: filter.trajectoryId } : {}),
-        ...(filter.analysisId ? { analysis: filter.analysisId } : {}),
-        ...(filter.exposureId ? { exposureId: filter.exposureId } : {}),
-        ...(filter.exposureName ? { exposureName: filter.exposureName } : {})
-    };
-    const skip = (filter.page - 1) * filter.limit;
-    const total = await PluginListingRowModel.countDocuments(query);
-    const data = await PluginListingRowModel.find(query)
-        .sort({ timestep: -1, _id: -1 })
-        .skip(skip)
-        .limit(filter.limit)
-        .lean();
+    if (filter.pluginId) {
+        query.plugin = filter.pluginId;
+    }
 
-    const docs = data.map(toPluginListingRowDocument);
+    if (filter.trajectoryId) {
+        query.trajectory = filter.trajectoryId;
+    }
 
-    const columnSet = new Set<string>();
-    for (const doc of docs) {
-        const rowData = (doc as Record<string, unknown>).row;
+    if (filter.analysisId) {
+        query.analysis = filter.analysisId;
+    }
+
+    if (filter.exposureId) {
+        query.exposureId = filter.exposureId;
+    }
+
+    if (filter.exposureName) {
+        query.exposureName = filter.exposureName;
+    }
+
+    return query;
+};
+
+const buildPluginSubListingQuery = (filter: PluginSubListingFilter): PluginSubListingQuery => {
+    const query: PluginSubListingQuery = {};
+
+    if (filter.analysisId) {
+        query.analysis = filter.analysisId;
+    }
+
+    if (filter.exposureId) {
+        query.exposureId = filter.exposureId;
+    }
+
+    if (typeof filter.timestep === 'number') {
+        query.timestep = filter.timestep;
+    }
+
+    if (filter.subListingName) {
+        query.subListingName = filter.subListingName;
+    }
+
+    return query;
+};
+
+const collectColumns = (documents: PluginListingRowDocument[]): string[] => {
+    const columns = new Set<string>();
+
+    for (const document of documents) {
+        const rowData = document.row;
+
         if (rowData && typeof rowData === 'object' && !Array.isArray(rowData)) {
-            for (const key of Object.keys(rowData as Record<string, unknown>)) {
-                columnSet.add(key);
+            const rowRecord = rowData as Record<string, unknown>;
+
+            for (const key of Object.keys(rowRecord)) {
+                columns.add(key);
             }
-        } else {
-            for (const key of Object.keys(doc)) {
-                if (!SYSTEM_KEYS.has(key)) {
-                    columnSet.add(key);
-                }
+
+            continue;
+        }
+
+        for (const key of Object.keys(document)) {
+            if (!SYSTEM_KEYS.has(key)) {
+                columns.add(key);
             }
         }
     }
-    const columns = Array.from(columnSet);
 
-    let subListingNames: string[] = [];
-    for (const doc of docs) {
-        const names = (doc as Record<string, unknown>).subListingNames;
-        if (Array.isArray(names) && names.length > 0) {
-            subListingNames = names.map(String);
-            break;
+    return Array.from(columns);
+};
+
+const readSubListingNames = (documents: PluginListingRowDocument[]): string[] => {
+    for (const document of documents) {
+        if (!Array.isArray(document.subListingNames) || document.subListingNames.length === 0) {
+            continue;
         }
+
+        return document.subListingNames.map(String);
     }
 
-    return {
-        data: docs,
-        page: filter.page,
-        limit: filter.limit,
-        total,
-        totalPages: Math.max(1, Math.ceil(total / filter.limit)),
-        columns,
-        subListingNames
-    };
+    return [];
 };
 
-export const listPluginSubListings = async (filter: PluginSubListingFilter): Promise<PaginatedResult<PluginSubListingRowDocument>> => {
-    const query = {
-        ...(filter.analysisId ? { analysis: filter.analysisId } : {}),
-        ...(filter.exposureId ? { exposureId: filter.exposureId } : {}),
-        ...(typeof filter.timestep === 'number' ? { timestep: filter.timestep } : {}),
-        ...(filter.subListingName ? { subListingName: filter.subListingName } : {})
-    };
-    const skip = (filter.page - 1) * filter.limit;
-    const total = await PluginSubListingRowModel.countDocuments(query);
-    const data = await PluginSubListingRowModel.find(query)
-        .sort({ timestep: -1, _id: -1 })
-        .skip(skip)
-        .limit(filter.limit)
-        .lean();
+export class MongoPluginListingRepository implements PluginListingRepository {
+    async listPluginListings(filter: PluginListingFilter): Promise<ListingPaginatedResult> {
+        const query = buildPluginListingQuery(filter);
+        const pageResult = await readPagedDocuments({
+            page: filter.page,
+            limit: filter.limit,
+            count: () => PluginListingRowModel.countDocuments(query),
+            read: (skip, limit) => PluginListingRowModel.find(query)
+                .sort({
+                    timestep: -1,
+                    _id: -1
+                })
+                .skip(skip)
+                .limit(limit)
+                .lean()
+        });
+        const documents = pageResult.documents.map(toPluginListingRowDocument);
+        const columns = collectColumns(documents);
+        const subListingNames = readSubListingNames(documents);
 
-    return {
-        data: data.map(toPluginSubListingRowDocument),
-        page: filter.page,
-        limit: filter.limit,
-        total,
-        totalPages: Math.max(1, Math.ceil(total / filter.limit))
-    };
-};
-
-export const bulkUpsertListingRows = async (operations: BulkUpsertOperation[]): Promise<void> => {
-    if (operations.length === 0) {
-        return;
+        return {
+            data: documents,
+            page: pageResult.page,
+            limit: pageResult.limit,
+            total: pageResult.total,
+            totalPages: calculateTotalPages(pageResult.total, pageResult.limit),
+            columns,
+            subListingNames
+        };
     }
 
-    const bulkOps = operations.map((operation) => ({
-        updateOne: {
-            filter: operation.filter,
-            update: { $set: operation.update },
-            upsert: true
+    async listPluginSubListings(filter: PluginSubListingFilter): Promise<PaginatedResult<PluginSubListingRowDocument>> {
+        const query = buildPluginSubListingQuery(filter);
+        const pageResult = await readPagedDocuments({
+            page: filter.page,
+            limit: filter.limit,
+            count: () => PluginSubListingRowModel.countDocuments(query),
+            read: (skip, limit) => PluginSubListingRowModel.find(query)
+                .sort({
+                    timestep: -1,
+                    _id: -1
+                })
+                .skip(skip)
+                .limit(limit)
+                .lean()
+        });
+
+        return {
+            data: pageResult.documents.map(toPluginSubListingRowDocument),
+            page: pageResult.page,
+            limit: pageResult.limit,
+            total: pageResult.total,
+            totalPages: calculateTotalPages(pageResult.total, pageResult.limit)
+        };
+    }
+
+    async bulkUpsertListingRows(operations: BulkUpsertOperation[]): Promise<void> {
+        if (operations.length === 0) {
+            return;
         }
-    }));
 
-    await PluginListingRowModel.bulkWrite(bulkOps);
-};
+        const bulkOperations = operations.map((operation) => ({
+            updateOne: {
+                filter: operation.filter,
+                update: {
+                    $set: operation.update
+                },
+                upsert: true
+            }
+        }));
 
-export const insertSubListingRows = async (documents: Array<Record<string, unknown>>): Promise<void> => {
-    if (documents.length === 0) {
-        return;
+        await PluginListingRowModel.bulkWrite(bulkOperations);
     }
 
-    await PluginSubListingRowModel.insertMany(documents);
+    async insertSubListingRows(documents: Array<Record<string, unknown>>): Promise<void> {
+        if (documents.length === 0) {
+            return;
+        }
+
+        await PluginSubListingRowModel.insertMany(documents);
+    }
+
+    async deleteSubListingRows(filter: Record<string, unknown>): Promise<void> {
+        await PluginSubListingRowModel.deleteMany(filter);
+    }
 };
 
-export const deleteSubListingRows = async (filter: Record<string, unknown>): Promise<void> => {
-    await PluginSubListingRowModel.deleteMany(filter);
-};
-
-export type PluginListingRepository = {
-    listPluginListings: typeof listPluginListings;
-    listPluginSubListings: typeof listPluginSubListings;
-    bulkUpsertListingRows: typeof bulkUpsertListingRows;
-    insertSubListingRows: typeof insertSubListingRows;
-    deleteSubListingRows: typeof deleteSubListingRows;
-};
-
-export const pluginListingRepository: PluginListingRepository = {
-    listPluginListings,
-    listPluginSubListings,
-    bulkUpsertListingRows,
-    insertSubListingRows,
-    deleteSubListingRows
+export const createPluginListingRepository = (): PluginListingRepository => {
+    return new MongoPluginListingRepository();
 };

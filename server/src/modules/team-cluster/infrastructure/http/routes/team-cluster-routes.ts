@@ -19,6 +19,22 @@ export default createHttpModule({
             controllers.revealCredentials.handle
         );
         router.post(
+            '/:teamClusterId/remote-access/sessions',
+            RATE_LIMIT_POLICIES.teamClusterRevealCredentials,
+            teamClusterValidation.createRemoteAccessSession,
+            controllers.createRemoteAccessSession.handle
+        );
+        router.post(
+            '/:teamClusterId/remote-access/explorer/entries',
+            teamClusterValidation.listRemoteExplorerEntries,
+            controllers.listRemoteExplorerEntries.handle
+        );
+        router.post(
+            '/:teamClusterId/remote-access/explorer/node',
+            teamClusterValidation.getRemoteExplorerNode,
+            controllers.getRemoteExplorerNode.handle
+        );
+        router.post(
             '/:teamClusterId/delete-requests',
             RATE_LIMIT_POLICIES.teamClusterDelete,
             teamClusterValidation.deleteById,

@@ -1,6 +1,6 @@
-import { logger } from '../../../core/logger';
+import { logger } from '@/core/logger';
 import { Client } from 'minio';
-import type { DaemonConfig } from '../../../core/config';
+import type { DaemonConfig } from '@/core/config';
 import type { Readable } from 'node:stream';
 
 export interface PutObjectInput {
@@ -34,6 +34,10 @@ export class MinioService {
                 logger.info(`Created MinIO bucket: ${bucket}`);
             }
         }
+    }
+
+    listBuckets(): string[] {
+        return [...this.config.allowedBuckets];
     }
 
     getObjectStream(bucket: string, objectKey: string): Promise<Readable> {

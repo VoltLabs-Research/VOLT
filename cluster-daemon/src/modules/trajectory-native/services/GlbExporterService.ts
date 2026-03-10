@@ -1,5 +1,5 @@
-import { ObjectBucketName } from '../../../shared/contracts';
-import { MinioService } from '../../platform/services';
+import { ObjectBucketName } from '@/shared/contracts';
+import { MinioService } from '@/modules/platform/services';
 import { NativeModuleLoader, type NativeTrajectoryRequest } from './NativeModuleLoader';
 import type { RasterizerService } from './RasterizerService';
 import type { TrajectoryParserService } from './TrajectoryParserService';

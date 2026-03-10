@@ -1,54 +1,110 @@
-import { createJobControlService } from '../../job-runtime/services';
-import type { QueueService, RedisConnectionService } from '../../platform/services';
+import { createJobControlService } from '@/modules/job-runtime/services';
+import type { ClearJobsHistoryRequest, RemoveRunningJobsRequest, RetryJobsRequest } from '@/shared/contracts';
+import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { ReverseChannelCommandHandler } from '../services';
-import { readRecord, readString, toPayloadRecord } from './payloadValidation';
+import { readPayloadRecord, readRecord, readString, readStringArray } from './payloadValidation';
 
 interface JobHandlersDependencies {
     queueService: QueueService;
     redisConnectionService: RedisConnectionService;
-}
+};
 
-export const createJobHandlers = (deps: JobHandlersDependencies): ReverseChannelCommandHandler[] => [
-    {
-        command: 'queue.dispatch',
-        execute: async (payload) => {
-            const body = readRecord(toPayloadRecord(payload), 'payload');
-            await deps.queueService.enqueue(readString(body.queueName, 'queueName'), readRecord(body.payload, 'payload'));
-            return { data: { queued: true } };
+interface QueueDispatchRequest {
+    queueName: string;
+    payload: Record<string, unknown>;
+};
+
+interface JobsListRequest {
+    teamId: string;
+};
+
+const readQueueDispatchRequest = (payload: unknown): QueueDispatchRequest => {
+    const record = readPayloadRecord(payload);
+
+    return {
+        queueName: readString(record.queueName, 'queueName'),
+        payload: readRecord(record.payload, 'payload')
+    };
+};
+
+const readJobsListRequest = (payload: unknown): JobsListRequest => {
+    const record = readPayloadRecord(payload);
+
+    return {
+        teamId: readString(record.teamId, 'teamId')
+    };
+};
+
+const readRetryJobsRequest = (payload: unknown): RetryJobsRequest => {
+    const record = readPayloadRecord(payload);
+
+    return {
+        jobIds: readStringArray(record.jobIds, 'jobIds')
+    };
+};
+
+const readRemoveRunningJobsRequest = (payload: unknown): RemoveRunningJobsRequest => {
+    const record = readPayloadRecord(payload);
+
+    return {
+        jobIds: readStringArray(record.jobIds, 'jobIds')
+    };
+};
+
+const readClearJobsHistoryRequest = (payload: unknown): ClearJobsHistoryRequest => {
+    const record = readPayloadRecord(payload);
+
+    return {
+        teamId: readString(record.teamId, 'teamId'),
+        jobIds: readStringArray(record.jobIds, 'jobIds')
+    };
+};
+
+export const createJobHandlers = (deps: JobHandlersDependencies): ReverseChannelCommandHandler[] => {
+    const jobControlService = createJobControlService(deps.queueService, deps.redisConnectionService);
+
+    return [
+        {
+            command: 'queue.dispatch',
+            execute: async (payload) => {
+                const request = readQueueDispatchRequest(payload);
+                await deps.queueService.enqueue(request.queueName, request.payload);
+                return { data: { queued: true } };
+            }
+        },
+        {
+            command: 'jobs.list',
+            execute: async (payload) => {
+                const request = readJobsListRequest(payload);
+                const jobs = await deps.redisConnectionService.getTeamJobs(request.teamId);
+                return {
+                    data: {
+                        data: jobs.map((job: Record<string, unknown>) => ({
+                            createdAt: typeof job.createdAt === 'string' ? job.createdAt : new Date().toISOString(),
+                            updatedAt: typeof job.updatedAt === 'string' ? job.updatedAt : new Date().toISOString(),
+                            ...job
+                        }))
+                    }
+                };
+            }
+        },
+        {
+            command: 'jobs.retry',
+            execute: async (payload) => ({
+                data: await jobControlService.retryJobs(readRetryJobsRequest(payload))
+            })
+        },
+        {
+            command: 'jobs.remove-running',
+            execute: async (payload) => ({
+                data: await jobControlService.removeRunningJobs(readRemoveRunningJobsRequest(payload))
+            })
+        },
+        {
+            command: 'jobs.clear-history',
+            execute: async (payload) => ({
+                data: await jobControlService.clearJobsHistory(readClearJobsHistoryRequest(payload))
+            })
         }
-    },
-    {
-        command: 'jobs.list',
-        execute: async (payload) => {
-            const body = readRecord(toPayloadRecord(payload), 'payload');
-            const jobs = await deps.redisConnectionService.getTeamJobs(readString(body.teamId, 'teamId'));
-            return {
-                data: {
-                    data: jobs.map((job: Record<string, unknown>) => ({
-                        createdAt: typeof job.createdAt === 'string' ? job.createdAt : new Date().toISOString(),
-                        updatedAt: typeof job.updatedAt === 'string' ? job.updatedAt : new Date().toISOString(),
-                        ...job
-                    }))
-                }
-            };
-        }
-    },
-    {
-        command: 'jobs.retry',
-        execute: async (payload) => ({
-            data: await createJobControlService(deps.queueService, deps.redisConnectionService).retryJobs(payload as never)
-        })
-    },
-    {
-        command: 'jobs.remove-running',
-        execute: async (payload) => ({
-            data: await createJobControlService(deps.queueService, deps.redisConnectionService).removeRunningJobs(payload as never)
-        })
-    },
-    {
-        command: 'jobs.clear-history',
-        execute: async (payload) => ({
-            data: await createJobControlService(deps.queueService, deps.redisConnectionService).clearJobsHistory(payload as never)
-        })
-    }
-];
+    ];
+};

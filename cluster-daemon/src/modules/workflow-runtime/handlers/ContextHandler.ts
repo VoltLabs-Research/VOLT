@@ -1,6 +1,6 @@
 import type { WorkflowNodeHandler } from '../services';
 import { WorkflowNodeType } from '../contracts';
-import { logger } from '../../../core/logger';
+import { logger } from '@/core/logger';
 
 export class WorkflowContextHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.Context;

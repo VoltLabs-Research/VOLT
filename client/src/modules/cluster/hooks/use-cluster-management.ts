@@ -7,12 +7,19 @@ import {
     useRevealTeamClusterCredentialsMutation,
     useTeamClustersQuery
 } from '@/modules/cluster/hooks/team-cluster/queries';
+import { teamClusterService } from '@/modules/cluster/api/service/team-cluster';
 import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useMemo, useEffect } from 'react';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
+import type {
+    TeamClusterRemoteAccessSession,
+    TeamClusterRemoteAccessTarget,
+    TeamClusterRemoteExplorerEntry,
+    TeamClusterRemoteExplorerNode
+} from '@/modules/cluster/api/entities/team-cluster-remote-access';
 
 interface ClusterCreateToastOptions {
     loading: { title: string };
@@ -43,6 +50,29 @@ const REVEAL_CREDENTIALS_TOAST_OPTIONS: ClusterCreateToastOptions = {
     error: { title: 'Failed to reveal credentials' }
 };
 
+const REMOTE_ACCESS_TOAST_OPTIONS: Record<TeamClusterRemoteAccessTarget, ClusterCreateToastOptions> = {
+    'host-terminal': {
+        loading: { title: 'Opening terminal...' },
+        success: { title: 'Terminal ready' },
+        error: { title: 'Failed to open terminal' }
+    },
+    'mongo-documents': {
+        loading: { title: 'Opening Mongo explorer...' },
+        success: { title: 'Mongo explorer ready' },
+        error: { title: 'Failed to open Mongo explorer' }
+    },
+    'redis-data': {
+        loading: { title: 'Opening Redis explorer...' },
+        success: { title: 'Redis explorer ready' },
+        error: { title: 'Failed to open Redis explorer' }
+    },
+    minio: {
+        loading: { title: 'Opening MinIO explorer...' },
+        success: { title: 'MinIO explorer ready' },
+        error: { title: 'Failed to open MinIO explorer' }
+    }
+};
+
 const DELETE_CLUSTER_TOAST_OPTIONS: DeleteClusterToastOptions = {
     loading: { title: 'Deleting cluster...' },
     success: (result) => ({
@@ -63,6 +93,23 @@ export interface ClusterManagementResult {
     createCluster: (name: string) => Promise<{ teamCluster: TeamCluster; enrollmentToken: string }>;
     revealCredentials: (teamClusterId: string, password: string) => Promise<TeamClusterCredentialServices>;
     deleteCluster: (teamClusterId: string, password: string) => Promise<DeleteTeamClusterOutputDTO>;
+    createRemoteAccessSession: (
+        teamClusterId: string,
+        password: string,
+        target: TeamClusterRemoteAccessTarget
+    ) => Promise<TeamClusterRemoteAccessSession>;
+    listRemoteExplorerEntries: (
+        teamClusterId: string,
+        sessionId: string,
+        target: TeamClusterRemoteAccessTarget,
+        path: string
+    ) => Promise<TeamClusterRemoteExplorerEntry[]>;
+    getRemoteExplorerNode: (
+        teamClusterId: string,
+        sessionId: string,
+        target: TeamClusterRemoteAccessTarget,
+        path: string
+    ) => Promise<TeamClusterRemoteExplorerNode>;
 };
 
 const useClusterManagement = (): ClusterManagementResult => {
@@ -152,6 +199,70 @@ const useClusterManagement = (): ClusterManagementResult => {
         }), DELETE_CLUSTER_TOAST_OPTIONS);
     };
 
+    const createRemoteAccessSession = async (
+        teamClusterId: string,
+        password: string,
+        target: TeamClusterRemoteAccessTarget
+    ) => {
+        if (!selectedTeamId) {
+            throw new Error('Missing selected team');
+        }
+
+        const result = await showPromise(
+            teamClusterService.createRemoteAccessSession({
+                teamId: selectedTeamId,
+                teamClusterId,
+                password,
+                target
+            }),
+            REMOTE_ACCESS_TOAST_OPTIONS[target]
+        );
+
+        return result.session;
+    };
+
+    const listRemoteExplorerEntries = async (
+        teamClusterId: string,
+        sessionId: string,
+        target: TeamClusterRemoteAccessTarget,
+        path: string
+    ) => {
+        if (!selectedTeamId) {
+            throw new Error('Missing selected team');
+        }
+
+        const result = await teamClusterService.listRemoteExplorerEntries({
+            teamId: selectedTeamId,
+            teamClusterId,
+            sessionId,
+            target,
+            path
+        });
+
+        return result.entries;
+    };
+
+    const getRemoteExplorerNode = async (
+        teamClusterId: string,
+        sessionId: string,
+        target: TeamClusterRemoteAccessTarget,
+        path: string
+    ) => {
+        if (!selectedTeamId) {
+            throw new Error('Missing selected team');
+        }
+
+        const result = await teamClusterService.getRemoteExplorerNode({
+            teamId: selectedTeamId,
+            teamClusterId,
+            sessionId,
+            target,
+            path
+        });
+
+        return result.node;
+    };
+
     return {
         clusters,
         selectedTeamId,
@@ -162,7 +273,10 @@ const useClusterManagement = (): ClusterManagementResult => {
         isLoading: teamClustersQuery.isLoading,
         createCluster,
         revealCredentials,
-        deleteCluster
+        deleteCluster,
+        createRemoteAccessSession,
+        listRemoteExplorerEntries,
+        getRemoteExplorerNode
     };
 };
 

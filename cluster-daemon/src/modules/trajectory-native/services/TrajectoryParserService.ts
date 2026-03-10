@@ -1,5 +1,5 @@
-import { ObjectBucketName } from '../../../shared/contracts';
-import { MinioService } from '../../platform/services';
+import { calculatePaginationOffset, ObjectBucketName, normalizePagination } from '@/shared/contracts';
+import { MinioService } from '@/modules/platform/services';
 import {
     NativeModuleLoader,
     type NativeAtomsPageRequest,
@@ -168,10 +168,9 @@ export const createTrajectoryParserService = (
                 properties: []
             });
             const totalAtoms = parsed.ids?.length || parsed.positions.length / 3;
-            const page = Math.max(1, input.page);
-            const limit = Math.max(1, input.limit);
-            const startIndex = (page - 1) * limit;
-            const endIndex = Math.min(totalAtoms, startIndex + limit);
+            const pagination = normalizePagination(input.page, input.limit);
+            const startIndex = calculatePaginationOffset(pagination.page, pagination.limit);
+            const endIndex = Math.min(totalAtoms, startIndex + pagination.limit);
             const atoms = [];
 
             for (let index = startIndex; index < endIndex; index++) {

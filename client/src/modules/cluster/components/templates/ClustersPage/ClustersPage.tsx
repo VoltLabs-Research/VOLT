@@ -1,5 +1,14 @@
 import './ClustersPage.css';
 import ClusterCredentialsModal from '@/modules/cluster/components/organisms/ClusterCredentialsModal';
+import ClusterRemoteAccessPasswordModal, {
+    CLUSTER_REMOTE_ACCESS_PASSWORD_MODAL_ID
+} from '@/modules/cluster/components/organisms/ClusterRemoteAccessPasswordModal';
+import ClusterRemoteExplorerModal, {
+    CLUSTER_REMOTE_EXPLORER_MODAL_ID
+} from '@/modules/cluster/components/organisms/ClusterRemoteExplorerModal';
+import ClusterRemoteTerminal, {
+    CLUSTER_REMOTE_TERMINAL_MODAL_ID
+} from '@/modules/cluster/components/organisms/ClusterRemoteTerminal';
 import ClusterSelector from '@/modules/cluster/components/organisms/ClusterSelector';
 import ClustersEmptyState from '@/modules/cluster/components/organisms/ClustersEmptyState';
 import CpuDistribution from '@/modules/cluster/components/molecules/CpuDistribution';
@@ -14,6 +23,7 @@ import useClustersPage from '@/modules/cluster/components/templates/ClustersPage
 import Container from '@/shared/presentation/components/Container';
 import NetworkChart from '@/shared/presentation/components/NetworkChart';
 import { openModal } from '@/shared/presentation/components/Modal';
+import { TeamClusterRemoteAccessTarget } from '@/modules/cluster/api/entities/team-cluster-remote-access';
 import { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterCredentialsModal';
 import { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/DeleteClusterModal';
 import { useMemo, useCallback } from 'react';
@@ -52,6 +62,30 @@ const ClustersPage = () => {
         openModal(DELETE_CLUSTER_MODAL_ID);
     }, [findClusterById, vm.setDeleteTarget]);
 
+    const handleRemoteAccessAction = useCallback((clusterId: string, target: TeamClusterRemoteAccessTarget) => {
+        const cluster = findClusterById(clusterId);
+        if (!cluster) {
+            return;
+        }
+
+        vm.setRemoteAccessRequest({
+            teamCluster: cluster,
+            target
+        });
+        openModal(CLUSTER_REMOTE_ACCESS_PASSWORD_MODAL_ID);
+    }, [findClusterById, vm.setRemoteAccessRequest]);
+
+    const handleSubmitRemoteAccess = useCallback(async (password: string) => {
+        const target = await vm.submitRemoteAccessRequest(password);
+
+        if (target === TeamClusterRemoteAccessTarget.HostTerminal) {
+            openModal(CLUSTER_REMOTE_TERMINAL_MODAL_ID);
+            return;
+        }
+
+        openModal(CLUSTER_REMOTE_EXPLORER_MODAL_ID);
+    }, [vm]);
+
     return (
         <Container className='clusters-page vh-max color-primary'>
             <Container className='clusters-main d-flex column gap-1-5 w-max'>
@@ -64,6 +98,25 @@ const ClustersPage = () => {
                     teamCluster={vm.deleteTarget}
                     onDelete={vm.deleteCluster}
                     onClose={() => vm.setDeleteTarget(null)}
+                />
+                <ClusterRemoteAccessPasswordModal
+                    teamCluster={vm.remoteAccessRequest?.teamCluster ?? null}
+                    target={vm.remoteAccessRequest?.target ?? null}
+                    onSubmit={handleSubmitRemoteAccess}
+                    onClose={() => vm.setRemoteAccessRequest(null)}
+                />
+                <ClusterRemoteTerminal
+                    teamCluster={vm.remoteTerminal?.teamCluster ?? null}
+                    session={vm.remoteTerminal?.session ?? null}
+                    onClose={vm.closeRemoteTerminal}
+                />
+                <ClusterRemoteExplorerModal
+                    teamCluster={vm.remoteExplorer?.teamCluster ?? null}
+                    target={vm.remoteExplorer?.target ?? null}
+                    session={vm.remoteExplorer?.session ?? null}
+                    onClose={vm.closeRemoteExplorer}
+                    listEntries={vm.listRemoteExplorerEntries}
+                    getNode={vm.getRemoteExplorerNode}
                 />
 
                 {!hasClusters && <ClustersEmptyState />}
@@ -110,6 +163,7 @@ const ClustersPage = () => {
                             onSelectCluster={vm.setSelectedClusterId}
                             onRevealCredentials={handleRevealCredentials}
                             onDeleteCluster={handleDeleteCluster}
+                            onRemoteAccessAction={handleRemoteAccessAction}
                         />
                     </>
                 )}

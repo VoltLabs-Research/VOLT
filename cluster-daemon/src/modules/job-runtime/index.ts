@@ -1,9 +1,9 @@
 import { AnalysisDispatchService, AnalysisWorker, createBinaryExecutorService, createPluginBinaryCacheService, createJobControlService } from './services';
-import type { ResultProcessorService } from '../artifacts/services';
-import type { WorkflowEngine } from '../workflow-runtime/services';
-import type { RuntimeEventBroker } from '../../shared/services';
-import type { MinioService, QueueService, RedisConnectionService } from '../platform/services';
-import type { DaemonJobReporterService } from '../cloud-control/services';
+import type { ResultProcessorService } from '@/modules/artifacts/services';
+import type { WorkflowEngine } from '@/modules/workflow-runtime/services';
+import type { RuntimeEventBroker } from '@/shared/services';
+import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
+import type { DaemonJobReporterService } from '@/modules/cloud-control/services';
 
 export interface JobRuntimeModule {
     analysisDispatchService: AnalysisDispatchService;
