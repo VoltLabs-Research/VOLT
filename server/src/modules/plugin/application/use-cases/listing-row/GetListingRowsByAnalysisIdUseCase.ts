@@ -15,30 +15,11 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { injectable, inject } from 'tsyringe';
 
+import type { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
+
 interface ListingRowsByAnalysisFilter {
     analysis: string;
     team: string;
-};
-
-interface DaemonListingRow {
-    _id: string;
-    plugin?: string;
-    trajectory?: string;
-    analysis?: string;
-    exposureId?: string;
-    exposureName?: string;
-    trajectoryName?: string;
-    timestep?: number;
-    row?: Record<string, unknown>;
-    [key: string]: unknown;
-};
-
-interface DaemonPaginatedResult {
-    data: DaemonListingRow[];
-    total: number;
-    page: number;
-    totalPages: number;
-    limit: number;
 };
 
 const buildListingRowsByAnalysisFilter = (

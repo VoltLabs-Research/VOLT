@@ -1,6 +1,7 @@
 import { logger } from '../../../core/logger';
 import { DAEMON_PATHS } from '../../../core/paths';
 import { MinioService } from '../../platform/services';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Readable } from 'node:stream';
@@ -8,7 +9,9 @@ import type { Readable } from 'node:stream';
 const PLUGINS_BUCKET = 'volt-plugins';
 
 const buildCacheKey = (binaryObjectPath: string): string => {
-    return path.basename(binaryObjectPath);
+    const basename = path.basename(binaryObjectPath);
+    const digest = createHash('sha256').update(binaryObjectPath).digest('hex');
+    return `${digest}-${basename}`;
 };
 
 const writeStreamToFile = (stream: Readable, filePath: string): Promise<void> => {

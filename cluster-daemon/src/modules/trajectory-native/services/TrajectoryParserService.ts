@@ -196,7 +196,7 @@ export const createTrajectoryParserService = (
             recursive: true
         });
 
-        const tempDumpPath = createTempPath('../../native/.dump');
+        const tempDumpPath = createTempPath('.dump');
         const objectKey = input.objectKey || getDumpObjectKey(input.trajectoryId, input.timestep);
 
         try {

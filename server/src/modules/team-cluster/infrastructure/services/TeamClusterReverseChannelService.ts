@@ -68,6 +68,17 @@ interface PendingWebSocketEntry extends BasePendingEntry {
     reject: (error: Error) => void;
 };
 
+export class TeamClusterDaemonStreamError extends Error {
+    constructor(
+        message: string,
+        public readonly status: number,
+        public readonly headers: TeamClusterDaemonSocketHeaders = {}
+    ) {
+        super(message);
+        Object.setPrototypeOf(this, TeamClusterDaemonStreamError.prototype);
+    }
+}
+
 export interface TeamClusterReverseChannelStreamAttachment {
     status: number;
     headers: TeamClusterDaemonSocketHeaders;
@@ -419,7 +430,11 @@ export default class TeamClusterReverseChannelService {
 
         if (!payload.ok) {
             this.pendingEntries.delete(payload.requestId);
-            entry.reject(new Error(payload.message || 'Daemon stream request failed'));
+            entry.reject(new TeamClusterDaemonStreamError(
+                payload.message || 'Daemon stream request failed',
+                payload.status,
+                payload.headers || {}
+            ));
             return;
         }
 

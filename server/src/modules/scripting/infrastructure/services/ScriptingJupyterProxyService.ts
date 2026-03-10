@@ -100,6 +100,22 @@ const buildFrameAncestorsDirective = (): string => {
     return `frame-ancestors ${Array.from(frameAncestors).join(' ')}`;
 };
 
+const rewriteFrameAncestorsDirective = (contentSecurityPolicy?: string): string => {
+    const frameAncestorsDirective = buildFrameAncestorsDirective();
+    if (!contentSecurityPolicy?.trim()) {
+        return frameAncestorsDirective;
+    }
+
+    const directives = contentSecurityPolicy
+        .split(';')
+        .map((directive) => directive.trim())
+        .filter(Boolean)
+        .filter((directive) => !directive.toLowerCase().startsWith('frame-ancestors'));
+
+    directives.push(frameAncestorsDirective);
+    return directives.join('; ');
+};
+
 @injectable()
 export class ScriptingJupyterProxyService {
     private readonly webSocketServer = new WebSocketServer({
@@ -145,6 +161,7 @@ export class ScriptingJupyterProxyService {
             });
             response.stream.pipe(res);
         } catch (error: unknown) {
+            this.applyProxyResponseSecurityHeaders(res);
             BaseResponse.fromError(res, error);
         }
     };
@@ -322,8 +339,8 @@ export class ScriptingJupyterProxyService {
         response: TeamClusterReverseChannelStreamAttachment,
         context: AuthorizedProxyContext
     ): void {
-        res.removeHeader('x-frame-options');
-        res.removeHeader('content-security-policy');
+        const upstreamContentSecurityPolicy = this.readHeaderValue(response.headers['content-security-policy']);
+        this.applyProxyResponseSecurityHeaders(res, upstreamContentSecurityPolicy);
         res.status(response.status);
 
         for (const [headerName, headerValue] of Object.entries(response.headers)) {
@@ -343,8 +360,12 @@ export class ScriptingJupyterProxyService {
 
             res.setHeader(headerName, headerValue);
         }
+    }
 
-        res.setHeader('Content-Security-Policy', buildFrameAncestorsDirective());
+    private applyProxyResponseSecurityHeaders(res: Response, upstreamContentSecurityPolicy?: string): void {
+        res.removeHeader('x-frame-options');
+        res.removeHeader('content-security-policy');
+        res.setHeader('Content-Security-Policy', rewriteFrameAncestorsDirective(upstreamContentSecurityPolicy));
     }
 
     private readProxyRequestHeaders(req: Request): Record<string, string> {
@@ -375,8 +396,8 @@ export class ScriptingJupyterProxyService {
         return body;
     }
 
-    private readRequestMethod(method: string): 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE' {
-        if (method === 'GET' || method === 'POST' || method === 'PATCH' || method === 'PUT' || method === 'DELETE') {
+    private readRequestMethod(method: string): 'GET' | 'HEAD' | 'OPTIONS' | 'POST' | 'PATCH' | 'PUT' | 'DELETE' {
+        if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS' || method === 'POST' || method === 'PATCH' || method === 'PUT' || method === 'DELETE') {
             return method;
         }
 
@@ -392,10 +413,7 @@ export class ScriptingJupyterProxyService {
         context: AuthorizedProxyContext
     ): { proxiedPath: string; rawQuery: string; } {
         const url = new URL(requestUrl, PROXY_URL_ORIGIN);
-        const proxyBasePath = this.buildPublicProxyBasePath(context.teamId, context.runtimeNotebookId);
-        const proxiedPath = url.pathname.startsWith(proxyBasePath)
-            ? url.pathname.slice(proxyBasePath.length) || '/'
-            : '/';
+        const proxiedPath = url.pathname;
 
         url.searchParams.delete(ACCESS_TOKEN_QUERY_PARAM);
 
@@ -410,10 +428,7 @@ export class ScriptingJupyterProxyService {
         const publicProxyBasePath = this.buildPublicProxyBasePath(context.teamId, context.runtimeNotebookId);
         const requestUrlObject = new URL(requestUrl, PROXY_URL_ORIGIN);
         const currentProxyTarget = this.extractProxyTarget(requestUrl, context);
-        const upstreamRequestUrl = new URL(
-            `${currentProxyTarget.proxiedPath}${currentProxyTarget.rawQuery}`,
-            UPSTREAM_URL_ORIGIN
-        );
+        const upstreamRequestUrl = new URL(`${currentProxyTarget.proxiedPath}${currentProxyTarget.rawQuery}`, UPSTREAM_URL_ORIGIN);
         const resolvedLocation = new URL(requestLocation, upstreamRequestUrl);
         const rewrittenUrl = new URL(PROXY_URL_ORIGIN);
         const normalizedPathname = this.normalizeUpstreamProxyPath(resolvedLocation.pathname, publicProxyBasePath);

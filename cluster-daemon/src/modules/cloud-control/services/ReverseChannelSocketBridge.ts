@@ -159,11 +159,18 @@ export class ReverseChannelSocketBridge {
                 }
             });
         } catch (error: unknown) {
+            const status = typeof error === 'object'
+                && error !== null
+                && 'statusCode' in error
+                && typeof error.statusCode === 'number'
+                ? error.statusCode
+                : 500;
+
             this.emitResponse(socket, {
                 type: 'response',
                 requestId,
                 ok: false,
-                status: 500,
+                status,
                 message: error instanceof Error ? error.message : 'Daemon command failed'
             });
         }
