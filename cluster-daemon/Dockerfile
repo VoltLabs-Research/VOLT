@@ -12,10 +12,8 @@ RUN apt-get update \
         libjpeg-dev \
         libgif-dev \
         librsvg2-dev \
-        libfmt9 \
         libhwloc15 \
         libhwloc-plugins \
-        libspdlog1.10 \
         libtbb12 \
         libtbbmalloc2 \
     && rm -rf /var/lib/apt/lists/*
