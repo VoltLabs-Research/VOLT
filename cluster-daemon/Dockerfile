@@ -26,7 +26,7 @@ RUN npm --prefix native install
 
 COPY tsconfig.json ./
 COPY src ./src
-COPY docker ./docker
+COPY image-contexts ./image-contexts
 
 RUN npm run build && npm prune --omit=dev
 
