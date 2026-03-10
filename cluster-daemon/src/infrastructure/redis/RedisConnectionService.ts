@@ -1,5 +1,3 @@
-import { DAEMON_TOKENS } from '../../core/tokens';
-import { inject, injectable } from 'tsyringe';
 import Redis from 'ioredis';
 import type { DaemonConfig } from '../../core/config';
 import type { ChildProcess } from 'node:child_process';
@@ -39,14 +37,12 @@ const isTeamJobRecord = (value: unknown): value is TeamJobRecord => {
         && typeof value.status === 'string';
 };
 
-@injectable()
 export class RedisConnectionService {
     private readonly client: Redis;
     private readonly activeProcesses = new Map<string, ChildProcess>();
     private readonly connectionOptions: RedisConnectionOptions;
 
     constructor(
-        @inject(DAEMON_TOKENS.Config)
         private readonly config: DaemonConfig
     ) {
         this.connectionOptions = {

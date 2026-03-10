@@ -1,9 +1,8 @@
 import { AnalysisExposureDefinition, type AnalysisJobExecutionData } from '../../contracts/http';
 import { logger } from '../../core/logger';
-import { DAEMON_TOKENS } from '../../core/tokens';
 import { MinioService } from '../../infrastructure/minio/MinioService';
 import { PluginListingRepository } from '../../infrastructure/mongo/repositories/PluginListingRepository';
-import { inject, injectable } from 'tsyringe';
+import { ExportNodeProcessorService } from './ExportNodeProcessorService';
 import { Decoder } from '@msgpack/msgpack';
 import fs from 'node:fs/promises';
 import type { Readable } from 'node:stream';
@@ -81,13 +80,11 @@ async function* decodeMultiStream(src: AsyncIterable<Uint8Array | Buffer>): Asyn
     }
 }
 
-@injectable()
 export class ResultProcessorService {
     constructor(
-        @inject(DAEMON_TOKENS.MinioService)
         private readonly minioService: MinioService,
-        @inject(DAEMON_TOKENS.TrajectoryRepository)
-        private readonly pluginListingRepository: PluginListingRepository
+        private readonly pluginListingRepository: PluginListingRepository,
+        private readonly exportNodeProcessorService: ExportNodeProcessorService
     ) {
     }
 
@@ -126,19 +123,28 @@ export class ResultProcessorService {
         });
 
         logger.info({ storageKey }, 'Uploaded exposure .msgpack');
-        await this.precomputeListingRows(executionData, exposure, storageKey, timestep, teamId);
+        const decoded = await this.readDecodedPayloadFromObject(storageKey);
+        await this.precomputeListingRows(executionData, exposure, decoded, storageKey, timestep, teamId);
+
+        if (decoded && exposure.export) {
+            await this.exportNodeProcessorService.process({
+                executionData,
+                exposure,
+                decodedPayload: decoded,
+                timestep,
+                teamClusterId: executionData.teamClusterId || ''
+            });
+        }
     }
 
     private async precomputeListingRows(
         executionData: AnalysisJobExecutionData,
         exposure: AnalysisExposureDefinition,
+        decoded: Record<string, unknown> | null,
         objectKey: string,
         timestep: number,
         teamId: string
     ): Promise<void> {
-        const stream = await this.minioService.getObjectStream(PLUGINS_BUCKET, objectKey);
-        const decoded = await this.readDecodedPayload(stream);
-
         if (!decoded) {
             logger.warn({ objectKey }, 'Failed to decode msgpack payload');
             return;
@@ -237,5 +243,10 @@ export class ResultProcessorService {
         }
 
         return decoded;
+    }
+
+    private async readDecodedPayloadFromObject(objectKey: string): Promise<Record<string, unknown> | null> {
+        const stream = await this.minioService.getObjectStream(PLUGINS_BUCKET, objectKey);
+        return this.readDecodedPayload(stream);
     }
 };

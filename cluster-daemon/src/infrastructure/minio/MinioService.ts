@@ -1,6 +1,4 @@
 import { logger } from '../../core/logger';
-import { DAEMON_TOKENS } from '../../core/tokens';
-import { inject, injectable } from 'tsyringe';
 import { Client } from 'minio';
 import type { DaemonConfig } from '../../core/config';
 import type { Readable } from 'node:stream';
@@ -12,12 +10,10 @@ export interface PutObjectInput {
     metadata?: Record<string, string>;
 };
 
-@injectable()
 export class MinioService {
     private readonly client: Client;
 
     constructor(
-        @inject(DAEMON_TOKENS.Config)
         private readonly config: DaemonConfig
     ) {
         const minioUrl = new URL(config.minio.endpoint);

@@ -1,13 +1,19 @@
-export enum TeamClusterDaemonResponseType {
-    Json = 'json',
-    Buffer = 'buffer',
-    Stream = 'stream'
-};
+type ValueOf<T> = T[keyof T];
 
-export enum TeamClusterDaemonSessionKind {
-    Terminal = 'terminal',
-    WebSocket = 'websocket'
-};
+export const REVERSE_CHANNEL = Object.freeze({
+    ResponseType: Object.freeze({
+        Json: 'json',
+        Buffer: 'buffer',
+        Stream: 'stream'
+    }),
+    SessionKind: Object.freeze({
+        Terminal: 'terminal',
+        WebSocket: 'websocket'
+    })
+});
+
+export type TeamClusterDaemonResponseType = ValueOf<typeof REVERSE_CHANNEL.ResponseType>;
+export type TeamClusterDaemonSessionKind = ValueOf<typeof REVERSE_CHANNEL.SessionKind>;
 
 export interface TeamClusterDaemonSocketHeaders {
     [key: string]: string;
@@ -103,7 +109,3 @@ export type TeamClusterDaemonMessage =
     | TeamClusterDaemonSessionDetachPayload
     | TeamClusterDaemonSessionDataPayload
     | TeamClusterDaemonSessionEndPayload;
-
-export const TEAM_CLUSTER_DAEMON_REGISTER_EVENT = 'team-cluster-daemon:register';
-export const TEAM_CLUSTER_DAEMON_REGISTERED_EVENT = 'team-cluster-daemon:registered';
-export const TEAM_CLUSTER_DAEMON_MESSAGE_EVENT = 'team-cluster-daemon:message';

@@ -1,4 +1,5 @@
 .opencode/
+depl.sh
 server/storage/
 
 # Logs

@@ -1,22 +1,15 @@
 import { ObjectBucketName } from '../../contracts/http';
-import { DAEMON_TOKENS } from '../../core/tokens';
 import { MinioService } from '../../infrastructure/minio/MinioService';
 import { NativeModuleLoader, type NativeTrajectoryRequest } from './NativeModuleLoader';
 import { RasterizerService } from './RasterizerService';
 import { TrajectoryParserService } from './TrajectoryParserService';
-import { inject, injectable } from 'tsyringe';
 import fs from 'node:fs/promises';
 
-@injectable()
 export class GlbExporterService {
     constructor(
-        @inject(DAEMON_TOKENS.MinioService)
         private readonly minioService: MinioService,
-        @inject(DAEMON_TOKENS.NativeModuleLoader)
         private readonly nativeModuleLoader: NativeModuleLoader,
-        @inject(DAEMON_TOKENS.TrajectoryParserService)
         private readonly trajectoryParserService: TrajectoryParserService,
-        @inject(DAEMON_TOKENS.RasterizerService)
         private readonly rasterizerService: RasterizerService
     ) {
     }

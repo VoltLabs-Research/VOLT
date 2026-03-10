@@ -1,18 +1,13 @@
 import { ObjectBucketName } from '../../contracts/http';
-import { DAEMON_TOKENS } from '../../core/tokens';
 import { MinioService } from '../../infrastructure/minio/MinioService';
 import { NativeModuleLoader, type RasterizePreviewInput } from './NativeModuleLoader';
-import { inject, injectable } from 'tsyringe';
 import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import { pipeline } from 'node:stream/promises';
 
-@injectable()
 export class RasterizerService {
     constructor(
-        @inject(DAEMON_TOKENS.MinioService)
         private readonly minioService: MinioService,
-        @inject(DAEMON_TOKENS.NativeModuleLoader)
         private readonly nativeModuleLoader: NativeModuleLoader
     ) {
     }

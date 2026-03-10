@@ -1,8 +1,6 @@
 import { DAEMON_PATHS } from '../../core/paths';
-import { DAEMON_TOKENS } from '../../core/tokens';
 import { DockerRuntimeService } from '../../infrastructure/docker/DockerRuntimeService';
 import { logger } from '../../core/logger';
-import { inject, injectable } from 'tsyringe';
 import path from 'node:path';
 import type { CreateNotebookSessionResponse } from '../../contracts/http';
 import type { DaemonConfig } from '../../core/config';
@@ -29,12 +27,9 @@ const sleep = async (delayMs: number): Promise<void> => {
     await new Promise((resolve) => setTimeout(resolve, delayMs));
 };
 
-@injectable()
 export class JupyterRuntimeService {
     constructor(
-        @inject(DAEMON_TOKENS.Config)
         private readonly config: DaemonConfig,
-        @inject(DAEMON_TOKENS.DockerRuntimeService)
         private readonly dockerRuntimeService: DockerRuntimeService
     ) {
     }

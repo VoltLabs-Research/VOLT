@@ -1,5 +1,4 @@
 import { ObjectBucketName } from '../../contracts/http';
-import { DAEMON_TOKENS } from '../../core/tokens';
 import { MinioService } from '../../infrastructure/minio/MinioService';
 import {
     NativeModuleLoader,
@@ -9,7 +8,6 @@ import {
     type NativeParticleFilterModelRequest
 } from './NativeModuleLoader';
 import { TrajectoryParserService } from './TrajectoryParserService';
-import { inject, injectable } from 'tsyringe';
 
 enum GradientType {
     Viridis = 0,
@@ -21,14 +19,10 @@ enum GradientType {
 const HIGHLIGHT_COLOR = [1.0, 0.2, 0.6];
 const DEFAULT_COLOR = [0.8, 0.8, 0.8];
 
-@injectable()
 export class FilterEvaluatorService {
     constructor(
-        @inject(DAEMON_TOKENS.MinioService)
         private readonly minioService: MinioService,
-        @inject(DAEMON_TOKENS.NativeModuleLoader)
         private readonly nativeModuleLoader: NativeModuleLoader,
-        @inject(DAEMON_TOKENS.TrajectoryParserService)
         private readonly trajectoryParserService: TrajectoryParserService
     ) {
     }

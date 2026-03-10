@@ -1,4 +1,3 @@
-import { injectable } from 'tsyringe';
 import { Client, SFTPWrapper } from 'ssh2';
 import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
@@ -27,7 +26,6 @@ export interface DownloadProgress {
     percent: number;
 };
 
-@injectable()
 export class SSHConnectionService {
     async getFileStats(connection: SSHConnectionConfig, remotePath: string): Promise<SSHFileEntry | null> {
         return this.execute(connection, (sftp) => {

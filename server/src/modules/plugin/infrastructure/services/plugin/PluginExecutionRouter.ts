@@ -20,6 +20,11 @@ interface DaemonExposureDefinition {
     name: string;
     results: string;
     iterable?: string;
+    export?: {
+        exporter: string;
+        type: string;
+        options?: Record<string, unknown>;
+    };
 };
 
 @injectable()
@@ -43,14 +48,18 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         );
         const entrypointData = entrypointNode?.data.entrypoint;
 
-        const exposureNodes = input.plugin.props.workflow.props.nodes.filter(
-            (node) => node.type === WorkflowNodeType.Exposure
-        );
-        const exposures: DaemonExposureDefinition[] = exposureNodes.map((node) => ({
-            nodeId: node.id,
-            name: node.data.exposure!.name,
-            results: node.data.exposure!.results,
-            iterable: node.data.exposure!.iterable
+        const exposures: DaemonExposureDefinition[] = (input.plugin.props.exposures || []).map((exposure) => ({
+            nodeId: exposure._id,
+            name: exposure.name,
+            results: exposure.results,
+            iterable: exposure.iterable,
+            export: exposure.export
+                ? {
+                    exporter: exposure.export.exporter,
+                    type: exposure.export.type,
+                    options: exposure.export.options || {}
+                }
+                : undefined
         }));
 
         await this.teamClusterDaemonClient.command(input.teamClusterId, 'analysis.start', {
@@ -62,6 +71,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
                 pluginId: input.plugin.id,
                 trajectoryId: input.trajectoryId,
                 analysisId: input.analysisId,
+                teamClusterId: input.teamClusterId,
                 exposures,
                 forEachNodeId: input.forEachNodeId,
                 nodeOutputSnapshots: input.nodeOutputSnapshots

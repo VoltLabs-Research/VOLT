@@ -1,4 +1,3 @@
-import { injectable } from 'tsyringe';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -19,7 +18,6 @@ export interface ExtractedFile {
     mimetype?: string;
 };
 
-@injectable()
 export class FileExtractorService {
     async extractFiles(files: UploadedFile[], workingDir: string): Promise<ExtractedFile[]> {
         const finalFiles: ExtractedFile[] = [];

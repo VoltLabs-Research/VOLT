@@ -10,10 +10,9 @@ import {
     type PluginSyncRequest,
     type RasterizeTrajectoryRequest,
     type RemoveRunningJobsRequest,
-    type RetryJobsRequest,
-    type TrajectoryPreprocessRequest
+    type RetryJobsRequest
 } from '../contracts/http';
-import { ProgressStage } from '../contracts/events';
+import { ProgressStageType } from '../contracts/events';
 import { RuntimeEventBroker } from '../infrastructure/RuntimeEventBroker';
 import { MinioService } from '../infrastructure/minio/MinioService';
 import { QueueService } from '../infrastructure/redis/QueueService';
@@ -21,12 +20,11 @@ import { RedisConnectionService } from '../infrastructure/redis/RedisConnectionS
 import { RasterizerService } from '../modules/native/RasterizerService';
 
 const ANALYSIS_QUEUE_NAME = 'analysis_processing';
-const TRAJECTORY_QUEUE_NAME = 'TrajectoryProcessingQueue';
 
-export const emitProgress = (
+const emitProgress = (
     eventBroker: RuntimeEventBroker,
     action: OrchestrationAction,
-    stage: ProgressStage,
+    stage: ProgressStageType,
     payload?: Record<string, unknown>
 ): void => {
     eventBroker.emitProgress({
@@ -49,7 +47,7 @@ export const startAnalysis = async (
     redisConnectionService: RedisConnectionService,
     eventBroker: RuntimeEventBroker
 ): Promise<void> => {
-    emitProgress(eventBroker, OrchestrationAction.AnalysisStart, ProgressStage.Accepted, {
+    emitProgress(eventBroker, OrchestrationAction.AnalysisStart, ProgressStageType.Accepted, {
         analysisId: input.analysisId
     });
 
@@ -69,26 +67,8 @@ export const startAnalysis = async (
         });
     }
 
-    emitProgress(eventBroker, OrchestrationAction.AnalysisStart, ProgressStage.Queued, {
+    emitProgress(eventBroker, OrchestrationAction.AnalysisStart, ProgressStageType.Queued, {
         analysisId: input.analysisId
-    });
-};
-
-export const preprocessTrajectory = async (
-    input: TrajectoryPreprocessRequest,
-    queueService: QueueService,
-    eventBroker: RuntimeEventBroker
-): Promise<void> => {
-    emitProgress(eventBroker, OrchestrationAction.TrajectoryPreprocess, ProgressStage.Accepted, {
-        trajectoryId: input.trajectoryId
-    });
-    await queueService.enqueue(TRAJECTORY_QUEUE_NAME, {
-        trajectoryId: input.trajectoryId,
-        payload: input.payload,
-        queuedAt: new Date().toISOString()
-    });
-    emitProgress(eventBroker, OrchestrationAction.TrajectoryPreprocess, ProgressStage.Queued, {
-        trajectoryId: input.trajectoryId
     });
 };
 
@@ -215,7 +195,7 @@ export const uploadObject = async (
         body: Buffer.from(input.content, encoding),
         metadata: input.metadata
     });
-    emitProgress(eventBroker, OrchestrationAction.ObjectUpload, ProgressStage.Completed, {
+    emitProgress(eventBroker, OrchestrationAction.ObjectUpload, ProgressStageType.Completed, {
         bucket: input.bucket,
         objectKey: input.objectKey
     });
@@ -235,7 +215,7 @@ export const syncPluginBinary = async (
         };
     }
 
-    emitProgress(eventBroker, OrchestrationAction.PluginSync, ProgressStage.Completed, {
+    emitProgress(eventBroker, OrchestrationAction.PluginSync, ProgressStageType.Completed, {
         pluginId: input.pluginId,
         objectKey: input.objectKey
     });

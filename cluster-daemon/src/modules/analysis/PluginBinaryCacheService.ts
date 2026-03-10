@@ -1,18 +1,14 @@
-import { DAEMON_TOKENS } from '../../core/tokens';
 import { logger } from '../../core/logger';
 import { DAEMON_PATHS } from '../../core/paths';
 import { MinioService } from '../../infrastructure/minio/MinioService';
-import { inject, injectable } from 'tsyringe';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Readable } from 'node:stream';
 
 const PLUGINS_BUCKET = 'volt-plugins';
 
-@injectable()
 export class PluginBinaryCacheService {
     constructor(
-        @inject(DAEMON_TOKENS.MinioService)
         private readonly minioService: MinioService
     ) {
     }

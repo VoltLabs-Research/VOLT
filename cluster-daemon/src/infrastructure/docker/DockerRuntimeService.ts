@@ -4,7 +4,6 @@ import {
     type ContainerPortMapping,
     type CreateContainerRequest
 } from '../../contracts/http';
-import { injectable } from 'tsyringe';
 import Docker from 'dockerode';
 import net from 'node:net';
 import path from 'node:path';
@@ -64,7 +63,6 @@ const toPortBindings = (ports: ContainerPortMapping[] = []): Record<string, Host
     return portBindings;
 };
 
-@injectable()
 export class DockerRuntimeService {
     private readonly docker: Docker;
 
