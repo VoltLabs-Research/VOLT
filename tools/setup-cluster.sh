@@ -286,6 +286,7 @@ PY
 }
 
 materialize_manifest() {
+    ensure_temp_dir
     INSTALL_DIR="${INSTALL_ROOT}/${TEAM_CLUSTER_ID}"
     export INSTALL_DIR
 
