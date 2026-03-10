@@ -31,7 +31,7 @@ const environmentVariableSchema = z.object({
 
 const portMappingSchema = z.object({
     private: z.number().int().min(1).max(65535),
-    public: z.number().int().min(1).max(65535)
+    public: z.number().int().min(0).max(65535).optional()
 }).strict();
 
 const createContainerSchema = z.object({

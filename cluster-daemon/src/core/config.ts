@@ -30,7 +30,7 @@ interface JupyterConfig {
     uiPath: string;
     frameAncestors: string;
     startTimeoutMs: number;
-    hostPortRange: JupyterHostPortRange;
+    hostPortRange?: JupyterHostPortRange;
     publicBasePath: string;
 };
 
@@ -89,6 +89,20 @@ const readNumber = (name: string, fallback: number): number => {
     return parsedValue;
 };
 
+const readOptionalNumber = (name: string): number | undefined => {
+    const rawValue = process.env[name]?.trim();
+    if (!rawValue) {
+        return undefined;
+    }
+
+    const parsedValue = Number(rawValue);
+    if (!Number.isFinite(parsedValue)) {
+        throw new Error(`${name} must be a finite number`);
+    }
+
+    return parsedValue;
+};
+
 const readBoolean = (name: string, fallback: boolean): boolean => {
     const rawValue = process.env[name]?.trim().toLowerCase();
     if (!rawValue) {
@@ -109,6 +123,29 @@ const normalizePath = (value: string): string => {
 
 const normalizeCloudUrl = (value: string): string => {
     return value.replace(/\/+$/g, '');
+};
+
+const readJupyterHostPortRange = (): JupyterHostPortRange | undefined => {
+    const start = readOptionalNumber('JUPYTER_HOST_PORT_RANGE_START');
+    const end = readOptionalNumber('JUPYTER_HOST_PORT_RANGE_END');
+
+    if (start === undefined && end === undefined) {
+        return undefined;
+    }
+
+    if (start === undefined || end === undefined) {
+        throw new Error('JUPYTER_HOST_PORT_RANGE_START and JUPYTER_HOST_PORT_RANGE_END must be set together');
+    }
+
+    if (start <= 0 || end <= 0) {
+        throw new Error('JUPYTER host port range values must be positive numbers');
+    }
+
+    if (start > end) {
+        throw new Error('JUPYTER_HOST_PORT_RANGE_START must be less than or equal to JUPYTER_HOST_PORT_RANGE_END');
+    }
+
+    return { start, end };
 };
 
 export const loadConfig = (): DaemonConfig => {
@@ -156,10 +193,7 @@ export const loadConfig = (): DaemonConfig => {
             uiPath: normalizePath(process.env.JUPYTER_UI_PATH?.trim() || '/lab'),
             frameAncestors: process.env.JUPYTER_FRAME_ANCESTORS?.trim() || '*',
             startTimeoutMs: readNumber('JUPYTER_START_TIMEOUT_MS', 30_000),
-            hostPortRange: {
-                start: readNumber('JUPYTER_HOST_PORT_RANGE_START', 38_000),
-                end: readNumber('JUPYTER_HOST_PORT_RANGE_END', 38_999)
-            },
+            hostPortRange: readJupyterHostPortRange(),
             publicBasePath: normalizePath(process.env.JUPYTER_PUBLIC_BASE_PATH?.trim() || '/api/notebooks/proxy')
         },
         allowedBuckets: [

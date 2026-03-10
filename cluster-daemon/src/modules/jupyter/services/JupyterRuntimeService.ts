@@ -84,14 +84,21 @@ export class JupyterRuntimeService {
         const existingContainer = await this.findRuntimeContainer(input.notebook._id);
         if (existingContainer) {
             await this.startContainerIfNeeded(existingContainer.containerId);
-            return existingContainer;
+            const refreshedHostPort = await this.dockerRuntimeService.getPublishedPort(existingContainer.containerId, this.config.jupyter.port);
+            return {
+                containerId: existingContainer.containerId,
+                hostPort: refreshedHostPort ?? existingContainer.hostPort
+            };
         }
 
-        const hostPort = await this.dockerRuntimeService.findAvailableHostPort(
-            this.config.jupyter.hostPortRange.start,
-            this.config.jupyter.hostPortRange.end
-        );
-        if (!hostPort) {
+        const reservedHostPort = this.config.jupyter.hostPortRange
+            ? await this.dockerRuntimeService.findAvailableHostPort(
+                this.config.jupyter.hostPortRange.start,
+                this.config.jupyter.hostPortRange.end
+            )
+            : undefined;
+
+        if (this.config.jupyter.hostPortRange && !reservedHostPort) {
             throw new Error('No available host port for Jupyter runtime');
         }
 
@@ -122,7 +129,7 @@ export class JupyterRuntimeService {
             ],
             ports: [{
                 private: this.config.jupyter.port,
-                public: hostPort
+                public: reservedHostPort ?? undefined
             }],
             memoryInMegabytes: this.config.jupyter.memoryInMegabytes,
             cpus: this.config.jupyter.cpus,
@@ -134,9 +141,15 @@ export class JupyterRuntimeService {
             cmd: ['tail', '-f', '/dev/null']
         });
 
+        const publishedHostPort = await this.dockerRuntimeService.getPublishedPort(container.Id, this.config.jupyter.port);
+        if (typeof publishedHostPort !== 'number') {
+            await this.dockerRuntimeService.deleteContainer(container.Id).catch(() => {});
+            throw new Error('Docker did not publish a host port for the Jupyter runtime');
+        }
+
         return {
             containerId: container.Id,
-            hostPort
+            hostPort: publishedHostPort
         };
     }
 

@@ -5,5 +5,6 @@ export const DAEMON_PATHS = Object.freeze({
     analysisDumps: '/tmp/analysis-dumps',
     pluginBinCache: '/tmp/plugin-bin-cache',
     sshImport: '/tmp/ssh-import',
-    scriptingDockerContext: path.resolve(process.cwd(), 'docker/scripting')
+    scriptingDockerContext: path.resolve(process.cwd(), 'docker/scripting'),
+    ubuntuAlgorithmsDockerContext: path.resolve(process.cwd(), 'docker/ubuntu-algorithms')
 });
