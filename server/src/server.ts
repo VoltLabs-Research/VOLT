@@ -9,7 +9,6 @@ import { SOCKET_TOKENS } from './modules/socket/infrastructure/di/SocketTokens';
 import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
 import { readNumberEnv } from './shared/infrastructure/utilities/env';
 import app from './core/config/express';
-import startQueues from './core/bootstrap/start-queues';
 import SocketGateway from './modules/socket/socket/SocketGateway';
 import { ScriptingJupyterProxyService } from './modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
 import logger from './shared/infrastructure/logger';
@@ -88,8 +87,6 @@ const startServer = async () => {
             socketGateway.register(module);
         }
         await socketGateway.initialize(server);
-
-        await startQueues();
 
         logger.info(`@server: running at http://${SERVER_HOST}:${SERVER_PORT}/`);
 

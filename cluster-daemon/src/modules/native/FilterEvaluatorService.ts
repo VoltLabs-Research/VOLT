@@ -1,0 +1,266 @@
+import { ObjectBucketName } from '../../contracts/http';
+import { DAEMON_TOKENS } from '../../core/tokens';
+import { MinioService } from '../../infrastructure/minio/MinioService';
+import {
+    NativeModuleLoader,
+    type NativeColorModelRequest,
+    type NativeFilterPreviewRequest,
+    type NativeFilterPreviewResponse,
+    type NativeParticleFilterModelRequest
+} from './NativeModuleLoader';
+import { TrajectoryParserService } from './TrajectoryParserService';
+import { inject, injectable } from 'tsyringe';
+
+enum GradientType {
+    Viridis = 0,
+    Plasma = 1,
+    BlueRed = 2,
+    Grayscale = 3
+};
+
+const HIGHLIGHT_COLOR = [1.0, 0.2, 0.6];
+const DEFAULT_COLOR = [0.8, 0.8, 0.8];
+
+@injectable()
+export class FilterEvaluatorService {
+    constructor(
+        @inject(DAEMON_TOKENS.MinioService)
+        private readonly minioService: MinioService,
+        @inject(DAEMON_TOKENS.NativeModuleLoader)
+        private readonly nativeModuleLoader: NativeModuleLoader,
+        @inject(DAEMON_TOKENS.TrajectoryParserService)
+        private readonly trajectoryParserService: TrajectoryParserService
+    ) {
+    }
+
+    async previewFilter(input: NativeFilterPreviewRequest): Promise<NativeFilterPreviewResponse> {
+        return this.trajectoryParserService.withDumpFile(input, async (dumpPath) => {
+            let values: Float32Array;
+
+            if (input.externalValuesBase64) {
+                const parsed = this.trajectoryParserService.parseTrajectory(dumpPath, {
+                    includeIds: true,
+                    properties: []
+                });
+                const externalValues = this.trajectoryParserService.decodeFloat32Array(input.externalValuesBase64);
+                values = new Float32Array(parsed.ids?.length || 0);
+
+                if (parsed.ids) {
+                    for (let index = 0; index < parsed.ids.length; index++) {
+                        values[index] = externalValues[parsed.ids[index]] || 0;
+                    }
+                }
+            } else {
+                const parsed = this.trajectoryParserService.parseTrajectory(dumpPath, {
+                    includeIds: input.property.toLowerCase() === 'id',
+                    properties: ['type', 'x', 'y', 'z', 'id'].includes(input.property.toLowerCase())
+                        ? []
+                        : [input.property]
+                });
+                values = this.trajectoryParserService.getPropertyValues(parsed, input.property);
+            }
+
+            const filterResult = this.evaluateFilter(values, input.operator, input.value);
+            return {
+                maskBase64: Buffer.from(filterResult.mask).toString('base64'),
+                matchCount: filterResult.matchCount,
+                totalAtoms: filterResult.mask.length
+            };
+        });
+    }
+
+    async exportColoredModel(input: NativeColorModelRequest): Promise<{ objectKey: string; }> {
+        await this.trajectoryParserService.withDumpFile(input, async (dumpPath) => {
+            const externalValues = input.externalValuesBase64
+                ? this.trajectoryParserService.decodeFloat32Array(input.externalValuesBase64)
+                : undefined;
+            const parsed = this.trajectoryParserService.parseTrajectory(dumpPath, externalValues
+                ? {
+                    includeIds: true,
+                    properties: []
+                }
+                : {
+                    properties: [input.property]
+                });
+
+            const values = externalValues
+                ? this.trajectoryParserService.remapExternalValues(parsed, externalValues)
+                : this.trajectoryParserService.getPropertyValues(parsed, input.property);
+            if (values.length === 0) {
+                throw new Error(`Property '${input.property}' not found in trajectory dump`);
+            }
+
+            const colors = this.nativeModuleLoader.getExporterModule().applyPropertyColors(
+                values,
+                input.startValue,
+                input.endValue,
+                this.resolveGradientType(input.gradient)
+            );
+            const buffer = this.nativeModuleLoader.getExporterModule().generatePointCloudGLB(
+                parsed.positions,
+                colors,
+                parsed.min,
+                parsed.max
+            );
+
+            await this.minioService.putObject({
+                bucket: ObjectBucketName.Models,
+                objectKey: input.objectKey,
+                body: buffer,
+                metadata: {
+                    'Content-Type': 'model/gltf-binary'
+                }
+            });
+        });
+
+        return {
+            objectKey: input.objectKey
+        };
+    }
+
+    async exportParticleFilterModel(input: NativeParticleFilterModelRequest): Promise<{ objectKey: string; atomsResult: number; }> {
+        return this.trajectoryParserService.withDumpFile(input, async (dumpPath) => {
+            const parsed = this.trajectoryParserService.parseTrajectory(dumpPath);
+            const mask = this.trajectoryParserService.decodeUint8Array(input.maskBase64);
+            let buffer: Buffer;
+            let atomsResult = 0;
+
+            if (input.action === 'delete') {
+                const inverseMask = new Uint8Array(mask.length);
+                for (let index = 0; index < mask.length; index++) {
+                    inverseMask[index] = mask[index] ? 0 : 1;
+                }
+
+                const filtered = this.filterByMask(parsed.positions, parsed.types, inverseMask);
+                buffer = this.nativeModuleLoader.getExporterModule().generateGLB(
+                    filtered.positions,
+                    filtered.types,
+                    parsed.min,
+                    parsed.max
+                );
+                atomsResult = filtered.count;
+            } else {
+                const atomCount = parsed.positions.length / 3;
+                const colors = new Float32Array(atomCount * 3);
+
+                for (let index = 0; index < atomCount; index++) {
+                    const color = mask[index] === 1 ? HIGHLIGHT_COLOR : DEFAULT_COLOR;
+                    colors[index * 3] = color[0];
+                    colors[index * 3 + 1] = color[1];
+                    colors[index * 3 + 2] = color[2];
+                    if (mask[index] === 1) {
+                        atomsResult++;
+                    }
+                }
+
+                buffer = this.nativeModuleLoader.getExporterModule().generatePointCloudGLB(
+                    parsed.positions,
+                    colors,
+                    parsed.min,
+                    parsed.max
+                );
+            }
+
+            await this.minioService.putObject({
+                bucket: ObjectBucketName.Models,
+                objectKey: input.objectKey,
+                body: buffer,
+                metadata: {
+                    'Content-Type': 'model/gltf-binary'
+                }
+            });
+
+            return {
+                objectKey: input.objectKey,
+                atomsResult
+            };
+        });
+    }
+
+    private evaluateFilter(values: Float32Array, operator: string, compareValue: number): { mask: Uint8Array; matchCount: number; } {
+        const mask = new Uint8Array(values.length);
+        let matchCount = 0;
+
+        for (let index = 0; index < values.length; index++) {
+            const value = values[index];
+            let matches = false;
+
+            if (operator === '==') {
+                matches = value === compareValue;
+            } else if (operator === '!=') {
+                matches = value !== compareValue;
+            } else if (operator === '>') {
+                matches = value > compareValue;
+            } else if (operator === '>=') {
+                matches = value >= compareValue;
+            } else if (operator === '<') {
+                matches = value < compareValue;
+            } else if (operator === '<=') {
+                matches = value <= compareValue;
+            }
+
+            if (matches) {
+                mask[index] = 1;
+                matchCount++;
+            }
+        }
+
+        return {
+            mask,
+            matchCount
+        };
+    }
+
+    private filterByMask(positions: Float32Array, types: Uint16Array, mask: Uint8Array): {
+        positions: Float32Array;
+        types: Uint16Array;
+        count: number;
+    } {
+        let count = 0;
+        for (let index = 0; index < mask.length; index++) {
+            if (mask[index]) {
+                count++;
+            }
+        }
+
+        const filteredPositions = new Float32Array(count * 3);
+        const filteredTypes = new Uint16Array(count);
+        let cursor = 0;
+
+        for (let index = 0; index < mask.length; index++) {
+            if (!mask[index]) {
+                continue;
+            }
+
+            const sourceIndex = index * 3;
+            const targetIndex = cursor * 3;
+            filteredPositions[targetIndex] = positions[sourceIndex];
+            filteredPositions[targetIndex + 1] = positions[sourceIndex + 1];
+            filteredPositions[targetIndex + 2] = positions[sourceIndex + 2];
+            filteredTypes[cursor] = types[index];
+            cursor++;
+        }
+
+        return {
+            positions: filteredPositions,
+            types: filteredTypes,
+            count
+        };
+    }
+
+    private resolveGradientType(gradientName: string): GradientType {
+        if (gradientName === 'Plasma') {
+            return GradientType.Plasma;
+        }
+
+        if (gradientName === 'BlueRed') {
+            return GradientType.BlueRed;
+        }
+
+        if (gradientName === 'GrayScale') {
+            return GradientType.Grayscale;
+        }
+
+        return GradientType.Viridis;
+    }
+};

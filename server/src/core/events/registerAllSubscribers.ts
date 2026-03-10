@@ -11,7 +11,6 @@ import { registerContainerSubscribers } from '@modules/container/infrastructure/
 import { registerSimulationCellSubscribers } from '@modules/simulation-cell/infrastructure/events/subscribers';
 import { registerSessionSubscribers } from '@modules/session/infrastructure/events/subscribers';
 import { registerAISubscribers } from '@modules/ai/infrastructure/events/subscribers';
-import { registerRasterSubscribers } from '@modules/raster/infrastructure/events/subscribers';
 import { registerAuthSubscribers } from '@modules/auth/infrastructure/events/subscribers';
 import { registerJobsSubscribers } from '@modules/jobs/infrastructure/events/subscribers';
 import logger from '@shared/infrastructure/logger';
@@ -31,7 +30,6 @@ export const registerAllSubscribers = async (): Promise<void> => {
         registerSSHSubscribers(),
         registerPluginSubscribers(),
         registerScriptingSubscribers(),
-        registerRasterSubscribers(),
         registerDailyActivitySubscribers(),
         registerContainerSubscribers(),
         registerSimulationCellSubscribers(),

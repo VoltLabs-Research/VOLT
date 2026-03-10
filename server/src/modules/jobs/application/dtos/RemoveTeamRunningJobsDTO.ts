@@ -5,4 +5,5 @@ export interface RemoveTeamRunningJobsInputDTO {
 export interface RemoveTeamRunningJobsOutputDTO {
     deletedJobs: number;
     deletedAnalyses: number;
+    affectedClusters: number;
 };

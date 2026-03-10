@@ -1,226 +1,149 @@
-import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
-import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import Job from '@modules/jobs/domain/entities/Job';
 import TeamJobQueryService from '@modules/jobs/infrastructure/services/TeamJobQueryService';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
-import IORedis from 'ioredis';
-import type { TeamJobSnapshot } from '@modules/jobs/infrastructure/projections/TeamJobSnapshot';
-import type { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
-import type { IJobQueueService } from '@modules/jobs/domain/port/IJobQueueService';
-import type { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
 import type {
     ClearTeamJobsHistoryResult,
     ITeamJobMaintenanceService,
     RemoveTeamRunningJobsResult,
     RetryTeamFailedJobsResult
 } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
+import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
-const DELETE_BATCH_SIZE = 500;
+interface ClusterActionResponse {
+    affectedJobs: number;
+};
 
 @injectable()
 export default class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
-    private readonly queueServices: Map<string, IJobQueueService>;
-
     constructor(
-        @inject(JOBS_TOKENS.JobRepository)
-        private readonly jobRepository: IJobRepository,
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
-        @inject(JOBS_TOKENS.QueueRegistry)
-        private readonly queueRegistry: IQueueRegistry,
-
-        @inject(SHARED_TOKENS.RedisClient)
-        private readonly redis: IORedis,
-
-        @inject(TRAJECTORY_TOKENS.TrajectoryProcessingQueue)
-        trajectoryProcessingQueue: IJobQueueService,
-
-        @inject(TRAJECTORY_TOKENS.CloudUploadQueue)
-        cloudUploadQueue: IJobQueueService,
-
-        @inject(PLUGIN_TOKENS.AnalysisProcessingQueue)
-        analysisProcessingQueue: IJobQueueService,
-
-        @inject(RASTER_TOKENS.RasterizerQueue)
-        rasterizerQueue: IJobQueueService,
-
-        @inject(SSH_TOKENS.SSHImportQueue)
-        sshImportQueue: IJobQueueService,
-
+        @inject(JOBS_TOKENS.TeamJobQueryService)
         private readonly teamJobQueryService: TeamJobQueryService
-    ) {
-        const queues = [
-            trajectoryProcessingQueue,
-            cloudUploadQueue,
-            analysisProcessingQueue,
-            rasterizerQueue,
-            sshImportQueue
-        ];
-
-        this.queueServices = new Map<string, IJobQueueService>();
-        for (const queue of queues) {
-            this.queueServices.set(queue.getQueueName(), queue);
-        }
-    }
+    ) {}
 
     async clearHistory(teamId: string): Promise<ClearTeamJobsHistoryResult> {
-        const teamJobIds = await this.jobRepository.getTeamJobIds(teamId);
-        if (teamJobIds.length === 0) {
-            return {
-                deletedJobs: 0,
-                deletedAnalyses: 0
-            };
-        }
-
         const teamJobs = await this.teamJobQueryService.getFlatTeamJobs(teamId);
-        const runningByQueue = new Map<string, Set<string>>();
-
-        for (const job of teamJobs) {
-            if (job.status !== 'running') continue;
-            const queueType = job.queueType;
-            if (!runningByQueue.has(queueType)) {
-                runningByQueue.set(queueType, new Set());
-            }
-            runningByQueue.get(queueType)!.add(job.jobId);
-        }
-
-        for (const [queueType, ids] of runningByQueue.entries()) {
-            const queue = this.queueServices.get(queueType);
-            if (!queue) continue;
-            await queue.abortRunningJobs(Array.from(ids));
-        }
-
-        await this.deleteStatusKeys(teamJobIds);
-        await this.jobRepository.deleteTeamJobs(teamId);
-
-        const analysisIds = new Set<string>();
-        for (const job of teamJobs) {
-            if (typeof job.analysisId === 'string') {
-                analysisIds.add(job.analysisId);
-                continue;
-            }
-            if (typeof job.metadata?.analysisId === 'string') {
-                analysisIds.add(job.metadata.analysisId);
-            }
-        }
+        const analysisIds = this.collectAnalysisIds(teamJobs);
+        const jobIdsByCluster = this.groupJobIdsByCluster(teamJobs);
+        const affectedClusters = await this.callPerCluster(jobIdsByCluster, (teamClusterId, jobIds) => {
+            return this.teamClusterDaemonClient.request<ClusterActionResponse>(teamClusterId, '/api/jobs/history', {
+                method: 'DELETE',
+                body: {
+                    teamId,
+                    jobIds
+                }
+            });
+        });
 
         return {
-            deletedJobs: teamJobIds.length,
-            deletedAnalyses: analysisIds.size
+            deletedJobs: teamJobs.length,
+            deletedAnalyses: analysisIds.size,
+            affectedClusters
         };
     }
 
     async removeRunningJobs(teamId: string): Promise<RemoveTeamRunningJobsResult> {
         const teamJobs = await this.teamJobQueryService.getFlatTeamJobs(teamId);
-        const runningByQueue = new Map<string, Set<string>>();
-        const runningIds = new Set<string>();
+        const runningJobs = teamJobs.filter((job) => job.status === 'running');
+        const analysisIds = this.collectAnalysisIds(runningJobs);
+        const jobIdsByCluster = this.groupJobIdsByCluster(runningJobs);
+        const affectedClusters = await this.callPerCluster(jobIdsByCluster, (teamClusterId, jobIds) => {
+            return this.teamClusterDaemonClient.request<ClusterActionResponse>(teamClusterId, '/api/jobs/remove-running', {
+                method: 'POST',
+                body: {
+                    jobIds
+                }
+            });
+        });
+
+        return {
+            deletedJobs: runningJobs.length,
+            deletedAnalyses: analysisIds.size,
+            affectedClusters
+        };
+    }
+
+    async retryFailedJobs(teamId: string, jobIds?: string[]): Promise<RetryTeamFailedJobsResult> {
+        const teamJobs = await this.teamJobQueryService.getFlatTeamJobs(teamId);
+        const failedJobs = teamJobs.filter((job) => {
+            if (job.status !== 'failed') {
+                return false;
+            }
+
+            if (!jobIds || jobIds.length === 0) {
+                return true;
+            }
+
+            return jobIds.includes(job.jobId);
+        });
+        const jobIdsByCluster = this.groupJobIdsByCluster(failedJobs);
+        const affectedClusters = await this.callPerCluster(jobIdsByCluster, (teamClusterId, jobIds) => {
+            return this.teamClusterDaemonClient.request<ClusterActionResponse>(teamClusterId, '/api/jobs/retry', {
+                method: 'POST',
+                body: {
+                    jobIds
+                }
+            });
+        });
+
+        return {
+            retriedFrames: failedJobs.length,
+            affectedClusters
+        };
+    }
+
+    private async callPerCluster(
+        jobIdsByCluster: Map<string, string[]>,
+        handler: (teamClusterId: string, jobIds: string[]) => Promise<ClusterActionResponse>
+    ): Promise<number> {
+        let affectedClusters = 0;
+
+        for (const [teamClusterId, jobIds] of jobIdsByCluster.entries()) {
+            try {
+                await handler(teamClusterId, jobIds);
+                affectedClusters += 1;
+            } catch (error) {
+                logger.warn(error, `[TeamJobMaintenanceService] Failed to perform job action on cluster ${teamClusterId}`);
+            }
+        }
+
+        return affectedClusters;
+    }
+
+    private groupJobIdsByCluster(teamJobs: Array<{ jobId: string; teamClusterId?: string }>): Map<string, string[]> {
+        const grouped = new Map<string, string[]>();
+
+        for (const job of teamJobs) {
+            if (!job.teamClusterId) {
+                continue;
+            }
+
+            const clusterJobIds = grouped.get(job.teamClusterId) || [];
+            clusterJobIds.push(job.jobId);
+            grouped.set(job.teamClusterId, clusterJobIds);
+        }
+
+        return grouped;
+    }
+
+    private collectAnalysisIds(teamJobs: Array<{ analysisId?: string; metadata?: Record<string, unknown> }>): Set<string> {
         const analysisIds = new Set<string>();
 
         for (const job of teamJobs) {
-            if (job.status !== 'running') continue;
-
-            runningIds.add(job.jobId);
-            const queueType = job.queueType;
-
-            if (!runningByQueue.has(queueType)) {
-                runningByQueue.set(queueType, new Set());
-            }
-            runningByQueue.get(queueType)!.add(job.jobId);
-
             if (typeof job.analysisId === 'string') {
                 analysisIds.add(job.analysisId);
-            } else if (typeof job.metadata?.analysisId === 'string') {
+                continue;
+            }
+
+            if (typeof job.metadata?.analysisId === 'string') {
                 analysisIds.add(job.metadata.analysisId);
             }
         }
 
-        if (runningIds.size === 0) {
-            return {
-                deletedJobs: 0,
-                deletedAnalyses: 0
-            };
-        }
-
-        for (const [queueType, ids] of runningByQueue.entries()) {
-            const queue = this.queueServices.get(queueType);
-            if (!queue) continue;
-            await queue.abortRunningJobs(Array.from(ids));
-        }
-
-        const runningIdList = Array.from(runningIds);
-        await this.deleteStatusKeys(runningIdList);
-        await this.jobRepository.removeFromTeamJobs(teamId, runningIdList);
-
-        return {
-            deletedJobs: runningIdList.length,
-            deletedAnalyses: analysisIds.size
-        };
+        return analysisIds;
     }
-
-    async retryFailedJobs(teamId: string): Promise<RetryTeamFailedJobsResult> {
-        const teamJobs = await this.teamJobQueryService.getFlatTeamJobs(teamId);
-        const failedByQueue = new Map<string, TeamJobSnapshot[]>();
-        const failedIds = new Set<string>();
-
-        for (const job of teamJobs) {
-            if (job.status !== 'failed') continue;
-
-            const queueType = job.queueType;
-            if (!this.queueServices.has(queueType)) {
-                logger.warn(`[TeamJobMaintenanceService] Queue "${queueType}" is not available`);
-                continue;
-            }
-
-            failedIds.add(job.jobId);
-            if (!failedByQueue.has(queueType)) {
-                failedByQueue.set(queueType, []);
-            }
-            failedByQueue.get(queueType)!.push(job);
-        }
-
-        if (failedIds.size === 0) {
-            return { retriedFrames: 0 };
-        }
-
-        let retriedFrames = 0;
-        for (const [queueType, jobs] of failedByQueue.entries()) {
-            const queue = this.queueServices.get(queueType);
-            if (!queue) continue;
-
-            const retryJobs: Job[] = jobs.map((job) => Job.create({
-                jobId: job.jobId,
-                teamId: job.teamId,
-                queueType,
-                status: JobStatus.Queued,
-                sessionId: job.sessionId,
-                message: job.message,
-                metadata: job.metadata || {}
-            }));
-
-            retriedFrames += await queue.retryFailedJobs(retryJobs);
-        }
-
-        return { retriedFrames };
-    }
-
-    private async deleteStatusKeys(jobIds: string[]): Promise<void> {
-        const prefixes = this.queueRegistry.getAllStatusKeyPrefixes();
-        const allKeys = prefixes.flatMap((prefix) =>
-            jobIds.map((jobId) => `${prefix}${jobId}`)
-        );
-
-        for (let i = 0; i < allKeys.length; i += DELETE_BATCH_SIZE) {
-            const batch = allKeys.slice(i, i + DELETE_BATCH_SIZE);
-            const pipeline = this.redis.pipeline();
-            for (const key of batch) {
-                pipeline.del(key);
-            }
-            await pipeline.exec();
-        }
-    }
-};
+}

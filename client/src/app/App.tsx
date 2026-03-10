@@ -77,7 +77,7 @@ const AppRoutes = () => {
 export default function App() {
     return (
         <QueryProvider>
-            <BrowserRouter>
+            <BrowserRouter unstable_useTransitions={false}>
                 <AppRoutes />
                 <Toaster
                     position="bottom-right"

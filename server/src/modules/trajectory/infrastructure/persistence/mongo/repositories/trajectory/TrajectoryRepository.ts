@@ -8,6 +8,7 @@ import trajectoryMapper from '@modules/trajectory/infrastructure/persistence/mon
 import TrajectoryModel, { TrajectoryDocument } from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryModel';
 
 import { injectable, inject } from 'tsyringe';
+import mongoose from 'mongoose';
 
 @injectable()
 export default class TrajectoryRepository
@@ -19,6 +20,15 @@ export default class TrajectoryRepository
         private readonly eventBus: IEventBus
     ) {
         super(TrajectoryModel, trajectoryMapper);
+    }
+
+    async createWithId(id: string, data: Partial<TrajectoryProps>): Promise<Trajectory> {
+        const created = await this.model.create({
+            _id: new mongoose.Types.ObjectId(id),
+            ...data
+        });
+
+        return trajectoryMapper.toDomain(created);
     }
 
     async deleteById(id: string): Promise<boolean> {

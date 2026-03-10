@@ -70,6 +70,7 @@ export interface WriteContainerFileRequest {
 };
 
 export interface CreateNotebookRequest {
+    _id?: string;
     teamId: string;
     title: string;
     notebookPath: string;
@@ -160,6 +161,31 @@ export interface AnalysisStartRequest {
         trajectoryId: string;
         jobs: AnalysisQueueJobPayload[];
     };
+};
+
+export interface TeamJobsResponse {
+    data: Array<AnalysisQueueJobPayload & Record<string, unknown>>;
+};
+
+export interface RetryJobsRequest {
+    jobIds: string[];
+};
+
+export interface RemoveRunningJobsRequest {
+    jobIds: string[];
+};
+
+export interface ClearJobsHistoryRequest {
+    teamId: string;
+    jobIds: string[];
+};
+
+export interface JobsActionResponse {
+    affectedJobs: number;
+};
+
+export interface RasterizeTrajectoryRequest {
+    trajectoryId: string;
 };
 
 export interface TrajectoryPreprocessRequest {

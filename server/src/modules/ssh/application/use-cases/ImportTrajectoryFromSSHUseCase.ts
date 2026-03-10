@@ -1,16 +1,18 @@
 import { Result } from '@shared/domain/port/Result';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamCluster, { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
 import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
-import { ISSHImportQueue } from '@modules/ssh/domain/port/ISSHImportQueue';
 import { ImportTrajectoryFromSSHInputDTO } from '@modules/ssh/application/dtos/ImportTrajectoryFromSSHInputDTO';
 import { ImportTrajectoryFromSSHOutputDTO } from '@modules/ssh/application/dtos/ImportTrajectoryFromSSHOutputDTO';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { v4 } from 'uuid';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 @injectable()
 export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTrajectoryFromSSHInputDTO, ImportTrajectoryFromSSHOutputDTO, ApplicationError>{
@@ -21,8 +23,8 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
         private readonly teamClusterRepository: ITeamClusterRepository,
 
-        @inject(SSH_TOKENS.SSHImportQueue)
-        private sshImportQueue: ISSHImportQueue
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ){}
 
     async execute(input: ImportTrajectoryFromSSHInputDTO): Promise<Result<ImportTrajectoryFromSSHOutputDTO, ApplicationError>>{
@@ -50,27 +52,39 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
         });
         const connectedTeamCluster = teamClusters.data[0] as TeamCluster | undefined;
 
-        if (connectedTeamCluster) {
+        if (!connectedTeamCluster) {
             return Result.fail(ApplicationError.conflict(
-                'TeamCluster::SSHImportDaemonRequired',
-                'SSH trajectory import must run through the team cluster daemon for connected team-cluster workloads'
+                'TeamCluster::ConnectedClusterRequired',
+                'A connected team cluster is required for SSH trajectory import'
             ));
         }
 
         try {
-            const { jobId, sessionId } = await this.sshImportQueue.enqueueImportJob({
-                teamId,
-                sshConnectionId,
-                remotePath,
-                userId,
-                host: sshConnection.props.host,
-                username: sshConnection.props.username
+            const trajectoryId = v4();
+            const trajectoryName = `Import: ${remotePath.split('/').pop() || remotePath}`;
+
+            await this.teamClusterDaemonClient.request(connectedTeamCluster.id, '/api/orchestration/queue-dispatch', {
+                method: 'POST',
+                body: {
+                    queueName: 'ssh_import',
+                    payload: {
+                        teamId,
+                        sshConnectionId,
+                        remotePath,
+                        userId,
+                        host: sshConnection.props.host,
+                        port: sshConnection.props.port,
+                        username: sshConnection.props.username,
+                        encryptedPassword: sshConnection.props.encryptedPassword,
+                        trajectoryId,
+                        trajectoryName
+                    }
+                }
             });
 
             return Result.ok({
-                jobId,
-                sessionId,
-                message: 'Import job queued successfully'
+                message: 'Import request sent to the team cluster daemon',
+                trajectoryId
             });
         } catch (error: unknown) {
             return Result.fail(new ApplicationError(

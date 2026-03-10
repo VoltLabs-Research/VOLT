@@ -8,6 +8,7 @@ import TeamClusterInstallManifestService from '@modules/team-cluster/infrastruct
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
+import ProcessDaemonTrajectoryImportUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonTrajectoryImportUseCase';
 import { container } from 'tsyringe';
 
 export const registerTeamClusterDependencies = () => {
@@ -19,5 +20,6 @@ export const registerTeamClusterDependencies = () => {
     container.registerSingleton(TEAM_CLUSTER_TOKENS.TeamClusterReverseChannelService, TeamClusterReverseChannelService);
     container.registerSingleton(TEAM_CLUSTER_TOKENS.TeamClusterSocketModule, TeamClusterSocketModule);
     container.registerSingleton(TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService, DaemonAnalysisCompletionService);
+    container.registerSingleton(ProcessDaemonTrajectoryImportUseCase);
     container.register(SOCKET_TOKENS.SocketModule, { useToken: TEAM_CLUSTER_TOKENS.TeamClusterSocketModule });
 };

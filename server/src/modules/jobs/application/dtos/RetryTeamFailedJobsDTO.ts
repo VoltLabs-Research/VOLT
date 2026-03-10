@@ -4,4 +4,5 @@ export interface RetryTeamFailedJobsInputDTO {
 
 export interface RetryTeamFailedJobsOutputDTO {
     retriedFrames: number;
+    affectedClusters: number;
 };

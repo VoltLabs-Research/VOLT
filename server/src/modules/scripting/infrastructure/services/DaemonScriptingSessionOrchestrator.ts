@@ -136,6 +136,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         const createdNotebook = await this.teamClusterDaemonClient.request<{ _id: string; }>(teamClusterId, '/api/notebooks', {
             method: 'POST',
             body: {
+                _id: notebook.id,
                 teamId: input.teamId,
                 title: notebook.props.title,
                 notebookPath: notebook.props.notebookPath,
@@ -146,7 +147,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         });
 
         await this.scriptingNotebookRepository.updateById(notebookId, {
-            runtimeNotebookId: createdNotebook._id,
+            runtimeNotebookId: notebook.id,
             teamCluster: teamClusterId
         });
 

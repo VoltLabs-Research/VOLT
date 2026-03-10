@@ -1,35 +1,19 @@
-import '@/src/core/config/env';
-
 import { SYS_BUCKETS } from '@core/config/minio';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { hasStringProperty, isRecord } from '@shared/infrastructure/utilities/type-guards';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
 import fs from 'node:fs/promises';
 import zlib from 'node:zlib';   
 
-import type { Job as BullJob } from 'bullmq';
 import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
-import type { QueueJobData } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
 
-interface CloudUploadJobFile {
+interface CloudUploadTask {
+    trajectoryId: string;
+    teamClusterId?: string;
+    timestep: number;
     frameFilePath: string;
-};
-
-interface CloudUploadJobMetadata {
-    trajectoryId: string;
-    teamClusterId?: string;
-    timestep: number;
-    file: CloudUploadJobFile;
-};
-
-interface CloudUploadJobMetadataRecord extends Record<string, unknown> {
-    trajectoryId: string;
-    teamClusterId?: string;
-    timestep: number;
-    file: CloudUploadJobFile;
 };
 
 @injectable()
@@ -42,50 +26,19 @@ export default class CloudUploadProcessor {
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
-    async process(job: BullJob<QueueJobData>): Promise<void> {
-        logger.info(`@cloud-upload-processor: received job ${job.id}, jobId=${job.data?.jobId}`);
+    async process(task: CloudUploadTask): Promise<void> {
+        const { trajectoryId, teamClusterId, timestep, frameFilePath } = task;
 
-        const { metadata } = job.data;
-        const { trajectoryId, teamClusterId, timestep, file } = this.readMetadata(metadata);
-        const localPath = file.frameFilePath;
-
-        logger.info(`@cloud-upload-processor: processing trajectoryId=${trajectoryId} timestep=${timestep} teamClusterId=${teamClusterId || 'none'} localPath=${localPath}`);
+        logger.info(`@cloud-upload-processor: processing trajectoryId=${trajectoryId} timestep=${timestep} teamClusterId=${teamClusterId || 'none'} localPath=${frameFilePath}`);
 
         if (!teamClusterId) {
             throw new Error('Cloud upload requires a team cluster. No local native modules available.');
         }
 
-        await this.uploadDumpToTeamCluster(teamClusterId, trajectoryId, timestep, localPath);
+        await this.uploadDumpToTeamCluster(teamClusterId, trajectoryId, timestep, frameFilePath);
         await this.notifyTeamClusterPreprocess(teamClusterId, trajectoryId, timestep);
 
-        logger.info(`@cloud-upload-processor: completed job ${job.id} trajectoryId=${trajectoryId} timestep=${timestep}`);
-    }
-
-    private readMetadata(metadata: unknown): CloudUploadJobMetadata {
-        if (!isRecord(metadata) || !hasStringProperty(metadata, 'trajectoryId')) {
-            throw new Error('Invalid cloud upload job metadata');
-        }
-
-        const metadataRecord = metadata as CloudUploadJobMetadataRecord;
-        if (typeof metadataRecord.timestep !== 'number') {
-            throw new Error('Invalid cloud upload job metadata');
-        }
-
-        const file = metadataRecord.file;
-        if (!isRecord(file) || !hasStringProperty(file, 'frameFilePath')) {
-            throw new Error('Invalid cloud upload job metadata');
-        }
-
-        return {
-            trajectoryId: metadataRecord.trajectoryId,
-            teamClusterId: typeof metadataRecord.teamClusterId === 'string'
-                ? metadataRecord.teamClusterId
-                : undefined,
-            timestep: metadataRecord.timestep,
-            file: {
-                frameFilePath: file.frameFilePath
-            }
-        };
+        logger.info(`@cloud-upload-processor: completed trajectoryId=${trajectoryId} timestep=${timestep}`);
     }
 
     private async uploadDumpToTeamCluster(

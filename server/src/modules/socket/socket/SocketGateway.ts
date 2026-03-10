@@ -82,6 +82,10 @@ export default class SocketGateway{
     async initialize(server: http.Server): Promise<Server>{
         if(this.initialized && this.io) return this.io;
 
+        for(const module of this.modules){
+            await module.onInit();
+        }
+
         this.io = new Server(server, {
             cors: {
                 origin: this.corsOrigins.filter(Boolean),
@@ -107,11 +111,8 @@ export default class SocketGateway{
             await this.authenticateSocket(socket, next);
         });
 
-        // Initialize all modules
-        for(const module of this.modules){
-            await module.onInit();
-        }
-
+        // Registered synchronously after new Server() — no await in between,
+        // so no event-loop yield where a 'connection' event could be lost.
         this.io.on('connection', (socket: Socket) => {
             this.handleConnection(socket);
         });

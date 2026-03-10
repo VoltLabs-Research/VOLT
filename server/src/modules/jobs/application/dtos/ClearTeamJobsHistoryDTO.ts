@@ -5,4 +5,5 @@ export interface ClearTeamJobsHistoryInputDTO {
 export interface ClearTeamJobsHistoryOutputDTO {
     deletedJobs: number;
     deletedAnalyses: number;
+    affectedClusters: number;
 };

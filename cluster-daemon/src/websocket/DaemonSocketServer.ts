@@ -1,54 +1,26 @@
-import {
-    AnalysisStartRequest,
-    CreateNotebookSessionRequest,
-    TrajectoryPreprocessRequest
-} from '../contracts/http';
-import { RuntimeLifecycleEvent, RuntimeProgressEvent } from '../contracts/events';
+import { createNotebookSessionSchema } from '../http/validation/schemas';
+import { parseValue } from '../http/common';
+import { preprocessTrajectory, startAnalysis } from '../core/runtimeActions';
+import { secureCompare } from '../utilities/compare';
 import {
     TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
-    TEAM_CLUSTER_DAEMON_REQUEST_EVENT,
-    TEAM_CLUSTER_DAEMON_RESPONSE_EVENT,
-    TEAM_CLUSTER_DAEMON_STREAM_END_EVENT,
-    TEAM_CLUSTER_DAEMON_STREAM_ERROR_EVENT,
-    TEAM_CLUSTER_DAEMON_STREAM_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_ATTACH_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_ATTACHED_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_DATA_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_DETACH_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_INPUT_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_RESIZE_EVENT,
-    TEAM_CLUSTER_DAEMON_WEBSOCKET_ATTACH_EVENT,
-    TEAM_CLUSTER_DAEMON_WEBSOCKET_DETACH_EVENT,
-    TEAM_CLUSTER_DAEMON_WEBSOCKET_INPUT_EVENT,
-    type TeamClusterDaemonRegisterPayload,
-    type TeamClusterDaemonSocketRequestPayload,
-    type TeamClusterDaemonTerminalAttachPayload,
-    type TeamClusterDaemonTerminalDetachPayload,
-    type TeamClusterDaemonTerminalInputPayload,
-    type TeamClusterDaemonTerminalResizePayload,
-    type TeamClusterDaemonWebSocketAttachPayload,
-    type TeamClusterDaemonWebSocketDataPayload,
-    type TeamClusterDaemonWebSocketDetachPayload
+    type TeamClusterDaemonRegisterPayload
 } from '../contracts/reverseChannel';
-import { DaemonConfig } from '../config/env';
-import { DockerRuntimeService } from '../services/DockerRuntimeService';
-import { MetricsService } from '../services/MetricsService';
-import { OrchestrationService } from '../services/OrchestrationService';
-import { RuntimeEventBroker } from '../services/RuntimeEventBroker';
+import { DAEMON_TOKENS } from '../core/tokens';
+import { DockerRuntimeService } from '../infrastructure/docker/DockerRuntimeService';
+import { RuntimeEventBroker } from '../infrastructure/RuntimeEventBroker';
+import { QueueService } from '../infrastructure/redis/QueueService';
+import { RedisConnectionService } from '../infrastructure/redis/RedisConnectionService';
+import { MetricsService } from '../modules/metrics/MetricsService';
 import { ReverseChannelSocketBridge } from './ReverseChannelSocketBridge';
-import { secureCompare } from '../utilities/compare';
-import { Server as SocketIOServer, Socket } from 'socket.io';
+import { inject, injectable } from 'tsyringe';
+import { Server as SocketIOServer } from 'socket.io';
+import type { RuntimeLifecycleEvent, RuntimeProgressEvent } from '../contracts/events';
+import type { AnalysisStartRequest, CreateNotebookSessionRequest, TrajectoryPreprocessRequest } from '../contracts/http';
+import type { DaemonConfig } from '../core/config';
 import type { Server as HttpServer } from 'node:http';
-
-interface DaemonSocketDependencies {
-    config: DaemonConfig;
-    server: HttpServer;
-    dockerRuntimeService: DockerRuntimeService;
-    orchestrationService: OrchestrationService;
-    metricsService: MetricsService;
-    eventBroker: RuntimeEventBroker;
-};
+import type { Socket } from 'socket.io';
 
 interface SocketAuthPayload {
     token?: string;
@@ -63,31 +35,43 @@ const emitError = (socket: Socket, message: string): void => {
     socket.emit('error', payload);
 };
 
+@injectable()
 export class DaemonSocketServer {
-    private readonly io: SocketIOServer;
-    private readonly metricsIntervals: Map<string, NodeJS.Timeout> = new Map();
-    private readonly lifecycleSubscriptions: Map<string, () => void> = new Map();
-    private readonly progressSubscriptions: Map<string, () => void> = new Map();
+    private readonly metricsIntervals = new Map<string, NodeJS.Timeout>();
+    private readonly lifecycleSubscriptions = new Map<string, () => void>();
+    private readonly progressSubscriptions = new Map<string, () => void>();
     private readonly reverseChannelSocketBridge: ReverseChannelSocketBridge;
+    private io: SocketIOServer | null = null;
 
-    constructor(private readonly dependencies: DaemonSocketDependencies) {
-        this.io = new SocketIOServer(dependencies.server, {
+    constructor(
+        @inject(DAEMON_TOKENS.Config)
+        private readonly config: DaemonConfig,
+        @inject(DAEMON_TOKENS.DockerRuntimeService)
+        dockerRuntimeService: DockerRuntimeService,
+        @inject(DAEMON_TOKENS.QueueService)
+        private readonly queueService: QueueService,
+        @inject(DAEMON_TOKENS.RedisConnection)
+        private readonly redisConnectionService: RedisConnectionService,
+        @inject(DAEMON_TOKENS.MetricsService)
+        private readonly metricsService: MetricsService,
+        @inject(DAEMON_TOKENS.RuntimeEventBroker)
+        private readonly eventBroker: RuntimeEventBroker
+    ) {
+        this.reverseChannelSocketBridge = new ReverseChannelSocketBridge(config, dockerRuntimeService);
+    }
+
+    initialize(server: HttpServer): void {
+        this.io = new SocketIOServer(server, {
             transports: ['websocket', 'polling'],
             cors: {
                 origin: true,
                 methods: ['GET', 'POST']
             }
         });
-        this.reverseChannelSocketBridge = new ReverseChannelSocketBridge(
-            dependencies.config,
-            dependencies.dockerRuntimeService
-        );
-    }
 
-    initialize(): void {
         this.io.use((socket, next) => {
             const auth = this.readSocketAuthPayload(socket.handshake.auth);
-            if (!auth?.token || !secureCompare(auth.token, this.dependencies.config.daemonPassword)) {
+            if (!auth?.token || !secureCompare(auth.token, this.config.daemonPassword)) {
                 next(new Error('Unauthorized'));
                 return;
             }
@@ -102,7 +86,7 @@ export class DaemonSocketServer {
 
     close(): Promise<void> {
         return new Promise((resolve) => {
-            this.io.close(() => resolve());
+            this.io?.close(() => resolve());
         });
     }
 
@@ -114,14 +98,14 @@ export class DaemonSocketServer {
             }
 
             const pushMetrics = async () => {
-                socket.emit('metrics:update', await this.dependencies.metricsService.collectSnapshot());
+                socket.emit('metrics:update', await this.metricsService.collectSnapshot());
             };
 
             const interval = setInterval(() => {
                 pushMetrics().catch((error: unknown) => {
                     emitError(socket, error instanceof Error ? error.message : 'Failed to publish metrics');
                 });
-            }, this.dependencies.config.metricsIntervalMs);
+            }, this.config.metricsIntervalMs);
 
             this.metricsIntervals.set(socket.id, interval);
             pushMetrics().catch((error: unknown) => {
@@ -130,19 +114,19 @@ export class DaemonSocketServer {
         });
 
         socket.on('lifecycle:subscribe', () => {
-            const unsubscribe = this.dependencies.eventBroker.onLifecycle((event: RuntimeLifecycleEvent) => {
+            const unsubscribe = this.eventBroker.onLifecycle((event: RuntimeLifecycleEvent) => {
                 socket.emit('lifecycle:event', event);
             });
             this.lifecycleSubscriptions.set(socket.id, unsubscribe);
 
-            const latestEvent = this.dependencies.eventBroker.getLatestLifecycleEvent();
+            const latestEvent = this.eventBroker.getLatestLifecycleEvent();
             if (latestEvent) {
                 socket.emit('lifecycle:event', latestEvent);
             }
         });
 
         socket.on('progress:subscribe', () => {
-            const unsubscribe = this.dependencies.eventBroker.onProgress((event: RuntimeProgressEvent) => {
+            const unsubscribe = this.eventBroker.onProgress((event: RuntimeProgressEvent) => {
                 socket.emit('progress:event', event);
             });
             this.progressSubscriptions.set(socket.id, unsubscribe);
@@ -150,7 +134,7 @@ export class DaemonSocketServer {
 
         socket.on('analysis:start', async (payload: AnalysisStartRequest) => {
             try {
-                await this.dependencies.orchestrationService.startAnalysis(payload);
+                await startAnalysis(payload, this.queueService, this.redisConnectionService, this.eventBroker);
                 socket.emit('analysis:accepted', {
                     analysisId: payload.analysisId
                 });
@@ -161,7 +145,7 @@ export class DaemonSocketServer {
 
         socket.on('trajectory:preprocess', async (payload: TrajectoryPreprocessRequest) => {
             try {
-                await this.dependencies.orchestrationService.preprocessTrajectory(payload);
+                await preprocessTrajectory(payload, this.queueService, this.eventBroker);
                 socket.emit('trajectory:accepted', {
                     trajectoryId: payload.trajectoryId
                 });
@@ -171,58 +155,32 @@ export class DaemonSocketServer {
         });
 
         socket.on('notebook:session:start', async (payload: CreateNotebookSessionRequest) => {
+            const requestBody = parseValue(createNotebookSessionSchema, payload);
             socket.emit('notebook:session:event', {
-                requestedBy: payload.requestedBy,
+                requestedBy: requestBody.requestedBy,
                 status: 'pending-runtime-wiring'
             });
         });
 
         socket.on(TEAM_CLUSTER_DAEMON_REGISTER_EVENT, (payload: TeamClusterDaemonRegisterPayload) => {
-            if (payload.teamClusterId !== this.dependencies.config.teamClusterId) {
+            if (payload.teamClusterId !== this.config.teamClusterId) {
                 socket.disconnect();
                 return;
             }
 
-            if (!secureCompare(payload.daemonPassword, this.dependencies.config.daemonPassword)) {
+            if (!secureCompare(payload.daemonPassword, this.config.daemonPassword)) {
                 socket.disconnect();
                 return;
             }
 
             socket.emit(TEAM_CLUSTER_DAEMON_REGISTERED_EVENT, {
-                teamClusterId: this.dependencies.config.teamClusterId
+                teamClusterId: this.config.teamClusterId
             });
         });
 
-        socket.on(TEAM_CLUSTER_DAEMON_REQUEST_EVENT, async (payload: TeamClusterDaemonSocketRequestPayload) => {
-            await this.reverseChannelSocketBridge.handleRequest(socket, payload);
-        });
-
-        socket.on(TEAM_CLUSTER_DAEMON_TERMINAL_ATTACH_EVENT, async (payload: TeamClusterDaemonTerminalAttachPayload) => {
-            await this.reverseChannelSocketBridge.handleTerminalAttach(socket, payload);
-        });
-
-        socket.on(TEAM_CLUSTER_DAEMON_TERMINAL_INPUT_EVENT, (payload: TeamClusterDaemonTerminalInputPayload) => {
-            this.reverseChannelSocketBridge.handleTerminalInput(payload);
-        });
-
-        socket.on(TEAM_CLUSTER_DAEMON_TERMINAL_RESIZE_EVENT, (payload: TeamClusterDaemonTerminalResizePayload) => {
-            this.reverseChannelSocketBridge.handleTerminalResize(payload);
-        });
-
-        socket.on(TEAM_CLUSTER_DAEMON_TERMINAL_DETACH_EVENT, (payload: TeamClusterDaemonTerminalDetachPayload) => {
-            this.reverseChannelSocketBridge.handleTerminalDetach(payload);
-        });
-
-        socket.on(TEAM_CLUSTER_DAEMON_WEBSOCKET_ATTACH_EVENT, (payload: TeamClusterDaemonWebSocketAttachPayload) => {
-            this.reverseChannelSocketBridge.handleWebSocketAttach(socket, payload);
-        });
-
-        socket.on(TEAM_CLUSTER_DAEMON_WEBSOCKET_INPUT_EVENT, (payload: TeamClusterDaemonWebSocketDataPayload) => {
-            this.reverseChannelSocketBridge.handleWebSocketInput(payload);
-        });
-
-        socket.on(TEAM_CLUSTER_DAEMON_WEBSOCKET_DETACH_EVENT, (payload: TeamClusterDaemonWebSocketDetachPayload) => {
-            this.reverseChannelSocketBridge.handleWebSocketDetach(payload);
+        this.reverseChannelSocketBridge.bindToSocket(socket as unknown as {
+            emit(event: string, payload: unknown): void;
+            on(event: string, listener: (payload: never) => void): void;
         });
 
         socket.on('disconnect', () => {
@@ -258,4 +216,4 @@ export class DaemonSocketServer {
             token
         };
     }
-}
+};

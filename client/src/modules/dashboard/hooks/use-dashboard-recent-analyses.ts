@@ -35,7 +35,7 @@ export const useDashboardRecentAnalyses = () => {
         return (recentAnalysesQuery.data?.data ?? []).map((analysis) => ({
             id: analysis._id,
             title: analysis.pluginDisplayName || analysis.plugin,
-            subtitle: `${analysis.trajectory.name} · ${analysis.totalFrames.toLocaleString()} frames`,
+            subtitle: `${analysis.trajectory.name} · ${(analysis.totalFrames ?? 0).toLocaleString()} frames`,
             status: analysis.status,
             createdAtLabel: formatDistanceToNow(new Date(analysis.createdAt), { addSuffix: true }),
             trajectoryId: analysis.trajectory._id

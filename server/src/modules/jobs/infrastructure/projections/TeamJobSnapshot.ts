@@ -1,5 +1,6 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 
+// TODO: This should live in port
 export type TeamJobStatus = JobStatus | 'retrying' | 'partial';
 
 export interface TeamJobMetadata {
@@ -14,6 +15,7 @@ export interface TeamJobMetadata {
 export interface TeamJobSnapshot {
     jobId: string;
     teamId: string;
+    teamClusterId?: string;
     queueType: string;
     status: TeamJobStatus;
     sessionId?: string;

@@ -3,14 +3,22 @@ import {
     TEAM_CLUSTER_DAEMON_STREAM_END_EVENT,
     TEAM_CLUSTER_DAEMON_STREAM_ERROR_EVENT,
     TEAM_CLUSTER_DAEMON_STREAM_EVENT,
+    TEAM_CLUSTER_DAEMON_REQUEST_EVENT,
+    TEAM_CLUSTER_DAEMON_TERMINAL_ATTACH_EVENT,
     TEAM_CLUSTER_DAEMON_TERMINAL_ATTACHED_EVENT,
     TEAM_CLUSTER_DAEMON_TERMINAL_DATA_EVENT,
+    TEAM_CLUSTER_DAEMON_TERMINAL_DETACH_EVENT,
     TEAM_CLUSTER_DAEMON_TERMINAL_END_EVENT,
     TEAM_CLUSTER_DAEMON_TERMINAL_ERROR_EVENT,
+    TEAM_CLUSTER_DAEMON_TERMINAL_INPUT_EVENT,
+    TEAM_CLUSTER_DAEMON_TERMINAL_RESIZE_EVENT,
+    TEAM_CLUSTER_DAEMON_WEBSOCKET_ATTACH_EVENT,
     TEAM_CLUSTER_DAEMON_WEBSOCKET_ATTACHED_EVENT,
     TEAM_CLUSTER_DAEMON_WEBSOCKET_DATA_EVENT,
+    TEAM_CLUSTER_DAEMON_WEBSOCKET_DETACH_EVENT,
     TEAM_CLUSTER_DAEMON_WEBSOCKET_END_EVENT,
     TEAM_CLUSTER_DAEMON_WEBSOCKET_ERROR_EVENT,
+    TEAM_CLUSTER_DAEMON_WEBSOCKET_INPUT_EVENT,
     TeamClusterDaemonResponseType,
     type TeamClusterDaemonSocketHeaders,
     type TeamClusterDaemonSocketRequestPayload,
@@ -26,11 +34,12 @@ import {
     type TeamClusterDaemonWebSocketDetachPayload,
     type TeamClusterDaemonWebSocketStatePayload
 } from '../contracts/reverseChannel';
-import { DaemonConfig } from '../config/env';
-import { DockerRuntimeService, type RuntimeTerminalAttachment } from '../services/DockerRuntimeService';
+import { DockerRuntimeService, type RuntimeTerminalAttachment } from '../infrastructure/docker/DockerRuntimeService';
+import type { DaemonConfig } from '../core/config';
 
 interface ReverseChannelSocketEmitter {
     emit(event: string, payload: unknown): void;
+    on(event: string, listener: (payload: never) => void): void;
 };
 
 interface WebSocketMessageResult {
@@ -93,6 +102,7 @@ export class ReverseChannelSocketBridge {
             }
 
             const jsonPayload = await response.json();
+
             const responsePayload: TeamClusterDaemonSocketResponsePayload = {
                 requestId: payload.requestId,
                 ok: response.ok,
@@ -111,6 +121,40 @@ export class ReverseChannelSocketBridge {
             };
             socket.emit(TEAM_CLUSTER_DAEMON_RESPONSE_EVENT, responsePayload);
         }
+    }
+
+    bindToSocket(socket: ReverseChannelSocketEmitter): void {
+        socket.on(TEAM_CLUSTER_DAEMON_REQUEST_EVENT, async (payload) => {
+            await this.handleRequest(socket, payload as TeamClusterDaemonSocketRequestPayload);
+        });
+
+        socket.on(TEAM_CLUSTER_DAEMON_TERMINAL_ATTACH_EVENT, async (payload) => {
+            await this.handleTerminalAttach(socket, payload as TeamClusterDaemonTerminalAttachPayload);
+        });
+
+        socket.on(TEAM_CLUSTER_DAEMON_TERMINAL_INPUT_EVENT, (payload) => {
+            this.handleTerminalInput(payload as TeamClusterDaemonTerminalInputPayload);
+        });
+
+        socket.on(TEAM_CLUSTER_DAEMON_TERMINAL_RESIZE_EVENT, (payload) => {
+            this.handleTerminalResize(payload as TeamClusterDaemonTerminalResizePayload);
+        });
+
+        socket.on(TEAM_CLUSTER_DAEMON_TERMINAL_DETACH_EVENT, (payload) => {
+            this.handleTerminalDetach(payload as TeamClusterDaemonTerminalDetachPayload);
+        });
+
+        socket.on(TEAM_CLUSTER_DAEMON_WEBSOCKET_ATTACH_EVENT, (payload) => {
+            this.handleWebSocketAttach(socket, payload as TeamClusterDaemonWebSocketAttachPayload);
+        });
+
+        socket.on(TEAM_CLUSTER_DAEMON_WEBSOCKET_INPUT_EVENT, (payload) => {
+            this.handleWebSocketInput(payload as TeamClusterDaemonWebSocketDataPayload);
+        });
+
+        socket.on(TEAM_CLUSTER_DAEMON_WEBSOCKET_DETACH_EVENT, (payload) => {
+            this.handleWebSocketDetach(payload as TeamClusterDaemonWebSocketDetachPayload);
+        });
     }
 
     async handleTerminalAttach(socket: ReverseChannelSocketEmitter, payload: TeamClusterDaemonTerminalAttachPayload): Promise<void> {

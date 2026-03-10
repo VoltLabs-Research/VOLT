@@ -23,7 +23,8 @@ export default class ClearTeamJobsHistoryUseCase extends BaseTeamJobActionUseCas
 
         return {
             deletedJobs: result.deletedJobs,
-            deletedAnalyses: result.deletedAnalyses
+            deletedAnalyses: result.deletedAnalyses,
+            affectedClusters: result.affectedClusters
         };
     }
 };
