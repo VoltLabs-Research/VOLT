@@ -1,4 +1,4 @@
-import { logger } from '../../../core/logger';
+import { logger } from '@/core/logger';
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeType } from '../contracts';
 
 export interface NodeOutputSchema {

@@ -1,9 +1,9 @@
-import { DAEMON_PATHS } from '../../../core/paths';
-import { DockerRuntimeService } from '../../platform/services';
-import { logger } from '../../../core/logger';
+import { DAEMON_PATHS } from '@/core/paths';
+import { DockerRuntimeService } from '@/modules/platform/services';
+import { logger } from '@/core/logger';
 import path from 'node:path';
-import type { CreateNotebookSessionResponse } from '../../../shared/contracts';
-import type { DaemonConfig } from '../../../core/config';
+import type { CreateNotebookSessionResponse } from '@/shared/contracts';
+import type { DaemonConfig } from '@/core/config';
 import type { ScriptingNotebookDocument } from '../models/ScriptingNotebookModel';
 
 interface EnsureNotebookSessionInput {
@@ -23,6 +23,9 @@ const RUNTIME_LABEL_KEY = 'volt.runtime.kind';
 const RUNTIME_LABEL_VALUE = 'jupyter';
 const NOTEBOOK_ID_LABEL_KEY = 'volt.notebook.id';
 const TEAM_ID_LABEL_KEY = 'volt.team.id';
+const TEAM_CLUSTER_ID_LABEL_KEY = 'volt.team-cluster.id';
+const HTTP_PORTS_LABEL_KEY = 'volt.exposure.http.ports';
+const WEBSOCKET_PORTS_LABEL_KEY = 'volt.exposure.websocket.ports';
 
 const sleep = async (delayMs: number): Promise<void> => {
     await new Promise((resolve) => setTimeout(resolve, delayMs));
@@ -136,7 +139,10 @@ export class JupyterRuntimeService {
             labels: {
                 [RUNTIME_LABEL_KEY]: RUNTIME_LABEL_VALUE,
                 [NOTEBOOK_ID_LABEL_KEY]: input.notebook._id,
-                [TEAM_ID_LABEL_KEY]: input.notebook.team
+                [TEAM_ID_LABEL_KEY]: input.notebook.team,
+                [TEAM_CLUSTER_ID_LABEL_KEY]: this.config.teamClusterId,
+                [HTTP_PORTS_LABEL_KEY]: String(this.config.jupyter.port),
+                [WEBSOCKET_PORTS_LABEL_KEY]: String(this.config.jupyter.port)
             },
             cmd: ['tail', '-f', '/dev/null']
         });

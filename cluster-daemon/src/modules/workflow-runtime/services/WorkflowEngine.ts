@@ -1,7 +1,7 @@
-import { logger } from '../../../core/logger';
+import { logger } from '@/core/logger';
 import { WorkflowNodeRegistry } from './NodeRegistry';
 import { WorkflowGraph, WorkflowNodeType, type WorkflowExecutionContext } from '../contracts';
-import type { WorkflowDefinition } from '../../../shared/contracts';
+import type { WorkflowDefinition } from '@/shared/contracts';
 
 export interface WorkflowPlanResult {
     items: Record<string, unknown>[];

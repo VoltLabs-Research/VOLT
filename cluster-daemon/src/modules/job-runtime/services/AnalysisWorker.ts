@@ -1,18 +1,19 @@
-import { logger } from '../../../core/logger';
-import { DAEMON_PATHS } from '../../../core/paths';
-import { MinioService } from '../../platform/services';
-import { RedisConnectionService } from '../../platform/services';
-import { QueueService } from '../../platform/services';
+import { logger } from '@/core/logger';
+import { DAEMON_PATHS } from '@/core/paths';
+import { MinioService } from '@/modules/platform/services';
+import { RedisConnectionService } from '@/modules/platform/services';
+import { QueueService } from '@/modules/platform/services';
 import type { BinaryExecutorService } from './BinaryExecutorService';
-import type { DaemonJobReporterService } from '../../cloud-control/services';
+import type { DaemonJobReporterService } from '@/modules/cloud-control/services';
 import type { PluginBinaryCacheService } from './PluginBinaryCacheService';
-import type { ResultProcessorService } from '../../artifacts/services';
+import type { ResultProcessorService } from '@/modules/artifacts/services';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import type { AnalysisJobExecutionData } from '../../../shared/contracts';
+import type { AnalysisJobExecutionData } from '@/shared/contracts';
 import type { Job as BullMQJob, Worker } from 'bullmq';
 import type { Readable } from 'node:stream';
+import { isRecord } from '@/shared/utils';
 
 const QUEUE_NAME = 'analysis_processing';
 const DUMPS_BUCKET = 'volt-dumps';
@@ -28,9 +29,6 @@ interface QueueJobPayload extends Record<string, unknown> {
     updatedAt: string;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
 
 const resolveTemplate = (template: string, outputs: Map<string, Record<string, unknown>>): string => {
     return template.replace(/\{\{\s*([^}]+)\s*\}\}/g, (_, ref: string) => {

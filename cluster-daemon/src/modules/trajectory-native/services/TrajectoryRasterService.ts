@@ -1,5 +1,5 @@
-import { ObjectBucketName, type RasterizeTrajectoryRequest } from '../../../shared/contracts';
-import type { MinioService } from '../../platform/services';
+import { ObjectBucketName, type RasterizeTrajectoryRequest } from '@/shared/contracts';
+import type { MinioService } from '@/modules/platform/services';
 import type { RasterizerService } from './RasterizerService';
 
 export interface TrajectoryRasterService {

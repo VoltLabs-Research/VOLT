@@ -2,7 +2,7 @@ import { exec } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import { promisify } from 'node:util';
-import type { MetricsSnapshot } from '../../../shared/contracts';
+import type { MetricsSnapshot } from '@/shared/contracts';
 
 interface DiskIOSnapshot {
     reads: number;

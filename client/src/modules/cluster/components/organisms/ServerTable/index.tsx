@@ -1,5 +1,6 @@
 import { transformClustersToRows } from '@/modules/cluster/utilities/transform-cluster-row';
 import { formatClusterTimestamp } from '@/modules/cluster/utilities/format-cluster-timestamp';
+import { TeamClusterRemoteAccessTarget } from '@/modules/cluster/api/entities/team-cluster-remote-access';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import MetricBars from '@/modules/cluster/components/organisms/MetricBars';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
@@ -13,7 +14,7 @@ import Title from '@/shared/presentation/components/Title';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import { Skeleton } from '@mui/material';
 import { useMemo, useCallback } from 'react';
-import { ChevronDown, Download, KeyRound, Trash2 } from 'lucide-react';
+import { ChevronDown, Database, Download, FolderOpen, KeyRound, Terminal, Trash2 } from 'lucide-react';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
@@ -26,6 +27,7 @@ interface ServerTableProps {
     onSelectCluster: (clusterId: string) => void;
     onRevealCredentials: (clusterId: string) => void;
     onDeleteCluster: (clusterId: string) => void;
+    onRemoteAccessAction: (clusterId: string, target: TeamClusterRemoteAccessTarget) => void;
 };
 
 interface ColumnDef {
@@ -142,7 +144,8 @@ const ServerTable = ({
     selectedClusterId,
     onSelectCluster,
     onRevealCredentials,
-    onDeleteCluster
+    onDeleteCluster,
+    onRemoteAccessAction
 }: ServerTableProps) => {
     const isLoading = !clusters?.length;
 
@@ -160,12 +163,32 @@ const ServerTable = ({
             onClick: () => onRevealCredentials(row.id)
         },
         {
+            label: 'Open terminal',
+            icon: Terminal,
+            onClick: () => onRemoteAccessAction(row.id, TeamClusterRemoteAccessTarget.HostTerminal)
+        },
+        {
+            label: 'Explore Mongo Documents',
+            icon: Database,
+            onClick: () => onRemoteAccessAction(row.id, TeamClusterRemoteAccessTarget.MongoDocuments)
+        },
+        {
+            label: 'Explore Redis Data',
+            icon: Database,
+            onClick: () => onRemoteAccessAction(row.id, TeamClusterRemoteAccessTarget.RedisData)
+        },
+        {
+            label: 'Explore MinIO',
+            icon: FolderOpen,
+            onClick: () => onRemoteAccessAction(row.id, TeamClusterRemoteAccessTarget.Minio)
+        },
+        {
             label: 'Delete cluster',
             icon: Trash2,
             destructive: true,
             onClick: () => onDeleteCluster(row.id)
         }
-    ], [onRevealCredentials, onDeleteCluster]);
+    ], [onDeleteCluster, onRemoteAccessAction, onRevealCredentials]);
 
     const renderSkeletonRows = () =>
         Array.from({ length: SKELETON_COUNT }).map((_, i) => (

@@ -5,5 +5,6 @@ export * from './notebook';
 export * from './object';
 export * from './payloadValidation';
 export * from './plugin';
+export * from './remote-access';
 export * from './runtime';
 export * from './trajectory';

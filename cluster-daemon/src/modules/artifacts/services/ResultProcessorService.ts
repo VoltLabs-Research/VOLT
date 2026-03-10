@@ -1,17 +1,15 @@
-import { AnalysisExposureDefinition, type AnalysisJobExecutionData } from '../../../shared/contracts';
-import { logger } from '../../../core/logger';
-import type { MinioService } from '../../platform/services';
+import { AnalysisExposureDefinition, type AnalysisJobExecutionData } from '@/shared/contracts';
+import { logger } from '@/core/logger';
+import type { MinioService } from '@/modules/platform/services';
 import type { PluginListingRepository } from '../repositories/PluginListingRepository';
 import type { ExportNodeProcessorService } from './ExportNodeProcessorService';
 import { Decoder } from '@msgpack/msgpack';
+import { isRecord } from '@/shared/utils';
 import fs from 'node:fs/promises';
 import type { Readable } from 'node:stream';
 
 const PLUGINS_BUCKET = 'volt-plugins';
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
 
 const shouldIgnoreValue = (value: unknown): boolean => {
     return Array.isArray(value) && value.length >= 1 && Array.isArray(value[0]);

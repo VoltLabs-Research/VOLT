@@ -21,6 +21,7 @@ export interface DockerContainerConfig {
     Image: string;
     name: string;
     Env: string[];
+    Labels?: Record<string, string>;
     ExposedPorts: Record<string, Record<string, never>>;
     HostConfig: DockerHostConfig;
     Tty: boolean;
@@ -85,6 +86,7 @@ export const buildDockerContainerConfig = (
         Image: options.image,
         name: options.name,
         Env: formattedEnv,
+        Labels: options.labels,
         ExposedPorts: exposedPorts,
         HostConfig: buildDockerHostConfig({
             ports: options.ports,

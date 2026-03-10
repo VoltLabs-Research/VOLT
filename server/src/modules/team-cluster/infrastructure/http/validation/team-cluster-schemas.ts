@@ -1,5 +1,6 @@
 import { createPaginationQuerySchema, createTeamScopedParamsSchema, teamParamsSchema } from '@shared/infrastructure/http/validation/shared-schemas';
 import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import { TeamClusterRemoteAccessTargetDTO } from '@modules/team-cluster/application/dtos/TeamClusterRemoteAccessDTO';
 import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
 import { requiredTextSchema } from '@shared/infrastructure/http/validation/resource-schemas';
 import { z } from 'zod/v4';
@@ -16,6 +17,24 @@ const createTeamClusterSchema = z.object({
 
 const passwordConfirmationSchema = z.object({
     password: requiredTextSchema
+}).strict();
+
+const remoteAccessTargetSchema = z.union([
+    z.literal(TeamClusterRemoteAccessTargetDTO.HostTerminal),
+    z.literal(TeamClusterRemoteAccessTargetDTO.MongoDocuments),
+    z.literal(TeamClusterRemoteAccessTargetDTO.RedisData),
+    z.literal(TeamClusterRemoteAccessTargetDTO.Minio)
+]);
+
+const createRemoteAccessSessionSchema = z.object({
+    password: requiredTextSchema,
+    target: remoteAccessTargetSchema
+}).strict();
+
+const remoteExplorerRequestSchema = z.object({
+    sessionId: requiredTextSchema,
+    target: remoteAccessTargetSchema,
+    path: z.string()
 }).strict();
 
 const daemonPasswordSchema = z.object({
@@ -123,6 +142,18 @@ export const teamClusterValidation = createResourceValidation({
     deleteById: {
         params: teamClusterParamsSchema,
         body: passwordConfirmationSchema
+    },
+    createRemoteAccessSession: {
+        params: teamClusterParamsSchema,
+        body: createRemoteAccessSessionSchema
+    },
+    listRemoteExplorerEntries: {
+        params: teamClusterParamsSchema,
+        body: remoteExplorerRequestSchema
+    },
+    getRemoteExplorerNode: {
+        params: teamClusterParamsSchema,
+        body: remoteExplorerRequestSchema
     },
     revealCredentials: {
         params: teamClusterParamsSchema,

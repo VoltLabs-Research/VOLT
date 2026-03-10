@@ -1,9 +1,11 @@
-import { ObjectBucketName, type AnalysisExposureDefinition, type AnalysisJobExecutionData } from '../../../shared/contracts';
-import { logger } from '../../../core/logger';
-import { MinioService } from '../../platform/services';
-import { NativeModuleLoader } from '../../trajectory-native/services';
+import { ObjectBucketName, type AnalysisExposureDefinition, type AnalysisJobExecutionData } from '@/shared/contracts';
+import { logger } from '@/core/logger';
+import { MinioService } from '@/modules/platform/services';
+import { NativeModuleLoader } from '@/modules/trajectory-native/services';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
-import type { DaemonArtifactReporterService } from '../../cloud-control/services';
+import type { BubbleDataPoint, ChartConfiguration, ChartDataset, ChartTypeRegistry, Point } from 'chart.js';
+import type { DaemonArtifactReporterService } from '@/modules/cloud-control/services';
+import { isRecord, toRecord } from '@/shared/utils';
 
 type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
 
@@ -68,7 +70,7 @@ interface ChartExportOptions {
 };
 
 interface ChartPoint {
-    x: unknown;
+    x: string | number;
     y: number;
 };
 
@@ -80,9 +82,6 @@ export interface ExportExecutionInput {
     teamClusterId?: string;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
 
 const getNestedValue = (data: unknown, key: string): unknown => {
     if (!key) {
@@ -104,7 +103,7 @@ const toFiniteNumber = (value: unknown, fallback = 0): number => {
 };
 
 const toStringMap = (value: unknown): Record<string, unknown> => {
-    return isRecord(value) ? value : {};
+    return toRecord(value);
 };
 
 const buildObjectPath = (input: ExportExecutionInput, exporter: ExporterName, type: string): string => {
@@ -552,7 +551,7 @@ const extractChartData = (decodedPayload: Record<string, unknown>, options: Char
 
     if (Array.isArray(xAxis) && Array.isArray(yAxis)) {
         return xAxis.map((x, index) => ({
-            x,
+            x: typeof x === 'number' ? x : String(x),
             y: toFiniteNumber(yAxis[index])
         }));
     }
@@ -565,7 +564,9 @@ const extractChartData = (decodedPayload: Record<string, unknown>, options: Char
                 }
 
                 return {
-                    x: entry[options.xAxisKey],
+                    x: typeof entry[options.xAxisKey] === 'number'
+                        ? entry[options.xAxisKey]
+                        : String(entry[options.xAxisKey]),
                     y: toFiniteNumber(entry[options.yAxisKey])
                 };
             })
@@ -575,7 +576,7 @@ const extractChartData = (decodedPayload: Record<string, unknown>, options: Char
     return [];
 };
 
-const resolveChartType = (chartType: ChartExportOptions['chartType']): 'line' | 'bar' | 'scatter' => {
+const resolveChartType = (chartType: ChartExportOptions['chartType']): SupportedChartType => {
     if (chartType === 'area') {
         return 'line';
     }
@@ -583,15 +584,19 @@ const resolveChartType = (chartType: ChartExportOptions['chartType']): 'line' | 
     return chartType;
 };
 
+type SupportedChartType = 'line' | 'bar' | 'scatter';
+
+type SupportedChartDatasetValue = number | [number, number] | Point | BubbleDataPoint | null;
+
 const buildChartDataset = (
     chartData: ChartPoint[],
-    chartType: 'line' | 'bar' | 'scatter',
+    chartType: SupportedChartType,
     options: ChartExportOptions
-): Record<string, unknown> => {
+): ChartDataset<keyof ChartTypeRegistry, SupportedChartDatasetValue[]> => {
     return {
         label: options.title || 'Data',
         data: chartType === 'scatter'
-            ? chartData.map((point) => ({ x: point.x, y: point.y }))
+            ? chartData.map((point) => ({ x: Number(point.x), y: point.y }))
             : chartData.map((point) => point.y),
         borderColor: options.lineColor || '#3b82f6',
         backgroundColor: options.fillColor || 'rgba(59, 130, 246, 0.3)',
@@ -798,7 +803,7 @@ export const createExportNodeProcessorService = (
 
         const chartType = resolveChartType(options.chartType);
         const dataset = buildChartDataset(chartData, chartType, options);
-        const buffer = await chartCanvas.renderToBuffer({
+        const chartConfiguration: ChartConfiguration<keyof ChartTypeRegistry, SupportedChartDatasetValue[], string> = {
             type: chartType,
             data: {
                 labels: chartType === 'scatter' ? undefined : chartData.map((point) => String(point.x)),
@@ -839,13 +844,13 @@ export const createExportNodeProcessorService = (
                         },
                         grid: {
                             display: options.showGrid ?? true,
-                            color: 'rgba(255,255,255,0.1)'
-                        },
+                            color: 'rgba(255,255,255,0.1)'                        },
                         ticks: { color: '#cccccc' }
                     }
                 }
             }
-        } as never);
+        };
+        const buffer = await chartCanvas.renderToBuffer(chartConfiguration);
 
         await minioService.putObject({
             bucket: ObjectBucketName.Plugins,

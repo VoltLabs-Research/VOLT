@@ -20,7 +20,9 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
     ) {}
 
     private buildContainerRuntimeConfig(
-        input: Pick<CreateContainerInputDTO, 'image' | 'name' | 'env' | 'ports'>,
+        input: Pick<CreateContainerInputDTO, 'image' | 'name' | 'env' | 'ports' | 'teamId'> & {
+            teamClusterId: string;
+        },
         options: {
             memoryInMegabytes: number;
             cpus: number;
@@ -35,6 +37,10 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             name: `${sanitizedName}-${Date.now()}`,
             env: input.env,
             ports: input.ports,
+            labels: {
+                'volt.team.id': input.teamId,
+                'volt.team-cluster.id': input.teamClusterId
+            },
             memoryInMegabytes: options.memoryInMegabytes,
             cpus: options.cpus,
             binds: options.binds,
@@ -67,7 +73,9 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             image,
             name,
             env,
-            ports
+            ports,
+            teamId: input.teamId,
+            teamClusterId
         }, {
             memoryInMegabytes,
             cpus: cpuCount,

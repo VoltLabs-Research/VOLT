@@ -1,11 +1,11 @@
-import type { DaemonConfig } from '../../core/config';
-import { RuntimeEventBroker } from '../../shared/services';
-import { DockerRuntimeService, MinioService, QueueService, RedisConnectionService } from './services';
-import { connectMongo, disconnectMongo } from './repositories';
+import type { DaemonConfig } from '@/core/config';
+import { RuntimeEventBroker } from '@/shared/services';
+import { connectMongo, disconnectMongo, DockerRuntimeService, HostShellService, MinioService, QueueService, RedisConnectionService } from './services';
 
 export interface PlatformModule {
     eventBroker: RuntimeEventBroker;
     dockerRuntimeService: DockerRuntimeService;
+    hostShellService: HostShellService;
     minioService: MinioService;
     redisConnectionService: RedisConnectionService;
     queueService: QueueService;
@@ -16,6 +16,7 @@ export interface PlatformModule {
 export const createPlatformModule = (config: DaemonConfig): PlatformModule => {
     const eventBroker = new RuntimeEventBroker();
     const dockerRuntimeService = new DockerRuntimeService();
+    const hostShellService = new HostShellService();
     const minioService = new MinioService(config);
     const redisConnectionService = new RedisConnectionService(config);
     const queueService = new QueueService(redisConnectionService);
@@ -23,6 +24,7 @@ export const createPlatformModule = (config: DaemonConfig): PlatformModule => {
     return {
         eventBroker,
         dockerRuntimeService,
+        hostShellService,
         minioService,
         redisConnectionService,
         queueService,

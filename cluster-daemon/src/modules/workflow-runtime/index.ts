@@ -1,12 +1,5 @@
-import { analysisRepository } from './repositories';
-import { WorkflowEngine, WorkflowNodeRegistry } from './services';
-import {
-    WorkflowArgumentsHandler,
-    WorkflowContextHandler,
-    WorkflowForEachHandler,
-    WorkflowIfStatementHandler,
-    WorkflowModifierHandler
-} from './handlers';
+import { createWorkflowNodeRegistry } from './factories';
+import { WorkflowEngine, type WorkflowNodeRegistry } from './services';
 
 export interface WorkflowRuntimeModule {
     workflowNodeRegistry: WorkflowNodeRegistry;
@@ -14,12 +7,7 @@ export interface WorkflowRuntimeModule {
 }
 
 export const createWorkflowRuntimeModule = (): WorkflowRuntimeModule => {
-    const workflowNodeRegistry = new WorkflowNodeRegistry();
-    workflowNodeRegistry.register(new WorkflowModifierHandler(analysisRepository));
-    workflowNodeRegistry.register(new WorkflowArgumentsHandler(workflowNodeRegistry));
-    workflowNodeRegistry.register(new WorkflowContextHandler());
-    workflowNodeRegistry.register(new WorkflowForEachHandler(workflowNodeRegistry));
-    workflowNodeRegistry.register(new WorkflowIfStatementHandler(workflowNodeRegistry));
+    const workflowNodeRegistry = createWorkflowNodeRegistry();
 
     return {
         workflowNodeRegistry,

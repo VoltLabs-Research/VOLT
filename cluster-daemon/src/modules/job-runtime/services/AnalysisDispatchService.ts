@@ -1,10 +1,10 @@
-import type { AnalysisStartRequest, AnalysisQueueJobPayload } from '../../../shared/contracts';
-import { OrchestrationAction } from '../../../shared/contracts';
-import { ProgressStageType } from '../../../shared/contracts';
-import { RuntimeEventBroker } from '../../../shared/services';
-import { QueueService } from '../../platform/services';
-import { RedisConnectionService } from '../../platform/services';
-import { WorkflowEngine } from '../../workflow-runtime/services';
+import type { AnalysisStartRequest, AnalysisQueueJobPayload } from '@/shared/contracts';
+import { OrchestrationAction } from '@/shared/contracts';
+import { ProgressStageType } from '@/shared/contracts';
+import { RuntimeEventBroker } from '@/shared/services';
+import { QueueService } from '@/modules/platform/services';
+import { RedisConnectionService } from '@/modules/platform/services';
+import { WorkflowEngine } from '@/modules/workflow-runtime/services';
 
 const ANALYSIS_QUEUE_NAME = 'analysis_processing';
 

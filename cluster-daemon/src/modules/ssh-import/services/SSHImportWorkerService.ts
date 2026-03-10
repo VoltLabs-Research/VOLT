@@ -1,19 +1,19 @@
-import { ObjectBucketName } from '../../../shared/contracts';
-import { DAEMON_PATHS } from '../../../core/paths';
-import { MinioService } from '../../platform/services';
-import { RedisConnectionService } from '../../platform/services';
-import { QueueService } from '../../platform/services';
-import type { GlbExporterService } from '../../trajectory-native/services';
+import { ObjectBucketName } from '@/shared/contracts';
+import { DAEMON_PATHS } from '@/core/paths';
+import { MinioService } from '@/modules/platform/services';
+import { RedisConnectionService } from '@/modules/platform/services';
+import { QueueService } from '@/modules/platform/services';
+import type { GlbExporterService } from '@/modules/trajectory-native/services';
 import { FileExtractorService } from './FileExtractorService';
 import { SSHConnectionService, type SSHConnectionConfig } from './SSHConnectionService';
 import { TrajectoryParserFactory } from './TrajectoryParserFactory';
-import { logger } from '../../../core/logger';
+import { logger } from '@/core/logger';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import type { Worker } from 'bullmq';
-import type { DaemonConfig } from '../../../core/config';
+import type { DaemonConfig } from '@/core/config';
 
 interface SSHImportJobPayload extends Record<string, unknown> {
     teamId: string;

@@ -1,90 +1,38 @@
-import { ScriptingNotebookModel, type ScriptingNotebookDocument } from '../models/ScriptingNotebookModel';
-import type { CreateNotebookRequest, UpdateNotebookRequest } from '../../../shared/contracts';
+import { ScriptingNotebookModel } from '../models/ScriptingNotebookModel';
+import { isRecord, readDocumentId, readOptionalDate, readString, readStringArray, toRecord } from '@/shared/utils';
+import type { ScriptingNotebookDocument } from '../models/ScriptingNotebookModel';
+import type { CreateNotebookRequest, UpdateNotebookRequest } from '@/shared/contracts';
 
-interface HexStringSerializable {
-    toHexString(): string;
+export interface NotebookRepository {
+    listNotebooks(teamId?: string): Promise<ScriptingNotebookDocument[]>;
+    createNotebook(input: CreateNotebookRequest): Promise<ScriptingNotebookDocument>;
+    updateNotebook(notebookId: string, input: UpdateNotebookRequest): Promise<ScriptingNotebookDocument | null>;
+    deleteNotebook(notebookId: string): Promise<boolean>;
+    getNotebookById(notebookId: string): Promise<ScriptingNotebookDocument | null>;
 };
 
-interface StringSerializable {
-    toString(): string;
+interface NotebookListQuery {
+    team?: string;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
+interface NotebookCreateDocument {
+    _id?: string;
+    team: string;
+    title: string;
+    notebookPath: string;
+    trajectories: string[];
+    createdBy: string;
+    content: Record<string, unknown>;
 };
 
-const hasToHexString = (value: unknown): value is HexStringSerializable => {
-    return isRecord(value) && typeof value.toHexString === 'function';
-};
-
-const hasToString = (value: unknown): value is StringSerializable => {
-    return isRecord(value) && typeof value.toString === 'function';
-};
-
-const readString = (value: unknown): string => {
-    return typeof value === 'string' ? value : '';
-};
-
-const readObjectIdProperty = (value: unknown, propertyName: string): string => {
-    if (!isRecord(value)) {
-        return '';
-    }
-
-    return readString(value[propertyName]);
-};
-
-const readDocumentId = (value: unknown): string => {
-    if (typeof value === 'string') {
-        return value;
-    }
-
-    const oidValue = readObjectIdProperty(value, '$oid');
-    if (oidValue) {
-        return oidValue;
-    }
-
-    const idValue = readObjectIdProperty(value, 'id');
-    if (idValue) {
-        return idValue;
-    }
-
-    if (hasToHexString(value)) {
-        return value.toHexString();
-    }
-
-    if (hasToString(value)) {
-        const serializedValue = value.toString();
-        return serializedValue === '[object Object]' ? '' : serializedValue;
-    }
-
-    return '';
-};
-
-const readOptionalDate = (value: unknown): Date | undefined => {
-    if (value instanceof Date) {
-        return value;
-    }
-
-    if (typeof value === 'string' || typeof value === 'number') {
-        const date = new Date(value);
-        if (!Number.isNaN(date.getTime())) {
-            return date;
-        }
-    }
-
-    return undefined;
-};
-
-const readStringArray = (value: unknown): string[] => {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-
-    return value.filter((entry): entry is string => typeof entry === 'string');
+interface NotebookUpdateDocument {
+    title?: string;
+    content?: Record<string, unknown>;
+    lastOpenedAt?: Date;
 };
 
 const toScriptingNotebookDocument = (value: unknown): ScriptingNotebookDocument => {
-    const record = isRecord(value) ? value : {};
+    const record = toRecord(value);
     const createdAt = readOptionalDate(record.createdAt) || new Date();
     const updatedAt = readOptionalDate(record.updatedAt) || createdAt;
 
@@ -102,67 +50,107 @@ const toScriptingNotebookDocument = (value: unknown): ScriptingNotebookDocument 
     };
 };
 
-export const listNotebooks = async (teamId?: string): Promise<ScriptingNotebookDocument[]> => {
-    const query = teamId ? { team: teamId } : {};
-    const notebooks = await ScriptingNotebookModel.find(query)
-        .sort({ updatedAt: -1, _id: -1 })
-        .lean();
+const buildNotebookListQuery = (teamId?: string): NotebookListQuery => {
+    const query: NotebookListQuery = {};
 
-    return notebooks.map(toScriptingNotebookDocument);
+    if (teamId) {
+        query.team = teamId;
+    }
+
+    return query;
 };
 
-export const createNotebook = async (input: CreateNotebookRequest): Promise<ScriptingNotebookDocument> => {
-    const notebook = await ScriptingNotebookModel.create({
-        ...(input._id ? { _id: input._id } : {}),
+const buildNotebookCreateDocument = (input: CreateNotebookRequest): NotebookCreateDocument => {
+    const document: NotebookCreateDocument = {
         team: input.teamId,
         title: input.title,
         notebookPath: input.notebookPath,
         trajectories: input.trajectories,
         createdBy: input.createdBy,
         content: input.content ?? {}
-    });
+    };
 
-    return toScriptingNotebookDocument(notebook.toObject());
+    if (input._id) {
+        document._id = input._id;
+    }
+
+    return document;
 };
 
-export const updateNotebook = async (notebookId: string, input: UpdateNotebookRequest): Promise<ScriptingNotebookDocument | null> => {
-    const notebook = await ScriptingNotebookModel.findByIdAndUpdate(
-        notebookId,
-        {
-            ...(input.title ? { title: input.title } : {}),
-            ...(input.content ? { content: input.content } : {}),
-            ...(input.lastOpenedAt ? { lastOpenedAt: new Date(input.lastOpenedAt) } : {})
-        },
-        {
-            new: true
+const buildNotebookUpdateDocument = (input: UpdateNotebookRequest): NotebookUpdateDocument => {
+    const update: NotebookUpdateDocument = {};
+
+    if (input.title) {
+        update.title = input.title;
+    }
+
+    if (input.content) {
+        update.content = input.content;
+    }
+
+    if (input.lastOpenedAt) {
+        update.lastOpenedAt = new Date(input.lastOpenedAt);
+    }
+
+    return update;
+};
+
+export class MongoNotebookRepository implements NotebookRepository {
+    async listNotebooks(teamId?: string): Promise<ScriptingNotebookDocument[]> {
+        const query = buildNotebookListQuery(teamId);
+        const notebooks = await ScriptingNotebookModel.find(query)
+            .sort({
+                updatedAt: -1,
+                _id: -1
+            })
+            .lean();
+
+        return notebooks.map(toScriptingNotebookDocument);
+    }
+
+    async createNotebook(input: CreateNotebookRequest): Promise<ScriptingNotebookDocument> {
+        const document = buildNotebookCreateDocument(input);
+        const notebook = await ScriptingNotebookModel.create(document);
+
+        return toScriptingNotebookDocument(notebook.toObject());
+    }
+
+    async updateNotebook(notebookId: string, input: UpdateNotebookRequest): Promise<ScriptingNotebookDocument | null> {
+        const update = buildNotebookUpdateDocument(input);
+        const notebook = await ScriptingNotebookModel.findByIdAndUpdate(
+            notebookId,
+            update,
+            {
+                new: true
+            }
+        ).lean();
+
+        if (!notebook) {
+            return null;
         }
-    ).lean();
 
-    return notebook ? toScriptingNotebookDocument(notebook) : null;
+        return toScriptingNotebookDocument(notebook);
+    }
+
+    async deleteNotebook(notebookId: string): Promise<boolean> {
+        const result = await ScriptingNotebookModel.deleteOne({
+            _id: notebookId
+        });
+
+        return result.deletedCount > 0;
+    }
+
+    async getNotebookById(notebookId: string): Promise<ScriptingNotebookDocument | null> {
+        const notebook = await ScriptingNotebookModel.findById(notebookId).lean();
+
+        if (!notebook) {
+            return null;
+        }
+
+        return toScriptingNotebookDocument(notebook);
+    }
 };
 
-export const deleteNotebook = async (notebookId: string): Promise<boolean> => {
-    const result = await ScriptingNotebookModel.deleteOne({ _id: notebookId });
-    return result.deletedCount > 0;
-};
-
-export const getNotebookById = async (notebookId: string): Promise<ScriptingNotebookDocument | null> => {
-    const notebook = await ScriptingNotebookModel.findById(notebookId).lean();
-    return notebook ? toScriptingNotebookDocument(notebook) : null;
-};
-
-export type NotebookRepository = {
-    listNotebooks: typeof listNotebooks;
-    createNotebook: typeof createNotebook;
-    updateNotebook: typeof updateNotebook;
-    deleteNotebook: typeof deleteNotebook;
-    getNotebookById: typeof getNotebookById;
-};
-
-export const notebookRepository: NotebookRepository = {
-    listNotebooks,
-    createNotebook,
-    updateNotebook,
-    deleteNotebook,
-    getNotebookById
+export const createNotebookRepository = (): NotebookRepository => {
+    return new MongoNotebookRepository();
 };

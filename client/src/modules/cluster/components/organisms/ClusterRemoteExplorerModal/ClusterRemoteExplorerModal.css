@@ -1,0 +1,40 @@
+.cluster-remote-explorer-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(340px, 0.9fr);
+    gap: 1rem;
+    min-height: 70vh;
+}
+
+.cluster-remote-explorer-panel {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+}
+
+.cluster-remote-explorer-detail {
+    min-height: 0;
+}
+
+.cluster-remote-explorer-detail-body {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border-soft);
+    min-height: 0;
+}
+
+.cluster-remote-explorer-detail-pre {
+    margin: 0;
+    min-height: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--color-text-secondary);
+}
+
+.cluster-remote-explorer-empty {
+    min-height: 220px;
+}
+
+.cluster-remote-explorer-path {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

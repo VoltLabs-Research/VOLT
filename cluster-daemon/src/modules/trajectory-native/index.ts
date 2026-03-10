@@ -9,7 +9,7 @@ import {
     type RasterizerService,
     type TrajectoryParserService
 } from './services';
-import type { MinioService } from '../platform/services';
+import type { MinioService } from '@/modules/platform/services';
 
 export interface TrajectoryNativeModule {
     nativeModuleLoader: NativeModuleLoader;

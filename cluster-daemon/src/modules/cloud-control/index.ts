@@ -1,13 +1,21 @@
-import { notebookRepository } from '../jupyter/repositories';
-import { pluginListingRepository } from '../artifacts/repositories';
-import type { DaemonConfig } from '../../core/config';
-import type { RuntimeEventBroker } from '../../shared/services';
-import type { DockerRuntimeService, MinioService, QueueService, RedisConnectionService } from '../platform/services';
-import type { AnalysisDispatchService } from '../job-runtime/services';
-import { createDaemonArtifactReporterService, createDaemonJobReporterService, ReverseChannelSocketBridge, VoltCloudConnection, type DaemonArtifactReporterService, type DaemonJobReporterService } from './services';
-import type { JupyterRuntimeService } from '../jupyter/services';
-import type { MetricsService } from '../metrics/services';
-import type { FilterEvaluatorService, GlbExporterService, RasterizerService, TrajectoryParserService } from '../trajectory-native/services';
+import type { PluginListingRepository } from '@/modules/artifacts';
+import type { NotebookRepository } from '@/modules/jupyter';
+import type { DaemonConfig } from '@/core/config';
+import type { RuntimeEventBroker } from '@/shared/services';
+import type { DockerRuntimeService, HostShellService, MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
+import type { AnalysisDispatchService } from '@/modules/job-runtime/services';
+import {
+    createDaemonArtifactReporterService,
+    createDaemonJobReporterService,
+    DaemonExposureRegistryService,
+    ReverseChannelSocketBridge,
+    VoltCloudConnection,
+    type DaemonArtifactReporterService,
+    type DaemonJobReporterService
+} from './services';
+import type { JupyterRuntimeService } from '@/modules/jupyter/services';
+import type { MetricsService } from '@/modules/metrics/services';
+import type { FilterEvaluatorService, GlbExporterService, RasterizerService, TrajectoryParserService } from '@/modules/trajectory-native/services';
 import {
     createAnalysisHandlers,
     createJobHandlers,
@@ -16,12 +24,14 @@ import {
     createPluginHandlers,
     createContainerHandlers,
     createNotebookHandlers,
+    createRemoteAccessHandlers,
     createRuntimeHandlers
 } from './handlers';
 
 export interface CloudControlModule {
     reverseChannelSocketBridge: ReverseChannelSocketBridge;
     voltCloudConnection: VoltCloudConnection;
+    daemonExposureRegistryService: DaemonExposureRegistryService;
     daemonArtifactReporterService: DaemonArtifactReporterService;
     daemonJobReporterService: DaemonJobReporterService;
 }
@@ -31,6 +41,7 @@ export const createCloudControlModule = (deps: {
     metricsService: MetricsService;
     eventBroker: RuntimeEventBroker;
     dockerRuntimeService: DockerRuntimeService;
+    hostShellService: HostShellService;
     minioService: MinioService;
     queueService: QueueService;
     redisConnectionService: RedisConnectionService;
@@ -39,9 +50,15 @@ export const createCloudControlModule = (deps: {
     rasterizerService: RasterizerService;
     filterEvaluatorService: FilterEvaluatorService;
     jupyterRuntimeService: JupyterRuntimeService;
+    notebookRepository: NotebookRepository;
+    pluginListingRepository: PluginListingRepository;
     analysisDispatchService: AnalysisDispatchService;
 }): CloudControlModule => {
-    const reverseChannelSocketBridge = new ReverseChannelSocketBridge(deps.config, deps.dockerRuntimeService);
+    const reverseChannelSocketBridge = new ReverseChannelSocketBridge(
+        deps.config,
+        deps.dockerRuntimeService,
+        deps.hostShellService
+    );
     const handlers = [
         ...createAnalysisHandlers({ analysisDispatchService: deps.analysisDispatchService }),
         ...createJobHandlers({ queueService: deps.queueService, redisConnectionService: deps.redisConnectionService }),
@@ -56,10 +73,14 @@ export const createCloudControlModule = (deps: {
         ...createPluginHandlers({
             minioService: deps.minioService,
             eventBroker: deps.eventBroker,
-            pluginListingRepository
+            pluginListingRepository: deps.pluginListingRepository
         }),
         ...createContainerHandlers({ dockerRuntimeService: deps.dockerRuntimeService }),
-        ...createNotebookHandlers({ notebookRepository, jupyterRuntimeService: deps.jupyterRuntimeService }),
+        ...createRemoteAccessHandlers({
+            minioService: deps.minioService,
+            redisConnectionService: deps.redisConnectionService
+        }),
+        ...createNotebookHandlers({ notebookRepository: deps.notebookRepository, jupyterRuntimeService: deps.jupyterRuntimeService }),
         ...createRuntimeHandlers({ config: deps.config, eventBroker: deps.eventBroker, dockerRuntimeService: deps.dockerRuntimeService })
     ];
 
@@ -73,10 +94,17 @@ export const createCloudControlModule = (deps: {
         deps.eventBroker,
         reverseChannelSocketBridge
     );
+    const daemonExposureRegistryService = new DaemonExposureRegistryService(
+        deps.config,
+        deps.dockerRuntimeService,
+        voltCloudConnection
+    );
+    reverseChannelSocketBridge.setExposureRegistryService(daemonExposureRegistryService);
 
     return {
         reverseChannelSocketBridge,
         voltCloudConnection,
+        daemonExposureRegistryService,
         daemonArtifactReporterService: createDaemonArtifactReporterService(voltCloudConnection),
         daemonJobReporterService: createDaemonJobReporterService(voltCloudConnection)
     };

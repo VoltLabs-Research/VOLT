@@ -1,6 +1,6 @@
-import { logger } from '../../../core/logger';
-import { DAEMON_PATHS } from '../../../core/paths';
-import { MinioService } from '../../platform/services';
+import { logger } from '@/core/logger';
+import { DAEMON_PATHS } from '@/core/paths';
+import { MinioService } from '@/modules/platform/services';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';

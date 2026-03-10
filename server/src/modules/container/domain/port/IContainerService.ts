@@ -15,6 +15,7 @@ export interface CreateRuntimeContainerOptions {
     name: string;
     env?: ContainerEnvironmentVariable[];
     ports?: ContainerPortMapping[];
+    labels?: Record<string, string>;
     memoryInMegabytes: number;
     cpus: number;
     binds?: string[];

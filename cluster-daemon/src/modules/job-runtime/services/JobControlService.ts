@@ -1,5 +1,5 @@
-import type { JobsActionResponse, RetryJobsRequest, RemoveRunningJobsRequest, ClearJobsHistoryRequest } from '../../../shared/contracts';
-import type { QueueService, RedisConnectionService } from '../../platform/services';
+import type { JobsActionResponse, RetryJobsRequest, RemoveRunningJobsRequest, ClearJobsHistoryRequest } from '@/shared/contracts';
+import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
 import { stopProcess } from './processTracker';
 
 const ANALYSIS_QUEUE_NAME = 'analysis_processing';

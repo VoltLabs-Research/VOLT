@@ -4,7 +4,11 @@ export const TEAM_CLUSTER_TOKENS = Object.freeze({
     TeamClusterInstallManifestService: Symbol.for('TeamClusterInstallManifestService'),
     TeamClusterLifecycleService: Symbol.for('TeamClusterLifecycleService'),
     TeamClusterHeartbeatMonitor: Symbol.for('TeamClusterHeartbeatMonitor'),
+    TeamClusterExposureRegistryService: Symbol.for('TeamClusterExposureRegistryService'),
     TeamClusterReverseChannelService: Symbol.for('TeamClusterReverseChannelService'),
+    TeamClusterRemoteTerminalService: Symbol.for('TeamClusterRemoteTerminalService'),
+    TeamClusterTcpExposureRelayService: Symbol.for('TeamClusterTcpExposureRelayService'),
     TeamClusterSocketModule: Symbol.for('TeamClusterSocketModule'),
-    DaemonAnalysisCompletionService: Symbol.for('DaemonAnalysisCompletionService')
+    DaemonAnalysisCompletionService: Symbol.for('DaemonAnalysisCompletionService'),
+    TeamClusterRemoteAccessSessionService: Symbol.for('TeamClusterRemoteAccessSessionService')
 });
