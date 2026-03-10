@@ -282,10 +282,10 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
         const listingMap = new Map<string, ListingAggregation>();
 
         do {
-            const daemonResult = await this.daemonClient.request<DaemonPaginatedResult<DaemonListingRow>>(
+            const daemonResult = await this.daemonClient.command<DaemonPaginatedResult<DaemonListingRow>>(
                 teamClusterId,
-                '/api/plugins/listings',
-                { query: { analysisId, page, limit: pageSize } }
+                'plugin.listings.list',
+                { analysisId, page, limit: pageSize }
             );
 
             totalPages = Math.max(1, daemonResult.totalPages || 1);
@@ -349,10 +349,10 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
         const allRows: SubListingExportRowInput[] = [];
 
         do {
-            const daemonResult = await this.daemonClient.request<DaemonPaginatedResult<DaemonSubListingRow>>(
+            const daemonResult = await this.daemonClient.command<DaemonPaginatedResult<DaemonSubListingRow>>(
                 teamClusterId,
-                '/api/plugins/sub-listings',
-                { query: { analysisId, page, limit: pageSize } }
+                'plugin.sub-listings.list',
+                { analysisId, page, limit: pageSize }
             );
 
             totalPages = Math.max(1, daemonResult.totalPages || 1);

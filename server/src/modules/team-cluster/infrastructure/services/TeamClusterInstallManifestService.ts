@@ -106,8 +106,6 @@ const buildComposeFile = (daemonDistributionMode: DaemonDistributionMode): strin
         '      - minio',
         '      - mongodb',
         '      - redis',
-        '    ports:',
-        '      - "${DAEMON_PORT}:8080"',
         '    volumes:',
         '      - /var/run/docker.sock:/var/run/docker.sock',
         'volumes:',
@@ -244,8 +242,7 @@ const buildRootEnvFile = (
         `VOLT_CLUSTER_DAEMON_IMAGE=${TEAM_CLUSTER_IMAGES.daemon}`,
         `MINIO_PORT=${ports.minio}`,
         `REDIS_PORT=${ports.redis}`,
-        `MONGODB_PORT=${ports.mongodb}`,
-        `DAEMON_PORT=${ports.daemon}`
+        `MONGODB_PORT=${ports.mongodb}`
     ].join('\n');
 };
 

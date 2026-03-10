@@ -46,10 +46,9 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
             }
 
             const objectName = this.dumpStorage.getObjectName(trajectoryId, String(firstFrame.timestep));
-            const stream = await this.teamClusterDaemonClient.stream(trajectory.props.teamCluster, '/api/objects/volt-dumps', {
-                query: {
-                    objectKey: objectName
-                }
+            const stream = await this.teamClusterDaemonClient.commandStream(trajectory.props.teamCluster, 'object.get', {
+                bucket: 'volt-dumps',
+                objectKey: objectName
             });
             const filename = input.name
                 ? `${input.name}.dump.gz`

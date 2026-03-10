@@ -77,10 +77,9 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
             const objectKey = getRasterFrameObjectName(trajectoryId, frame.timestep);
 
             try {
-                const stream = await this.teamClusterDaemonClient.stream(teamClusterId, `/api/objects/volt-rasterizer`, {
-                    query: {
-                        objectKey
-                    }
+                const stream = await this.teamClusterDaemonClient.commandStream(teamClusterId, 'object.get', {
+                    bucket: 'volt-rasterizer',
+                    objectKey
                 });
                 const buffer = await this.readStream(stream);
 

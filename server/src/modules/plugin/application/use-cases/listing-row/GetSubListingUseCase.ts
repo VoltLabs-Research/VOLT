@@ -94,18 +94,16 @@ export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, Get
         page: number,
         limit: number
     ): Promise<Result<GetSubListingOutputDTO>> {
-        const daemonResult = await this.daemonClient.request<DaemonPaginatedResult>(
+        const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
             teamClusterId,
-            '/api/plugins/sub-listings',
+            'plugin.sub-listings.list',
             {
-                query: {
-                    analysisId: input.analysisId,
-                    exposureId: input.exposureId,
-                    timestep: Number(input.timestep),
-                    subListingName: input.subListingName,
-                    page,
-                    limit
-                }
+                analysisId: input.analysisId,
+                exposureId: input.exposureId,
+                timestep: Number(input.timestep),
+                subListingName: input.subListingName,
+                page,
+                limit
             }
         );
 

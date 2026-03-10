@@ -109,14 +109,14 @@ export class ScriptingJupyterProxyService {
         try {
             const context = await this.authorizeHttpRequest(req);
             this.persistAccessTokenCookie(req, res, context);
-            const daemonPath = this.buildDaemonProxyPath(req.originalUrl, context);
             const body = this.readRequestBody(req.body);
             const headers = this.readProxyRequestHeaders(req);
-            const response = await this.teamClusterDaemonClient.openHttpStream(context.teamClusterId, daemonPath, {
+            const response = await this.teamClusterDaemonClient.commandResponseStream(context.teamClusterId, 'notebook.proxy.http', {
+                notebookId: context.runtimeNotebookId,
+                ...this.buildDaemonProxyPayload(req.originalUrl, context),
                 method: this.readRequestMethod(req.method),
                 headers,
-                body,
-                query: undefined
+                body
             });
 
             this.prepareProxyResponse(res, response);
@@ -146,9 +146,12 @@ export class ScriptingJupyterProxyService {
 
         try {
             const context = await this.authorizeUpgradeRequest(request);
-            const runtime = await this.teamClusterDaemonClient.request<DaemonNotebookRuntimeResponse>(
+            const runtime = await this.teamClusterDaemonClient.command<DaemonNotebookRuntimeResponse>(
                 context.teamClusterId,
-                `/api/notebooks/${context.runtimeNotebookId}/runtime`
+                'notebook.runtime.get',
+                {
+                    notebookId: context.runtimeNotebookId
+                }
             );
 
             if (!runtime.hostPort) {
@@ -282,7 +285,7 @@ export class ScriptingJupyterProxyService {
         });
     }
 
-    private buildDaemonProxyPath(requestUrl: string, context: AuthorizedProxyContext): string {
+    private buildDaemonProxyPayload(requestUrl: string, context: AuthorizedProxyContext): Record<string, unknown> {
         const url = new URL(requestUrl, 'http://volt.local');
         const proxyBasePath = `${JUPYTER_PROXY_BASE_PATH}/${encodeURIComponent(context.teamId)}/notebooks/${encodeURIComponent(context.runtimeNotebookId)}`;
         const proxiedPath = url.pathname.startsWith(proxyBasePath)
@@ -292,8 +295,10 @@ export class ScriptingJupyterProxyService {
         url.searchParams.delete(ACCESS_TOKEN_QUERY_PARAM);
 
         const search = url.searchParams.toString();
-        const targetPath = `/api/notebooks/proxy/${encodeURIComponent(context.runtimeNotebookId)}${proxiedPath}`;
-        return search ? `${targetPath}?${search}` : targetPath;
+        return {
+            proxiedPath,
+            rawQuery: search ? `?${search}` : ''
+        };
     }
 
     private buildDaemonWebSocketTargetUrl(requestUrl: string, context: AuthorizedProxyContext, hostPort: number): string {

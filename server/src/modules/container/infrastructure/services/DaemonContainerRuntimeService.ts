@@ -28,18 +28,15 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
     ) {}
 
     async listContainers(teamClusterId: string): Promise<RuntimeContainerSummary[]> {
-        return this.teamClusterDaemonClient.request<RuntimeContainerSummary[]>(teamClusterId, '/api/containers');
+        return this.teamClusterDaemonClient.command<RuntimeContainerSummary[]>(teamClusterId, 'container.list');
     }
 
     async createContainer(teamClusterId: string, config: CreateRuntimeContainerOptions): Promise<RuntimeContainerInfo> {
-        return this.teamClusterDaemonClient.request<RuntimeContainerInfo>(teamClusterId, '/api/containers', {
-            method: 'POST',
-            body: { ...config }
-        });
+        return this.teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, 'container.create', { ...config });
     }
 
     async getContainer(teamClusterId: string, containerId: string): Promise<RuntimeContainerInfo> {
-        return this.teamClusterDaemonClient.request<RuntimeContainerInfo>(teamClusterId, `/api/containers/${containerId}`);
+        return this.teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, 'container.get', { containerId });
     }
 
     async startContainer(teamClusterId: string, containerId: string): Promise<RuntimeContainerInfo> {
@@ -55,25 +52,19 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
     }
 
     async removeContainer(teamClusterId: string, containerId: string): Promise<void> {
-        await this.teamClusterDaemonClient.request<{ deleted: boolean; }>(teamClusterId, `/api/containers/${containerId}`, {
-            method: 'DELETE'
-        });
+        await this.teamClusterDaemonClient.command<{ deleted: boolean; }>(teamClusterId, 'container.delete', { containerId });
     }
 
     async getStats(teamClusterId: string, containerId: string): Promise<ContainerStats> {
-        return this.teamClusterDaemonClient.request<ContainerStats>(teamClusterId, `/api/containers/${containerId}/stats`);
+        return this.teamClusterDaemonClient.command<ContainerStats>(teamClusterId, 'container.stats.get', { containerId });
     }
 
     async getFiles(teamClusterId: string, containerId: string, path: string): Promise<ContainerFileEntry[]> {
-        return this.teamClusterDaemonClient.request<ContainerFileEntry[]>(teamClusterId, `/api/containers/${containerId}/files`, {
-            query: { path }
-        });
+        return this.teamClusterDaemonClient.command<ContainerFileEntry[]>(teamClusterId, 'container.files.list', { containerId, path });
     }
 
     async readFile(teamClusterId: string, containerId: string, path: string): Promise<string> {
-        const response = await this.teamClusterDaemonClient.request<ReadContainerFileResponse>(teamClusterId, `/api/containers/${containerId}/file`, {
-            query: { path }
-        });
+        const response = await this.teamClusterDaemonClient.command<ReadContainerFileResponse>(teamClusterId, 'container.file.read', { containerId, path });
 
         return response.contents;
     }
@@ -83,13 +74,10 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
     }
 
     async getProcesses(teamClusterId: string, containerId: string): Promise<ContainerProcessInfo[]> {
-        return this.teamClusterDaemonClient.request<ContainerProcessInfo[]>(teamClusterId, `/api/containers/${containerId}/processes`);
+        return this.teamClusterDaemonClient.command<ContainerProcessInfo[]>(teamClusterId, 'container.processes.list', { containerId });
     }
 
     private async applyContainerAction(teamClusterId: string, containerId: string, action: ContainerRuntimeAction): Promise<RuntimeContainerInfo> {
-        return this.teamClusterDaemonClient.request<RuntimeContainerInfo>(teamClusterId, `/api/containers/${containerId}`, {
-            method: 'PATCH',
-            body: { action }
-        });
+        return this.teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, 'container.update', { containerId, action });
     }
 };

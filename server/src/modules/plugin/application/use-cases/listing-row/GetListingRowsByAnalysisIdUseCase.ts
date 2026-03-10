@@ -108,15 +108,13 @@ export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRow
         page: number,
         limit: number
     ): Promise<Result<GetListingRowsByAnalysisIdOutputDTO>> {
-        const daemonResult = await this.daemonClient.request<DaemonPaginatedResult>(
+        const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
             teamClusterId,
-            '/api/plugins/listings',
+            'plugin.listings.list',
             {
-                query: {
-                    analysisId,
-                    page,
-                    limit
-                }
+                analysisId,
+                page,
+                limit
             }
         );
 

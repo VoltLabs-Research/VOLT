@@ -36,11 +36,11 @@ export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingN
 
             if (notebook.props.teamCluster && notebook.props.runtimeNotebookId) {
                 try {
-                    await this.teamClusterDaemonClient.request<{ deleted: boolean; }>(
+                    await this.teamClusterDaemonClient.command<{ deleted: boolean; }>(
                         notebook.props.teamCluster,
-                        `/api/notebooks/${notebook.props.runtimeNotebookId}`,
+                        'notebook.delete',
                         {
-                        method: 'DELETE'
+                            notebookId: notebook.props.runtimeNotebookId
                         }
                     );
                 } catch {

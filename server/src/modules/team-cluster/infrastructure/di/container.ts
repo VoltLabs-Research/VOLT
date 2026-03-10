@@ -8,7 +8,12 @@ import TeamClusterInstallManifestService from '@modules/team-cluster/infrastruct
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
+import CompleteTeamClusterDeletionUseCase from '@modules/team-cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
+import ProcessDaemonJobCompletionUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonJobCompletionUseCase';
 import ProcessDaemonTrajectoryImportUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonTrajectoryImportUseCase';
+import ProcessTeamClusterHealthcheckUseCase from '@modules/team-cluster/application/use-cases/ProcessTeamClusterHealthcheckUseCase';
+import RecordTeamClusterHeartbeatUseCase from '@modules/team-cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
+import UpdateTeamClusterLifecycleUseCase from '@modules/team-cluster/application/use-cases/UpdateTeamClusterLifecycleUseCase';
 import { container } from 'tsyringe';
 
 export const registerTeamClusterDependencies = () => {
@@ -20,6 +25,11 @@ export const registerTeamClusterDependencies = () => {
     container.registerSingleton(TEAM_CLUSTER_TOKENS.TeamClusterReverseChannelService, TeamClusterReverseChannelService);
     container.registerSingleton(TEAM_CLUSTER_TOKENS.TeamClusterSocketModule, TeamClusterSocketModule);
     container.registerSingleton(TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService, DaemonAnalysisCompletionService);
+    container.registerSingleton(CompleteTeamClusterDeletionUseCase);
+    container.registerSingleton(ProcessDaemonJobCompletionUseCase);
     container.registerSingleton(ProcessDaemonTrajectoryImportUseCase);
+    container.registerSingleton(ProcessTeamClusterHealthcheckUseCase);
+    container.registerSingleton(RecordTeamClusterHeartbeatUseCase);
+    container.registerSingleton(UpdateTeamClusterLifecycleUseCase);
     container.register(SOCKET_TOKENS.SocketModule, { useToken: TEAM_CLUSTER_TOKENS.TeamClusterSocketModule });
 };

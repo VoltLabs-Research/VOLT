@@ -1,6 +1,12 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
+import CompleteTeamClusterDeletionUseCase from '@modules/team-cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
+import ProcessDaemonJobCompletionUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonJobCompletionUseCase';
+import ProcessDaemonTrajectoryImportUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonTrajectoryImportUseCase';
+import ProcessTeamClusterHealthcheckUseCase from '@modules/team-cluster/application/use-cases/ProcessTeamClusterHealthcheckUseCase';
+import RecordTeamClusterHeartbeatUseCase from '@modules/team-cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
+import UpdateTeamClusterLifecycleUseCase from '@modules/team-cluster/application/use-cases/UpdateTeamClusterLifecycleUseCase';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterHeartbeatMonitor from '@modules/team-cluster/infrastructure/services/TeamClusterHeartbeatMonitor';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
@@ -8,31 +14,13 @@ import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructu
 import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
 import {
     getTeamClusterRoom,
+    TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
-    TEAM_CLUSTER_DAEMON_RESPONSE_EVENT,
-    TEAM_CLUSTER_DAEMON_STREAM_END_EVENT,
-    TEAM_CLUSTER_DAEMON_STREAM_ERROR_EVENT,
-    TEAM_CLUSTER_DAEMON_STREAM_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_ATTACHED_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_DATA_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_END_EVENT,
-    TEAM_CLUSTER_DAEMON_TERMINAL_ERROR_EVENT,
-    TEAM_CLUSTER_DAEMON_WEBSOCKET_ATTACHED_EVENT,
-    TEAM_CLUSTER_DAEMON_WEBSOCKET_DATA_EVENT,
-    TEAM_CLUSTER_DAEMON_WEBSOCKET_END_EVENT,
-    TEAM_CLUSTER_DAEMON_WEBSOCKET_ERROR_EVENT,
     TEAM_CLUSTER_SUBSCRIPTION_EVENT,
+    type TeamClusterDaemonCommandMessage,
+    type TeamClusterDaemonMessage,
     type TeamClusterDaemonRegisterPayload,
-    type TeamClusterDaemonSocketResponsePayload,
-    type TeamClusterDaemonSocketStreamPayload,
-    type TeamClusterDaemonSocketStreamStatePayload,
-    type TeamClusterDaemonTerminalDataPayload,
-    type TeamClusterDaemonTerminalDetachPayload,
-    type TeamClusterDaemonTerminalStatePayload,
-    type TeamClusterDaemonWebSocketDataPayload,
-    type TeamClusterDaemonWebSocketDetachPayload,
-    type TeamClusterDaemonWebSocketStatePayload
 } from '@modules/team-cluster/utilities/teamClusterSocket';
 import { inject, singleton } from 'tsyringe';
 import { z } from 'zod/v4';
@@ -41,6 +29,8 @@ import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEv
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import type { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import type ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type { Result } from '@shared/domain/port/Result';
 
 interface SubscribeToTeamClusterSocketPayload {
     teamClusterIds: string[];
@@ -73,7 +63,25 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         private readonly teamClusterReverseChannelService: TeamClusterReverseChannelService,
 
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository
+        private readonly teamClusterRepository: ITeamClusterRepository,
+
+        @inject(ProcessTeamClusterHealthcheckUseCase)
+        private readonly processTeamClusterHealthcheckUseCase: ProcessTeamClusterHealthcheckUseCase,
+
+        @inject(UpdateTeamClusterLifecycleUseCase)
+        private readonly updateTeamClusterLifecycleUseCase: UpdateTeamClusterLifecycleUseCase,
+
+        @inject(RecordTeamClusterHeartbeatUseCase)
+        private readonly recordTeamClusterHeartbeatUseCase: RecordTeamClusterHeartbeatUseCase,
+
+        @inject(CompleteTeamClusterDeletionUseCase)
+        private readonly completeTeamClusterDeletionUseCase: CompleteTeamClusterDeletionUseCase,
+
+        @inject(ProcessDaemonJobCompletionUseCase)
+        private readonly processDaemonJobCompletionUseCase: ProcessDaemonJobCompletionUseCase,
+
+        @inject(ProcessDaemonTrajectoryImportUseCase)
+        private readonly processDaemonTrajectoryImportUseCase: ProcessDaemonTrajectoryImportUseCase
     ) {
         super(emitter, roomManager, eventRegistry);
     }
@@ -163,105 +171,92 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             }
         );
 
-        this.on<TeamClusterDaemonSocketResponsePayload>(
+        this.on<TeamClusterDaemonMessage>(
             connection.id,
-            TEAM_CLUSTER_DAEMON_RESPONSE_EVENT,
+            TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
             async (_conn, payload) => {
-                this.teamClusterReverseChannelService.handleResponse(connection.id, payload);
-            }
-        );
+                if (this.teamClusterReverseChannelService.isRegisteredDaemonSocket(connection.id) && payload.type === 'command') {
+                    await this.handleDaemonServerCommand(connection.id, payload);
+                    return;
+                }
 
-        this.on<TeamClusterDaemonSocketStreamPayload>(
-            connection.id,
-            TEAM_CLUSTER_DAEMON_STREAM_EVENT,
-            async (_conn, payload) => {
-                this.teamClusterReverseChannelService.handleStreamChunk(connection.id, payload);
-            }
-        );
-
-        this.on<TeamClusterDaemonSocketStreamStatePayload>(
-            connection.id,
-            TEAM_CLUSTER_DAEMON_STREAM_END_EVENT,
-            async (_conn, payload) => {
-                this.teamClusterReverseChannelService.handleStreamEnd(connection.id, payload);
-            }
-        );
-
-        this.on<TeamClusterDaemonSocketStreamStatePayload>(
-            connection.id,
-            TEAM_CLUSTER_DAEMON_STREAM_ERROR_EVENT,
-            async (_conn, payload) => {
-                this.teamClusterReverseChannelService.handleStreamError(connection.id, payload);
-            }
-        );
-
-        this.on<TeamClusterDaemonTerminalDetachPayload>(
-            connection.id,
-            TEAM_CLUSTER_DAEMON_TERMINAL_ATTACHED_EVENT,
-            async (_conn, payload) => {
-                this.teamClusterReverseChannelService.handleTerminalAttached(connection.id, payload);
-            }
-        );
-
-        this.on<TeamClusterDaemonTerminalDataPayload>(
-            connection.id,
-            TEAM_CLUSTER_DAEMON_TERMINAL_DATA_EVENT,
-            async (_conn, payload) => {
-                this.teamClusterReverseChannelService.handleTerminalData(connection.id, payload);
-            }
-        );
-
-        this.on<TeamClusterDaemonTerminalStatePayload>(
-            connection.id,
-            TEAM_CLUSTER_DAEMON_TERMINAL_END_EVENT,
-            async (_conn, payload) => {
-                this.teamClusterReverseChannelService.handleTerminalEnd(connection.id, payload);
-            }
-        );
-
-        this.on<TeamClusterDaemonTerminalStatePayload>(
-            connection.id,
-            TEAM_CLUSTER_DAEMON_TERMINAL_ERROR_EVENT,
-            async (_conn, payload) => {
-                this.teamClusterReverseChannelService.handleTerminalError(connection.id, payload);
-            }
-        );
-
-        this.on<TeamClusterDaemonWebSocketDetachPayload>(
-            connection.id,
-            TEAM_CLUSTER_DAEMON_WEBSOCKET_ATTACHED_EVENT,
-            async (_conn, payload) => {
-                this.teamClusterReverseChannelService.handleWebSocketAttached(connection.id, payload);
-            }
-        );
-
-        this.on<TeamClusterDaemonWebSocketDataPayload>(
-            connection.id,
-            TEAM_CLUSTER_DAEMON_WEBSOCKET_DATA_EVENT,
-            async (_conn, payload) => {
-                this.teamClusterReverseChannelService.handleWebSocketData(connection.id, payload);
-            }
-        );
-
-        this.on<TeamClusterDaemonWebSocketStatePayload>(
-            connection.id,
-            TEAM_CLUSTER_DAEMON_WEBSOCKET_END_EVENT,
-            async (_conn, payload) => {
-                this.teamClusterReverseChannelService.handleWebSocketEnd(connection.id, payload);
-            }
-        );
-
-        this.on<TeamClusterDaemonWebSocketStatePayload>(
-            connection.id,
-            TEAM_CLUSTER_DAEMON_WEBSOCKET_ERROR_EVENT,
-            async (_conn, payload) => {
-                this.teamClusterReverseChannelService.handleWebSocketError(connection.id, payload);
+                this.teamClusterReverseChannelService.handleMessage(connection.id, payload);
             }
         );
 
         this.onDisconnect(connection.id, async (conn) => {
             delete conn.data.teamClusterIds;
             this.teamClusterReverseChannelService.unregisterDaemonConnection(connection.id);
+        });
+    }
+
+    private async handleDaemonServerCommand(socketId: string, payload: TeamClusterDaemonCommandMessage): Promise<void> {
+        if (payload.command === 'runtime.heartbeat') {
+            const result = await this.recordTeamClusterHeartbeatUseCase.execute(payload.payload as never);
+            this.emitUseCaseResult(socketId, payload.requestId, result);
+            return;
+        }
+
+        if (payload.command === 'runtime.lifecycle') {
+            const result = await this.updateTeamClusterLifecycleUseCase.execute(payload.payload as never);
+            this.emitUseCaseResult(socketId, payload.requestId, result);
+            return;
+        }
+
+        if (payload.command === 'runtime.delete-completed') {
+            const result = await this.completeTeamClusterDeletionUseCase.execute(payload.payload as never);
+            this.emitUseCaseResult(socketId, payload.requestId, result);
+            return;
+        }
+
+        if (payload.command === 'analysis.job-complete') {
+            const result = await this.processDaemonJobCompletionUseCase.execute(payload.payload as never);
+            this.emitUseCaseResult(socketId, payload.requestId, result);
+            return;
+        }
+
+        if (payload.command === 'trajectory.import-complete') {
+            const result = await this.processDaemonTrajectoryImportUseCase.execute(payload.payload as never);
+            this.emitUseCaseResult(socketId, payload.requestId, result);
+            return;
+        }
+
+        if (payload.command === 'runtime.healthcheck') {
+            const result = await this.processTeamClusterHealthcheckUseCase.execute(payload.payload as never);
+            this.emitUseCaseResult(socketId, payload.requestId, result);
+            return;
+        }
+
+        this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
+            type: 'response',
+            requestId: payload.requestId,
+            ok: false,
+            status: 404,
+            message: `Unknown daemon server command: ${payload.command}`
+        });
+    }
+
+    private emitUseCaseResult<T>(socketId: string, requestId: string, result: Result<T, ApplicationError>): void {
+        if (!result.success) {
+            this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
+                type: 'response',
+                requestId,
+                ok: false,
+                status: result.error.statusCode,
+                message: result.error.message
+            });
+            return;
+        }
+
+        this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
+            type: 'response',
+            requestId,
+            ok: true,
+            status: 200,
+            data: {
+                status: 'success',
+                data: result.value
+            }
         });
     }
 };

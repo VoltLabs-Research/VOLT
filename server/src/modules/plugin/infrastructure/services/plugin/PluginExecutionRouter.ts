@@ -53,26 +53,23 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             iterable: node.data.exposure!.iterable
         }));
 
-        await this.teamClusterDaemonClient.request(input.teamClusterId, '/api/orchestration/analysis/start', {
-            method: 'POST',
-            body: {
+        await this.teamClusterDaemonClient.command(input.teamClusterId, 'analysis.start', {
+            analysisId: input.analysisId,
+            executionData: {
+                binaryObjectPath: entrypointData?.binaryObjectPath || '',
+                binaryFileName: entrypointData?.binaryFileName,
+                arguments: entrypointData?.arguments || '',
+                pluginId: input.plugin.id,
+                trajectoryId: input.trajectoryId,
                 analysisId: input.analysisId,
-                executionData: {
-                    binaryObjectPath: entrypointData?.binaryObjectPath || '',
-                    binaryFileName: entrypointData?.binaryFileName,
-                    arguments: entrypointData?.arguments || '',
-                    pluginId: input.plugin.id,
-                    trajectoryId: input.trajectoryId,
-                    analysisId: input.analysisId,
-                    exposures,
-                    forEachNodeId: input.forEachNodeId,
-                    nodeOutputSnapshots: input.nodeOutputSnapshots
-                },
-                payload: {
-                    teamId: input.teamId,
-                    trajectoryId: input.trajectoryId,
-                    jobs: input.jobs.map((job) => job.props)
-                }
+                exposures,
+                forEachNodeId: input.forEachNodeId,
+                nodeOutputSnapshots: input.nodeOutputSnapshots
+            },
+            payload: {
+                teamId: input.teamId,
+                trajectoryId: input.trajectoryId,
+                jobs: input.jobs.map((job) => job.props)
             }
         });
 
@@ -89,39 +86,26 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             return;
         }
 
-        const syncResponse = await this.teamClusterDaemonClient.request<DaemonPluginSyncResponse>(
-            teamClusterId,
-            '/api/orchestration/plugins/sync',
-            {
-                method: 'POST',
-                body: {
-                    pluginId: plugin.id,
-                    objectKey
-                }
-            }
-        );
+        const syncResponse = await this.teamClusterDaemonClient.command<DaemonPluginSyncResponse>(teamClusterId, 'plugin.sync', {
+            pluginId: plugin.id,
+            objectKey
+        });
 
         if (syncResponse.synced) {
             return;
         }
 
         const buffer = await this.storageService.getBuffer(SYS_BUCKETS.PLUGINS, objectKey);
-        await this.teamClusterDaemonClient.request(teamClusterId, '/api/orchestration/object-upload', {
-            method: 'POST',
-            body: {
-                bucket: 'volt-plugins',
-                objectKey,
-                content: buffer.toString('base64'),
-                encoding: 'base64'
-            }
+        await this.teamClusterDaemonClient.command(teamClusterId, 'object.upload', {
+            bucket: 'volt-plugins',
+            objectKey,
+            content: buffer.toString('base64'),
+            encoding: 'base64'
         });
 
-        await this.teamClusterDaemonClient.request(teamClusterId, '/api/orchestration/plugins/sync', {
-            method: 'POST',
-            body: {
-                pluginId: plugin.id,
-                objectKey
-            }
+        await this.teamClusterDaemonClient.command(teamClusterId, 'plugin.sync', {
+            pluginId: plugin.id,
+            objectKey
         });
     }
 };

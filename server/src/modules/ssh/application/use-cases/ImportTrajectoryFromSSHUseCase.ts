@@ -63,22 +63,19 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
             const trajectoryId = v4();
             const trajectoryName = `Import: ${remotePath.split('/').pop() || remotePath}`;
 
-            await this.teamClusterDaemonClient.request(connectedTeamCluster.id, '/api/orchestration/queue-dispatch', {
-                method: 'POST',
-                body: {
-                    queueName: 'ssh_import',
-                    payload: {
-                        teamId,
-                        sshConnectionId,
-                        remotePath,
-                        userId,
-                        host: sshConnection.props.host,
-                        port: sshConnection.props.port,
-                        username: sshConnection.props.username,
-                        encryptedPassword: sshConnection.props.encryptedPassword,
-                        trajectoryId,
-                        trajectoryName
-                    }
+            await this.teamClusterDaemonClient.command(connectedTeamCluster.id, 'queue.dispatch', {
+                queueName: 'ssh_import',
+                payload: {
+                    teamId,
+                    sshConnectionId,
+                    remotePath,
+                    userId,
+                    host: sshConnection.props.host,
+                    port: sshConnection.props.port,
+                    username: sshConnection.props.username,
+                    encryptedPassword: sshConnection.props.encryptedPassword,
+                    trajectoryId,
+                    trajectoryName
                 }
             });
 
