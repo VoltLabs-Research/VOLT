@@ -89,17 +89,6 @@ export const CONTAINER_TEMPLATES: ContainerTemplate[] = [
         ]
     },
     {
-        id: 'ubuntu',
-        name: 'Ubuntu Algorithms',
-        image: 'volt-ubuntu-algorithms:latest',
-        logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/ubuntu/ubuntu-plain.svg',
-        description: 'Ubuntu runtime with C++23, Conan, CMake and Volt algorithms dependencies preinstalled.',
-        category: 'system',
-        defaultEnv: [
-            { key: 'DEBIAN_FRONTEND', value: 'noninteractive' }
-        ]
-    },
-    {
         id: 'alpine',
         name: 'Alpine',
         image: 'alpine:latest',
