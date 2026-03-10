@@ -43,7 +43,7 @@ export interface RuntimeTerminalExec {
 const MAX_EXEC_BUFFER_SIZE = 10 * 1024 * 1024;
 
 const LOCAL_IMAGE_BUILD_CONTEXTS: Record<string, string> = {
-    'volt-scripting-env:latest': DAEMON_PATHS.scriptingDockerContext
+    'volt-scripting-env:latest': DAEMON_PATHS.scriptingImageContext
 };
 
 const toEnvPairs = (environmentVariables: ContainerEnvironmentVariable[] = []): string[] => {

@@ -31,7 +31,7 @@ export default class CreateTeamClusterRemoteAccessSessionUseCase implements IUse
         @inject(AUTH_TOKENS.PasswordHasher)
         private readonly passwordHasher: IPasswordHasher,
 
-        @inject(TeamClusterRemoteAccessSessionService)
+        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService)
         private readonly sessionService: TeamClusterRemoteAccessSessionService
     ) {}
 

@@ -78,7 +78,7 @@ const ClusterRemoteAccessPasswordModal = ({
             )}
             onClose={onClose}
         >
-            <Container className='d-flex column gap-1'>
+            <Container className='d-flex column gap-1 p-1-5'>
                 <Paragraph className='font-size-2 color-secondary'>
                     Remote access is sensitive. Confirm your password before opening this cluster resource.
                 </Paragraph>

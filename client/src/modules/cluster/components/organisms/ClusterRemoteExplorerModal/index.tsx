@@ -269,6 +269,7 @@ const ClusterRemoteExplorerModal = ({
             id={CLUSTER_REMOTE_EXPLORER_MODAL_ID}
             title={`${target ? getTeamClusterRemoteAccessLabel(target) : 'Remote Explorer'}${teamCluster ? ` · ${teamCluster.name}` : ''}`}
             description='Shared explorer UI for cluster resources.'
+            className='cluster-remote-explorer-modal'
             width='min(96vw, 1480px)'
             onClose={onClose}
         >

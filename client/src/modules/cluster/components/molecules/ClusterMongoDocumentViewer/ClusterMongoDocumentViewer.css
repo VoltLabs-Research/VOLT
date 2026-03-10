@@ -2,12 +2,6 @@
     min-height: 0;
 }
 
-.cluster-mongo-document-card {
-    background: var(--color-surface-1);
-    border: 1px solid var(--color-border-soft);
-}
-
 .cluster-mongo-document-body {
-    background: var(--color-bg);
     border: 1px solid var(--color-border-soft);
 }
