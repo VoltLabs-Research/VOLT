@@ -2,22 +2,24 @@
     display: grid;
     grid-template-columns: minmax(0, 1.5fr) minmax(340px, 0.9fr);
     gap: 1rem;
-    min-height: 70vh;
-}
-
-.cluster-remote-explorer-panel {
-    background: var(--color-surface-1);
-    border: 1px solid var(--color-border-soft);
+    height: 70vh;
 }
 
 .cluster-remote-explorer-detail {
     min-height: 0;
+    overflow: hidden;
 }
 
 .cluster-remote-explorer-detail-body {
     background: var(--color-bg);
     border: 1px solid var(--color-border-soft);
     min-height: 0;
+}
+
+.cluster-remote-explorer-detail .cluster-mongo-document-viewer {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
 }
 
 .cluster-remote-explorer-detail-pre {

@@ -27,7 +27,7 @@ export default class ListTeamClusterRemoteExplorerEntriesUseCase implements IUse
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
         private readonly teamClusterRepository: ITeamClusterRepository,
 
-        @inject(TeamClusterRemoteAccessSessionService)
+        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService)
         private readonly sessionService: TeamClusterRemoteAccessSessionService,
 
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)

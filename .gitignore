@@ -1,5 +1,5 @@
 .opencode/
-depl.sh
+cluster-daemon/dev-tools/
 server/storage/
 
 plans

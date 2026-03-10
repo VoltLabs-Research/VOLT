@@ -79,7 +79,7 @@ const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterMod
                 />
             )}
         >
-            <Container className='d-flex column gap-1'>
+            <Container className='d-flex column gap-1 p-1-5'>
                 {!result && (
                     <>
                         <Paragraph className='font-size-2 color-secondary'>

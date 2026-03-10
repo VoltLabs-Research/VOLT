@@ -42,7 +42,7 @@ export class JupyterRuntimeService {
         try {
             await this.dockerRuntimeService.ensureImage(this.config.jupyter.image);
         } catch {
-            await this.dockerRuntimeService.buildImage(this.config.jupyter.image, DAEMON_PATHS.scriptingDockerContext);
+            await this.dockerRuntimeService.buildImage(this.config.jupyter.image, DAEMON_PATHS.scriptingImageContext);
         }
     }
 

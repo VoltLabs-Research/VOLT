@@ -2,6 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import {
     TeamClusterRemoteAccessTargetDTO
 } from '@modules/team-cluster/application/dtos/TeamClusterRemoteAccessDTO';
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterRemoteAccessSessionService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteAccessSessionService';
 import logger from '@shared/infrastructure/logger';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -40,7 +41,7 @@ export default class TeamClusterRemoteTerminalService {
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
-        @inject(TeamClusterRemoteAccessSessionService)
+        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService)
         private readonly sessionService: TeamClusterRemoteAccessSessionService
     ) {}
 
