@@ -5,7 +5,7 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
 
 import type { ITrajectoryReader } from '@modules/trajectory/domain/port/trajectory/ITrajectoryReader';
-import type { FrameMetadata, ParseOptions, ParseResult } from '@modules/trajectory/domain/contracts/trajectory';
+import type { AtomPageResult, FrameMetadata, ParseOptions, ParseResult } from '@modules/trajectory/domain/contracts/trajectory';
 import type TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
 
 @injectable()
@@ -108,6 +108,23 @@ export default class TrajectoryReader implements ITrajectoryReader {
             trajectoryId,
             timestep,
             objectKey: this.getDumpObjectKey(trajectoryId, timestep)
+        });
+    }
+
+    async readPage(
+        teamClusterId: string,
+        trajectoryId: string,
+        timestep: string | number,
+        page: number,
+        limit: number
+    ): Promise<AtomPageResult> {
+        return this.trajectoryNativeDaemonService.getAtomsPage({
+            teamClusterId,
+            trajectoryId,
+            timestep,
+            objectKey: this.getDumpObjectKey(trajectoryId, timestep),
+            page,
+            limit
         });
     }
 

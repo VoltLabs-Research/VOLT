@@ -1,8 +1,6 @@
-import { ErrorCodes } from '@core/constants/error-codes';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { GetAtomsInputDTO, AtomRecord } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
 import { IAtomPropertiesService } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
-import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
@@ -24,13 +22,6 @@ interface PropertyRenameMap {
     display: string;
 };
 
-const buildDumpNotFoundError = (): ApplicationError => {
-    return ApplicationError.notFound(
-        ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND,
-        'Trajectory dump not found'
-    );
-};
-
 type PerAtomRecord = Record<string, unknown> & {
     id: number;
 };
@@ -44,9 +35,6 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepository: ITrajectoryRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
-        private readonly dumpStorage: ITrajectoryDumpStorageService,
-        
         @inject(TRAJECTORY_TOKENS.AtomPropertiesService)
         private readonly atomProps: IAtomPropertiesService
     ) {}
@@ -60,20 +48,27 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
             const pageNum = Math.max(1, page);
             const limitNum = Math.min(100000, Math.max(1, limit));
 
-            const dumpFilePath = await this.dumpStorage.getDump(trajectoryId, String(timestep));
-            if (!dumpFilePath) {
-                return Result.fail(buildDumpNotFoundError());
+            const trajectory = await this.trajectoryRepository.findById(trajectoryId);
+            const teamClusterId = trajectory?.props.teamCluster;
+
+            if (!teamClusterId) {
+                return Result.fail(
+                    ApplicationError.badRequest(
+                        'Trajectory::ClusterRequired',
+                        'Trajectory does not have an associated team cluster'
+                    )
+                );
             }
 
-            const trajectory = await this.trajectoryRepository.findById(trajectoryId);
+            const atomsPage = await this.trajectoryReader.readPage(
+                teamClusterId,
+                trajectoryId,
+                String(timestep),
+                pageNum,
+                limitNum
+            );
 
-            const parsed = await this.trajectoryReader.read(dumpFilePath, {
-                includeIds: true,
-                properties: []
-            }, trajectory?.props.teamCluster, trajectoryId, String(timestep));
-
-            const totalAtoms = parsed.ids?.length || parsed.positions.length / 3;
-            const atomCount = parsed.ids?.length || parsed.positions.length / 3;
+            const totalAtoms = atomsPage.totalAtoms;
 
             let perAtomData: Map<number, PerAtomRecord> | null = null;
             let displayProperties: string[] = [];
@@ -145,30 +140,27 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
                 }
             }
 
-            const startIdx = (pageNum - 1) * limitNum;
-            const endIdx = Math.min(startIdx + limitNum, atomCount);
-
             const atoms: AtomRecord[] = [];
-            for (let i = startIdx; i < endIdx; i++) {
-                const id = Number(parsed.ids ? parsed.ids[i] : i + 1);
-                const type = Number(parsed.types[i]);
-                const x = Number(parsed.positions[i * 3]);
-                const y = Number(parsed.positions[i * 3 + 1]);
-                const z = Number(parsed.positions[i * 3 + 2]);
+            for (const atom of atomsPage.atoms) {
+                const record: AtomRecord = {
+                    id: atom.id,
+                    type: atom.type,
+                    x: atom.x,
+                    y: atom.y,
+                    z: atom.z
+                };
 
-                const atom: AtomRecord = { id, type, x, y, z };
-
-                if (perAtomData?.has(id)) {
-                    const pluginData = perAtomData.get(id)!;
+                if (perAtomData?.has(atom.id)) {
+                    const pluginData = perAtomData.get(atom.id)!;
                     for (const prop of displayProperties) {
                         const propertyValue = pluginData[prop];
                         if (propertyValue !== undefined) {
-                            atom[prop] = propertyValue;
+                            record[prop] = propertyValue;
                         }
                     }
                 }
 
-                atoms.push(atom);
+                atoms.push(record);
             }
 
             const totalPages = Math.ceil(totalAtoms / limitNum);

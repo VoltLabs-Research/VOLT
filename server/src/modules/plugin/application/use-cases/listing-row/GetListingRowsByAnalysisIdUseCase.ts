@@ -1,11 +1,8 @@
-import { mapListingRowByAnalysis } from '@modules/plugin/utilities/mappers/listing-row/mapListingRowByAnalysis';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     GetListingRowsByAnalysisIdInputDTO,
     GetListingRowsByAnalysisIdOutputDTO,
     ListingRowByAnalysisData
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
-import { IListingRowRepository } from '@modules/plugin/domain/port/listing-row/IListingRowRepository';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 
@@ -16,20 +13,6 @@ import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCluster
 import { injectable, inject } from 'tsyringe';
 
 import type { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
-
-interface ListingRowsByAnalysisFilter {
-    analysis: string;
-    team: string;
-};
-
-const buildListingRowsByAnalysisFilter = (
-    input: GetListingRowsByAnalysisIdInputDTO
-): ListingRowsByAnalysisFilter => {
-    return {
-        analysis: input.analysisId,
-        team: input.teamId
-    };
-};
 
 const mapDaemonListingRow = (row: DaemonListingRow): ListingRowByAnalysisData => {
     return {
@@ -44,10 +27,17 @@ const mapDaemonListingRow = (row: DaemonListingRow): ListingRowByAnalysisData =>
     };
 };
 
+const EMPTY_RESULT: GetListingRowsByAnalysisIdOutputDTO = {
+    data: [],
+    total: 0,
+    page: 1,
+    totalPages: 0,
+    limit: 0
+};
+
 @injectable()
 export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRowsByAnalysisIdInputDTO, GetListingRowsByAnalysisIdOutputDTO> {
     constructor(
-        @inject(PLUGIN_TOKENS.ListingRowRepository) private listingRowRepository: IListingRowRepository,
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private analysisRepository: IAnalysisRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private daemonClient: TeamClusterDaemonClient
     ) {}
@@ -55,45 +45,17 @@ export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRow
     async execute(input: GetListingRowsByAnalysisIdInputDTO): Promise<Result<GetListingRowsByAnalysisIdOutputDTO>> {
         const page = Math.max(1, Number(input.page || 1));
         const limit = Math.min(200, Math.max(1, Number(input.limit || 50)));
-        const sortAsc = input.sortAsc ?? false;
 
         const analysis = await this.analysisRepository.findById(input.analysisId);
-        if (analysis?.props.teamCluster) {
-            return this.executeFromDaemon(analysis.props.teamCluster, input.analysisId, page, limit);
+        if (!analysis?.props.teamCluster) {
+            return Result.ok(EMPTY_RESULT);
         }
 
-        const filter = buildListingRowsByAnalysisFilter(input);
-
-        const result = await this.listingRowRepository.findAll({
-            filter,
-            limit,
-            page,
-            sort: {
-                timestep: sortAsc ? 1 : -1,
-                _id: sortAsc ? 1 : -1
-            },
-            populate: 'trajectory'
-        });
-
-        const data = result.data.map(mapListingRowByAnalysis);
-
-        return Result.ok({
-            ...result,
-            data
-        });
-    }
-
-    private async executeFromDaemon(
-        teamClusterId: string,
-        analysisId: string,
-        page: number,
-        limit: number
-    ): Promise<Result<GetListingRowsByAnalysisIdOutputDTO>> {
         const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
-            teamClusterId,
+            analysis.props.teamCluster,
             'plugin.listings.list',
             {
-                analysisId,
+                analysisId: input.analysisId,
                 page,
                 limit
             }
