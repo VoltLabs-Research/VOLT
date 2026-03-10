@@ -1,18 +1,14 @@
-import { DAEMON_TOKENS } from '../../core/tokens';
 import { RedisConnectionService } from './RedisConnectionService';
-import { inject, injectable } from 'tsyringe';
 import { Job, Queue, Worker } from 'bullmq';
 
 export interface QueueWorkerOptions {
     concurrency?: number;
 };
 
-@injectable()
 export class QueueService {
     private readonly queues = new Map<string, Queue<Record<string, unknown>>>();
 
     constructor(
-        @inject(DAEMON_TOKENS.RedisConnection)
         private readonly redisConnectionService: RedisConnectionService
     ) {
     }

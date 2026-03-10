@@ -1,4 +1,3 @@
-import { injectable } from 'tsyringe';
 import { exec } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -31,7 +30,6 @@ const PHYSICAL_DISK_PATTERN = /^(sd[a-z]|nvme\d+n\d+|vd[a-z]|hd[a-z])$/;
 const PARTITION_SUFFIX_PATTERN = /\d+$/;
 const NVME_DISK_PATTERN = /^nvme\d+n\d+$/;
 
-@injectable()
 export class MetricsService {
     private lastDiskIO: DiskIOSnapshot | null = null;
     private lastNetworkSnapshot: NetworkCounterSnapshot | null = null;

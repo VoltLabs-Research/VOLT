@@ -1,6 +1,5 @@
 import { PluginListingRowModel, type PluginListingRowDocument } from '../models/PluginListingRowModel';
 import { PluginSubListingRowModel, type PluginSubListingRowDocument } from '../models/PluginSubListingRowModel';
-import { injectable } from 'tsyringe';
 
 export interface PluginListingFilter {
     pluginId?: string;
@@ -59,7 +58,6 @@ const toPluginSubListingRowDocument = (value: unknown): PluginSubListingRowDocum
     };
 };
 
-@injectable()
 export class PluginListingRepository {
     async listPluginListings(filter: PluginListingFilter): Promise<PaginatedResult<PluginListingRowDocument>> {
         const query = {

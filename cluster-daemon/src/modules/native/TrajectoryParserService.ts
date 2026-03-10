@@ -1,5 +1,4 @@
 import { ObjectBucketName } from '../../contracts/http';
-import { DAEMON_TOKENS } from '../../core/tokens';
 import { MinioService } from '../../infrastructure/minio/MinioService';
 import {
     NativeModuleLoader,
@@ -14,7 +13,6 @@ import {
     type NativeDataResult,
     type NativeDumpResult
 } from './NativeModuleLoader';
-import { inject, injectable } from 'tsyringe';
 import { randomUUID } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
@@ -22,14 +20,11 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
 
-@injectable()
 export class TrajectoryParserService {
     private readonly runtimeDir = path.join(process.cwd(), '.runtime', 'native-processing');
 
     constructor(
-        @inject(DAEMON_TOKENS.MinioService)
         private readonly minioService: MinioService,
-        @inject(DAEMON_TOKENS.NativeModuleLoader)
         private readonly nativeModuleLoader: NativeModuleLoader
     ) {
     }

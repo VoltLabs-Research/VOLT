@@ -1,12 +1,8 @@
-import { DAEMON_TOKENS } from '../../../core/tokens';
-import { inject, injectable } from 'tsyringe';
 import mongoose from 'mongoose';
 import type { DaemonConfig } from '../../../core/config';
 
-@injectable()
 export class MongoConnectionRepository {
     constructor(
-        @inject(DAEMON_TOKENS.Config)
         private readonly config: DaemonConfig
     ) {
     }

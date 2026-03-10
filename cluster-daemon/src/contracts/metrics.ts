@@ -1,18 +1,18 @@
-export interface MemorySnapshot {
+interface MemorySnapshot {
     totalBytes: number;
     freeBytes: number;
     usedBytes: number;
     usagePercent: number;
 };
 
-export interface DiskUsageSnapshot {
+interface DiskUsageSnapshot {
     totalBytes: number;
     freeBytes: number;
     usedBytes: number;
     usagePercent: number;
 };
 
-export interface DiskOperationsSnapshot {
+interface DiskOperationsSnapshot {
     readMegabytesPerSecond: number;
     writeMegabytesPerSecond: number;
     readIOPS: number;
@@ -20,7 +20,7 @@ export interface DiskOperationsSnapshot {
     totalIOPS: number;
 };
 
-export interface NetworkSnapshot {
+interface NetworkSnapshot {
     incomingKilobytesPerSecond: number;
     outgoingKilobytesPerSecond: number;
     totalKilobytesPerSecond: number;

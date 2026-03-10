@@ -1,47 +1,101 @@
-import { RuntimeLifecycleEventType } from '../contracts/events';
-import { DAEMON_TOKENS } from './tokens';
 import { logger } from './logger';
-import { registerDaemonDependencies, container } from './container';
-import type { DaemonConfig } from './config';
-import type { RuntimeEventBroker } from '../infrastructure/RuntimeEventBroker';
-import type { DockerRuntimeService } from '../infrastructure/docker/DockerRuntimeService';
-import type { MinioService } from '../infrastructure/minio/MinioService';
-import type { MongoConnectionRepository } from '../infrastructure/mongo/repositories/MongoConnectionRepository';
-import type { NotebookRepository } from '../infrastructure/mongo/repositories/NotebookRepository';
-import type { PluginListingRepository } from '../infrastructure/mongo/repositories/PluginListingRepository';
-import type { QueueService } from '../infrastructure/redis/QueueService';
-import type { RedisConnectionService } from '../infrastructure/redis/RedisConnectionService';
-import type { AnalysisWorker } from '../modules/analysis/AnalysisWorker';
-import type { JupyterRuntimeService } from '../modules/jupyter/JupyterRuntimeService';
-import type { MetricsService } from '../modules/metrics/MetricsService';
-import type { FilterEvaluatorService } from '../modules/native/FilterEvaluatorService';
-import type { GlbExporterService } from '../modules/native/GlbExporterService';
-import type { RasterizerService } from '../modules/native/RasterizerService';
-import type { TrajectoryParserService } from '../modules/native/TrajectoryParserService';
-import type { SSHImportWorkerService } from '../modules/ssh-import/SSHImportWorkerService';
-import type { VoltCloudConnection } from '../websocket/VoltCloudConnection';
+import { loadConfig } from './config';
+import { RuntimeEventBroker } from '../infrastructure/RuntimeEventBroker';
+import { DockerRuntimeService } from '../infrastructure/docker/DockerRuntimeService';
+import { MinioService } from '../infrastructure/minio/MinioService';
+import { MongoConnectionRepository } from '../infrastructure/mongo/repositories/MongoConnectionRepository';
+import { NotebookRepository } from '../infrastructure/mongo/repositories/NotebookRepository';
+import { PluginListingRepository } from '../infrastructure/mongo/repositories/PluginListingRepository';
+import { SceneArtifactRepository } from '../infrastructure/mongo/repositories/SceneArtifactRepository';
+import { QueueService } from '../infrastructure/redis/QueueService';
+import { RedisConnectionService } from '../infrastructure/redis/RedisConnectionService';
+import { AnalysisWorker } from '../modules/analysis/AnalysisWorker';
+import { BinaryExecutorService } from '../modules/analysis/BinaryExecutorService';
+import { ExportNodeProcessorService } from '../modules/analysis/ExportNodeProcessorService';
+import { PluginBinaryCacheService } from '../modules/analysis/PluginBinaryCacheService';
+import { ResultProcessorService } from '../modules/analysis/ResultProcessorService';
+import { JupyterRuntimeService } from '../modules/jupyter/JupyterRuntimeService';
+import { MetricsService } from '../modules/metrics/MetricsService';
+import { FilterEvaluatorService } from '../modules/native/FilterEvaluatorService';
+import { GlbExporterService } from '../modules/native/GlbExporterService';
+import { NativeModuleLoader } from '../modules/native/NativeModuleLoader';
+import { RasterizerService } from '../modules/native/RasterizerService';
+import { TrajectoryParserService } from '../modules/native/TrajectoryParserService';
+import { FileExtractorService } from '../modules/ssh-import/FileExtractorService';
+import { SSHConnectionService } from '../modules/ssh-import/SSHConnectionService';
+import { SSHImportWorkerService } from '../modules/ssh-import/SSHImportWorkerService';
+import { VoltCloudConnection } from '../websocket/VoltCloudConnection';
 
 export const bootstrap = async (): Promise<void> => {
-    registerDaemonDependencies();
-
-    const config = container.resolve<DaemonConfig>(DAEMON_TOKENS.Config);
-    const eventBroker = container.resolve<RuntimeEventBroker>(DAEMON_TOKENS.RuntimeEventBroker);
-    const dockerRuntimeService = container.resolve<DockerRuntimeService>(DAEMON_TOKENS.DockerRuntimeService);
-    const jupyterRuntimeService = container.resolve<JupyterRuntimeService>(DAEMON_TOKENS.JupyterRuntimeService);
-    const minioService = container.resolve<MinioService>(DAEMON_TOKENS.MinioService);
-    const notebookRepository = container.resolve<NotebookRepository>(DAEMON_TOKENS.NotebookRepository);
-    const pluginListingRepository = container.resolve<PluginListingRepository>(DAEMON_TOKENS.TrajectoryRepository);
-    const queueService = container.resolve<QueueService>(DAEMON_TOKENS.QueueService);
-    const redisConnectionService = container.resolve<RedisConnectionService>(DAEMON_TOKENS.RedisConnection);
-    const metricsService = container.resolve<MetricsService>(DAEMON_TOKENS.MetricsService);
-    const trajectoryParserService = container.resolve<TrajectoryParserService>(DAEMON_TOKENS.TrajectoryParserService);
-    const glbExporterService = container.resolve<GlbExporterService>(DAEMON_TOKENS.GlbExporterService);
-    const rasterizerService = container.resolve<RasterizerService>(DAEMON_TOKENS.RasterizerService);
-    const filterEvaluatorService = container.resolve<FilterEvaluatorService>(DAEMON_TOKENS.FilterEvaluatorService);
-    const mongoConnectionRepository = container.resolve<MongoConnectionRepository>(DAEMON_TOKENS.MongoConnection);
-    const analysisWorker = container.resolve<AnalysisWorker>(DAEMON_TOKENS.AnalysisWorker);
-    const sshImportWorkerService = container.resolve<SSHImportWorkerService>(DAEMON_TOKENS.SSHImportWorkerService);
-    const voltCloudConnection = container.resolve<VoltCloudConnection>(DAEMON_TOKENS.VoltCloudConnection);
+    const config = loadConfig();
+    const eventBroker = new RuntimeEventBroker();
+    const dockerRuntimeService = new DockerRuntimeService();
+    const minioService = new MinioService(config);
+    const mongoConnectionRepository = new MongoConnectionRepository(config);
+    const notebookRepository = new NotebookRepository();
+    const pluginListingRepository = new PluginListingRepository();
+    const sceneArtifactRepository = new SceneArtifactRepository();
+    const redisConnectionService = new RedisConnectionService(config);
+    const queueService = new QueueService(redisConnectionService);
+    const metricsService = new MetricsService();
+    const nativeModuleLoader = new NativeModuleLoader();
+    const trajectoryParserService = new TrajectoryParserService(minioService, nativeModuleLoader);
+    const rasterizerService = new RasterizerService(minioService, nativeModuleLoader);
+    const glbExporterService = new GlbExporterService(
+        minioService,
+        nativeModuleLoader,
+        trajectoryParserService,
+        rasterizerService
+    );
+    const filterEvaluatorService = new FilterEvaluatorService(minioService, nativeModuleLoader, trajectoryParserService);
+    const jupyterRuntimeService = new JupyterRuntimeService(config, dockerRuntimeService);
+    const pluginBinaryCacheService = new PluginBinaryCacheService(minioService);
+    const binaryExecutorService = new BinaryExecutorService(redisConnectionService);
+    const exportNodeProcessorService = new ExportNodeProcessorService(
+        minioService,
+        nativeModuleLoader,
+        sceneArtifactRepository
+    );
+    const resultProcessorService = new ResultProcessorService(
+        minioService,
+        pluginListingRepository,
+        exportNodeProcessorService
+    );
+    const analysisWorker = new AnalysisWorker(
+        queueService,
+        redisConnectionService,
+        minioService,
+        pluginBinaryCacheService,
+        binaryExecutorService,
+        resultProcessorService
+    );
+    const sshConnectionService = new SSHConnectionService();
+    const fileExtractorService = new FileExtractorService();
+    const sshImportWorkerService = new SSHImportWorkerService(
+        config,
+        queueService,
+        redisConnectionService,
+        minioService,
+        glbExporterService,
+        sshConnectionService,
+        fileExtractorService
+    );
+    const voltCloudConnection = new VoltCloudConnection(
+        config,
+        metricsService,
+        eventBroker,
+        dockerRuntimeService,
+        minioService,
+        notebookRepository,
+        pluginListingRepository,
+        queueService,
+        redisConnectionService,
+        trajectoryParserService,
+        glbExporterService,
+        rasterizerService,
+        filterEvaluatorService,
+        jupyterRuntimeService
+    );
 
     await Promise.all([
         redisConnectionService.connect(),
@@ -50,7 +104,7 @@ export const bootstrap = async (): Promise<void> => {
     ]);
 
     eventBroker.emitLifecycle({
-        type: RuntimeLifecycleEventType.ServicesReady,
+        type: 'services-ready',
         teamClusterId: config.teamClusterId,
         timestamp: new Date().toISOString(),
         connectedToCloud: false,

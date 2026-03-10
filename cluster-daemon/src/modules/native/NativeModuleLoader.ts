@@ -1,4 +1,3 @@
-import { injectable } from 'tsyringe';
 import path from 'node:path';
 
 export interface NativeDumpResult {
@@ -172,6 +171,33 @@ export interface NativeExporterModule {
         min: [number, number, number],
         max: [number, number, number]
     ): Buffer;
+    taubinSmooth(
+        positions: Float32Array,
+        indices: Uint32Array,
+        iterations: number
+    ): boolean;
+    generateMeshGLB(
+        positions: Float32Array,
+        normals: Float32Array,
+        indices: Uint16Array | Uint32Array,
+        hasColors: boolean,
+        colors: Float32Array | undefined,
+        bounds: {
+            minX: number;
+            minY: number;
+            minZ: number;
+            maxX: number;
+            maxY: number;
+            maxZ: number;
+        },
+        material: {
+            baseColor: [number, number, number, number];
+            metallic: number;
+            roughness: number;
+            emissive: [number, number, number];
+            doubleSided?: boolean;
+        }
+    ): Buffer;
 };
 
 export interface NativeRasterizerModule {
@@ -192,7 +218,6 @@ export interface NativeRasterizerOptions {
     zUp: boolean;
 };
 
-@injectable()
 export class NativeModuleLoader {
     private dumpParserModule: NativeDumpParserModule | null = null;
     private dataParserModule: NativeDataParserModule | null = null;

@@ -1,6 +1,5 @@
 import { ObjectBucketName } from '../../contracts/http';
 import { DAEMON_PATHS } from '../../core/paths';
-import { DAEMON_TOKENS } from '../../core/tokens';
 import { MinioService } from '../../infrastructure/minio/MinioService';
 import { RedisConnectionService } from '../../infrastructure/redis/RedisConnectionService';
 import { QueueService } from '../../infrastructure/redis/QueueService';
@@ -9,7 +8,6 @@ import { FileExtractorService } from './FileExtractorService';
 import { SSHConnectionService, type SSHConnectionConfig } from './SSHConnectionService';
 import { TrajectoryParserFactory } from './TrajectoryParserFactory';
 import { logger } from '../../core/logger';
-import { inject, injectable } from 'tsyringe';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -37,24 +35,16 @@ interface ImportedFrameRecord {
     size: number;
 };
 
-@injectable()
 export class SSHImportWorkerService {
     private worker: Worker<SSHImportJobPayload> | null = null;
 
     constructor(
-        @inject(DAEMON_TOKENS.Config)
         private readonly config: DaemonConfig,
-        @inject(DAEMON_TOKENS.QueueService)
         private readonly queueService: QueueService,
-        @inject(DAEMON_TOKENS.RedisConnection)
         private readonly redisConnectionService: RedisConnectionService,
-        @inject(DAEMON_TOKENS.MinioService)
         private readonly minioService: MinioService,
-        @inject(DAEMON_TOKENS.GlbExporterService)
         private readonly glbExporterService: GlbExporterService,
-        @inject(DAEMON_TOKENS.SSHConnectionService)
         private readonly sshConnectionService: SSHConnectionService,
-        @inject(DAEMON_TOKENS.FileExtractorService)
         private readonly fileExtractorService: FileExtractorService
     ) {
     }

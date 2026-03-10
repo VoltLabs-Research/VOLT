@@ -1,13 +1,3 @@
-import type { RuntimeLifecycleEvent } from './events';
-import type { MetricsSnapshot } from './metrics';
-
-export interface DaemonHealthResponse {
-    ok: boolean;
-    ready: boolean;
-    metrics: MetricsSnapshot;
-    latestLifecycleEvent: RuntimeLifecycleEvent | null;
-};
-
 export enum ObjectBucketName {
     Dumps = 'volt-dumps',
     Models = 'volt-models',
@@ -60,15 +50,6 @@ export interface CreateContainerRequest {
     cmd?: string[];
 };
 
-export interface UpdateContainerRequest {
-    action: ContainerAction;
-};
-
-export interface WriteContainerFileRequest {
-    path: string;
-    content: string;
-};
-
 export interface CreateNotebookRequest {
     _id?: string;
     teamId: string;
@@ -85,22 +66,11 @@ export interface UpdateNotebookRequest {
     lastOpenedAt?: string;
 };
 
-export interface CreateNotebookSessionRequest {
-    requestedBy: string;
-};
-
-export interface NotebookSessionJupyterInfo {
-    url: string;
-    ready: boolean;
-};
-
 export interface CreateNotebookSessionResponse {
-    jupyter: NotebookSessionJupyterInfo;
-};
-
-export interface QueueDispatchRequest {
-    queueName: string;
-    payload: Record<string, unknown>;
+    jupyter: {
+        url: string;
+        ready: boolean;
+    };
 };
 
 export interface ObjectUploadRequest {
@@ -139,6 +109,11 @@ export interface AnalysisExposureDefinition {
     name: string;
     results: string;
     iterable?: string;
+    export?: {
+        exporter: string;
+        type: string;
+        options?: Record<string, unknown>;
+    };
 };
 
 export interface AnalysisJobExecutionData {
@@ -148,6 +123,7 @@ export interface AnalysisJobExecutionData {
     pluginId: string;
     trajectoryId: string;
     analysisId: string;
+    teamClusterId?: string;
     exposures: AnalysisExposureDefinition[];
     forEachNodeId: string;
     nodeOutputSnapshots: Record<string, Record<string, unknown>>;
@@ -161,10 +137,6 @@ export interface AnalysisStartRequest {
         trajectoryId: string;
         jobs: AnalysisQueueJobPayload[];
     };
-};
-
-export interface TeamJobsResponse {
-    data: Array<AnalysisQueueJobPayload & Record<string, unknown>>;
 };
 
 export interface RetryJobsRequest {
@@ -186,59 +158,4 @@ export interface JobsActionResponse {
 
 export interface RasterizeTrajectoryRequest {
     trajectoryId: string;
-};
-
-export interface TrajectoryPreprocessRequest {
-    trajectoryId: string;
-    payload: Record<string, unknown>;
-};
-
-export interface NativeTrajectoryPreprocessRequest {
-    trajectoryId: string;
-    timestep: number;
-    objectKey?: string;
-};
-
-export interface NativeTrajectoryMetadataRequest {
-    trajectoryId: string;
-    timestep: number;
-    objectKey?: string;
-};
-
-export interface NativeTrajectoryPropertyStatsRequest extends NativeTrajectoryMetadataRequest {
-    property: string;
-};
-
-export interface NativeTrajectoryUniqueValuesRequest extends NativeTrajectoryPropertyStatsRequest {
-    maxValues?: number;
-};
-
-export interface NativeTrajectoryAtomsPageRequest extends NativeTrajectoryMetadataRequest {
-    page: number;
-    limit: number;
-};
-
-export interface NativeTrajectoryFilterPreviewRequest extends NativeTrajectoryMetadataRequest {
-    property: string;
-    operator: string;
-    value: number;
-    externalValuesBase64?: string;
-};
-
-export interface NativeTrajectoryColorModelRequest extends NativeTrajectoryPropertyStatsRequest {
-    objectKey: string;
-    startValue: number;
-    endValue: number;
-    gradient: string;
-    externalValuesBase64?: string;
-};
-
-export interface NativeTrajectoryParticleFilterModelRequest extends NativeTrajectoryMetadataRequest {
-    objectKey: string;
-    action: 'delete' | 'highlight';
-    maskBase64: string;
-};
-
-export interface UninstallRequest {
-    reason?: string;
 };

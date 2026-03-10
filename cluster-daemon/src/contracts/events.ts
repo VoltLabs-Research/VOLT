@@ -1,27 +1,29 @@
-export enum RuntimeLifecycleEventType {
-    Starting = 'starting',
-    ServicesReady = 'services-ready',
-    HeartbeatSucceeded = 'heartbeat-succeeded',
-    HeartbeatFailed = 'heartbeat-failed',
-    CloudSocketConnected = 'cloud-socket-connected',
-    CloudSocketDisconnected = 'cloud-socket-disconnected',
-    UninstallRequested = 'uninstall-requested',
-    UninstallCompleted = 'uninstall-completed',
-    UninstallFailed = 'uninstall-failed'
-};
+export enum EventType {
+    RuntimeLifecycle = 'lifecycle',
+    RuntimeProgress = 'progress',
+    TeamClusterDaemonRegister = 'team-cluster-daemon:register',
+    TeamClusterDaemonRegistered = 'team-cluster-daemon:registered',
+    TeamClusterDaemonMessage = 'team-cluster-daemon:message'
+}
 
-export enum ProgressStage {
+export type RuntimeLifecycleEventType =
+    | 'starting'
+    | 'services-ready'
+    | 'heartbeat-succeeded'
+    | 'heartbeat-failed'
+    | 'cloud-socket-connected'
+    | 'cloud-socket-disconnected'
+    | 'uninstall-requested'
+    | 'uninstall-completed'
+    | 'uninstall-failed';
+
+export enum ProgressStageType {
     Accepted = 'accepted',
     Queued = 'queued',
     Running = 'running',
     Completed = 'completed',
     Failed = 'failed'
-};
-
-export enum RuntimeEventName {
-    Lifecycle = 'lifecycle',
-    Progress = 'progress'
-};
+}
 
 export interface RuntimeLifecycleEvent {
     type: RuntimeLifecycleEventType;
@@ -29,12 +31,12 @@ export interface RuntimeLifecycleEvent {
     timestamp: string;
     connectedToCloud: boolean;
     details?: string;
-};
+}
 
 export interface RuntimeProgressEvent {
     action: string;
-    stage: ProgressStage;
+    stage: ProgressStageType;
     timestamp: string;
     details?: string;
     payload?: Record<string, unknown>;
-};
+}

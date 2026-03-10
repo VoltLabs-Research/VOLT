@@ -1,5 +1,4 @@
 import { ScriptingNotebookModel, type ScriptingNotebookDocument } from '../models/ScriptingNotebookModel';
-import { injectable } from 'tsyringe';
 import type { CreateNotebookRequest, UpdateNotebookRequest } from '../../../contracts/http';
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
@@ -52,7 +51,6 @@ const toScriptingNotebookDocument = (value: unknown): ScriptingNotebookDocument 
     };
 };
 
-@injectable()
 export class NotebookRepository {
     async listNotebooks(teamId?: string): Promise<ScriptingNotebookDocument[]> {
         const query = teamId ? { team: teamId } : {};

@@ -1,13 +1,11 @@
 import { logger } from '../../core/logger';
 import { DAEMON_PATHS } from '../../core/paths';
-import { DAEMON_TOKENS } from '../../core/tokens';
 import { MinioService } from '../../infrastructure/minio/MinioService';
 import { RedisConnectionService } from '../../infrastructure/redis/RedisConnectionService';
 import { QueueService } from '../../infrastructure/redis/QueueService';
 import { BinaryExecutorService } from './BinaryExecutorService';
 import { PluginBinaryCacheService } from './PluginBinaryCacheService';
 import { ResultProcessorService } from './ResultProcessorService';
-import { inject, injectable } from 'tsyringe';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';
@@ -70,23 +68,16 @@ const parseArguments = (value: string): string[] => {
     return [...value.matchAll(regex)].map((match) => match[1] ?? match[2] ?? match[3]);
 };
 
-@injectable()
 export class AnalysisWorker {
     private running = false;
     private worker: Worker<QueueJobPayload> | null = null;
 
     constructor(
-        @inject(DAEMON_TOKENS.QueueService)
         private readonly queueService: QueueService,
-        @inject(DAEMON_TOKENS.RedisConnection)
         private readonly redisConnectionService: RedisConnectionService,
-        @inject(DAEMON_TOKENS.MinioService)
         private readonly minioService: MinioService,
-        @inject(DAEMON_TOKENS.PluginBinaryCacheService)
         private readonly pluginBinaryCacheService: PluginBinaryCacheService,
-        @inject(DAEMON_TOKENS.BinaryExecutorService)
         private readonly binaryExecutorService: BinaryExecutorService,
-        @inject(DAEMON_TOKENS.ResultProcessorService)
         private readonly resultProcessorService: ResultProcessorService
     ) {
     }

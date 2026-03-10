@@ -1,21 +1,16 @@
-import { RuntimeLifecycleEventType } from '../contracts/events';
+import { type RuntimeLifecycleEventType, EventType } from '../contracts/events';
 import {
-    TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
-    TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
-    TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
-    TeamClusterDaemonResponseType,
+    REVERSE_CHANNEL,
     type TeamClusterDaemonRegisterPayload,
     type TeamClusterDaemonSocketResponsePayload
 } from '../contracts/reverseChannel';
 import { TeamClusterStatus, type ProcessTeamClusterHealthcheckOutputDTO } from './voltCloudTypes';
 import { logger } from '../core/logger';
-import { DAEMON_TOKENS } from '../core/tokens';
 import { DockerRuntimeService } from '../infrastructure/docker/DockerRuntimeService';
 import { RuntimeEventBroker } from '../infrastructure/RuntimeEventBroker';
 import { MetricsService } from '../modules/metrics/MetricsService';
 import { registerDaemonCommands } from './DaemonCommandRegistry';
 import { ReverseChannelSocketBridge } from './ReverseChannelSocketBridge';
-import { inject, injectable } from 'tsyringe';
 import crypto from 'node:crypto';
 import { io, Socket } from 'socket.io-client';
 import type { DaemonConfig } from '../core/config';
@@ -55,7 +50,6 @@ interface CommandResponseEnvelope<T> {
     data: T;
 };
 
-@injectable()
 export class VoltCloudConnection {
     private daemonPassword: string;
     private heartbeatTimer: NodeJS.Timeout | null = null;
@@ -69,33 +63,19 @@ export class VoltCloudConnection {
     private activeSocketId = 0;
 
     constructor(
-        @inject(DAEMON_TOKENS.Config)
         private readonly config: DaemonConfig,
-        @inject(DAEMON_TOKENS.MetricsService)
         private readonly metricsService: MetricsService,
-        @inject(DAEMON_TOKENS.RuntimeEventBroker)
         private readonly eventBroker: RuntimeEventBroker,
-        @inject(DAEMON_TOKENS.DockerRuntimeService)
         dockerRuntimeService: DockerRuntimeService,
-        @inject(DAEMON_TOKENS.MinioService)
         minioService: MinioService,
-        @inject(DAEMON_TOKENS.NotebookRepository)
         notebookRepository: NotebookRepository,
-        @inject(DAEMON_TOKENS.TrajectoryRepository)
         pluginListingRepository: PluginListingRepository,
-        @inject(DAEMON_TOKENS.QueueService)
         queueService: QueueService,
-        @inject(DAEMON_TOKENS.RedisConnection)
         redisConnectionService: RedisConnectionService,
-        @inject(DAEMON_TOKENS.TrajectoryParserService)
         trajectoryParserService: TrajectoryParserService,
-        @inject(DAEMON_TOKENS.GlbExporterService)
         glbExporterService: GlbExporterService,
-        @inject(DAEMON_TOKENS.RasterizerService)
         rasterizerService: RasterizerService,
-        @inject(DAEMON_TOKENS.FilterEvaluatorService)
         filterEvaluatorService: FilterEvaluatorService,
-        @inject(DAEMON_TOKENS.JupyterRuntimeService)
         jupyterRuntimeService: JupyterRuntimeService
     ) {
         this.daemonPassword = config.daemonPassword;
@@ -119,8 +99,8 @@ export class VoltCloudConnection {
 
     async start(): Promise<void> {
         await this.authenticate();
-        this.emitLifecycle(RuntimeLifecycleEventType.Starting, 'Cluster daemon starting');
-        this.connectControlSocket();
+        this.emitLifecycle('starting', 'Cluster daemon starting');
+        await this.connectControlSocket();
         this.startHeartbeatLoop();
     }
 
@@ -216,14 +196,14 @@ export class VoltCloudConnection {
                 this.connectedToCloud = true;
                 this.metricsService.updateCloudLatency(this.latestLatencyMs);
                 this.metricsService.updateCloudConnectionState(true);
-                this.emitLifecycle(RuntimeLifecycleEventType.HeartbeatSucceeded, `Heartbeat latency ${this.latestLatencyMs}ms`);
+                this.emitLifecycle('heartbeat-succeeded', `Heartbeat latency ${this.latestLatencyMs}ms`);
             } catch (error: unknown) {
                 const details = error instanceof Error ? error.message : String(error);
                 this.connectedToCloud = false;
                 this.latestLatencyMs = null;
                 this.metricsService.updateCloudLatency(null);
                 this.metricsService.updateCloudConnectionState(false);
-                this.emitLifecycle(RuntimeLifecycleEventType.HeartbeatFailed, details);
+                this.emitLifecycle('heartbeat-failed', details);
                 logger.warn('Failed to send team cluster heartbeat: ' + error);
             }
         };
@@ -239,9 +219,9 @@ export class VoltCloudConnection {
         }, this.config.heartbeatIntervalMs);
     }
 
-    private connectControlSocket(): void {
+    private connectControlSocket(): Promise<void> {
         if (!this.config.controlSocketUrl) {
-            return;
+            return Promise.resolve();
         }
 
         this.controlSocketRegistered = false;
@@ -260,51 +240,65 @@ export class VoltCloudConnection {
 
         this.controlSocket = socket;
 
-        socket.on('connect', () => {
-            logger.info('Connected to VoltCloud');
-            const payload: TeamClusterDaemonRegisterPayload = {
-                teamClusterId: this.config.teamClusterId,
-                daemonPassword: this.daemonPassword
-            };
+        return new Promise<void>((resolve, reject) => {
+            let resolved = false;
 
-            socket.emit(TEAM_CLUSTER_DAEMON_REGISTER_EVENT, payload);
-        });
+            socket.on('connect', () => {
+                logger.info('Connected to VoltCloud');
+                const payload: TeamClusterDaemonRegisterPayload = {
+                    teamClusterId: this.config.teamClusterId,
+                    daemonPassword: this.daemonPassword
+                };
 
-        socket.on(TEAM_CLUSTER_DAEMON_REGISTERED_EVENT, () => {
-            if (this.activeSocketId !== socketId) {
-                return;
-            }
+                socket.emit(EventType.TeamClusterDaemonRegister, payload);
+            });
 
-            this.controlSocketRegistered = true;
-            this.controlSocket = socket;
-            this.emitLifecycle(RuntimeLifecycleEventType.CloudSocketConnected, 'Outbound cloud socket connected');
-        });
+            socket.on(EventType.TeamClusterDaemonRegistered, () => {
+                if (this.activeSocketId !== socketId) {
+                    return;
+                }
 
-        this.reverseChannelSocketBridge.bindToSocket(socket as unknown as {
-            emit(event: string, payload: unknown): void;
-            on(event: string, listener: (payload: never) => void): void;
-        });
+                this.controlSocketRegistered = true;
+                this.controlSocket = socket;
+                this.emitLifecycle('cloud-socket-connected', 'Outbound cloud socket connected');
 
-        socket.on('disconnect', (reason) => {
-            if (this.activeSocketId !== socketId) {
-                return;
-            }
+                if (!resolved) {
+                    resolved = true;
+                    resolve();
+                }
+            });
 
-            if (this.controlSocket === socket) {
-                this.controlSocket = null;
-            }
-            this.controlSocketRegistered = false;
-            this.reverseChannelSocketBridge.cleanup();
-            this.emitLifecycle(RuntimeLifecycleEventType.CloudSocketDisconnected, `Outbound cloud socket disconnected (${reason})`);
-        });
+            this.reverseChannelSocketBridge.bindToSocket(socket as unknown as {
+                emit(event: string, payload: unknown): void;
+                on(event: string, listener: (payload: never) => void): void;
+            });
 
-        socket.on('connect_error', (error: Error) => {
-            if (this.activeSocketId !== socketId) {
-                return;
-            }
+            socket.on('disconnect', (reason) => {
+                if (this.activeSocketId !== socketId) {
+                    return;
+                }
 
-            logger.error(`Outbound cloud socket connection error, will retry in ${this.baseReconnectDelayMs} ms`);
-            logger.debug({ err: error }, 'Outbound cloud socket connect_error details');
+                if (this.controlSocket === socket) {
+                    this.controlSocket = null;
+                }
+                this.controlSocketRegistered = false;
+                this.reverseChannelSocketBridge.cleanup();
+                this.emitLifecycle('cloud-socket-disconnected', `Outbound cloud socket disconnected (${reason})`);
+            });
+
+            socket.on('connect_error', (error: Error) => {
+                if (this.activeSocketId !== socketId) {
+                    return;
+                }
+
+                logger.error(`Outbound cloud socket connection error, will retry in ${this.baseReconnectDelayMs} ms`);
+                logger.debug({ err: error }, 'Outbound cloud socket connect_error details');
+
+                if (!resolved) {
+                    resolved = true;
+                    reject(error);
+                }
+            });
         });
     }
 
@@ -318,7 +312,7 @@ export class VoltCloudConnection {
             };
 
             await this.sendServerCommand('runtime.lifecycle', requestBody as unknown as Record<string, unknown>);
-            this.emitLifecycle(RuntimeLifecycleEventType.ServicesReady, details);
+            this.emitLifecycle('services-ready', details);
         } catch (error: unknown) {
             logger.warn({ err: error, status }, 'Failed to send lifecycle status to VoltCloud');
         }
@@ -364,7 +358,7 @@ export class VoltCloudConnection {
 
         return new Promise<T | undefined>((resolve, reject) => {
             const timeout = setTimeout(() => {
-                this.controlSocket?.off(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, onMessage);
+                this.controlSocket?.off(EventType.TeamClusterDaemonMessage, onMessage);
                 reject(new Error(`Timed out waiting for response to ${command}`));
             }, 30_000);
 
@@ -379,7 +373,7 @@ export class VoltCloudConnection {
                 }
 
                 clearTimeout(timeout);
-                this.controlSocket?.off(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, onMessage);
+                this.controlSocket?.off(EventType.TeamClusterDaemonMessage, onMessage);
 
                 if (!typedMessage.ok) {
                     reject(new Error(typedMessage.message || `Socket command failed: ${command}`));
@@ -389,12 +383,12 @@ export class VoltCloudConnection {
                 resolve(typedMessage.data?.data);
             };
 
-            this.controlSocket?.on(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, onMessage);
-            this.controlSocket?.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
+            this.controlSocket?.on(EventType.TeamClusterDaemonMessage, onMessage);
+            this.controlSocket?.emit(EventType.TeamClusterDaemonMessage, {
                 type: 'command',
                 requestId,
                 command,
-                responseType: TeamClusterDaemonResponseType.Json,
+                responseType: REVERSE_CHANNEL.ResponseType.Json,
                 payload
             });
         });

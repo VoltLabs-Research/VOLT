@@ -1,9 +1,9 @@
+import { EventType } from '../contracts/events';
 import { DockerRuntimeService, type RuntimeTerminalAttachment } from '../infrastructure/docker/DockerRuntimeService';
 import {
-    TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
-    TeamClusterDaemonResponseType,
-    TeamClusterDaemonSessionKind,
+    REVERSE_CHANNEL,
     type TeamClusterDaemonMessage,
+    type TeamClusterDaemonResponseType,
     type TeamClusterDaemonSessionAttachPayload,
     type TeamClusterDaemonSessionDataPayload,
     type TeamClusterDaemonSessionDetachPayload,
@@ -22,12 +22,12 @@ interface ReverseChannelSocketEmitter {
     on(event: string, listener: (payload: TeamClusterDaemonMessage) => void): void;
 };
 
-interface ReverseChannelCommandHandler {
+export interface ReverseChannelCommandHandler {
     command: string;
     execute: (payload: Record<string, unknown> | undefined) => Promise<ReverseChannelCommandResult>;
 };
 
-interface ReverseChannelCommandResult {
+export interface ReverseChannelCommandResult {
     status?: number;
     data?: unknown;
     body?: Buffer;
@@ -71,7 +71,7 @@ export class ReverseChannelSocketBridge {
     }
 
     bindToSocket(socket: ReverseChannelSocketEmitter): void {
-        socket.on(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, async (message) => {
+        socket.on(EventType.TeamClusterDaemonMessage, async (message) => {
             if (message.type === 'command') {
                 await this.handleCommand(socket, message.requestId, message.command, message.responseType, message.payload);
                 return;
@@ -130,12 +130,12 @@ export class ReverseChannelSocketBridge {
         try {
             const result = await handler.execute(payload);
 
-            if (responseType === TeamClusterDaemonResponseType.Stream && result.stream) {
+            if (responseType === REVERSE_CHANNEL.ResponseType.Stream && result.stream) {
                 await this.emitStreamResponse(socket, requestId, result.stream, result.status || 200, result.headers);
                 return;
             }
 
-            if (responseType === TeamClusterDaemonResponseType.Buffer && result.body) {
+            if (responseType === REVERSE_CHANNEL.ResponseType.Buffer && result.body) {
                 this.emitResponse(socket, {
                     type: 'response',
                     requestId,
@@ -186,12 +186,12 @@ export class ReverseChannelSocketBridge {
             return;
         }
 
-        if (attachPayload.kind === TeamClusterDaemonSessionKind.Terminal) {
+        if (attachPayload.kind === REVERSE_CHANNEL.SessionKind.Terminal) {
             await this.attachTerminal(socket, requestId, attachPayload);
             return;
         }
 
-        if (attachPayload.kind === TeamClusterDaemonSessionKind.WebSocket) {
+        if (attachPayload.kind === REVERSE_CHANNEL.SessionKind.WebSocket) {
             this.attachWebSocket(socket, requestId, attachPayload);
             return;
         }
@@ -228,7 +228,7 @@ export class ReverseChannelSocketBridge {
                     chunkBase64: chunk.toString('base64'),
                     isBinary: true
                 };
-                socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, message);
+                socket.emit(EventType.TeamClusterDaemonMessage, message);
             };
             const onEnd = () => {
                 this.emitSessionEnd(socket, {
@@ -427,7 +427,7 @@ export class ReverseChannelSocketBridge {
                     streamId,
                     chunkBase64: Buffer.from(chunk.value).toString('base64')
                 };
-                socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, streamPayload);
+                socket.emit(EventType.TeamClusterDaemonMessage, streamPayload);
             }
 
             const endPayload: TeamClusterDaemonSocketStreamStatePayload = {
@@ -435,7 +435,7 @@ export class ReverseChannelSocketBridge {
                 requestId,
                 streamId
             };
-            socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, endPayload);
+            socket.emit(EventType.TeamClusterDaemonMessage, endPayload);
         } catch (error: unknown) {
             const endPayload: TeamClusterDaemonSocketStreamStatePayload = {
                 type: 'stream-end',
@@ -443,18 +443,18 @@ export class ReverseChannelSocketBridge {
                 streamId,
                 message: error instanceof Error ? error.message : 'Failed to stream response'
             };
-            socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, endPayload);
+            socket.emit(EventType.TeamClusterDaemonMessage, endPayload);
         } finally {
             reader.releaseLock();
         }
     }
 
     private emitResponse(socket: ReverseChannelSocketEmitter, payload: TeamClusterDaemonSocketResponsePayload): void {
-        socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, payload);
+        socket.emit(EventType.TeamClusterDaemonMessage, payload);
     }
 
     private emitSessionEnd(socket: ReverseChannelSocketEmitter, payload: TeamClusterDaemonSessionEndPayload): void {
-        socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, payload);
+        socket.emit(EventType.TeamClusterDaemonMessage, payload);
     }
 
     private async handleWebSocketMessage(
@@ -469,7 +469,7 @@ export class ReverseChannelSocketBridge {
             chunkBase64: message.data.toString('base64'),
             isBinary: message.isBinary
         };
-        socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, payload);
+        socket.emit(EventType.TeamClusterDaemonMessage, payload);
     }
 
     private async readWebSocketMessage(data: unknown): Promise<WebSocketMessageResult> {

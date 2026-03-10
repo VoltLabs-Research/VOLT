@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { bootstrap } from './core/bootstrap';
 import { logger } from './core/logger';
 

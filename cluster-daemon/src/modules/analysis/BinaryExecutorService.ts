@@ -1,6 +1,4 @@
-import { DAEMON_TOKENS } from '../../core/tokens';
 import { RedisConnectionService } from '../../infrastructure/redis/RedisConnectionService';
-import { inject, injectable } from 'tsyringe';
 import { spawn } from 'node:child_process';
 
 export interface ProcessResult {
@@ -9,10 +7,8 @@ export interface ProcessResult {
     stderr: string;
 };
 
-@injectable()
 export class BinaryExecutorService {
     constructor(
-        @inject(DAEMON_TOKENS.RedisConnection)
         private readonly redisConnectionService: RedisConnectionService
     ) {
     }
