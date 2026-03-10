@@ -34,7 +34,7 @@ export class WorkflowNodeRegistry {
     }
 
     resolveReference(ref: string, context: WorkflowExecutionContext): unknown {
-        const parts = ref.split('../../analysis/workflow');
+        const parts = ref.split('.');
         const nodeId = parts[0];
         const propertyPath = parts.slice(1);
         const nodeOutput = context.outputs.get(nodeId);

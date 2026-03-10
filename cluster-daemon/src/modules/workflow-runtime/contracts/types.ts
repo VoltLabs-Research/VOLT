@@ -32,6 +32,7 @@ export interface WorkflowExecutionContext {
     outputs: Map<string, Record<string, unknown>>;
     userConfig: Record<string, unknown>;
     trajectoryId: string;
+    trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
     analysisId: string;
     generatedFiles: string[];
     pluginId: string;

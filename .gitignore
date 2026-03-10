@@ -2,6 +2,9 @@
 depl.sh
 server/storage/
 
+plans
+.github/agents
+
 # Logs
 logs
 *.log

@@ -55,6 +55,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             teamId: input.teamId,
             teamClusterId: input.teamClusterId,
             trajectoryId: input.trajectoryId,
+            trajectoryFrames: input.trajectoryFrames,
             workflow: input.plugin.props.workflow.props as unknown as WorkflowSerializable,
             config: input.config,
             selectedFrameOnly: input.selectedFrameOnly,

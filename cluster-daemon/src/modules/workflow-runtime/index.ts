@@ -1,4 +1,4 @@
-import { analysisRepository, trajectoryRepository } from './repositories';
+import { analysisRepository } from './repositories';
 import { WorkflowEngine, WorkflowNodeRegistry } from './services';
 import {
     WorkflowArgumentsHandler,
@@ -15,7 +15,7 @@ export interface WorkflowRuntimeModule {
 
 export const createWorkflowRuntimeModule = (): WorkflowRuntimeModule => {
     const workflowNodeRegistry = new WorkflowNodeRegistry();
-    workflowNodeRegistry.register(new WorkflowModifierHandler(trajectoryRepository, analysisRepository));
+    workflowNodeRegistry.register(new WorkflowModifierHandler(analysisRepository));
     workflowNodeRegistry.register(new WorkflowArgumentsHandler(workflowNodeRegistry));
     workflowNodeRegistry.register(new WorkflowContextHandler());
     workflowNodeRegistry.register(new WorkflowForEachHandler(workflowNodeRegistry));

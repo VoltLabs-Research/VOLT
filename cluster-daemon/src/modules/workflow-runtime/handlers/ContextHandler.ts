@@ -1,33 +1,32 @@
 import type { WorkflowNodeHandler } from '../services';
 import { WorkflowNodeType } from '../contracts';
+import { logger } from '../../../core/logger';
 
 export class WorkflowContextHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.Context;
     readonly outputSchema = { properties: {} };
 
     async execute(_node: any, context: any): Promise<Record<string, unknown>> {
-        const current = this.resolveCurrentItem(context);
-        const dumps = current ? [current] : [];
+        const allFrames = Array.isArray(context.trajectoryFrames) ? context.trajectoryFrames : [];
+
+        let dumps: Record<string, unknown>[];
+        if (context.selectedFrameOnly && context.selectedTimestep != null) {
+            dumps = allFrames.filter(
+                (f: Record<string, unknown>) => f.timestep === context.selectedTimestep || f.frame === context.selectedTimestep
+            );
+        } else {
+            dumps = allFrames;
+        }
+
+        logger.info(
+            { framesCount: dumps.length, totalAvailable: allFrames.length },
+            '@context-handler: planning trajectory_dumps'
+        );
 
         return {
             trajectory_dumps: dumps,
             count: dumps.length,
-            trajectory: context.outputs.get(this.findModifierNodeId(context))?.trajectory || null
+            trajectory: { _id: context.trajectoryId, frames: allFrames }
         };
-    }
-
-    private resolveCurrentItem(context: any): Record<string, unknown> | null {
-        for (const [, output] of context.outputs.entries()) {
-            if (output && typeof output === 'object' && 'currentValue' in output) {
-                return (output.currentValue as Record<string, unknown>) || null;
-            }
-        }
-
-        return null;
-    }
-
-    private findModifierNodeId(context: any): string {
-        const modifierNode = context.workflow.nodes.find((node: any) => node.type === WorkflowNodeType.Modifier);
-        return modifierNode?.id || '';
     }
 }
