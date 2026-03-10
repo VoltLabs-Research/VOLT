@@ -1,4 +1,4 @@
-import TokenStorage from '@/modules/auth/services/token-storage';
+import TokenStorage from '@/shared/auth/token-storage';
 import { DefaultChatTransport } from 'ai';
 import type {
     CreateConversationStreamTransportParams,

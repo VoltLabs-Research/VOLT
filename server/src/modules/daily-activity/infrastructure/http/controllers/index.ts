@@ -1,6 +1,6 @@
 import FindActivityByTeamIdController from './FindActivityByTeamIdController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    getByTeamId: container.resolve(FindActivityByTeamIdController)
-};
+export default createControllerRegistry({
+    getByTeamId: FindActivityByTeamIdController
+});

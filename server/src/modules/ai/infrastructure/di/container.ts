@@ -16,6 +16,7 @@ import AIMessageRepository from '@modules/ai/infrastructure/persistence/mongo/re
 import { DeleteConversationAITool } from '@modules/ai/application/ai-tools/DeleteConversationAITool';
 import { ListConversationsAITool } from '@modules/ai/application/ai-tools/ListConversationsAITool';
 import { UpdateConversationAITool } from '@modules/ai/application/ai-tools/UpdateConversationAITool';
+import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 import type { ClassProvider } from 'tsyringe';
 import { container, Lifecycle } from 'tsyringe';
 
@@ -26,20 +27,24 @@ const AI_TOOL_CLASSES: ClassProvider<unknown>[] = [
 ];
 
 export const registerAIDependencies = () => {
-    container.registerSingleton(AI_TOKENS.AIConversationRepository, AIConversationRepository);
-    container.registerSingleton(AI_TOKENS.AIMessageRepository, AIMessageRepository);
-    container.registerSingleton(AI_TOKENS.AIToolService, AIToolService);
-    container.registerSingleton(AI_TOKENS.AIChatTransport, AISDKChatTransport);
-    container.registerSingleton(AI_TOKENS.AIProviderModelDiscovery, AIProviderModelDiscoveryAdapter);
-    container.registerSingleton(AI_TOKENS.AIMessageDTOMapper, AIMessageDTOMapper);
-    container.registerSingleton(AI_TOKENS.AIUIMessageUtils, AIUIMessageUtils);
-    container.registerSingleton(AI_TOKENS.AIResponseMessagePartsMapper, AIResponseMessagePartsMapper);
-    container.registerSingleton(AI_TOKENS.CreateAIConversationUseCase, CreateAIConversationUseCase);
-    container.registerSingleton(AI_TOKENS.ListAIConversationsUseCase, ListAIConversationsUseCase);
-    container.registerSingleton(AI_TOKENS.ListAIConversationMessagesUseCase, ListAIConversationMessagesUseCase);
-    container.registerSingleton(AI_TOKENS.SendAIConversationMessageUseCase, SendAIConversationMessageUseCase);
-    container.registerSingleton(AI_TOKENS.UpdateAIConversationUseCase, UpdateAIConversationUseCase);
-    container.registerSingleton(AI_TOKENS.DeleteAIConversationUseCase, DeleteAIConversationUseCase);
+    registerModuleDependencies({
+        singletons: [
+            [AI_TOKENS.AIConversationRepository, AIConversationRepository],
+            [AI_TOKENS.AIMessageRepository, AIMessageRepository],
+            [AI_TOKENS.AIToolService, AIToolService],
+            [AI_TOKENS.AIChatTransport, AISDKChatTransport],
+            [AI_TOKENS.AIProviderModelDiscovery, AIProviderModelDiscoveryAdapter],
+            [AI_TOKENS.AIMessageDTOMapper, AIMessageDTOMapper],
+            [AI_TOKENS.AIUIMessageUtils, AIUIMessageUtils],
+            [AI_TOKENS.AIResponseMessagePartsMapper, AIResponseMessagePartsMapper],
+            [AI_TOKENS.CreateAIConversationUseCase, CreateAIConversationUseCase],
+            [AI_TOKENS.ListAIConversationsUseCase, ListAIConversationsUseCase],
+            [AI_TOKENS.ListAIConversationMessagesUseCase, ListAIConversationMessagesUseCase],
+            [AI_TOKENS.SendAIConversationMessageUseCase, SendAIConversationMessageUseCase],
+            [AI_TOKENS.UpdateAIConversationUseCase, UpdateAIConversationUseCase],
+            [AI_TOKENS.DeleteAIConversationUseCase, DeleteAIConversationUseCase]
+        ]
+    });
 
     for (const toolClassProvider of AI_TOOL_CLASSES) {
         container.register(AI_TOKENS.AITool, { useClass: toolClassProvider.useClass }, {

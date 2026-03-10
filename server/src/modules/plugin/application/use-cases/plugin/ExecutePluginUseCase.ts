@@ -1,10 +1,8 @@
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ExecutePluginInputDTO } from '@modules/plugin/application/dtos/plugin/ExecutePluginDTO';
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
-import { IAnalysisJobFactory } from '@modules/plugin/domain/port/plugin/IAnalysisJobFactory';
 import { IPluginExecutionRouter } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
-import { IPluginWorkflowEngine } from '@modules/plugin/domain/port/plugin/IPluginWorkflowEngine';
 import { IWorkflowValidatorService } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
 import PluginDisplayNameResolver from '@modules/plugin/utilities/plugin/PluginDisplayNameResolver';
@@ -35,9 +33,6 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         @inject(PLUGIN_TOKENS.PluginRepository)
         private pluginRepo: IPluginRepository,
 
-        @inject(PLUGIN_TOKENS.PluginWorkflowEngine)
-        private workflowEngine: IPluginWorkflowEngine,
-
         @inject(SHARED_TOKENS.EventBus)
         private eventBus: IEventBus,
 
@@ -49,9 +44,6 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private trajectoryRepo: ITrajectoryRepository,
-
-        @inject(PLUGIN_TOKENS.AnalysisJobFactory)
-        private jobFactory: IAnalysisJobFactory,
 
         @inject(PLUGIN_TOKENS.PluginExecutionRouter)
         private readonly pluginExecutionRouter: IPluginExecutionRouter,
@@ -157,48 +149,15 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             createdAt: new Date()
         }));
 
-        const planResult = await this.workflowEngine.planExecutionStrategy({
-            plugin,
-            trajectoryId: input.trajectoryId,
-            analysisId: analysis.id,
-            userConfig: input.config,
-            teamId: input.teamId,
-            options: {
-                selectedFrameOnly: input.selectedFrameOnly,
-                timestep: input.timestep
-            }
-        });
-
-        if (!planResult || planResult.items.length === 0) {
-            return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
-                'No items after ForEach node evaluation'
-            ));
-        }
-
-        const jobs = this.jobFactory.create({
-            analysisId: analysis.id,
-            teamId: input.teamId,
-            trajectoryId: input.trajectoryId,
-            trajectoryName: trajectory.props.name,
-            plugin,
-            items: planResult.items,
-            config: input.config
-        });
-
-        await this.analysisRepo.updateById(analysis.id, {
-            totalFrames: jobs.length
-        });
-
         await this.pluginExecutionRouter.route({
             teamClusterId: input.teamClusterId,
             analysisId: analysis.id,
             trajectoryId: input.trajectoryId,
             teamId: input.teamId,
             plugin,
-            jobs,
-            forEachNodeId: planResult.forEachNodeId,
-            nodeOutputSnapshots: planResult.nodeOutputSnapshots
+            config: input.config,
+            selectedFrameOnly: input.selectedFrameOnly,
+            timestep: input.timestep
         });
 
         return Result.ok({ analysisId: analysis.id });

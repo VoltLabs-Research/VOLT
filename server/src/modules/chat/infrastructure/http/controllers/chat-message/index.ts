@@ -5,14 +5,14 @@ import MarkMessagesAsReadController from './MarkMessagesAsReadController';
 import SendChatMessageController from './SendChatMessageController';
 import SendFileMessageController from './SendFileMessageController';
 import ToggleMessageReactionController from './ToggleMessageReactionController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    delete: container.resolve(DeleteMessageController),
-    editMessage: container.resolve(EditMessageController),
-    getChatMessages: container.resolve(GetChatMessagesController),
-    markMessagesAsRead: container.resolve(MarkMessagesAsReadController),
-    sendChatMessage: container.resolve(SendChatMessageController),
-    sendFileMessage: container.resolve(SendFileMessageController),
-    toggleMessageReaction: container.resolve(ToggleMessageReactionController)
-};
+export default createControllerRegistry({
+    delete: DeleteMessageController,
+    editMessage: EditMessageController,
+    getChatMessages: GetChatMessagesController,
+    markMessagesAsRead: MarkMessagesAsReadController,
+    sendChatMessage: SendChatMessageController,
+    sendFileMessage: SendFileMessageController,
+    toggleMessageReaction: ToggleMessageReactionController
+});

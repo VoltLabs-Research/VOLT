@@ -2,13 +2,13 @@ import { useCallback, useState, useMemo, useEffect } from 'react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import CodeEditor from '@/shared/presentation/components/CodeEditor';
-import useNodeFormRHF from '@/modules/plugin/hooks/plugin/use-node-form-rhf';
+import { createNodeEditorForm } from '@/shared/forms';
 import { EXPORTER_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
-import { Exporter, ExportType_ as ExportType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import type { IExportData } from '@/modules/plugin/api/entities/plugin/workflow';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import { z } from 'zod/v4';
 import type { EditorProps } from '../types';
+import { EXPORT_EDITOR_DEFAULT_VALUES, exportEditorSchema, type ExportEditorFormValues } from './schema';
 
 const EXPORTER_SELECT_OPTIONS = EXPORTER_OPTIONS.map(opt => ({
     value: opt.value,
@@ -27,28 +27,14 @@ const CHART_TYPE_OPTIONS = [
     { value: 'area', title: 'Area Chart' }
 ];
 
-const exportEditorSchema = z.object({
-    exporter: z.string().default(Exporter.ATOMISTIC),
-    type: z.string().default(ExportType.GLB),
-    options: z.record(z.string(), z.unknown()).optional()
-}).strict();
-
-type ExportEditorFormValues = z.infer<typeof exportEditorSchema>;
-
-const DEFAULT_VALUES: ExportEditorFormValues = {
-    exporter: Exporter.ATOMISTIC,
-    type: ExportType.GLB,
-    options: {}
-};
+const useExportEditorForm = createNodeEditorForm<ExportEditorFormValues, 'export'>({
+    schema: exportEditorSchema,
+    defaults: EXPORT_EDITOR_DEFAULT_VALUES,
+    dataKey: 'export'
+});
 
 const ExportEditor = ({ node }: EditorProps) => {
-    const form = useNodeFormRHF<ExportEditorFormValues>({
-        schema: exportEditorSchema,
-        nodeId: node.id,
-        dataKey: 'export',
-        node,
-        defaultValue: DEFAULT_VALUES
-    });
+    const form = useExportEditorForm(node);
 
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
 

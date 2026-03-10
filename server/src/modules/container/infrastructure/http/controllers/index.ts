@@ -7,16 +7,16 @@ import GetContainerStatsByIdController from './GetContainerStatsByIdController';
 import ListContainersByTeamIdController from './ListContainersByTeamIdController';
 import ReadContainerFileByIdController from './ReadContainerFileByIdController';
 import UpdateContainerByIdController from './UpdateContainerByIdController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    create: container.resolve(CreateContainerController),
-    deleteById: container.resolve(DeleteContainerByIdController),
-    getById: container.resolve(GetContainerByIdController),
-    getFilesById: container.resolve(GetContainerFilesByIdController),
-    getProcessesById: container.resolve(GetContainerProcessesByIdController),
-    getStatsById: container.resolve(GetContainerStatsByIdController),
-    listByTeamId: container.resolve(ListContainersByTeamIdController),
-    readFileById: container.resolve(ReadContainerFileByIdController),
-    updateById: container.resolve(UpdateContainerByIdController)
-};
+export default createControllerRegistry({
+    create: CreateContainerController,
+    deleteById: DeleteContainerByIdController,
+    getById: GetContainerByIdController,
+    getFilesById: GetContainerFilesByIdController,
+    getProcessesById: GetContainerProcessesByIdController,
+    getStatsById: GetContainerStatsByIdController,
+    listByTeamId: ListContainersByTeamIdController,
+    readFileById: ReadContainerFileByIdController,
+    updateById: UpdateContainerByIdController
+});

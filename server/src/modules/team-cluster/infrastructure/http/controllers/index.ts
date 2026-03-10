@@ -8,17 +8,17 @@ import ProcessTeamClusterHealthcheckController from '@modules/team-cluster/infra
 import RecordTeamClusterHeartbeatController from '@modules/team-cluster/infrastructure/http/controllers/RecordTeamClusterHeartbeatController';
 import RevealTeamClusterCredentialsController from '@modules/team-cluster/infrastructure/http/controllers/RevealTeamClusterCredentialsController';
 import UpdateTeamClusterLifecycleController from '@modules/team-cluster/infrastructure/http/controllers/UpdateTeamClusterLifecycleController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    completeDeletion: container.resolve(CompleteTeamClusterDeletionController),
-    create: container.resolve(CreateTeamClusterController),
-    deleteById: container.resolve(DeleteTeamClusterByIdController),
-    generateInstallManifest: container.resolve(GenerateTeamClusterInstallManifestController),
-    getById: container.resolve(GetTeamClusterByIdController),
-    listByTeamId: container.resolve(ListTeamClustersByTeamIdController),
-    processHealthcheck: container.resolve(ProcessTeamClusterHealthcheckController),
-    recordHeartbeat: container.resolve(RecordTeamClusterHeartbeatController),
-    revealCredentials: container.resolve(RevealTeamClusterCredentialsController),
-    updateLifecycle: container.resolve(UpdateTeamClusterLifecycleController)
-};
+export default createControllerRegistry({
+    completeDeletion: CompleteTeamClusterDeletionController,
+    create: CreateTeamClusterController,
+    deleteById: DeleteTeamClusterByIdController,
+    generateInstallManifest: GenerateTeamClusterInstallManifestController,
+    getById: GetTeamClusterByIdController,
+    listByTeamId: ListTeamClustersByTeamIdController,
+    processHealthcheck: ProcessTeamClusterHealthcheckController,
+    recordHeartbeat: RecordTeamClusterHeartbeatController,
+    revealCredentials: RevealTeamClusterCredentialsController,
+    updateLifecycle: UpdateTeamClusterLifecycleController
+});

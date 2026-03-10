@@ -6,15 +6,15 @@ import ImportTrajectoryFromSSHController from './ImportTrajectoryFromSSHControll
 import ListSSHFilesController from './ListSSHFilesController';
 import TestSSHConnectionByIdController from './TestSSHConnectionByIdController';
 import UpdateSSHConnectionByIdController from './UpdateSSHConnectionByIdController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    create: container.resolve(CreateSSHConnectionController),
-    deleteById: container.resolve(DeleteSSHConnectionByIdController),
-    getById: container.resolve(GetSSHConnectionByIdController),
-    importTrajectory: container.resolve(ImportTrajectoryFromSSHController),
-    listByTeamId: container.resolve(GetSSHConnectionsByTeamIdController),
-    testById: container.resolve(TestSSHConnectionByIdController),
-    updateById: container.resolve(UpdateSSHConnectionByIdController),
-    listFiles: container.resolve(ListSSHFilesController)
-};
+export default createControllerRegistry({
+    create: CreateSSHConnectionController,
+    deleteById: DeleteSSHConnectionByIdController,
+    getById: GetSSHConnectionByIdController,
+    importTrajectory: ImportTrajectoryFromSSHController,
+    listByTeamId: GetSSHConnectionsByTeamIdController,
+    testById: TestSSHConnectionByIdController,
+    updateById: UpdateSSHConnectionByIdController,
+    listFiles: ListSSHFilesController
+});

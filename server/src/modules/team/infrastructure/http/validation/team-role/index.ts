@@ -1,5 +1,5 @@
 import { teamRoleNameSchema, teamRolePermissionsSchema } from '@modules/team/application/dtos/team-role/CreateTeamRoleDTO';
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
+import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
 import { z } from 'zod/v4';
 
 const createTeamRoleSchema = z.object({
@@ -9,7 +9,7 @@ const createTeamRoleSchema = z.object({
 
 const updateTeamRoleSchema = createTeamRoleSchema.partial();
 
-export const teamRoleValidation = {
-    create: createValidationMiddleware(createTeamRoleSchema),
-    update: createValidationMiddleware(updateTeamRoleSchema)
-};
+export const teamRoleValidation = createResourceValidation({
+    create: createTeamRoleSchema,
+    update: updateTeamRoleSchema
+});

@@ -1,4 +1,3 @@
-import type Job from '@modules/jobs/domain/entities/Job';
 import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 
 export interface RoutePluginExecutionInput {
@@ -7,9 +6,9 @@ export interface RoutePluginExecutionInput {
     trajectoryId: string;
     teamId: string;
     plugin: Plugin;
-    jobs: Job[];
-    forEachNodeId: string;
-    nodeOutputSnapshots: Record<string, Record<string, unknown>>;
+    config: Record<string, unknown>;
+    selectedFrameOnly?: boolean;
+    timestep?: number;
 };
 
 export interface IPluginExecutionRouter {

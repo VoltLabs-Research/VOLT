@@ -4,8 +4,9 @@ import { createController } from '@shared/infrastructure/http/controllers/create
 
 export default createController(CreateTeamClusterUseCase, {
     statusCode: HttpStatus.Created,
-    extendParams: (request, params) => ({
-        ...params,
-        userId: request.userId ?? ''
-    })
+    contextProviders: [
+        (request) => ({
+            userId: request.userId ?? ''
+        })
+    ]
 });

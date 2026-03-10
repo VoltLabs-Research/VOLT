@@ -1,36 +1,27 @@
 import { fetchTrajectories, trajectoryQuery, TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
 import { dateColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
+import { createPromiseToastOptions, type PromiseToastOptions } from '@/shared/presentation/toast-options';
 import { formatNumber, formatSize } from '@/shared/utils/format';
 import { RiTableLine } from 'react-icons/ri';
 import { useNavigate } from 'react-router-dom';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 
-interface ToastState {
-    title: string;
-};
-
-interface DeleteTrajectoryToastConfig {
-    loading: ToastState;
-    success: ToastState;
-    error: ToastState;
-};
-
 interface ColumnSkeletonText {
     variant: 'text';
     width: number;
 };
 
-const DELETE_TRAJECTORY_TOAST: DeleteTrajectoryToastConfig = {
-    loading: { title: 'Deleting trajectory...' },
-    success: { title: 'Trajectory deleted' },
-    error: { title: 'Failed to delete trajectory' }
-};
+const DELETE_TRAJECTORY_TOAST: PromiseToastOptions = createPromiseToastOptions({
+    loading: 'Deleting trajectory...',
+    success: 'Trajectory deleted',
+    error: 'Failed to delete trajectory'
+});
 
 const NAME_SKELETON: ColumnSkeletonText = {
     variant: 'text',
@@ -115,7 +106,10 @@ export default function TrajectoriesListing() {
             },
             delete: {
                 handler: async ({ item: trajectory }) => {
-                    await showPromise(deleteTrajectoryMutation.mutateAsync(trajectory._id), DELETE_TRAJECTORY_TOAST);
+                    await runAction({
+                        action: () => deleteTrajectoryMutation.mutateAsync(trajectory._id),
+                        toast: DELETE_TRAJECTORY_TOAST
+                    });
                 },
                 confirm: ({ selectedItems }) => (
                     selectedItems.length === 1

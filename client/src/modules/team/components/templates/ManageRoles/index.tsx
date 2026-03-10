@@ -2,10 +2,10 @@ import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useCreateTeamRoleMutation, useDeleteTeamRoleMutation, useUpdateTeamRoleMutation } from '@/modules/team/hooks/role/queries';
 import { rbacConfigQuery } from '@/modules/system/hooks/queries';
 import { RoleEditorModal, openRoleEditorModal } from '../../organisms/RoleEditorModal';
+import { runHandledAction } from '@/shared/errors/handled-action';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
-import { showPromise } from '@/shared/presentation/hooks/toast';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
-import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
@@ -27,28 +27,22 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'team-role.updated', queryKeys: [TEAM_ROLES_QUERY_KEY] }
 ];
 
-interface PromiseToastOptions {
-    loading: { title: string };
-    success: { title: string };
-    error: { title: string };
-};
+const createRoleToastOptions = createPromiseToastOptions({
+    loading: 'Creating role...',
+    success: 'Role created successfully',
+    error: 'Failed to create role'
+});
 
-const createRoleToastOptions: PromiseToastOptions = {
-    loading: { title: 'Creating role...' },
-    success: { title: 'Role created successfully' },
-    error: { title: 'Failed to create role' }
-};
+const updateRoleToastOptions = createPromiseToastOptions({
+    loading: 'Updating role...',
+    success: 'Role updated successfully',
+    error: 'Failed to update role'
+});
 
-const updateRoleToastOptions: PromiseToastOptions = {
-    loading: { title: 'Updating role...' },
-    success: { title: 'Role updated successfully' },
-    error: { title: 'Failed to update role' }
-};
-
-const getDeleteRoleToastOptions = (roleName: string): PromiseToastOptions => ({
-    loading: { title: `Deleting "${roleName}"...` },
-    success: { title: `Role "${roleName}" deleted` },
-    error: { title: `Failed to delete "${roleName}"` }
+const getDeleteRoleToastOptions = (roleName: string) => createPromiseToastOptions({
+    loading: `Deleting "${roleName}"...`,
+    success: `Role "${roleName}" deleted`,
+    error: `Failed to delete "${roleName}"`
 });
 
 const COLUMNS: ColumnConfig<TeamRole>[] = [
@@ -120,25 +114,16 @@ export default function ManageRolesTemplate() {
     }, []);
 
     const handleSaveRole = useCallback(async (data: RoleEditorPayload) => {
-        try{
-            if(editingRole){
-                await showPromise(
-                    updateRoleMutation.mutateAsync({ teamId: selectedTeam._id, roleId: editingRole._id, ...data }),
-                    updateRoleToastOptions
-                );
-            }else{
-                await showPromise(
-                    createRoleMutation.mutateAsync({ teamId: selectedTeam._id, ...data }),
-                    createRoleToastOptions
-                );
-            }
-            setEditingRole(null);
-        }catch(err){
-            if(isAccessDeniedError(err)){
-                notifyApiError(err, { fallbackTitle: 'You do not have permission to manage roles' });
-            }
-            throw err;
-        }
+        await runHandledAction({
+            action: () => editingRole
+                ? updateRoleMutation.mutateAsync({ teamId: selectedTeam._id, roleId: editingRole._id, ...data })
+                : createRoleMutation.mutateAsync({ teamId: selectedTeam._id, ...data }),
+            toast: editingRole ? updateRoleToastOptions : createRoleToastOptions,
+            afterSuccess: () => {
+                setEditingRole(null);
+            },
+            accessDeniedTitle: 'You do not have permission to manage roles'
+        });
     }, [selectedTeam._id, editingRole, createRoleMutation, updateRoleMutation]);
 
     const handleDeleteRoles = useCallback(async (rolesToDelete: TeamRole[]) => {
@@ -158,13 +143,11 @@ export default function ManageRolesTemplate() {
         if(!isConfirmed) return;
 
         for (const role of eligibleRoles) {
-            try{
-                await showPromise(
-                    deleteRoleMutation.mutateAsync({ teamId: selectedTeam._id, roleId: role._id }),
-                    getDeleteRoleToastOptions(role.name)
-                );
-            }catch{
-            }
+            await runHandledAction({
+                action: () => deleteRoleMutation.mutateAsync({ teamId: selectedTeam._id, roleId: role._id }),
+                toast: getDeleteRoleToastOptions(role.name),
+                rethrow: false
+            });
         }
     }, [selectedTeam._id, deleteRoleMutation]);
 

@@ -1,6 +1,6 @@
 import { GetOrCreateChatInputDTO, GetOrCreateChatOutputDTO } from '@modules/chat/application/dtos/chat/GetOrCreateChatDTO';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { toPersistedChatOutput } from '@modules/chat/utilities/toPersistedChatOutput';
+import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -26,6 +26,6 @@ export class GetOrCreateChatUseCase implements IUseCase<GetOrCreateChatInputDTO,
         }
 
         const result = await this.chatRepo.findOrCreateChat(userId, targetUserId, teamId);
-        return Result.ok(toPersistedChatOutput(result));
+        return Result.ok(toPersistedEntity(result));
     }
 };

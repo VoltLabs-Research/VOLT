@@ -1,4 +1,5 @@
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
+import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
+import { objectIdSchema } from '@shared/infrastructure/http/validation/shared-schemas';
 import { z } from 'zod/v4';
 
 const workflowNodeSchema = z.object({
@@ -40,8 +41,6 @@ const workflowSchema = z.object({
     viewport: workflowViewportSchema.optional()
 }).strict();
 
-const objectIdSchema = z.string().trim().regex(/^[a-fA-F0-9]{24}$/);
-
 const createPluginSchema = z.object({
     workflow: workflowSchema
 }).strict();
@@ -62,9 +61,9 @@ const executePluginSchema = z.object({
     config: z.record(z.string(), z.unknown())
 }).strict();
 
-export const pluginValidation = {
-    create: createValidationMiddleware(createPluginSchema),
-    update: createValidationMiddleware(updatePluginSchema),
-    validateWorkflow: createValidationMiddleware(validateWorkflowSchema),
-    execute: createValidationMiddleware(executePluginSchema)
-};
+export const pluginValidation = createResourceValidation({
+    create: createPluginSchema,
+    update: updatePluginSchema,
+    validateWorkflow: validateWorkflowSchema,
+    execute: executePluginSchema
+});

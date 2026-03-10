@@ -1,11 +1,12 @@
-export interface PersistedEntity<TProps> {
-    _id: string;
-    props: TProps;
-};
+import {
+    toPersistedEntity,
+    type PersistedEntity,
+    type PersistedEntityOutput
+} from '@shared/domain/persisted/to-persisted-entity';
 
-export type PersistedOutput<TProps> = TProps & {
-    _id: string;
-};
+export type { PersistedEntity };
+
+export type PersistedOutput<TProps> = PersistedEntityOutput<TProps>;
 
 interface EntityWithProps<TProps> {
     props: TProps;
@@ -20,8 +21,5 @@ export const toPersistedOutput = <TProps>(entity: EntityWithProps<TProps>): Pers
         throw new Error('Persisted entity is missing a string _id');
     }
 
-    return {
-        _id: entity._id,
-        ...entity.props
-    };
+    return toPersistedEntity(entity);
 };

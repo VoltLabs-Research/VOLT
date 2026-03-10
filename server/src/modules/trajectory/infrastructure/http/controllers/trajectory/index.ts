@@ -16,7 +16,7 @@ import DownloadTrajectoryController from './DownloadTrajectoryController';
 import ListSampleSimulationsUseCase from '@modules/trajectory/application/use-cases/trajectory/ListSampleSimulationsUseCase';
 import GetTrajectorySceneArtifactsController from '@modules/trajectory/infrastructure/http/controllers/scene-artifacts/GetTrajectorySceneArtifactsController';
 import { presentTeamMetrics } from '@modules/trajectory/infrastructure/http/presenters/trajectory';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
 const CreateTrajectoryController = createController(CreateTrajectoryUseCase, HttpStatus.Created);
 const DeleteTrajectoryByIdController = createController(DeleteTrajectoryByIdUseCase, HttpStatus.NoContent);
@@ -30,6 +30,13 @@ const GetTrajectoryByIdController = createController(GetTrajectoryByIdUseCase);
 const UpdateTrajectoryByIdController = createController(UpdateTrajectoryByIdUseCase);
 const GetAtomsController = createPaginatedController(GetAtomsUseCase);
 const ListSampleSimulationsController = createController(ListSampleSimulationsUseCase);
+const resolvedControllers = createControllerRegistry({
+    getGLB: GetTrajectoryGLBController,
+    getPreview: GetTrajectoryPreviewController,
+    getSceneArtifacts: GetTrajectorySceneArtifactsController,
+    downloadSamples: DownloadSampleSimulationsController,
+    downloadTrajectory: DownloadTrajectoryController
+});
 
 export default {
     create: new CreateTrajectoryController(),
@@ -37,12 +44,8 @@ export default {
     getByTeamId: new GetTrajectoriesByTeamIdController(),
     getById: new GetTrajectoryByIdController(),
     updateById: new UpdateTrajectoryByIdController(),
-    getGLB: container.resolve(GetTrajectoryGLBController),
-    getPreview: container.resolve(GetTrajectoryPreviewController),
     getMetrics: new GetTeamMetricsController(),
     getAtoms: new GetAtomsController(),
-    getSceneArtifacts: container.resolve(GetTrajectorySceneArtifactsController),
-    downloadSamples: container.resolve(DownloadSampleSimulationsController),
-    downloadTrajectory: container.resolve(DownloadTrajectoryController),
+    ...resolvedControllers,
     listSamples: new ListSampleSimulationsController()
 };

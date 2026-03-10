@@ -2,8 +2,9 @@ import RevealTeamClusterCredentialsUseCase from '@modules/team-cluster/applicati
 import { createController } from '@shared/infrastructure/http/controllers/createController';
 
 export default createController(RevealTeamClusterCredentialsUseCase, {
-    extendParams: (request, params) => ({
-        ...params,
-        userId: request.userId ?? ''
-    })
+    contextProviders: [
+        (request) => ({
+            userId: request.userId ?? ''
+        })
+    ]
 });

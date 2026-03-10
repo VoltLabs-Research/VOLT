@@ -1,4 +1,4 @@
-import { createService } from '@/app/core/http/utilities/create-service';
+import { defineServiceModule } from '@/shared/api/service-module';
 import client from './client';
 import endpoints from './endpoints';
 import type { CreateScriptingSessionParams } from '../dtos/create-scripting-session';
@@ -14,6 +14,9 @@ type ScriptingService = {
     createSession: (params: CreateScriptingSessionParams) => Promise<ScriptingSession>;
 };
 
-const service = createService({ clients: client }, endpoints as never) as ScriptingService;
+const service = defineServiceModule({
+    clients: client,
+    endpoints: endpoints as never
+}) as ScriptingService;
 
 export default service;

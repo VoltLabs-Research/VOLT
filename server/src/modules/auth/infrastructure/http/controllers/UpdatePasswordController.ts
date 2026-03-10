@@ -5,9 +5,10 @@ import UpdatePasswordUseCase from '@modules/auth/application/use-cases/UpdatePas
 
 export default createController(UpdatePasswordUseCase, {
     validationSchema: authValidation.updatePassword,
-    extendParams: (request, params) => ({
-        ...params,
-        userId: request.userId ?? '',
-        ...getAuthRequestContext(request)
-    })
+    contextProviders: [
+        (request) => ({
+            userId: request.userId ?? ''
+        }),
+        getAuthRequestContext
+    ]
 });

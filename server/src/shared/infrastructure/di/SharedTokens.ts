@@ -4,6 +4,7 @@ export const SHARED_TOKENS = Object.freeze({
     EventBus: Symbol.for('EventBus'),
     RedisClient: Symbol.for('RedisClient'),
     FileExtractorService: Symbol.for('FileExtractorService'),
+    DaemonCredentialGuard: Symbol.for('DaemonCredentialGuard'),
     TeamClusterDaemonClient: Symbol.for('TeamClusterDaemonClient'),
     TeamClusterServiceResolver: Symbol.for('TeamClusterServiceResolver'),
     TeamClusterStorageResolver: Symbol.for('TeamClusterStorageResolver'),

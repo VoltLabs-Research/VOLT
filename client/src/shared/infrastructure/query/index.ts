@@ -8,6 +8,10 @@ export {
     withSuccess
 } from './create-paginated-query';
 
+export { createManagedMutation } from './managed-mutation';
+
+export { createCachePolicy } from './cache-policies';
+
 export type {
     QueryOptions,
     MutationOptions,

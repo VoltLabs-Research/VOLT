@@ -2,9 +2,10 @@ import useTeamInvitationData from '@/modules/team/hooks/invitation/use-team-invi
 import { useCancelInvitationMutation, useSendInvitationMutation } from '@/modules/team/hooks/invitation/queries';
 import type { TeamInvitation } from '@/modules/team/api/entities/invitation/team-invitation';
 import type { InviteButtonState } from '../../components/atoms/InviteButton';
-import { getAccessDeniedMessage, getApiErrorMessage, notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { getApiErrorMessage } from '@/shared/errors/notify-api-error';
+import { runHandledAction } from '@/shared/errors/handled-action';
 import useZodForm from '@/shared/presentation/hooks/use-zod-form';
+import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import type { ChangeEvent } from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { sileo } from 'sileo';
@@ -30,17 +31,11 @@ interface UseInvitePanelReturn {
     handleCancelInvitation: (id: string) => Promise<void>;
 };
 
-interface PromiseToastOptions {
-    loading: { title: string };
-    success: { title: string };
-    error: { title: string };
-};
-
-const CANCEL_INVITATION_TOAST_OPTIONS: PromiseToastOptions = {
-    loading: { title: 'Cancelling invitation...' },
-    success: { title: 'Invitation cancelled' },
-    error: { title: 'Failed to cancel invitation' }
-};
+const CANCEL_INVITATION_TOAST_OPTIONS = createPromiseToastOptions({
+    loading: 'Cancelling invitation...',
+    success: 'Invitation cancelled',
+    error: 'Failed to cancel invitation'
+});
 
 export default function useInvitePanel(): UseInvitePanelReturn {
     const [buttonState, setButtonState] = useState<InviteButtonState>('idle');
@@ -96,38 +91,42 @@ export default function useInvitePanel(): UseInvitePanelReturn {
             return;
         }
 
-        try {
-            if (!teamId) {
-                throw new Error('No team selected');
-            }
+        if (!teamId) {
+            form.setError('email', { message: 'No team selected' });
+            setButtonState('error');
+            scheduleButtonReset(2000);
+            return;
+        }
 
-            await sendInvitation.mutateAsync({
+        await runHandledAction({
+            action: () => sendInvitation.mutateAsync({
                 teamId,
                 email,
                 roleId: undefined
-            });
-            sileo.success({
-                title: 'Invitation sent',
-                description: `Invitation sent to ${email}`
-            });
-            form.reset();
-            setButtonState('success');
-            scheduleButtonReset(2500);
-        } catch (error: unknown) {
-            if (isAccessDeniedError(error)) {
-                const accessDeniedMessage = getAccessDeniedMessage(error, 'You do not have permission to send invitations')
-                    ?? 'You do not have permission to send invitations';
-                form.setError('email', { message: accessDeniedMessage });
-                notifyApiError(error, { fallbackTitle: 'You do not have permission to send invitations' });
+            }),
+            afterSuccess: () => {
+                sileo.success({
+                    title: 'Invitation sent',
+                    description: `Invitation sent to ${email}`
+                });
+                form.reset();
+                setButtonState('success');
+                scheduleButtonReset(2500);
+            },
+            accessDeniedTitle: 'You do not have permission to send invitations',
+            onAccessDenied: (message) => {
+                form.setError('email', { message });
                 setButtonState('error');
                 scheduleButtonReset(2000);
-                return;
-            }
-            const message = getApiErrorMessage(error, 'An unexpected error occurred');
-            form.setError('email', { message });
-            setButtonState('error');
-            scheduleButtonReset(2000);
-        }
+            },
+            onError: (message) => {
+                form.setError('email', { message: getApiErrorMessage(message, 'An unexpected error occurred') });
+                setButtonState('error');
+                scheduleButtonReset(2000);
+            },
+            errorToast: false,
+            rethrow: false
+        });
     }, [form, invitations, sendInvitation, scheduleButtonReset, teamId]);
 
     const handleCancelInvitation = useCallback(async (invitationId: string) => {
@@ -137,7 +136,11 @@ export default function useInvitePanel(): UseInvitePanelReturn {
 
         setCancelingId(invitationId);
         try {
-            await showPromise(cancelInvitation.mutateAsync({ teamId, invitationId }), CANCEL_INVITATION_TOAST_OPTIONS);
+            await runHandledAction({
+                action: () => cancelInvitation.mutateAsync({ teamId, invitationId }),
+                toast: CANCEL_INVITATION_TOAST_OPTIONS,
+                rethrow: false
+            });
         } finally {
             setCancelingId(null);
         }

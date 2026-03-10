@@ -4,25 +4,15 @@ import {
     TeamClusterInstallManifestPortsDTO
 } from '@modules/team-cluster/application/dtos/GenerateTeamClusterInstallManifestDTO';
 import TeamCluster from '@modules/team-cluster/domain/entities/TeamCluster';
-import type { ITeamClusterCredentialsCipher } from '@modules/team-cluster/domain/port/ITeamClusterCredentialsCipher';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import { secureCompare } from '@modules/team-cluster/utilities/secureCompare';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import DaemonCredentialGuard, { DecryptedTeamClusterServiceCredentials } from '@shared/application/team-cluster/DaemonCredentialGuard';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { inject, injectable } from 'tsyringe';
-
-interface DecryptedServiceCredentials {
-    minioUsername: string;
-    minioPassword: string;
-    redisUsername: string;
-    redisPassword: string;
-    mongodbUsername: string;
-    mongodbPassword: string;
-    daemonPassword: string;
-};
 
 interface DaemonManifestFile {
     relativePath: string;
@@ -246,14 +236,14 @@ const buildRootEnvFile = (
     ].join('\n');
 };
 
-const buildMinioEnvFile = (credentials: DecryptedServiceCredentials): string => {
+const buildMinioEnvFile = (credentials: DecryptedTeamClusterServiceCredentials): string => {
     return [
         `MINIO_ROOT_USER=${credentials.minioUsername}`,
         `MINIO_ROOT_PASSWORD=${credentials.minioPassword}`
     ].join('\n');
 };
 
-const buildMongoEnvFile = (credentials: DecryptedServiceCredentials): string => {
+const buildMongoEnvFile = (credentials: DecryptedTeamClusterServiceCredentials): string => {
     return [
         `MONGO_INITDB_ROOT_USERNAME=${credentials.mongodbUsername}`,
         `MONGO_INITDB_ROOT_PASSWORD=${credentials.mongodbPassword}`,
@@ -261,14 +251,14 @@ const buildMongoEnvFile = (credentials: DecryptedServiceCredentials): string => 
     ].join('\n');
 };
 
-const buildRedisEnvFile = (credentials: DecryptedServiceCredentials): string => {
+const buildRedisEnvFile = (credentials: DecryptedTeamClusterServiceCredentials): string => {
     return [
         `REDIS_USERNAME=${credentials.redisUsername}`,
         `REDIS_PASSWORD=${credentials.redisPassword}`
     ].join('\n');
 };
 
-const buildRedisAclFile = (credentials: DecryptedServiceCredentials): string => {
+const buildRedisAclFile = (credentials: DecryptedTeamClusterServiceCredentials): string => {
     return [
         'user default off',
         `user ${credentials.redisUsername} on >${credentials.redisPassword} ~* &* +@all`
@@ -277,7 +267,7 @@ const buildRedisAclFile = (credentials: DecryptedServiceCredentials): string => 
 
 const buildDaemonEnvFile = (
     teamClusterId: string,
-    credentials: DecryptedServiceCredentials,
+    credentials: DecryptedTeamClusterServiceCredentials,
     cloudUrl: string
 ): string => {
     return [
@@ -307,11 +297,11 @@ const buildDaemonEnvFile = (
 @injectable()
 export default class TeamClusterInstallManifestService {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(SHARED_TOKENS.DaemonCredentialGuard)
+        private readonly daemonCredentialGuard: DaemonCredentialGuard,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterCredentialsCipher)
-        private readonly teamClusterCredentialsCipher: ITeamClusterCredentialsCipher
+        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
+        private readonly teamClusterRepository: ITeamClusterRepository
     ){}
 
     async generateInstallManifest(
@@ -319,9 +309,9 @@ export default class TeamClusterInstallManifestService {
         daemonPassword: string,
         ports: TeamClusterInstallManifestPortsDTO
     ): Promise<TeamClusterInstallManifestDTO> {
-        const teamCluster = await this.requireTeamClusterByDaemonPassword(teamClusterId, daemonPassword);
+        const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
         const cloudUrl = this.requireCloudUrl();
-        const credentials = this.decryptCredentials(teamCluster);
+        const credentials = this.daemonCredentialGuard.getDecryptedServiceCredentials(teamCluster);
         const daemonDistributionMode = getDaemonDistributionMode();
 
         await this.persistPorts(teamCluster, ports);
@@ -396,52 +386,6 @@ export default class TeamClusterInstallManifestService {
         }
 
         return rawCloudUrl.replace(/\/+$/g, '');
-    }
-
-    private async requireTeamClusterByDaemonPassword(teamClusterId: string, daemonPassword: string): Promise<TeamCluster> {
-        const teamCluster = await this.teamClusterRepository.findByIdWithSensitiveData(teamClusterId);
-        if (!teamCluster) {
-            throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
-        }
-
-        const persistedDaemonPassword = teamCluster.props.services.daemon.password;
-        if (!persistedDaemonPassword) {
-            throw ApplicationError.internalServerError(`Missing daemon password for team cluster ${teamClusterId}`);
-        }
-
-        const decryptedDaemonPassword = this.teamClusterCredentialsCipher.decrypt(persistedDaemonPassword);
-        if (!secureCompare(decryptedDaemonPassword, daemonPassword)) {
-            throw ApplicationError.unauthorized(
-                'TeamCluster::DaemonUnauthorized',
-                'Invalid daemon credentials'
-            );
-        }
-
-        return teamCluster;
-    }
-
-    private decryptCredentials(teamCluster: TeamCluster): DecryptedServiceCredentials {
-        const minioUsername = teamCluster.props.services.minio.username;
-        const minioPassword = teamCluster.props.services.minio.password;
-        const redisUsername = teamCluster.props.services.redis.username;
-        const redisPassword = teamCluster.props.services.redis.password;
-        const mongodbUsername = teamCluster.props.services.mongodb.username;
-        const mongodbPassword = teamCluster.props.services.mongodb.password;
-        const daemonPassword = teamCluster.props.services.daemon.password;
-
-        if (!minioUsername || !minioPassword || !redisUsername || !redisPassword || !mongodbUsername || !mongodbPassword || !daemonPassword) {
-            throw ApplicationError.internalServerError(`Missing service credentials for team cluster ${teamCluster.id}`);
-        }
-
-        return {
-            minioUsername: this.teamClusterCredentialsCipher.decrypt(minioUsername),
-            minioPassword: this.teamClusterCredentialsCipher.decrypt(minioPassword),
-            redisUsername: this.teamClusterCredentialsCipher.decrypt(redisUsername),
-            redisPassword: this.teamClusterCredentialsCipher.decrypt(redisPassword),
-            mongodbUsername: this.teamClusterCredentialsCipher.decrypt(mongodbUsername),
-            mongodbPassword: this.teamClusterCredentialsCipher.decrypt(mongodbPassword),
-            daemonPassword: this.teamClusterCredentialsCipher.decrypt(daemonPassword)
-        };
     }
 
     private async persistPorts(teamCluster: TeamCluster, ports: TeamClusterInstallManifestPortsDTO): Promise<void> {

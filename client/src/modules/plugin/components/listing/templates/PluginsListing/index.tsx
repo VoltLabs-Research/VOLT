@@ -5,12 +5,13 @@ import useExportPlugin from '@/modules/plugin/hooks/plugin/use-export-plugin';
 import useImportPlugin from '@/modules/plugin/hooks/plugin/use-import-plugin';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { PluginStatus } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import Button from '@/shared/presentation/components/Button';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
-import { showPromise } from '@/shared/presentation/hooks/toast';
 import { dateColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
+import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GetPluginsInputDTO } from '@/modules/plugin/api/dtos/plugin/get-plugins';
@@ -29,6 +30,24 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'plugin.created', queryKeys: [PLUGIN_QUERY_KEYS.catalog(), PLUGIN_QUERY_KEYS.all(), PLUGIN_QUERY_KEYS.byId()] },
     { event: 'plugin.deleted', queryKeys: [PLUGIN_QUERY_KEYS.catalog(), PLUGIN_QUERY_KEYS.all(), PLUGIN_QUERY_KEYS.byId()] }
 ];
+
+const CLONE_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({
+    loading: 'Cloning plugin...',
+    success: 'Plugin cloned',
+    error: 'Failed to clone plugin'
+});
+
+const IMPORT_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({
+    loading: 'Importing plugin...',
+    success: 'Plugin imported',
+    error: 'Failed to import plugin'
+});
+
+const DELETE_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({
+    loading: 'Deleting plugin...',
+    success: 'Plugin deleted',
+    error: 'Failed to delete plugin'
+});
 
 const PluginsListing = () => {
     const navigate = useNavigate();
@@ -49,18 +68,18 @@ const PluginsListing = () => {
     }, []);
 
     const handleClone = useCallback(async (item: Plugin) => {
-        const clonedPlugin = await showPromise(
-            clonePluginMutation.mutateAsync({
+        const clonedPlugin = await runAction({
+            action: () => clonePluginMutation.mutateAsync({
                 pluginId: item._id,
                 teamId: selectedTeam._id
             }),
-            {
-                loading: { title: 'Cloning plugin...' },
-                success: { title: 'Plugin cloned' },
-                error: { title: 'Failed to clone plugin' }
+            toast: CLONE_PLUGIN_TOAST_OPTIONS,
+            afterSuccess: (plugin) => {
+                navigate(`/plugins/builder?id=${plugin._id}`);
             }
-        );
-        navigate(`/plugins/builder?id=${clonedPlugin._id}`);
+        });
+
+        return clonedPlugin;
     }, [clonePluginMutation, selectedTeam._id, navigate]);
 
     const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,10 +88,9 @@ const PluginsListing = () => {
 
         setIsImporting(true);
         try{
-            await showPromise(importPlugin(file), {
-                loading: { title: 'Importing plugin...' },
-                success: { title: 'Plugin imported' },
-                error: { title: 'Failed to import plugin' }
+            await runAction({
+                action: () => importPlugin(file),
+                toast: IMPORT_PLUGIN_TOAST_OPTIONS
             });
         }finally{
             setIsImporting(false);
@@ -91,14 +109,14 @@ const PluginsListing = () => {
             [PluginStatus.DRAFT]: 'Plugin set as draft',
             [PluginStatus.DISABLED]: 'Plugin disabled'
         };
-        await showPromise(
-            updatePluginMutation.mutateAsync({ _id: plugin._id, status: newStatus }),
-            {
-                loading: { title: `${statusLabels[newStatus]}...` },
-                success: { title: successLabels[newStatus] },
-                error: { title: 'Failed to update plugin status' }
-            }
-        );
+        await runAction({
+            action: () => updatePluginMutation.mutateAsync({ _id: plugin._id, status: newStatus }),
+            toast: createPromiseToastOptions({
+                loading: `${statusLabels[newStatus]}...`,
+                success: successLabels[newStatus],
+                error: 'Failed to update plugin status'
+            })
+        });
     }, [updatePluginMutation]);
 
     const buildDeleteConfirmationMessage = useCallback((selectedItems: Plugin[]) => {
@@ -126,7 +144,9 @@ const PluginsListing = () => {
             clone: {
                 label: 'Clone',
                 icon: RiFileCopyLine,
-                handler: ({ item }) => handleClone(item),
+                handler: async ({ item }) => {
+                    await handleClone(item);
+                },
                 requiredPermission: 'plugin:create'
             },
             export: {
@@ -137,10 +157,9 @@ const PluginsListing = () => {
             },
             delete: {
                 handler: async ({ item }) => {
-                    await showPromise(deletePlugin(item._id), {
-                        loading: { title: 'Deleting plugin...' },
-                        success: { title: 'Plugin deleted' },
-                        error: { title: 'Failed to delete plugin' }
+                    await runAction({
+                        action: () => deletePlugin(item._id),
+                        toast: DELETE_PLUGIN_TOAST_OPTIONS
                     });
                 },
                 confirm: ({ selectedItems }) => buildDeleteConfirmationMessage(selectedItems),

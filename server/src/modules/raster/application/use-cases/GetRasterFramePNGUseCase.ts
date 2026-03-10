@@ -1,5 +1,5 @@
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
-import { createStreamResponse } from '@modules/raster/utilities/create-download-response';
+import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -24,7 +24,7 @@ export class GetRasterFramePNGUseCase implements IUseCase<GetRasterFramePNGInput
                 input.timestep
             );
 
-            return Result.ok(createStreamResponse({
+            return Result.ok(createDownloadStreamResponse({
                 stream: rasterFrame.stream,
                 contentType: rasterFrame.contentType,
                 contentLength: rasterFrame.contentLength,

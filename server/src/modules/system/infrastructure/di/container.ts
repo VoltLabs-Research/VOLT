@@ -1,4 +1,3 @@
-import { container } from 'tsyringe';
 import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
 import MetricsCollectorService from '@modules/system/infrastructure/services/MetricsCollectorService';
 import CpuMetricsCollector from '@modules/system/infrastructure/services/CpuMetricsCollector';
@@ -12,18 +11,23 @@ import SystemMetricsRedisRepository from '@modules/system/infrastructure/persist
 import SystemSocketModule from '@modules/system/socket/SystemSocketModule';
 import SystemMetricsSocketOrchestrator from '@modules/system/socket/SystemMetricsSocketOrchestrator';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 
 export const registerSystemDependencies = (): void => {
-    container.registerSingleton(SYSTEM_TOKENS.CpuMetricsCollector, CpuMetricsCollector);
-    container.registerSingleton(SYSTEM_TOKENS.MemoryMetricsCollector, MemoryMetricsCollector);
-    container.registerSingleton(SYSTEM_TOKENS.DiskMetricsCollector, DiskMetricsCollector);
-    container.registerSingleton(SYSTEM_TOKENS.NetworkMetricsCollector, NetworkMetricsCollector);
-    container.registerSingleton(SYSTEM_TOKENS.MongoMetricsCollector, MongoMetricsCollector);
-    container.registerSingleton(SYSTEM_TOKENS.ServiceHealthPinger, ServiceHealthPinger);
-    container.registerSingleton(SYSTEM_TOKENS.SystemMetricsRepository, SystemMetricsRedisRepository);
-    container.registerSingleton(SYSTEM_TOKENS.ClusterMetricsAggregator, ClusterMetricsAggregator);
-    container.registerSingleton(SYSTEM_TOKENS.MetricsService, MetricsCollectorService);
-    container.registerSingleton(SYSTEM_TOKENS.MetricsSocketOrchestrator, SystemMetricsSocketOrchestrator);
-    container.registerSingleton(SYSTEM_TOKENS.SystemSocketModule, SystemSocketModule);
-    container.register(SOCKET_TOKENS.SocketModule, { useToken: SYSTEM_TOKENS.SystemSocketModule });
+    registerModuleDependencies({
+        singletons: [
+            [SYSTEM_TOKENS.CpuMetricsCollector, CpuMetricsCollector],
+            [SYSTEM_TOKENS.MemoryMetricsCollector, MemoryMetricsCollector],
+            [SYSTEM_TOKENS.DiskMetricsCollector, DiskMetricsCollector],
+            [SYSTEM_TOKENS.NetworkMetricsCollector, NetworkMetricsCollector],
+            [SYSTEM_TOKENS.MongoMetricsCollector, MongoMetricsCollector],
+            [SYSTEM_TOKENS.ServiceHealthPinger, ServiceHealthPinger],
+            [SYSTEM_TOKENS.SystemMetricsRepository, SystemMetricsRedisRepository],
+            [SYSTEM_TOKENS.ClusterMetricsAggregator, ClusterMetricsAggregator],
+            [SYSTEM_TOKENS.MetricsService, MetricsCollectorService],
+            [SYSTEM_TOKENS.MetricsSocketOrchestrator, SystemMetricsSocketOrchestrator],
+            [SYSTEM_TOKENS.SystemSocketModule, SystemSocketModule]
+        ],
+        aliases: [[SOCKET_TOKENS.SocketModule, SYSTEM_TOKENS.SystemSocketModule]]
+    });
 };

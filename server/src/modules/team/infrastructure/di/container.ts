@@ -36,6 +36,7 @@ import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
 import TeamAIIntegrationSecretCipher from '@modules/team/infrastructure/security/ai-integration/TeamAIIntegrationSecretCipher';
 import TeamJobsSocketModule from '@modules/team/socket/team/TeamJobsSocketModule';
 import TeamPresenceSocketModule from '@modules/team/socket/team-member/TeamPresenceSocketModule';
+import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 import type { ClassProvider } from 'tsyringe';
 import { container } from 'tsyringe';
 
@@ -57,28 +58,34 @@ const TEAM_AI_TOOL_CLASSES: ClassProvider<unknown>[] = [
 ];
 
 export const registerTeamDependencies = () => {
-    container.registerSingleton(TEAM_TOKENS.TeamMemberRepository, TeamMemberRepository);
-    container.registerSingleton(TEAM_TOKENS.TeamRepository, TeamRepository);
-    container.registerSingleton(TEAM_TOKENS.TeamRoleRepository, TeamRoleRepository);
-    container.registerSingleton(TEAM_TOKENS.TeamInvitationRepository, TeamInvitationRepository);
-    container.registerSingleton(TEAM_TOKENS.SecretKeyRepository, SecretKeyRepository);
-    container.registerSingleton(TEAM_TOKENS.SecretKeyUsageLogRepository, SecretKeyUsageLogRepository);
-    container.registerSingleton(TEAM_TOKENS.TeamAIIntegrationRepository, TeamAIIntegrationRepository);
-    container.registerSingleton(TEAM_TOKENS.TeamJobsService, TeamJobsService);
-    container.registerSingleton(TEAM_TOKENS.TeamPresenceService, TeamPresenceService);
-    container.registerSingleton(TEAM_TOKENS.TeamJobsSocketModule, TeamJobsSocketModule);
-    container.registerSingleton(TEAM_TOKENS.TeamPresenceSocketModule, TeamPresenceSocketModule);
-    container.registerSingleton(TEAM_TOKENS.TeamAIProviderCatalog, TeamAIProviderCatalog);
-    container.registerSingleton(TEAM_TOKENS.TeamAIIntegrationInputService, TeamAIIntegrationInputService);
-    container.registerSingleton(TEAM_TOKENS.TeamAIIntegrationSecretCipher, TeamAIIntegrationSecretCipher);
-    container.registerSingleton(TEAM_TOKENS.TeamAIIntegrationSecretService, TeamAIIntegrationSecretService);
-    container.registerSingleton(TEAM_TOKENS.TeamAIIntegrationSerializer, TeamAIIntegrationSerializer);
-    container.registerSingleton(TEAM_TOKENS.SecretKeyUsageMetricsMapper, SecretKeyUsageMetricsMapper);
-    container.registerSingleton(TEAM_TOKENS.TeamMembershipService, TeamMembershipService);
-    container.register(TEAM_TOKENS.DiscoverTeamAIProviderModelsUseCase, DiscoverTeamAIProviderModelsUseCase);
+    registerModuleDependencies({
+        singletons: [
+            [TEAM_TOKENS.TeamMemberRepository, TeamMemberRepository],
+            [TEAM_TOKENS.TeamRepository, TeamRepository],
+            [TEAM_TOKENS.TeamRoleRepository, TeamRoleRepository],
+            [TEAM_TOKENS.TeamInvitationRepository, TeamInvitationRepository],
+            [TEAM_TOKENS.SecretKeyRepository, SecretKeyRepository],
+            [TEAM_TOKENS.SecretKeyUsageLogRepository, SecretKeyUsageLogRepository],
+            [TEAM_TOKENS.TeamAIIntegrationRepository, TeamAIIntegrationRepository],
+            [TEAM_TOKENS.TeamJobsService, TeamJobsService],
+            [TEAM_TOKENS.TeamPresenceService, TeamPresenceService],
+            [TEAM_TOKENS.TeamJobsSocketModule, TeamJobsSocketModule],
+            [TEAM_TOKENS.TeamPresenceSocketModule, TeamPresenceSocketModule],
+            [TEAM_TOKENS.TeamAIProviderCatalog, TeamAIProviderCatalog],
+            [TEAM_TOKENS.TeamAIIntegrationInputService, TeamAIIntegrationInputService],
+            [TEAM_TOKENS.TeamAIIntegrationSecretCipher, TeamAIIntegrationSecretCipher],
+            [TEAM_TOKENS.TeamAIIntegrationSecretService, TeamAIIntegrationSecretService],
+            [TEAM_TOKENS.TeamAIIntegrationSerializer, TeamAIIntegrationSerializer],
+            [TEAM_TOKENS.SecretKeyUsageMetricsMapper, SecretKeyUsageMetricsMapper],
+            [TEAM_TOKENS.TeamMembershipService, TeamMembershipService]
+        ],
+        aliases: [
+            [SOCKET_TOKENS.SocketModule, TEAM_TOKENS.TeamJobsSocketModule],
+            [SOCKET_TOKENS.SocketModule, TEAM_TOKENS.TeamPresenceSocketModule]
+        ]
+    });
 
-    container.register(SOCKET_TOKENS.SocketModule, { useToken: TEAM_TOKENS.TeamJobsSocketModule });
-    container.register(SOCKET_TOKENS.SocketModule, { useToken: TEAM_TOKENS.TeamPresenceSocketModule });
+    container.register(TEAM_TOKENS.DiscoverTeamAIProviderModelsUseCase, DiscoverTeamAIProviderModelsUseCase);
 
     for (const toolClassProvider of TEAM_AI_TOOL_CLASSES) {
         container.register(AI_TOKENS.AITool, toolClassProvider);

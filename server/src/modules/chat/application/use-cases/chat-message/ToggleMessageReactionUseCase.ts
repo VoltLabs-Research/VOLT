@@ -1,7 +1,7 @@
 import { ToggleMessageReactionInputDTO, ToggleMessageReactionOutputDTO } from '@modules/chat/application/dtos/chat-message/ToggleMessageReactionDTO';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
-import { toPersistedChatOutput } from '@modules/chat/utilities/toPersistedChatOutput';
+import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -50,7 +50,7 @@ export class ToggleMessageReactionUseCase implements IUseCase<ToggleMessageReact
             ));
         }
 
-        const persistedMessage = toPersistedChatOutput(updatedMessage);
+        const persistedMessage = toPersistedEntity(updatedMessage);
 
         this.socketEmitter.emitToRoom(`chat-${input.chatId}`, 'reaction_updated', {
             chatId: input.chatId,

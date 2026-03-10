@@ -1,4 +1,4 @@
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
+import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
 import { createTeamScopedParamsSchema, objectIdSchema } from '@shared/infrastructure/http/validation/shared-schemas';
 
 import { z } from 'zod/v4';
@@ -49,45 +49,45 @@ const applyFilterBodySchema = z.object({
     exposureId: objectIdSchema.optional()
 }).strict();
 
-export const particleFilterValidation = {
-    getProperties: createValidationMiddleware({
+export const particleFilterValidation = createResourceValidation({
+    getProperties: {
         params: particleFilterParamsSchema,
         query: particleFilterPropertiesQuerySchema
-    }),
-    getPropertiesByAnalysis: createValidationMiddleware({
+    },
+    getPropertiesByAnalysis: {
         params: particleFilterAnalysisParamsSchema,
         query: particleFilterPropertiesQuerySchema
-    }),
-    preview: createValidationMiddleware({
+    },
+    preview: {
         params: particleFilterParamsSchema,
         query: particleFilterPreviewQuerySchema
-    }),
-    previewByAnalysis: createValidationMiddleware({
+    },
+    previewByAnalysis: {
         params: particleFilterAnalysisParamsSchema,
         query: particleFilterPreviewQuerySchema
-    }),
-    getUniqueValues: createValidationMiddleware({
+    },
+    getUniqueValues: {
         params: particleFilterParamsSchema,
         query: particleFilterUniqueValuesQuerySchema
-    }),
-    getUniqueValuesByAnalysis: createValidationMiddleware({
+    },
+    getUniqueValuesByAnalysis: {
         params: particleFilterAnalysisParamsSchema,
         query: particleFilterUniqueValuesQuerySchema
-    }),
-    getModel: createValidationMiddleware({
+    },
+    getModel: {
         params: particleFilterParamsSchema,
         query: particleFilterModelQuerySchema
-    }),
-    getModelByAnalysis: createValidationMiddleware({
+    },
+    getModelByAnalysis: {
         params: particleFilterAnalysisParamsSchema,
         query: particleFilterModelQuerySchema
-    }),
-    applyFilter: createValidationMiddleware({
+    },
+    applyFilter: {
         params: particleFilterParamsSchema,
         body: applyFilterBodySchema
-    }),
-    applyFilterByAnalysis: createValidationMiddleware({
+    },
+    applyFilterByAnalysis: {
         params: particleFilterAnalysisParamsSchema,
         body: applyFilterBodySchema
-    })
-};
+    }
+});

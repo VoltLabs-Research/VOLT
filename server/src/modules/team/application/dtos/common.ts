@@ -1,5 +1,5 @@
-import type { PersistedEntity } from '@modules/team/domain/contracts/team/PersistedEntity';
 import type { PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
+import type { PersistedEntityOutput } from '@shared/domain/persisted/to-persisted-entity';
 
 export interface TeamScopedInputDTO {
     teamId: string;
@@ -27,7 +27,7 @@ export type TeamScopedEntityIdInputDTO<TKey extends string> = TeamScopedInputDTO
 
 export type UserScopedEntityIdInputDTO<TKey extends string> = UserScopedInputDTO & EntityIdInputDTO<TKey>;
 
-export type PersistedEntityDTO<TProps> = PersistedEntity<TProps>;
+export type PersistedEntityDTO<TProps> = PersistedEntityOutput<TProps>;
 
 export type EntityOutputDTO<TProps> = PersistedEntityDTO<TProps>;
 

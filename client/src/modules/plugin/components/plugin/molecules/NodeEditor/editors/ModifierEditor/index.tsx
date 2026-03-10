@@ -1,39 +1,17 @@
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import useNodeFormRHF from '@/modules/plugin/hooks/plugin/use-node-form-rhf';
-import { z } from 'zod/v4';
+import { createNodeEditorForm } from '@/shared/forms';
 import type { EditorProps } from '../types';
+import { MODIFIER_EDITOR_DEFAULT_VALUES, modifierEditorSchema, type ModifierEditorFormValues } from './schema';
 
-const modifierEditorSchema = z.object({
-    name: z.string().default(''),
-    icon: z.string().default(''),
-    author: z.string().default(''),
-    license: z.string().default(''),
-    version: z.string().default(''),
-    homepage: z.string().default(''),
-    description: z.string().default('')
-}).strict();
-
-type ModifierEditorFormValues = z.infer<typeof modifierEditorSchema>;
-
-const DEFAULT_VALUES: ModifierEditorFormValues = {
-    name: '',
-    icon: '',
-    author: '',
-    license: '',
-    version: '',
-    homepage: '',
-    description: ''
-};
+const useModifierEditorForm = createNodeEditorForm<ModifierEditorFormValues, 'modifier'>({
+    schema: modifierEditorSchema,
+    defaults: MODIFIER_EDITOR_DEFAULT_VALUES,
+    dataKey: 'modifier'
+});
 
 const ModifierEditor = ({ node }: EditorProps) => {
-    const form = useNodeFormRHF<ModifierEditorFormValues>({
-        schema: modifierEditorSchema,
-        nodeId: node.id,
-        dataKey: 'modifier',
-        node,
-        defaultValue: DEFAULT_VALUES
-    });
+    const form = useModifierEditorForm(node);
 
     return (
         <>

@@ -1,7 +1,7 @@
 import { GetChatMessagesInputDTO, GetChatMessagesOutputDTO } from '@modules/chat/application/dtos/chat-message/GetChatMessagesDTO';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
-import { toPersistedChatOutput } from '@modules/chat/utilities/toPersistedChatOutput';
+import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -55,7 +55,7 @@ export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO,
         const messages = await this.messageRepo.findAll(options);
         return Result.ok({
             ...messages,
-            data: messages.data.map((message) => toPersistedChatOutput(message))
+            data: messages.data.map((message) => toPersistedEntity(message))
         });
     }
 };

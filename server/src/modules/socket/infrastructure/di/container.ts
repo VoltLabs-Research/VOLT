@@ -1,4 +1,3 @@
-import { container } from 'tsyringe';
 import AuthenticateSocketConnectionUseCase from '@modules/socket/application/use-cases/AuthenticateSocketConnectionUseCase';
 import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
@@ -8,17 +7,24 @@ import { SOCKET_TOKENS } from './SocketTokens';
 import SocketGateway from '@modules/socket/socket/SocketGateway';
 import TeamSubscriptionSocketModule from '@modules/socket/socket/team-subscription/TeamSubscriptionSocketModule';
 import SocketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
+import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 
 export const registerSocketDependencies = (): void => {
-    container.registerSingleton(SOCKET_TOKENS.SocketEventEmitter, SocketIOEmitter);
-    container.register(SOCKET_TOKENS.SocketEmitter, { useToken: SOCKET_TOKENS.SocketEventEmitter });
-    container.registerSingleton(SOCKET_TOKENS.SocketRoomManager, SocketIORoomManager);
-    container.registerSingleton(SOCKET_TOKENS.SocketEventRegistry, SocketIOEventRegistry);
-    container.registerSingleton(SOCKET_TOKENS.SocketConnectionMapper, SocketConnectionMapper);
-    container.registerSingleton(SOCKET_TOKENS.SocketGateway, SocketGateway);
-    container.registerSingleton(SOCKET_TOKENS.AuthenticateSocketConnectionUseCase, AuthenticateSocketConnectionUseCase);
-    container.registerSingleton(SOCKET_TOKENS.TeamSubscriptionCoordinator, SocketTeamSubscriptionCoordinator);
-    container.registerSingleton(SocketTeamSubscriptionCoordinator, SocketTeamSubscriptionCoordinator);
-    container.registerSingleton(SOCKET_TOKENS.TeamSubscriptionSocketModule, TeamSubscriptionSocketModule);
-    container.register(SOCKET_TOKENS.SocketModule, { useToken: SOCKET_TOKENS.TeamSubscriptionSocketModule });
+    registerModuleDependencies({
+        singletons: [
+            [SOCKET_TOKENS.SocketEventEmitter, SocketIOEmitter],
+            [SOCKET_TOKENS.SocketRoomManager, SocketIORoomManager],
+            [SOCKET_TOKENS.SocketEventRegistry, SocketIOEventRegistry],
+            [SOCKET_TOKENS.SocketConnectionMapper, SocketConnectionMapper],
+            [SOCKET_TOKENS.SocketGateway, SocketGateway],
+            [SOCKET_TOKENS.AuthenticateSocketConnectionUseCase, AuthenticateSocketConnectionUseCase],
+            [SOCKET_TOKENS.TeamSubscriptionCoordinator, SocketTeamSubscriptionCoordinator],
+            SocketTeamSubscriptionCoordinator,
+            [SOCKET_TOKENS.TeamSubscriptionSocketModule, TeamSubscriptionSocketModule]
+        ],
+        aliases: [
+            [SOCKET_TOKENS.SocketEmitter, SOCKET_TOKENS.SocketEventEmitter],
+            [SOCKET_TOKENS.SocketModule, SOCKET_TOKENS.TeamSubscriptionSocketModule]
+        ]
+    });
 };

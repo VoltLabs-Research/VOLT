@@ -1,4 +1,5 @@
 import { getApiErrorMessage, isApiError, markApiErrorHandled } from '@/shared/errors/notify-api-error';
+import type { PromiseToastOptions } from '@/shared/presentation/toast-options';
 import { sileo } from 'sileo';
 import type { SileoOptions, SileoPosition } from 'sileo';
 
@@ -12,12 +13,6 @@ interface SileoPromiseOptions<T = unknown> {
     error: SileoOptions | ((err: unknown) => SileoOptions);
     action?: SileoOptions | ((data: T) => SileoOptions);
     position?: SileoPosition;
-};
-
-interface ToastPromiseOptions<T = unknown> {
-    loading: SileoOptions;
-    success: SileoOptions | ((data: T) => SileoOptions);
-    error: SileoOptions;
 };
 
 const DEFAULT_ERROR_DESCRIPTION = 'Please try again later.';
@@ -41,7 +36,7 @@ const buildErrorHandler = (base: SileoOptions) =>
 
 export const showPromise = <T,>(
     promise: Promise<T> | (() => Promise<T>),
-    opts: ToastPromiseOptions<T>
+    opts: PromiseToastOptions<T>
 ): Promise<T> => {
     const sileoOpts: SileoPromiseOptions<T> = {
         loading: opts.loading,

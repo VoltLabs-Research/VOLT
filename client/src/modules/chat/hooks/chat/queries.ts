@@ -1,3 +1,4 @@
+import { createEntityCacheResource } from '@/shared/api/query-resources';
 import { buildKeys, createMutation, createQuery } from '@/shared/infrastructure/query';
 import chatService from '../../api/services/chat';
 import type { QueryClient } from '@tanstack/react-query';
@@ -20,75 +21,32 @@ export const useGetOrCreateChatMutation = createMutation<Chat, GetOrCreateChatIn
 
 export const chatsQuery = createQuery(KEYS.chats, () => chatService.getAll({}));
 
-const setChatDetailCache = (queryClient: QueryClient, chat: Chat) => {
-    queryClient.setQueryData(KEYS.detail(chat._id), chat);
-};
+const chatEntityCache = createEntityCacheResource<Chat>({
+    listKey: KEYS.chats,
+    detailKey: KEYS.detail,
+    rootKey: () => ['chat']
+});
 
 export const addChatToCache = (queryClient: QueryClient, chat: Chat) => {
-    queryClient.setQueryData<Chat[]>(KEYS.chats(), (current) => {
-        if (!current) return [chat];
-        if (current.some((existingChat) => existingChat._id === chat._id)) {
-            return current;
-        }
-        return [chat, ...current];
-    });
-
-    setChatDetailCache(queryClient, chat);
+    chatEntityCache.upsert(chat, { client: queryClient, replaceExisting: false });
 };
 
 export const replaceChatInCache = (queryClient: QueryClient, chat: Chat) => {
-    queryClient.setQueryData<Chat[]>(KEYS.chats(), (current) => {
-        if (!current) return [chat];
-
-        const exists = current.some((existingChat) => existingChat._id === chat._id);
-        if (!exists) {
-            return [chat, ...current];
-        }
-
-        return current.map((existingChat) => {
-            if (existingChat._id === chat._id) {
-                return chat;
-            }
-
-            return existingChat;
-        });
-    });
-
-    setChatDetailCache(queryClient, chat);
+    chatEntityCache.upsert(chat, { client: queryClient });
 };
 
 export const updateChatInCache = (queryClient: QueryClient, chatId: string, updates: Partial<Chat>) => {
-    queryClient.setQueryData<Chat[]>(KEYS.chats(), (current) => {
-        if (!current) return current;
-
-        return current.map((chat) => {
-            if (chat._id === chatId) {
-                return { ...chat, ...updates };
-            }
-
-            return chat;
-        });
-    });
-
-    queryClient.setQueryData<Chat | undefined>(KEYS.detail(chatId), (current) => {
-        if (!current) return current;
-        return { ...current, ...updates };
-    });
+    chatEntityCache.merge(chatId, updates, queryClient);
 };
 
 export const removeChatFromCache = (queryClient: QueryClient, chatId: string) => {
-    queryClient.setQueryData<Chat[]>(KEYS.chats(), (current) => {
-        if (!current) return current;
-        return current.filter((chat) => chat._id !== chatId);
-    });
-
-    queryClient.removeQueries({ queryKey: KEYS.detail(chatId) });
+    chatEntityCache.remove(chatId, queryClient);
 };
 
 export const invalidateChatsQuery = (queryClient: QueryClient) => {
-    return queryClient.invalidateQueries({ queryKey: KEYS.chats() });
+    return chatEntityCache.invalidateList(queryClient);
 };
 
 export const resetChatQueries = (queryClient: QueryClient) => {
-    queryClient.removeQueries({ queryKey: ['chat'] });
+    chatEntityCache.clearRoot(queryClient);
 };

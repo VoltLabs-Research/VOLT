@@ -7,8 +7,5 @@ import SignUpUseCase from '@modules/auth/application/use-cases/SignUpUseCase';
 export default createController(SignUpUseCase, {
     statusCode: HttpStatus.Created,
     validationSchema: authValidation.signUp,
-    extendParams: (request, params) => ({
-        ...params,
-        ...getAuthRequestContext(request)
-    })
+    contextProviders: [getAuthRequestContext]
 });

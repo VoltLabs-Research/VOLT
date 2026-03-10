@@ -1,4 +1,3 @@
-import { container } from 'tsyringe';
 import { CHAT_TOKENS } from './ChatTokens';
 import { DeleteMessageUseCase } from '@modules/chat/application/use-cases/chat-message/DeleteMessageUseCase';
 import { EditMessageUseCase } from '@modules/chat/application/use-cases/chat-message/EditMessageUseCase';
@@ -13,19 +12,24 @@ import ChatSocketModule from '@modules/chat/socket/chat/ChatSocketModule';
 import ChatSocketPresenceService from '@modules/chat/socket/chat/ChatSocketPresenceService';
 import ChatMessageRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat-message/ChatMessageRepository';
 import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
+import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 
 export const registerChatDependencies = () => {
-    container.registerSingleton(CHAT_TOKENS.ChatRepository, ChatRepository);
-    container.registerSingleton(CHAT_TOKENS.ChatMessageRepository, ChatMessageRepository);
-    container.registerSingleton(CHAT_TOKENS.SendChatMessageUseCase, SendChatMessageUseCase);
-    container.registerSingleton(CHAT_TOKENS.SendFileMessageUseCase, SendFileMessageUseCase);
-    container.registerSingleton(CHAT_TOKENS.EditMessageUseCase, EditMessageUseCase);
-    container.registerSingleton(CHAT_TOKENS.DeleteMessageUseCase, DeleteMessageUseCase);
-    container.registerSingleton(CHAT_TOKENS.ToggleMessageReactionUseCase, ToggleMessageReactionUseCase);
-    container.registerSingleton(CHAT_TOKENS.MarkMessageAsReadUseCase, MarkMessageAsReadUseCase);
-    container.registerSingleton(CHAT_TOKENS.ChatSocketAccessPolicy, ChatSocketAccessPolicy);
-    container.registerSingleton(CHAT_TOKENS.ChatSocketEventOrchestrator, ChatSocketEventOrchestrator);
-    container.registerSingleton(CHAT_TOKENS.ChatSocketPresenceService, ChatSocketPresenceService);
-    container.registerSingleton(CHAT_TOKENS.ChatSocketModule, ChatSocketModule);
-    container.register(SOCKET_TOKENS.SocketModule, { useToken: CHAT_TOKENS.ChatSocketModule });
+    registerModuleDependencies({
+        singletons: [
+            [CHAT_TOKENS.ChatRepository, ChatRepository],
+            [CHAT_TOKENS.ChatMessageRepository, ChatMessageRepository],
+            [CHAT_TOKENS.SendChatMessageUseCase, SendChatMessageUseCase],
+            [CHAT_TOKENS.SendFileMessageUseCase, SendFileMessageUseCase],
+            [CHAT_TOKENS.EditMessageUseCase, EditMessageUseCase],
+            [CHAT_TOKENS.DeleteMessageUseCase, DeleteMessageUseCase],
+            [CHAT_TOKENS.ToggleMessageReactionUseCase, ToggleMessageReactionUseCase],
+            [CHAT_TOKENS.MarkMessageAsReadUseCase, MarkMessageAsReadUseCase],
+            [CHAT_TOKENS.ChatSocketAccessPolicy, ChatSocketAccessPolicy],
+            [CHAT_TOKENS.ChatSocketEventOrchestrator, ChatSocketEventOrchestrator],
+            [CHAT_TOKENS.ChatSocketPresenceService, ChatSocketPresenceService],
+            [CHAT_TOKENS.ChatSocketModule, ChatSocketModule]
+        ],
+        aliases: [[SOCKET_TOKENS.SocketModule, CHAT_TOKENS.ChatSocketModule]]
+    });
 };

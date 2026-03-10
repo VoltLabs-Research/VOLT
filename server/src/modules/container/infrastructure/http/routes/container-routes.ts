@@ -1,32 +1,24 @@
-import { Router } from 'express';
 import controllers from '@modules/container/infrastructure/http/controllers';
 import { Resource } from '@core/constants/resources';
-import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
-import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
+import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 
-const router = Router({ mergeParams: true });
-const module: HttpModule = {
+export default createHttpModule({
     basePath: '/api/containers/:teamId',
-    router,
-    resource: Resource.CONTAINER
-};
+    resource: Resource.CONTAINER,
+    routes: (router) => {
+        router.route('/')
+            .post(RATE_LIMIT_POLICIES.containerCreate, controllers.create.handle)
+            .get(controllers.listByTeamId.handle);
 
-const createContainerRateLimit = createStandardRateLimiter(5);
+        router.route('/:containerId')
+            .get(controllers.getById.handle)
+            .patch(controllers.updateById.handle)
+            .delete(RATE_LIMIT_POLICIES.containerDelete, controllers.deleteById.handle);
 
-const deleteContainerRateLimit = createStandardRateLimiter(10);
-
-router.route('/')
-    .post(createContainerRateLimit, controllers.create.handle)
-    .get(controllers.listByTeamId.handle);
-
-router.route('/:containerId')
-    .get(controllers.getById.handle)
-    .patch(controllers.updateById.handle)
-    .delete(deleteContainerRateLimit, controllers.deleteById.handle);
-
-router.get('/:containerId/files', controllers.getFilesById.handle);
-router.get('/:containerId/processes', controllers.getProcessesById.handle);
-router.get('/:containerId/stats', controllers.getStatsById.handle);
-router.get('/:containerId/files/content', controllers.readFileById.handle);
-
-export default module;
+        router.get('/:containerId/files', controllers.getFilesById.handle);
+        router.get('/:containerId/processes', controllers.getProcessesById.handle);
+        router.get('/:containerId/stats', controllers.getStatsById.handle);
+        router.get('/:containerId/files/content', controllers.readFileById.handle);
+    }
+});

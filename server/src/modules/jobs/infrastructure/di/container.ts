@@ -4,12 +4,16 @@ import RemoveTeamRunningJobsUseCase from '@modules/jobs/application/use-cases/Re
 import RetryTeamFailedJobsUseCase from '@modules/jobs/application/use-cases/RetryTeamFailedJobsUseCase';
 import TeamJobMaintenanceService from '@modules/jobs/infrastructure/services/TeamJobMaintenanceService';
 import TeamJobQueryService from '@modules/jobs/infrastructure/services/TeamJobQueryService';
-import { container } from 'tsyringe';
+import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 
 export const registerJobsDependencies = () => {
-    container.registerSingleton(JOBS_TOKENS.TeamJobQueryService, TeamJobQueryService);
-    container.registerSingleton(JOBS_TOKENS.TeamJobMaintenanceService, TeamJobMaintenanceService);
-    container.registerSingleton(ClearTeamJobsHistoryUseCase);
-    container.registerSingleton(RemoveTeamRunningJobsUseCase);
-    container.registerSingleton(RetryTeamFailedJobsUseCase);
+    registerModuleDependencies({
+        singletons: [
+            [JOBS_TOKENS.TeamJobQueryService, TeamJobQueryService],
+            [JOBS_TOKENS.TeamJobMaintenanceService, TeamJobMaintenanceService],
+            ClearTeamJobsHistoryUseCase,
+            RemoveTeamRunningJobsUseCase,
+            RetryTeamFailedJobsUseCase
+        ]
+    });
 };

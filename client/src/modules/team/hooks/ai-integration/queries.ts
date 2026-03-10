@@ -1,112 +1,85 @@
 import aiIntegrationService from '../../api/services/ai-integration';
-import { buildKeys } from '@/shared/infrastructure/query';
-import type { UseQueryOptions } from '@tanstack/react-query';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { createInvalidatingMutation, createQueryResource } from '@/shared/api/query-resources';
 import type { DiscoverTeamAIProviderModelsInputDTO, DiscoverTeamAIProviderModelsOutputDTO } from '../../api/dtos/ai-integration/discover-team-ai-provider-models';
 import type { ListTeamAIIntegrationsResponse } from '../../api/dtos/ai-integration/get-team-ai-integrations';
 import type { ListTeamAIIntegrationModelsResponse } from '../../api/dtos/ai-integration/get-team-ai-integration-models';
 import type { CreateTeamAIIntegrationInputDTO, CreateTeamAIIntegrationResponse } from '../../api/dtos/ai-integration/create-team-ai-integration';
 import type { UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationResponse } from '../../api/dtos/ai-integration/update-team-ai-integration';
 import type { DeleteTeamAIIntegrationInputDTO } from '../../api/dtos/ai-integration/delete-team-ai-integration';
-import queryClient from '@/shared/infrastructure/query/query-client';
 
-type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
+const teamAIIntegrationsResource = createQueryResource<string, string, ListTeamAIIntegrationsResponse>({
+    baseKey: 'team-ai-integrations',
+    rootKey: 'aiIntegrations',
+    itemKey: 'teamAIIntegrations',
+    getKeyParam: (teamId) => teamId,
+    query: (teamId) => aiIntegrationService.listByTeamId({ teamId })
+});
 
-/** Team AI integration query keys. */
+const teamAIIntegrationModelsResource = createQueryResource<string, string, ListTeamAIIntegrationModelsResponse>({
+    baseKey: 'team-ai-integration-models',
+    rootKey: 'aiIntegrationModels',
+    itemKey: 'teamAIIntegrationModels',
+    getKeyParam: (teamId) => teamId,
+    query: (teamId) => aiIntegrationService.listModels({ teamId })
+});
 
-const aiIntegrationKeys = buildKeys<{
-    aiIntegrations: void;
-    teamAIIntegrations: string;
-}>('team-ai-integrations');
-
-const aiIntegrationModelKeys = buildKeys<{
-    aiIntegrationModels: void;
-    teamAIIntegrationModels: string;
-}>('team-ai-integration-models');
-
-const aiIntegrationDiscoveryKeys = buildKeys<{
-    aiIntegrationModelDiscovery: void;
-    discoverAIIntegrationModels: DiscoverTeamAIProviderModelsInputDTO;
-}>('team-ai-integration-model-discovery');
+const aiIntegrationDiscoveryResource = createQueryResource<
+    DiscoverTeamAIProviderModelsInputDTO,
+    DiscoverTeamAIProviderModelsInputDTO,
+    DiscoverTeamAIProviderModelsOutputDTO
+>({
+    baseKey: 'team-ai-integration-model-discovery',
+    rootKey: 'aiIntegrationModelDiscovery',
+    itemKey: 'discoverAIIntegrationModels',
+    getKeyParam: (params) => params,
+    query: aiIntegrationService.discoverModels
+});
 
 export const AI_INTEGRATION_QUERY_KEYS = {
-    aiIntegrations: aiIntegrationKeys.aiIntegrations,
-    teamAIIntegrations: aiIntegrationKeys.teamAIIntegrations,
-    aiIntegrationModels: aiIntegrationModelKeys.aiIntegrationModels,
-    teamAIIntegrationModels: aiIntegrationModelKeys.teamAIIntegrationModels,
-    aiIntegrationModelDiscovery: aiIntegrationDiscoveryKeys.aiIntegrationModelDiscovery,
-    discoverAIIntegrationModels: aiIntegrationDiscoveryKeys.discoverAIIntegrationModels
+    aiIntegrations: teamAIIntegrationsResource.keys.root,
+    teamAIIntegrations: teamAIIntegrationsResource.keys.item,
+    aiIntegrationModels: teamAIIntegrationModelsResource.keys.root,
+    teamAIIntegrationModels: teamAIIntegrationModelsResource.keys.item,
+    aiIntegrationModelDiscovery: aiIntegrationDiscoveryResource.keys.root,
+    discoverAIIntegrationModels: aiIntegrationDiscoveryResource.keys.item
 };
-
-/** Invalidates AI integration queries for a team. */
 
 export const invalidateTeamAIIntegrationsQuery = (teamId: string) => {
     return Promise.all([
-        queryClient.invalidateQueries({ queryKey: AI_INTEGRATION_QUERY_KEYS.teamAIIntegrations(teamId) }),
-        queryClient.invalidateQueries({ queryKey: AI_INTEGRATION_QUERY_KEYS.teamAIIntegrationModels(teamId) })
+        teamAIIntegrationsResource.invalidate(teamId),
+        teamAIIntegrationModelsResource.invalidate(teamId)
     ]);
 };
 
-/** Team AI integration queries. */
+export const useTeamAIIntegrationsQuery = teamAIIntegrationsResource.query;
 
-export const useTeamAIIntegrationsQuery = (
-    teamId: string,
-    options?: QueryOptions<ListTeamAIIntegrationsResponse>
-) => {
-    return useQuery({
-        queryKey: AI_INTEGRATION_QUERY_KEYS.teamAIIntegrations(teamId),
-        queryFn: () => aiIntegrationService.listByTeamId({ teamId }),
-        ...options
-    });
-};
+export const useTeamAIIntegrationModelsQuery = teamAIIntegrationModelsResource.query;
 
-export const useTeamAIIntegrationModelsQuery = (
-    teamId: string,
-    options?: QueryOptions<ListTeamAIIntegrationModelsResponse>
-) => {
-    return useQuery({
-        queryKey: AI_INTEGRATION_QUERY_KEYS.teamAIIntegrationModels(teamId),
-        queryFn: () => aiIntegrationService.listModels({ teamId }),
-        ...options
-    });
-};
+export const useDiscoverTeamAIProviderModelsQuery = aiIntegrationDiscoveryResource.query;
 
-export const useDiscoverTeamAIProviderModelsQuery = (
-    params: DiscoverTeamAIProviderModelsInputDTO,
-    options?: QueryOptions<DiscoverTeamAIProviderModelsOutputDTO>
-) => {
-    return useQuery({
-        queryKey: AI_INTEGRATION_QUERY_KEYS.discoverAIIntegrationModels(params),
-        queryFn: () => aiIntegrationService.discoverModels(params),
-        ...options
-    });
-};
+export const useCreateTeamAIIntegrationMutation = createInvalidatingMutation<
+    CreateTeamAIIntegrationResponse,
+    CreateTeamAIIntegrationInputDTO
+>({
+    mutationFn: aiIntegrationService.createByProvider,
+    onSuccess: (_data, variables) => {
+        void invalidateTeamAIIntegrationsQuery(variables.teamId);
+    }
+});
 
-/** Team AI integration mutations. */
+export const useUpdateTeamAIIntegrationMutation = createInvalidatingMutation<
+    UpdateTeamAIIntegrationResponse,
+    UpdateTeamAIIntegrationInputDTO
+>({
+    mutationFn: aiIntegrationService.updateByProvider,
+    onSuccess: (_data, variables) => {
+        void invalidateTeamAIIntegrationsQuery(variables.teamId);
+    }
+});
 
-export const useCreateTeamAIIntegrationMutation = () => {
-    return useMutation<CreateTeamAIIntegrationResponse, Error, CreateTeamAIIntegrationInputDTO>({
-        mutationFn: aiIntegrationService.createByProvider,
-        onSuccess: (_data, variables) => {
-            invalidateTeamAIIntegrationsQuery(variables.teamId);
-        }
-    });
-};
-
-export const useUpdateTeamAIIntegrationMutation = () => {
-    return useMutation<UpdateTeamAIIntegrationResponse, Error, UpdateTeamAIIntegrationInputDTO>({
-        mutationFn: aiIntegrationService.updateByProvider,
-        onSuccess: (_data, variables) => {
-            invalidateTeamAIIntegrationsQuery(variables.teamId);
-        }
-    });
-};
-
-export const useDeleteTeamAIIntegrationMutation = () => {
-    return useMutation<void, Error, DeleteTeamAIIntegrationInputDTO>({
-        mutationFn: aiIntegrationService.deleteByProvider,
-        onSuccess: (_data, variables) => {
-            invalidateTeamAIIntegrationsQuery(variables.teamId);
-        }
-    });
-};
+export const useDeleteTeamAIIntegrationMutation = createInvalidatingMutation<void, DeleteTeamAIIntegrationInputDTO>({
+    mutationFn: aiIntegrationService.deleteByProvider,
+    onSuccess: (_data, variables) => {
+        void invalidateTeamAIIntegrationsQuery(variables.teamId);
+    }
+});

@@ -2,9 +2,10 @@ import { createController } from '@shared/infrastructure/http/controllers/create
 import GetCurrentSecretKeyUseCase from '@modules/team/application/use-cases/secret-key/GetCurrentSecretKeyUseCase';
 
 export default createController(GetCurrentSecretKeyUseCase, {
-    extendParams: (request, params) => ({
-        ...params,
-        authType: request.authType,
-        secretKeyId: request.secretKeyId
-    })
+    contextProviders: [
+        (request) => ({
+            authType: request.authType,
+            secretKeyId: request.secretKeyId
+        })
+    ]
 });

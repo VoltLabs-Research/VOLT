@@ -1,15 +1,15 @@
-import { createValidationMiddleware, ValidationTarget } from '@shared/infrastructure/http/middleware/validation';
+import { ValidationTarget } from '@shared/infrastructure/http/middleware/validation';
+import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
+import { requiredTextSchema } from '@shared/infrastructure/http/validation/resource-schemas';
 import { z } from 'zod/v4';
 
-const idSchema = z.string().trim().min(1);
-
 const chatIdParamsSchema = z.object({
-    chatId: idSchema
+    chatId: requiredTextSchema
 }).strict();
 
 const chatMessageParamsSchema = z.object({
-    chatId: idSchema,
-    messageId: idSchema
+    chatId: requiredTextSchema,
+    messageId: requiredTextSchema
 }).strict();
 
 const getChatMessagesQuerySchema = z.object({
@@ -30,24 +30,33 @@ const toggleReactionSchema = z.object({
     emoji: z.string().trim().min(1)
 }).strict();
 
-export const chatMessageValidation = {
-    getChatMessages: createValidationMiddleware({
+export const chatMessageValidation = createResourceValidation({
+    getChatMessages: {
         params: chatIdParamsSchema,
         query: getChatMessagesQuerySchema
-    }),
-    sendMessage: createValidationMiddleware({
+    },
+    sendMessage: {
         params: chatIdParamsSchema,
         body: sendMessageSchema
-    }),
-    editMessage: createValidationMiddleware({
+    },
+    editMessage: {
         params: chatMessageParamsSchema,
         body: editMessageSchema
-    }),
-    deleteMessage: createValidationMiddleware(chatMessageParamsSchema, ValidationTarget.Params),
-    markMessagesAsRead: createValidationMiddleware(chatIdParamsSchema, ValidationTarget.Params),
-    toggleReaction: createValidationMiddleware({
+    },
+    deleteMessage: {
+        schema: chatMessageParamsSchema,
+        target: ValidationTarget.Params
+    },
+    markMessagesAsRead: {
+        schema: chatIdParamsSchema,
+        target: ValidationTarget.Params
+    },
+    toggleReaction: {
         params: chatMessageParamsSchema,
         body: toggleReactionSchema
-    }),
-    sendFileMessage: createValidationMiddleware(chatIdParamsSchema, ValidationTarget.Params)
-};
+    },
+    sendFileMessage: {
+        schema: chatIdParamsSchema,
+        target: ValidationTarget.Params
+    }
+});

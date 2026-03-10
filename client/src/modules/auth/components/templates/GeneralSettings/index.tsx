@@ -1,8 +1,7 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useDeleteMeMutation, useUpdateMeMutation } from '@/modules/auth/hooks/queries';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import AvatarUpload from '@/modules/auth/components/organisms/AvatarUpload';
 import ProfileForm from '@/modules/auth/components/organisms/ProfileForm';
 import Container from '@/shared/presentation/components/Container';
@@ -10,9 +9,28 @@ import DangerZone from '@/shared/presentation/components/DangerZone';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
+import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { ProfileForm as ProfileFormType } from '@/modules/auth/components/organisms/ProfileForm/validation-schema';
+
+const AVATAR_TOAST_OPTIONS = createPromiseToastOptions({
+    loading: 'Uploading avatar...',
+    success: 'Avatar updated',
+    error: 'Failed to upload avatar'
+});
+
+const PROFILE_TOAST_OPTIONS = createPromiseToastOptions({
+    loading: 'Updating profile...',
+    success: 'Profile updated',
+    error: 'Failed to update profile'
+});
+
+const DELETE_ACCOUNT_TOAST_OPTIONS = createPromiseToastOptions({
+    loading: 'Deleting account...',
+    success: 'Account deleted',
+    error: 'Failed to delete account'
+});
 
 const GeneralSettings = () => {
     const user = useCurrentUser();
@@ -20,37 +38,28 @@ const GeneralSettings = () => {
     const updateMe = useUpdateMeMutation();
     const deleteMe = useDeleteMeMutation();
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-    const { confirm } = useConfirm();
 
     const handleAvatarUpload = useCallback(async (file: File) => {
         setIsUploadingAvatar(true);
 
         try{
-            await showPromise(
-                updateMe.mutateAsync({ avatar: file }),
-                {
-                    loading: { title: 'Uploading avatar...' },
-                    success: { title: 'Avatar updated' },
-                    error: { title: 'Failed to upload avatar' }
-                }
-            );
+            await runAction({
+                action: () => updateMe.mutateAsync({ avatar: file }),
+                toast: AVATAR_TOAST_OPTIONS
+            });
         }finally{
             setIsUploadingAvatar(false);
         }
     }, [updateMe]);
 
     const handleProfileUpdate = useCallback(async (data: ProfileFormType) => {
-        await showPromise(
-            updateMe.mutateAsync({
+        await runAction({
+            action: () => updateMe.mutateAsync({
                 fullName: data.fullName,
                 email: data.email
             }),
-            {
-                loading: { title: 'Updating profile...' },
-                success: { title: 'Profile updated' },
-                error: { title: 'Failed to update profile' }
-            }
-        );
+            toast: PROFILE_TOAST_OPTIONS
+        });
     }, [updateMe]);
 
     const profileInitialValues = useMemo(() => ({
@@ -59,25 +68,19 @@ const GeneralSettings = () => {
     }), [user?.fullName, user?.email]);
 
     const handleDeleteAccount = useCallback(async () => {
-        const isConfirmed = await confirm({
-            title: 'Delete your account?',
-            description: 'This action cannot be undone.',
-            confirmText: 'Delete'
-        });
-
-        if(!isConfirmed){
-            return;
-        }
-        await showPromise(
-            deleteMe.mutateAsync(),
-            {
-                loading: { title: 'Deleting account...' },
-                success: { title: 'Account deleted' },
-                error: { title: 'Failed to delete account' }
+        await runAction({
+            action: () => deleteMe.mutateAsync(),
+            confirm: {
+                title: 'Delete your account?',
+                description: 'This action cannot be undone.',
+                confirmText: 'Delete'
+            },
+            toast: DELETE_ACCOUNT_TOAST_OPTIONS,
+            afterSuccess: () => {
+                signOut();
             }
-        );
-        signOut();
-    }, [confirm, deleteMe, signOut]);
+        });
+    }, [deleteMe, signOut]);
 
     return (
         <SettingsPage title="General Settings">

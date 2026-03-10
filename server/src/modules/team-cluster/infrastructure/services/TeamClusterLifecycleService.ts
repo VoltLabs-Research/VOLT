@@ -5,14 +5,12 @@ import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/Tea
 import { toTeamClusterDTO, TeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
 import TeamCluster, { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
 import FirstTeamClusterConnectedEvent from '@modules/team-cluster/domain/events/FirstTeamClusterConnectedEvent';
-import { hashEnrollmentToken } from '@modules/team-cluster/utilities/enrollmentToken';
-import { secureCompare } from '@modules/team-cluster/utilities/secureCompare';
 import { getTeamClusterRoom, TEAM_CLUSTER_LIFECYCLE_EVENT } from '@modules/team-cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type { ITeamClusterCredentialsCipher } from '@modules/team-cluster/domain/port/ITeamClusterCredentialsCipher';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
@@ -77,19 +75,19 @@ interface TeamClusterLifecycleEventPayload {
 @injectable()
 export default class TeamClusterLifecycleService {
     constructor(
+        @inject(SHARED_TOKENS.DaemonCredentialGuard)
+        private readonly daemonCredentialGuard: DaemonCredentialGuard,
+
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
         private readonly teamClusterRepository: ITeamClusterRepository,
-
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterCredentialsCipher)
-        private readonly teamClusterCredentialsCipher: ITeamClusterCredentialsCipher,
 
         @inject(SOCKET_TOKENS.SocketEmitter)
         private readonly socketEmitter: ISocketEmitter,
 
         @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
+        private readonly eventBus: IEventBus,
 
-        ,@inject(SYSTEM_TOKENS.SystemMetricsRepository)
+        @inject(SYSTEM_TOKENS.SystemMetricsRepository)
         private readonly systemMetricsRepository: ISystemMetricsRepository
     ){}
 
@@ -97,8 +95,8 @@ export default class TeamClusterLifecycleService {
         teamCluster: TeamClusterDTO;
         daemonPassword: string;
     }> {
-        const teamCluster = await this.requireTeamClusterByEnrollment(teamClusterId, enrollmentToken);
-        const daemonPassword = this.decryptDaemonPassword(teamCluster);
+        const teamCluster = await this.daemonCredentialGuard.requireByEnrollment(teamClusterId, enrollmentToken);
+        const daemonPassword = this.daemonCredentialGuard.getDecryptedDaemonPassword(teamCluster);
         const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
             status: TeamClusterStatus.HealthcheckReceived,
             installedVersion,
@@ -117,7 +115,7 @@ export default class TeamClusterLifecycleService {
         status: TeamClusterStatus,
         installedVersion?: string
     ): Promise<TeamClusterDTO> {
-        const teamCluster = await this.requireTeamClusterByDaemonPassword(teamClusterId, daemonPassword);
+        const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
 
         const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
             status,
@@ -134,7 +132,7 @@ export default class TeamClusterLifecycleService {
         installedVersion?: string,
         metrics?: DaemonMetricsSnapshot
     ): Promise<TeamClusterDTO> {
-        const teamCluster = await this.requireTeamClusterByDaemonPassword(teamClusterId, daemonPassword);
+        const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
         const nextStatus = teamCluster.props.status === TeamClusterStatus.Deleting
             || teamCluster.props.status === TeamClusterStatus.DeleteFailed
             ? teamCluster.props.status
@@ -222,7 +220,7 @@ export default class TeamClusterLifecycleService {
     }
 
     async authenticateDaemonConnection(teamClusterId: string, daemonPassword: string): Promise<void> {
-        await this.requireTeamClusterByDaemonPassword(teamClusterId, daemonPassword);
+        await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
     }
 
     async markDeleting(teamClusterId: string): Promise<TeamClusterDTO> {
@@ -235,7 +233,7 @@ export default class TeamClusterLifecycleService {
     }
 
     async completeDeletion(teamClusterId: string, daemonPassword: string): Promise<void> {
-        const teamCluster = await this.requireTeamClusterByDaemonPassword(teamClusterId, daemonPassword);
+        const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
         await this.deleteTeamCluster(teamCluster);
     }
 
@@ -292,61 +290,6 @@ export default class TeamClusterLifecycleService {
         }
 
         return teamCluster;
-    }
-
-    private async requireTeamClusterByEnrollment(teamClusterId: string, enrollmentToken: string): Promise<TeamCluster> {
-        const teamCluster = await this.teamClusterRepository.findByIdWithSensitiveData(teamClusterId);
-        if (!teamCluster) {
-            throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
-        }
-
-        if (!teamCluster.props.enrollmentTokenHash) {
-            throw ApplicationError.conflict(
-                'TeamCluster::EnrollmentAlreadyCompleted',
-                'Team cluster enrollment has already been completed'
-            );
-        }
-
-        const hashedEnrollmentToken = hashEnrollmentToken(enrollmentToken);
-        if (!secureCompare(teamCluster.props.enrollmentTokenHash, hashedEnrollmentToken)) {
-            throw ApplicationError.unauthorized(
-                'TeamCluster::EnrollmentInvalid',
-                'Invalid enrollment credentials'
-            );
-        }
-
-        return teamCluster;
-    }
-
-    private async requireTeamClusterByDaemonPassword(teamClusterId: string, daemonPassword: string): Promise<TeamCluster> {
-        const teamCluster = await this.teamClusterRepository.findByIdWithSensitiveData(teamClusterId);
-        if (!teamCluster) {
-            throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
-        }
-
-        const persistedDaemonPassword = teamCluster.props.services.daemon.password;
-        if (!persistedDaemonPassword) {
-            throw ApplicationError.internalServerError(`Missing daemon password for team cluster ${teamClusterId}`);
-        }
-
-        const decryptedDaemonPassword = this.teamClusterCredentialsCipher.decrypt(persistedDaemonPassword);
-        if (!secureCompare(decryptedDaemonPassword, daemonPassword)) {
-            throw ApplicationError.unauthorized(
-                'TeamCluster::DaemonUnauthorized',
-                'Invalid daemon credentials'
-            );
-        }
-
-        return teamCluster;
-    }
-
-    private decryptDaemonPassword(teamCluster: TeamCluster): string {
-        const daemonPassword = teamCluster.props.services.daemon.password;
-        if (!daemonPassword) {
-            throw ApplicationError.internalServerError(`Missing daemon password for team cluster ${teamCluster.id}`);
-        }
-
-        return this.teamClusterCredentialsCipher.decrypt(daemonPassword);
     }
 
     private async persistLifecycleUpdate(

@@ -4,7 +4,7 @@ import {
     useRevokeAllOtherSessionsMutation,
     useRevokeSessionMutation
 } from './queries';
-import TokenStorage from '@/modules/session/services/token-storage';
+import TokenStorage from '@/shared/auth/token-storage';
 import { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useMemo, useState } from 'react';

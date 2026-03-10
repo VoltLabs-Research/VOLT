@@ -7,5 +7,5 @@ import { getSessionRequestContext } from '@modules/session/infrastructure/http/h
 export default createController(RevokeSessionUseCase, {
     statusCode: HttpStatus.NoContent,
     validationSchema: sessionValidation.revokeById,
-    getRequestValidationContext: getSessionRequestContext
+    contextProviders: [getSessionRequestContext]
 });

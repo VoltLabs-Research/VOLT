@@ -1,8 +1,6 @@
 import invitationService from '../../api/services/invitation';
-import { buildKeys } from '@/shared/infrastructure/query';
+import { createInvalidatingMutation, createQueryResource } from '@/shared/api/query-resources';
 import { invalidateTeamsQuery } from '../team/queries';
-import type { UseQueryOptions } from '@tanstack/react-query';
-import { useMutation, useQuery } from '@tanstack/react-query';
 import type { TeamInvitation } from '../../api/entities/invitation/team-invitation';
 import type { SendInvitationInputDTO } from '../../api/dtos/invitation/send-invitation';
 import type { CancelInvitationInputDTO } from '../../api/dtos/invitation/cancel-invitation';
@@ -10,97 +8,69 @@ import type { AcceptInvitationInputDTO } from '../../api/dtos/invitation/accept-
 import type { RejectInvitationInputDTO } from '../../api/dtos/invitation/reject-invitation';
 import queryClient from '@/shared/infrastructure/query/query-client';
 
-type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
+const pendingInvitationsResource = createQueryResource<string, string, TeamInvitation[]>({
+    baseKey: 'team-invitations',
+    rootKey: 'invitations',
+    itemKey: 'pendingInvitations',
+    getKeyParam: (teamId) => teamId,
+    query: (teamId) => invitationService.getPending({ teamId })
+});
 
-/** Team invitation query keys. */
-
-const invitationKeys = buildKeys<{
-    invitations: void;
-    pendingInvitations: string;
-}>('team-invitations');
-
-const invitationDetailKeys = buildKeys<{
-    invitationDetails: void;
-    invitationDetailsById: string;
-}>('team-invitation-details');
+const invitationDetailsResource = createQueryResource<string, string, TeamInvitation>({
+    baseKey: 'team-invitation-details',
+    rootKey: 'invitationDetails',
+    itemKey: 'invitationDetailsById',
+    getKeyParam: (invitationId) => invitationId,
+    query: (invitationId) => invitationService.getDetails({ invitationId })
+});
 
 export const TEAM_INVITATION_QUERY_KEYS = {
-    invitations: invitationKeys.invitations,
-    pendingInvitations: invitationKeys.pendingInvitations,
-    invitationDetails: invitationDetailKeys.invitationDetails,
-    invitationDetailsById: invitationDetailKeys.invitationDetailsById
+    invitations: pendingInvitationsResource.keys.root,
+    pendingInvitations: pendingInvitationsResource.keys.item,
+    invitationDetails: invitationDetailsResource.keys.root,
+    invitationDetailsById: invitationDetailsResource.keys.item
 };
 
-/** Team invitation cache helpers. */
-
-const invalidatePendingInvitationsQuery = (teamId: string) => {
-    return queryClient.invalidateQueries({ queryKey: TEAM_INVITATION_QUERY_KEYS.pendingInvitations(teamId) });
-};
+const invalidatePendingInvitationsQuery = pendingInvitationsResource.invalidate;
 
 const invalidateInvitationCollectionQuery = (teamId?: string) => {
     if (teamId) return invalidatePendingInvitationsQuery(teamId);
     return queryClient.invalidateQueries({ queryKey: TEAM_INVITATION_QUERY_KEYS.invitations() });
 };
 
-const invalidateInvitationDetailsQuery = (invitationId: string) => {
-    return queryClient.invalidateQueries({ queryKey: TEAM_INVITATION_QUERY_KEYS.invitationDetailsById(invitationId) });
-};
+const invalidateInvitationDetailsQuery = invitationDetailsResource.invalidate;
 
-/** Team invitation queries. */
+export const usePendingInvitationsQuery = pendingInvitationsResource.query;
 
-export const usePendingInvitationsQuery = (teamId: string, options?: QueryOptions<TeamInvitation[]>) => {
-    return useQuery({
-        queryKey: TEAM_INVITATION_QUERY_KEYS.pendingInvitations(teamId),
-        queryFn: () => invitationService.getPending({ teamId }),
-        ...options
-    });
-};
+export const useInvitationDetailsQuery = invitationDetailsResource.query;
 
-export const useInvitationDetailsQuery = (invitationId: string, options?: QueryOptions<TeamInvitation>) => {
-    return useQuery({
-        queryKey: TEAM_INVITATION_QUERY_KEYS.invitationDetailsById(invitationId),
-        queryFn: () => invitationService.getDetails({ invitationId }),
-        ...options
-    });
-};
+export const useSendInvitationMutation = createInvalidatingMutation<void, SendInvitationInputDTO>({
+    mutationFn: invitationService.send,
+    onSuccess: (_data, variables) => {
+        void invalidatePendingInvitationsQuery(variables.teamId);
+    }
+});
 
-/** Team invitation mutations. */
+export const useCancelInvitationMutation = createInvalidatingMutation<void, CancelInvitationInputDTO>({
+    mutationFn: invitationService.cancel,
+    onSuccess: (_data, variables) => {
+        void invalidatePendingInvitationsQuery(variables.teamId);
+    }
+});
 
-export const useSendInvitationMutation = () => {
-    return useMutation<void, Error, SendInvitationInputDTO>({
-        mutationFn: invitationService.send,
-        onSuccess: (_data, variables) => {
-            invalidatePendingInvitationsQuery(variables.teamId);
-        }
-    });
-};
+export const useAcceptInvitationMutation = createInvalidatingMutation<void, AcceptInvitationInputDTO>({
+    mutationFn: invitationService.accept,
+    onSuccess: (_data, variables) => {
+        void invalidateTeamsQuery();
+        void invalidateInvitationCollectionQuery(variables.teamId);
+        void invalidateInvitationDetailsQuery(variables.invitationId);
+    }
+});
 
-export const useCancelInvitationMutation = () => {
-    return useMutation<void, Error, CancelInvitationInputDTO>({
-        mutationFn: invitationService.cancel,
-        onSuccess: (_data, variables) => {
-            invalidatePendingInvitationsQuery(variables.teamId);
-        }
-    });
-};
-
-export const useAcceptInvitationMutation = () => {
-    return useMutation<void, Error, AcceptInvitationInputDTO>({
-        mutationFn: invitationService.accept,
-        onSuccess: (_data, variables) => {
-            invalidateTeamsQuery();
-            invalidateInvitationCollectionQuery(variables.teamId);
-            invalidateInvitationDetailsQuery(variables.invitationId);
-        }
-    });
-};
-
-export const useRejectInvitationMutation = () => {
-    return useMutation<void, Error, RejectInvitationInputDTO>({
-        mutationFn: invitationService.reject,
-        onSuccess: (_data, variables) => {
-            invalidateInvitationCollectionQuery(variables.teamId);
-            invalidateInvitationDetailsQuery(variables.invitationId);
-        }
-    });
-};
+export const useRejectInvitationMutation = createInvalidatingMutation<void, RejectInvitationInputDTO>({
+    mutationFn: invitationService.reject,
+    onSuccess: (_data, variables) => {
+        void invalidateInvitationCollectionQuery(variables.teamId);
+        void invalidateInvitationDetailsQuery(variables.invitationId);
+    }
+});

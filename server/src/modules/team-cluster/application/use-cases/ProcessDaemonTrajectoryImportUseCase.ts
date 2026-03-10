@@ -1,7 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import { secureCompare } from '@modules/team-cluster/utilities/secureCompare';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
 import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryCreatedEvent';
@@ -9,12 +7,11 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
+import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
-import type { ITeamClusterCredentialsCipher } from '@modules/team-cluster/domain/port/ITeamClusterCredentialsCipher';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 interface ImportedFrameInput {
@@ -48,11 +45,8 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
-
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterCredentialsCipher)
-        private readonly teamClusterCredentialsCipher: ITeamClusterCredentialsCipher,
+        @inject(SHARED_TOKENS.DaemonCredentialGuard)
+        private readonly daemonCredentialGuard: DaemonCredentialGuard,
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepository: ITrajectoryRepository,
@@ -66,7 +60,7 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
 
     async execute(input: ProcessDaemonTrajectoryImportInputDTO): Promise<Result<ProcessDaemonTrajectoryImportOutputDTO, ApplicationError>> {
         try {
-            await this.authenticate(input.teamClusterId, input.daemonPassword);
+            await this.daemonCredentialGuard.requireByDaemonPassword(input.teamClusterId, input.daemonPassword);
 
             const existingTrajectory = await this.trajectoryRepository.findById(input.trajectoryId);
             const trajectory = existingTrajectory || await this.trajectoryRepository.createWithId(input.trajectoryId, {
@@ -170,23 +164,6 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
             }
 
             return Result.fail(ApplicationError.internalServerError('Failed to process daemon trajectory import'));
-        }
-    }
-
-    private async authenticate(teamClusterId: string, daemonPassword: string): Promise<void> {
-        const teamCluster = await this.teamClusterRepository.findByIdWithSensitiveData(teamClusterId);
-        if (!teamCluster) {
-            throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
-        }
-
-        const persistedDaemonPassword = teamCluster.props.services.daemon.password;
-        if (!persistedDaemonPassword) {
-            throw ApplicationError.internalServerError(`Missing daemon password for team cluster ${teamClusterId}`);
-        }
-
-        const decryptedDaemonPassword = this.teamClusterCredentialsCipher.decrypt(persistedDaemonPassword);
-        if (!secureCompare(decryptedDaemonPassword, daemonPassword)) {
-            throw ApplicationError.unauthorized('TeamCluster::DaemonUnauthorized', 'Invalid daemon credentials');
         }
     }
 }

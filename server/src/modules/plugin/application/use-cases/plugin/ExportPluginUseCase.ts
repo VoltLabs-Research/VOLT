@@ -1,6 +1,6 @@
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ExportPluginInputDTO, ExportPluginOutputDTO } from '@modules/plugin/application/dtos/plugin/ExportPluginDTO';
-import { createStreamResponse } from '@modules/plugin/utilities/plugin/create-download-response';
+import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { IPluginStorageService } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
 
@@ -31,7 +31,7 @@ export class ExportPluginUseCase implements IUseCase<ExportPluginInputDTO, Expor
         const stream = await this.storageService.exportPlugin(input.pluginId);
 
         return Result.ok({
-            ...createStreamResponse({
+            ...createDownloadStreamResponse({
                 stream,
                 contentType: 'application/zip',
                 filename: fileName

@@ -5,8 +5,5 @@ import SignInUseCase from '@modules/auth/application/use-cases/SignInUseCase';
 
 export default createController(SignInUseCase, {
     validationSchema: authValidation.signIn,
-    extendParams: (request, params) => ({
-        ...params,
-        ...getAuthRequestContext(request)
-    })
+    contextProviders: [getAuthRequestContext]
 });

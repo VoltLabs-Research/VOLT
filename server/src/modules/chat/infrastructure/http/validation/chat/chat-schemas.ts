@@ -1,60 +1,66 @@
-import { createValidationMiddleware, ValidationTarget } from '@shared/infrastructure/http/middleware/validation';
+import { ValidationTarget } from '@shared/infrastructure/http/middleware/validation';
+import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
+import { requiredTextSchema, resourceDescriptionSchema } from '@shared/infrastructure/http/validation/resource-schemas';
 import { z } from 'zod/v4';
 
-const idSchema = z.string().trim().min(1);
-
 const getOrCreateChatParamsSchema = z.object({
-    teamId: idSchema,
-    targetUserId: idSchema
+    teamId: requiredTextSchema,
+    targetUserId: requiredTextSchema
 }).strict();
 
 const chatIdParamsSchema = z.object({
-    chatId: idSchema
+    chatId: requiredTextSchema
 }).strict();
 
 const createGroupSchema = z.object({
-    teamId: idSchema,
-    groupName: z.string().trim().min(1).max(100),
-    groupDescription: z.string().max(500).optional(),
-    participantIds: z.array(idSchema).min(1)
+    teamId: requiredTextSchema,
+    groupName: requiredTextSchema.max(100),
+    groupDescription: resourceDescriptionSchema.optional(),
+    participantIds: z.array(requiredTextSchema).min(1)
 }).strict();
 
 const addUsersSchema = z.object({
-    userIds: z.array(idSchema).min(1)
+    userIds: z.array(requiredTextSchema).min(1)
 }).strict();
 
 const removeUsersSchema = z.object({
-    userIds: z.array(idSchema).min(1)
+    userIds: z.array(requiredTextSchema).min(1)
 }).strict();
 
 const updateGroupInfoSchema = z.object({
-    groupName: z.string().trim().min(1).max(100),
-    groupDescription: z.string().max(500)
+    groupName: requiredTextSchema.max(100),
+    groupDescription: resourceDescriptionSchema
 }).strict().partial();
 
 const updateGroupAdminsSchema = z.object({
-    targetUserIds: z.array(idSchema).min(1),
+    targetUserIds: z.array(requiredTextSchema).min(1),
     action: z.enum(['add', 'remove'])
 }).strict();
 
-export const chatValidation = {
-    getOrCreate: createValidationMiddleware(getOrCreateChatParamsSchema, ValidationTarget.Params),
-    createGroup: createValidationMiddleware(createGroupSchema),
-    addUsers: createValidationMiddleware({
+export const chatValidation = createResourceValidation({
+    getOrCreate: {
+        schema: getOrCreateChatParamsSchema,
+        target: ValidationTarget.Params
+    },
+    createGroup: createGroupSchema,
+    addUsers: {
         params: chatIdParamsSchema,
         body: addUsersSchema
-    }),
-    removeUsers: createValidationMiddleware({
+    },
+    removeUsers: {
         params: chatIdParamsSchema,
         body: removeUsersSchema
-    }),
-    updateGroupInfo: createValidationMiddleware({
+    },
+    updateGroupInfo: {
         params: chatIdParamsSchema,
         body: updateGroupInfoSchema
-    }),
-    updateGroupAdmins: createValidationMiddleware({
+    },
+    updateGroupAdmins: {
         params: chatIdParamsSchema,
         body: updateGroupAdminsSchema
-    }),
-    leaveGroup: createValidationMiddleware(chatIdParamsSchema, ValidationTarget.Params)
-};
+    },
+    leaveGroup: {
+        schema: chatIdParamsSchema,
+        target: ValidationTarget.Params
+    }
+});

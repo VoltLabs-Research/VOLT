@@ -1,6 +1,6 @@
 import chatMapper from '@modules/chat/infrastructure/persistence/mongo/mappers/chat/ChatMapper';
 import ChatDeletedEvent from '@modules/chat/domain/events/ChatDeletedEvent';
-import { toPersistedChatOutput } from '@modules/chat/utilities/toPersistedChatOutput';
+import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
 import ChatModel from '@modules/chat/infrastructure/persistence/mongo/models/chat/ChatModel';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
@@ -73,7 +73,7 @@ export default class ChatRepository
             .populate('participants')
             .sort({ lastMessageAt: -1 });
 
-        return chats.map((chat) => toPersistedChatOutput(this.mapper.toDomain(chat)));
+        return chats.map((chat) => toPersistedEntity(this.mapper.toDomain(chat)));
     }
 
     async updateLastMessage(chatId: string, messageId: string): Promise<void> {

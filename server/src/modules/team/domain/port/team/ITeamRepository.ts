@@ -1,6 +1,6 @@
 import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 import Team, { TeamProps } from '@modules/team/domain/entities/team/Team';
-import type { PersistedEntity } from '@modules/team/domain/contracts/team/PersistedEntity';
+import type { PersistedEntityOutput } from '@shared/domain/persisted/to-persisted-entity';
 
 interface TeamMemberInfo{
     _id: string;
@@ -30,5 +30,5 @@ export interface ITeamRepository extends IBaseRepository<Team, TeamProps>{
     /**
      * Get all teams for the specified user.
      */
-    findUserTeams(userId: string): Promise<PersistedEntity<TeamProps>[]>;
+    findUserTeams(userId: string): Promise<PersistedEntityOutput<TeamProps>[]>;
 };

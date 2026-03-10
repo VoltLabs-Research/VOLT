@@ -5,14 +5,14 @@ import ListAIConversationsController from './ListAIConversationsController';
 import SendAIConversationMessageController from './SendAIConversationMessageController';
 import StreamAIConversationMessageController from './StreamAIConversationMessageController';
 import UpdateAIConversationController from './UpdateAIConversationController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    listConversations: container.resolve(ListAIConversationsController),
-    createConversation: container.resolve(CreateAIConversationController),
-    listMessages: container.resolve(ListAIConversationMessagesController),
-    sendMessage: container.resolve(SendAIConversationMessageController),
-    streamMessage: container.resolve(StreamAIConversationMessageController),
-    updateConversation: container.resolve(UpdateAIConversationController),
-    deleteConversation: container.resolve(DeleteAIConversationController)
-};
+export default createControllerRegistry({
+    listConversations: ListAIConversationsController,
+    createConversation: CreateAIConversationController,
+    listMessages: ListAIConversationMessagesController,
+    sendMessage: SendAIConversationMessageController,
+    streamMessage: StreamAIConversationMessageController,
+    updateConversation: UpdateAIConversationController,
+    deleteConversation: DeleteAIConversationController
+});

@@ -1,20 +1,13 @@
 import controllers from '@modules/daily-activity/infrastructure/http/controllers';
 import { Resource } from '@core/constants/resources';
-import { createGeneralRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
-import { Router } from 'express';
-import type { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
+import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 
-const router = Router({ mergeParams: true });
-const module: HttpModule = {
+export default createHttpModule({
     basePath: '/api/daily-activities/:teamId',
-    router,
-    resource: Resource.DAILY_ACTIVITY
-};
-
-const generalRateLimit = createGeneralRateLimiter(60);
-
-router.use(generalRateLimit);
-
-router.get('/', controllers.getByTeamId.handle);
-
-export default module;
+    resource: Resource.DAILY_ACTIVITY,
+    middleware: RATE_LIMIT_POLICIES.dailyActivityRead,
+    routes: (router) => {
+        router.get('/', controllers.getByTeamId.handle);
+    }
+});

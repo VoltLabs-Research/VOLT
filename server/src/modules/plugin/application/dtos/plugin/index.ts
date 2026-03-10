@@ -4,7 +4,6 @@ export * from './DeleteBinaryDTO';
 export * from './DeletePluginByIdDTO';
 export * from './ExecutePluginDTO';
 export * from './ExportPluginDTO';
-export * from './GetNodeSchemasDTO';
 export * from './GetPluginByIdDTO';
 export * from './ImportPluginDTO';
 export * from './ListPluginsDTO';

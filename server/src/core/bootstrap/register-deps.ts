@@ -7,7 +7,7 @@ import { registerContainerDependencies } from '@modules/container/infrastructure
 import { registerDailyActivityDependencies } from '@modules/daily-activity/infrastructure/di/container';
 import { registerJobsDependencies } from '@modules/jobs/infrastructure/di/container';
 import { registerNotificationDependencies } from '@modules/notification/infrastructure/di/container';
-import { registerPluginDependencies, initializeNodeHandlers } from '@modules/plugin/infrastructure/di/container';
+import { registerPluginDependencies } from '@modules/plugin/infrastructure/di/container';
 import { registerRasterDependencies } from '@modules/raster/infrastructure/di/container';
 import { registerScriptingDependencies } from '@modules/scripting/infrastructure/di/container';
 import { registerSessionDependencies } from '@modules/session/infrastructure/di/container';
@@ -62,8 +62,6 @@ export const registerAllDependencies = (): void => {
     registerSocketDependencies();
     registerSimulationCellDependencies();
     registerAIDependencies();
-
-    initializeNodeHandlers();
 
     dependenciesRegistered = true;
 };

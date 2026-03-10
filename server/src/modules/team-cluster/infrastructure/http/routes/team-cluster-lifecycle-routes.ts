@@ -1,29 +1,22 @@
 import controllers from '@modules/team-cluster/infrastructure/http/controllers';
 import { teamClusterValidation } from '@modules/team-cluster/infrastructure/http/validation/team-cluster-schemas';
-import { createStandardRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
-import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
-import { Router } from 'express';
+import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 
-const router = Router({ mergeParams: true });
-
-const module: HttpModule = {
+export default createHttpModule({
     basePath: '/api/team-clusters/:teamClusterId',
-    router
-};
-
-const lifecycleRateLimiter = createStandardRateLimiter(30, 'Too many team cluster lifecycle requests, please try again later');
-
-router.post(
-    '/healthcheck',
-    lifecycleRateLimiter,
-    teamClusterValidation.processHealthcheck,
-    controllers.processHealthcheck.handle
-);
-router.post(
-    '/install-manifest',
-    lifecycleRateLimiter,
-    teamClusterValidation.generateInstallManifest,
-    controllers.generateInstallManifest.handle
-);
-
-export default module;
+    routes: (router) => {
+        router.post(
+            '/healthcheck',
+            RATE_LIMIT_POLICIES.teamClusterLifecycle,
+            teamClusterValidation.processHealthcheck,
+            controllers.processHealthcheck.handle
+        );
+        router.post(
+            '/install-manifest',
+            RATE_LIMIT_POLICIES.teamClusterLifecycle,
+            teamClusterValidation.generateInstallManifest,
+            controllers.generateInstallManifest.handle
+        );
+    }
+});

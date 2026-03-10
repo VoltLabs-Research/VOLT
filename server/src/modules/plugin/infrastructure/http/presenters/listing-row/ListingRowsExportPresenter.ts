@@ -2,7 +2,7 @@ import {
     createSerializedDownloadResponse,
     createZipDownloadResponse,
     sanitizeDownloadName
-} from '@modules/plugin/utilities/plugin/create-download-response';
+} from '@shared/infrastructure/http/responses/download-response';
 import { toCsvContent } from '@modules/plugin/utilities/listing-row/csv';
 
 import { ExportType } from '@shared/domain/port/IBaseRepository';

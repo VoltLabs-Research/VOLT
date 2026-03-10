@@ -28,6 +28,7 @@ import TeamMetricsQueryService from '@modules/trajectory/infrastructure/services
 import TrajectoryBackgroundProcessor from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryBackgroundProcessor';
 import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
 import TrajectoryReader from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryReader';
+import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 
 import type { ClassProvider } from 'tsyringe';
 import { container } from 'tsyringe';
@@ -35,46 +36,37 @@ import { container } from 'tsyringe';
 const TRAJECTORY_AI_TOOL_CLASSES: ClassProvider<unknown>[] = Object.values(trajectoryAiTools).map((useClass) => ({ useClass }));
 
 export const registerTrajectoryDependencies = (): void => {
-    container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryRepository, TrajectoryRepository);
-    container.registerSingleton(TRAJECTORY_TOKENS.TeamMetricsQueryService, TeamMetricsQueryService);
-    container.registerSingleton(TRAJECTORY_TOKENS.SceneArtifactRepository, SceneArtifactRepository);
-    container.registerSingleton(TRAJECTORY_TOKENS.CloudUploadProcessor, CloudUploadProcessor);
-    container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService, TrajectoryNativeDaemonService);
-    container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryDumpStorageService, TrajectoryDumpStorageService);
-    container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryReader, TrajectoryReader);
-    container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryBackgroundProcessor, TrajectoryBackgroundProcessor);
-
-    // Exporters
-    container.registerSingleton(TRAJECTORY_TOKENS.AtomisticExporter, AtomisticExporter);
-    container.registerSingleton(TRAJECTORY_TOKENS.DislocationExporter, DislocationExporter);
-    container.registerSingleton(TRAJECTORY_TOKENS.MeshExporter, MeshExporter);
-    container.registerSingleton(TRAJECTORY_TOKENS.ChartExporter, ChartExporter);
-
-    // Color-coding and Particle-filter services
-    container.registerSingleton(TRAJECTORY_TOKENS.AtomPropertiesService, AtomPropertiesService);
-    container.registerSingleton(TRAJECTORY_TOKENS.ColorCodingService, ColorCodingService);
-    container.registerSingleton(TRAJECTORY_TOKENS.ParticleFilterService, ParticleFilterService);
-
-    // Color-Coding Use Cases
-    container.registerSingleton(GetColorCodingPropertiesUseCase);
-    container.registerSingleton(GetColorCodingStatsUseCase);
-    container.registerSingleton(CreateColoredModelUseCase);
-    container.registerSingleton(GetColoredModelStreamUseCase);
-
-    // Particle-Filter Use Cases
-    container.registerSingleton(GetParticleFilterPropertiesUseCase);
-    container.registerSingleton(PreviewParticleFilterUseCase);
-    container.registerSingleton(ApplyParticleFilterActionUseCase);
-    container.registerSingleton(GetFilteredModelStreamUseCase);
-    container.registerSingleton(GetParticleFilterUniqueValuesUseCase);
-
-    // Scene Artifacts Use Cases
-    container.registerSingleton(ListTrajectorySceneArtifactsUseCase);
-
-    // Team Metrics Use Case
-    container.registerSingleton(GetTeamMetricsUseCase);
-
-    container.registerSingleton(JobStatusChangedEventHandler);
+    registerModuleDependencies({
+        singletons: [
+            [TRAJECTORY_TOKENS.TrajectoryRepository, TrajectoryRepository],
+            [TRAJECTORY_TOKENS.TeamMetricsQueryService, TeamMetricsQueryService],
+            [TRAJECTORY_TOKENS.SceneArtifactRepository, SceneArtifactRepository],
+            [TRAJECTORY_TOKENS.CloudUploadProcessor, CloudUploadProcessor],
+            [TRAJECTORY_TOKENS.TrajectoryNativeDaemonService, TrajectoryNativeDaemonService],
+            [TRAJECTORY_TOKENS.TrajectoryDumpStorageService, TrajectoryDumpStorageService],
+            [TRAJECTORY_TOKENS.TrajectoryReader, TrajectoryReader],
+            [TRAJECTORY_TOKENS.TrajectoryBackgroundProcessor, TrajectoryBackgroundProcessor],
+            [TRAJECTORY_TOKENS.AtomisticExporter, AtomisticExporter],
+            [TRAJECTORY_TOKENS.DislocationExporter, DislocationExporter],
+            [TRAJECTORY_TOKENS.MeshExporter, MeshExporter],
+            [TRAJECTORY_TOKENS.ChartExporter, ChartExporter],
+            [TRAJECTORY_TOKENS.AtomPropertiesService, AtomPropertiesService],
+            [TRAJECTORY_TOKENS.ColorCodingService, ColorCodingService],
+            [TRAJECTORY_TOKENS.ParticleFilterService, ParticleFilterService],
+            GetColorCodingPropertiesUseCase,
+            GetColorCodingStatsUseCase,
+            CreateColoredModelUseCase,
+            GetColoredModelStreamUseCase,
+            GetParticleFilterPropertiesUseCase,
+            PreviewParticleFilterUseCase,
+            ApplyParticleFilterActionUseCase,
+            GetFilteredModelStreamUseCase,
+            GetParticleFilterUniqueValuesUseCase,
+            ListTrajectorySceneArtifactsUseCase,
+            GetTeamMetricsUseCase,
+            JobStatusChangedEventHandler
+        ]
+    });
 
     // Register all AI Tools for discovery
     for (const toolClassProvider of TRAJECTORY_AI_TOOL_CLASSES) {

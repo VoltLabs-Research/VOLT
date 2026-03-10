@@ -1,21 +1,13 @@
-import { Router } from 'express';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
-import { createGeneralRateLimiter } from '@shared/infrastructure/http/middleware/rate-limit';
 import controllers from '@modules/system/infrastructure/http/controllers';
-import { HttpModule } from '@shared/infrastructure/http/routing/HttpModule';
+import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 
-const router = Router({ mergeParams: true });
-const module: HttpModule = {
+export default createHttpModule({
     basePath: '/api/system',
-    router
-};
-
-const generalRateLimit = createGeneralRateLimiter(60);
-
-router.use(protect);
-router.use(generalRateLimit);
-
-router.get('/stats', controllers.getSystemStats.handle);
-router.get('/rbac', controllers.getRbacConfig.handle)
-
-export default module;
+    protected: true,
+    middleware: RATE_LIMIT_POLICIES.systemAccess,
+    routes: (router) => {
+        router.get('/stats', controllers.getSystemStats.handle);
+        router.get('/rbac', controllers.getRbacConfig.handle);
+    }
+});

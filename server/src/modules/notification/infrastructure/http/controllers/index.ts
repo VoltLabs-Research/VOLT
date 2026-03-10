@@ -1,8 +1,8 @@
 import GetMyNotificationsController from './GetMyNotificationsController';
 import MarkAllMyNotificationsAsReadController from './MarkAllMyNotificationsAsReadController';
-import { container } from 'tsyringe';
+import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-export default {
-    getMyNotifications: container.resolve(GetMyNotificationsController),
-    markAllAsRead: container.resolve(MarkAllMyNotificationsAsReadController)
-};
+export default createControllerRegistry({
+    getMyNotifications: GetMyNotificationsController,
+    markAllAsRead: MarkAllMyNotificationsAsReadController
+});
