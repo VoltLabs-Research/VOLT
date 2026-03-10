@@ -27,7 +27,6 @@ import { DebugSocketOrchestrator } from '@modules/plugin/socket/debug/DebugSocke
 import ListingRowRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/listing-row/ListingRowRepository';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
 import SubListingRowRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/listing-row/SubListingRowRepository';
-import AnalysisProcessingQueue from '@modules/plugin/queues/AnalysisProcessingQueue';
 import AnalysisJobFactory from '@modules/plugin/infrastructure/services/plugin/AnalysisJobFactory';
 import ArgumentsHandler from '@modules/plugin/infrastructure/services/plugin/nodes/handlers/ArgumentsHandler';
 import ContextHandler from '@modules/plugin/infrastructure/services/plugin/nodes/handlers/ContextHandler';
@@ -81,7 +80,6 @@ export const registerPluginDependencies = (): void => {
 
     container.registerSingleton(PLUGIN_TOKENS.PluginWorkflowEngine, PluginWorkflowEngine);
 
-    container.registerSingleton(PLUGIN_TOKENS.AnalysisProcessingQueue, AnalysisProcessingQueue);
     container.registerSingleton(PLUGIN_TOKENS.AnalysisJobFactory, AnalysisJobFactory);
     container.registerSingleton(DebugSocketOrchestrator);
     container.registerSingleton(PLUGIN_TOKENS.DebugSocketModule, DebugSocketModule);

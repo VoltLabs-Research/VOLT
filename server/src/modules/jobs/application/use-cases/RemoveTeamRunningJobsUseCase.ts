@@ -23,7 +23,8 @@ export default class RemoveTeamRunningJobsUseCase extends BaseTeamJobActionUseCa
 
         return {
             deletedJobs: result.deletedJobs,
-            deletedAnalyses: result.deletedAnalyses
+            deletedAnalyses: result.deletedAnalyses,
+            affectedClusters: result.affectedClusters
         };
     }
 };

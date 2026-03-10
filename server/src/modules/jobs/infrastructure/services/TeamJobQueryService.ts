@@ -1,60 +1,83 @@
-import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
+import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import type { TeamJobSnapshot, TeamJobStatus } from '@modules/jobs/infrastructure/projections/TeamJobSnapshot';
-import type { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
-import type { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
+import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+
+interface DaemonTeamJobsResponse {
+    data: TeamJobSnapshot[];
+};
 
 @injectable()
 export default class TeamJobQueryService {
     constructor(
-        @inject(JOBS_TOKENS.JobRepository)
-        private readonly jobRepository: IJobRepository,
+        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
+        private readonly teamClusterRepository: ITeamClusterRepository,
 
-        @inject(JOBS_TOKENS.QueueRegistry)
-        private readonly queueRegistry: IQueueRegistry
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
     async getFlatTeamJobs(teamId: string): Promise<TeamJobSnapshot[]> {
         try {
-            const jobIds = await this.jobRepository.getTeamJobIds(teamId);
-
-            if (jobIds.length === 0) {
-                return [];
-            }
-
-            const queuePrefixes = this.queueRegistry.getAllStatusKeyPrefixes();
-
-            if (queuePrefixes.length === 0) {
-                logger.warn('[TeamJobQueryService] No queues registered in QueueRegistry');
-                return [];
-            }
-
-            const statusKeys = queuePrefixes.flatMap((prefix) =>
-                jobIds.map((jobId) => `${prefix}${jobId}`)
-            );
-
-            const jobStatuses = await this.jobRepository.getJobStatuses(statusKeys);
             const jobsById = new Map<string, TeamJobSnapshot>();
 
-            for (const jobStatus of jobStatuses) {
-                if (!this.isTeamJobSnapshot(jobStatus)) {
-                    continue;
-                }
-
-                if (jobStatus.teamId !== teamId) {
-                    continue;
-                }
-
+            const clusterJobs = await this.getClusterTeamJobs(teamId);
+            for (const jobStatus of clusterJobs) {
                 jobsById.set(jobStatus.jobId, jobStatus);
             }
 
-            return Array.from(jobsById.values());
+            return Array.from(jobsById.values()).sort((left, right) => {
+                const leftTimestamp = left.timestamp || left.updatedAt || left.createdAt || '';
+                const rightTimestamp = right.timestamp || right.updatedAt || right.createdAt || '';
+
+                return new Date(rightTimestamp).getTime() - new Date(leftTimestamp).getTime();
+            });
         } catch (error) {
             logger.error(error, '[TeamJobQueryService] Error fetching team jobs');
             return [];
         }
+    }
+
+    private async getClusterTeamJobs(teamId: string): Promise<TeamJobSnapshot[]> {
+        const teamClusters = await this.teamClusterRepository.findAll({
+            filter: {
+                team: teamId,
+                status: TeamClusterStatus.Connected
+            },
+            page: 1,
+            limit: 100
+        });
+        const jobs: TeamJobSnapshot[] = [];
+
+        for (const teamCluster of teamClusters.data) {
+            try {
+                const response = await this.teamClusterDaemonClient.request<DaemonTeamJobsResponse>(
+                    teamCluster.id,
+                    '/api/jobs',
+                    {
+                        query: { teamId }
+                    }
+                );
+
+                for (const job of response.data || []) {
+                    if (this.isTeamJobSnapshot(job) && job.teamId === teamId) {
+                        jobs.push({
+                            ...job,
+                            teamClusterId: teamCluster.id
+                        });
+                    }
+                }
+            } catch (error) {
+                logger.warn(error, `[TeamJobQueryService] Failed to fetch daemon jobs for cluster ${teamCluster.id}`);
+            }
+        }
+
+        return jobs;
     }
 
     private isTeamJobSnapshot(job: Record<string, unknown> | null): job is TeamJobSnapshot {

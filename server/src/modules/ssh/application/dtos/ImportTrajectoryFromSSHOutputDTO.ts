@@ -1,5 +1,4 @@
 export interface ImportTrajectoryFromSSHOutputDTO{
-    jobId: string;
-    sessionId: string;
+    trajectoryId: string;
     message: string;
 };

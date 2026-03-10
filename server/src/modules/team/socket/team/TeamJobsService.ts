@@ -1,9 +1,11 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import { IJobRepository } from '@modules/jobs/domain/port/IJobRepository';
-import { IQueueRegistry } from '@modules/jobs/domain/port/IQueueRegistry';
-import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
+import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 type TeamJobStatus = JobStatus | 'retrying' | 'partial';
 
@@ -56,46 +58,23 @@ interface FrameJobGroup {
     overallStatus: string;
 };
 
+interface DaemonTeamJobsResponse {
+    data: TeamJobSummary[];
+};
+
 @injectable()
 export default class TeamJobsService {
     constructor(
-        @inject(JOBS_TOKENS.JobRepository)
-        private readonly jobRepository: IJobRepository,
+        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
+        private readonly teamClusterRepository: ITeamClusterRepository,
 
-        @inject(JOBS_TOKENS.QueueRegistry)
-        private readonly queueRegistry: IQueueRegistry
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) { }
 
     async getTeamJobs(teamId: string): Promise<TrajectoryJobGroup[]> {
         try {
-            const jobIds = await this.jobRepository.getTeamJobIds(teamId);
-
-            if (!jobIds || jobIds.length === 0) {
-                return [];
-            }
-
-            // Dynamically get all registered queue status key prefixes
-            const queuePrefixes = this.queueRegistry.getAllStatusKeyPrefixes();
-
-            if (queuePrefixes.length === 0) {
-                logger.warn('[TeamJobsService] No queues registered in QueueRegistry');
-                return [];
-            }
-
-            const statusKeys = queuePrefixes.flatMap((prefix) =>
-                jobIds.map((jobId) => `${prefix}${jobId}`)
-            );
-
-            const jobStatuses = await this.jobRepository.getJobStatuses(statusKeys);
-
-            const validJobs: TeamJobSummary[] = [];
-            for (const job of jobStatuses) {
-                if (this.isTeamJobSummary(job)) {
-                    validJobs.push(job);
-                }
-            }
-
-            const grouped = this.groupJobsByTrajectory(validJobs);
+            const grouped = this.groupJobsByTrajectory(await this.getFlatTeamJobs(teamId));
 
             return grouped;
         } catch (error) {
@@ -105,18 +84,56 @@ export default class TeamJobsService {
     }
 
     async getFlatTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
-        const groupedJobs = await this.getTeamJobs(teamId);
         const jobsById = new Map<string, TeamJobSummary>();
 
-        for (const trajectory of groupedJobs) {
-            for (const frameGroup of trajectory.frameGroups) {
-                for (const job of frameGroup.jobs) {
-                    jobsById.set(job.jobId, job);
+        const clusterJobs = await this.getClusterTeamJobs(teamId);
+        for (const job of clusterJobs) {
+            jobsById.set(job.jobId, job);
+        }
+
+        return Array.from(jobsById.values()).sort((left, right) => {
+            const leftTimestamp = left.timestamp || left.updatedAt || left.createdAt || '';
+            const rightTimestamp = right.timestamp || right.updatedAt || right.createdAt || '';
+            return new Date(rightTimestamp).getTime() - new Date(leftTimestamp).getTime();
+        });
+    }
+
+    private async getClusterTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
+        const teamClusters = await this.teamClusterRepository.findAll({
+            filter: {
+                team: teamId,
+                status: TeamClusterStatus.Connected
+            },
+            page: 1,
+            limit: 100
+        });
+
+        const jobs: TeamJobSummary[] = [];
+
+        for (const teamCluster of teamClusters.data) {
+            try {
+                const response = await this.teamClusterDaemonClient.request<DaemonTeamJobsResponse>(
+                    teamCluster.id,
+                    '/api/jobs',
+                    {
+                        query: { teamId }
+                    }
+                );
+
+                for (const job of response.data || []) {
+                    if (this.isTeamJobSummary(job)) {
+                        jobs.push({
+                            ...job,
+                            teamClusterId: teamCluster.id
+                        });
+                    }
                 }
+            } catch (error) {
+                logger.warn(error, `[TeamJobsService] Failed to fetch daemon jobs for cluster ${teamCluster.id}`);
             }
         }
 
-        return Array.from(jobsById.values());
+        return jobs;
     }
 
     private groupJobsByTrajectory(jobs: TeamJobSummary[]): TrajectoryJobGroup[] {

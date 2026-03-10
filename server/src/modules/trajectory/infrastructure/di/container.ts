@@ -12,13 +12,10 @@ import { GetParticleFilterUniqueValuesUseCase } from '@modules/trajectory/applic
 import { PreviewParticleFilterUseCase } from '@modules/trajectory/application/use-cases/particle-filter/PreviewParticleFilterUseCase';
 import { ListTrajectorySceneArtifactsUseCase } from '@modules/trajectory/application/use-cases/scene-artifacts/ListTrajectorySceneArtifactsUseCase';
 import JobStatusChangedEventHandler from '@modules/trajectory/application/events/JobStatusChangedEventHandler';
-import SessionCompletedEventHandler from '@modules/trajectory/application/events/SessionCompletedEventHandler';
 import GetTeamMetricsUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTeamMetricsUseCase';
 import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
-import CloudUploadQueue from '@modules/trajectory/queues/CloudUploadQueue';
 import CloudUploadProcessor from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadProcessor';
-import TrajectoryProcessingQueue from '@modules/trajectory/queues/TrajectoryProcessingQueue';
 import AtomPropertiesService from '@modules/trajectory/infrastructure/services/trajectory/AtomPropertiesService';
 import ColorCodingService from '@modules/trajectory/infrastructure/services/color-coding/ColorCodingService';
 import AtomisticExporter from '@modules/trajectory/infrastructure/services/trajectory/exporters/AtomisticExporter';
@@ -41,8 +38,6 @@ export const registerTrajectoryDependencies = (): void => {
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryRepository, TrajectoryRepository);
     container.registerSingleton(TRAJECTORY_TOKENS.TeamMetricsQueryService, TeamMetricsQueryService);
     container.registerSingleton(TRAJECTORY_TOKENS.SceneArtifactRepository, SceneArtifactRepository);
-    container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryProcessingQueue, TrajectoryProcessingQueue);
-    container.registerSingleton(TRAJECTORY_TOKENS.CloudUploadQueue, CloudUploadQueue);
     container.registerSingleton(TRAJECTORY_TOKENS.CloudUploadProcessor, CloudUploadProcessor);
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService, TrajectoryNativeDaemonService);
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryDumpStorageService, TrajectoryDumpStorageService);
@@ -79,7 +74,6 @@ export const registerTrajectoryDependencies = (): void => {
     // Team Metrics Use Case
     container.registerSingleton(GetTeamMetricsUseCase);
 
-    container.registerSingleton(SessionCompletedEventHandler);
     container.registerSingleton(JobStatusChangedEventHandler);
 
     // Register all AI Tools for discovery

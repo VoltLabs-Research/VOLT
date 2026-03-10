@@ -22,7 +22,8 @@ export default class RetryTeamFailedJobsUseCase extends BaseTeamJobActionUseCase
         const result = await this.teamJobMaintenanceService.retryFailedJobs(teamId);
 
         return {
-            retriedFrames: result.retriedFrames
+            retriedFrames: result.retriedFrames,
+            affectedClusters: result.affectedClusters
         };
     }
 };

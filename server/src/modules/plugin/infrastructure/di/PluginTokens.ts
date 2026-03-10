@@ -14,7 +14,6 @@ export const PLUGIN_TOKENS = Object.freeze({
     PluginExposureExportService: Symbol.for('PluginExposureExportService'),
     PluginWorkflowEngine: Symbol.for('WorkflowEngine'),
     ProcessExecutorService: Symbol.for('ProcessExecutorService'),
-    AnalysisProcessingQueue: Symbol.for('AnalysisProcessingQueue'),
     AnalysisJobFactory: Symbol.for('AnalysisJobFactory'),
     DebugSocketModule: Symbol.for('DebugSocketModule'),
     ModifierHandler: Symbol.for('ModifierHandler'),

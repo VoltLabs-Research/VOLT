@@ -1,5 +1,4 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import { JOB_STATUS_KEY_PREFIX, STATUS_TTL_SECONDS } from '@modules/jobs/infrastructure/services/ProcessingQueueShared';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
@@ -15,6 +14,8 @@ import { injectable, inject } from 'tsyringe';
 
 const QUEUE_TYPE = 'analysis_processing';
 const SESSION_TTL_SECONDS = 86400;
+const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
+const STATUS_TTL_SECONDS = 86400;
 
 interface DaemonJobCompletionInput {
     jobId: string;
@@ -66,7 +67,7 @@ export default class DaemonAnalysisCompletionService {
         const { jobId, analysisId, teamId, success, error } = input;
         const status = success ? JobStatus.Completed : JobStatus.Failed;
 
-        // 1. Project job status to Redis (same format as BaseProcessingQueue)
+        // 1. Project job status to Redis for dashboard/socket consumers
         await this.projectJobStatus(jobId, status, teamId, analysisId, error);
 
         // 2. Publish socket event to frontend
@@ -112,7 +113,8 @@ export default class DaemonAnalysisCompletionService {
             teamId,
             analysisId,
             queueType: QUEUE_TYPE,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         };
 
         if (error) {

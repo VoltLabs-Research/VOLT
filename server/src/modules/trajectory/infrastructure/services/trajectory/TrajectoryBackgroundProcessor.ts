@@ -10,21 +10,19 @@ import { IEventBus } from '@shared/application/events/IEventBus';
 import { IFileExtractorService } from '@shared/domain/port/IFileExtractorService';
 import { ITempFileService } from '@shared/domain/port/ITempFileService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import Job from '@modules/jobs/domain/entities/Job';
 import Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/trajectory/TrajectoryParserFactory';
+import CloudUploadProcessor from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadProcessor';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
 
 import { injectable, inject } from 'tsyringe';
-import { v4 } from 'uuid';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import type { ErrorCode } from '@core/constants/error-codes';
 import type { ExtractedFile } from '@shared/domain/port/IFileExtractorService';
-import type { IJobQueueService } from '@modules/jobs/domain/port/IJobQueueService';
 
 type ParsedFrame = {
     timestep: number;
@@ -47,8 +45,8 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository)
         private readonly simulationCellRepo: ISimulationCellRepository,
 
-        @inject(TRAJECTORY_TOKENS.CloudUploadQueue)
-        private readonly cloudUploadQueue: IJobQueueService,
+        @inject(TRAJECTORY_TOKENS.CloudUploadProcessor)
+        private readonly cloudUploadProcessor: CloudUploadProcessor,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
@@ -318,31 +316,16 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         trajectory: Trajectory,
         teamId: string
     ): Promise<void>{
-        const jobs: Job[] = [];
-        const sessionId = v4();
+        logger.info(`@trajectory-background-processor: Uploading ${frames.length} trajectory frame(s) directly`);
 
-        for(const frame of frames){
-            const { cachePath, timestep, ...frameInfo } = frame;
-            jobs.push(Job.create({
-                jobId: v4(),
-                teamId,
-                message: trajectory.props.name,
-                sessionId,
-                queueType: 'cloud-upload',
-                metadata: {
-                    trajectoryId: trajectory._id,
-                    trajectoryName: trajectory.props.name,
-                    teamClusterId: trajectory.props.teamCluster,
-                    timestep,
-                    file: {
-                        frameInfo,
-                        frameFilePath: cachePath
-                    }
-                }
-            }));
+        for (const frame of frames) {
+            const { cachePath, timestep } = frame;
+            await this.cloudUploadProcessor.process({
+                trajectoryId: trajectory._id,
+                teamClusterId: trajectory.props.teamCluster,
+                timestep,
+                frameFilePath: cachePath
+            });
         }
-
-        logger.info(`@trajectory-background-processor: Dispatching ${jobs.length} cloud upload jobs`);
-        await this.cloudUploadQueue.addJobs(jobs);
     }
 };
