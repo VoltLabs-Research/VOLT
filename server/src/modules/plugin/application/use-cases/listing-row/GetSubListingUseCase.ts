@@ -1,10 +1,8 @@
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     GetSubListingInputDTO,
     GetSubListingOutputDTO,
     SubListingColumn
 } from '@modules/plugin/application/dtos/listing-row/GetSubListingDTO';
-import { ISubListingRowRepository } from '@modules/plugin/domain/port/listing-row/ISubListingRowRepository';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 
@@ -28,12 +26,19 @@ interface DaemonPaginatedResult {
     limit: number;
 };
 
+const EMPTY_RESULT = (subListingName: string): GetSubListingOutputDTO => ({
+    subListingName,
+    columns: [],
+    rows: [],
+    total: 0,
+    page: 1,
+    totalPages: 0,
+    limit: 0
+});
+
 @injectable()
 export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, GetSubListingOutputDTO> {
     constructor(
-        @inject(PLUGIN_TOKENS.SubListingRowRepository)
-        private subListingRowRepository: ISubListingRowRepository,
-
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private analysisRepository: IAnalysisRepository,
 
@@ -46,56 +51,12 @@ export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, Get
         const limit = Math.min(200, Math.max(1, Number(input.limit) || 50));
 
         const analysis = await this.analysisRepository.findById(input.analysisId);
-        if (analysis?.props.teamCluster) {
-            return this.executeFromDaemon(analysis.props.teamCluster, input, page, limit);
+        if (!analysis?.props.teamCluster) {
+            return Result.ok(EMPTY_RESULT(input.subListingName));
         }
 
-        const result = await this.subListingRowRepository.findAll({
-            filter: {
-                analysis: input.analysisId,
-                exposureId: input.exposureId,
-                timestep: Number(input.timestep),
-                subListingName: input.subListingName
-            },
-            page,
-            limit,
-            sort: {
-                _id: 1
-            }
-        });
-
-        const rows = result.data.map((document) => ({
-            _id: document._id,
-            ...(document.props.row || {})
-        }));
-
-        let columns: SubListingColumn[] = [];
-        if (result.data.length > 0) {
-            columns = Object.keys(result.data[0].props.row || {}).map((key) => ({
-                label: key,
-                sortable: true
-            }));
-        }
-
-        return Result.ok({
-            subListingName: input.subListingName,
-            columns,
-            rows,
-            total: result.total,
-            page: result.page,
-            totalPages: result.totalPages,
-            limit: result.limit
-        });
-    }
-
-    private async executeFromDaemon(
-        teamClusterId: string,
-        input: GetSubListingInputDTO,
-        page: number,
-        limit: number
-    ): Promise<Result<GetSubListingOutputDTO>> {
         const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
-            teamClusterId,
+            analysis.props.teamCluster,
             'plugin.sub-listings.list',
             {
                 analysisId: input.analysisId,

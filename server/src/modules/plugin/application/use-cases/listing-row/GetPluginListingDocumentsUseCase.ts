@@ -1,10 +1,7 @@
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     GetPluginListingDocumentsInputDTO,
     GetPluginListingDocumentsOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
-import { toPluginListingOptions } from '@modules/plugin/utilities/listing-row/toPluginListingOptions';
-import { IPluginListingService } from '@modules/plugin/domain/port/listing-row/IPluginListingService';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 
@@ -19,7 +16,7 @@ import { deriveColumns, mapDaemonRow } from '@modules/plugin/application/dtos/li
 import type { PluginListingDocumentsMeta } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
 import type { DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
 
-const buildDaemonMeta = (
+const buildMeta = (
     pluginId: string,
     daemonResult: DaemonPaginatedResult,
     input: GetPluginListingDocumentsInputDTO
@@ -42,14 +39,21 @@ const buildDaemonMeta = (
     };
 };
 
+const EMPTY_RESULT: GetPluginListingDocumentsOutputDTO = {
+    data: [],
+    total: 0,
+    page: 1,
+    totalPages: 0,
+    limit: 0,
+    _meta: { pluginId: '', exposureName: '', exposureId: '', columns: [], subListingNames: [] }
+};
+
 @injectable()
 export class GetPluginListingDocumentsUseCase implements IUseCase<
     GetPluginListingDocumentsInputDTO,
     GetPluginListingDocumentsOutputDTO
 > {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginListingService)
-        private readonly listingService: IPluginListingService,
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private readonly analysisRepository: IAnalysisRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
@@ -60,37 +64,17 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<
         const page = input.page ?? 1;
         const limit = input.limit ?? 50;
 
-        if (input.analysisId) {
-            const analysis = await this.analysisRepository.findById(input.analysisId);
-            if (analysis?.props.teamCluster) {
-                return this.executeFromDaemon(analysis.props.teamCluster, input, page, limit);
-            }
+        const resolved = await this.resolveTeamCluster(input);
+        if (!resolved) {
+            return Result.ok(EMPTY_RESULT);
         }
 
-        const result = await this.listingService.getListingDocuments(
-            input.pluginId,
-            {
-                ...toPluginListingOptions(input),
-                page,
-                limit
-            }
-        );
-
-        return Result.ok(result);
-    }
-
-    private async executeFromDaemon(
-        teamClusterId: string,
-        input: GetPluginListingDocumentsInputDTO,
-        page: number,
-        limit: number
-    ): Promise<Result<GetPluginListingDocumentsOutputDTO>> {
         const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
-            teamClusterId,
+            resolved.teamClusterId,
             'plugin.listings.list',
             {
                 pluginId: input.pluginId,
-                analysisId: input.analysisId,
+                analysisId: resolved.analysisId,
                 trajectoryId: input.trajectoryId,
                 exposureId: input.exposureId,
                 exposureName: input.exposureName,
@@ -107,7 +91,32 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<
             page: daemonResult.page || page,
             totalPages: daemonResult.totalPages || 1,
             limit: daemonResult.limit || limit,
-            _meta: buildDaemonMeta(input.pluginId, daemonResult, input)
+            _meta: buildMeta(input.pluginId, daemonResult, input)
         });
+    }
+
+    private async resolveTeamCluster(
+        input: GetPluginListingDocumentsInputDTO
+    ): Promise<{ teamClusterId: string; analysisId: string } | null> {
+        if (input.analysisId) {
+            const analysis = await this.analysisRepository.findById(input.analysisId);
+            if (analysis?.props.teamCluster) {
+                return { teamClusterId: analysis.props.teamCluster, analysisId: input.analysisId };
+            }
+        }
+
+        const filter: Record<string, unknown> = {
+            plugin: input.pluginId,
+            teamCluster: { $exists: true, $ne: null }
+        };
+        if (input.trajectoryId) filter.trajectory = input.trajectoryId;
+        if (input.teamId) filter.team = input.teamId;
+
+        const analysis = await this.analysisRepository.findOne(filter);
+        if (analysis?.props.teamCluster) {
+            return { teamClusterId: analysis.props.teamCluster, analysisId: analysis._id };
+        }
+
+        return null;
     }
 };

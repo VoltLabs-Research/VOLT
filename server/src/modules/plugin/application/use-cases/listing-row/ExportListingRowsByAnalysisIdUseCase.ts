@@ -1,15 +1,12 @@
-import { mapListingRowByAnalysis } from '@modules/plugin/utilities/mappers/listing-row/mapListingRowByAnalysis';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     ExportListingRowsByAnalysisIdInputDTO,
     ExportListingRowsByAnalysisIdOutputDTO,
     ListingRowByAnalysisData,
     AnalysisSubListingExportData
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
-import { IListingRowRepository } from '@modules/plugin/domain/port/listing-row/IListingRowRepository';
-import { ISubListingRowRepository } from '@modules/plugin/domain/port/listing-row/ISubListingRowRepository';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
 import { IUseCase } from '@shared/application/IUseCase';
 import { ExportType } from '@shared/domain/port/IBaseRepository';
@@ -26,16 +23,6 @@ interface ListingAggregation {
     listingName: string;
     rows: Record<string, unknown>[];
     dynamicColumns: Set<string>;
-};
-
-interface ListingRowsByAnalysisFilter {
-    analysis: string;
-    team: string;
-};
-
-interface SubListingRowsByAnalysisFilter {
-    analysis: string;
-    team: string;
 };
 
 interface SubListingAggregation {
@@ -90,32 +77,12 @@ interface DaemonPaginatedResult<T> {
     limit: number;
 };
 
-const buildListingRowsByAnalysisFilter = (
-    input: ExportListingRowsByAnalysisIdInputDTO
-): ListingRowsByAnalysisFilter => {
-    return {
-        analysis: input.analysisId,
-        team: input.teamId
-    };
-};
-
-const buildSubListingRowsByAnalysisFilter = (
-    input: ExportListingRowsByAnalysisIdInputDTO
-): SubListingRowsByAnalysisFilter => {
-    return {
-        analysis: input.analysisId,
-        team: input.teamId
-    };
-};
-
 @injectable()
 export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
     ExportListingRowsByAnalysisIdInputDTO,
     DownloadStreamOutputDTO
 > {
     constructor(
-        @inject(PLUGIN_TOKENS.ListingRowRepository) private listingRowRepository: IListingRowRepository,
-        @inject(PLUGIN_TOKENS.SubListingRowRepository) private subListingRowRepository: ISubListingRowRepository,
         @inject(PLUGIN_TOKENS.ListingRowsExportPresenter)
         private readonly listingRowsExportPresenter: IListingRowsExportPresenter,
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private analysisRepository: IAnalysisRepository,
@@ -239,40 +206,7 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
             }));
     }
 
-    private async collectListings(input: ExportListingRowsByAnalysisIdInputDTO): Promise<ExportListingRowsByAnalysisIdOutputDTO['listings']> {
-        const sortAsc = input.sortAsc ?? false;
-        const pageSize = 200;
-        let page = 1;
-        let totalPages = 1;
-        const listingMap = new Map<string, ListingAggregation>();
-        const filter = buildListingRowsByAnalysisFilter(input);
-
-        do {
-            const pageResult = await this.listingRowRepository.findAll({
-                filter,
-                limit: pageSize,
-                page,
-                sort: {
-                    timestep: sortAsc ? 1 : -1,
-                    _id: sortAsc ? 1 : -1
-                },
-                populate: 'trajectory'
-            });
-
-            totalPages = Math.max(1, pageResult.totalPages || 1);
-
-            for (const document of pageResult.data) {
-                const mapped = mapListingRowByAnalysis(document);
-                this.aggregateListingRow(listingMap, input.analysisId, mapped);
-            }
-
-            page += 1;
-        } while (page <= totalPages);
-
-        return this.finalizeListingMap(listingMap);
-    }
-
-    private async collectListingsFromDaemon(
+    private async collectListings(
         teamClusterId: string,
         analysisId: string
     ): Promise<ExportListingRowsByAnalysisIdOutputDTO['listings']> {
@@ -311,35 +245,6 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
     }
 
     private async collectSubListings(
-        input: ExportListingRowsByAnalysisIdInputDTO
-    ): Promise<AnalysisSubListingExportData[]> {
-        const filter = buildSubListingRowsByAnalysisFilter(input);
-        const rows = await this.subListingRowRepository.export({
-            filter,
-            sort: {
-                exposureName: 1,
-                subListingName: 1,
-                timestep: 1,
-                _id: 1
-            }
-        });
-
-        return this.aggregateSubListingRows(
-            input.analysisId,
-            rows.map((document) => ({
-                _id: document._id,
-                plugin: String(document.props.plugin),
-                trajectory: String(document.props.trajectory),
-                exposureId: document.props.exposureId,
-                exposureName: document.props.exposureName,
-                timestep: document.props.timestep,
-                subListingName: document.props.subListingName,
-                row: document.props.row || {}
-            }))
-        );
-    }
-
-    private async collectSubListingsFromDaemon(
         teamClusterId: string,
         analysisId: string
     ): Promise<AnalysisSubListingExportData[]> {
@@ -432,18 +337,20 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
         const analysis = await this.analysisRepository.findById(input.analysisId);
         const teamClusterId = analysis?.props.teamCluster;
 
-        let listings: ExportListingRowsByAnalysisIdOutputDTO['listings'];
-        let subListings: AnalysisSubListingExportData[];
-
-        if (teamClusterId) {
-            [listings, subListings] = await Promise.all([
-                this.collectListingsFromDaemon(teamClusterId, input.analysisId),
-                this.collectSubListingsFromDaemon(teamClusterId, input.analysisId)
-            ]);
-        } else {
-            listings = await this.collectListings(input);
-            subListings = await this.collectSubListings(input);
+        if (!teamClusterId) {
+            const payload: ExportListingRowsByAnalysisIdOutputDTO = {
+                analysisId: input.analysisId,
+                format,
+                listings: [],
+                subListings: []
+            };
+            return Result.ok(this.listingRowsExportPresenter.present(payload));
         }
+
+        const [listings, subListings] = await Promise.all([
+            this.collectListings(teamClusterId, input.analysisId),
+            this.collectSubListings(teamClusterId, input.analysisId)
+        ]);
 
         const payload: ExportListingRowsByAnalysisIdOutputDTO = {
             analysisId: input.analysisId,

@@ -34,3 +34,16 @@ export interface ParseOptions {
     includeIds?: boolean;
     properties?: string[];
 };
+
+export interface AtomPageEntry {
+    id: number;
+    type: number;
+    x: number;
+    y: number;
+    z: number;
+};
+
+export interface AtomPageResult {
+    atoms: AtomPageEntry[];
+    totalAtoms: number;
+};
