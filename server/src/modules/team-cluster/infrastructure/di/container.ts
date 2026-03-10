@@ -10,6 +10,7 @@ import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructu
 import DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
 import CompleteTeamClusterDeletionUseCase from '@modules/team-cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
 import ProcessDaemonJobCompletionUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonJobCompletionUseCase';
+import ProcessDaemonSceneArtifactUpsertUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
 import ProcessDaemonTrajectoryImportUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonTrajectoryImportUseCase';
 import ProcessTeamClusterHealthcheckUseCase from '@modules/team-cluster/application/use-cases/ProcessTeamClusterHealthcheckUseCase';
 import RecordTeamClusterHeartbeatUseCase from '@modules/team-cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
@@ -29,6 +30,7 @@ export const registerTeamClusterDependencies = () => {
             [TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService, DaemonAnalysisCompletionService],
             CompleteTeamClusterDeletionUseCase,
             ProcessDaemonJobCompletionUseCase,
+            ProcessDaemonSceneArtifactUpsertUseCase,
             ProcessDaemonTrajectoryImportUseCase,
             ProcessTeamClusterHealthcheckUseCase,
             RecordTeamClusterHeartbeatUseCase,

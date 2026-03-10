@@ -357,53 +357,31 @@ PY
 }
 
 wait_for_daemon_ready() {
-    local daemon_port timeout_seconds started_at body_file status_code ready
+    local compose_project_name container_name timeout_seconds started_at
 
-    daemon_port="$(python3 - "$PORTS_JSON" <<'PY'
+    compose_project_name="$(python3 - "$MANIFEST_FILE" <<'PY'
 import json
 import sys
 
-print(json.loads(sys.argv[1])['daemon'])
+payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
+print(payload['data']['manifest']['composeProjectName'])
 PY
 )"
+    container_name="${compose_project_name}-daemon-1"
     timeout_seconds='60'
     started_at="$(date +%s)"
 
-    log "Waiting for daemon readiness on port $daemon_port"
+    log "Waiting for daemon readiness (container: $container_name)"
 
     while :; do
-        ensure_temp_dir
-        body_file="$(mktemp "$TEMP_DIR/health.XXXXXX.json")"
-        status_code="$(curl -sS -o "$body_file" -w '%{http_code}' "http://127.0.0.1:${daemon_port}/health" || printf '000')"
-
-        if [ "$status_code" -ge 200 ] && [ "$status_code" -lt 300 ]; then
-            ready="$(python3 - "$body_file" <<'PY'
-import json
-import sys
-
-try:
-    payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
-except Exception:
-    print('false')
-    sys.exit(0)
-
-data = payload.get('data')
-if isinstance(data, dict) and data.get('ready') is True:
-    print('true')
-elif payload.get('ready') is True:
-    print('true')
-else:
-    print('false')
-PY
-)"
-
-            if [ "$ready" = 'true' ]; then
-                log 'Daemon is ready'
-                return
-            fi
+        if docker logs "$container_name" 2>&1 | grep -q 'cluster-daemon started for team cluster'; then
+            log 'Daemon is ready'
+            return
         fi
 
         if [ $(( $(date +%s) - started_at )) -ge "$timeout_seconds" ]; then
+            log 'Daemon logs at timeout:'
+            docker logs --tail 20 "$container_name" 2>&1 || true
             fail "Daemon did not become ready within ${timeout_seconds}s"
         fi
 
@@ -421,7 +399,6 @@ print('[setup-cluster] Provisioning assets installed')
 print(f"[setup-cluster] MinIO port: {ports['minio']}")
 print(f"[setup-cluster] Redis port: {ports['redis']}")
 print(f"[setup-cluster] MongoDB port: {ports['mongodb']}")
-print(f"[setup-cluster] Daemon port: {ports['daemon']}")
 PY
 }
 
