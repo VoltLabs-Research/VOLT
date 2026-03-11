@@ -1,24 +1,27 @@
 import { calculatePaginationOffset, ObjectBucketName, normalizePagination } from '@/shared/contracts';
-import { MinioService } from '@/modules/platform/services';
 import {
     createNativeProcessingTempPath,
     NATIVE_PROCESSING_RUNTIME_DIR,
-    NativeModuleLoader,
-    type NativeAtomsPageRequest,
-    type NativeAtomsPageResponse,
-    type NativePropertyStatsRequest,
-    type NativeStatsResult,
-    type NativeTrajectoryRequest,
-    type NativeUniqueValuesRequest,
-    type ParseOptions,
-    type ParsedTrajectory,
-    type NativeDataResult,
-    type NativeDumpResult
+    NativeModuleOperation
 } from './NativeModuleLoader';
 import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import zlib from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
+import type { MinioService } from '@/modules/platform/services';
+import type {
+    NativeAtomsPageRequest,
+    NativeAtomsPageResponse,
+    NativeDataResult,
+    NativeDumpResult,
+    NativeModuleLoader,
+    NativePropertyStatsRequest,
+    NativeStatsResult,
+    NativeTrajectoryRequest,
+    NativeUniqueValuesRequest,
+    ParseOptions,
+    ParsedTrajectory
+} from './NativeModuleLoader';
 
 const getDumpObjectKey = (trajectoryId: string, timestep: number): string => {
     return `trajectory-${trajectoryId}/timestep-${timestep}.dump.gz`;
@@ -128,6 +131,11 @@ export const createTrajectoryParserService = (
     },
 
     async getPropertyStats(input) {
+        nativeModuleLoader.traceOperation(NativeModuleOperation.PropertyStats, {
+            objectKey: input.objectKey,
+            timestep: input.timestep,
+            trajectoryId: input.trajectoryId
+        });
         return this.withDumpFile(input, async (dumpPath) => {
             const parsed = this.parseTrajectory(dumpPath, {
                 properties: []
@@ -142,6 +150,11 @@ export const createTrajectoryParserService = (
     },
 
     async getUniqueValues(input) {
+        nativeModuleLoader.traceOperation(NativeModuleOperation.UniqueValues, {
+            objectKey: input.objectKey,
+            timestep: input.timestep,
+            trajectoryId: input.trajectoryId
+        });
         return this.withDumpFile(input, async (dumpPath) => {
             const parsed = this.parseTrajectory(dumpPath, {
                 properties: []
@@ -195,13 +208,16 @@ export const createTrajectoryParserService = (
         try {
             const stream = await minioService.getObjectStream(ObjectBucketName.Dumps, objectKey);
             await pipeline(stream, zlib.createGunzip(), createWriteStream(tempDumpPath));
-            return action(tempDumpPath);
+            return await action(tempDumpPath);
         } finally {
             await fs.unlink(tempDumpPath).catch(() => {});
         }
     },
 
     parseTrajectory(filePath, options = {}) {
+        nativeModuleLoader.traceOperation(NativeModuleOperation.ParseTrajectory, {
+            filePath
+        });
         const dumpResult = nativeModuleLoader.getDumpParserModule().parseDump(filePath, {
             includeIds: options.includeIds,
             properties: options.properties

@@ -1,14 +1,14 @@
 import { ObjectBucketName } from '@/shared/contracts';
-import { MinioService } from '@/modules/platform/services';
 import {
     createNativeProcessingTempPath,
     NATIVE_PROCESSING_RUNTIME_DIR,
-    NativeModuleLoader,
-    type RasterizePreviewInput
+    NativeModuleOperation
 } from './NativeModuleLoader';
 import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import { pipeline } from 'node:stream/promises';
+import type { MinioService } from '@/modules/platform/services';
+import type { NativeModuleLoader, RasterizePreviewInput } from './NativeModuleLoader';
 
 export interface RasterizerService {
     rasterizePreview(input: RasterizePreviewInput): Promise<void>;
@@ -53,6 +53,10 @@ export const createRasterizerService = (
     },
 
     async rasterizeLocalGlb(tempGlbPath, tempPngPath) {
+        nativeModuleLoader.traceOperation(NativeModuleOperation.RasterizeGlb, {
+            pngPath: tempPngPath,
+            tempGlbPath
+        });
         const rasterized = nativeModuleLoader.getRasterizerModule().rasterize(
             tempGlbPath,
             tempPngPath,

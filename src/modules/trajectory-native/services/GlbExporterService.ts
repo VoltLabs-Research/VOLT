@@ -1,9 +1,12 @@
 import { ObjectBucketName } from '@/shared/contracts';
-import { MinioService } from '@/modules/platform/services';
-import { NativeModuleLoader, type NativeTrajectoryRequest } from './NativeModuleLoader';
+import {
+    NativeModuleOperation
+} from './NativeModuleLoader';
+import fs from 'node:fs/promises';
+import type { MinioService } from '@/modules/platform/services';
+import type { NativeModuleLoader, NativeTrajectoryRequest } from './NativeModuleLoader';
 import type { RasterizerService } from './RasterizerService';
 import type { TrajectoryParserService } from './TrajectoryParserService';
-import fs from 'node:fs/promises';
 
 export interface GlbExporterService {
     preprocessTrajectory(input: NativeTrajectoryRequest): Promise<void>;
@@ -16,6 +19,11 @@ export const createGlbExporterService = (
     rasterizerService: RasterizerService
 ): GlbExporterService => ({
     async preprocessTrajectory(input) {
+        nativeModuleLoader.traceOperation(NativeModuleOperation.ExportGlb, {
+            objectKey: input.objectKey,
+            timestep: input.timestep,
+            trajectoryId: input.trajectoryId
+        });
         await trajectoryParserService.withDumpFile(input, async (dumpPath) => {
             const parsed = trajectoryParserService.parseTrajectory(dumpPath);
             const tempGlbPath = `${dumpPath}.glb`;

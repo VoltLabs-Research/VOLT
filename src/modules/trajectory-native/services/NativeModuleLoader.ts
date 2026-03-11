@@ -1,3 +1,4 @@
+import { logger } from '@/core/logger';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
@@ -144,6 +145,30 @@ interface LammpsIoModule {
     statsParser: NativeStatsModule;
 };
 
+export interface NativeModuleOperationContext {
+    filePath?: string;
+    objectKey?: string;
+    packageName?: string;
+    pngPath?: string;
+    tempGlbPath?: string;
+    timestep?: number;
+    trajectoryId?: string;
+};
+
+export enum NativeModuleOperation {
+    ExportGlb = 'export-glb',
+    ParseTrajectory = 'parse-trajectory',
+    PropertyStats = 'property-stats',
+    RasterizeGlb = 'rasterize-glb',
+    UniqueValues = 'unique-values'
+};
+
+enum NativePackageName {
+    HeadlessRasterizer = '@voltstack/headless-rasterizer',
+    LammpsIo = '@voltstack/lammps-io',
+    SpatialAssembler = '@voltstack/spatial-assembler'
+}
+
 export const NATIVE_PROCESSING_RUNTIME_DIR = path.join(process.cwd(), '.runtime', 'native-processing');
 
 export const createNativeProcessingTempPath = (extension: string): string => {
@@ -155,7 +180,7 @@ export interface NativeDumpParserModule {
 };
 
 export interface NativeDataParserModule {
-    parseData(filePath: string, options: { includeIds?: boolean; }): NativeDataResult | undefined;
+    parseData(filePath: string, options: NativeDataParseOptions): NativeDataResult | undefined;
 };
 
 export interface NativeStatsModule {
@@ -166,6 +191,27 @@ export interface NativeStatsModule {
 export interface NativeStatsResult {
     min: number;
     max: number;
+};
+
+export interface NativeMeshBounds {
+    minX: number;
+    minY: number;
+    minZ: number;
+    maxX: number;
+    maxY: number;
+    maxZ: number;
+};
+
+export interface NativeMeshMaterial {
+    baseColor: [number, number, number, number];
+    metallic: number;
+    roughness: number;
+    emissive: [number, number, number];
+    doubleSided?: boolean;
+};
+
+export interface NativeDataParseOptions {
+    includeIds?: boolean;
 };
 
 export interface NativeExporterModule {
@@ -205,21 +251,8 @@ export interface NativeExporterModule {
         indices: Uint16Array | Uint32Array,
         hasColors: boolean,
         colors: Float32Array | undefined,
-        bounds: {
-            minX: number;
-            minY: number;
-            minZ: number;
-            maxX: number;
-            maxY: number;
-            maxZ: number;
-        },
-        material: {
-            baseColor: [number, number, number, number];
-            metallic: number;
-            roughness: number;
-            emissive: [number, number, number];
-            doubleSided?: boolean;
-        }
+        bounds: NativeMeshBounds,
+        material: NativeMeshMaterial
     ): Buffer;
 };
 
@@ -245,6 +278,9 @@ export class NativeModuleLoader {
     private lammpsIoModule: LammpsIoModule | null = null;
     private exporterModule: NativeExporterModule | null = null;
     private rasterizerModule: NativeRasterizerModule | null = null;
+    private readonly observedOperations = new Set<NativeModuleOperation>();
+    private readonly observedPackages = new Set<NativePackageName>();
+    private hasLoggedEnvironment = false;
 
     getDumpParserModule(): NativeDumpParserModule {
         const module = this.getLammpsIoModule().dumpParser;
@@ -275,7 +311,7 @@ export class NativeModuleLoader {
 
     getExporterModule(): NativeExporterModule {
         if (!this.exporterModule) {
-            this.exporterModule = this.loadPackage('@voltstack/spatial-assembler');
+            this.exporterModule = this.loadPackage(NativePackageName.SpatialAssembler);
         }
 
         const module = this.exporterModule;
@@ -288,7 +324,7 @@ export class NativeModuleLoader {
 
     getRasterizerModule(): NativeRasterizerModule {
         if (!this.rasterizerModule) {
-            this.rasterizerModule = this.loadPackage('@voltstack/headless-rasterizer');
+            this.rasterizerModule = this.loadPackage(NativePackageName.HeadlessRasterizer);
         }
 
         const module = this.rasterizerModule;
@@ -301,7 +337,7 @@ export class NativeModuleLoader {
 
     private getLammpsIoModule(): LammpsIoModule {
         if (!this.lammpsIoModule) {
-            this.lammpsIoModule = this.loadPackage('@voltstack/lammps-io');
+            this.lammpsIoModule = this.loadPackage(NativePackageName.LammpsIo);
         }
 
         const module = this.lammpsIoModule;
@@ -312,13 +348,90 @@ export class NativeModuleLoader {
         return module;
     }
 
-    private loadPackage<T>(packageName: string): T {
-        const loadedPackage = require(packageName);
+    traceOperation(
+        operation: NativeModuleOperation,
+        context: NativeModuleOperationContext = {}
+    ): void {
+        this.logEnvironmentOnce();
 
-        if (loadedPackage?.default) {
-            return loadedPackage.default;
+        if (this.observedOperations.has(operation)) {
+            return;
         }
 
-        return loadedPackage;
+        this.observedOperations.add(operation);
+        logger.info(
+            {
+                operation,
+                ...context
+            },
+            'Preparing first native trajectory operation'
+        );
+    }
+
+    private logEnvironmentOnce(): void {
+        if (this.hasLoggedEnvironment) {
+            return;
+        }
+
+        this.hasLoggedEnvironment = true;
+        logger.info(
+            {
+                arch: process.arch,
+                cwd: process.cwd(),
+                nodeVersion: process.version,
+                pid: process.pid,
+                platform: process.platform
+            },
+            'Native trajectory runtime initialized'
+        );
+    }
+
+    private loadPackage<T>(packageName: NativePackageName): T {
+        this.logEnvironmentOnce();
+
+        const startTime = Date.now();
+
+        if (!this.observedPackages.has(packageName)) {
+            this.observedPackages.add(packageName);
+            logger.info(
+                {
+                    packageName
+                },
+                'Loading native module package'
+            );
+        }
+
+        let resolvedPath = packageName;
+
+        try {
+            resolvedPath = require.resolve(packageName);
+            const loadedPackage = require(packageName);
+
+            logger.info(
+                {
+                    durationMs: Date.now() - startTime,
+                    packageName,
+                    resolvedPath
+                },
+                'Native module package loaded'
+            );
+
+            if (loadedPackage?.default) {
+                return loadedPackage.default;
+            }
+
+            return loadedPackage;
+        } catch (error: unknown) {
+            logger.error(
+                {
+                    durationMs: Date.now() - startTime,
+                    err: error,
+                    packageName,
+                    resolvedPath
+                },
+                'Failed to load native module package'
+            );
+            throw error;
+        }
     }
 };
