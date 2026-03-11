@@ -2,12 +2,11 @@ import { DAEMON_PATHS } from '@/core/paths';
 import { DockerRuntimeService } from '@/modules/platform/services';
 import { logger } from '@/core/logger';
 import path from 'node:path';
-import type { CreateNotebookSessionResponse } from '@/shared/contracts';
+import type { CreateNotebookSessionResponse, NotebookSessionSnapshot } from '@/shared/contracts';
 import type { DaemonConfig } from '@/core/config';
-import type { ScriptingNotebookDocument } from '../models/ScriptingNotebookModel';
 
 interface EnsureNotebookSessionInput {
-    notebook: ScriptingNotebookDocument;
+    notebook: NotebookSessionSnapshot;
     requestedBy: string;
     publicBasePath: string;
 };
@@ -123,7 +122,7 @@ export class JupyterRuntimeService {
                 },
                 {
                     key: 'VOLT_TEAM_ID',
-                    value: input.notebook.team
+                    value: input.notebook.teamId
                 },
                 {
                     key: 'VOLT_REQUESTED_BY',
@@ -139,7 +138,7 @@ export class JupyterRuntimeService {
             labels: {
                 [RUNTIME_LABEL_KEY]: RUNTIME_LABEL_VALUE,
                 [NOTEBOOK_ID_LABEL_KEY]: input.notebook._id,
-                [TEAM_ID_LABEL_KEY]: input.notebook.team,
+                [TEAM_ID_LABEL_KEY]: input.notebook.teamId,
                 [TEAM_CLUSTER_ID_LABEL_KEY]: this.config.teamClusterId,
                 [HTTP_PORTS_LABEL_KEY]: String(this.config.jupyter.port),
                 [WEBSOCKET_PORTS_LABEL_KEY]: String(this.config.jupyter.port)

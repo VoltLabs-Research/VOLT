@@ -1,18 +1,19 @@
 import { logger } from '@/core/logger';
 import { WorkflowNodeRegistry } from './NodeRegistry';
 import { WorkflowGraph, WorkflowNodeType, type WorkflowExecutionContext } from '../contracts';
-import type { WorkflowDefinition } from '@/shared/contracts';
+import type { DaemonAnalysisDocument, WorkflowDefinition } from '@/shared/contracts';
 
 export interface WorkflowPlanResult {
     items: Record<string, unknown>[];
     forEachNodeId: string;
     nodeOutputSnapshots: Record<string, Record<string, unknown>>;
-}
+};
 
 export interface WorkflowExecutionRequest {
     workflow: WorkflowDefinition;
     trajectoryId: string;
     trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
+    analysis: DaemonAnalysisDocument;
     analysisId: string;
     pluginId: string;
     userConfig: Record<string, unknown>;
@@ -21,7 +22,7 @@ export interface WorkflowExecutionRequest {
         selectedFrameOnly?: boolean;
         timestep?: number;
     };
-}
+};
 
 export class WorkflowEngine {
     constructor(
@@ -61,6 +62,7 @@ export class WorkflowEngine {
             userConfig: request.userConfig,
             trajectoryId: request.trajectoryId,
             trajectoryFrames: request.trajectoryFrames,
+            analysis: request.analysis,
             analysisId: request.analysisId,
             generatedFiles: [],
             pluginId: request.pluginId,

@@ -1,4 +1,4 @@
-import type { WorkflowDefinition } from '@/shared/contracts';
+import type { DaemonAnalysisDocument, WorkflowDefinition } from '@/shared/contracts';
 
 export enum WorkflowNodeType {
     Modifier = 'modifier',
@@ -33,6 +33,7 @@ export interface WorkflowExecutionContext {
     userConfig: Record<string, unknown>;
     trajectoryId: string;
     trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
+    analysis: DaemonAnalysisDocument;
     analysisId: string;
     generatedFiles: string[];
     pluginId: string;

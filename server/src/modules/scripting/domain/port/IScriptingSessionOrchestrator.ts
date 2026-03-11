@@ -4,7 +4,7 @@ export interface DefaultNotebookTemplateContext {
 
 export interface ScriptingSessionNotebookInput {
     notebookPath: string;
-    content?: unknown;
+    content?: Record<string, unknown>;
 };
 
 export interface ScriptingSessionJupyterInfo {

@@ -1,4 +1,5 @@
 import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
+import type Analysis from '@modules/analysis/domain/entities/Analysis';
 import type { IPluginExecutionRouter, RoutePluginExecutionInput } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -16,7 +17,7 @@ interface DaemonPluginSyncResponse {
 interface DaemonAnalysisStartResponse {
     queued: boolean;
     totalJobs: number;
-}
+};
 
 interface WorkflowSerializable {
     nodes: Array<{
@@ -31,7 +32,45 @@ interface WorkflowSerializable {
         sourceHandle?: string;
         targetHandle?: string;
     }>;
-}
+};
+
+interface DaemonAnalysisPayload {
+    _id: string;
+    plugin: string;
+    clusterId?: string;
+    teamCluster?: string;
+    config: Record<string, unknown>;
+    trajectory: string;
+    createdBy: string;
+    totalFrames?: number;
+    completedFrames?: number;
+    startedAt?: Date;
+    finishedAt?: Date;
+    team: string;
+    status: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+};
+
+const serializeAnalysis = (analysis: Analysis): DaemonAnalysisPayload => {
+    return {
+        _id: analysis.id,
+        plugin: analysis.props.plugin,
+        clusterId: analysis.props.clusterId,
+        teamCluster: analysis.props.teamCluster,
+        config: analysis.props.config,
+        trajectory: analysis.props.trajectory,
+        createdBy: analysis.props.createdBy,
+        totalFrames: analysis.props.totalFrames,
+        completedFrames: analysis.props.completedFrames,
+        startedAt: analysis.props.startedAt,
+        finishedAt: analysis.props.finishedAt,
+        team: analysis.props.team,
+        status: analysis.props.status,
+        createdAt: analysis.props.createdAt,
+        updatedAt: analysis.props.updatedAt
+    };
+};
 
 @injectable()
 export default class PluginExecutionRouter implements IPluginExecutionRouter {
@@ -50,6 +89,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         await this.syncPluginBinaryIfNeeded(input.teamClusterId, input.plugin);
 
         const response = await this.teamClusterDaemonClient.command<DaemonAnalysisStartResponse>(input.teamClusterId, 'analysis.start', {
+            analysis: serializeAnalysis(input.analysis),
             analysisId: input.analysisId,
             pluginId: input.plugin.id,
             teamId: input.teamId,

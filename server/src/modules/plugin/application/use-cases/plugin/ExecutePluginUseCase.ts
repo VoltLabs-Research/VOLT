@@ -152,6 +152,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
 
         await this.pluginExecutionRouter.route({
             teamClusterId: input.teamClusterId,
+            analysis,
             analysisId: analysis.id,
             trajectoryId: input.trajectoryId,
             trajectoryFrames: trajectory.props.frames,

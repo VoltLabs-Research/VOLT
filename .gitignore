@@ -2,8 +2,7 @@
 cluster-daemon/dev-tools/
 server/storage/
 
-plans
-.github/agents
+.ai-workflow/
 
 # Logs
 logs

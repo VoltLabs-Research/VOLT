@@ -41,7 +41,6 @@ export const bootstrap = async (): Promise<void> => {
         rasterizerService: trajectoryNative.rasterizerService,
         filterEvaluatorService: trajectoryNative.filterEvaluatorService,
         jupyterRuntimeService: jupyter.jupyterRuntimeService,
-        notebookRepository: jupyter.notebookRepository,
         pluginListingRepository,
         analysisDispatchService
     });

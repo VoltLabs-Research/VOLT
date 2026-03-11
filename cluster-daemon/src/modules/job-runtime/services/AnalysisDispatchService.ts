@@ -30,6 +30,7 @@ export class AnalysisDispatchService {
             workflow: input.workflow,
             trajectoryId: input.trajectoryId,
             trajectoryFrames: input.trajectoryFrames,
+            analysis: input.analysis,
             analysisId: input.analysisId,
             pluginId: input.pluginId,
             userConfig: input.config,

@@ -1,21 +1,22 @@
-import type { JupyterRuntimeService, NotebookRepository } from '@/modules/jupyter';
-import type { CreateNotebookRequest } from '@/shared/contracts';
+import type { JupyterRuntimeService } from '@/modules/jupyter';
+import type { CreateNotebookSessionRequest, NotebookSessionSnapshot } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
 import { isRecord } from '@/shared/utils';
-import { readOptionalPayloadRecord, readOptionalString, readOptionalStringRecord, readPayloadRecord, readString } from './payloadValidation';
+import {
+    readOptionalPayloadRecord,
+    readOptionalString,
+    readOptionalStringRecord,
+    readOptionalUnknownRecord,
+    readRecord,
+    readString
+} from './payloadValidation';
 
 interface NotebookHandlersDependencies {
-    notebookRepository: NotebookRepository;
     jupyterRuntimeService: JupyterRuntimeService;
 };
 
 interface NotebookIdentifierPayload {
     notebookId: string;
-};
-
-interface NotebookSessionRequestPayload extends NotebookIdentifierPayload {
-    requestedBy: string;
-    publicBasePath: string;
 };
 
 interface NotebookProxyRequestPayload extends NotebookIdentifierPayload {
@@ -26,32 +27,20 @@ interface NotebookProxyRequestPayload extends NotebookIdentifierPayload {
     body?: string;
 };
 
-const readCreateNotebookRequest = (payload: unknown): CreateNotebookRequest => {
-    const record = readPayloadRecord(payload);
-    const trajectoriesValue = record.trajectories;
-
-    if (!Array.isArray(trajectoriesValue)) {
-        throw new Error('trajectories must be an array');
-    }
-
-    const trajectories = trajectoriesValue.map((entry) => readString(entry, 'trajectories'));
-    const request: CreateNotebookRequest = {
-        teamId: readString(record.teamId, 'teamId'),
-        title: readString(record.title, 'title'),
-        notebookPath: readString(record.notebookPath, 'notebookPath'),
-        trajectories,
-        createdBy: readString(record.createdBy, 'createdBy')
+const readNotebookSessionSnapshot = (value: unknown): NotebookSessionSnapshot => {
+    const record = readRecord(value, 'notebook');
+    const snapshot: NotebookSessionSnapshot = {
+        _id: readString(record._id, 'notebook._id'),
+        teamId: readString(record.teamId, 'notebook.teamId'),
+        notebookPath: readString(record.notebookPath, 'notebook.notebookPath')
     };
+    const content = readOptionalUnknownRecord(record.content, 'notebook.content');
 
-    if (typeof record._id !== 'undefined') {
-        request._id = readString(record._id, '_id');
+    if (content) {
+        snapshot.content = content;
     }
 
-    if (typeof record.content !== 'undefined') {
-        request.content = readPayloadRecord(record.content);
-    }
-
-    return request;
+    return snapshot;
 };
 
 const readNotebookIdentifierPayload = (payload: unknown): NotebookIdentifierPayload => {
@@ -62,13 +51,14 @@ const readNotebookIdentifierPayload = (payload: unknown): NotebookIdentifierPayl
     };
 };
 
-const readNotebookSessionRequestPayload = (payload: unknown): NotebookSessionRequestPayload => {
+const readNotebookSessionRequestPayload = (payload: unknown): CreateNotebookSessionRequest => {
     const record = readOptionalPayloadRecord(payload);
 
     return {
         notebookId: readString(record.notebookId, 'notebookId'),
         requestedBy: readString(record.requestedBy, 'requestedBy'),
-        publicBasePath: readString(record.publicBasePath, 'publicBasePath')
+        publicBasePath: readString(record.publicBasePath, 'publicBasePath'),
+        notebook: readNotebookSessionSnapshot(record.notebook)
     };
 };
 
@@ -103,20 +93,12 @@ const readNotebookProxyRequestPayload = (payload: unknown): NotebookProxyRequest
 
 export const createNotebookHandlers = (deps: NotebookHandlersDependencies): ReverseChannelCommandHandler[] => [
     {
-        command: 'notebook.create',
-        execute: async (payload) => ({
-            data: await deps.notebookRepository.createNotebook(readCreateNotebookRequest(payload)),
-            status: 201
-        })
-    },
-    {
         command: 'notebook.delete',
         execute: async (payload) => {
             const request = readNotebookIdentifierPayload(payload);
-            await deps.jupyterRuntimeService.deleteSession(request.notebookId);
             return {
                 data: {
-                    deleted: await deps.notebookRepository.deleteNotebook(request.notebookId)
+                    deleted: await deps.jupyterRuntimeService.deleteSession(request.notebookId)
                 }
             };
         }
@@ -136,14 +118,13 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
         command: 'notebook.session.create',
         execute: async (payload) => {
             const request = readNotebookSessionRequestPayload(payload);
-            const notebook = await deps.notebookRepository.getNotebookById(request.notebookId);
-            if (!notebook) {
-                throw new Error('Notebook not found');
+            if (request.notebook._id !== request.notebookId) {
+                throw new Error('notebookId must match notebook._id');
             }
 
             return {
                 data: await deps.jupyterRuntimeService.ensureSession({
-                    notebook,
+                    notebook: request.notebook,
                     requestedBy: request.requestedBy,
                     publicBasePath: request.publicBasePath
                 }),
