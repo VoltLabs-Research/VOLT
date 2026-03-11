@@ -15,7 +15,6 @@ const DesktopTitlebar = () => {
         handleClose,
         handleMinimize,
         handleToggleMaximize,
-        identityLabel,
         isDesktop,
         isMaximized
     } = useDesktopTitlebar();
@@ -44,7 +43,7 @@ const DesktopTitlebar = () => {
 
     return (
         <header className='desktop-titlebar'>
-            <Container className='desktop-titlebar__section desktop-titlebar__controls d-flex items-center gap-05'>
+            <Container className='desktop-titlebar__controls d-flex items-center gap-05'>
                 {controls.map((control) => (
                     <Tooltip key={control.label} content={control.label} placement='bottom'>
                         <IconButton
@@ -59,14 +58,6 @@ const DesktopTitlebar = () => {
                     </Tooltip>
                 ))}
             </Container>
-
-            <Container className='desktop-titlebar__section desktop-titlebar__identity'>
-                <p className='desktop-titlebar__identity-label text-truncate' title={identityLabel}>
-                    {identityLabel}
-                </p>
-            </Container>
-
-            <Container aria-hidden='true' className='desktop-titlebar__section desktop-titlebar__spacer' />
         </header>
     );
 };

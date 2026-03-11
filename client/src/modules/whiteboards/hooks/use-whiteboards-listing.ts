@@ -14,24 +14,19 @@ import {
     whiteboardsQueryKey
 } from '@/modules/whiteboards/hooks/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import { closeModal, openModal } from '@/shared/presentation/components/Modal';
-import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
-import useFolderSearchParam from '@/shared/presentation/hooks/use-folder-search-param';
-import useFolderBreadcrumbs from '@/shared/presentation/hooks/use-folder-breadcrumbs';
+import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { runAction } from '@/shared/presentation/actions/run-action';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import { FolderInput, FolderOpen, Pencil, SquarePen, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { sileo } from 'sileo';
 import { createEmptyWhiteboardsResponse, getDeleteConfirmationMessage } from '../utilities/whiteboards';
 import {
     createWhiteboardFolderRow,
@@ -44,10 +39,6 @@ import {
 import type { WhiteboardFolder } from '@/modules/whiteboards/api/entities/whiteboard-folder';
 import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
 import type { WhiteboardListingRow } from '@/modules/whiteboards/utilities/listing';
-
-interface WhiteboardsListingContext {
-    folderId: string | null;
-};
 
 type WhiteboardsListingDragAndDropConfig = DocumentListingDragAndDropConfig<WhiteboardListingRow>;
 
@@ -111,7 +102,7 @@ const MOVE_WHITEBOARD_TOAST = {
     error: { title: 'Failed to move whiteboard' }
 };
 
-const fetchWhiteboards = (params: PaginationParams & WhiteboardsListingContext): Promise<PaginatedResponse<Whiteboard>> => {
+const fetchWhiteboards = (params: PaginationParams & FolderedListingContext): Promise<PaginatedResponse<Whiteboard>> => {
     return whiteboardsQuery.fetch({
         page: params.page,
         limit: params.limit,
@@ -139,7 +130,6 @@ const useWhiteboardsListing = () => {
     const navigate = useNavigate();
     const teamId = useSelectedTeamId();
     const canMoveWhiteboards = usePermission(['whiteboard:update']);
-    const { currentFolderId, isInsideFolder, openFolder, goToRoot } = useFolderSearchParam();
     const { mutateAsync: deleteWhiteboard } = useDeleteWhiteboardMutation();
     const { mutateAsync: createWhiteboard } = useCreateWhiteboardMutation();
     const { mutateAsync: updateWhiteboard } = useUpdateWhiteboardMutation();
@@ -147,52 +137,55 @@ const useWhiteboardsListing = () => {
     const { mutateAsync: updateWhiteboardFolder } = useUpdateWhiteboardFolderMutation();
     const { mutateAsync: deleteWhiteboardFolder } = useDeleteWhiteboardFolderMutation();
     const { mutateAsync: moveWhiteboard } = useMoveWhiteboardMutation();
-    const context = useMemo(() => ({ folderId: currentFolderId }), [currentFolderId]);
 
     const [renamingWhiteboard, setRenamingWhiteboard] = useState<Whiteboard | null>(null);
-    const [renamingFolder, setRenamingFolder] = useState<WhiteboardFolder | null>(null);
     const [movingWhiteboard, setMovingWhiteboard] = useState<WhiteboardMoveTarget | null>(null);
-    const [folderRefreshKey, setFolderRefreshKey] = useState(0);
-
-    const { breadcrumbs, currentFolder } = useFolderBreadcrumbs<WhiteboardFolder>({
+    const {
+        breadcrumbs,
+        context,
+        currentFolder,
         currentFolderId,
+        fetchData,
+        getMoveFolder,
+        goToRoot,
+        handleCreateFolder,
+        handleDeleteFolder,
+        handleDeleteCurrentFolder,
+        handleRenameFolderClose: handleRenameFolderStateClose,
+        handleRenameFolderOpen: handleRenameFolderStateOpen,
+        handleRenameFolderSubmit: handleRenameFolderStateSubmit,
+        isInsideFolder,
+        listMoveFolders,
+        navigateToFolder,
+        openFolder,
+        renamingFolder
+    } = useFolderedListing<Whiteboard, WhiteboardFolder, WhiteboardListingRow>({
+        teamId,
+        fetchItems: fetchWhiteboards,
+        fetchFolders,
         getFolder: fetchFolderById,
-        onInvalidFolder: goToRoot,
-        refreshKey: folderRefreshKey,
-        invalidFolderMessage: 'This whiteboard folder no longer exists. Showing Root instead.'
-    });
-
-    const fetchData = useCallback(async (
-        params: PaginationParams & WhiteboardsListingContext
-    ): Promise<PaginatedResponse<WhiteboardListingRow>> => {
-        if (!teamId) {
-            return createEmptyWhiteboardsResponse(params);
-        }
-
-        try {
-            const [whiteboardsResponse, foldersResponse] = await Promise.all([
-                fetchWhiteboards(params),
-                params.page === 1 ? fetchFolders(params.folderId ?? null) : Promise.resolve(null)
+        createEmptyResponse: createEmptyWhiteboardsResponse,
+        mapFolderRow: createWhiteboardFolderRow,
+        mapItemRow: createWhiteboardItemRow,
+        onFetchErrorTitle: 'Failed to fetch whiteboards',
+        invalidFolderMessage: 'This whiteboard folder no longer exists. Showing Root instead.',
+        createFolder: createWhiteboardFolder,
+        createFolderToast: CREATE_FOLDER_TOAST,
+        afterCreateFolder: async () => {
+            await Promise.all([
+                invalidateWhiteboardFoldersQuery(),
+                invalidateWhiteboardsQuery()
             ]);
-
-            const folderRows = foldersResponse?.data.map(createWhiteboardFolderRow) ?? [];
-            const whiteboardRows = (whiteboardsResponse.data || []).map(createWhiteboardItemRow);
-
-            return {
-                ...whiteboardsResponse,
-                data: params.page === 1
-                    ? [...folderRows, ...whiteboardRows]
-                    : whiteboardRows
-            };
-        } catch (error) {
-            if (isAccessDeniedError(error)) {
-                throw error;
-            }
-
-            sileo.error({ title: 'Failed to fetch whiteboards' });
-            return createEmptyWhiteboardsResponse(params);
-        }
-    }, [teamId]);
+        },
+        updateFolder: updateWhiteboardFolder,
+        renameFolderToast: RENAME_FOLDER_TOAST,
+        deleteFolder: deleteWhiteboardFolder,
+        deleteFolderToast: DELETE_FOLDER_TOAST,
+        getDeleteFolderConfirm: (folder) => ({
+            title: getDeleteFolderConfirmDescription(folder.title),
+            description: 'Nested folders are deleted recursively. Whiteboards inside deleted folders are moved to Root.'
+        })
+    });
 
     const handleCreate = useCallback(async () => {
         if (!teamId) {
@@ -213,25 +206,6 @@ const useWhiteboardsListing = () => {
             CREATE_WHITEBOARD_TOAST
         );
     }, [currentFolderId, createWhiteboard, navigate, teamId]);
-
-    const handleCreateFolder = useCallback(async (title: string) => {
-        if (!teamId) {
-            return;
-        }
-
-        await showPromise(
-            createWhiteboardFolder({
-                title,
-                parentId: currentFolderId
-            }).then(async () => {
-                await Promise.all([
-                    invalidateWhiteboardFoldersQuery(),
-                    invalidateWhiteboardsQuery()
-                ]);
-            }),
-            CREATE_FOLDER_TOAST
-        );
-    }, [createWhiteboardFolder, currentFolderId, teamId]);
 
     const handleRenameWhiteboardOpen = useCallback((whiteboard: Whiteboard) => {
         setRenamingWhiteboard(whiteboard);
@@ -260,57 +234,19 @@ const useWhiteboardsListing = () => {
     }, [handleRenameWhiteboardClose, renamingWhiteboard, updateWhiteboard]);
 
     const handleRenameFolderOpen = useCallback((folder: WhiteboardFolder) => {
-        setRenamingFolder(folder);
+        handleRenameFolderStateOpen(folder);
         openModal(RENAME_WHITEBOARD_FOLDER_MODAL_ID);
-    }, []);
+    }, [handleRenameFolderStateOpen]);
 
     const handleRenameFolderClose = useCallback(() => {
         closeModal(RENAME_WHITEBOARD_FOLDER_MODAL_ID);
-        setRenamingFolder(null);
-    }, []);
+        handleRenameFolderStateClose();
+    }, [handleRenameFolderStateClose]);
 
     const handleRenameFolderSubmit = useCallback(async (title: string) => {
-        if (!renamingFolder) {
-            return;
-        }
-
-        await showPromise(
-            updateWhiteboardFolder({
-                folderId: renamingFolder._id,
-                title
-            }),
-            RENAME_FOLDER_TOAST
-        );
-
-        setFolderRefreshKey((previousValue) => previousValue + 1);
-        handleRenameFolderClose();
-    }, [handleRenameFolderClose, renamingFolder, updateWhiteboardFolder]);
-
-    const handleDeleteFolder = useCallback(async (folder: WhiteboardFolder) => {
-        await runAction({
-            action: () => deleteWhiteboardFolder({ folderId: folder._id }),
-            confirm: {
-                title: getDeleteFolderConfirmDescription(folder.title),
-                description: 'Nested folders are deleted recursively. Whiteboards inside deleted folders are moved to Root.',
-                confirmText: 'Delete Folder',
-                cancelText: 'Cancel',
-                tone: ConfirmActionTone.Danger
-            },
-            toast: DELETE_FOLDER_TOAST,
-            afterSuccess: async () => {
-                setFolderRefreshKey((previousValue) => previousValue + 1);
-
-                if (currentFolderId === folder._id) {
-                    if (folder.parent) {
-                        openFolder(folder.parent);
-                        return;
-                    }
-
-                    goToRoot();
-                }
-            }
-        });
-    }, [currentFolderId, deleteWhiteboardFolder, goToRoot, openFolder]);
+        await handleRenameFolderStateSubmit(title);
+        closeModal(RENAME_WHITEBOARD_FOLDER_MODAL_ID);
+    }, [handleRenameFolderStateSubmit]);
 
     const handleMoveWhiteboardOpen = useCallback((whiteboard: Whiteboard) => {
         setMovingWhiteboard({
@@ -452,21 +388,6 @@ const useWhiteboardsListing = () => {
         return true;
     }, [openFolder]);
 
-    const listMoveFolders = useCallback(async (folderId: string | null) => {
-        const response = await fetchFolders(folderId);
-        return response.data;
-    }, []);
-
-    const getMoveFolder = useCallback((folderId: string) => fetchFolderById(folderId), []);
-    const navigateToFolder = useCallback((folderId: string | null) => {
-        if (folderId) {
-            openFolder(folderId);
-            return;
-        }
-
-        goToRoot();
-    }, [goToRoot, openFolder]);
-
     const dragAndDrop = useMemo<WhiteboardsListingDragAndDropConfig | undefined>(() => {
         if (!canMoveWhiteboards) {
             return undefined;
@@ -491,7 +412,7 @@ const useWhiteboardsListing = () => {
         goToRoot,
         handleCreate,
         handleCreateFolder,
-        handleDeleteCurrentFolder: currentFolder ? () => handleDeleteFolder(currentFolder) : null,
+        handleDeleteCurrentFolder,
         handleItemClick,
         handleMoveWhiteboardClose,
         handleMoveWhiteboardSubmit,
