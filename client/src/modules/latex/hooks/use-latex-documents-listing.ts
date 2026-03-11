@@ -134,7 +134,7 @@ const filterFoldersBySearch = (folders: LatexFolder[], search: string): LatexFol
 };
 
 const getDeleteFolderConfirmDescription = (folderTitle: string): string => {
-    return `Delete "${folderTitle}"? Nested folders will be removed and any documents inside them will be moved to Root.`;
+    return `Delete "${folderTitle}"? Nested folders and all documents inside them will be deleted recursively.`;
 };
 
 const useLatexDocumentsListing = () => {
@@ -195,7 +195,7 @@ const useLatexDocumentsListing = () => {
         deleteFolderToast: DELETE_FOLDER_TOAST,
         getDeleteFolderConfirm: (folder) => ({
             title: getDeleteFolderConfirmDescription(folder.title),
-            description: 'Nested folders are deleted recursively. Documents inside deleted folders are moved to Root.'
+            description: 'This permanently deletes the folder tree and every document contained in it.'
         })
     });
 

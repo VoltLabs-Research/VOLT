@@ -162,8 +162,8 @@ const useTrajectoriesListing = () => {
             error: { title: 'Failed to delete folder' }
         },
         getDeleteFolderConfirm: (folder) => ({
-            title: `Delete "${folder.title}"? Nested folders will be removed and any trajectories inside them will be moved to Root.`,
-            description: 'Nested folders are deleted recursively. Trajectories inside deleted folders are moved to Root.'
+            title: `Delete "${folder.title}"? Nested folders and all trajectories inside them will be deleted recursively.`,
+            description: 'This permanently deletes the folder tree and every trajectory contained in it.'
         })
     });
 
