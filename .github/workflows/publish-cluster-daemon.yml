@@ -6,6 +6,13 @@ on:
       - main
     paths:
       - '.github/workflows/publish-cluster-daemon.yml'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'src/**'
+      - 'image-contexts/**'
   workflow_dispatch:
 
 env:
