@@ -18,13 +18,15 @@ import { IoIosAdd } from 'react-icons/io';
 import { IoAnalytics, IoBookOutline, IoCubeOutline, IoKeyOutline, IoLockClosedOutline, IoPeopleOutline } from 'react-icons/io5';
 import { MdAutoAwesome, MdImportExport } from 'react-icons/md';
 import { RiHomeSmile2Fill } from 'react-icons/ri';
-import { TbCube3dSphere } from 'react-icons/tb';
+import { TbCube3dSphere, TbFileTypePdf } from 'react-icons/tb';
+import { PiUserPlus, PiPaintBrushBold } from 'react-icons/pi';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { IconType } from 'react-icons';
 
 interface SidebarNavigationProps {
     setSidebarOpen: (status: boolean) => void;
     collapsed?: boolean;
+    onExpandSidebar?: () => void;
 };
 
 interface NavItem {
@@ -60,10 +62,24 @@ const MAIN_NAV_ITEMS: NavItem[] = [
         to: '/dashboard/notebooks',
         requiredPermissions: ['plugin:read'],
         disabledReason: 'You do not have permission to view notebooks.'
+    },
+    {
+        label: 'LaTeX',
+        icon: TbFileTypePdf,
+        to: '/dashboard/latex',
+        requiredPermissions: ['latex:read'],
+        disabledReason: 'You do not have permission to view LaTeX documents.'
     }
 ];
 
 const SECONDARY_NAV_ITEMS: NavItem[] = [
+    {
+        label: 'Whiteboards',
+        icon: PiPaintBrushBold,
+        to: '/dashboard/whiteboards',
+        requiredPermissions: ['whiteboard:read'],
+        disabledReason: 'You do not have permission to view whiteboards.'
+    },
     {
         label: 'Plugins',
         icon: GoWorkflow,
@@ -118,7 +134,7 @@ const SECONDARY_NAV_ITEMS: NavItem[] = [
     }
 ];
 
-const SidebarNavigation = ({ setSidebarOpen, collapsed = false }: SidebarNavigationProps) => {
+const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar }: SidebarNavigationProps) => {
     const { searchParams } = useSearchParamsState();
     const navigate = useNavigate();
     const { pathname } = useLocation();
@@ -262,6 +278,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false }: SidebarNavigat
                     isActive={pathname.includes('/trajectories') || pathname.includes('/simulation-cells')}
                     subItems={trajectoriesSubItems}
                     disabled={!canAccessTrajectories}
+                    onRequestSidebarExpand={onExpandSidebar}
                 />
             </Tooltip>
 
@@ -276,6 +293,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false }: SidebarNavigat
                     isActive={pathname.includes('/analysis-configs') || isAnalysisPluginListingRoute}
                     subItems={analysisSubItems}
                     disabled={!canAccessAnalysis}
+                    onRequestSidebarExpand={onExpandSidebar}
                 />
             </Tooltip>
 
@@ -292,6 +310,15 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false }: SidebarNavigat
                     label='Create Team'
                     icon={IoIosAdd}
                     commandFor='team-creator-modal'
+                    command='show-modal'
+                />
+            )}
+
+            {!collapsed && (
+                <SidebarNavItem
+                    label='Join an Existing Team'
+                    icon={PiUserPlus}
+                    commandFor='join-team-modal'
                     command='show-modal'
                 />
             )}

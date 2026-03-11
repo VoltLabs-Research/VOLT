@@ -30,12 +30,13 @@ interface ObjectsPanelProps {
 
 const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListing }: ObjectsPanelProps) => {
     const [sceneCollectionOpen, setSceneCollectionOpen] = useState(true);
+    const [selectedTimestepAnalysisOpen, setSelectedTimestepAnalysisOpen] = useState(true);
     const [colorCodingOpen, setColorCodingOpen] = useState(true);
     const [particleFilterOpen, setParticleFilterOpen] = useState(true);
 
-
     const {
-        filteredSections,
+        sceneCollectionSections,
+        selectedTimestepSections,
         expandedSections,
         toggleSection,
         showSectionsSkeleton,
@@ -45,7 +46,9 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
         addScene,
         removeScene,
         onDeleteAnalysis,
-        totalAnalyses
+        sceneCollectionTotalAnalyses,
+        selectedTimestepTotalAnalyses,
+        hasSelectedTimestepAnalyses
     } = useCanvasSidebarState({ trajectory, trajectoryId: trajectory?._id });
 
     const { statusMap } = useAnalysisStatus({ trajectoryId: trajectory?._id, enabled: !!trajectory?._id });
@@ -55,7 +58,6 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
         colorCodingArtifacts,
         particleFilterArtifacts
     } = useSceneArtifacts({ trajectoryId: trajectory?._id });
-
 
     const isArtifactActive = (artifact: SceneArtifact): boolean => isArtifactSceneActive(activeScene, artifact);
 
@@ -88,7 +90,7 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
                 useDefaultTitleStyles={false}
             >
                 <SceneCollection
-                    filteredSections={filteredSections}
+                    filteredSections={sceneCollectionSections}
                     expandedSections={expandedSections}
                     toggleSection={toggleSection}
                     showSectionsSkeleton={showSectionsSkeleton}
@@ -97,7 +99,7 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
                     isSceneInActiveScenes={isSceneInActiveScenes}
                     addScene={addScene}
                     removeScene={removeScene}
-                    totalAnalyses={totalAnalyses}
+                    totalAnalyses={sceneCollectionTotalAnalyses}
                     statusMap={statusMap}
                     onDeleteAnalysis={onDeleteAnalysis}
                     onDownloadAnalysis={onDownloadAnalysis ?? (() => undefined)}
@@ -105,7 +107,42 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
                 />
             </CollapsibleSection>
 
-
+            {hasSelectedTimestepAnalyses && (
+                <CollapsibleSection
+                    title="Selected timestep analysis"
+                    icon={<Layers style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.25)' }} />}
+                    expanded={selectedTimestepAnalysisOpen}
+                    onExpandedChange={setSelectedTimestepAnalysisOpen}
+                    className="canvas-right-dropdown"
+                    headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
+                    titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
+                    iconClassName="canvas-right-dropdown-icon"
+                    bodyClassName="canvas-right-dropdown-body"
+                    contentClassName="d-flex column"
+                    noSpacing
+                    arrowSize={13}
+                    useDefaultHeaderStyles={false}
+                    useDefaultTitleStyles={false}
+                >
+                    <SceneCollection
+                        filteredSections={selectedTimestepSections}
+                        expandedSections={expandedSections}
+                        toggleSection={toggleSection}
+                        showSectionsSkeleton={showSectionsSkeleton}
+                        activeScene={activeScene}
+                        onSelectScene={onSelectScene}
+                        isSceneInActiveScenes={isSceneInActiveScenes}
+                        addScene={addScene}
+                        removeScene={removeScene}
+                        totalAnalyses={selectedTimestepTotalAnalyses}
+                        statusMap={statusMap}
+                        onDeleteAnalysis={onDeleteAnalysis}
+                        onDownloadAnalysis={onDownloadAnalysis ?? (() => undefined)}
+                        onDownloadExposureListing={onDownloadExposureListing}
+                        showDefaultScene={false}
+                    />
+                </CollapsibleSection>
+            )}
 
             <CollapsibleSection
                 title="Color Coding"

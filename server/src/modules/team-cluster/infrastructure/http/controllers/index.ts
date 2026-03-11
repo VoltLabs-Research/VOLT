@@ -1,5 +1,6 @@
 import CompleteTeamClusterDeletionController from '@modules/team-cluster/infrastructure/http/controllers/CompleteTeamClusterDeletionController';
 import CreateTeamClusterController from '@modules/team-cluster/infrastructure/http/controllers/CreateTeamClusterController';
+import FetchAvailableClusterVersionsController from '@modules/team-cluster/infrastructure/http/controllers/FetchAvailableClusterVersionsController';
 import CreateTeamClusterRemoteAccessSessionController from '@modules/team-cluster/infrastructure/http/controllers/CreateTeamClusterRemoteAccessSessionController';
 import DeleteTeamClusterByIdController from '@modules/team-cluster/infrastructure/http/controllers/DeleteTeamClusterByIdController';
 import GenerateTeamClusterInstallManifestController from '@modules/team-cluster/infrastructure/http/controllers/GenerateTeamClusterInstallManifestController';
@@ -9,6 +10,7 @@ import ListTeamClusterRemoteExplorerEntriesController from '@modules/team-cluste
 import ListTeamClustersByTeamIdController from '@modules/team-cluster/infrastructure/http/controllers/ListTeamClustersByTeamIdController';
 import ProcessTeamClusterHealthcheckController from '@modules/team-cluster/infrastructure/http/controllers/ProcessTeamClusterHealthcheckController';
 import RecordTeamClusterHeartbeatController from '@modules/team-cluster/infrastructure/http/controllers/RecordTeamClusterHeartbeatController';
+import RequestTeamClusterUpdateController from '@modules/team-cluster/infrastructure/http/controllers/RequestTeamClusterUpdateController';
 import RevealTeamClusterCredentialsController from '@modules/team-cluster/infrastructure/http/controllers/RevealTeamClusterCredentialsController';
 import UpdateTeamClusterLifecycleController from '@modules/team-cluster/infrastructure/http/controllers/UpdateTeamClusterLifecycleController';
 import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
@@ -18,6 +20,7 @@ export default createControllerRegistry({
     create: CreateTeamClusterController,
     createRemoteAccessSession: CreateTeamClusterRemoteAccessSessionController,
     deleteById: DeleteTeamClusterByIdController,
+    fetchAvailableVersions: FetchAvailableClusterVersionsController,
     generateInstallManifest: GenerateTeamClusterInstallManifestController,
     getById: GetTeamClusterByIdController,
     getRemoteExplorerNode: GetTeamClusterRemoteExplorerNodeController,
@@ -25,6 +28,7 @@ export default createControllerRegistry({
     listRemoteExplorerEntries: ListTeamClusterRemoteExplorerEntriesController,
     processHealthcheck: ProcessTeamClusterHealthcheckController,
     recordHeartbeat: RecordTeamClusterHeartbeatController,
+    requestUpdate: RequestTeamClusterUpdateController,
     revealCredentials: RevealTeamClusterCredentialsController,
     updateLifecycle: UpdateTeamClusterLifecycleController
 });

@@ -36,15 +36,8 @@
     min-width: 0;
 }
 
-.dashboard-jobs-card {
-    background: var(--color-surface-1);
-    border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-xl);
-    overflow: hidden;
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
+.dashboard-jobs-card-header {
+    padding: 1.25rem 1.25rem 0 1.25rem;
 }
 
 .dashboard-jobs-card .jobs-history-viewer-embedded {
@@ -60,7 +53,6 @@
     min-height: 100%;
 }
 
-/* ---- Simulations Section ---- */
 .dashboard-simulations-section {
     grid-column: span 12;
     display: flex;
@@ -68,8 +60,6 @@
     gap: 1rem;
     margin-top: 0.5rem;
 }
-
-/* ---- Responsive ---- */
 
 @media screen and (max-width: 1200px) {
     .dashboard-bottom-row {

@@ -2,6 +2,19 @@ import type { ContainerTemplate } from '../api/entities/container-template';
 
 export const CONTAINER_TEMPLATES: ContainerTemplate[] = [
     {
+        id: 'ubuntu-xrdp',
+        name: 'Ubuntu Remote Desktop',
+        image: 'scottyhardy/docker-remote-desktop:latest',
+        logo: 'https://assets.ubuntu.com/v1/29985a98-ubuntu-logo32.png',
+        description: 'Ubuntu XFCE desktop with XRDP on port 3389. Default image credentials are ubuntu / ubuntu.',
+        category: 'runtime',
+        defaultPort: 3389,
+        useImageCmd: true,
+        capabilities: {
+            xrdp: true
+        }
+    },
+    {
         id: 'code-server',
         name: 'Code Server',
         image: 'codercom/code-server:latest',

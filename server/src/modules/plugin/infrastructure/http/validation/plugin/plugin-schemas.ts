@@ -57,6 +57,7 @@ const validateWorkflowSchema = z.object({
 const executePluginSchema = z.object({
     teamClusterId: objectIdSchema,
     selectedFrameOnly: z.boolean().optional(),
+    selectedTimesteps: z.array(z.number()).optional(),
     timestep: z.number().optional(),
     config: z.record(z.string(), z.unknown())
 }).strict();

@@ -31,4 +31,14 @@ export interface ITeamRepository extends IBaseRepository<Team, TeamProps>{
      * Get all teams for the specified user.
      */
     findUserTeams(userId: string): Promise<PersistedEntityOutput<TeamProps>[]>;
+
+    /**
+     * Find a team by its invite code.
+     */
+    findByInviteCode(code: string): Promise<Team | null>;
+
+    /**
+     * Clear the invite code for a team (sets it to null).
+     */
+    clearInviteCode(teamId: string): Promise<void>;
 };

@@ -4,6 +4,7 @@ import { useTeamClusterSocket } from '@/modules/cluster/hooks/team-cluster/use-t
 import {
     useCreateTeamClusterMutation,
     useDeleteTeamClusterMutation,
+    useRequestClusterUpdateMutation,
     useRevealTeamClusterCredentialsMutation,
     useTeamClustersQuery
 } from '@/modules/cluster/hooks/team-cluster/queries';
@@ -13,6 +14,7 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useMemo, useEffect } from 'react';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
+import type { RequestClusterUpdateOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/request-cluster-update';
 import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
 import type {
     TeamClusterRemoteAccessSession,
@@ -82,6 +84,12 @@ const DELETE_CLUSTER_TOAST_OPTIONS: DeleteClusterToastOptions = {
     error: { title: 'Failed to delete cluster' }
 };
 
+const UPDATE_CLUSTER_TOAST_OPTIONS: ClusterCreateToastOptions = {
+    loading: { title: 'Requesting cluster update...' },
+    success: { title: 'Update requested' },
+    error: { title: 'Failed to request cluster update' }
+};
+
 export interface ClusterManagementResult {
     clusters: TeamCluster[];
     selectedTeamId: string | null;
@@ -93,6 +101,12 @@ export interface ClusterManagementResult {
     createCluster: (name: string) => Promise<{ teamCluster: TeamCluster; enrollmentToken: string }>;
     revealCredentials: (teamClusterId: string, password: string) => Promise<TeamClusterCredentialServices>;
     deleteCluster: (teamClusterId: string, password: string) => Promise<DeleteTeamClusterOutputDTO>;
+    requestUpdate: (
+        teamClusterId: string,
+        targetVersion: string,
+        isEdge: boolean,
+        password: string
+    ) => Promise<RequestClusterUpdateOutputDTO>;
     createRemoteAccessSession: (
         teamClusterId: string,
         password: string,
@@ -127,6 +141,7 @@ const useClusterManagement = (): ClusterManagementResult => {
     const createMutation = useCreateTeamClusterMutation();
     const revealCredentialsMutation = useRevealTeamClusterCredentialsMutation();
     const deleteMutation = useDeleteTeamClusterMutation();
+    const updateMutation = useRequestClusterUpdateMutation();
 
     const clusters = teamClustersQuery.data?.data ?? [];
 
@@ -197,6 +212,25 @@ const useClusterManagement = (): ClusterManagementResult => {
             teamClusterId,
             password
         }), DELETE_CLUSTER_TOAST_OPTIONS);
+    };
+
+    const requestUpdate = async (
+        teamClusterId: string,
+        targetVersion: string,
+        isEdge: boolean,
+        password: string
+    ) => {
+        if (!selectedTeamId) {
+            throw new Error('Missing selected team');
+        }
+
+        return showPromise(updateMutation.mutateAsync({
+            teamId: selectedTeamId,
+            teamClusterId,
+            targetVersion,
+            isEdge,
+            password
+        }), UPDATE_CLUSTER_TOAST_OPTIONS);
     };
 
     const createRemoteAccessSession = async (
@@ -274,6 +308,7 @@ const useClusterManagement = (): ClusterManagementResult => {
         createCluster,
         revealCredentials,
         deleteCluster,
+        requestUpdate,
         createRemoteAccessSession,
         listRemoteExplorerEntries,
         getRemoteExplorerNode

@@ -1,6 +1,8 @@
 .opencode/
 cluster-daemon/dev-tools/
 server/storage/
+client/release
+client/dist-electron
 
 .ai-workflow/
 

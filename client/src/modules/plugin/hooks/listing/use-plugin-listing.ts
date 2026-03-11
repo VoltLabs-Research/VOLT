@@ -172,14 +172,17 @@ const usePluginListing = ({
         const targetRows = selectedItems.includes(item) ? selectedItems : [item];
         const isMultipleSelection = targetRows.length > 1;
         const options: MenuOption[] = [];
+        const inspectAtomsExposureId = item.exposureId ?? exposureId;
 
         if (!isMultipleSelection && item.trajectoryId && item.analysisId && item.timestep !== undefined) {
+            const inspectAtomsPath = inspectAtomsExposureId
+                ? `/dashboard/trajectory/${item.trajectoryId}/analysis/${item.analysisId}/atoms/${inspectAtomsExposureId}?timestep=${item.timestep}`
+                : `/dashboard/trajectory/${item.trajectoryId}/analysis/${item.analysisId}/atoms?timestep=${item.timestep}`;
+
             options.push({
                 label: 'Inspect Atoms',
                 icon: RiEyeLine,
-                onClick: () => navigate(
-                    `/dashboard/trajectory/${item.trajectoryId}/analysis/${item.analysisId}/atoms?timestep=${item.timestep}`
-                )
+                onClick: () => navigate(inspectAtomsPath)
             });
 
             for (const name of subListingNames) {
@@ -201,7 +204,7 @@ const usePluginListing = ({
         }
 
         return options;
-    }, [handleDelete, handleViewSubListing, navigate, onDeleteRows, subListingNames]);
+    }, [exposureId, handleDelete, handleViewSubListing, navigate, onDeleteRows, subListingNames]);
 
     return {
         columns,

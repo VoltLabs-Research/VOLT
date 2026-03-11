@@ -1,0 +1,43 @@
+.desktop-shell {
+    --volt-desktop-titlebar-height: 3.5rem;
+    --volt-desktop-content-height: calc(100vh - var(--volt-desktop-titlebar-height));
+
+    min-height: 100vh;
+    background: var(--color-bg);
+}
+
+.desktop-shell__content {
+    min-height: var(--volt-desktop-content-height);
+}
+
+.desktop-shell .vh-max {
+    height: var(--volt-desktop-content-height);
+}
+
+.desktop-shell .metro-start-screen,
+.desktop-shell .cluster-onboarding-page,
+.desktop-shell .cluster-onboarding-center,
+.desktop-shell .cluster-onboarding-success,
+.desktop-shell .error-page,
+.desktop-shell .sign-in-hero-section {
+    min-height: var(--volt-desktop-content-height);
+    height: var(--volt-desktop-content-height);
+}
+
+.desktop-shell .dashboard-content-wrapper {
+    height: calc(var(--volt-desktop-content-height) - 1rem);
+}
+
+.desktop-shell .document-listing-overlay-blur {
+    height: calc(var(--volt-desktop-content-height) - 320px);
+}
+
+.desktop-shell .ai-floating-assistant {
+    height: min(640px, calc(var(--volt-desktop-content-height) - 6rem));
+}
+
+@media screen and (max-width: 1024px) {
+    .desktop-shell .dashboard-content-wrapper {
+        height: var(--volt-desktop-content-height);
+    }
+}

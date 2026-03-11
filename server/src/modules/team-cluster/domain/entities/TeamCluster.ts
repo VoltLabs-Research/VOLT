@@ -7,7 +7,9 @@ export enum TeamClusterStatus {
     Connected = 'connected',
     Disconnected = 'disconnected',
     Deleting = 'deleting',
-    DeleteFailed = 'delete-failed'
+    DeleteFailed = 'delete-failed',
+    Updating = 'updating',
+    UpdateFailed = 'update-failed'
 };
 
 export interface TeamClusterServiceProps {
@@ -35,6 +37,7 @@ export interface TeamClusterProps {
     status: TeamClusterStatus;
     enrollmentTokenHash: string | null;
     installedVersion: string | null;
+    installRoot: string | null;
     lastHeartbeatAt: Date | null;
     lastDisconnectAt: Date | null;
     services: TeamClusterServicesProps;

@@ -96,7 +96,7 @@ export default class DaemonAnalysisCompletionService {
             return;
         }
 
-        // 6. All jobs settled — finalize analysis
+        // 6. All jobs settled - finalize analysis
         await this.finalizeAnalysis(analysisId, teamId, drainResult.failedJobs);
     }
 
@@ -209,7 +209,7 @@ export default class DaemonAnalysisCompletionService {
 
         logger.info(`[DaemonAnalysisCompletion] Analysis ${analysisId} completed successfully (daemon precomputed listings)`);
 
-        // Daemon already precomputed listing rows — skip ListingRowPrecomputationService
+        // Daemon already precomputed listing rows - skip ListingRowPrecomputationService
         await this.analysisRepo.updateById(analysisId, {
             status: 'completed',
             finishedAt: new Date()

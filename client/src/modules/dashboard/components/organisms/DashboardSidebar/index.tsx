@@ -16,9 +16,10 @@ interface DashboardSidebarProps {
     setSidebarOpen: (status: boolean) => void;
     collapsed: boolean;
     onToggleCollapse: () => void;
+    onExpandSidebar: () => void;
 };
 
-const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleCollapse }: DashboardSidebarProps) => {
+const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleCollapse, onExpandSidebar }: DashboardSidebarProps) => {
     const [settingsExpanded, setSettingsExpanded] = useState(false);
     const navigate = useNavigate();
     const [isSigningOut, setIsSigningOut] = useState(false);
@@ -52,6 +53,7 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
             <SidebarNavigation
                 setSidebarOpen={setSidebarOpen}
                 collapsed={collapsed}
+                onExpandSidebar={onExpandSidebar}
             />
 
             <Container className='sidebar-footer'>

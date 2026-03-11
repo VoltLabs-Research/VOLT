@@ -1,8 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { ValidationCodes } from '@core/constants/validation-codes';
+import type { ContainerCapabilities } from '@modules/container/domain/entities/ContainerCapabilities';
 import type { ContainerEnvironmentVariable, ContainerPortMapping } from '@modules/container/domain/port/IContainerService';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 
+interface ContainerCapabilitiesDocument extends ContainerCapabilities {};
 interface ContainerEnvironmentVariableDocument extends ContainerEnvironmentVariable {};
 interface ContainerPortMappingDocument extends ContainerPortMapping {};
 
@@ -21,6 +23,7 @@ export interface IContainer extends Document {
     env: ContainerEnvironmentVariableDocument[];
     ports: ContainerPortMappingDocument[];
     mountDockerSocket?: boolean;
+    capabilities?: ContainerCapabilitiesDocument;
     createdBy: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
@@ -54,6 +57,13 @@ const environmentVariableField = {
 const portMappingField = {
     private: Number,
     public: Number
+};
+
+const containerCapabilitiesField = {
+    xrdp: {
+        type: Boolean,
+        required: false
+    }
 };
 
 const ContainerSchema = new Schema<IContainer>({
@@ -99,6 +109,10 @@ const ContainerSchema = new Schema<IContainer>({
     mountDockerSocket: {
         type: Boolean,
         default: false
+    },
+    capabilities: {
+        type: containerCapabilitiesField,
+        required: false
     },
     createdBy: {
         ...userRefField([true, ValidationCodes.CONTAINER_CREATED_BY_REQUIRED])

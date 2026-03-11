@@ -5,7 +5,7 @@ import { createContext, useContext } from 'react';
  *
  * When a floating element (Select, Tooltip, Popover, etc.) lives inside a
  * native <dialog> opened with .showModal(), the dialog is in the browser's
- * "top layer" — above everything in the normal stacking context. FloatingPortal
+ * "top layer" - above everything in the normal stacking context. FloatingPortal
  * defaults to document.body, which sits *below* the top layer, making the
  * dropdown invisible.
  *

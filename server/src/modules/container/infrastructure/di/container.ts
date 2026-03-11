@@ -7,7 +7,18 @@ import { ListContainerFilesAITool } from '@modules/container/application/ai-tool
 import { ListContainersAITool } from '@modules/container/application/ai-tools/ListContainersAITool';
 import { ReadContainerFileAITool } from '@modules/container/application/ai-tools/ReadContainerFileAITool';
 import { UpdateContainerAITool } from '@modules/container/application/ai-tools/UpdateContainerAITool';
-import { CreateContainerUseCase, DeleteContainerUseCase, GetContainerByIdUseCase, GetContainerFilesUseCase, GetContainerProcessesUseCase, GetContainerStatsUseCase, ListContainersUseCase, ReadContainerFileUseCase, UpdateContainerUseCase } from '@modules/container/application/use-cases';
+import {
+    CreateContainerUseCase,
+    CreateContainerXrdpSessionUseCase,
+    DeleteContainerUseCase,
+    GetContainerByIdUseCase,
+    GetContainerFilesUseCase,
+    GetContainerProcessesUseCase,
+    GetContainerStatsUseCase,
+    ListContainersUseCase,
+    ReadContainerFileUseCase,
+    UpdateContainerUseCase
+} from '@modules/container/application/use-cases';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
 import { DockerNetworkRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/DockerNetworkRepository';
@@ -15,6 +26,7 @@ import { DockerVolumeRepository } from '@modules/container/infrastructure/persis
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import {
     ContainerOwnershipService,
+    ContainerXrdpGatewayService,
     DaemonContainerRuntimeService,
     DockerContainerService,
     TeamClusterSelectionService,
@@ -45,9 +57,11 @@ export const registerContainerDependencies = (): void => {
     container.register(CONTAINER_TOKENS.ContainerRuntimeService, { useClass: DaemonContainerRuntimeService });
     container.register(CONTAINER_TOKENS.TerminalService, { useClass: TerminalService });
     container.register(ContainerOwnershipService, { useClass: ContainerOwnershipService });
+    container.registerSingleton(ContainerXrdpGatewayService, ContainerXrdpGatewayService);
     container.register(TeamClusterSelectionService, { useClass: TeamClusterSelectionService });
 
     container.register(CreateContainerUseCase, { useClass: CreateContainerUseCase });
+    container.register(CreateContainerXrdpSessionUseCase, { useClass: CreateContainerXrdpSessionUseCase });
     container.register(UpdateContainerUseCase, { useClass: UpdateContainerUseCase });
     container.register(DeleteContainerUseCase, { useClass: DeleteContainerUseCase });
     container.register(ListContainersUseCase, { useClass: ListContainersUseCase });

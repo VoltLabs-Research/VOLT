@@ -1,21 +1,22 @@
 import { ContainerAction } from '../../../api/dtos/update-container';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
+    Activity,
     ArrowLeft,
-    Play,
-    Square,
-    ExternalLink,
     Box,
-    Layers,
-    RefreshCw,
-    Terminal,
+    ExternalLink,
     Folder,
-    Activity
+    Layers,
+    Monitor,
+    Play,
+    RefreshCw,
+    Square,
+    Terminal
 } from 'lucide-react';
-import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
-import Title from '@/shared/presentation/components/Title';
+import Container from '@/shared/presentation/components/Container';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
+import Title from '@/shared/presentation/components/Title';
 import usePermission from '@/shared/presentation/hooks/use-permission';
 import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
 import type { LucideIcon } from 'lucide-react';
@@ -33,7 +34,7 @@ interface NavItem {
     icon: LucideIcon;
 };
 
-const NAV_ITEMS: NavItem[] = [
+const BASE_NAV_ITEMS: NavItem[] = [
     {
         path: '',
         label: 'Overview',
@@ -56,6 +57,12 @@ const NAV_ITEMS: NavItem[] = [
     }
 ];
 
+const XRDP_NAV_ITEM: NavItem = {
+    path: 'remote-desktop',
+    label: 'Remote Desktop',
+    icon: Monitor
+};
+
 const ContainerSidebar = ({
     container,
     onBack,
@@ -66,8 +73,12 @@ const ContainerSidebar = ({
     const { pathname } = useLocation();
     const isRunning = container.status === 'running';
     const canUpdate = usePermission(['container:update']);
+    const supportsXrdp = !!container.capabilities?.xrdp;
 
     const basePath = `/dashboard/containers/${container._id}`;
+    const navItems = supportsXrdp && isRunning
+        ? [...BASE_NAV_ITEMS, XRDP_NAV_ITEM]
+        : BASE_NAV_ITEMS;
     let actionButtons = null;
 
     if (canUpdate) {
@@ -145,7 +156,7 @@ const ContainerSidebar = ({
             </Container>
 
             <nav className='container-details-nav d-flex column flex-1 y-auto'>
-                {NAV_ITEMS.map(({ path, label, icon }) => (
+                {navItems.map(({ path, label, icon }) => (
                     <SidebarNavItem
                         key={path}
                         label={label}

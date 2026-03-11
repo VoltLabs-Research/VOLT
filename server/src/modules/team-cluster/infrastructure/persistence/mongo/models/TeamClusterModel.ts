@@ -81,6 +81,10 @@ const TeamClusterSchema = new Schema({
         type: String,
         default: null
     },
+    installRoot: {
+        type: String,
+        default: null
+    },
     lastHeartbeatAt: {
         type: Date,
         default: null

@@ -1,3 +1,4 @@
+import type { ContainerCapabilities } from '../entities/container-capabilities';
 import type { EnvVariable } from '@/modules/container/api/entities/env-variable';
 import type { PortMapping } from '@/modules/container/api/entities/port-mapping';
 
@@ -13,4 +14,5 @@ export interface CreateContainerParams {
     cmd?: string[];
     mountDockerSocket?: boolean;
     useImageCmd?: boolean;
+    capabilities?: ContainerCapabilities;
 };

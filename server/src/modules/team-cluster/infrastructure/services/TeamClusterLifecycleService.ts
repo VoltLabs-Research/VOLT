@@ -135,6 +135,8 @@ export default class TeamClusterLifecycleService {
         const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
         const nextStatus = teamCluster.props.status === TeamClusterStatus.Deleting
             || teamCluster.props.status === TeamClusterStatus.DeleteFailed
+            || teamCluster.props.status === TeamClusterStatus.Updating
+            || teamCluster.props.status === TeamClusterStatus.UpdateFailed
             ? teamCluster.props.status
             : TeamClusterStatus.Connected;
         const isFirstTeamConnection = teamCluster.props.lastHeartbeatAt === null
@@ -230,6 +232,33 @@ export default class TeamClusterLifecycleService {
         });
 
         return toTeamClusterDTO(updatedTeamCluster);
+    }
+
+    async markUpdating(teamClusterId: string): Promise<TeamClusterDTO> {
+        const teamCluster = await this.requireTeamClusterById(teamClusterId);
+        const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
+            status: TeamClusterStatus.Updating
+        });
+
+        return toTeamClusterDTO(updatedTeamCluster);
+    }
+
+    async markUpdatingTimeouts(cutoff: Date): Promise<number> {
+        const timedOutClusters = await this.teamClusterRepository.findUpdatingTimedOutClusters(cutoff);
+
+        for (const teamCluster of timedOutClusters) {
+            await this.persistLifecycleUpdate(teamCluster, {
+                status: TeamClusterStatus.UpdateFailed
+            });
+
+            logger.warn({
+                action: 'team-cluster.update-timeout',
+                teamClusterId: teamCluster.id,
+                teamId: teamCluster.props.team
+            }, 'Team cluster marked as update-failed after update timeout');
+        }
+
+        return timedOutClusters.length;
     }
 
     async completeDeletion(teamClusterId: string, daemonPassword: string): Promise<void> {

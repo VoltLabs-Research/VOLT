@@ -99,6 +99,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             workflow: input.plugin.props.workflow.props as unknown as WorkflowSerializable,
             config: input.config,
             selectedFrameOnly: input.selectedFrameOnly,
+            selectedTimesteps: input.selectedTimesteps,
             timestep: input.timestep
         });
 

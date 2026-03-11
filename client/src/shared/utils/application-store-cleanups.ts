@@ -18,7 +18,7 @@ import queryClient from '@/shared/infrastructure/query/query-client';
 /**
  * Stores whose lifecycle is managed by WebSocket hooks (cluster metrics,
  * team jobs).  Their `isConnected` flag must stay in sync with the real
- * socket state, so they must NOT be bulk-reset during a team switch —
+ * socket state, so they must NOT be bulk-reset during a team switch -
  * the owning hook already handles re-subscription when the team changes.
  *
  * They ARE still reset during full session cleanup (route navigation,
@@ -44,7 +44,7 @@ const teamScopedStoreResetters = [
     () => useTeamPresenceStore.getState().reset()
 ];
 
-/** Every store resetter — used for full cleanup (route nav, logout). */
+/** Every store resetter - used for full cleanup (route nav, logout). */
 const allStoreResetters = [...teamScopedStoreResetters, ...socketManagedStoreResetters];
 
 const safeResetAll = (resetters: Array<() => void>): void => {

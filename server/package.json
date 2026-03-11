@@ -2,7 +2,6 @@
   "scripts": {
     "start": "export NODE_OPTIONS='--max-old-space-size=8192' && npx tsx src/server.ts",
     "build": "tsc -p tsconfig.json",
-    
     "dev:docker-nuke": "docker stop $(docker ps -aq) 2>/dev/null; docker rm $(docker ps -aq) 2>/dev/null; docker rmi -f $(docker images -aq) 2>/dev/null; docker volume rm $(docker volume ls -q) 2>/dev/null; docker network prune -f; docker builder prune -a -f",
     "dev:drop:all": "npm run dev:drop:db && npm run dev:drop:redis && npm run dev:drop:minio",
     "dev:drop:db": "tsx tools/drop-db.ts",
@@ -50,8 +49,8 @@
     "@types/passport-github2": "^1.2.9",
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/ssh2": "^1.15.5",
-    "@types/ws": "^8.18.1",
     "@types/unzipper": "^0.10.11",
+    "@types/ws": "^8.18.1",
     "ai": "^6.0.105",
     "archiver": "^7.0.1",
     "bcryptjs": "^3.0.2",
@@ -64,6 +63,7 @@
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
     "express-rate-limit": "^8.3.0",
+    "guacamole-lite": "^1.2.0",
     "helmet": "^8.1.0",
     "identicon.js": "^2.3.3",
     "ioredis": "^5.6.1",

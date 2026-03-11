@@ -1,4 +1,5 @@
 import './DashboardTeamTimeline.css';
+import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
@@ -68,27 +69,26 @@ const DashboardTeamTimeline = () => {
             }
         }
 
-        // Sort newest first
         items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         return items;
     }, [activityData]);
 
     if (accessDenied) {
         return (
-            <Container className='dashboard-timeline-card'>
+            <DashboardCard className='dashboard-timeline-card d-flex column'>
                 <RecoveryState
                     title='Access denied'
                     description={accessDeniedMessage ?? 'You do not have permission to view team activity.'}
                     tone={RecoveryStateTone.AccessDenied}
                     className='dashboard-card-state dashboard-timeline-empty'
                 />
-            </Container>
+            </DashboardCard>
         );
     }
 
     if (error) {
         return (
-            <Container className='dashboard-timeline-card'>
+            <DashboardCard className='dashboard-timeline-card d-flex column'>
                 <RecoveryState
                     title='Unable to load activity'
                     description={error}
@@ -98,13 +98,13 @@ const DashboardTeamTimeline = () => {
                     }}
                     className='dashboard-card-state dashboard-timeline-empty'
                 />
-            </Container>
+            </DashboardCard>
         );
     }
 
     if (isLoading) {
         return (
-            <Container className='dashboard-timeline-card'>
+            <DashboardCard className='dashboard-timeline-card d-flex column'>
                 <Container className='dashboard-timeline-header'>
                     <Title className='font-size-3 color-primary font-weight-5'>Activity</Title>
                 </Container>
@@ -122,7 +122,7 @@ const DashboardTeamTimeline = () => {
                         </Container>
                     ))}
                 </Container>
-            </Container>
+            </DashboardCard>
         );
     }
 
@@ -169,7 +169,7 @@ const DashboardTeamTimeline = () => {
     }
 
     return (
-        <Container className='dashboard-timeline-card'>
+        <DashboardCard className='dashboard-timeline-card d-flex column'>
             <Container className='dashboard-timeline-header'>
                 <Title className='font-size-3 color-primary font-weight-5'>Activity</Title>
                 <span className='font-size-1 color-muted'>Last 7 days</span>
@@ -178,7 +178,7 @@ const DashboardTeamTimeline = () => {
             <Container className='dashboard-timeline-list flex-1 min-h-0 y-auto d-flex column'>
                 {timelineContent}
             </Container>
-        </Container>
+        </DashboardCard>
     );
 };
 

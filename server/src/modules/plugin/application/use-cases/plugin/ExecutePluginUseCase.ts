@@ -27,6 +27,54 @@ interface ExecutePluginOutputDTO {
     analysisId: string;
 };
 
+interface TrajectoryFrameReference {
+    timestep: number;
+};
+
+interface AnalysisExecutionMetadata {
+    selectedTimesteps?: number[];
+};
+
+const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
+
+const sanitizeSelectedTimesteps = (
+    selectedTimesteps: number[] | undefined,
+    trajectoryFrames: TrajectoryFrameReference[]
+): number[] | undefined => {
+    if (!selectedTimesteps?.length || !trajectoryFrames.length) {
+        return undefined;
+    }
+
+    const availableTimesteps = new Set(trajectoryFrames.map((frame) => frame.timestep));
+    const sanitizedTimesteps = Array.from(new Set(
+        selectedTimesteps.filter((timestep) => availableTimesteps.has(timestep))
+    )).sort((left, right) => left - right);
+
+    if (!sanitizedTimesteps.length || sanitizedTimesteps.length === availableTimesteps.size) {
+        return undefined;
+    }
+
+    return sanitizedTimesteps;
+};
+
+const createAnalysisConfig = (
+    config: Record<string, unknown>,
+    selectedTimesteps: number[] | undefined
+): Record<string, unknown> => {
+    if (!selectedTimesteps?.length) {
+        return config;
+    }
+
+    const metadata: AnalysisExecutionMetadata = {
+        selectedTimesteps
+    };
+
+    return {
+        ...config,
+        [ANALYSIS_EXECUTION_METADATA_KEY]: metadata
+    };
+};
+
 @injectable()
 export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, ExecutePluginOutputDTO, ApplicationError> {
     constructor(
@@ -119,6 +167,9 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             ));
         }
 
+        const selectedTimesteps = sanitizeSelectedTimesteps(input.selectedTimesteps, trajectory.props.frames);
+        const analysisConfig = createAnalysisConfig(input.config, selectedTimesteps);
+
         await this.eventBus.publish(new PluginExecutionRequestEvent({
             pluginId: plugin._id,
             trajectoryId: input.trajectoryId,
@@ -132,7 +183,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             plugin: plugin._id,
             clusterId: input.teamClusterId,
             teamCluster: input.teamClusterId,
-            config: input.config,
+            config: analysisConfig,
             team: input.teamId,
             trajectory: input.trajectoryId,
             createdBy: input.userId,
@@ -145,7 +196,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             pluginId: plugin._id,
             pluginDisplayName,
             teamId: input.teamId,
-            config: input.config,
+            config: analysisConfig,
             status: 'pending',
             createdAt: new Date()
         }));
@@ -160,6 +211,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             plugin,
             config: input.config,
             selectedFrameOnly: input.selectedFrameOnly,
+            selectedTimesteps,
             timestep: input.timestep
         });
 

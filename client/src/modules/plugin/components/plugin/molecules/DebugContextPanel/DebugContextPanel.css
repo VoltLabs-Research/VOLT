@@ -16,7 +16,7 @@
     line-height: 1.4;
 }
 
-/* Shared clickable row — used for panel header, entry headers, iteration headers */
+/* Shared clickable row - used for panel header, entry headers, iteration headers */
 .debug-context-row {
     padding: 0.35rem 0.625rem;
     transition: background 0.1s;

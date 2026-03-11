@@ -1,9 +1,11 @@
 import { InvitationEmailInput } from '../../molecules/InvitationEmailInput';
 import { InvitationsList } from '../../molecules/InvitationsList';
+import { InviteCodeSection } from '../../molecules/InviteCodeSection';
 import { PanelFooter } from '../../molecules/PanelFooter';
 import { PanelHeader } from '../../molecules/PanelHeader';
 import Container from '@/shared/presentation/components/Container';
 import useInvitePanel from '@/modules/team/hooks/invitation/use-invite-panel';
+import useInviteCode from '@/modules/team/hooks/invitation/use-invite-code';
 import { BookOpen, Copy } from 'lucide-react';
 import './TeamInvitePanel.css';
 
@@ -24,6 +26,16 @@ export const TeamInvitePanel = ({
         cancelingId,
         handleCancelInvitation
     } = useInvitePanel();
+
+    const {
+        inviteCode,
+        canManageCode,
+        isGenerating,
+        isDeleting,
+        handleGenerate,
+        handleDelete,
+        handleCopy
+    } = useInviteCode();
 
     return (
         <Container className='team-invite-panel d-flex column'>
@@ -51,6 +63,16 @@ export const TeamInvitePanel = ({
                     isLoading={loadingInvitations}
                     cancelingId={cancelingId}
                     onCancelInvitation={handleCancelInvitation}
+                />
+
+                <InviteCodeSection
+                    inviteCode={inviteCode}
+                    canManageCode={canManageCode}
+                    isGenerating={isGenerating}
+                    isDeleting={isDeleting}
+                    onGenerate={handleGenerate}
+                    onDelete={handleDelete}
+                    onCopy={handleCopy}
                 />
 
                 <PanelFooter

@@ -55,7 +55,7 @@ client/src/shared/
     errors/ (ApiError.ts, error-codes.ts, *.ts)
     infrastructure/query/
     presentation/
-        assets/stylesheets/ — READ-ONLY
+        assets/stylesheets/ - READ-ONLY
         components/{ComponentName}/
         contexts/{ContextName}Context.ts
         hooks/use-*.ts
@@ -98,7 +98,7 @@ Modules can have submodules grouped by context name.
    - Read relevant files identified in searches
    - Explore dependencies and related code
 
-2. **Stop at 90% confidence** — you have enough context when you can answer:
+2. **Stop at 90% confidence** - you have enough context when you can answer:
    - What files and functions are relevant?
    - How does the existing code work in this area?
    - What patterns and conventions does the codebase use?
@@ -110,7 +110,7 @@ Modules can have submodules grouped by context name.
 
 ```
 ## Relevant Files
-- path/to/file.ts — brief description
+- path/to/file.ts - brief description
 
 ## Key Functions / Classes
 - FunctionName in path/to/file.ts

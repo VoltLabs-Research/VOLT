@@ -111,7 +111,7 @@ export default class SocketGateway{
             await this.authenticateSocket(socket, next);
         });
 
-        // Registered synchronously after new Server() — no await in between,
+        // Registered synchronously after new Server() - no await in between,
         // so no event-loop yield where a 'connection' event could be lost.
         this.io.on('connection', (socket: Socket) => {
             this.handleConnection(socket);

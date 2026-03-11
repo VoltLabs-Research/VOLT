@@ -46,9 +46,12 @@ const OAuthCallbackTemplate = () => {
 
                 setStatus('success');
 
+                const next = params.get('next') ?? '/dashboard';
+                const onboardingUrl = next === '/dashboard' ? '/onboarding' : `/onboarding?next=${encodeURIComponent(next)}`;
+
                 redirectTimeoutReference.current = window.setTimeout(() => {
                     redirectTimeoutReference.current = null;
-                    navigate('/');
+                    navigate(onboardingUrl);
                 }, 1500);
             }catch{
                 if (isCancelled) {
@@ -138,7 +141,7 @@ const OAuthCallbackTemplate = () => {
                 >
                     <Paragraph className='color-secondary'>
                         {status === 'loading' && 'Please wait while we verify your credentials.'}
-                        {status === 'success' && 'Redirecting you to the dashboard...'}
+                        {status === 'success' && 'Redirecting you to setup...'}
                         {status === 'error' && 'Something went wrong. Redirecting to login...'}
                     </Paragraph>
                 </motion.div>

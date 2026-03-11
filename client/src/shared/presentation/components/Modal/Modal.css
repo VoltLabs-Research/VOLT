@@ -11,7 +11,13 @@ dialog.volt-modal{
     color: var(--color-text-primary);
     margin: auto;
     opacity: 0;
-    transform: scale(0.95);
+    /*
+     * transform is intentionally absent from the open state.
+     * A non-none transform creates a CSS containing block, which causes
+     * position:fixed descendants (including the Sileo toaster portaled here)
+     * to be positioned relative to the dialog box instead of the viewport.
+     * The opening scale animation is preserved via @starting-style below.
+     */
     transition: 
         opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
         transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
@@ -21,7 +27,6 @@ dialog.volt-modal{
 
 dialog.volt-modal[open]{
     opacity: 1;
-    transform: scale(1);
 }
 
 @starting-style{

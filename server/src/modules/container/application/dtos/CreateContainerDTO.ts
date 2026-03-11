@@ -1,3 +1,4 @@
+import type { ContainerCapabilities } from '@modules/container/domain/entities/ContainerCapabilities';
 import type { Container } from '@modules/container/domain/entities/Container';
 import type { ContainerEnvironmentVariable, ContainerPortMapping } from '@modules/container/domain/port/IContainerService';
 
@@ -14,6 +15,7 @@ export interface CreateContainerInputDTO {
     cpus?: number;
     mountDockerSocket?: boolean;
     useImageCmd?: boolean;
+    capabilities?: ContainerCapabilities;
 };
 
 export interface CreateContainerOutputDTO {

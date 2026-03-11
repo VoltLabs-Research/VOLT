@@ -1,4 +1,5 @@
 import './DashboardTeamPresence.css';
+import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
 import useTeamMemberData from '@/modules/team/hooks/member/use-team-member-data';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
@@ -55,20 +56,20 @@ const DashboardTeamPresence = () => {
 
     if (accessDenied) {
         return (
-            <Container className='dashboard-presence-card'>
+            <DashboardCard className='dashboard-presence-card d-flex column'>
                 <RecoveryState
                     title='Access denied'
                     description={accessDeniedMessage ?? 'You do not have permission to view team presence.'}
                     tone={RecoveryStateTone.AccessDenied}
                     className='dashboard-card-state'
                 />
-            </Container>
+            </DashboardCard>
         );
     }
 
     if (error) {
         return (
-            <Container className='dashboard-presence-card'>
+            <DashboardCard className='dashboard-presence-card d-flex column'>
                 <RecoveryState
                     title='Unable to load team presence'
                     description={error}
@@ -78,13 +79,13 @@ const DashboardTeamPresence = () => {
                     }}
                     className='dashboard-card-state'
                 />
-            </Container>
+            </DashboardCard>
         );
     }
 
     if (isLoading) {
         return (
-            <Container className='dashboard-presence-card'>
+            <DashboardCard className='dashboard-presence-card d-flex column'>
                 <Container className='dashboard-presence-header'>
                     <Title className='font-size-3 color-primary font-weight-5'>{selectedTeam.name}</Title>
                 </Container>
@@ -93,7 +94,7 @@ const DashboardTeamPresence = () => {
                         <Skeleton key={i} variant='circular' width={32} height={32} />
                     ))}
                 </Container>
-            </Container>
+            </DashboardCard>
         );
     }
 
@@ -140,7 +141,7 @@ const DashboardTeamPresence = () => {
     }
 
     return (
-        <Container className='dashboard-presence-card'>
+        <DashboardCard className='dashboard-presence-card d-flex column'>
             <Container className='dashboard-presence-header'>
                 <Title className='font-size-3 color-primary font-weight-5'>{selectedTeam.name}</Title>
                 <Button
@@ -162,7 +163,7 @@ const DashboardTeamPresence = () => {
                 </span>
                 <span className='font-size-1 color-muted'>/ {totalCount}</span>
             </Container>
-        </Container>
+        </DashboardCard>
     );
 };
 

@@ -1,0 +1,83 @@
+.desktop-titlebar {
+    --desktop-titlebar-side-width: 120px;
+    display: grid;
+    grid-template-columns: var(--desktop-titlebar-side-width) minmax(0, 1fr) var(--desktop-titlebar-side-width);
+    align-items: center;
+    gap: 0.75rem;
+    height: var(--volt-desktop-titlebar-height);
+    padding: 0 1rem;
+    background: color-mix(in srgb, var(--glass-bg) 92%, transparent);
+    border-bottom: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    -webkit-app-region: drag;
+}
+
+.desktop-titlebar__section {
+    min-width: 0;
+}
+
+.desktop-titlebar__controls {
+    width: var(--desktop-titlebar-side-width);
+    -webkit-app-region: no-drag;
+}
+
+.desktop-titlebar__identity {
+    min-width: 0;
+}
+
+.desktop-titlebar__identity-label {
+    margin: 0;
+    width: 100%;
+    font-size: 0.82rem;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    color: var(--color-text-secondary);
+    text-align: center;
+}
+
+.desktop-titlebar__spacer {
+    width: var(--desktop-titlebar-side-width);
+}
+
+.desktop-titlebar__window-control {
+    width: 12px;
+    height: 12px;
+    min-width: 12px;
+    min-height: 12px;
+    padding: 0;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+
+.desktop-titlebar__window-control:hover {
+    transform: scale(1.06);
+}
+
+.desktop-titlebar__window-control--close {
+    background: #ff5f57;
+}
+
+.desktop-titlebar__window-control--minimize {
+    background: #febc2e;
+}
+
+.desktop-titlebar__window-control--maximize {
+    background: #28c840;
+}
+
+@media screen and (max-width: 768px) {
+    .desktop-titlebar {
+        --desktop-titlebar-side-width: 88px;
+        padding: 0 0.75rem;
+    }
+
+    .desktop-titlebar__identity-label {
+        font-size: 0.76rem;
+    }
+}

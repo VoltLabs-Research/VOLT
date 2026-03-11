@@ -11,6 +11,8 @@ export default createHttpModule({
     teamScope: HttpModuleTeamScope.Param,
     protected: true,
     routes: (router) => {
+        router.post('/join', teamValidation.joinByCode, controllers.joinByCode.handle);
+
         router.route('/')
             .get(controllers.listUserTeams.handle)
             .post(RATE_LIMIT_POLICIES.teamCreate, teamValidation.create, controllers.create.handle);
@@ -28,5 +30,9 @@ export default createHttpModule({
         );
 
         router.get('/:teamId/invite-permission', controllers.checkInvitePermission.handle);
+
+        router.route('/:teamId/invite-code')
+            .post(controllers.generateInviteCode.handle)
+            .delete(controllers.deleteInviteCode.handle);
     }
 });

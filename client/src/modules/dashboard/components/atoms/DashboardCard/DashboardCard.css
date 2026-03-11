@@ -1,0 +1,17 @@
+.dashboard-card {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-xl);
+}
+
+.dashboard-card--clickable {
+    cursor: pointer;
+}
+
+.dashboard-card--relative {
+    position: relative;
+}
+
+.dashboard-card--overflow-hidden {
+    overflow: hidden;
+}

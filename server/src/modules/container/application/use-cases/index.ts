@@ -1,4 +1,5 @@
 export * from './CreateContainerUseCase';
+export * from './CreateContainerXrdpSessionUseCase';
 export * from './DeleteContainerUseCase';
 export * from './GetContainerByIdUseCase';
 export * from './GetContainerFilesUseCase';

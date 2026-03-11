@@ -11,6 +11,7 @@ export interface RoutePluginExecutionInput {
     plugin: Plugin;
     config: Record<string, unknown>;
     selectedFrameOnly?: boolean;
+    selectedTimesteps?: number[];
     timestep?: number;
 };
 

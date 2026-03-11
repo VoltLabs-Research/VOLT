@@ -155,9 +155,29 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
     const [rangeEnd, setRangeEnd] = useState<number | undefined>(undefined);
 
     useEffect(() => {
-        if (!availableTimesteps.length) return;
-        setRangeStart((prev) => prev ?? availableTimesteps[0]);
-        setRangeEnd((prev) => prev ?? availableTimesteps[availableTimesteps.length - 1]);
+        if (!availableTimesteps.length) {
+            setRangeStart(undefined);
+            setRangeEnd(undefined);
+            return;
+        }
+
+        const firstTimestep = availableTimesteps[0];
+        const lastTimestep = availableTimesteps[availableTimesteps.length - 1];
+
+        setRangeStart((prev) => {
+            if (prev === undefined || !availableTimesteps.includes(prev)) {
+                return firstTimestep;
+            }
+
+            return prev;
+        });
+        setRangeEnd((prev) => {
+            if (prev === undefined || !availableTimesteps.includes(prev)) {
+                return lastTimestep;
+            }
+
+            return prev;
+        });
     }, [availableTimesteps]);
 
     const startFrame = rangeStart ?? availableTimesteps[0];

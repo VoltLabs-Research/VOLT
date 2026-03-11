@@ -7,7 +7,7 @@
     max-width: 280px;
     text-overflow: ellipsis;
 
-    /* Solid flat styling — no glassmorphism */
+    /* Solid flat styling - no glassmorphism */
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
     color: var(--color-text-primary);

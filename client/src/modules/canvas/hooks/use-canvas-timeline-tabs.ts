@@ -1,14 +1,15 @@
 import { usePluginListingSubListingQueries } from '@/modules/plugin/hooks/listing/queries';
-import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
-import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
-import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifacts/queries';
-import { useEffect, useMemo } from 'react';
 import usePluginCatalog from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
+import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
-import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
+import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifacts/queries';
+import useAnalysisAtomPropertiesAvailability from '@/modules/trajectory/hooks/trajectory/use-analysis-atom-properties-availability';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { isAccessDeniedError, notifyApiError } from '@/shared/errors/notify-api-error';
+import { useEffect, useMemo } from 'react';
 
-import type { IExposureComputed } from '@/modules/plugin/api/entities/plugin/exposure';
 import type { RenderableExposurePayload } from '@/modules/trajectory/api/dtos/scene-artifacts';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 
@@ -19,6 +20,11 @@ export interface SubListingEntry {
     label: string;
 };
 
+interface FallbackListingExposure {
+    exposureId: string;
+    name: string;
+};
+
 interface UseCanvasTimelineTabsParams {
     trajectory: Trajectory | null | undefined;
     analysisId?: string;
@@ -27,8 +33,11 @@ interface UseCanvasTimelineTabsParams {
 const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabsParams) => {
     const { ensurePluginById } = usePluginCatalog();
     const { pluginsById } = usePluginSelectors();
+    const currentTimestep = useEditorStore((state) => state.currentTimestep);
 
     const trajectoryId = trajectory?._id;
+    const fallbackTimestep = trajectory?.frames[0]?.timestep;
+    const atomPropertiesTimestep = currentTimestep ?? fallbackTimestep;
 
     const selectedAnalysis = useMemo(() => {
         if (!analysisId || !trajectory?.analysis?.length) return undefined;
@@ -78,7 +87,7 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
     }, [plugin?.exposures]);
 
     const fallbackListingExposures = useMemo(() => {
-        const uniqueById = new Map<string, { exposureId: string; name: string }>();
+        const uniqueById = new Map<string, FallbackListingExposure>();
 
         for (const exposure of sceneExposureFallback) {
             if (!exposure?.exposureId || !exposure?.name) continue;
@@ -102,13 +111,20 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
         ? pluginListingExposures
         : fallbackListingExposures;
 
-    const hasAtomProperties = useMemo(() => {
-        if (!plugin?.exposures?.length) return false;
-        return plugin.exposures.some((item) => {
-            const perAtomProperties = (item as IExposureComputed & { perAtomProperties?: unknown[] }).perAtomProperties;
-            return Boolean(perAtomProperties?.length);
-        });
-    }, [plugin?.exposures]);
+    const atomPropertiesAvailability = useAnalysisAtomPropertiesAvailability({
+        trajectoryId,
+        analysisId,
+        timestep: atomPropertiesTimestep
+    });
+
+    useEffect(() => {
+        if (!atomPropertiesAvailability.error) return;
+        if (isAccessDeniedError(atomPropertiesAvailability.error)) {
+            notifyApiError(atomPropertiesAvailability.error, { fallbackTitle: 'You do not have permission to perform this action.' });
+        }
+    }, [atomPropertiesAvailability.error]);
+
+    const hasAtomProperties = atomPropertiesAvailability.hasAtomProperties;
 
     const subListingQueries = usePluginListingSubListingQueries(
         listingExposures.map((exposure) => ({

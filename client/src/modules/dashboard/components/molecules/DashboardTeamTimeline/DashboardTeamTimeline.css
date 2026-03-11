@@ -1,13 +1,8 @@
 .dashboard-timeline-card {
     grid-column: span 4;
-    background: var(--color-surface-1);
-    border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-xl);
     padding: 1.5rem;
     min-height: 320px;
     max-height: 373px;
-    display: flex;
-    flex-direction: column;
 }
 
 .dashboard-timeline-header {

@@ -1,0 +1,38 @@
+import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { Result } from '@shared/domain/port/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { inject, injectable } from 'tsyringe';
+import type { IUseCase } from '@shared/application/IUseCase';
+import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
+import type { ListWhiteboardsInputDTO, ListWhiteboardsOutputDTO } from '@modules/whiteboards/application/dtos/ListWhiteboardsDTO';
+
+@injectable()
+export class ListWhiteboardsUseCase implements IUseCase<ListWhiteboardsInputDTO, ListWhiteboardsOutputDTO, ApplicationError> {
+    constructor(
+        @inject(WHITEBOARD_TOKENS.WhiteboardRepository)
+        private readonly whiteboardRepository: IWhiteboardRepository
+    ) {}
+
+    async execute(input: ListWhiteboardsInputDTO): Promise<Result<ListWhiteboardsOutputDTO, ApplicationError>> {
+        const page = Math.max(1, Number(input.page || 1));
+        const limit = Math.max(1, Math.min(500, Number(input.limit || 500)));
+
+        const result = await this.whiteboardRepository.findAllByTeam(input.teamId, { page, limit });
+
+        const value: ListWhiteboardsOutputDTO = {
+            ...result,
+            data: result.data.map((whiteboard) => ({
+                _id: whiteboard._id,
+                title: whiteboard.props.title,
+                payloadKey: whiteboard.props.payloadKey,
+                thumbnailKey: whiteboard.props.thumbnailKey,
+                lastEditedAt: whiteboard.props.lastEditedAt,
+                createdAt: whiteboard.props.createdAt,
+                updatedAt: whiteboard.props.updatedAt
+            }))
+        };
+
+        return Result.ok(value);
+    }
+};

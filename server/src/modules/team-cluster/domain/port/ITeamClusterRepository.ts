@@ -5,5 +5,6 @@ export interface ITeamClusterRepository extends IBaseRepository<TeamCluster, Tea
     findByIdWithSensitiveData(teamClusterId: string): Promise<TeamCluster | null>;
     findHeartbeatTimedOutConnectedClusters(cutoff: Date): Promise<TeamCluster[]>;
     findHeartbeatTimedOutDeletingClusters(cutoff: Date): Promise<TeamCluster[]>;
+    findUpdatingTimedOutClusters(cutoff: Date): Promise<TeamCluster[]>;
     hasTeamEverConnected(teamId: string): Promise<boolean>;
 };

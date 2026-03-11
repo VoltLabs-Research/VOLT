@@ -1,30 +1,31 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
 import DashboardOverviewCard from '@/modules/dashboard/components/atoms/DashboardOverviewCard';
 import DashboardOverviewSkeleton from '@/modules/dashboard/components/atoms/DashboardOverviewSkeleton';
-import { DashboardQuickActions } from '@/modules/dashboard/components/molecules/DashboardQuickActions';
 import DashboardClusterHealth from '@/modules/dashboard/components/molecules/DashboardClusterHealth';
 import DashboardInAppActivity from '@/modules/dashboard/components/molecules/DashboardInAppActivity';
 import DashboardNotificationsFeed from '@/modules/dashboard/components/molecules/DashboardNotificationsFeed';
 import DashboardPreviewCard from '@/modules/dashboard/components/molecules/DashboardPreviewCard';
+import { DashboardQuickActions } from '@/modules/dashboard/components/molecules/DashboardQuickActions';
 import DashboardRecentAnalyses from '@/modules/dashboard/components/molecules/DashboardRecentAnalyses';
 import DashboardTeamPresence from '@/modules/dashboard/components/molecules/DashboardTeamPresence';
 import DashboardTeamTimeline from '@/modules/dashboard/components/molecules/DashboardTeamTimeline';
 import useDashboardMetrics from '@/modules/dashboard/hooks/use-dashboard-metrics';
 import JobsHistoryViewer from '@/modules/jobs/components/organisms/JobsHistoryViewer';
-import TrajectoryUploaderContainer from '@/modules/trajectory/components/organisms/TrajectoryUploaderContainer';
+import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import SimulationGrid from '@/modules/trajectory/components/molecules/SimulationGrid';
+import TrajectoryUploaderContainer from '@/modules/trajectory/components/organisms/TrajectoryUploaderContainer';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
+import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import './Dashboard.css';
 import { useMemo } from 'react';
 import { FlaskConical, Puzzle } from 'lucide-react';
 import { HiOutlineServerStack } from 'react-icons/hi2';
-import type { DashboardCard } from '@/modules/dashboard/api/entities/dashboard';
+import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/api/entities/dashboard';
 import type { ReactNode } from 'react';
 
 const CARD_ICONS: Record<string, ReactNode> = {
@@ -63,7 +64,7 @@ const DashboardPage = () => {
             day: 'numeric'
         });
     }, []);
-    let statCards = cards.map((card: DashboardCard, index: number) => (
+    let statCards = cards.map((card: DashboardMetricsCard, index: number) => (
         <DashboardOverviewCard
             key={`${card.key}-${index}`}
             card={card}
@@ -73,25 +74,25 @@ const DashboardPage = () => {
 
     if (accessDenied) {
         statCards = [
-            <Container key='denied' className='dashboard-stat-card' style={{ gridColumn: 'span 4' }}>
+            <DashboardCard key='denied' className='dashboard-stat-card' isRelative={true} overflowHidden={true} style={{ gridColumn: 'span 4' }}>
                 <RecoveryState
                     title='Access denied'
                     description={accessDeniedMessage ?? 'You do not have permission to view dashboard metrics.'}
                     tone={RecoveryStateTone.AccessDenied}
                     className='dashboard-card-state'
                 />
-            </Container>
+            </DashboardCard>
         ];
     } else if (error) {
         statCards = [
-            <Container key='error' className='dashboard-stat-card' style={{ gridColumn: 'span 4' }}>
+            <DashboardCard key='error' className='dashboard-stat-card' isRelative={true} overflowHidden={true} style={{ gridColumn: 'span 4' }}>
                 <RecoveryState
                     title='Unable to load dashboard metrics'
                     description={error}
                     tone={RecoveryStateTone.Error}
                     className='dashboard-card-state'
                 />
-            </Container>
+            </DashboardCard>
         ];
     } else if (loading) {
         statCards = [<DashboardOverviewSkeleton key='loading' count={3} />];
@@ -126,7 +127,6 @@ const DashboardPage = () => {
     return (
         <TrajectoryUploaderContainer>
             <Container className='dashboard-bento'>
-                {/* Welcome section */}
                 <Container className='dashboard-welcome'>
                     <Title className='font-size-5 color-primary font-weight-6'>
                         {getGreeting()}, {firstName}
@@ -136,35 +136,25 @@ const DashboardPage = () => {
                     </Paragraph>
                 </Container>
 
-                {/* Stat overview cards */}
                 {statCards}
 
-                {/* Spacer card to fill remaining columns when 3 stat cards */}
                 {!loading && cards.length === 3 && (
-                    <Container className='dashboard-stat-card' style={{ opacity: 0, pointerEvents: 'none' }} />
+                    <DashboardCard className='dashboard-stat-card' isRelative={true} overflowHidden={true} style={{ opacity: 0, pointerEvents: 'none' }} />
                 )}
 
-                {/* Team activity timeline */}
                 <DashboardTeamTimeline />
-
-                {/* In-app activity history (365d) */}
                 <DashboardInAppActivity />
-
-                {/* Quick actions */}
                 <DashboardQuickActions />
-
-                {/* Infrastructure & team overview */}
                 <DashboardClusterHealth />
                 <DashboardTeamPresence />
                 <DashboardNotificationsFeed />
 
-                {/* 3D Preview + Jobs & Analyses */}
                 <Container className='dashboard-bottom-row'>
                     <DashboardPreviewCard />
 
                     <Container className='dashboard-bottom-sidebar'>
-                        <Container className='dashboard-jobs-card'>
-                            <Container className='d-flex items-center content-between w-max' style={{ padding: '1.25rem 1.25rem 0 1.25rem' }}>
+                        <DashboardCard className='dashboard-jobs-card d-flex column flex-1 min-h-0' overflowHidden={true}>
+                            <Container className='d-flex items-center content-between w-max dashboard-jobs-card-header'>
                                 <Title className='font-size-2 color-primary font-weight-6'>
                                     Jobs History
                                 </Title>
@@ -182,13 +172,12 @@ const DashboardPage = () => {
                                     />
                                 )}
                             />
-                        </Container>
+                        </DashboardCard>
 
                         <DashboardRecentAnalyses />
                     </Container>
                 </Container>
 
-                {/* Simulations grid */}
                 <Container className='dashboard-simulations-section'>
                     <Title className='font-size-4 color-primary font-weight-5'>Trajectories</Title>
                     <SimulationGrid />

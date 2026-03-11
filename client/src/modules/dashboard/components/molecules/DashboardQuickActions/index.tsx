@@ -1,4 +1,5 @@
 import './DashboardQuickActions.css';
+import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import Container from '@/shared/presentation/components/Container';
@@ -10,7 +11,12 @@ import { Box, Puzzle, Upload, Users } from 'lucide-react';
 import { GoArrowRight } from 'react-icons/go';
 import type { ReactNode } from 'react';
 
-type DashboardQuickActionVariant = 'upload' | 'team' | 'plugin' | 'container';
+export enum DashboardQuickActionVariant {
+    Upload = 'upload',
+    Team = 'team',
+    Plugin = 'plugin',
+    Container = 'container'
+}
 
 interface DashboardQuickAction {
     label: string;
@@ -27,7 +33,7 @@ const actions: DashboardQuickAction[] = [
         label: 'Upload Trajectory',
         description: 'Import simulation data',
         icon: <Upload size={16} strokeWidth={1.8} />,
-        variant: 'upload',
+        variant: DashboardQuickActionVariant.Upload,
         path: '/dashboard/trajectories/list',
         requiredPermissions: ['trajectory:create'],
         disabledReason: 'You do not have permission to upload trajectories.'
@@ -36,7 +42,7 @@ const actions: DashboardQuickAction[] = [
         label: 'Team Management',
         description: 'View the team activity',
         icon: <Users size={16} strokeWidth={1.8} />,
-        variant: 'team',
+        variant: DashboardQuickActionVariant.Team,
         path: '/dashboard/my-team',
         requiredPermissions: ['team:read'],
         disabledReason: 'You do not have permission to manage team members.'
@@ -45,7 +51,7 @@ const actions: DashboardQuickAction[] = [
         label: 'Browse Plugins',
         description: 'Extend your workflow',
         icon: <Puzzle size={16} strokeWidth={1.8} />,
-        variant: 'plugin',
+        variant: DashboardQuickActionVariant.Plugin,
         path: '/dashboard/plugins/catalog',
         requiredPermissions: ['plugin:read'],
         disabledReason: 'You do not have permission to view plugins.'
@@ -54,7 +60,7 @@ const actions: DashboardQuickAction[] = [
         label: 'Containers',
         description: 'Manage compute resources',
         icon: <Box size={16} strokeWidth={1.8} />,
-        variant: 'container',
+        variant: DashboardQuickActionVariant.Container,
         path: '/dashboard/containers',
         requiredPermissions: ['container:read'],
         disabledReason: 'You do not have permission to view containers.'
@@ -76,7 +82,7 @@ export const DashboardQuickActions = () => {
             return;
         }
 
-        if (action.variant !== 'upload') {
+        if (action.variant !== DashboardQuickActionVariant.Upload) {
             navigate(action.path);
             return;
         }
@@ -123,7 +129,7 @@ export const DashboardQuickActions = () => {
     };
 
     return (
-        <Container className='dashboard-actions-card'>
+        <DashboardCard className='dashboard-actions-card d-flex column'>
             <Title className='font-size-3 color-primary font-weight-5' style={{ marginBottom: '0.75rem' }}>
                 Quick Actions
             </Title>
@@ -138,7 +144,7 @@ export const DashboardQuickActions = () => {
                 hidden
                 onChange={handlePickerChange}
             />
-        </Container>
+        </DashboardCard>
     );
 };
 

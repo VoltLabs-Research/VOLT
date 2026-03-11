@@ -18,7 +18,9 @@ export const SYS_BUCKETS = {
     PLUGINS: 'volt-plugins',
     DUMPS: 'volt-dumps',
     AVATARS: 'volt-avatars',
-    CHAT: 'volt-chat'
+    CHAT: 'volt-chat',
+    WHITEBOARDS: 'volt-whiteboards',
+    LATEX_ASSETS: 'volt-latex-assets'
 };
 
 export const getMinioConfig = (): MinioClientConfig => {
@@ -59,7 +61,7 @@ const ensureBucketExists = async (client: Client, bucket: string): Promise<void>
     if (!exists) {
         await client.makeBucket(bucket, '');
         // Set public policy for avatars bucket
-        if (bucket === SYS_BUCKETS.AVATARS || bucket === SYS_BUCKETS.CHAT) {
+        if (bucket === SYS_BUCKETS.AVATARS || bucket === SYS_BUCKETS.CHAT || bucket === SYS_BUCKETS.LATEX_ASSETS) {
             const policy = {
                 Version: '2012-10-17',
                 Statement: [

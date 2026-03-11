@@ -24,6 +24,12 @@ const TeamSchema: Schema<TeamDocument> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User',
         required: [true, ValidationCodes.TEAM_OWNER_REQUIRED]
+    },
+    inviteCode: {
+        type: String,
+        sparse: true,
+        unique: true,
+        default: null
     }
 }, {
     timestamps: true

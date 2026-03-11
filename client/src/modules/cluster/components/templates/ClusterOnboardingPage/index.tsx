@@ -18,8 +18,12 @@ import { sileo } from 'sileo';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
+
+interface ClusterOnboardingLocationState {
+    next?: string;
+};
 
 type ClusterType = 'computer' | 'server';
 type OnboardingStep = 'type' | 'name' | 'success';
@@ -28,6 +32,9 @@ const INSTALL_MODAL_ID = 'cluster-onboarding-install-modal';
 
 const ClusterOnboardingPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const locationState = location.state as ClusterOnboardingLocationState | null;
+    const nextDestination = locationState?.next ?? '/dashboard';
     const { clusters, createCluster } = useClusterManagement();
     const hasConnectedCluster = clusters.some((c) => c.status === TeamClusterStatus.Connected);
     const [isSigningOut, setIsSigningOut] = useState(false);
@@ -65,7 +72,7 @@ const ClusterOnboardingPage = () => {
 
         hasRedirected.current = true;
         const timer = setTimeout(() => {
-            navigate('/dashboard');
+            navigate(nextDestination);
         }, 2500);
 
         return () => clearTimeout(timer);

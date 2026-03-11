@@ -3,19 +3,20 @@ import './core/config/env';
 
 import { registerAllDependencies } from './core/bootstrap/register-deps';
 import { initializeMinio } from './core/config/minio';
-import { initializeRedis, redis } from './core/config/redis';
+import { initializeRedis } from './core/config/redis';
 import { registerAllSubscribers } from './core/events/registerAllSubscribers';
 import { SOCKET_TOKENS } from './modules/socket/infrastructure/di/SocketTokens';
+import { TEAM_CLUSTER_TOKENS } from './modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import { ContainerXrdpGatewayService } from './modules/container/infrastructure/services/ContainerXrdpGatewayService';
+import { ScriptingJupyterProxyService } from './modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
+import type TeamClusterTcpExposureRelayService from './modules/team-cluster/infrastructure/services/TeamClusterTcpExposureRelayService';
 import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
+import logger from './shared/infrastructure/logger';
+import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
 import { readNumberEnv } from './shared/infrastructure/utilities/env';
 import app from './core/config/express';
 import SocketGateway from './modules/socket/socket/SocketGateway';
-import { ScriptingJupyterProxyService } from './modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
-import TeamClusterTcpExposureRelayService from './modules/team-cluster/infrastructure/services/TeamClusterTcpExposureRelayService';
-import logger from './shared/infrastructure/logger';
-import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
 import http from 'http';
-import os from 'node:os';
 import { container } from 'tsyringe';
 import type { ISocketModule } from './modules/socket/domain/port/ISocketModule';
 import type { Duplex } from 'node:stream';
@@ -25,7 +26,7 @@ const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
 const SERVER_TIMEOUT = readNumberEnv('SERVER_TIMEOUT', 1800000);
 
 registerAllDependencies();
-const tcpExposureRelayService = container.resolve(TeamClusterTcpExposureRelayService);
+const tcpExposureRelayService = container.resolve<TeamClusterTcpExposureRelayService>(TEAM_CLUSTER_TOKENS.TeamClusterTcpExposureRelayService);
 
 const shutdown = async () => {
     await tcpExposureRelayService.stop();
@@ -43,8 +44,11 @@ process.on('uncaughtException', (error: Error) => {
 
 const startServer = async () => {
     const { default: mountHttpRoutes } = await import('./core/bootstrap/mount-http-routes');
-    
+
     const server = http.createServer(app);
+    const xrdpGatewayService = container.resolve(ContainerXrdpGatewayService);
+    xrdpGatewayService.attach(server);
+
     app.use(mountHttpRoutes());
     app.use(httpErrorMiddleware);
 
@@ -54,9 +58,10 @@ const startServer = async () => {
     server.headersTimeout = SERVER_TIMEOUT;
 
     server.on('error', (error) => {
-        logger.error(`@server: http server error: ${error}`)
+        logger.error(`@server: http server error: ${error}`);
     });
 
+    // TODO: ???
     server.on('upgrade', (request, socket, head) => {
         const proxyService = container.resolve(ScriptingJupyterProxyService);
         if (!proxyService.isJupyterUpgradeRequest(request)) {

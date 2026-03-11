@@ -8,6 +8,7 @@ export interface TeamClusterInstallManifestPortsDTO {
 export interface GenerateTeamClusterInstallManifestInputDTO {
     teamClusterId: string;
     daemonPassword: string;
+    installRoot: string;
     ports: TeamClusterInstallManifestPortsDTO;
 };
 

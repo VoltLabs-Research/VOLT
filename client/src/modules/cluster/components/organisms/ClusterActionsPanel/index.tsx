@@ -9,14 +9,24 @@ interface ClusterActionsPanelProps {
     teamCluster: TeamCluster | null;
     onRevealCredentials: () => void;
     onDeleteCluster: () => void;
+    onUpdateCluster: () => void;
 };
 
-const ClusterActionsPanel = ({ teamCluster, onRevealCredentials, onDeleteCluster }: ClusterActionsPanelProps) => {
+const ClusterActionsPanel = ({
+    teamCluster,
+    onRevealCredentials,
+    onDeleteCluster,
+    onUpdateCluster
+}: ClusterActionsPanelProps) => {
     if (!teamCluster) {
         return null;
     }
 
     const isDeleting = teamCluster.status === TeamClusterStatus.Deleting;
+    const isUpdating = teamCluster.status === TeamClusterStatus.Updating;
+    const canUpdate = teamCluster.status === TeamClusterStatus.Connected
+        || teamCluster.status === TeamClusterStatus.UpdateFailed;
+    const isDisabled = isDeleting || isUpdating;
 
     return (
         <Container className='cluster-actions-panel d-flex column gap-2 p-1-5 radius-lg'>
@@ -25,14 +35,24 @@ const ClusterActionsPanel = ({ teamCluster, onRevealCredentials, onDeleteCluster
                 <Paragraph className='font-size-2 color-secondary'>
                     {isDeleting
                         ? 'Remote uninstall is in progress. Volt will remove this cluster once cleanup is confirmed.'
-                        : 'Reveal service credentials only when needed and confirm deletes with your password.'}
+                        : isUpdating
+                            ? 'Update is in progress. The daemon will reconnect once it restarts with the new version.'
+                            : 'Reveal service credentials only when needed and confirm deletes with your password.'}
                 </Paragraph>
             </Container>
             <Container className='d-flex gap-075 flex-wrap'>
-                <Button variant='outline' intent='neutral' onClick={onRevealCredentials} disabled={isDeleting}>
+                <Button variant='outline' intent='neutral' onClick={onRevealCredentials} disabled={isDisabled}>
                     Reveal credentials
                 </Button>
-                <Button variant='solid' intent='danger' onClick={onDeleteCluster} disabled={isDeleting}>
+                <Button
+                    variant='outline'
+                    intent='brand'
+                    onClick={onUpdateCluster}
+                    disabled={!canUpdate || isUpdating}
+                >
+                    {isUpdating ? 'Updating...' : 'Update cluster'}
+                </Button>
+                <Button variant='solid' intent='danger' onClick={onDeleteCluster} disabled={isDisabled}>
                     {isDeleting ? 'Deleting...' : 'Delete cluster'}
                 </Button>
                 <Button variant='solid' intent='brand' shape='pill' size='sm' to='/onboarding/cluster/setup'>

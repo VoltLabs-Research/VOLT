@@ -34,6 +34,10 @@ const portMappingSchema = z.object({
     public: z.number().int().min(0).max(65535).optional()
 }).strict();
 
+const containerCapabilitiesSchema = z.object({
+    xrdp: z.boolean().optional()
+}).strict();
+
 const createContainerSchema = z.object({
     name: z.string().min(1),
     image: z.string().min(1),
@@ -44,7 +48,8 @@ const createContainerSchema = z.object({
     memory: z.number().positive().optional(),
     cpus: z.number().positive().optional(),
     mountDockerSocket: z.boolean().optional(),
-    useImageCmd: z.boolean().optional()
+    useImageCmd: z.boolean().optional(),
+    capabilities: containerCapabilitiesSchema.optional()
 }).strict();
 
 const updateContainerSchema = z.object({
@@ -53,10 +58,22 @@ const updateContainerSchema = z.object({
     ports: z.array(portMappingSchema).optional()
 }).strict();
 
+const createContainerXrdpSessionSchema = z.object({
+    username: z.string().min(1),
+    password: z.string().min(1),
+    width: z.number().int().positive().max(8192).optional(),
+    height: z.number().int().positive().max(4320).optional(),
+    dpi: z.number().int().positive().max(300).optional()
+}).strict();
+
 export const containerValidation = {
     create: {
         params: byTeamParamsSchema,
         body: createContainerSchema
+    },
+    createXrdpSession: {
+        params: byContainerParamsSchema,
+        body: createContainerXrdpSessionSchema
     },
     update: {
         params: byContainerParamsSchema,

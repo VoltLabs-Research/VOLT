@@ -16,7 +16,7 @@ import type { GetSubListingInputDTO, GetSubListingOutputDTO } from '../../api/dt
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
 
 // ---------------------------------------------------------------------------
-// buildKeys — hierarchical keys with prefix support
+// buildKeys - hierarchical keys with prefix support
 // ---------------------------------------------------------------------------
 
 const listingKeys = buildKeys<{
@@ -34,7 +34,7 @@ const subListingInfiniteKeys = buildKeys<{
 }>(['plugins', 'subListing', 'infinite']);
 
 // ---------------------------------------------------------------------------
-// LISTING_QUERY_KEYS — public facade
+// LISTING_QUERY_KEYS - public facade
 // ---------------------------------------------------------------------------
 
 export const LISTING_QUERY_KEYS = {

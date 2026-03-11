@@ -1,6 +1,6 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
-import { setGetTeamId } from '@/app/core/http/client/VoltClient';
+import { setGetTeamId } from '@/app/core/http/utilities/create-client';
 import { resetTeamSessionState, useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
@@ -58,10 +58,8 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     const hasTeam = !!selectedTeamId;
     const isStartRoute = location.pathname === '/start';
     const isTeamInvitationRoute = location.pathname.startsWith('/team-invitation/');
-    const isClusterOnboardingRoute = location.pathname === '/onboarding/cluster/setup';
-    const isDashboardRoute = location.pathname === '/dashboard' || location.pathname.startsWith('/dashboard/');
-    const canAccessWithoutSelectedTeam = isStartRoute || isTeamInvitationRoute;
-    const canAccessWithoutCluster = canAccessWithoutSelectedTeam || isClusterOnboardingRoute;
+    const isOnboardingRoute = location.pathname === '/onboarding' || location.pathname.startsWith('/onboarding/');
+    const canAccessWithoutSelectedTeam = isStartRoute || isTeamInvitationRoute || isOnboardingRoute;
 
     const renderProtectedContent = (content: ReactNode) => {
         return (
@@ -111,24 +109,18 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
         if(!hasTeam){
             if (teams.length === 0) {
-                if (isDashboardRoute) {
-                    return renderProtectedContent(<Outlet />);
-                }
-
-                return renderProtectedContent(<Navigate to='/dashboard' replace />);
+                return renderProtectedContent(<Navigate to='/onboarding' replace />);
             }
 
             return renderProtectedContent(<Loader scale={0.6} />);
         }
 
-        if (!canAccessWithoutCluster) {
-            if (isClusterCheckLoading) {
-                return renderProtectedContent(<Loader scale={0.6} />);
-            }
+        if (isClusterCheckLoading) {
+            return renderProtectedContent(<Loader scale={0.6} />);
+        }
 
-            if (shouldRedirectToOnboarding) {
-                return renderProtectedContent(<Navigate to='/onboarding/cluster/setup' replace />);
-            }
+        if (shouldRedirectToOnboarding) {
+            return renderProtectedContent(<Navigate to='/onboarding/cluster/setup' replace />);
         }
 
         return renderProtectedContent(<Outlet />);

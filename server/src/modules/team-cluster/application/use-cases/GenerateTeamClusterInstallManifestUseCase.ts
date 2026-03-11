@@ -25,6 +25,7 @@ export default class GenerateTeamClusterInstallManifestUseCase implements IUseCa
             const manifest = await this.teamClusterInstallManifestService.generateInstallManifest(
                 input.teamClusterId,
                 input.daemonPassword,
+                input.installRoot,
                 input.ports
             );
 

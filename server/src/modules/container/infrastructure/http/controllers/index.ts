@@ -1,4 +1,5 @@
 import CreateContainerController from './CreateContainerController';
+import CreateContainerXrdpSessionController from './CreateContainerXrdpSessionController';
 import DeleteContainerByIdController from './DeleteContainerByIdController';
 import GetContainerByIdController from './GetContainerByIdController';
 import GetContainerFilesByIdController from './GetContainerFilesByIdController';
@@ -11,6 +12,7 @@ import { createControllerRegistry } from '@shared/infrastructure/di/create-contr
 
 export default createControllerRegistry({
     create: CreateContainerController,
+    createXrdpSession: CreateContainerXrdpSessionController,
     deleteById: DeleteContainerByIdController,
     getById: GetContainerByIdController,
     getFilesById: GetContainerFilesByIdController,

@@ -1,23 +1,36 @@
 import './DashboardInAppActivity.css';
+import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import Container from '@/shared/presentation/components/Container';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
 import { useMemo } from 'react';
 import {
-    PolarGrid,
     PolarAngleAxis,
+    PolarGrid,
     Radar,
     RadarChart,
     ResponsiveContainer,
     Tooltip
 } from 'recharts';
-import type { TooltipContentProps } from 'recharts';
 
 interface DashboardInAppActivityBucket {
     minutes: number;
     actions: number;
     count: number;
+};
+
+interface DashboardChartTooltipEntry {
+    color?: string;
+    dataKey?: string;
+    name?: string;
+    value?: number | string;
+};
+
+interface DashboardChartTooltipProps {
+    active?: boolean;
+    label?: string | number;
+    payload?: readonly unknown[];
 };
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -52,6 +65,10 @@ const toMondayIndex = (jsDay: number): number => {
     }
 
     return mondayIndex;
+};
+
+const isDashboardChartTooltipEntry = (value: unknown): value is DashboardChartTooltipEntry => {
+    return typeof value === 'object' && value !== null;
 };
 
 const DashboardInAppActivity = () => {
@@ -99,7 +116,6 @@ const DashboardInAppActivity = () => {
             };
         });
 
-        // Find peak day
         let peakIdx = 0;
         let peakVal = 0;
         data.forEach((d, i) => {
@@ -117,13 +133,17 @@ const DashboardInAppActivity = () => {
         };
     }, [activityData]);
 
-    const renderTooltip = ({ active, payload, label }: TooltipContentProps<number, string>) => {
-        if (!active || !payload?.length) return null;
+    const renderTooltip = ({ active, payload, label }: DashboardChartTooltipProps) => {
+        if (!active || !Array.isArray(payload) || payload.length < 1) return null;
 
         return (
             <div className='dashboard-chart-tooltip'>
                 <span className='dashboard-chart-tooltip-label'>{label}</span>
                 {payload.map((entry, i: number) => {
+                    if (!isDashboardChartTooltipEntry(entry)) {
+                        return null;
+                    }
+
                     let value = entry.value;
                     if (entry.dataKey === 'minutes' && typeof entry.value === 'number') {
                         value = formatMinutes(entry.value);
@@ -145,20 +165,20 @@ const DashboardInAppActivity = () => {
 
     if (accessDenied) {
         return (
-            <Container className='dashboard-inapp-activity-card'>
+            <DashboardCard className='dashboard-inapp-activity-card d-flex column'>
                 <RecoveryState
                     title='Access denied'
                     description={accessDeniedMessage ?? 'You do not have permission to view in-app activity.'}
                     tone={RecoveryStateTone.AccessDenied}
                     className='dashboard-card-state'
                 />
-            </Container>
+            </DashboardCard>
         );
     }
 
     if (error) {
         return (
-            <Container className='dashboard-inapp-activity-card'>
+            <DashboardCard className='dashboard-inapp-activity-card d-flex column'>
                 <RecoveryState
                     title='Unable to load in-app activity'
                     description={error}
@@ -168,18 +188,18 @@ const DashboardInAppActivity = () => {
                     }}
                     className='dashboard-card-state'
                 />
-            </Container>
+            </DashboardCard>
         );
     }
 
     if (isLoading) {
         return (
-            <Container className='dashboard-inapp-activity-card'>
+            <DashboardCard className='dashboard-inapp-activity-card d-flex column'>
                 <Container className='dashboard-inapp-activity-header'>
                     <Title className='font-size-3 color-primary font-weight-5'>In-app Activity</Title>
                 </Container>
                 <Container className='dashboard-inapp-activity-inner d-flex flex-center' />
-            </Container>
+            </DashboardCard>
         );
     }
 
@@ -230,7 +250,7 @@ const DashboardInAppActivity = () => {
     }
 
     return (
-        <Container className='dashboard-inapp-activity-card'>
+        <DashboardCard className='dashboard-inapp-activity-card d-flex column'>
             <Container className='dashboard-inapp-activity-header'>
                 <Title className='font-size-3 color-primary font-weight-5'>In-app Activity</Title>
                 <span className='font-size-1 color-muted'>Avg / day of week</span>
@@ -256,7 +276,7 @@ const DashboardInAppActivity = () => {
                     </Container>
                 </Container>
             )}
-        </Container>
+        </DashboardCard>
     );
 };
 

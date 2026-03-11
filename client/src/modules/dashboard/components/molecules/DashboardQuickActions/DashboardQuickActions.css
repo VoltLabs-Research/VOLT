@@ -1,11 +1,6 @@
 .dashboard-actions-card {
     grid-column: span 4;
-    background: var(--color-surface-1);
-    border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-xl);
     padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
 }
 
 .dashboard-action-item {

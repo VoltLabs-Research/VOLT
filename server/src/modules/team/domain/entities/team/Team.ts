@@ -14,6 +14,7 @@ export interface TeamProps {
     trajectories?: string[];
     chats?: string[];
     plugins?: string[];
+    inviteCode?: string;
     createdAt: Date;
     updatedAt: Date;
 };

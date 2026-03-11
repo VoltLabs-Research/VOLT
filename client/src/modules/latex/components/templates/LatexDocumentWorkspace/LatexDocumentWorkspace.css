@@ -1,0 +1,137 @@
+.latex-workspace {
+    height: 100%;
+    background: var(--color-surface-1);
+}
+
+.latex-workspace__layout {
+    height: 100%;
+    min-height: 0;
+}
+
+/** Left panel - file tree */
+.latex-workspace__files {
+    width: 220px;
+    min-width: 160px;
+    max-width: 320px;
+    border-right: 1px solid var(--color-border-soft);
+    background: var(--color-surface-1);
+    overflow: hidden;
+}
+
+/** Center panel - Monaco editor */
+.latex-workspace__editor {
+    flex: 1;
+    min-width: 0;
+    border-right: 1px solid var(--color-border-soft);
+    background: var(--color-surface-2);
+    overflow: hidden;
+}
+
+.latex-workspace__editor-inner {
+    height: 100%;
+}
+
+/** Right panel - preview placeholder */
+.latex-workspace__preview {
+    width: 320px;
+    min-width: 200px;
+    background: var(--color-surface-1);
+    overflow: hidden;
+}
+
+.latex-workspace__preview-placeholder {
+    width: 100%;
+    height: 100%;
+}
+
+/** Toolbar */
+.latex-workspace__toolbar {
+    border-bottom: 1px solid var(--color-border-soft);
+    padding: 0 0.75rem;
+    height: 40px;
+    background: var(--color-surface-1);
+}
+
+.latex-workspace__toolbar-title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 320px;
+}
+
+.latex-workspace__dirty-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    flex-shrink: 0;
+}
+
+/** File row in left panel */
+.latex-workspace__file-row {
+    padding: 0.45rem 0.75rem;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.latex-workspace__file-row:hover {
+    background: var(--hover-bg);
+}
+
+.latex-workspace__file-row.is-selected {
+    background: var(--color-surface-2);
+}
+
+.latex-workspace__file-name {
+    font-size: 0.8125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-secondary);
+}
+
+.latex-workspace__file-row.is-selected .latex-workspace__file-name {
+    color: var(--color-text-primary);
+}
+
+/** Collaborator avatar stack in the toolbar */
+.latex-workspace__collaborators {
+    gap: -0.25rem;
+}
+
+.latex-workspace__collaborator-avatar {
+    border: 2px solid var(--color-surface-1);
+    margin-left: -0.375rem;
+}
+
+.latex-workspace__collaborator-avatar:first-child {
+    margin-left: 0;
+}
+
+.latex-workspace__assets-section {
+    border-top: 1px solid var(--color-border-soft);
+    min-height: 0;
+    flex: 1;
+}
+
+.latex-workspace__assets-header {
+    padding: 0.4rem 0.75rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    flex-shrink: 0;
+}
+
+.latex-workspace__asset-row {
+    padding: 0.35rem 0.5rem 0.35rem 0.75rem;
+    transition: background 0.12s;
+}
+
+.latex-workspace__asset-row:hover {
+    background: var(--hover-bg);
+}
+
+.latex-workspace__asset-meta {
+    font-size: 0.6875rem;
+    white-space: nowrap;
+}

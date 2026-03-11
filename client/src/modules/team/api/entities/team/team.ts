@@ -5,4 +5,5 @@ export interface Team extends BaseEntity {
     name: string;
     description?: string;
     owner: User;
+    inviteCode?: string;
 };

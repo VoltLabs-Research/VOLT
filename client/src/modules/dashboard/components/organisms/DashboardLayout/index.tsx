@@ -1,6 +1,7 @@
 import DashboardHeader from '@/modules/dashboard/components/molecules/DashboardHeader';
 import DashboardSidebar from '@/modules/dashboard/components/organisms/DashboardSidebar';
 import { TeamCreatorModal } from '@/modules/team/components/organisms/TeamCreatorModal';
+import { JoinTeamModal } from '@/modules/team/components/organisms/JoinTeamModal';
 import Container from '@/shared/presentation/components/Container';
 import PageTransition from '@/shared/presentation/components/PageTransition';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
@@ -42,6 +43,16 @@ const DashboardLayout = () => {
         });
     }, []);
 
+    const expandSidebar = useCallback(() => {
+        setSidebarCollapsed((prev) => {
+            if (prev) {
+                localStorage.setItem(SIDEBAR_COLLAPSED_KEY, 'false');
+                return false;
+            }
+            return prev;
+        });
+    }, []);
+
     // Allow other modules (e.g. AI spreadsheet panel) to programmatically
     // collapse / restore the sidebar via custom DOM events.
     useEffect(() => {
@@ -52,7 +63,7 @@ const DashboardLayout = () => {
                     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, 'true');
                     return true;
                 }
-                // Already collapsed — nothing to remember
+                // Already collapsed - nothing to remember
                 collapsedBeforeOverride.current = null;
                 return prev;
             });
@@ -90,6 +101,7 @@ const DashboardLayout = () => {
     return (
         <main className={`dashboard-main d-flex vh-max ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
             <TeamCreatorModal isRequired={teams.length === 0} />
+            <JoinTeamModal />
 
             {/* Sidebar Overlay for Mobile */}
             <Container
@@ -102,6 +114,7 @@ const DashboardLayout = () => {
                 setSidebarOpen={setSidebarOpen}
                 collapsed={sidebarCollapsed}
                 onToggleCollapse={toggleSidebarCollapsed}
+                onExpandSidebar={expandSidebar}
             />
 
             <Container className='dashboard-content-wrapper'>
