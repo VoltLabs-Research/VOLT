@@ -1,15 +1,29 @@
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
+
+export interface NativeBoxBounds {
+    xlo: number;
+    xhi: number;
+    ylo: number;
+    yhi: number;
+    zlo: number;
+    zhi: number;
+};
+
+export interface NativeTrajectoryMetadata {
+    timestep: number;
+    natoms: number;
+    headers: string[];
+    boxBounds?: NativeBoxBounds;
+};
 
 export interface NativeDumpResult {
     positions: Float32Array;
     types: Uint16Array;
     ids?: Uint32Array;
+    /** Additional per-atom columns returned by the dump parser when requested and available. */
     properties?: Record<string, Float32Array>;
-    metadata: {
-        timestep: number;
-        natoms: number;
-        headers: string[];
-    };
+    metadata: NativeTrajectoryMetadata;
     min: [number, number, number];
     max: [number, number, number];
 };
@@ -18,17 +32,14 @@ export interface NativeDataResult {
     positions: Float32Array;
     types: Uint16Array;
     ids?: Uint32Array;
-    metadata: {
-        timestep: number;
-        natoms: number;
-        headers: string[];
-    };
+    metadata: NativeTrajectoryMetadata;
     min: [number, number, number];
     max: [number, number, number];
 };
 
 export interface ParseOptions {
     includeIds?: boolean;
+    /** Additional dump columns to materialize beyond the built-in id/type/x/y/z fields. */
     properties?: string[];
 };
 
@@ -127,6 +138,18 @@ export interface RasterizePreviewInput {
     outputObjectKey: string;
 };
 
+interface LammpsIoModule {
+    dataParser: NativeDataParserModule;
+    dumpParser: NativeDumpParserModule;
+    statsParser: NativeStatsModule;
+};
+
+export const NATIVE_PROCESSING_RUNTIME_DIR = path.join(process.cwd(), '.runtime', 'native-processing');
+
+export const createNativeProcessingTempPath = (extension: string): string => {
+    return path.join(NATIVE_PROCESSING_RUNTIME_DIR, `${randomUUID()}${extension}`);
+};
+
 export interface NativeDumpParserModule {
     parseDump(filePath: string, options: ParseOptions): NativeDumpResult | undefined;
 };
@@ -219,18 +242,12 @@ export interface NativeRasterizerOptions {
 };
 
 export class NativeModuleLoader {
-    private dumpParserModule: NativeDumpParserModule | null = null;
-    private dataParserModule: NativeDataParserModule | null = null;
-    private statsModule: NativeStatsModule | null = null;
+    private lammpsIoModule: LammpsIoModule | null = null;
     private exporterModule: NativeExporterModule | null = null;
     private rasterizerModule: NativeRasterizerModule | null = null;
 
     getDumpParserModule(): NativeDumpParserModule {
-        if (!this.dumpParserModule) {
-            this.dumpParserModule = require(this.getNativeModulePath('dump_parser.node'));
-        }
-
-        const module = this.dumpParserModule;
+        const module = this.getLammpsIoModule().dumpParser;
         if (!module) {
             throw new Error('Native dump parser module is not available');
         }
@@ -239,11 +256,7 @@ export class NativeModuleLoader {
     }
 
     getDataParserModule(): NativeDataParserModule {
-        if (!this.dataParserModule) {
-            this.dataParserModule = require(this.getNativeModulePath('data_parser.node'));
-        }
-
-        const module = this.dataParserModule;
+        const module = this.getLammpsIoModule().dataParser;
         if (!module) {
             throw new Error('Native data parser module is not available');
         }
@@ -252,11 +265,7 @@ export class NativeModuleLoader {
     }
 
     getStatsModule(): NativeStatsModule {
-        if (!this.statsModule) {
-            this.statsModule = require(this.getNativeModulePath('stats_parser.node'));
-        }
-
-        const module = this.statsModule;
+        const module = this.getLammpsIoModule().statsParser;
         if (!module) {
             throw new Error('Native stats module is not available');
         }
@@ -266,7 +275,7 @@ export class NativeModuleLoader {
 
     getExporterModule(): NativeExporterModule {
         if (!this.exporterModule) {
-            this.exporterModule = require(this.getNativeModulePath('glb_exporter.node'));
+            this.exporterModule = this.loadPackage('@voltstack/spatial-assembler');
         }
 
         const module = this.exporterModule;
@@ -279,7 +288,7 @@ export class NativeModuleLoader {
 
     getRasterizerModule(): NativeRasterizerModule {
         if (!this.rasterizerModule) {
-            this.rasterizerModule = require(this.getNativeModulePath('rasterizer.node'));
+            this.rasterizerModule = this.loadPackage('@voltstack/headless-rasterizer');
         }
 
         const module = this.rasterizerModule;
@@ -290,7 +299,26 @@ export class NativeModuleLoader {
         return module;
     }
 
-    private getNativeModulePath(fileName: string): string {
-        return path.resolve(process.cwd(), 'native', 'build', 'Release', fileName);
+    private getLammpsIoModule(): LammpsIoModule {
+        if (!this.lammpsIoModule) {
+            this.lammpsIoModule = this.loadPackage('@voltstack/lammps-io');
+        }
+
+        const module = this.lammpsIoModule;
+        if (!module) {
+            throw new Error('LAMMPS native module package is not available');
+        }
+
+        return module;
+    }
+
+    private loadPackage<T>(packageName: string): T {
+        const loadedPackage = require(packageName);
+
+        if (loadedPackage?.default) {
+            return loadedPackage.default;
+        }
+
+        return loadedPackage;
     }
 };
