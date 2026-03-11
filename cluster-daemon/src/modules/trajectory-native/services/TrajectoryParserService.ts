@@ -1,6 +1,8 @@
 import { calculatePaginationOffset, ObjectBucketName, normalizePagination } from '@/shared/contracts';
 import { MinioService } from '@/modules/platform/services';
 import {
+    createNativeProcessingTempPath,
+    NATIVE_PROCESSING_RUNTIME_DIR,
     NativeModuleLoader,
     type NativeAtomsPageRequest,
     type NativeAtomsPageResponse,
@@ -13,18 +15,10 @@ import {
     type NativeDataResult,
     type NativeDumpResult
 } from './NativeModuleLoader';
-import { randomUUID } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import zlib from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
-
-const RUNTIME_DIR = path.join(process.cwd(), '../../native/.runtime', 'native-processing');
-
-const createTempPath = (extension: string): string => {
-    return path.join(RUNTIME_DIR, `${randomUUID()}${extension}`);
-};
 
 const getDumpObjectKey = (trajectoryId: string, timestep: number): string => {
     return `trajectory-${trajectoryId}/timestep-${timestep}.dump.gz`;
@@ -191,11 +185,11 @@ export const createTrajectoryParserService = (
     },
 
     async withDumpFile<T>(input: NativeTrajectoryRequest, action: (dumpPath: string) => Promise<T>): Promise<T> {
-        await fs.mkdir(RUNTIME_DIR, {
+        await fs.mkdir(NATIVE_PROCESSING_RUNTIME_DIR, {
             recursive: true
         });
 
-        const tempDumpPath = createTempPath('.dump');
+        const tempDumpPath = createNativeProcessingTempPath('.dump');
         const objectKey = input.objectKey || getDumpObjectKey(input.trajectoryId, input.timestep);
 
         try {

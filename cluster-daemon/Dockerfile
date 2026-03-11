@@ -18,11 +18,8 @@ RUN apt-get update \
         libtbbmalloc2 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY package.json ./
-COPY native/package.json ./native/package.json
-COPY native ./native
-RUN npm install
-RUN npm --prefix native install
+COPY package.json package-lock.json ./
+RUN npm ci
 
 COPY tsconfig.json ./
 COPY src ./src

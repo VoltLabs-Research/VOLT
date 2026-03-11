@@ -1,5 +1,3 @@
 node_modules
 dist
 npm-debug.log
-native/node_modules
-native/build
