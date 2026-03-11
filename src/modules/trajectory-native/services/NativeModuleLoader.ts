@@ -378,7 +378,10 @@ export class NativeModuleLoader {
             {
                 arch: process.arch,
                 cwd: process.cwd(),
+                execPath: process.execPath,
+                napiVersion: process.versions.napi,
                 nodeVersion: process.version,
+                nodeModuleVersion: process.versions.modules,
                 pid: process.pid,
                 platform: process.platform
             },
@@ -401,7 +404,7 @@ export class NativeModuleLoader {
             );
         }
 
-        let resolvedPath = packageName;
+        let resolvedPath: string = packageName;
 
         try {
             resolvedPath = require.resolve(packageName);

@@ -341,6 +341,21 @@ done`, '--', normalizedDirectoryPath]);
         return this.execute(containerId, command, stdin);
     }
 
+    async execDetached(containerId: string, command: string[]): Promise<void> {
+        const container = this.docker.getContainer(containerId);
+        const dockerExec = await container.exec({
+            Cmd: command,
+            AttachStdout: false,
+            AttachStderr: false,
+            AttachStdin: false
+        });
+
+        await dockerExec.start({
+            Detach: true,
+            Tty: false
+        });
+    }
+
     /**
      * Unconditionally pulls an image from a registry, bypassing any local cache check.
      * Use this for updates where a fresh copy is always required.

@@ -693,7 +693,7 @@ PY
 )"
 
     log 'Starting Team Cluster stack'
-    run_stack_shell "cd '$INSTALL_DIR' && docker compose --project-name '$compose_project_name' --project-directory '$INSTALL_DIR' --file '$INSTALL_DIR/docker-compose.yml' up -d"
+    run_stack_shell "cd '$INSTALL_DIR' && if [ -d '$INSTALL_DIR/cluster-daemon' ]; then docker compose --project-name '$compose_project_name' --project-directory '$INSTALL_DIR' --file '$INSTALL_DIR/docker-compose.yml' up -d --build; else docker compose --project-name '$compose_project_name' --project-directory '$INSTALL_DIR' --file '$INSTALL_DIR/docker-compose.yml' up -d; fi"
 }
 
 wait_for_daemon_ready() {

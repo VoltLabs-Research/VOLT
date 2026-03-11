@@ -1,4 +1,5 @@
 import { ObjectBucketName } from '@/shared/contracts';
+import { logger } from '@/core/logger';
 import {
     NativeModuleOperation
 } from './NativeModuleLoader';
@@ -24,6 +25,16 @@ export const createGlbExporterService = (
             timestep: input.timestep,
             trajectoryId: input.trajectoryId
         });
+        const startTime = Date.now();
+
+        logger.info(
+            {
+                objectKey: input.objectKey,
+                timestep: input.timestep,
+                trajectoryId: input.trajectoryId
+            },
+            'Starting native trajectory preprocessing'
+        );
         await trajectoryParserService.withDumpFile(input, async (dumpPath) => {
             const parsed = trajectoryParserService.parseTrajectory(dumpPath);
             const tempGlbPath = `${dumpPath}.glb`;
@@ -32,6 +43,25 @@ export const createGlbExporterService = (
             const previewObjectKey = trajectoryParserService.getPreviewObjectKey(input.trajectoryId, input.timestep);
 
             try {
+                logger.info(
+                    {
+                        atomCount: parsed.metadata.natoms,
+                        dumpPath,
+                        headers: parsed.metadata.headers,
+                        tempGlbPath,
+                        timestep: parsed.metadata.timestep,
+                        trajectoryId: input.trajectoryId
+                    },
+                    'Parsed trajectory ready for native GLB export'
+                );
+                logger.info(
+                    {
+                        tempGlbPath,
+                        timestep: input.timestep,
+                        trajectoryId: input.trajectoryId
+                    },
+                    'Invoking native GLB exporter'
+                );
                 const exported = nativeModuleLoader.getExporterModule().generateGLBToFile(
                     parsed.positions,
                     parsed.types,
@@ -43,6 +73,19 @@ export const createGlbExporterService = (
                     throw new Error('Failed to export trajectory GLB');
                 }
 
+                const glbStats = await fs.stat(tempGlbPath);
+                logger.info(
+                    {
+                        durationMs: Date.now() - startTime,
+                        modelObjectKey,
+                        sizeBytes: glbStats.size,
+                        tempGlbPath,
+                        timestep: input.timestep,
+                        trajectoryId: input.trajectoryId
+                    },
+                    'Native GLB export completed'
+                );
+
                 const glbBuffer = await fs.readFile(tempGlbPath);
                 await minioService.putObject({
                     bucket: ObjectBucketName.Models,
@@ -52,7 +95,25 @@ export const createGlbExporterService = (
                         'Content-Type': 'model/gltf-binary'
                     }
                 });
+                logger.info(
+                    {
+                        modelObjectKey,
+                        timestep: input.timestep,
+                        trajectoryId: input.trajectoryId
+                    },
+                    'Uploaded generated GLB artifact'
+                );
 
+                logger.info(
+                    {
+                        previewObjectKey,
+                        tempGlbPath,
+                        tempPngPath,
+                        timestep: input.timestep,
+                        trajectoryId: input.trajectoryId
+                    },
+                    'Starting native rasterization for generated GLB'
+                );
                 await rasterizerService.rasterizeLocalGlb(tempGlbPath, tempPngPath);
 
                 const pngBuffer = await fs.readFile(tempPngPath);
@@ -65,6 +126,15 @@ export const createGlbExporterService = (
                         'Cache-Control': 'public, max-age=86400'
                     }
                 });
+                logger.info(
+                    {
+                        durationMs: Date.now() - startTime,
+                        previewObjectKey,
+                        timestep: input.timestep,
+                        trajectoryId: input.trajectoryId
+                    },
+                    'Completed native trajectory preprocessing'
+                );
             } finally {
                 await Promise.all([
                     fs.unlink(tempGlbPath).catch(() => {}),

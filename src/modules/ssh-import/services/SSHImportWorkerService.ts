@@ -139,11 +139,32 @@ export class SSHImportWorkerService {
                     }
                 });
 
+                logger.info(
+                    {
+                        filePath: file.path,
+                        natoms: metadata.natoms,
+                        objectKey,
+                        sourceSizeBytes: file.size,
+                        timestep: metadata.timestep,
+                        trajectoryId: job.trajectoryId
+                    },
+                    'Starting native preprocessing for imported trajectory frame'
+                );
+
                 await this.glbExporterService.preprocessTrajectory({
                     trajectoryId: job.trajectoryId,
                     timestep: metadata.timestep,
                     objectKey
                 });
+
+                logger.info(
+                    {
+                        objectKey,
+                        timestep: metadata.timestep,
+                        trajectoryId: job.trajectoryId
+                    },
+                    'Finished native preprocessing for imported trajectory frame'
+                );
 
                 frames.push({
                     timestep: metadata.timestep,

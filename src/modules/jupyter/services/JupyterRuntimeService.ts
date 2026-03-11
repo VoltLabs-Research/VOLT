@@ -193,12 +193,35 @@ export class JupyterRuntimeService {
     private async ensureJupyterServer(containerId: string, hostPort: number, publicBasePath: string): Promise<boolean> {
         try {
             await this.dockerRuntimeService.exec(containerId, ['/bin/sh', '-lc', this.getStopCommand()]);
-            await this.dockerRuntimeService.exec(containerId, ['/bin/sh', '-lc', this.getStartCommand(publicBasePath)]);
+            await this.dockerRuntimeService.exec(containerId, ['/bin/sh', '-lc', 'rm -f /tmp/volt-jupyter.log']);
+            await this.dockerRuntimeService.execDetached(containerId, ['/bin/sh', '-lc', this.getStartCommand(publicBasePath)]);
         } catch (error: unknown) {
             logger.warn({ err: error, containerId }, 'Failed to start Jupyter server inside container');
         }
 
-        return this.waitForJupyterReady(hostPort, publicBasePath, this.config.jupyter.startTimeoutMs);
+        const ready = await this.waitForJupyterReady(hostPort, publicBasePath, this.config.jupyter.startTimeoutMs);
+        if (!ready) {
+            try {
+                const jupyterLog = await this.dockerRuntimeService.exec(containerId, [
+                    '/bin/sh',
+                    '-lc',
+                    'tail -n 100 /tmp/volt-jupyter.log 2>/dev/null || true'
+                ]);
+                logger.warn(
+                    {
+                        containerId,
+                        hostPort,
+                        jupyterLog: jupyterLog.trim() || undefined,
+                        publicBasePath
+                    },
+                    'Jupyter server did not become ready before timeout'
+                );
+            } catch (error: unknown) {
+                logger.warn({ err: error, containerId }, 'Failed to collect Jupyter startup log output');
+            }
+        }
+
+        return ready;
     }
 
     private async isJupyterReady(hostPort: number, publicBasePath: string, timeoutMs: number): Promise<boolean> {
@@ -264,14 +287,14 @@ export class JupyterRuntimeService {
     }
 
     private getStopCommand(): string {
-        return "pkill -f 'python3 -m jupyter lab' >/dev/null 2>&1 || true";
+        return "pkill -f '[p]ython3 -m jupyter lab' >/dev/null 2>&1 || true";
     }
 
     private getStartCommand(publicBasePath: string): string {
         return [
             `mkdir -p "${this.config.jupyter.notebookRoot}"`,
             '&&',
-            'nohup python3 -m jupyter lab',
+            'exec python3 -m jupyter lab',
             '--ip=0.0.0.0',
             `--port=${this.config.jupyter.port}`,
             '--no-browser',
@@ -283,7 +306,7 @@ export class JupyterRuntimeService {
             `--ServerApp.root_dir="${this.config.jupyter.notebookRoot}"`,
             '--allow-root',
             `--ServerApp.tornado_settings='{"headers":{"Content-Security-Policy":"frame-ancestors ${this.config.jupyter.frameAncestors}"}}'`,
-            '> /tmp/volt-jupyter.log 2>&1 &'
+            '> /tmp/volt-jupyter.log 2>&1'
         ].join(' ');
     }
 };

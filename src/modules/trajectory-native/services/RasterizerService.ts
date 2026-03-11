@@ -1,4 +1,5 @@
 import { ObjectBucketName } from '@/shared/contracts';
+import { logger } from '@/core/logger';
 import {
     createNativeProcessingTempPath,
     NATIVE_PROCESSING_RUNTIME_DIR,
@@ -57,6 +58,15 @@ export const createRasterizerService = (
             pngPath: tempPngPath,
             tempGlbPath
         });
+        const startTime = Date.now();
+
+        logger.info(
+            {
+                tempGlbPath,
+                tempPngPath
+            },
+            'Invoking native GLB rasterizer'
+        );
         const rasterized = nativeModuleLoader.getRasterizerModule().rasterize(
             tempGlbPath,
             tempPngPath,
@@ -74,5 +84,14 @@ export const createRasterizerService = (
         if (!rasterized) {
             throw new Error('Failed to rasterize trajectory preview');
         }
+
+        logger.info(
+            {
+                durationMs: Date.now() - startTime,
+                tempGlbPath,
+                tempPngPath
+            },
+            'Native GLB rasterizer completed'
+        );
     }
 });

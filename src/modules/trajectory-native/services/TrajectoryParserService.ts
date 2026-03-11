@@ -1,4 +1,5 @@
 import { calculatePaginationOffset, ObjectBucketName, normalizePagination } from '@/shared/contracts';
+import { logger } from '@/core/logger';
 import {
     createNativeProcessingTempPath,
     NATIVE_PROCESSING_RUNTIME_DIR,
@@ -204,10 +205,35 @@ export const createTrajectoryParserService = (
 
         const tempDumpPath = createNativeProcessingTempPath('.dump');
         const objectKey = input.objectKey || getDumpObjectKey(input.trajectoryId, input.timestep);
+        const startTime = Date.now();
+
+        logger.info(
+            {
+                objectKey,
+                tempDumpPath,
+                timestep: input.timestep,
+                trajectoryId: input.trajectoryId
+            },
+            'Preparing local dump file for native trajectory processing'
+        );
 
         try {
             const stream = await minioService.getObjectStream(ObjectBucketName.Dumps, objectKey);
             await pipeline(stream, zlib.createGunzip(), createWriteStream(tempDumpPath));
+            const dumpStats = await fs.stat(tempDumpPath);
+
+            logger.info(
+                {
+                    durationMs: Date.now() - startTime,
+                    objectKey,
+                    sizeBytes: dumpStats.size,
+                    tempDumpPath,
+                    timestep: input.timestep,
+                    trajectoryId: input.trajectoryId
+                },
+                'Local dump file ready for native trajectory processing'
+            );
+
             return await action(tempDumpPath);
         } finally {
             await fs.unlink(tempDumpPath).catch(() => {});
@@ -218,21 +244,78 @@ export const createTrajectoryParserService = (
         nativeModuleLoader.traceOperation(NativeModuleOperation.ParseTrajectory, {
             filePath
         });
+        const parseStart = Date.now();
+
+        logger.info(
+            {
+                filePath,
+                includeIds: options.includeIds ?? false,
+                requestedProperties: options.properties ?? []
+            },
+            'Starting native trajectory parse'
+        );
+
+        logger.info(
+            {
+                filePath
+            },
+            'Invoking native dump parser'
+        );
         const dumpResult = nativeModuleLoader.getDumpParserModule().parseDump(filePath, {
             includeIds: options.includeIds,
             properties: options.properties
         });
         if (dumpResult) {
+            logger.info(
+                {
+                    atomCount: dumpResult.metadata.natoms,
+                    durationMs: Date.now() - parseStart,
+                    filePath,
+                    format: 'dump',
+                    headers: dumpResult.metadata.headers,
+                    timestep: dumpResult.metadata.timestep
+                },
+                'Native trajectory parse completed with dump parser'
+            );
             return toParsedDumpResult(dumpResult);
         }
 
+        logger.warn(
+            {
+                filePath
+            },
+            'Native dump parser returned no result, falling back to native data parser'
+        );
+        logger.info(
+            {
+                filePath
+            },
+            'Invoking native data parser'
+        );
         const dataResult = nativeModuleLoader.getDataParserModule().parseData(filePath, {
             includeIds: options.includeIds
         });
         if (dataResult) {
+            logger.info(
+                {
+                    atomCount: dataResult.metadata.natoms,
+                    durationMs: Date.now() - parseStart,
+                    filePath,
+                    format: 'data',
+                    timestep: dataResult.metadata.timestep
+                },
+                'Native trajectory parse completed with data parser'
+            );
             return toParsedDataResult(dataResult);
         }
 
+        logger.error(
+            {
+                durationMs: Date.now() - parseStart,
+                filePath
+            },
+            'Native trajectory parse failed for all supported formats'
+        );
         throw new Error('Unsupported trajectory format');
     },
 
