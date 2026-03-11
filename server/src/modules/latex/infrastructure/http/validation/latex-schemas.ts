@@ -22,7 +22,8 @@ const fileParamsSchema = documentParamsSchema.extend({
 
 const createDocumentBodySchema = z.object({
     title: z.string().trim().min(1).max(255),
-    content: z.string().optional()
+    content: z.string().optional(),
+    folderId: objectIdSchema.nullable().optional()
 }).strict();
 
 const updateDocumentBodySchema = z.object({
@@ -98,7 +99,10 @@ export const latexValidation = {
         params: documentParamsSchema
     },
     importDocument: {
-        params: teamParamsSchema
+        params: teamParamsSchema,
+        body: z.object({
+            folderId: objectIdSchema.nullable().optional()
+        }).strict()
     },
     compileDocument: {
         params: documentParamsSchema
@@ -133,6 +137,9 @@ export const latexValidation = {
             parentId: z.string().optional()
         })
     },
+    getFolder: {
+        params: folderParamsSchema
+    },
     updateFolder: {
         params: folderParamsSchema,
         body: z.object({
@@ -149,5 +156,3 @@ export const latexValidation = {
         }).strict()
     }
 };
-
-

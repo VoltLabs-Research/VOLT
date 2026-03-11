@@ -49,9 +49,9 @@ export const filterPersistableAppState = (
     return result;
 };
 
-export const createEmptyWhiteboardsResponse = (
+export const createEmptyWhiteboardsResponse = <T extends { _id: string }>(
     params: PaginationParams
-): PaginatedResponse<Whiteboard> => ({
+): PaginatedResponse<T> => ({
     status: 'success',
     data: [],
     pagination: {

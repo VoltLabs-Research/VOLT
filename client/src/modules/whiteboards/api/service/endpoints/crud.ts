@@ -6,6 +6,7 @@ import type { ListWhiteboardsParams } from '@/modules/whiteboards/api/dtos/list-
 import type { CreateWhiteboardParams } from '@/modules/whiteboards/api/dtos/create-whiteboard-params';
 import type { UpdateWhiteboardParams } from '@/modules/whiteboards/api/dtos/update-whiteboard-params';
 import type { DeleteWhiteboardParams } from '@/modules/whiteboards/api/dtos/delete-whiteboard-params';
+import type { MoveWhiteboardParams } from '@/modules/whiteboards/api/dtos/move-whiteboard-params';
 
 export interface WhiteboardIdParams {
     whiteboardId: string;
@@ -30,13 +31,16 @@ export interface UploadAssetResult {
 const endpoints = {
     listWhiteboards: paginated<ListWhiteboardsParams, PaginatedResponse<Whiteboard>>('/'),
     createWhiteboard: post<CreateWhiteboardParams, Whiteboard>('/', {
-        body: ({ title }) => ({ title })
+        body: ({ title, folderId }) => ({ title, folderId })
     }),
     getWhiteboard: get<WhiteboardIdParams, Whiteboard>('/:whiteboardId'),
     updateWhiteboard: patch<UpdateWhiteboardParams, Whiteboard>('/:whiteboardId', {
         body: ({ title }) => ({ title })
     }),
     deleteWhiteboard: del<DeleteWhiteboardParams>('/:whiteboardId'),
+    moveWhiteboard: patch<MoveWhiteboardParams, Whiteboard>('/:whiteboardId/folder', {
+        body: ({ folderId }) => ({ folderId })
+    }),
     getWhiteboardState: get<WhiteboardIdParams, unknown>('/:whiteboardId/state', { unwrap: 'raw' }),
     saveWhiteboardState: patch<SaveStateParams, void>('/:whiteboardId/state', {
         body: ({ state }) => state as Record<string, unknown>

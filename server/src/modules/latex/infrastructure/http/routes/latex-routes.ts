@@ -27,6 +27,7 @@ export default createHttpModule({
         router.delete('/documents/:documentId/files/:fileId', latexControllers.deleteFile.handle);
         router.post('/documents/:documentId/files/:fileId/entrypoint', latexControllers.setFileEntrypoint.handle);
         router.get('/folders', latexControllers.listFolders.handle);
+        router.get('/folders/:folderId', latexControllers.getFolder.handle);
         router.post('/folders', latexControllers.createFolder.handle);
         router.patch('/folders/:folderId', latexControllers.updateFolder.handle);
         router.delete('/folders/:folderId', latexControllers.deleteFolder.handle);

@@ -1,8 +1,11 @@
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import { motion } from 'framer-motion';
+import { CSS } from '@dnd-kit/utilities';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import type { ColumnConfig, Identifiable } from '../DocumentListingTable';
 import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { CSSProperties } from 'react';
 
 interface TableRowProps<T extends Identifiable> {
     item: T;
@@ -12,9 +15,12 @@ interface TableRowProps<T extends Identifiable> {
     selectedItems: T[];
     isSelected: boolean;
     onClick: (event: React.MouseEvent, item: T) => void;
+    onItemClick?: (item: T, event: React.MouseEvent) => boolean;
     onContextMenu: (item: T) => void;
     useFlexDistribution: boolean;
     columnGap?: number;
+    draggableId?: string | null;
+    droppableId?: string | null;
 };
 
 const TableRow = <T extends Identifiable>({ 
@@ -25,29 +31,81 @@ const TableRow = <T extends Identifiable>({
     selectedItems,
     isSelected,
     onClick,
+    onItemClick,
     onContextMenu,
     useFlexDistribution,
-    columnGap = 16
+    columnGap = 16,
+    draggableId = null,
+    droppableId = null
 }: TableRowProps<T>) => {
     const menuOptions = getMenuOptions ? getMenuOptions(item, selectedItems) : [];
     const itemRecord = item as Record<string, unknown>;
     const getColumnKey = (col: ColumnConfig<T>): string => String(col.key ?? col.path ?? '');
     const getColumnTitle = (col: ColumnConfig<T>): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
+    const {
+        attributes,
+        listeners,
+        setNodeRef: setDraggableNodeRef,
+        transform,
+        isDragging
+    } = useDraggable({
+        id: draggableId ?? `document-listing-row-disabled-draggable:${item._id}`,
+        disabled: !draggableId
+    });
+    const {
+        setNodeRef: setDroppableNodeRef,
+        isOver
+    } = useDroppable({
+        id: droppableId ?? `document-listing-row-disabled-droppable:${item._id}`,
+        disabled: !droppableId
+    });
 
-    const rowStyle: React.CSSProperties = {
+    const rowStyle: CSSProperties = {
         display: 'flex',
         alignItems: 'center',
         justifyContent: useFlexDistribution ? 'space-between' : 'flex-start',
-        gap: useFlexDistribution ? undefined : `${columnGap}px`
+        gap: useFlexDistribution ? undefined : `${columnGap}px`,
+        transform: CSS.Translate.toString(transform),
+        zIndex: isDragging ? 10 : undefined
     };
+
+    const setRowNodeRef = (node: HTMLButtonElement | null) => {
+        setDraggableNodeRef(node);
+        setDroppableNodeRef(node);
+    };
+
+    const rowClassName = [
+        'document-listing-table-row-container',
+        'cursor-pointer',
+        'w-max',
+        isSelected ? 'is-selected' : '',
+        draggableId ? 'is-draggable' : '',
+        droppableId ? 'is-droppable' : '',
+        isDragging ? 'is-dragging' : '',
+        isOver ? 'is-drag-over' : ''
+    ].filter(Boolean).join(' ');
+
+    const dragListeners = draggableId ? listeners : undefined;
+    const dragAttributes = draggableId ? attributes : undefined;
 
     const content = (
         <motion.button
+            ref={setRowNodeRef}
             type='button'
             style={rowStyle}
-            className={`document-listing-table-row-container cursor-pointer w-max ${isSelected ? 'is-selected' : ''}`}
+            className={rowClassName}
             transition={{ duration: 0.1 }}
-            onClick={(event) => onClick(event, item)}
+            {...dragAttributes}
+            {...dragListeners}
+            onClick={(event) => {
+                const isHandled = onItemClick?.(item, event);
+
+                if (isHandled) {
+                    return;
+                }
+
+                onClick(event, item);
+            }}
             onContextMenu={() => onContextMenu(item)}
             aria-pressed={isSelected}
         >
@@ -83,7 +141,7 @@ const TableRow = <T extends Identifiable>({
         </motion.button>
     );
 
-    if(menuOptions.length === 0) return content;
+    if (menuOptions.length === 0) return content;
 
     return (
         <ContextMenuPopover id={`row-menu-${item._id}`} trigger={content} options={menuOptions} />

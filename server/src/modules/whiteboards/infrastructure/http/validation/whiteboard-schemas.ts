@@ -19,7 +19,8 @@ const assetParamsSchema = whiteboardParamsSchema.extend({
 }).strict();
 
 const createWhiteboardBodySchema = z.object({
-    title: z.string().trim().min(1).max(255)
+    title: z.string().trim().min(1).max(255),
+    folderId: objectIdSchema.nullable().optional()
 }).strict();
 
 const updateWhiteboardBodySchema = z.object({
@@ -75,6 +76,9 @@ export const whiteboardValidation = {
         query: createPaginationQuerySchema({ maxLimit: 500 }).extend({
             parentId: z.string().optional()
         })
+    },
+    getFolder: {
+        params: folderParamsSchema
     },
     updateFolder: {
         params: folderParamsSchema,

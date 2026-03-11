@@ -17,6 +17,7 @@ import { UpdateLatexFileUseCase } from '@modules/latex/application/use-cases/Upd
 import { DeleteLatexFileUseCase } from '@modules/latex/application/use-cases/DeleteLatexFileUseCase';
 import { SetLatexFileEntrypointUseCase } from '@modules/latex/application/use-cases/SetLatexFileEntrypointUseCase';
 import { CreateLatexFolderUseCase } from '@modules/latex/application/use-cases/CreateLatexFolderUseCase';
+import { GetLatexFolderUseCase } from '@modules/latex/application/use-cases/GetLatexFolderUseCase';
 import { ListLatexFoldersUseCase } from '@modules/latex/application/use-cases/ListLatexFoldersUseCase';
 import { UpdateLatexFolderUseCase } from '@modules/latex/application/use-cases/UpdateLatexFolderUseCase';
 import { DeleteLatexFolderUseCase } from '@modules/latex/application/use-cases/DeleteLatexFolderUseCase';
@@ -57,6 +58,7 @@ export const registerLatexDependencies = (): void => {
             DeleteLatexFileUseCase,
             SetLatexFileEntrypointUseCase,
             CreateLatexFolderUseCase,
+            GetLatexFolderUseCase,
             ListLatexFoldersUseCase,
             UpdateLatexFolderUseCase,
             DeleteLatexFolderUseCase,

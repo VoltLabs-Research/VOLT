@@ -6,6 +6,7 @@ import { inject, injectable } from 'tsyringe';
 import type { CreateLatexDocumentInputDTO, CreateLatexDocumentOutputDTO } from '@modules/latex/application/dtos/CreateLatexDocumentDTO';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
+import type { ILatexFolderRepository } from '@modules/latex/domain/port/ILatexFolderRepository';
 import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 
 const DEFAULT_DOCUMENT_CONTENT = '';
@@ -16,6 +17,9 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
     constructor(
         @inject(LATEX_TOKENS.LatexDocumentRepository)
         private readonly latexDocumentRepository: ILatexDocumentRepository,
+
+        @inject(LATEX_TOKENS.LatexFolderRepository)
+        private readonly latexFolderRepository: ILatexFolderRepository,
 
         @inject(LATEX_TOKENS.LatexFileRepository)
         private readonly latexFileRepository: ILatexFileRepository
@@ -34,11 +38,26 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
 
             const initialContent = input.content ?? DEFAULT_DOCUMENT_CONTENT;
 
+            if (input.folderId) {
+                const folder = await this.latexFolderRepository.findByTeamAndFolderId(
+                    input.teamId,
+                    input.folderId
+                );
+
+                if (!folder) {
+                    return Result.fail(ApplicationError.notFound(
+                        ErrorCodes.RESOURCE_NOT_FOUND,
+                        'Target LaTeX folder not found'
+                    ));
+                }
+            }
+
             const document = await this.latexDocumentRepository.create({
                 team: input.teamId,
                 title,
                 content: initialContent,
                 createdBy: input.userId,
+                folder: input.folderId ?? null,
                 createdAt: new Date(),
                 updatedAt: new Date()
             });

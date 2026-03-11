@@ -1,15 +1,18 @@
 import Container from '@/shared/presentation/components/Container';
 import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
+import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import TableRow from '@/shared/presentation/components/TableRow';
 import TableSkeletonRow from '@/shared/presentation/components/TableSkeletonRow';
 import Title from '@/shared/presentation/components/Title';
 import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
 import './DocumentListingTable.css';
+import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { FileText } from 'lucide-react';
 import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import React from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { DragEndEvent } from '@dnd-kit/core';
 
 const MIN_COLUMN_WIDTH = 180;
 const MAX_COLUMN_WIDTH = 280;
@@ -34,9 +37,11 @@ interface DocumentListingTableProps<T extends Identifiable> {
     columns: ColumnConfig<T>[];
     data: T[];
     onCellClick?: (col: ColumnConfig<T>) => void;
+    onItemClick?: (item: T, event: React.MouseEvent) => boolean;
     getCellTitle?: (col: ColumnConfig<T>) => React.ReactNode;
     isLoading?: boolean;
     getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
+    dragAndDrop?: DocumentListingDragAndDropConfig<T>;
     emptyMessage?: string;
     hasMore?: boolean;
     isFetchingMore?: boolean;
@@ -63,9 +68,11 @@ const DocumentListingTable = <T extends Identifiable>({
     columns,
     data,
     onCellClick = () => {},
+    onItemClick,
     getCellTitle = (col) => col.title,
     isLoading = false,
     getMenuOptions,
+    dragAndDrop,
     emptyMessage = 'No documents to show.',
     hasMore = false,
     isFetchingMore = false,
@@ -81,6 +88,13 @@ const DocumentListingTable = <T extends Identifiable>({
 }: DocumentListingTableProps<T>) => {
     const bodyRef = useRef<HTMLDivElement | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: dragAndDrop?.activationDistance ?? 6
+            }
+        })
+    );
 
     const columnWidths = useMemo(() => columns.map(getColumnWidth), [columns]);
     const minContentWidth = useMemo(() => {
@@ -139,6 +153,70 @@ const DocumentListingTable = <T extends Identifiable>({
         return data.filter((item) => selectedIds.has(item._id));
     }, [data, selectedIds]);
 
+    const draggableIdsByItemId = useMemo(() => {
+        const nextMap = new Map<string, string>();
+        if (!dragAndDrop) {
+            return nextMap;
+        }
+
+        data.forEach((item) => {
+            const draggableId = dragAndDrop.getDraggableId(item);
+            if (draggableId) {
+                nextMap.set(item._id, draggableId);
+            }
+        });
+
+        return nextMap;
+    }, [data, dragAndDrop]);
+
+    const droppableIdsByItemId = useMemo(() => {
+        const nextMap = new Map<string, string>();
+        if (!dragAndDrop) {
+            return nextMap;
+        }
+
+        data.forEach((item) => {
+            const droppableId = dragAndDrop.getDroppableId(item);
+            if (droppableId) {
+                nextMap.set(item._id, droppableId);
+            }
+        });
+
+        return nextMap;
+    }, [data, dragAndDrop]);
+
+    const draggableItemsById = useMemo(() => {
+        const nextMap = new Map<string, T>();
+        if (!dragAndDrop) {
+            return nextMap;
+        }
+
+        data.forEach((item) => {
+            const draggableId = dragAndDrop.getDraggableId(item);
+            if (draggableId) {
+                nextMap.set(draggableId, item);
+            }
+        });
+
+        return nextMap;
+    }, [data, dragAndDrop]);
+
+    const droppableItemsById = useMemo(() => {
+        const nextMap = new Map<string, T>();
+        if (!dragAndDrop) {
+            return nextMap;
+        }
+
+        data.forEach((item) => {
+            const droppableId = dragAndDrop.getDroppableId(item);
+            if (droppableId) {
+                nextMap.set(droppableId, item);
+            }
+        });
+
+        return nextMap;
+    }, [data, dragAndDrop]);
+
     const handleRowClick = useCallback((event: React.MouseEvent, item: T) => {
         const isMultiSelection = event.ctrlKey || event.metaKey;
 
@@ -166,6 +244,42 @@ const DocumentListingTable = <T extends Identifiable>({
             return new Set([item._id]);
         });
     }, []);
+
+    const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+        if (!dragAndDrop) {
+            return;
+        }
+
+        const activeId = String(event.active.id);
+        const overId = event.over ? String(event.over.id) : null;
+
+        await dragAndDrop.onDragEnd({
+            event,
+            activeId,
+            overId,
+            activeItem: draggableItemsById.get(activeId) ?? null,
+            overItem: overId ? droppableItemsById.get(overId) ?? null : null
+        });
+    }, [dragAndDrop, draggableItemsById, droppableItemsById]);
+
+    const rows = !hasNoData && data.map((item) => (
+        <TableRow
+            key={item._id}
+            item={item}
+            columns={columns}
+            columnWidths={columnWidths}
+            getMenuOptions={getMenuOptions}
+            selectedItems={selectedItems}
+            isSelected={selectedIds.has(item._id)}
+            onClick={handleRowClick}
+            onItemClick={onItemClick}
+            onContextMenu={handleRowContextMenu}
+            useFlexDistribution={useFlexDistribution}
+            columnGap={COLUMN_GAP}
+            draggableId={draggableIdsByItemId.get(item._id) ?? null}
+            droppableId={droppableIdsByItemId.get(item._id) ?? null}
+        />
+    ));
 
     return (
         <Container className='d-flex column document-listing-table-container h-max'>
@@ -200,21 +314,11 @@ const DocumentListingTable = <T extends Identifiable>({
                 className='d-flex column p-relative document-listing-table-body-container flex-1'
                 style={{ minWidth: (useFlexDistribution || !shouldShowContent) ? undefined : `${minContentWidth}px` }}
             >
-                {!hasNoData && data.map((item) => (
-                    <TableRow
-                        key={item._id}
-                        item={item}
-                        columns={columns}
-                        columnWidths={columnWidths}
-                        getMenuOptions={getMenuOptions}
-                        selectedItems={selectedItems}
-                        isSelected={selectedIds.has(item._id)}
-                        onClick={handleRowClick}
-                        onContextMenu={handleRowContextMenu}
-                        useFlexDistribution={useFlexDistribution}
-                        columnGap={COLUMN_GAP}
-                    />
-                ))}
+                {dragAndDrop ? (
+                    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+                        {rows}
+                    </DndContext>
+                ) : rows}
 
                 {isFetchingMore && Array.from({ length: skeletonRowsCount }).map((_, i) => (
                     <TableSkeletonRow 

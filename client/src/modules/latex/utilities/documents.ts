@@ -2,9 +2,9 @@ import type { LatexDocument } from '@/modules/latex/api/entities/latex-document'
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 
-export const createEmptyDocumentsResponse = (
+export const createEmptyDocumentsResponse = <T extends { _id: string }>(
     params: PaginationParams
-): PaginatedResponse<LatexDocument> => ({
+): PaginatedResponse<T> => ({
     status: 'success',
     data: [],
     pagination: {

@@ -13,6 +13,7 @@ export default createHttpModule({
         router.post('/', whiteboardControllers.createWhiteboard.handle);
         router.get('/', whiteboardControllers.listWhiteboards.handle);
         router.get('/folders', whiteboardControllers.listFolders.handle);
+        router.get('/folders/:folderId', whiteboardControllers.getFolder.handle);
         router.post('/folders', whiteboardControllers.createFolder.handle);
         router.patch('/folders/:folderId', whiteboardControllers.updateFolder.handle);
         router.delete('/folders/:folderId', whiteboardControllers.deleteFolder.handle);

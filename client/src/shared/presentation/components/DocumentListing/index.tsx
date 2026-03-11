@@ -1,4 +1,5 @@
 import { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import type { ExportType } from '@/shared/domain/export/types';
 import { getValueByPath } from '@/shared/utils/format';
 import { isAccessDeniedCode } from '@/shared/errors/notify-api-error';
@@ -68,7 +69,7 @@ interface DocumentListingExportConfig<TContext = Record<string, never>> {
     getFilename?: (format: ExportType) => string;
 };
 
-interface DocumentListingProps<T, TContext = Record<string, never>> {
+interface DocumentListingProps<T extends { _id: string }, TContext = Record<string, never>> {
     title: string | React.ReactNode;
     queryKey: QueryKey;
     fetchData: (params: PaginationParams & TContext) => Promise<PaginatedResponse<T>>;
@@ -83,6 +84,8 @@ interface DocumentListingProps<T, TContext = Record<string, never>> {
     // Table view props
     columns?: ColumnConfig<T>[];
     getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
+    onItemClick?: (item: T, event: React.MouseEvent) => boolean;
+    dragAndDrop?: DocumentListingDragAndDropConfig<T>;
     // Grid view props
     view?: ViewMode;
     renderGridItem?: (item: T, index: number) => React.ReactNode;
@@ -157,6 +160,8 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     enabled = true,
     columns = [],
     getMenuOptions,
+    onItemClick,
+    dragAndDrop,
     emptyMessage = 'No data available',
     createNew,
     headerActions,
@@ -198,7 +203,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     }, [initialTabId]);
 
     const getColumnSortKey = useCallback((col: ColumnConfig<T>): string => {
-        return String(col.key ?? (col as any).path ?? '');
+        return String(col.key ?? col.path ?? '');
     }, []);
 
     const {
@@ -429,6 +434,8 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                         getCellTitle={(col) => <>{col.title} {getSortIndicator(col)}</>}
                         isLoading={isLoading}
                         getMenuOptions={wrappedGetMenuOptions}
+                        onItemClick={onItemClick}
+                        dragAndDrop={dragAndDrop}
                         emptyMessage={emptyMessage}
                         hasMore={hasMore}
                         isFetchingMore={isFetchingMore}

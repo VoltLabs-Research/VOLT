@@ -8,7 +8,10 @@ const transferEndpoints = {
     exportDocumentTex: download<ExportLatexDocumentParams>('GET', '/documents/:documentId/export/tex'),
     exportDocumentZip: download<ExportLatexDocumentParams>('GET', '/documents/:documentId/export/zip'),
     importDocument: request<ImportLatexDocumentParams, ImportLatexDocumentResult>('POST', '/import', {
-        body: ({ file }) => buildFileFormData([{ name: 'file', file }]),
+        body: ({ file, folderId }) => buildFileFormData(
+            [{ name: 'file', file }],
+            folderId ? { folderId } : undefined
+        ),
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
     compileDocument: download<CompileLatexDocumentParams>('POST', '/documents/:documentId/compile')

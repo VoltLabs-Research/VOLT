@@ -14,6 +14,7 @@ import type { IUseCase } from '@shared/application/IUseCase';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import type { ILatexAssetRepository } from '@modules/latex/domain/port/ILatexAssetRepository';
 import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
+import type { ILatexFolderRepository } from '@modules/latex/domain/port/ILatexFolderRepository';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 
 const MAX_IMPORT_SIZE = 100 * 1024 * 1024;
@@ -33,6 +34,9 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
     constructor(
         @inject(LATEX_TOKENS.LatexDocumentRepository)
         private readonly latexDocumentRepository: ILatexDocumentRepository,
+
+        @inject(LATEX_TOKENS.LatexFolderRepository)
+        private readonly latexFolderRepository: ILatexFolderRepository,
 
         @inject(LATEX_TOKENS.LatexAssetRepository)
         private readonly latexAssetRepository: ILatexAssetRepository,
@@ -58,6 +62,20 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
                     ErrorCodes.FILE_READ_ERROR,
                     'File exceeds the 100MB import size limit'
                 ));
+            }
+
+            if (input.folderId) {
+                const folder = await this.latexFolderRepository.findByTeamAndFolderId(
+                    input.teamId,
+                    input.folderId
+                );
+
+                if (!folder) {
+                    return Result.fail(ApplicationError.notFound(
+                        ErrorCodes.RESOURCE_NOT_FOUND,
+                        'Target LaTeX folder not found'
+                    ));
+                }
             }
 
             const mimetype = input.file.mimetype ?? '';
@@ -96,6 +114,7 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
             team: input.teamId,
             title,
             content,
+            folder: input.folderId ?? null,
             createdBy: input.userId,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -154,6 +173,7 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
             team: input.teamId,
             title,
             content,
+            folder: input.folderId ?? null,
             createdBy: input.userId,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -261,6 +281,7 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
             team: input.teamId,
             title,
             content: mainTexContent,
+            folder: input.folderId ?? null,
             createdBy: input.userId,
             createdAt: new Date(),
             updatedAt: new Date()
