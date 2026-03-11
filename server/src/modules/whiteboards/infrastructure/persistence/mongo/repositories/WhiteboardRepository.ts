@@ -3,9 +3,9 @@ import Whiteboard from '@modules/whiteboards/domain/entities/Whiteboard';
 import whiteboardMapper from '@modules/whiteboards/infrastructure/persistence/mongo/mappers/WhiteboardMapper';
 import WhiteboardModel from '@modules/whiteboards/infrastructure/persistence/mongo/models/WhiteboardModel';
 import { injectable } from 'tsyringe';
-import type { PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
-import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
+import type { IWhiteboardRepository, WhiteboardPaginationOptions } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import type { WhiteboardDocument } from '@modules/whiteboards/infrastructure/persistence/mongo/models/WhiteboardModel';
 
 @injectable()
@@ -22,14 +22,20 @@ export default class WhiteboardRepository
         return doc ? this.mapper.toDomain(doc) : null;
     }
 
-    async findAllByTeam(teamId: string, options: PaginationOptions): Promise<PaginatedResult<Whiteboard>> {
+    async findAllByTeam(teamId: string, options: WhiteboardPaginationOptions): Promise<PaginatedResult<Whiteboard>> {
         const page = options.page ?? 1;
         const limit = options.limit ?? 100;
         const skip = (page - 1) * limit;
 
+        const filter: Record<string, unknown> = { team: teamId };
+
+        if (options.folderId !== undefined && options.folderId !== 'all') {
+            filter.folder = options.folderId;
+        }
+
         const [docs, total] = await Promise.all([
-            this.model.find({ team: teamId }).skip(skip).limit(limit).sort({ createdAt: -1 }).exec(),
-            this.model.countDocuments({ team: teamId })
+            this.model.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }).exec(),
+            this.model.countDocuments(filter)
         ]);
 
         return {

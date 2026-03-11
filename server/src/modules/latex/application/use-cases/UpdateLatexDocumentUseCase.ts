@@ -54,6 +54,7 @@ export class UpdateLatexDocumentUseCase implements IUseCase<UpdateLatexDocumentI
                 _id: updated._id,
                 title: updated.props.title,
                 content: updated.props.content,
+                folder: updated.props.folder,
                 createdAt: updated.props.createdAt,
                 updatedAt: updated.props.updatedAt
             });

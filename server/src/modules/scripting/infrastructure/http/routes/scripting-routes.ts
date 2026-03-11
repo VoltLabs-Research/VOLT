@@ -8,7 +8,10 @@ export default createHttpModule({
     resource: Resource.SCRIPTING,
     routes: (router) => {
         router.get('/notebooks', scriptingControllers.listNotebooks.handle);
+        router.post('/notebooks', scriptingControllers.createNotebook.handle);
+        router.patch('/notebooks/:notebookId', scriptingControllers.updateNotebook.handle);
         router.get('/:trajectoryId/notebooks', scriptingControllers.listNotebooks.handle);
+        router.post('/sessions', RATE_LIMIT_POLICIES.scriptingSessionCreate, scriptingControllers.createNotebookJupyterSession.handle);
         router.post('/:trajectoryId/sessions', RATE_LIMIT_POLICIES.scriptingSessionCreate, scriptingControllers.createJupyterSession.handle);
         router.delete('/notebooks/:notebookId', scriptingControllers.deleteNotebook.handle);
     }

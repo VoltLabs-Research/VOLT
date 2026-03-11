@@ -1,4 +1,5 @@
 import xrdpService from '../api/service/xrdp-service';
+import { buildBackendWebSocketUrl } from '@/app/core/http/utilities/backend-origin';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Guacamole from 'guacamole-common-js';
 import type { Container } from '../api/entities/container';
@@ -42,8 +43,7 @@ const CONNECTED_GUACAMOLE_STATE = 3;
 const DISCONNECTED_GUACAMOLE_STATE = 5;
 
 const buildWebSocketUrl = (path: string): string => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${protocol}//${window.location.host}${path}`;
+    return buildBackendWebSocketUrl(path);
 };
 
 const clearElement = (element: HTMLElement | null): void => {
@@ -117,7 +117,10 @@ const useContainerRemoteDesktop = (container: Container): UseContainerRemoteDesk
         clearElement(displayElement);
         displayElement?.appendChild(client.getDisplay().getElement());
 
+        let connected = false;
+
         const sendViewportSize = () => {
+            if (!connected) return;
             const viewport = measureViewport(displayElementRef.current);
             client.sendSize(viewport.width, viewport.height);
         };
@@ -125,7 +128,6 @@ const useContainerRemoteDesktop = (container: Container): UseContainerRemoteDesk
         const resizeObserver = new ResizeObserver(() => {
             sendViewportSize();
         });
-        resizeObserver.observe(displayElementRef.current || document.body);
         resizeObserverRef.current = resizeObserver;
 
         const mouse = new Guacamole.Mouse(client.getDisplay().getElement());
@@ -151,6 +153,8 @@ const useContainerRemoteDesktop = (container: Container): UseContainerRemoteDesk
         };
         client.onstatechange = (state) => {
             if (state === CONNECTED_GUACAMOLE_STATE) {
+                connected = true;
+                resizeObserver.observe(displayElementRef.current || document.body);
                 sendViewportSize();
                 setConnectionState(RemoteDesktopConnectionState.Connected);
             }

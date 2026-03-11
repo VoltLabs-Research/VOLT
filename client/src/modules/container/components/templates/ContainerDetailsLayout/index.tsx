@@ -4,6 +4,7 @@ import { ContainerAction } from '../../../api/dtos/update-container';
 import useContainerStats from '../../../hooks/use-container-stats';
 import { containerQuery, useContainerByIdQuery } from '../../../hooks/queries';
 import { handleActionError, runHandledAction } from '@/shared/errors/handled-action';
+import { useEffect, useRef } from 'react';
 import { useParams, useNavigate, Outlet } from 'react-router-dom';
 import Container from '@/shared/presentation/components/Container';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
@@ -21,6 +22,18 @@ interface ContainerDetailsRouteParams extends Record<string, string | undefined>
 const ContainerDetailsLayout = () => {
     const { id } = useParams<ContainerDetailsRouteParams>();
     const navigate = useNavigate();
+    const didCollapseSidebar = useRef(false);
+
+    useEffect(() => {
+        didCollapseSidebar.current = true;
+        window.dispatchEvent(new CustomEvent('volt:request-sidebar-collapse'));
+
+        return () => {
+            if (didCollapseSidebar.current) {
+                window.dispatchEvent(new CustomEvent('volt:request-sidebar-expand'));
+            }
+        };
+    }, []);
 
     const updateContainerMutation = containerQuery.useUpdateMutation();
     const deleteContainerMutation = containerQuery.useDeleteMutation();

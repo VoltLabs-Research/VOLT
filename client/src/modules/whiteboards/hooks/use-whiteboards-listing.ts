@@ -78,7 +78,7 @@ const useWhiteboardsListing = () => {
         await showPromise(
             createWhiteboard({ teamId, title: 'Untitled Whiteboard' }).then((whiteboard) => {
                 invalidateWhiteboardsQuery();
-                navigate(`/whiteboard/${whiteboard._id}`);
+                navigate(`/dashboard/whiteboard/${whiteboard._id}`);
             }),
             CREATE_WHITEBOARD_TOAST
         );
@@ -90,7 +90,7 @@ const useWhiteboardsListing = () => {
                 label: 'Open Whiteboard',
                 icon: SquarePen,
                 handler: ({ item: whiteboard }) => {
-                    navigate(`/whiteboard/${whiteboard._id}`);
+                    navigate(`/dashboard/whiteboard/${whiteboard._id}`);
                 },
                 requiredPermission: 'whiteboard:read'
             },

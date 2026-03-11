@@ -50,6 +50,10 @@ export const getTeamClusterStatusVariant = (status: TeamClusterStatus): 'success
 
 export const getTeamClusterStatusDescription = (status: TeamClusterStatus): string | null => {
     switch (status) {
+        case TeamClusterStatus.Updating:
+            return 'Volt has dispatched an update command and is waiting for the daemon to pull the new image and reconnect.';
+        case TeamClusterStatus.UpdateFailed:
+            return 'The runtime reported that the update failed. The daemon may still be on the previous version. Use the "Update cluster" action to retry.';
         case TeamClusterStatus.Deleting:
             return 'Volt has requested uninstall and is waiting for runtime confirmation or disconnect evidence before removing the cluster.';
         case TeamClusterStatus.DeleteFailed:

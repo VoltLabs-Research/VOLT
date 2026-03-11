@@ -2,13 +2,12 @@ import { confirm, confirmDelete } from './use-confirm';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useCallback } from 'react';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
-import type { MenuOption } from '@/shared/presentation/types/menu';
-
-type IconType = React.ComponentType<{ size?: number | string; className?: string }>;
+import type { ComponentType } from 'react';
+import type { MenuIconProps, MenuOption } from '@/shared/presentation/types/menu';
 
 export interface ActionConfig<T = unknown> {
     label?: string;
-    icon?: IconType;
+    icon?: ComponentType<MenuIconProps>;
     handler: (payload: { item: T; selectedItems: T[] }) => void | Promise<void>;
     confirm?: boolean | string | ((payload: { item: T; selectedItems: T[] }) => string);
     variant?: 'default' | 'danger';
@@ -27,7 +26,7 @@ export interface UseListingActionsReturn<T = unknown> {
     getSelectionActionOptions: (item: T, selectedItems: T[]) => MenuOption[];
 };
 
-const ICON_PRESETS_REACT_ICONS: Record<string, IconType> = {
+const ICON_PRESETS_REACT_ICONS: Record<string, ComponentType<MenuIconProps>> = {
     delete: RiDeleteBin6Line,
     edit: RiEditLine,
     view: RiEyeLine
@@ -60,7 +59,7 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
         return canAccess([permission]);
     }, [canAccess]);
     
-    const getActionIcon = useCallback((actionKey: string, actionConfig: ActionConfig<T>): IconType | null => {
+    const getActionIcon = useCallback((actionKey: string, actionConfig: ActionConfig<T>): ComponentType<MenuIconProps> | null => {
         if(actionConfig.icon) return actionConfig.icon;
         return ICON_PRESETS_REACT_ICONS[actionKey] || null;
     }, []);

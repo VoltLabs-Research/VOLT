@@ -4,7 +4,15 @@ export interface UploadLatexAssetInputDTO {
     teamId: string;
     documentId: string;
     userId: string;
-    file: Express.Multer.File;
+    /** Optional relative path prefix applied to all uploaded files (e.g. `images/`). */
+    path?: string;
+    files: Express.Multer.File[];
 };
 
-export type UploadLatexAssetOutputDTO = LatexAssetDTO;
+/** Result of a batch asset upload. Includes only the assets that were successfully persisted. */
+export interface UploadLatexAssetOutputDTO {
+    uploaded: LatexAssetDTO[];
+    /** Number of files that could not be processed. */
+    failedCount: number;
+    total: number;
+};

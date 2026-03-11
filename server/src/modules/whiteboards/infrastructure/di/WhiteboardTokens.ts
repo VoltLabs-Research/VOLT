@@ -1,5 +1,6 @@
 export const WHITEBOARD_TOKENS = Object.freeze({
     WhiteboardRepository: Symbol.for('WhiteboardRepository'),
+    WhiteboardFolderRepository: Symbol.for('WhiteboardFolderRepository'),
     CreateWhiteboardUseCase: Symbol.for('CreateWhiteboardUseCase'),
     ListWhiteboardsUseCase: Symbol.for('ListWhiteboardsUseCase'),
     GetWhiteboardUseCase: Symbol.for('GetWhiteboardUseCase'),

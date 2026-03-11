@@ -1,5 +1,5 @@
 export interface DefaultNotebookTemplateContext {
-    trajectoryId: string;
+    trajectoryId?: string;
 };
 
 export interface ScriptingSessionNotebookInput {
@@ -15,7 +15,7 @@ export interface ScriptingSessionJupyterInfo {
 export interface ScriptingSessionStartInput {
     teamId: string;
     teamClusterId: string;
-    trajectoryId: string;
+    trajectoryId?: string;
     userId: string;
     notebook?: ScriptingSessionNotebookInput;
     notebookId?: string;

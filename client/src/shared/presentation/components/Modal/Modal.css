@@ -4,25 +4,40 @@ dialog.volt-modal{
     padding: 0;
     width: 100%;
     max-width: 500px;
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
+    /*
+     * background and backdrop-filter are intentionally absent from this rule
+     * and delegated to ::before instead.
+     * Both `transform` (non-none) and `backdrop-filter` create a CSS containing
+     * block, which would cause position:fixed descendants (including the Sileo
+     * toaster portaled into the active dialog) to be positioned relative to the
+     * dialog box instead of the real viewport.
+     * Painting the glass surface on a non-containing ::before pseudo-element
+     * keeps the visual effect while leaving the fixed-positioning context intact.
+     * The opening scale animation is preserved via @starting-style below.
+     */
+    background: transparent;
     box-shadow: var(--shadow-elevated);
     color: var(--color-text-primary);
     margin: auto;
     opacity: 0;
-    /*
-     * transform is intentionally absent from the open state.
-     * A non-none transform creates a CSS containing block, which causes
-     * position:fixed descendants (including the Sileo toaster portaled here)
-     * to be positioned relative to the dialog box instead of the viewport.
-     * The opening scale animation is preserved via @starting-style below.
-     */
+    position: relative;
     transition: 
         opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
         transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
         overlay 0.2s allow-discrete, 
         display 0.2s allow-discrete;
+}
+
+dialog.volt-modal::before{
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-md);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    pointer-events: none;
+    z-index: -1;
 }
 
 dialog.volt-modal[open]{

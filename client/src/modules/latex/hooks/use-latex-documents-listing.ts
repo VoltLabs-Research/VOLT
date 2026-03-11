@@ -25,7 +25,8 @@ export const RENAME_LATEX_DOCUMENT_MODAL_ID = 'rename-latex-document-modal';
 const fetchDocuments = (params: PaginationParams): Promise<PaginatedResponse<LatexDocument>> => {
     return latexDocumentsQuery.fetch({
         page: params.page,
-        limit: params.limit
+        limit: params.limit,
+        ...(params.search ? { search: params.search } : {})
     });
 };
 

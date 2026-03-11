@@ -55,9 +55,20 @@ export default class FetchAvailableClusterVersionsUseCase
         }
 
         const stableVersions = await this.fetchStableVersions();
-        const versions = [...stableVersions, EDGE_OPTION];
+        const versions = this.deduplicateByTag([...stableVersions, EDGE_OPTION]);
 
         return Result.ok({ versions });
+    }
+
+    private deduplicateByTag(versions: AvailableClusterVersionDTO[]): AvailableClusterVersionDTO[] {
+        const seen = new Set<string>();
+        return versions.filter((version) => {
+            if (seen.has(version.tag)) {
+                return false;
+            }
+            seen.add(version.tag);
+            return true;
+        });
     }
 
     private async fetchStableVersions(): Promise<AvailableClusterVersionDTO[]> {

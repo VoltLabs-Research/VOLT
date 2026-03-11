@@ -37,7 +37,7 @@ const endpoints = {
         body: ({ title }) => ({ title })
     }),
     deleteWhiteboard: del<DeleteWhiteboardParams>('/:whiteboardId'),
-    getWhiteboardState: get<WhiteboardIdParams, unknown>('/:whiteboardId/state'),
+    getWhiteboardState: get<WhiteboardIdParams, unknown>('/:whiteboardId/state', { unwrap: 'raw' }),
     saveWhiteboardState: patch<SaveStateParams, void>('/:whiteboardId/state', {
         body: ({ state }) => state as Record<string, unknown>
     }),

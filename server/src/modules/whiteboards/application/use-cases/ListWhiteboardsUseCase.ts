@@ -18,13 +18,23 @@ export class ListWhiteboardsUseCase implements IUseCase<ListWhiteboardsInputDTO,
         const page = Math.max(1, Number(input.page || 1));
         const limit = Math.max(1, Math.min(500, Number(input.limit || 500)));
 
-        const result = await this.whiteboardRepository.findAllByTeam(input.teamId, { page, limit });
+        let folderId: string | null | 'all';
+        if (!input.folderId) {
+            folderId = 'all';
+        } else if (input.folderId === 'root') {
+            folderId = null;
+        } else {
+            folderId = input.folderId;
+        }
+
+        const result = await this.whiteboardRepository.findAllByTeam(input.teamId, { page, limit, folderId });
 
         const value: ListWhiteboardsOutputDTO = {
             ...result,
             data: result.data.map((whiteboard) => ({
                 _id: whiteboard._id,
                 title: whiteboard.props.title,
+                folder: whiteboard.props.folder,
                 payloadKey: whiteboard.props.payloadKey,
                 thumbnailKey: whiteboard.props.thumbnailKey,
                 lastEditedAt: whiteboard.props.lastEditedAt,

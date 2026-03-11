@@ -7,17 +7,23 @@ import {
     sanitizeDownloadName
 } from '@shared/infrastructure/http/responses/download-response';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
 import type { ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO } from '@modules/latex/application/dtos/ExportLatexDocumentDTO';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import type { ILatexAssetRepository } from '@modules/latex/domain/port/ILatexAssetRepository';
+import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 
 /**
- * Exports a LaTeX document as a `.zip` archive containing `main.tex`
- * and all associated assets fetched from object storage.
+ * Exports a LaTeX document as a `.zip` archive.
+ *
+ * Includes all LatexFile records (respecting their `path` prefix) plus
+ * all associated assets fetched from object storage. Falls back to
+ * `document.content` as `main.tex` when no LatexFile records exist
+ * (legacy compat).
  */
 @injectable()
 export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO, ApplicationError> {
@@ -27,6 +33,9 @@ export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocume
 
         @inject(LATEX_TOKENS.LatexAssetRepository)
         private readonly latexAssetRepository: ILatexAssetRepository,
+
+        @inject(LATEX_TOKENS.LatexFileRepository)
+        private readonly latexFileRepository: ILatexFileRepository,
 
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
@@ -46,15 +55,25 @@ export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocume
                 ));
             }
 
-            const assets = await this.latexAssetRepository.findAllByDocument(input.documentId);
+            const [latexFiles, assets] = await Promise.all([
+                this.latexFileRepository.findAllByDocument(input.documentId),
+                this.latexAssetRepository.findAllByDocument(input.documentId)
+            ]);
+
             const safeName = sanitizeDownloadName(document.props.title, 'document');
-            const content = document.props.content ?? '';
 
             const output = createZipDownloadResponse({
                 filename: safeName,
                 cacheControl: 'no-cache',
                 appendEntries: async (archive) => {
-                    archive.append(content, { name: 'main.tex' });
+                    if (latexFiles.length === 0) {
+                        // Legacy fallback: document.content becomes main.tex in the archive.
+                        archive.append(document.props.content ?? '', { name: 'main.tex' });
+                    } else {
+                        for (const file of latexFiles) {
+                            archive.append(file.props.content, { name: file.fullPath });
+                        }
+                    }
 
                     for (const asset of assets) {
                         try {
@@ -62,7 +81,11 @@ export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocume
                                 SYS_BUCKETS.LATEX_ASSETS,
                                 asset.props.storageKey
                             );
-                            archive.append(stream, { name: `assets/${asset.props.originalName}` });
+                            const entryName = asset.props.path
+                                ? sanitizeAssetPath(asset.props.path, asset.props.originalName)
+                                : `assets/${asset.props.originalName}`;
+
+                            archive.append(stream, { name: entryName });
                         } catch {
                             // Skip assets that cannot be retrieved from storage.
                         }

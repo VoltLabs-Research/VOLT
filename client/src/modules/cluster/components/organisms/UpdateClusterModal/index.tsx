@@ -1,4 +1,5 @@
 import { useAvailableClusterVersionsQuery } from '@/modules/cluster/hooks/team-cluster/queries';
+import { getApiErrorMessage, isApiError } from '@/shared/errors/notify-api-error';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Loader from '@/shared/presentation/components/Loader';
@@ -8,6 +9,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import Select from '@/shared/presentation/components/Select';
 import Title from '@/shared/presentation/components/Title';
 import { useState } from 'react';
+import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import type { AvailableClusterVersion } from '@/modules/cluster/api/dtos/team-cluster/fetch-available-cluster-versions';
 import type { RequestClusterUpdateOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/request-cluster-update';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
@@ -92,10 +94,15 @@ const UpdateClusterModal = ({ teamCluster, teamId, onUpdate, onClose }: UpdateCl
         }
 
         setIsSubmitting(true);
+        setError(undefined);
 
         try {
             await onUpdate(selectedVersion.tag, selectedVersion.isEdge, password);
             handleClose();
+        } catch (err: unknown) {
+            setError(isApiError(err)
+                ? getApiErrorMessage(err, 'Update request failed')
+                : 'Update request failed. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -120,8 +127,18 @@ const UpdateClusterModal = ({ teamCluster, teamId, onUpdate, onClose }: UpdateCl
             );
         }
 
+        const isRetry = teamCluster?.status === TeamClusterStatus.UpdateFailed;
+
         return (
             <Container className='d-flex column gap-1'>
+                {isRetry && (
+                    <Container className='p-1 radius-md bg-page'>
+                        <Paragraph className='font-size-2 color-danger'>
+                            ⚠ The previous update attempt failed. Select a version and retry.
+                            If the issue persists, check the host logs.
+                        </Paragraph>
+                    </Container>
+                )}
                 {teamCluster?.installedVersion && (
                     <Paragraph className='font-size-2 color-secondary'>
                         Current version: <strong>{teamCluster.installedVersion}</strong>

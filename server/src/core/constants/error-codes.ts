@@ -164,7 +164,8 @@ export const ErrorCodes = createErrorCodes({
     TEAM_INVITE_CODE_ALREADY_MEMBER: 'TeamInviteCode::AlreadyMember',
 
     LATEX_COMPILER_NOT_FOUND: 'Latex::Compiler::NotFound',
-    LATEX_COMPILATION_FAILED: 'Latex::Compilation::Failed'
+    LATEX_COMPILATION_FAILED: 'Latex::Compilation::Failed',
+    LATEX_FILE_NOT_FOUND: 'Latex::File::NotFound'
 });
 
 export const isErrorCode = (value: string): value is ErrorCode => {

@@ -36,7 +36,7 @@ const PopoverMenuItem: React.FC<PopoverMenuItemProps> = ({
             onClick={isLoading ? undefined : onClick}
             disabled={disabled || isLoading}
             isLoading={isLoading}
-            leftIcon={icon ? <span className='popover-menu-item-icon d-flex items-center content-center f-shrink-0 font-size-3'>{icon}</span> : undefined}
+            leftIcon={icon ? <span className='popover-menu-item-icon d-flex items-center content-center f-shrink-0'>{icon}</span> : undefined}
         >
             {content}
         </Button>

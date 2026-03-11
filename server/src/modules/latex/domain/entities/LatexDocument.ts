@@ -3,6 +3,7 @@ export interface LatexDocumentProps {
     title: string;
     content: string;
     createdBy: string;
+    folder: string | null;
     createdAt: Date;
     updatedAt: Date;
 };

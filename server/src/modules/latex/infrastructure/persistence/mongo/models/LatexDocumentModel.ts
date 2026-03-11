@@ -1,5 +1,5 @@
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
-import { Document, Model, Schema } from 'mongoose';
+import { Document, Model, Schema, Types } from 'mongoose';
 import mongoose from 'mongoose';
 import type { LatexDocumentProps } from '@modules/latex/domain/entities/LatexDocument';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
@@ -9,7 +9,11 @@ export enum LatexDocumentRelation {
     CreatedBy = 'createdBy'
 };
 
-export interface LatexDocumentDocument extends Persistable<LatexDocumentProps, `${LatexDocumentRelation}`>, Document {};
+type LatexDocumentDocumentBase = Persistable<LatexDocumentProps, `${LatexDocumentRelation}`>;
+
+export interface LatexDocumentDocument extends Omit<LatexDocumentDocumentBase, 'folder'>, Document {
+    folder: Types.ObjectId | null;
+};
 
 const LatexDocumentSchema: Schema<LatexDocumentDocument> = new Schema({
     team: {
@@ -26,6 +30,12 @@ const LatexDocumentSchema: Schema<LatexDocumentDocument> = new Schema({
         required: false,
         default: ''
     },
+    folder: {
+        type: Schema.Types.ObjectId,
+        ref: 'LatexFolder',
+        default: null,
+        required: false
+    },
     createdBy: {
         ...userRefField(true)
     }
@@ -33,7 +43,7 @@ const LatexDocumentSchema: Schema<LatexDocumentDocument> = new Schema({
     timestamps: true
 });
 
-LatexDocumentSchema.index({ team: 1, createdAt: -1 });
+LatexDocumentSchema.index({ team: 1, folder: 1, createdAt: -1 });
 
 const LatexDocumentModel: Model<LatexDocumentDocument> = mongoose.model<LatexDocumentDocument>(
     'LatexDocument',

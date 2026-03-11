@@ -1,3 +1,4 @@
+import { buildBackendUrl } from '@/app/core/http/utilities/backend-origin';
 import type {
     SceneObjectType,
     PluginScene,
@@ -15,24 +16,8 @@ export interface ComputeGlbUrlParams {
 
 const DEFAULT_ANALYSIS_ID = 'default';
 
-const getApiBaseUrl = (): string => {
-    const apiUrl = import.meta.env.VITE_API_URL;
-
-    if (typeof apiUrl !== 'string' || apiUrl.trim().length === 0) {
-        return '';
-    }
-
-    return apiUrl.replace(/\/$/, '');
-};
-
 const buildApiUrl = (path: string): string => {
-    const apiBaseUrl = getApiBaseUrl();
-
-    if (!apiBaseUrl) {
-        return path;
-    }
-
-    return `${apiBaseUrl}${path}`;
+    return buildBackendUrl(path);
 };
 
 const buildPluginUrl = (

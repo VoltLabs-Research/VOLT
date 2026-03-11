@@ -32,6 +32,7 @@ export class GetLatexDocumentUseCase implements IUseCase<GetLatexDocumentInputDT
                 _id: document._id,
                 title: document.props.title,
                 content: document.props.content,
+                folder: document.props.folder,
                 createdAt: document.props.createdAt,
                 updatedAt: document.props.updatedAt
             });

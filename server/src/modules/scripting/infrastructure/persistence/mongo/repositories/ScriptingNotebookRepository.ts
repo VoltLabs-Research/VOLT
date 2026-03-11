@@ -1,18 +1,17 @@
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import ScriptingNotebook from '@modules/scripting/domain/entities/ScriptingNotebook';
+import { ScriptingNotebookScope } from '@modules/scripting/domain/entities/ScriptingNotebookScope';
 import scriptingNotebookMapper from '@modules/scripting/infrastructure/persistence/mongo/mappers/ScriptingNotebookMapper';
 import ScriptingNotebookModel from '@modules/scripting/infrastructure/persistence/mongo/models/ScriptingNotebookModel';
 import { injectable } from 'tsyringe';
+import type { FilterQuery } from 'mongoose';
 import type { PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
 import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
-import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import type {
+    IScriptingNotebookRepository,
+    ListScriptingNotebookFilters
+} from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 import type { ScriptingNotebookDocument } from '@modules/scripting/infrastructure/persistence/mongo/models/ScriptingNotebookModel';
-
-interface ScriptingNotebookQuery {
-    _id?: string;
-    team: string;
-    trajectories?: string;
-};
 
 @injectable()
 export default class ScriptingNotebookRepository
@@ -40,16 +39,12 @@ export default class ScriptingNotebookRepository
     async findAllByTeam(
         teamId: string,
         options: PaginationOptions,
-        trajectoryId?: string
+        filters?: ListScriptingNotebookFilters
     ): Promise<PaginatedResult<ScriptingNotebook>> {
         const page = options.page ?? 1;
         const limit = options.limit ?? 100;
         const skip = (page - 1) * limit;
-        const query: ScriptingNotebookQuery = { team: teamId };
-
-        if (trajectoryId) {
-            query.trajectories = trajectoryId;
-        }
+        const query = this.buildTeamQuery(teamId, filters);
 
         const [docs, total] = await Promise.all([
             this.model.find(query).skip(skip).limit(limit).sort({ updatedAt: -1 }).exec(),
@@ -66,6 +61,8 @@ export default class ScriptingNotebookRepository
     }
 
     async removeTrajectory(trajectoryId: string): Promise<void> {
+        const impactedNotebookIds = await this.model.find({ trajectories: trajectoryId }).distinct('_id').exec();
+
         await this.model.updateMany({
             trajectories: trajectoryId
         }, {
@@ -74,7 +71,14 @@ export default class ScriptingNotebookRepository
             }
         });
 
+        if (!impactedNotebookIds.length) {
+            return;
+        }
+
         await this.model.deleteMany({
+            _id: {
+                $in: impactedNotebookIds
+            },
             trajectories: {
                 $size: 0
             }
@@ -86,7 +90,29 @@ export default class ScriptingNotebookRepository
         return docs.map((doc) => this.mapper.toDomain(doc));
     }
 
-    private async findOneByQuery(query: ScriptingNotebookQuery): Promise<ScriptingNotebook | null> {
+    private buildTeamQuery(
+        teamId: string,
+        filters?: ListScriptingNotebookFilters
+    ): FilterQuery<ScriptingNotebookDocument> {
+        const query: FilterQuery<ScriptingNotebookDocument> = { team: teamId };
+
+        if (filters?.trajectoryId) {
+            query.trajectories = filters.trajectoryId;
+            return query;
+        }
+
+        if (filters?.scope === ScriptingNotebookScope.General) {
+            query.trajectories = { $size: 0 };
+        }
+
+        if (filters?.scope === ScriptingNotebookScope.Trajectory) {
+            query['trajectories.0'] = { $exists: true };
+        }
+
+        return query;
+    }
+
+    private async findOneByQuery(query: FilterQuery<ScriptingNotebookDocument>): Promise<ScriptingNotebook | null> {
         const doc = await this.model.findOne(query).exec();
         return doc ? this.mapper.toDomain(doc) : null;
     }

@@ -1,17 +1,52 @@
 import useLatexWorkspace from '@/modules/latex/hooks/use-latex-workspace';
+import { DASHBOARD_LAYOUT_EVENTS } from '@/modules/dashboard/utilities/layout-events';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Avatar from '@/shared/presentation/components/Avatar';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import EditableTag from '@/shared/presentation/components/EditableTag';
 import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import LatexEditorPanel from './LatexEditorPanel';
 import LatexFilePanel from './LatexFilePanel';
 import LatexPreviewPanel from './LatexPreviewPanel';
 import './LatexDocumentWorkspace.css';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Download, FileArchive, Save } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import type { PresenceUser } from '@/modules/socket/trajectory/api/entities/presence-user';
+
+interface PanelWidths {
+    files: number;
+    preview: number;
+};
+
+interface DragState {
+    panel: 'files' | 'preview';
+    startX: number;
+    startWidth: number;
+};
+
+const STORAGE_KEY = 'volt:latex-panel-widths';
+const FILES_MIN = 160;
+const FILES_MAX = 400;
+const PREVIEW_MIN = 260;
+const PREVIEW_MAX = 600;
+const DEFAULT_WIDTHS: PanelWidths = { files: 220, preview: 340 };
+
+const loadPanelWidths = (): PanelWidths => {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return DEFAULT_WIDTHS;
+        const parsed = JSON.parse(saved) as Partial<PanelWidths>;
+        return {
+            files: Math.min(FILES_MAX, Math.max(FILES_MIN, parsed.files ?? DEFAULT_WIDTHS.files)),
+            preview: Math.min(PREVIEW_MAX, Math.max(PREVIEW_MIN, parsed.preview ?? DEFAULT_WIDTHS.preview))
+        };
+    } catch {
+        return DEFAULT_WIDTHS;
+    }
+};
 
 /** Returns "FL" initials from a PresenceUser, falling back to "?" for anonymous users. */
 const getPresenceInitials = (user: PresenceUser): string => {
@@ -23,11 +58,14 @@ const getPresenceInitials = (user: PresenceUser): string => {
 
 const LatexDocumentWorkspace = () => {
     const { documentId = '' } = useParams<{ documentId: string }>();
+    const [panelWidths, setPanelWidths] = useState<PanelWidths>(loadPanelWidths);
+    const dragStateRef = useRef<DragState | null>(null);
 
     const {
-        document,
+        latexDocument,
         documentId: resolvedDocumentId,
         isLoading,
+        activeFile: activeLatexFile,
         editorContent,
         isDirty,
         isSaving,
@@ -41,14 +79,88 @@ const LatexDocumentWorkspace = () => {
         files,
         collaborators,
         handleEditorChange,
+        handleRenameDocument,
         handleSave,
         handleInsertAssetRef,
         handleExportTex,
         handleExportZip,
-        handleCompile
+        handleCompile,
+        handleSelectFileById,
+        handleCreateFile,
+        handleDeleteFile,
+        handleSetEntrypoint,
+        handleMoveFile
     } = useLatexWorkspace({ documentId });
 
-    const activeFile = files.find((f) => f.isSelected);
+    /** Collapse the dashboard sidebar while the editor is mounted. */
+    useEffect(() => {
+        window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestSidebarCollapse));
+        window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestHeaderHide));
+
+        return () => {
+            window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestSidebarExpand));
+            window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestHeaderShow));
+        };
+    }, []);
+
+    /** Pointer Capture drag — files panel handle. */
+    const handleFilesPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>): void => {
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        dragStateRef.current = {
+            panel: 'files',
+            startX: e.clientX,
+            startWidth: panelWidths.files
+        };
+    }, [panelWidths.files]);
+
+    /** Pointer Capture drag — preview panel handle. */
+    const handlePreviewPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>): void => {
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        dragStateRef.current = {
+            panel: 'preview',
+            startX: e.clientX,
+            startWidth: panelWidths.preview
+        };
+    }, [panelWidths.preview]);
+
+    /**
+     * Shared pointermove for both handles.
+     * Pointer capture guarantees events arrive here even when the mouse
+     * is over the PDF iframe — no global listeners needed.
+     */
+    const handleDragPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>): void => {
+        const state = dragStateRef.current;
+        if (!state || !e.currentTarget.hasPointerCapture(e.pointerId)) return;
+        const delta = e.clientX - state.startX;
+
+        if (state.panel === 'files') {
+            const w = Math.min(FILES_MAX, Math.max(FILES_MIN, state.startWidth + delta));
+            setPanelWidths((prev) => ({ ...prev, files: w }));
+        } else {
+            const w = Math.min(PREVIEW_MAX, Math.max(PREVIEW_MIN, state.startWidth - delta));
+            setPanelWidths((prev) => ({ ...prev, preview: w }));
+        }
+    }, []);
+
+    /** Shared pointerup: releases capture and persists widths to localStorage. */
+    const handleDragPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>): void => {
+        if (!dragStateRef.current) return;
+        e.currentTarget.releasePointerCapture(e.pointerId);
+        dragStateRef.current = null;
+        setPanelWidths((prev) => {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(prev));
+            return prev;
+        });
+    }, []);
+
+    /** pointercancel fires if the browser forcibly cancels capture (e.g. touch interrupted). */
+    const handleDragPointerCancel = useCallback((): void => {
+        dragStateRef.current = null;
+    }, []);
+
+    const activeFile = files.find((f) => f._id === activeLatexFile?._id);
 
     if (isLoading) {
         return (
@@ -122,9 +234,14 @@ const LatexDocumentWorkspace = () => {
     return (
         <Container className='latex-workspace d-flex column'>
             <Container className='latex-workspace__toolbar d-flex items-center content-between gap-1'>
-                <span className='latex-workspace__toolbar-title color-primary'>
-                    {document?.title ?? 'LaTeX Document'}
-                </span>
+                <EditableTag
+                    as='span'
+                    className='latex-workspace__toolbar-title color-primary'
+                    onSave={handleRenameDocument}
+                    title='Double-click to rename'
+                >
+                    {latexDocument?.title ?? 'LaTeX Document'}
+                </EditableTag>
                 <Container className='d-flex items-center gap-075'>
                     {collaboratorAvatars.length > 0 && (
                         <Container className='latex-workspace__collaborators d-flex items-center'>
@@ -143,18 +260,48 @@ const LatexDocumentWorkspace = () => {
                     documentId={resolvedDocumentId}
                     files={files}
                     onInsertRef={handleInsertAssetRef}
+                    onFileSelect={handleSelectFileById}
+                    onCreateFile={handleCreateFile}
+                    onDeleteFile={handleDeleteFile}
+                    onSetEntrypoint={handleSetEntrypoint}
+                    onMoveFile={handleMoveFile}
+                    width={panelWidths.files}
                 />
+
+                <div
+                    className='latex-drag-handle'
+                    role='separator'
+                    aria-label='Resize file panel'
+                    aria-orientation='vertical'
+                    onPointerDown={handleFilesPointerDown}
+                    onPointerMove={handleDragPointerMove}
+                    onPointerUp={handleDragPointerUp}
+                    onPointerCancel={handleDragPointerCancel}
+                />
+
                 <LatexEditorPanel
                     activeFile={activeFile}
                     content={editorContent}
                     onChange={handleEditorChange}
                 />
+
+                <div
+                    className='latex-drag-handle'
+                    role='separator'
+                    aria-label='Resize preview panel'
+                    aria-orientation='vertical'
+                    onPointerDown={handlePreviewPointerDown}
+                    onPointerMove={handleDragPointerMove}
+                    onPointerUp={handleDragPointerUp}
+                    onPointerCancel={handleDragPointerCancel}
+                />
+
                 <LatexPreviewPanel
-                    content={editorContent}
                     isCompiling={isCompiling}
                     compiledPdfUrl={compiledPdfUrl}
                     compileError={compileError}
                     onCompile={handleCompile}
+                    width={panelWidths.preview}
                 />
             </Container>
         </Container>
@@ -162,4 +309,3 @@ const LatexDocumentWorkspace = () => {
 };
 
 export default LatexDocumentWorkspace;
-

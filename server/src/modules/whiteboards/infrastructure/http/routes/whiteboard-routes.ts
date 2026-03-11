@@ -12,9 +12,14 @@ export default createHttpModule({
     routes: (router) => {
         router.post('/', whiteboardControllers.createWhiteboard.handle);
         router.get('/', whiteboardControllers.listWhiteboards.handle);
+        router.get('/folders', whiteboardControllers.listFolders.handle);
+        router.post('/folders', whiteboardControllers.createFolder.handle);
+        router.patch('/folders/:folderId', whiteboardControllers.updateFolder.handle);
+        router.delete('/folders/:folderId', whiteboardControllers.deleteFolder.handle);
         router.get('/:whiteboardId', whiteboardControllers.getWhiteboard.handle);
         router.patch('/:whiteboardId', whiteboardControllers.updateWhiteboard.handle);
         router.delete('/:whiteboardId', whiteboardControllers.deleteWhiteboard.handle);
+        router.patch('/:whiteboardId/folder', whiteboardControllers.moveWhiteboard.handle);
         router.get('/:whiteboardId/state', whiteboardControllers.getWhiteboardState.handle);
         router.patch('/:whiteboardId/state', stateBodyParser, whiteboardControllers.saveWhiteboardState.handle);
         router.post('/:whiteboardId/assets', upload.single('file'), whiteboardControllers.uploadWhiteboardAsset.handle);

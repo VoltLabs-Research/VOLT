@@ -4,8 +4,7 @@ import path from 'node:path';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { injectable } from 'tsyringe';
 import type {
-    DefaultNotebookTemplateContext,
-    ScriptingSessionNotebookInput
+    DefaultNotebookTemplateContext
 } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
 
 const DEFAULT_NOTEBOOK_TEMPLATE_PATH = path.join(
@@ -36,6 +35,6 @@ export class JupyterNotebookService {
         const templateContent = await fs.readFile(DEFAULT_NOTEBOOK_TEMPLATE_PATH, 'utf8');
         return templateContent
             .replace(/<BASE_URL>/g, serverDomain.replace(/\/+$/g, ''))
-            .replace(/<TRAJECTORY_ID>/g, context.trajectoryId);
+            .replace(/<TRAJECTORY_ID>/g, context.trajectoryId || '');
     }
 };

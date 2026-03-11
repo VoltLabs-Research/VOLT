@@ -13,7 +13,7 @@ import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/c
 import UpdateClusterModal, { UPDATE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/UpdateClusterModal';
 import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
 import useClustersListingPage from '@/modules/cluster/hooks/use-clusters-listing-page';
-import { TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
+import { invalidateAvailableVersionsQuery, TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
 import { formatClusterTimestamp } from '@/modules/cluster/utilities/format-cluster-timestamp';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import { TeamClusterRemoteAccessTarget } from '@/modules/cluster/api/entities/team-cluster-remote-access';
@@ -56,8 +56,11 @@ const ClustersListing = () => {
 
     const handleUpdateCluster = useCallback((cluster: TeamCluster) => {
         state.setUpdateTarget(cluster);
+        if (vm.selectedTeamId) {
+            invalidateAvailableVersionsQuery(vm.selectedTeamId, cluster._id);
+        }
         openModal(UPDATE_CLUSTER_MODAL_ID);
-    }, [state]);
+    }, [state, vm.selectedTeamId]);
 
     const handleRemoteAccessAction = useCallback((cluster: TeamCluster, target: TeamClusterRemoteAccessTarget) => {
         state.setRemoteAccessRequest({

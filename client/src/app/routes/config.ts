@@ -120,7 +120,7 @@ export const routesConfig: RouteGroup = {
             requiredPermissions: ['trajectory:read']
         },
         {
-            path: '/whiteboard/:whiteboardId',
+            path: '/dashboard/whiteboard/:whiteboardId',
             component: WhiteboardEditorPage,
             requiredPermissions: ['whiteboard:read']
         },

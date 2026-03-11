@@ -1,100 +1,110 @@
 import useLatexAssets from '@/modules/latex/hooks/use-latex-assets';
+import useFileTree from '@/modules/latex/hooks/use-file-tree';
 import Container from '@/shared/presentation/components/Container';
 import FileExplorer from '@/shared/presentation/components/FileExplorer';
 import IconButton from '@/shared/presentation/components/IconButton';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
-import { formatSize } from '@/shared/utils/format';
-import { cn } from '@/shared/utils';
-import { FileText, FolderOpen, Image, File, Paperclip, Trash2, Upload, Link } from 'lucide-react';
+import FileTreeNode from './FileTreeNode';
+import NewFileInput from './NewFileInput';
+import NewFolderInput from './NewFolderInput';
+import RootDropZone from './RootDropZone';
+import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { FilePlus, FolderOpen, FolderPlus, Upload } from 'lucide-react';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
-import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
+import type { FileTreeNode as FileTreeNodeType } from '@/modules/latex/utilities/file-tree';
 
 interface LatexFilePanelProps {
     documentId: string;
     files: LatexFileEntry[];
     onInsertRef: (ref: string) => void;
+    onFileSelect: (fileId: string) => void;
+    onCreateFile: (name: string, path?: string) => Promise<unknown>;
+    onDeleteFile: (fileId: string) => void;
+    onSetEntrypoint: (fileId: string) => void;
+    onMoveFile: (fileId: string, newPath: string) => Promise<void>;
+    width: number;
 };
 
-const FILE_ICON = <FileText size={14} />;
 const FOLDER_ICON = <FolderOpen size={14} />;
 
-const getAssetIcon = (mimetype: string) => {
-    if (mimetype.startsWith('image/')) return <Image size={14} />;
-    return <File size={14} />;
-};
-
-const renderFileRow = (file: LatexFileEntry) => (
-    <Container
-        key={file.name}
-        className={cn('latex-workspace__file-row d-flex items-center gap-05', file.isSelected && 'is-selected')}
-    >
-        <span className='color-muted d-flex items-center'>{FILE_ICON}</span>
-        <span className='latex-workspace__file-name'>{file.name}</span>
-    </Container>
-);
-
-interface AssetRowProps {
-    asset: LatexAsset;
-    onDelete: (asset: LatexAsset) => void;
-    onInsertRef: (asset: LatexAsset) => void;
-};
-
-const AssetRow = ({ asset, onDelete, onInsertRef }: AssetRowProps) => {
-    const mimeShort = asset.mimetype.split('/')[1] ?? asset.mimetype;
-
-    return (
-        <Container className='latex-workspace__asset-row d-flex items-center content-between gap-05'>
-            <Container className='d-flex items-center gap-05 flex-1 min-w-0'>
-                <span className='color-muted d-flex items-center f-shrink-0'>
-                    {getAssetIcon(asset.mimetype)}
-                </span>
-                <span className='latex-workspace__file-name text-truncate' title={asset.originalName}>
-                    {asset.originalName}
-                </span>
-            </Container>
-            <Container className='d-flex items-center gap-025 f-shrink-0'>
-                <span className='latex-workspace__asset-meta color-muted'>{formatSize(asset.size)}</span>
-                <span className='latex-workspace__asset-meta color-muted'>{mimeShort}</span>
-                <IconButton
-                    variant='ghost'
-                    size='sm'
-                    title='Insert reference in editor'
-                    onClick={() => onInsertRef(asset)}
-                >
-                    <Link size={12} />
-                </IconButton>
-                <IconButton
-                    variant='ghost'
-                    size='sm'
-                    title='Delete asset'
-                    onClick={() => onDelete(asset)}
-                >
-                    <Trash2 size={12} />
-                </IconButton>
-            </Container>
-        </Container>
-    );
-};
-
-const LatexFilePanel = ({ documentId, files, onInsertRef }: LatexFilePanelProps) => {
+const LatexFilePanel = ({
+    documentId,
+    files,
+    onInsertRef,
+    onFileSelect,
+    onCreateFile,
+    onDeleteFile,
+    onSetEntrypoint,
+    onMoveFile,
+    width
+}: LatexFilePanelProps) => {
     const {
         assets,
-        isLoadingAssets,
         isUploading,
         fileInputRef,
         handleUploadClick,
         handleFileSelected,
         handleDeleteAsset,
-        handleInsertRef
+        handleInsertRef,
+        handleMoveAsset
     } = useLatexAssets({ documentId, onInsertRef });
 
+    const {
+        treeNodes,
+        expandedFolders,
+        newFileTargetFolder,
+        newFolderTargetFolder,
+        toggleFolder,
+        openNewFileIn,
+        closeNewFile,
+        handleConfirmNewFile,
+        openNewFolderIn,
+        closeNewFolder,
+        handleConfirmNewFolder,
+        handleDragEnd
+    } = useFileTree({
+        files,
+        assets,
+        onMoveFile,
+        onMoveAsset: handleMoveAsset,
+        onCreateFile
+    });
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: { distance: 6 }
+        })
+    );
+
     const folderIcon = <span className='d-flex items-center color-muted'>{FOLDER_ICON}</span>;
+
+    const newFileAction = (
+        <IconButton
+            variant='ghost'
+            size='sm'
+            title='New .tex file at root'
+            onClick={() => openNewFileIn('')}
+        >
+            <FilePlus size={14} />
+        </IconButton>
+    );
+
+    const newFolderAction = (
+        <IconButton
+            variant='ghost'
+            size='sm'
+            title='New folder at root'
+            onClick={() => openNewFolderIn('')}
+        >
+            <FolderPlus size={14} />
+        </IconButton>
+    );
 
     const uploadAction = (
         <IconButton
             variant='ghost'
             size='sm'
-            title='Upload asset'
+            title='Upload assets'
             disabled={isUploading}
             onClick={handleUploadClick}
         >
@@ -102,52 +112,91 @@ const LatexFilePanel = ({ documentId, files, onInsertRef }: LatexFilePanelProps)
         </IconButton>
     );
 
-    const renderAssetRow = (asset: LatexAsset) => (
-        <AssetRow
-            key={asset._id}
-            asset={asset}
-            onDelete={handleDeleteAsset}
-            onInsertRef={handleInsertRef}
+    const newFileInputSlot = (
+        <NewFileInput
+            onConfirm={handleConfirmNewFile}
+            onCancel={closeNewFile}
         />
     );
 
+    const newFolderInputSlot = (
+        <NewFolderInput
+            onConfirm={handleConfirmNewFolder}
+            onCancel={closeNewFolder}
+        />
+    );
+
+    const renderTreeNode = (node: FileTreeNodeType) => (
+        <FileTreeNode
+            key={node.id}
+            node={node}
+            depth={0}
+            expandedFolders={expandedFolders}
+            newFileTargetFolder={newFileTargetFolder}
+            newFolderTargetFolder={newFolderTargetFolder}
+            onToggleFolder={toggleFolder}
+            onOpenNewFileIn={openNewFileIn}
+            onOpenNewFolderIn={openNewFolderIn}
+            newFileInputSlot={newFileInputSlot}
+            newFolderInputSlot={newFolderInputSlot}
+            onFileSelect={onFileSelect}
+            onFileDelete={onDeleteFile}
+            onFileSetEntrypoint={onSetEntrypoint}
+            onAssetDelete={handleDeleteAsset}
+            onAssetInsertRef={handleInsertRef}
+        />
+    );
+
+    const panelActions = (
+        <Container className='d-flex items-center gap-025'>
+            {newFolderAction}
+            {newFileAction}
+            {uploadAction}
+        </Container>
+    );
+
+    const isEmpty = files.length === 0
+        && assets.length === 0
+        && newFileTargetFolder === null
+        && newFolderTargetFolder === null;
+
     return (
-        <Container className='latex-workspace__files d-flex column'>
+        <Container className='latex-workspace__files d-flex column' style={{ width }}>
             <PanelHeader
                 variant='compact'
                 icon={folderIcon}
                 title='Files'
-                actions={uploadAction}
+                actions={panelActions}
             />
 
             <input
                 ref={fileInputRef}
                 type='file'
                 className='d-none'
+                multiple
                 onChange={handleFileSelected}
-                accept='image/*,.pdf,.bib,.cls,.sty,.tex'
+                accept='image/*,.pdf,.bib,.cls,.sty'
             />
 
-            <FileExplorer isEmpty={files.length === 0} emptyMessage='No files'>
-                {files.map(renderFileRow)}
-            </FileExplorer>
-
-            <Container className='latex-workspace__assets-section d-flex column'>
-                <Container className='latex-workspace__assets-header d-flex items-center content-between'>
-                    <Container className='d-flex items-center gap-05'>
-                        <Paperclip size={12} />
-                        <span className='font-size-05 color-muted'>Assets</span>
-                    </Container>
-                    <span className='font-size-05 color-muted'>{assets.length}</span>
-                </Container>
-                <FileExplorer
-                    isEmpty={assets.length === 0}
-                    isLoading={isLoadingAssets}
-                    emptyMessage='No assets - upload figures or files'
-                >
-                    {assets.map(renderAssetRow)}
+            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+                <FileExplorer isEmpty={isEmpty} emptyMessage='No files'>
+                    <RootDropZone>
+                        {treeNodes.map(renderTreeNode)}
+                        {newFolderTargetFolder === '' && (
+                            <NewFolderInput
+                                onConfirm={handleConfirmNewFolder}
+                                onCancel={closeNewFolder}
+                            />
+                        )}
+                        {newFileTargetFolder === '' && (
+                            <NewFileInput
+                                onConfirm={handleConfirmNewFile}
+                                onCancel={closeNewFile}
+                            />
+                        )}
+                    </RootDropZone>
                 </FileExplorer>
-            </Container>
+            </DndContext>
         </Container>
     );
 };

@@ -69,7 +69,7 @@ export class CreateContainerXrdpSessionUseCase implements IUseCase<CreateContain
             teamId: input.teamId,
             containerId: input.containerId,
             userId: input.userId,
-            host: this.tcpExposureRelayService.getRelayHost(),
+            host: this.tcpExposureRelayService.getRelayAdvertisedHost(),
             port: relayPort,
             username: input.username,
             password: input.password,

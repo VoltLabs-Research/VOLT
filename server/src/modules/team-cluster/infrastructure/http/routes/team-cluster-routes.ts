@@ -14,6 +14,7 @@ export default createHttpModule({
         router.get('/:teamClusterId', teamClusterValidation.getById, controllers.getById.handle);
         router.get(
             '/:teamClusterId/available-updates',
+            RATE_LIMIT_POLICIES.teamClusterAvailableVersions,
             teamClusterValidation.fetchAvailableVersions,
             controllers.fetchAvailableVersions.handle
         );
