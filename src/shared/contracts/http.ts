@@ -178,6 +178,7 @@ export interface AnalysisStartRequest {
     workflow: WorkflowDefinition;
     config: Record<string, unknown>;
     selectedFrameOnly?: boolean;
+    selectedTimesteps?: number[];
     timestep?: number;
 };
 

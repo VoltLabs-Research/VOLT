@@ -1,5 +1,5 @@
 import { Duplex } from 'node:stream';
-import { spawn } from 'node:child_process';
+import { exec as nodeExec, spawn } from 'node:child_process';
 import type { RuntimeTerminalAttachment, RuntimeTerminalExec } from '@/modules/platform/services';
 
 class HostShellTerminalExec implements RuntimeTerminalExec {
@@ -67,5 +67,25 @@ export class HostShellService {
             stream: new HostShellTerminalStream(childProcess),
             exec: new HostShellTerminalExec()
         };
+    }
+
+    /**
+     * Executes a shell command and resolves with its stdout output.
+     *
+     * @param command - The shell command string to execute.
+     * @returns Stdout output of the command.
+     * @throws If the command exits with a non-zero code.
+     */
+    exec(command: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            nodeExec(command, (error, stdout, stderr) => {
+                if (error) {
+                    reject(new Error(stderr?.trim() || error.message));
+                    return;
+                }
+
+                resolve(stdout.trim());
+            });
+        });
     }
 }

@@ -7,7 +7,9 @@ export enum TeamClusterStatus {
     Connected = 'connected',
     Disconnected = 'disconnected',
     Deleting = 'deleting',
-    DeleteFailed = 'delete-failed'
+    DeleteFailed = 'delete-failed',
+    Updating = 'updating',
+    UpdateFailed = 'update-failed'
 };
 
 export interface ProcessTeamClusterHealthcheckOutputDTO {

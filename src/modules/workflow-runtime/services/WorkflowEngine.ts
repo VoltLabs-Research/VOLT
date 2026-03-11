@@ -20,6 +20,7 @@ export interface WorkflowExecutionRequest {
     teamId: string;
     options?: {
         selectedFrameOnly?: boolean;
+        selectedTimesteps?: number[];
         timestep?: number;
     };
 };
@@ -68,6 +69,7 @@ export class WorkflowEngine {
             pluginId: request.pluginId,
             teamId: request.teamId,
             selectedFrameOnly: request.options?.selectedFrameOnly,
+            selectedTimesteps: request.options?.selectedTimesteps,
             selectedTimestep: request.options?.timestep,
             workflow: new WorkflowGraph(request.workflow)
         };

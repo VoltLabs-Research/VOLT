@@ -1,6 +1,6 @@
 import type { AnalysisStartRequest, AnalysisQueueJobPayload } from '@/shared/contracts';
 import { OrchestrationAction } from '@/shared/contracts';
-import { ProgressStageType } from '@/shared/contracts';
+import { ProgressStageType } from '@voltstack/daemon-cluster-client';
 import { RuntimeEventBroker } from '@/shared/services';
 import { QueueService } from '@/modules/platform/services';
 import { RedisConnectionService } from '@/modules/platform/services';
@@ -37,6 +37,7 @@ export class AnalysisDispatchService {
             teamId: input.teamId,
             options: {
                 selectedFrameOnly: input.selectedFrameOnly,
+                selectedTimesteps: input.selectedTimesteps,
                 timestep: input.timestep
             }
         });

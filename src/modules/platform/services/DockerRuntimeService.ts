@@ -341,6 +341,30 @@ done`, '--', normalizedDirectoryPath]);
         return this.execute(containerId, command, stdin);
     }
 
+    /**
+     * Unconditionally pulls an image from a registry, bypassing any local cache check.
+     * Use this for updates where a fresh copy is always required.
+     */
+    forcePullImage(imageName: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.docker.pull(imageName, (error: Error | null, stream?: Readable) => {
+                if (error || !stream) {
+                    reject(error ?? new Error(`Docker pull returned no stream for ${imageName}`));
+                    return;
+                }
+
+                this.docker.modem.followProgress(stream, (progressError) => {
+                    if (progressError) {
+                        reject(progressError);
+                        return;
+                    }
+
+                    resolve();
+                });
+            });
+        });
+    }
+
     private pullImage(imageName: string): Promise<void> {
         return new Promise((resolve, reject) => {
             this.docker.pull(imageName, (error: Error | null, stream?: Readable) => {

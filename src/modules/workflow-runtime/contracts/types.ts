@@ -39,6 +39,7 @@ export interface WorkflowExecutionContext {
     pluginId: string;
     teamId: string;
     selectedFrameOnly?: boolean;
+    selectedTimesteps?: number[];
     selectedTimestep?: number;
     workflow: WorkflowGraph;
 }

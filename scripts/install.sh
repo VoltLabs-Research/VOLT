@@ -5,9 +5,18 @@ TEAM_CLUSTER_ID="${1:-}"
 ENROLLMENT_TOKEN="${2:-}"
 INSTALL_VERSION="1.0.0"
 DEPLOY_USER="volt"
-INSTALL_ROOT="/opt/volt/team-clusters"
+INSTALL_ROOT=""
+INSTALL_DIR=""
 TEMP_DIR=""
 DAEMON_PASSWORD=""
+PORTS_JSON=""
+MANIFEST_FILE=""
+PLATFORM=""
+OS_ID="unknown"
+OS_ID_LIKE=""
+LOCAL_USER=""
+LOCAL_HOME=""
+SUDO=""
 
 usage() {
     printf 'Usage: bash install.sh <team-cluster-id> <enrollment-token>\n' >&2
@@ -50,6 +59,42 @@ cleanup() {
     if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
         rm -rf "$TEMP_DIR"
     fi
+}
+
+on_error() {
+    log 'Installation failed'
+}
+
+resolve_local_user() {
+    if [ "$(id -u)" -eq 0 ] && [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != 'root' ]; then
+        LOCAL_USER="$SUDO_USER"
+    else
+        LOCAL_USER="$(id -un)"
+    fi
+
+    if [ "$LOCAL_USER" = 'root' ]; then
+        LOCAL_HOME="$HOME"
+        return
+    fi
+
+    if command -v getent >/dev/null 2>&1; then
+        LOCAL_HOME="$(getent passwd "$LOCAL_USER" | cut -d: -f6)"
+    elif command -v dscl >/dev/null 2>&1; then
+        LOCAL_HOME="$(dscl . -read "/Users/$LOCAL_USER" NFSHomeDirectory | awk '{print $2}')"
+    else
+        LOCAL_HOME="$HOME"
+    fi
+
+    if [ -z "$LOCAL_HOME" ]; then
+        fail "Unable to determine the home directory for user $LOCAL_USER"
+    fi
+}
+
+normalize_path_value() {
+    local raw_value="$1"
+    raw_value="${raw_value%/}"
+    raw_value="${raw_value%\\}"
+    printf '%s\n' "$raw_value"
 }
 
 http_post_json() {
@@ -110,35 +155,38 @@ else:
 PY
 }
 
-on_error() {
-    log 'Installation failed'
+detect_platform() {
+    local uname_value
+    uname_value="$(uname -s)"
+
+    case "$uname_value" in
+        Linux)
+            PLATFORM='linux'
+            ;;
+        Darwin)
+            PLATFORM='darwin'
+            ;;
+        CYGWIN*|MINGW*|MSYS*)
+            fail 'Windows hosts must use the PowerShell installer instead of install.sh'
+            ;;
+        *)
+            fail "Unsupported operating system: $uname_value"
+            ;;
+    esac
 }
 
-detect_os() {
+detect_linux_distribution() {
+    if [ "$PLATFORM" != 'linux' ]; then
+        return
+    fi
+
     if [ -r /etc/os-release ]; then
+        # shellcheck disable=SC1091
         . /etc/os-release
         OS_ID="${ID:-unknown}"
         OS_ID_LIKE="${ID_LIKE:-}"
-    else
-        OS_ID='unknown'
-        OS_ID_LIKE=''
+        VERSION_CODENAME="${VERSION_CODENAME:-}"
     fi
-}
-
-is_debian_based() {
-    case "${OS_ID:-}" in
-        debian|ubuntu)
-            return 0
-            ;;
-    esac
-
-    case "${OS_ID_LIKE:-}" in
-        *debian*)
-            return 0
-            ;;
-    esac
-
-    return 1
 }
 
 ensure_supported_architecture() {
@@ -147,14 +195,29 @@ ensure_supported_architecture() {
 
     case "$architecture" in
         x86_64|amd64|aarch64|arm64)
-            return 0
+            return
             ;;
     esac
 
     fail "Unsupported architecture: $architecture"
 }
 
-ensure_sudo() {
+set_install_root() {
+    local configured_root="${TEAM_CLUSTER_INSTALL_ROOT:-}"
+    if [ -n "$configured_root" ]; then
+        INSTALL_ROOT="$(normalize_path_value "$configured_root")"
+        return
+    fi
+
+    if [ "$PLATFORM" = 'linux' ]; then
+        INSTALL_ROOT='/opt/volt/team-clusters'
+        return
+    fi
+
+    INSTALL_ROOT="$(normalize_path_value "$LOCAL_HOME/Library/Application Support/Volt/team-clusters")"
+}
+
+ensure_privileges() {
     if [ "$(id -u)" -eq 0 ]; then
         SUDO=''
         return
@@ -165,6 +228,16 @@ ensure_sudo() {
     fi
 
     SUDO='sudo'
+    $SUDO -v
+}
+
+host_docker() {
+    if [ "$PLATFORM" = 'linux' ] && [ -n "$SUDO" ]; then
+        $SUDO docker "$@"
+        return
+    fi
+
+    docker "$@"
 }
 
 docker_available() {
@@ -172,15 +245,46 @@ docker_available() {
 }
 
 docker_compose_available() {
-    docker compose version >/dev/null 2>&1
+    if ! docker_available; then
+        return 1
+    fi
+
+    host_docker compose version >/dev/null 2>&1
+}
+
+docker_runtime_ready() {
+    host_docker version >/dev/null 2>&1 \
+        && host_docker info >/dev/null 2>&1 \
+        && host_docker compose version >/dev/null 2>&1
+}
+
+wait_for_docker_ready() {
+    local timeout_seconds="300"
+    local started_at
+    started_at="$(date +%s)"
+
+    log 'Waiting for Docker daemon and Compose to become ready'
+
+    while :; do
+        if docker_runtime_ready; then
+            log 'Docker is ready'
+            return
+        fi
+
+        if [ $(( $(date +%s) - started_at )) -ge "$timeout_seconds" ]; then
+            fail "Docker did not become ready within ${timeout_seconds}s"
+        fi
+
+        sleep 5
+    done
 }
 
 install_docker_on_debian() {
-    log 'Installing Docker and Compose for Debian-based host'
+    log 'Installing Docker Engine and Compose plugin for Debian-based Linux'
     $SUDO apt-get update
     $SUDO apt-get install -y ca-certificates curl gnupg python3
     $SUDO install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/${OS_ID}/gpg | $SUDO gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    curl -fsSL "https://download.docker.com/linux/${OS_ID}/gpg" | $SUDO gpg --yes --dearmor -o /etc/apt/keyrings/docker.gpg
     $SUDO chmod a+r /etc/apt/keyrings/docker.gpg
     printf 'deb [arch=%s signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/%s %s stable\n' \
         "$(dpkg --print-architecture)" \
@@ -188,39 +292,246 @@ install_docker_on_debian() {
         "$VERSION_CODENAME" | $SUDO tee /etc/apt/sources.list.d/docker.list >/dev/null
     $SUDO apt-get update
     $SUDO apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-    $SUDO systemctl enable --now docker
 }
 
-ensure_runtime_capabilities() {
-    if docker_available && docker_compose_available; then
-        log 'Docker and Compose already available'
+install_docker_on_fedora_like() {
+    local repo_id='centos'
+    if [ "$OS_ID" = 'fedora' ]; then
+        repo_id='fedora'
+    fi
+
+    log 'Installing Docker Engine and Compose plugin for Fedora/RHEL-like Linux'
+    if command -v dnf >/dev/null 2>&1; then
+        $SUDO dnf install -y dnf-plugins-core python3
+        $SUDO dnf config-manager --add-repo "https://download.docker.com/linux/${repo_id}/docker-ce.repo"
+        $SUDO dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         return
     fi
 
-    detect_os
-    if ! is_debian_based; then
-        fail "Automatic provisioning is only supported on Debian-based hosts when Docker is missing (detected: ${OS_ID})"
+    if command -v yum >/dev/null 2>&1; then
+        $SUDO yum install -y yum-utils python3
+        $SUDO yum-config-manager --add-repo "https://download.docker.com/linux/${repo_id}/docker-ce.repo"
+        $SUDO yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        return
     fi
 
-    if [ -z "${VERSION_CODENAME:-}" ]; then
-        fail 'Unable to determine Debian release codename for Docker repository setup'
+    fail 'Automatic Docker installation requires dnf or yum on this Linux host'
+}
+
+start_linux_docker_service() {
+    if ! command -v systemctl >/dev/null 2>&1; then
+        fail 'Automatic Docker installation requires systemctl on supported Linux hosts'
     fi
 
-    install_docker_on_debian
+    $SUDO systemctl enable --now docker
+}
 
-    if ! docker_available || ! docker_compose_available; then
-        fail 'Docker installation completed but Docker Compose is still unavailable'
+ensure_docker_linux() {
+    if docker_available && docker_compose_available; then
+        log 'Docker CLI and Compose plugin already detected'
+        wait_for_docker_ready
+        return
+    fi
+
+    detect_linux_distribution
+
+    case "$OS_ID" in
+        ubuntu|debian)
+            if [ -z "${VERSION_CODENAME:-}" ]; then
+                fail 'Unable to determine Debian/Ubuntu release codename for Docker repository setup'
+            fi
+            install_docker_on_debian
+            ;;
+        fedora|rhel|rocky|almalinux|centos)
+            install_docker_on_fedora_like
+            ;;
+        *)
+            case "$OS_ID_LIKE" in
+                *debian*)
+                    if [ -z "${VERSION_CODENAME:-}" ]; then
+                        fail 'Unable to determine Debian-like release codename for Docker repository setup'
+                    fi
+                    install_docker_on_debian
+                    ;;
+                *rhel*|*fedora*)
+                    install_docker_on_fedora_like
+                    ;;
+                *)
+                    fail "Automatic Docker installation is not supported on this Linux distribution (${OS_ID})"
+                    ;;
+            esac
+            ;;
+    esac
+
+    start_linux_docker_service
+    wait_for_docker_ready
+}
+
+ensure_interactive_macos_session() {
+    if [ -n "${CI:-}" ] || [ -n "${SSH_TTY:-}" ]; then
+        fail 'Automatic Docker Desktop installation on macOS requires an interactive desktop session'
     fi
 }
 
-ensure_deploy_user() {
-    if ! id -u "$DEPLOY_USER" >/dev/null 2>&1; then
-        log "Creating deployment user $DEPLOY_USER"
-        $SUDO useradd --create-home --shell /bin/bash "$DEPLOY_USER"
+install_docker_on_macos_with_brew() {
+    log 'Installing Docker Desktop with Homebrew'
+    brew install --cask docker
+}
+
+install_docker_on_macos_official() {
+    local architecture download_arch dmg_path mount_output volume_path
+
+    architecture="$(uname -m)"
+    case "$architecture" in
+        arm64|aarch64)
+            download_arch='arm64'
+            ;;
+        x86_64|amd64)
+            download_arch='amd64'
+            ;;
+        *)
+            fail "Unsupported macOS architecture for Docker Desktop: $architecture"
+            ;;
+    esac
+
+    ensure_temp_dir
+    dmg_path="$TEMP_DIR/docker-desktop.dmg"
+    log 'Downloading Docker Desktop for macOS'
+    curl -fsSL "https://desktop.docker.com/mac/main/${download_arch}/Docker.dmg" -o "$dmg_path"
+
+    mount_output="$(hdiutil attach "$dmg_path" -nobrowse)"
+    volume_path="$(printf '%s\n' "$mount_output" | awk '/\/Volumes\// {print $NF; exit}')"
+    if [ -z "$volume_path" ] || [ ! -d "$volume_path/Docker.app" ]; then
+        fail 'Failed to mount the Docker Desktop installer image on macOS'
     fi
 
-    $SUDO usermod -aG docker "$DEPLOY_USER"
-    $SUDO install -d -m 0755 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$INSTALL_ROOT"
+    log 'Installing Docker Desktop.app'
+    $SUDO rm -rf /Applications/Docker.app
+    $SUDO ditto "$volume_path/Docker.app" /Applications/Docker.app
+    hdiutil detach "$volume_path" -quiet >/dev/null 2>&1 || true
+
+    if ! command -v python3 >/dev/null 2>&1; then
+        install_python3_on_macos_official
+    fi
+}
+
+start_docker_desktop_macos() {
+    if ! open -Ra Docker >/dev/null 2>&1; then
+        fail 'Docker Desktop.app was not found after installation'
+    fi
+
+    log 'Launching Docker Desktop'
+    open -a Docker
+}
+
+ensure_docker_macos() {
+    if docker_runtime_ready; then
+        log 'Docker CLI, daemon, and Compose already detected'
+        return
+    fi
+
+    ensure_interactive_macos_session
+
+    if docker_available && docker_compose_available; then
+        start_docker_desktop_macos
+        wait_for_docker_ready
+        return
+    fi
+
+    if command -v brew >/dev/null 2>&1; then
+        install_docker_on_macos_with_brew
+    else
+        install_docker_on_macos_official
+    fi
+
+    start_docker_desktop_macos
+    wait_for_docker_ready
+}
+
+refresh_macos_python3_path() {
+    local candidate
+
+    if [ "$PLATFORM" != 'darwin' ]; then
+        return
+    fi
+
+    for candidate in \
+        '/usr/local/bin' \
+        '/Library/Frameworks/Python.framework/Versions/Current/bin' \
+        '/Library/Frameworks/Python.framework/Versions/3.13/bin' \
+        '/Library/Frameworks/Python.framework/Versions/3.12/bin'; do
+        if [ -x "$candidate/python3" ]; then
+            PATH="$candidate:$PATH"
+            export PATH
+            return
+        fi
+    done
+}
+
+install_python3_on_macos_official() {
+    local python_version pkg_path
+
+    python_version='3.12.10'
+    ensure_temp_dir
+    pkg_path="$TEMP_DIR/python-${python_version}-macos.pkg"
+
+    log 'Downloading Python 3 for macOS'
+    curl -fsSL "https://www.python.org/ftp/python/${python_version}/python-${python_version}-macos11.pkg" -o "$pkg_path"
+
+    log 'Installing Python 3 for macOS'
+    $SUDO installer -pkg "$pkg_path" -target /
+    refresh_macos_python3_path
+}
+
+ensure_runtime_capabilities() {
+    if [ "$PLATFORM" = 'linux' ]; then
+        ensure_docker_linux
+        return
+    fi
+
+    if [ "$PLATFORM" = 'darwin' ]; then
+        ensure_docker_macos
+        return
+    fi
+
+    fail "Unsupported platform: $PLATFORM"
+}
+
+ensure_python3() {
+    if command -v python3 >/dev/null 2>&1; then
+        return
+    fi
+
+    if [ "$PLATFORM" = 'darwin' ]; then
+        if command -v brew >/dev/null 2>&1; then
+            log 'Installing python3 with Homebrew'
+            brew install python
+        else
+            install_python3_on_macos_official
+        fi
+    fi
+
+    refresh_macos_python3_path
+    require_command python3
+}
+
+ensure_deploy_user() {
+    if [ "$PLATFORM" = 'linux' ]; then
+        if ! id -u "$DEPLOY_USER" >/dev/null 2>&1; then
+            log "Creating deployment user $DEPLOY_USER"
+            $SUDO useradd --create-home --shell /bin/bash "$DEPLOY_USER"
+        fi
+
+        $SUDO usermod -aG docker "$DEPLOY_USER"
+        $SUDO install -d -m 0755 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$INSTALL_ROOT"
+        return
+    fi
+
+    DEPLOY_USER="$LOCAL_USER"
+    mkdir -p "$INSTALL_ROOT"
+    if [ "$(id -u)" -eq 0 ] && [ "$LOCAL_USER" != 'root' ]; then
+        chown "$LOCAL_USER" "$INSTALL_ROOT"
+    fi
 }
 
 choose_ports() {
@@ -269,13 +580,14 @@ PY
 download_manifest() {
     local payload response_file
 
-    payload="$(python3 - "$DAEMON_PASSWORD" "$PORTS_JSON" <<'PY'
+    payload="$(python3 - "$DAEMON_PASSWORD" "$INSTALL_ROOT" "$PORTS_JSON" <<'PY'
 import json
 import sys
 
 print(json.dumps({
     'daemonPassword': sys.argv[1],
-    'ports': json.loads(sys.argv[2])
+    'installRoot': sys.argv[2],
+    'ports': json.loads(sys.argv[3])
 }))
 PY
 )"
@@ -290,7 +602,11 @@ materialize_manifest() {
     INSTALL_DIR="${INSTALL_ROOT}/${TEAM_CLUSTER_ID}"
     export INSTALL_DIR
 
-    $SUDO install -d -m 0755 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$INSTALL_DIR"
+    if [ "$PLATFORM" = 'linux' ]; then
+        $SUDO install -d -m 0755 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$INSTALL_DIR"
+    else
+        mkdir -p "$INSTALL_DIR"
+    fi
 
     local staging_dir
     staging_dir="$(mktemp -d "$TEMP_DIR/staging.XXXXXX")"
@@ -337,8 +653,32 @@ write_manifest_files(install_dir, manifest['files'])
 materialize_build_context(install_dir, manifest)
 PY
 
-    $SUDO cp -r "$staging_dir/." "$INSTALL_DIR/"
-    $SUDO chown -R "$DEPLOY_USER:$DEPLOY_USER" "$INSTALL_DIR"
+    if [ "$PLATFORM" = 'linux' ]; then
+        $SUDO cp -r "$staging_dir/." "$INSTALL_DIR/"
+        $SUDO chown -R "$DEPLOY_USER:$DEPLOY_USER" "$INSTALL_DIR"
+        return
+    fi
+
+    cp -r "$staging_dir/." "$INSTALL_DIR/"
+    if [ "$(id -u)" -eq 0 ] && [ "$LOCAL_USER" != 'root' ]; then
+        chown -R "$LOCAL_USER" "$INSTALL_DIR"
+    fi
+}
+
+run_stack_shell() {
+    local command="$1"
+
+    if [ "$PLATFORM" = 'linux' ]; then
+        $SUDO -H -u "$DEPLOY_USER" sh -lc "$command"
+        return
+    fi
+
+    if [ "$(id -u)" -eq 0 ] && [ "$LOCAL_USER" != 'root' ]; then
+        sudo -H -u "$LOCAL_USER" sh -lc "$command"
+        return
+    fi
+
+    sh -lc "$command"
 }
 
 start_stack() {
@@ -353,7 +693,7 @@ PY
 )"
 
     log 'Starting Team Cluster stack'
-    $SUDO -u "$DEPLOY_USER" sh -lc "cd '$INSTALL_DIR' && docker compose --project-name '$compose_project_name' --project-directory '$INSTALL_DIR' --file '$INSTALL_DIR/docker-compose.yml' up -d"
+    run_stack_shell "cd '$INSTALL_DIR' && docker compose --project-name '$compose_project_name' --project-directory '$INSTALL_DIR' --file '$INSTALL_DIR/docker-compose.yml' up -d"
 }
 
 wait_for_daemon_ready() {
@@ -368,34 +708,36 @@ print(payload['data']['manifest']['composeProjectName'])
 PY
 )"
     container_name="${compose_project_name}-daemon-1"
-    timeout_seconds='60'
+    timeout_seconds='90'
     started_at="$(date +%s)"
 
     log "Waiting for daemon readiness (container: $container_name)"
 
     while :; do
-        if docker logs "$container_name" 2>&1 | grep -q 'cluster-daemon started for team cluster'; then
+        if host_docker logs "$container_name" 2>&1 | grep -q 'cluster-daemon started for team cluster'; then
             log 'Daemon is ready'
             return
         fi
 
         if [ $(( $(date +%s) - started_at )) -ge "$timeout_seconds" ]; then
             log 'Daemon logs at timeout:'
-            docker logs --tail 20 "$container_name" 2>&1 || true
+            host_docker logs --tail 20 "$container_name" 2>&1 || true
             fail "Daemon did not become ready within ${timeout_seconds}s"
         fi
 
-        sleep 2
+        sleep 3
     done
 }
 
 print_summary() {
-    python3 - "$PORTS_JSON" <<'PY'
+    python3 - "$PORTS_JSON" "$INSTALL_ROOT" <<'PY'
 import json
 import sys
 
 ports = json.loads(sys.argv[1])
+install_root = sys.argv[2]
 print('[install] Provisioning assets installed')
+print(f'[install] Install root: {install_root}')
 print(f"[install] MinIO port: {ports['minio']}")
 print(f"[install] Redis port: {ports['redis']}")
 print(f"[install] MongoDB port: {ports['mongodb']}")
@@ -406,14 +748,19 @@ main() {
     require_argument "$TEAM_CLUSTER_ID" 'team-cluster-id'
     require_argument "$ENROLLMENT_TOKEN" 'enrollment-token'
     require_command curl
-    require_command python3
-    ensure_sudo
 
     trap cleanup EXIT
     trap on_error ERR
 
+    detect_platform
+    resolve_local_user
     ensure_supported_architecture
-    detect_os
+    set_install_root
+    ensure_privileges
+
+    log 'Checking Docker availability'
+    ensure_runtime_capabilities
+    ensure_python3
 
     VOLT_CLOUD_URL="${VOLT_CLOUD_URL:-${VOLT_CLOUD_SERVER_URL:-}}"
     if [ -z "$VOLT_CLOUD_URL" ]; then
@@ -422,13 +769,11 @@ main() {
     VOLT_CLOUD_URL="${VOLT_CLOUD_URL%/}"
     export VOLT_CLOUD_URL
 
-    log 'Sending initial healthcheck to VoltCloud'
-    send_healthcheck
-
-    log 'Checking runtime capabilities'
-    ensure_runtime_capabilities
     ensure_deploy_user
     choose_ports
+
+    log 'Requesting daemon credentials from VoltCloud'
+    send_healthcheck
 
     log 'Downloading install manifest'
     download_manifest

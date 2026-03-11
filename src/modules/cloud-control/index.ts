@@ -53,10 +53,13 @@ export const createCloudControlModule = (deps: {
     analysisDispatchService: AnalysisDispatchService;
 }): CloudControlModule => {
     const reverseChannelSocketBridge = new ReverseChannelSocketBridge(
-        deps.config,
         deps.dockerRuntimeService,
         deps.hostShellService
     );
+
+    // Lazy reference resolved after voltCloudConnection is constructed below.
+    let voltCloudConnectionRef: VoltCloudConnection | null = null;
+
     const handlers = [
         ...createAnalysisHandlers({ analysisDispatchService: deps.analysisDispatchService }),
         ...createJobHandlers({ queueService: deps.queueService, redisConnectionService: deps.redisConnectionService }),
@@ -79,7 +82,13 @@ export const createCloudControlModule = (deps: {
             redisConnectionService: deps.redisConnectionService
         }),
         ...createNotebookHandlers({ jupyterRuntimeService: deps.jupyterRuntimeService }),
-        ...createRuntimeHandlers({ config: deps.config, eventBroker: deps.eventBroker, dockerRuntimeService: deps.dockerRuntimeService })
+        ...createRuntimeHandlers({
+            config: deps.config,
+            eventBroker: deps.eventBroker,
+            dockerRuntimeService: deps.dockerRuntimeService,
+            hostShellService: deps.hostShellService,
+            reportUpdateFailed: (details) => voltCloudConnectionRef?.reportUpdateFailed(details) ?? Promise.resolve()
+        })
     ];
 
     for (const handler of handlers) {
@@ -89,9 +98,13 @@ export const createCloudControlModule = (deps: {
     const voltCloudConnection = new VoltCloudConnection(
         deps.config,
         deps.metricsService,
-        deps.eventBroker,
-        reverseChannelSocketBridge
+        deps.eventBroker
     );
+    voltCloudConnectionRef = voltCloudConnection;
+
+    // Bind the bridge to the client after both objects are created.
+    reverseChannelSocketBridge.bindToClient(voltCloudConnection);
+
     const daemonExposureRegistryService = new DaemonExposureRegistryService(
         deps.config,
         deps.dockerRuntimeService,

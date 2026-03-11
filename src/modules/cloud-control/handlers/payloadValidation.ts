@@ -110,6 +110,18 @@ export const readOptionalStringArray = (value: unknown, fieldName: string): stri
     return readStringArray(value, fieldName);
 };
 
+export const readOptionalNumberArray = (value: unknown, fieldName: string): number[] | undefined => {
+    if (typeof value === 'undefined') {
+        return undefined;
+    }
+
+    if (!Array.isArray(value)) {
+        throw new Error(`${fieldName} must be an array`);
+    }
+
+    return value.map((entry) => readNumber(entry, fieldName));
+};
+
 export const readOptionalStringRecord = (value: unknown, fieldName: string): Record<string, string> | undefined => {
     if (typeof value === 'undefined') {
         return undefined;

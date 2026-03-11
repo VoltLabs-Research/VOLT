@@ -1,4 +1,5 @@
-import { ObjectBucketName, OrchestrationAction, PluginSyncRequest, ProgressStageType, TextEncoding, type ObjectUploadRequest, type RuntimeEventBroker } from '@/shared/contracts';
+import { ObjectBucketName, OrchestrationAction, PluginSyncRequest, TextEncoding, type ObjectUploadRequest, type RuntimeEventBroker } from '@/shared/contracts';
+import { ProgressStageType } from '@voltstack/daemon-cluster-client';
 import type { MinioService } from './MinioService';
 
 const emitProgress = (

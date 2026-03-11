@@ -1,4 +1,4 @@
-import { EventType, type TeamClusterDaemonExposureSnapshotPayload, TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus, type TeamClusterServiceExposure } from '@/shared/contracts';
+import { type TeamClusterDaemonExposureSnapshotPayload, TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus, type TeamClusterServiceExposure } from '@/shared/contracts';
 import type { DaemonConfig } from '@/core/config';
 import type { ContainerInfo } from 'dockerode';
 import type { DockerRuntimeService } from '@/modules/platform/services';
@@ -131,16 +131,11 @@ export class DaemonExposureRegistryService {
             return;
         }
 
-        const socket = this.voltCloudConnection.getControlSocket();
-        if (!socket) {
-            return;
-        }
-
         const payload: TeamClusterDaemonExposureSnapshotPayload = {
             type: 'exposure-snapshot',
             exposures
         };
 
-        socket.emit(EventType.TeamClusterDaemonMessage, payload);
+        this.voltCloudConnection.emitMessage(payload);
     }
 };

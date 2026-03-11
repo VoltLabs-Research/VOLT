@@ -7,7 +7,15 @@ import type {
 } from '@/shared/contracts';
 import type { AnalysisDispatchService } from '@/modules/job-runtime/services';
 import type { ReverseChannelCommandHandler } from '../services';
-import { readNumber, readOptionalBoolean, readOptionalNumber, readPayloadRecord, readRecord, readString } from './payloadValidation';
+import {
+    readNumber,
+    readOptionalBoolean,
+    readOptionalNumber,
+    readOptionalNumberArray,
+    readPayloadRecord,
+    readRecord,
+    readString
+} from './payloadValidation';
 import { readDocumentId, toRecord } from '@/shared/utils';
 
 interface AnalysisHandlersDependencies {
@@ -173,10 +181,15 @@ const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
     const selectedFrameOnly = typeof record.selectedFrameOnly === 'undefined'
         ? undefined
         : readOptionalBoolean(record.selectedFrameOnly, false);
+    const selectedTimesteps = readOptionalNumberArray(record.selectedTimesteps, 'selectedTimesteps');
     const timestep = readOptionalNumber(record.timestep);
 
     if (typeof selectedFrameOnly !== 'undefined') {
         request.selectedFrameOnly = selectedFrameOnly;
+    }
+
+    if (selectedTimesteps?.length) {
+        request.selectedTimesteps = selectedTimesteps;
     }
 
     if (typeof timestep !== 'undefined') {

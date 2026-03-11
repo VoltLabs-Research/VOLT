@@ -1,6 +1,6 @@
-import { EventType } from '../contracts/events';
+import { DaemonSocketEvent } from '@voltstack/daemon-cluster-client';
 import { EventEmitter } from 'node:events';
-import type { RuntimeLifecycleEvent, RuntimeProgressEvent } from '../contracts/events';
+import type { RuntimeLifecycleEvent, RuntimeProgressEvent } from '@voltstack/daemon-cluster-client';
 
 type RuntimeLifecycleListener = (event: RuntimeLifecycleEvent) => void;
 type RuntimeProgressListener = (event: RuntimeProgressEvent) => void;
@@ -11,24 +11,24 @@ export class RuntimeEventBroker {
 
     emitLifecycle(event: RuntimeLifecycleEvent): void {
         this.latestLifecycleEvent = event;
-        this.emitter.emit(EventType.RuntimeLifecycle, event);
+        this.emitter.emit(DaemonSocketEvent.RuntimeLifecycle, event);
     }
 
     emitProgress(event: RuntimeProgressEvent): void {
-        this.emitter.emit(EventType.RuntimeProgress, event);
+        this.emitter.emit(DaemonSocketEvent.RuntimeProgress, event);
     }
 
     onLifecycle(listener: RuntimeLifecycleListener): () => void {
-        this.emitter.on(EventType.RuntimeLifecycle, listener);
+        this.emitter.on(DaemonSocketEvent.RuntimeLifecycle, listener);
         return () => {
-            this.emitter.off(EventType.RuntimeLifecycle, listener);
+            this.emitter.off(DaemonSocketEvent.RuntimeLifecycle, listener);
         };
     }
 
     onProgress(listener: RuntimeProgressListener): () => void {
-        this.emitter.on(EventType.RuntimeProgress, listener);
+        this.emitter.on(DaemonSocketEvent.RuntimeProgress, listener);
         return () => {
-            this.emitter.off(EventType.RuntimeProgress, listener);
+            this.emitter.off(DaemonSocketEvent.RuntimeProgress, listener);
         };
     }
 
