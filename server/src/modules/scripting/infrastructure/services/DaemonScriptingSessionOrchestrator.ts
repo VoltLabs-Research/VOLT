@@ -15,13 +15,31 @@ import type {
 } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 
+interface DaemonNotebookJupyterResponse {
+    internalPath?: string;
+    path?: string;
+    url?: string;
+    ready: boolean;
+};
+
 interface DaemonNotebookSessionResponse {
-    jupyter?: {
-        internalPath?: string;
-        path?: string;
-        url?: string;
-        ready: boolean;
-    };
+    jupyter?: DaemonNotebookJupyterResponse;
+};
+
+interface DaemonNotebookSessionSnapshot {
+    [key: string]: unknown;
+    _id: string;
+    teamId: string;
+    notebookPath: string;
+    content?: Record<string, unknown>;
+};
+
+interface DaemonNotebookSessionRequest {
+    [key: string]: unknown;
+    notebookId: string;
+    requestedBy: string;
+    publicBasePath: string;
+    notebook: DaemonNotebookSessionSnapshot;
 };
 
 const LEGACY_DAEMON_PROXY_BASE_PATH = '/api/notebooks/proxy';
@@ -61,18 +79,32 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         if (!input.notebookId) {
             throw ApplicationError.badRequest('Scripting::NotebookRequired', 'Notebook id is required to start a remote notebook session');
         }
+        if (!input.notebook) {
+            throw ApplicationError.badRequest('Scripting::NotebookSnapshotRequired', 'Notebook snapshot is required to start a remote notebook session');
+        }
 
-        const runtimeNotebookId = await this.ensureRemoteNotebook(teamClusterId, input.notebookId, input);
+        const runtimeNotebookId = input.notebookId;
+        const request: DaemonNotebookSessionRequest = {
+            notebookId: runtimeNotebookId,
+            requestedBy: input.userId,
+            publicBasePath: this.buildPublicProxyBasePath(input.teamId, runtimeNotebookId),
+            notebook: {
+                _id: runtimeNotebookId,
+                teamId: input.teamId,
+                notebookPath: input.notebook.notebookPath,
+                content: input.notebook.content
+            }
+        };
 
         const response = await this.teamClusterDaemonClient.command<DaemonNotebookSessionResponse>(
             teamClusterId,
             'notebook.session.create',
-            {
-                notebookId: runtimeNotebookId,
-                requestedBy: input.userId,
-                publicBasePath: this.buildPublicProxyBasePath(input.teamId, runtimeNotebookId)
-            }
+            request
         );
+        await this.scriptingNotebookRepository.updateById(input.notebookId, {
+            runtimeNotebookId,
+            teamCluster: teamClusterId
+        });
 
         if (response.jupyter) {
             const daemonPath = this.resolveDaemonJupyterPath(response.jupyter);
@@ -125,38 +157,6 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         return this.notebookService.resolveDefaultNotebookTemplateContent(context);
     }
 
-    private async ensureRemoteNotebook(
-        teamClusterId: string,
-        notebookId: string,
-        input: ScriptingSessionStartInput
-    ): Promise<string> {
-        const notebook = await this.scriptingNotebookRepository.findById(notebookId);
-        if (!notebook) {
-            throw ApplicationError.notFound('Scripting::NotebookNotFound', 'Notebook not found');
-        }
-
-        if (notebook.props.runtimeNotebookId) {
-            return notebook.props.runtimeNotebookId;
-        }
-
-        const createdNotebook = await this.teamClusterDaemonClient.command<{ _id: string; }>(teamClusterId, 'notebook.create', {
-            _id: notebook.id,
-            teamId: input.teamId,
-            title: notebook.props.title,
-            notebookPath: notebook.props.notebookPath,
-            trajectories: notebook.props.trajectories,
-            createdBy: notebook.props.createdBy,
-            content: notebook.props.content
-        });
-
-        await this.scriptingNotebookRepository.updateById(notebookId, {
-            runtimeNotebookId: notebook.id,
-            teamCluster: teamClusterId
-        });
-
-        return createdNotebook._id;
-    }
-
     private buildProxyJupyterUrl(teamId: string, runtimeNotebookId: string, daemonPath: string, userId: string): string {
         const accessToken = this.accessTokenService.create({
             teamId,
@@ -173,7 +173,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         return `/api/jupyter/${encodeURIComponent(teamId)}/notebooks/${encodeURIComponent(runtimeNotebookId)}`;
     }
 
-    private resolveDaemonJupyterPath(jupyter: NonNullable<DaemonNotebookSessionResponse['jupyter']>): string {
+    private resolveDaemonJupyterPath(jupyter: DaemonNotebookJupyterResponse): string {
         if (jupyter.internalPath) {
             return this.normalizeDaemonPath(jupyter.internalPath);
         }

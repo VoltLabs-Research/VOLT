@@ -1,7 +1,14 @@
-import type { AnalysisStartRequest, WorkflowDefinition, WorkflowEdgeDefinition, WorkflowNodeDefinition } from '@/shared/contracts';
+import type {
+    AnalysisStartRequest,
+    DaemonAnalysisDocument,
+    WorkflowDefinition,
+    WorkflowEdgeDefinition,
+    WorkflowNodeDefinition
+} from '@/shared/contracts';
 import type { AnalysisDispatchService } from '@/modules/job-runtime/services';
 import type { ReverseChannelCommandHandler } from '../services';
 import { readNumber, readOptionalBoolean, readOptionalNumber, readPayloadRecord, readRecord, readString } from './payloadValidation';
+import { readDocumentId, toRecord } from '@/shared/utils';
 
 interface AnalysisHandlersDependencies {
     analysisDispatchService: AnalysisDispatchService;
@@ -11,6 +18,75 @@ interface AnalysisTrajectoryFrame {
     timestep: number;
     natoms: number;
     simulationCell: string;
+};
+
+const readAnalysisDocument = (value: unknown): DaemonAnalysisDocument => {
+    const record = readRecord(value, 'analysis');
+    const analysis: DaemonAnalysisDocument = {
+        _id: readDocumentId(record._id)
+    };
+
+    if (!analysis._id) {
+        throw new Error('analysis._id is required');
+    }
+
+    if (typeof record.plugin === 'string') {
+        analysis.plugin = record.plugin;
+    }
+
+    if (typeof record.clusterId === 'string') {
+        analysis.clusterId = record.clusterId;
+    }
+
+    if (typeof record.teamCluster === 'string') {
+        analysis.teamCluster = record.teamCluster;
+    }
+
+    if (typeof record.config !== 'undefined') {
+        analysis.config = toRecord(record.config);
+    }
+
+    if (typeof record.trajectory === 'string') {
+        analysis.trajectory = record.trajectory;
+    }
+
+    if (typeof record.createdBy === 'string') {
+        analysis.createdBy = record.createdBy;
+    }
+
+    if (typeof record.totalFrames === 'number') {
+        analysis.totalFrames = record.totalFrames;
+    }
+
+    if (typeof record.completedFrames === 'number') {
+        analysis.completedFrames = record.completedFrames;
+    }
+
+    if (typeof record.startedAt === 'string' || record.startedAt instanceof Date) {
+        analysis.startedAt = record.startedAt;
+    }
+
+    if (typeof record.finishedAt === 'string' || record.finishedAt instanceof Date) {
+        analysis.finishedAt = record.finishedAt;
+    }
+
+    if (typeof record.team === 'string') {
+        analysis.team = record.team;
+    }
+
+    if (typeof record.status === 'string') {
+        analysis.status = record.status;
+    }
+
+    if (typeof record.createdAt === 'string' || record.createdAt instanceof Date) {
+        analysis.createdAt = record.createdAt;
+    }
+
+    if (typeof record.updatedAt === 'string' || record.updatedAt instanceof Date) {
+        analysis.updatedAt = record.updatedAt;
+    }
+
+    return analysis;
 };
 
 const readWorkflowNodeDefinition = (value: unknown): WorkflowNodeDefinition => {
@@ -84,6 +160,7 @@ const readAnalysisTrajectoryFrames = (value: unknown): AnalysisTrajectoryFrame[]
 const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
     const record = readPayloadRecord(payload);
     const request: AnalysisStartRequest = {
+        analysis: readAnalysisDocument(record.analysis),
         analysisId: readString(record.analysisId, 'analysisId'),
         pluginId: readString(record.pluginId, 'pluginId'),
         teamId: readString(record.teamId, 'teamId'),

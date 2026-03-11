@@ -24,7 +24,7 @@ Determine the issue type from the user request:
 
 1. Classify the issue type
 2. Fill in the matching template below using the planner findings
-3. Write the proposal to:
+3. Write the proposal **IN ENGLISH** to:
 
 ```
 .ai-workflow/proposals/{bug|feature|task}/{proposal-name}.md

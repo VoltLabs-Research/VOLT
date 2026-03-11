@@ -1,5 +1,4 @@
 import type { PluginListingRepository } from '@/modules/artifacts';
-import type { NotebookRepository } from '@/modules/jupyter';
 import type { DaemonConfig } from '@/core/config';
 import type { RuntimeEventBroker } from '@/shared/services';
 import type { DockerRuntimeService, HostShellService, MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
@@ -50,7 +49,6 @@ export const createCloudControlModule = (deps: {
     rasterizerService: RasterizerService;
     filterEvaluatorService: FilterEvaluatorService;
     jupyterRuntimeService: JupyterRuntimeService;
-    notebookRepository: NotebookRepository;
     pluginListingRepository: PluginListingRepository;
     analysisDispatchService: AnalysisDispatchService;
 }): CloudControlModule => {
@@ -80,7 +78,7 @@ export const createCloudControlModule = (deps: {
             minioService: deps.minioService,
             redisConnectionService: deps.redisConnectionService
         }),
-        ...createNotebookHandlers({ notebookRepository: deps.notebookRepository, jupyterRuntimeService: deps.jupyterRuntimeService }),
+        ...createNotebookHandlers({ jupyterRuntimeService: deps.jupyterRuntimeService }),
         ...createRuntimeHandlers({ config: deps.config, eventBroker: deps.eventBroker, dockerRuntimeService: deps.dockerRuntimeService })
     ];
 

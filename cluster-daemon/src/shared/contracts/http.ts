@@ -50,20 +50,18 @@ export interface CreateContainerRequest {
     cmd?: string[];
 };
 
-export interface CreateNotebookRequest {
-    _id?: string;
+export interface NotebookSessionSnapshot {
+    _id: string;
     teamId: string;
-    title: string;
     notebookPath: string;
-    trajectories: string[];
-    createdBy: string;
     content?: Record<string, unknown>;
 };
 
-export interface UpdateNotebookRequest {
-    title?: string;
-    content?: Record<string, unknown>;
-    lastOpenedAt?: string;
+export interface CreateNotebookSessionRequest {
+    notebookId: string;
+    requestedBy: string;
+    publicBasePath: string;
+    notebook: NotebookSessionSnapshot;
 };
 
 export interface CreateNotebookSessionResponse {
@@ -117,6 +115,24 @@ export interface AnalysisExposureDefinition {
     };
 };
 
+export interface DaemonAnalysisDocument {
+    _id: string;
+    plugin?: string;
+    clusterId?: string;
+    teamCluster?: string;
+    config?: Record<string, unknown>;
+    trajectory?: string;
+    createdBy?: string;
+    totalFrames?: number;
+    completedFrames?: number;
+    startedAt?: string | Date;
+    finishedAt?: string | Date;
+    team?: string;
+    status?: string;
+    createdAt?: string | Date;
+    updatedAt?: string | Date;
+};
+
 export interface WorkflowEdgeDefinition {
     source: string;
     target: string;
@@ -152,6 +168,7 @@ export interface AnalysisJobExecutionData {
 };
 
 export interface AnalysisStartRequest {
+    analysis: DaemonAnalysisDocument;
     analysisId: string;
     pluginId: string;
     teamId: string;
