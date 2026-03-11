@@ -46,8 +46,6 @@ const startServer = async () => {
     const { default: mountHttpRoutes } = await import('./core/bootstrap/mount-http-routes');
 
     const server = http.createServer(app);
-    const xrdpGatewayService = container.resolve(ContainerXrdpGatewayService);
-    xrdpGatewayService.attach(server);
 
     app.use(mountHttpRoutes());
     app.use(httpErrorMiddleware);
@@ -61,7 +59,6 @@ const startServer = async () => {
         logger.error(`@server: http server error: ${error}`);
     });
 
-    // TODO: ???
     server.on('upgrade', (request, socket, head) => {
         const proxyService = container.resolve(ScriptingJupyterProxyService);
         if (!proxyService.isJupyterUpgradeRequest(request)) {
@@ -74,27 +71,64 @@ const startServer = async () => {
         });
     });
 
+    // XRDP gateway uses noServer mode; its upgrade handler is
+    // registered inside attach() and only handles its own path,
+    // so it won't interfere with Socket.IO WebSocket upgrades.
+    const xrdpGatewayService = container.resolve(ContainerXrdpGatewayService);
+    xrdpGatewayService.attach(server);
+
     server.listen(SERVER_PORT, SERVER_HOST, async () => {
-        await Promise.all([
-            initializeRedis(),
-            mongoConnector(),
-            initializeMinio()
-        ]);
+        try {
+            const [redisResult, mongoResult, minioResult] = await Promise.allSettled([
+                initializeRedis(),
+                mongoConnector(),
+                initializeMinio()
+            ]);
 
-        await registerAllSubscribers();
+            const failures: string[] = [];
 
-        const socketGateway = container.resolve<SocketGateway>(SOCKET_TOKENS.SocketGateway);
-        const socketModules = container.resolveAll<ISocketModule>(SOCKET_TOKENS.SocketModule);
-        for (const module of socketModules) {
-            socketGateway.register(module);
+            if (redisResult.status === 'rejected') {
+                logger.error(`@server: Redis init failed: ${redisResult.reason}`);
+                failures.push('Redis');
+            }
+
+            if (mongoResult.status === 'rejected') {
+                logger.error(`@server: MongoDB init failed: ${mongoResult.reason}`);
+                failures.push('MongoDB');
+            }
+
+            if (minioResult.status === 'rejected') {
+                logger.error(`@server: MinIO init failed: ${minioResult.reason}`);
+                failures.push('MinIO');
+            }
+
+            if (failures.length > 0) {
+                logger.error(`@server: critical dependencies failed (${failures.join(', ')}), shutting down`);
+                process.exit(1);
+            }
+
+            await registerAllSubscribers();
+
+            const socketGateway = container.resolve<SocketGateway>(SOCKET_TOKENS.SocketGateway);
+            const socketModules = container.resolveAll<ISocketModule>(SOCKET_TOKENS.SocketModule);
+            for (const module of socketModules) {
+                socketGateway.register(module);
+            }
+
+            await socketGateway.initialize(server);
+            logger.info(`@server: SocketGateway ready on :${SERVER_PORT}`);
+
+            tcpExposureRelayService.start();
+
+            logger.info(`@server: running at http://${SERVER_HOST}:${SERVER_PORT}/`);
+
+            process.on('SIGTERM', shutdown);
+            process.on('SIGINT', shutdown);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.stack || error.message : String(error);
+            logger.error(`@server: startup error: ${message}`);
+            process.exit(1);
         }
-        await socketGateway.initialize(server);
-        tcpExposureRelayService.start();
-
-        logger.info(`@server: running at http://${SERVER_HOST}:${SERVER_PORT}/`);
-
-        process.on('SIGTERM', shutdown);
-        process.on('SIGINT', shutdown);
     });
 };
 

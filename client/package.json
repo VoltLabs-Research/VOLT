@@ -72,6 +72,7 @@
     "@rollup/plugin-commonjs": "^28.0.6",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
+    "@types/react-katex": "^3.0.4",
     "@vitejs/plugin-react": "^4.4.1",
     "cross-env": "^10.1.0",
     "electron": "^41.0.0",

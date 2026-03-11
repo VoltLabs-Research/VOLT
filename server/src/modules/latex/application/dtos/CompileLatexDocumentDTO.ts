@@ -1,11 +1,11 @@
 import type { Readable } from 'node:stream';
 
-export interface ExportLatexDocumentInputDTO {
+export interface CompileLatexDocumentInputDTO {
     teamId: string;
     documentId: string;
 };
 
-export interface ExportLatexDocumentOutputDTO {
+export interface CompileLatexDocumentOutputDTO {
     stream: Readable;
     headers: Record<string, string>;
     prepare?: () => Promise<void>;

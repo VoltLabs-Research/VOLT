@@ -13,6 +13,9 @@ import type { UpdateLatexDocumentParams } from '../api/dtos/update-latex-documen
 import type { ListLatexAssetsParams } from '../api/dtos/list-latex-assets';
 import type { UploadLatexAssetParams } from '../api/dtos/upload-latex-asset';
 import type { DeleteLatexAssetParams } from '../api/dtos/delete-latex-asset';
+import type { CompileLatexDocumentParams } from '../api/dtos/compile-latex-document';
+import type { ExportLatexDocumentParams } from '../api/dtos/export-latex-document';
+import type { ImportLatexDocumentParams, ImportLatexDocumentResult } from '../api/dtos/import-latex-document';
 import type { LatexDocument } from '../api/entities/latex-document';
 import type { LatexAsset } from '../api/entities/latex-asset';
 
@@ -76,4 +79,21 @@ export const useUploadLatexAssetMutation = createManagedMutation<LatexAsset, Upl
 export const useDeleteLatexAssetMutation = createManagedMutation<void, DeleteLatexAssetParams>(
     deleteAsset,
     (_data, variables) => invalidateLatexAssetsQuery({ documentId: variables.documentId })
+);
+
+export const useExportLatexDocumentTexMutation = createManagedMutation<Blob, ExportLatexDocumentParams>(
+    (params: ExportLatexDocumentParams) => service.exportDocumentTex(params)
+);
+
+export const useExportLatexDocumentZipMutation = createManagedMutation<Blob, ExportLatexDocumentParams>(
+    (params: ExportLatexDocumentParams) => service.exportDocumentZip(params)
+);
+
+export const useImportLatexDocumentMutation = createManagedMutation<ImportLatexDocumentResult, ImportLatexDocumentParams>(
+    (params: ImportLatexDocumentParams) => service.importDocument(params),
+    () => invalidateLatexDocumentsQuery()
+);
+
+export const useCompileLatexDocumentMutation = createManagedMutation<Blob, CompileLatexDocumentParams>(
+    (params: CompileLatexDocumentParams) => service.compileDocument(params)
 );

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import type { Excalidraw as ExcalidrawComponent } from '@excalidraw/excalidraw';
+import '@excalidraw/excalidraw/index.css';
 import './WhiteboardEditorPage.css';
 
 const Excalidraw = lazy(() =>

@@ -38,50 +38,52 @@ const PanelHeader: React.FC<PanelHeaderProps> = ({
     );
 
     const renderLeft = () => {
-        if (icon || (title && variant === 'compact')) {
-            return (
-                <Container className="d-flex items-center gap-05">
-                    {icon && (
-                        <span className="shared-panel-header-icon d-flex items-center">{icon}</span>
-                    )}
-                    {title && (
-                        <Paragraph className="shared-panel-header-title font-size-05 color-muted">
-                            {title}
-                        </Paragraph>
-                    )}
-                </Container>
-            );
+        const showCompactIconTitle = icon || (title && variant === 'compact');
+        const showFullTitle = title && !icon && variant !== 'compact';
+        const showTabs = tabs && tabs.length > 0;
+
+        if (!showCompactIconTitle && !showFullTitle && !showTabs) {
+            return null;
         }
 
-        if (title) {
-            return (
-                <Title className="font-size-4 font-weight-6 flex-1">
-                    {title}
-                </Title>
-            );
-        }
-
-        if (tabs && tabs.length > 0) {
-            return (
-                <Container className="d-flex flex-1 gap-025">
-                    {tabs.map((tab, index) => (
-                        <Button
-                            key={index}
-                            variant="ghost"
-                            intent={tab.active ? 'brand' : 'neutral'}
-                            size="sm"
-                            onClick={tab.onClick}
-                            disabled={tab.disabled}
-                            style={tab.disabled ? { opacity: 0.5 } : undefined}
-                        >
-                            {tab.label}
-                        </Button>
-                    ))}
-                </Container>
-            );
-        }
-
-        return null;
+        return (
+            <>
+                {showCompactIconTitle && (
+                    <Container className="d-flex items-center gap-05">
+                        {icon && (
+                            <span className="shared-panel-header-icon d-flex items-center">{icon}</span>
+                        )}
+                        {title && (
+                            <Paragraph className="shared-panel-header-title font-size-05 color-muted">
+                                {title}
+                            </Paragraph>
+                        )}
+                    </Container>
+                )}
+                {showFullTitle && (
+                    <Title className="font-size-4 font-weight-6 flex-1">
+                        {title}
+                    </Title>
+                )}
+                {showTabs && (
+                    <Container className="d-flex flex-1 gap-025">
+                        {tabs!.map((tab, index) => (
+                            <Button
+                                key={index}
+                                variant="ghost"
+                                intent={tab.active ? 'brand' : 'neutral'}
+                                size="sm"
+                                onClick={tab.onClick}
+                                disabled={tab.disabled}
+                                style={tab.disabled ? { opacity: 0.5 } : undefined}
+                            >
+                                {tab.label}
+                            </Button>
+                        ))}
+                    </Container>
+                )}
+            </>
+        );
     };
 
     return (

@@ -13,12 +13,13 @@ class SocketIOAdapter implements ISocketService {
     private connectionStatus = SocketConnectionStatus.Disconnected;
     private connectionStatusListeners: Array<(status: SocketConnectionStatus) => void> = [];
     private hasConnectedOnce = false;
+    private connectErrorAttempts = 0;
 
     constructor(baseUrl: string, options: SocketOptions = {}) {
         this.connectionUrl = options.url ?? baseUrl;
         this.options = {
             path: options.path ?? '/socket.io',
-            autoConnect: options.autoConnect ?? true,
+            autoConnect: options.autoConnect ?? false,
             timeout: options.timeout ?? 20000,
             auth: options.auth ?? {}
         };
@@ -47,7 +48,12 @@ class SocketIOAdapter implements ISocketService {
                     path: this.options.path,
                     timeout: this.options.timeout,
                     auth: this.options.auth,
-                    transports: ['websocket', 'polling']
+                    transports: ['websocket', 'polling'],
+                    reconnection: true,
+                    reconnectionAttempts: Infinity,
+                    reconnectionDelay: 1000,
+                    reconnectionDelayMax: 30000,
+                    randomizationFactor: 0.5
                 });
 
                 this.socket.on(SOCKET_CONNECTION_EVENTS.CONNECT, () => {
@@ -57,7 +63,7 @@ class SocketIOAdapter implements ISocketService {
 
                 this.socket.on(SOCKET_CONNECTION_EVENTS.CONNECT_ERROR, (error) => {
                     this.connectionPromise = null;
-                    this.handleConnectError();
+                    this.handleConnectError(error);
                     reject(error);
                 });
 
@@ -184,13 +190,19 @@ class SocketIOAdapter implements ISocketService {
 
     private handleConnect(): void {
         this.connectionPromise = null;
+        this.connectErrorAttempts = 0;
         this.hasConnectedOnce = true;
         this.setConnectionStatus(SocketConnectionStatus.Connected);
         this.notifyConnectionListeners(true);
         this.resubscribeToEvents();
     }
 
-    private handleConnectError(): void {
+    private handleConnectError(error?: Error): void {
+        this.connectErrorAttempts++;
+        const transport = (this.socket?.io as { engine?: { transport?: { name?: string } } })?.engine?.transport?.name ?? 'unknown';
+        console.warn(
+            `[SocketIOAdapter] connect_error (attempt #${this.connectErrorAttempts}): ${error?.message ?? 'unknown'} | transport: ${transport} | url: ${this.connectionUrl}`
+        );
         this.setConnectionStatus(this.hasConnectedOnce ? SocketConnectionStatus.Reconnecting : SocketConnectionStatus.Error);
         this.notifyConnectionListeners(false);
     }

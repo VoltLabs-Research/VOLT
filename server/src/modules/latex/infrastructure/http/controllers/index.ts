@@ -6,6 +6,10 @@ import UpdateLatexDocumentController from './UpdateLatexDocumentController';
 import UploadLatexAssetController from './UploadLatexAssetController';
 import ListLatexAssetsController from './ListLatexAssetsController';
 import DeleteLatexAssetController from './DeleteLatexAssetController';
+import ExportLatexDocumentTexController from './ExportLatexDocumentTexController';
+import ExportLatexDocumentZipController from './ExportLatexDocumentZipController';
+import ImportLatexDocumentController from './ImportLatexDocumentController';
+import CompileLatexDocumentController from './CompileLatexDocumentController';
 import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
 export default createControllerRegistry({
@@ -16,5 +20,9 @@ export default createControllerRegistry({
     updateDocument: UpdateLatexDocumentController,
     uploadAsset: UploadLatexAssetController,
     listAssets: ListLatexAssetsController,
-    deleteAsset: DeleteLatexAssetController
+    deleteAsset: DeleteLatexAssetController,
+    exportDocumentTex: ExportLatexDocumentTexController,
+    exportDocumentZip: ExportLatexDocumentZipController,
+    importDocument: ImportLatexDocumentController,
+    compileDocument: CompileLatexDocumentController
 });

@@ -23,7 +23,7 @@ const LatexDocumentSchema: Schema<LatexDocumentDocument> = new Schema({
     },
     content: {
         type: String,
-        required: true,
+        required: false,
         default: ''
     },
     createdBy: {

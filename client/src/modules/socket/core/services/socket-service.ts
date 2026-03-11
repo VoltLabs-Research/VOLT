@@ -121,7 +121,8 @@ const getInitialAuth = (): Record<string, unknown> => {
 };
 
 export const socketTransport = new SocketIOAdapter(import.meta.env.VITE_API_URL, {
-    auth: getInitialAuth()
+    auth: getInitialAuth(),
+    autoConnect: false
 });
 
 export const socketService = new SocketService(socketTransport, getInitialAuth);
