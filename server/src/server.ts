@@ -70,17 +70,11 @@ const startServer = async () => {
     });
 
     server.listen(SERVER_PORT, SERVER_HOST, async () => {
-        const clusterId = process.env.CLUSTER_ID || os.hostname();
         await Promise.all([
             initializeRedis(),
             mongoConnector(),
             initializeMinio()
         ]);
-
-        if (redis) {
-            await redis.zadd('active_clusters', Date.now(), clusterId);
-            logger.info(`@server: registered ${clusterId} to active_clusters`);
-        }
 
         await registerAllSubscribers();
 
