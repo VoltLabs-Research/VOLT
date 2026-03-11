@@ -11,6 +11,7 @@ const paginationQuerySchema = createPaginationQuerySchema({
 });
 
 const trajectoryParamsSchema = createTeamScopedParamsSchema('trajectoryId');
+const folderParamsSchema = createTeamScopedParamsSchema('folderId');
 
 const trajectoryAnalysisParamsSchema = trajectoryParamsSchema.extend({
     analysisId: trajectoryAnalysisIdSchema
@@ -43,10 +44,45 @@ const updateTrajectorySchema = z.object({
     isPublic: z.boolean().optional()
 }).strict();
 
+const createFolderSchema = z.object({
+    title: z.string().trim().min(1).max(255),
+    parentId: objectIdSchema.nullable().optional()
+}).strict();
+
+const updateFolderSchema = z.object({
+    title: z.string().trim().min(1).max(255)
+}).strict();
+
+const moveTrajectorySchema = z.object({
+    folderId: objectIdSchema.nullable()
+}).strict();
+
 export const trajectoryValidation = createResourceValidation({
     listByTeamId: {
         params: teamParamsSchema,
-        query: paginationQuerySchema
+        query: paginationQuerySchema.extend({
+            folderId: z.string().optional()
+        })
+    },
+    createFolder: {
+        params: teamParamsSchema,
+        body: createFolderSchema
+    },
+    listFolders: {
+        params: teamParamsSchema,
+        query: createPaginationQuerySchema({ maxLimit: 500 }).extend({
+            parentId: z.string().optional()
+        })
+    },
+    getFolder: {
+        params: folderParamsSchema
+    },
+    updateFolder: {
+        params: folderParamsSchema,
+        body: updateFolderSchema
+    },
+    deleteFolder: {
+        params: folderParamsSchema
     },
     getMetrics: {
         params: teamParamsSchema
@@ -78,5 +114,9 @@ export const trajectoryValidation = createResourceValidation({
     update: {
         params: trajectoryParamsSchema,
         body: updateTrajectorySchema
+    },
+    move: {
+        params: trajectoryParamsSchema,
+        body: moveTrajectorySchema
     }
 });

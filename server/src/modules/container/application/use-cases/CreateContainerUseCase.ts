@@ -111,12 +111,13 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         const containerInfo = await this.containerRuntimeService.createContainer(teamClusterId, dockerConfig);
         const dockerId = containerInfo.Id;
 
-        const container = await this.repository.create({
-            name,
-            image,
-            containerId: dockerId,
-            status: containerInfo.State?.Status || 'running',
-            memory: memoryInMegabytes,
+            const container = await this.repository.create({
+                name,
+                image,
+                containerId: dockerId,
+                folder: input.folderId ?? null,
+                status: containerInfo.State?.Status || 'running',
+                memory: memoryInMegabytes,
             cpus: cpuCount,
             env: env || [],
             ports: ports || [],

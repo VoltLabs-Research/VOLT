@@ -1,6 +1,6 @@
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import Container from '@/shared/presentation/components/Container';
-import composeRefs from '@/shared/presentation/utils/compose-refs';
+import composeRefs from '@/shared/presentation/utilities/compose-refs';
 import './Popover.css';
 import { useFloating, useClick, useDismiss, useRole, useInteractions, FloatingPortal, FloatingFocusManager, offset, flip, shift, autoUpdate } from '@floating-ui/react';
 import { useState, useCallback, useLayoutEffect, useMemo, cloneElement, isValidElement } from 'react';

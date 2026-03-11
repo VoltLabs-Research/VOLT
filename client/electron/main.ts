@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, screen } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -15,6 +15,10 @@ const isDevelopment = !app.isPackaged;
 const rendererDistPath = path.join(__dirname, '../../dist');
 const preloadPath = path.join(__dirname, 'preload.js');
 const developmentServerUrl = process.env.VITE_DEV_SERVER_URL;
+const defaultWindowWidth = 1800;
+const defaultWindowHeight = 960;
+const defaultMinWindowWidth = 1180;
+const defaultMinWindowHeight = 720;
 
 const createDesktopWindowState = (window: BrowserWindow): DesktopWindowState => {
     return {
@@ -64,13 +68,14 @@ const registerWindowStateObservers = (window: BrowserWindow) => {
 };
 
 const createMainWindow = () => {
+    const { width: availableWidth, height: availableHeight } = screen.getPrimaryDisplay().workAreaSize;
     const mainWindow = new BrowserWindow({
-        width: 1440,
-        height: 900,
-        minWidth: 1180,
-        minHeight: 720,
-        backgroundColor: '#070708',
+        width: Math.min(defaultWindowWidth, availableWidth),
+        height: Math.min(defaultWindowHeight, availableHeight),
+        minWidth: Math.min(defaultMinWindowWidth, availableWidth),
+        minHeight: Math.min(defaultMinWindowHeight, availableHeight),
         frame: false,
+        transparent: true,
         titleBarStyle: process.platform === DesktopPlatform.MacOS ? 'hidden' : 'default',
         autoHideMenuBar: true,
         webPreferences: {

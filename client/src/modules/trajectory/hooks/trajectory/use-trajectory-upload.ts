@@ -8,7 +8,7 @@ interface UseTrajectoryUploadResult {
     isUploading: boolean;
 };
 
-export default function useTrajectoryUpload(): UseTrajectoryUploadResult {
+export default function useTrajectoryUpload(folderId?: string | null): UseTrajectoryUploadResult {
     const [isUploading, setIsUploading] = useState(false);
     const createTrajectory = useCreateTrajectory();
 
@@ -27,11 +27,15 @@ export default function useTrajectoryUpload(): UseTrajectoryUploadResult {
                 formData.append('paths', path);
             });
 
+            if (folderId) {
+                formData.append('folderId', folderId);
+            }
+
             await createTrajectory(formData);
         } finally {
             setIsUploading(false);
         }
-    }, [createTrajectory]);
+    }, [createTrajectory, folderId]);
 
     return { uploadTrajectory, isUploading };
 }

@@ -1,5 +1,6 @@
 import { renderPublicRoutes, renderGuestRoutes, renderProtectedRoutes } from './routes/RouteRenderer';
 import { useGlobalShortcuts } from '@/shared/presentation/hooks/use-global-shortcuts';
+import { usePageScale } from '@/shared/presentation/hooks/use-page-scale';
 import { usePageTracker } from '@/modules/start/hooks/use-page-tracker';
 import { useRouteCleanup } from '@/shared/presentation/hooks/use-route-cleanup';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
@@ -80,6 +81,7 @@ const AppRoutes = () => {
 
 export default function App() {
     const Router = isElectronEnvironment() ? HashRouter : BrowserRouter;
+    usePageScale();
 
     return (
         <QueryProvider>

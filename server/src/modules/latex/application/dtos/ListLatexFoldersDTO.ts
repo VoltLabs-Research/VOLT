@@ -1,11 +1,4 @@
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import type { LatexFolderDTO } from './LatexFolderDTO';
+import type { ListCatalogFoldersInputDTO, ListCatalogFoldersOutputDTO } from '@shared/application/catalog/catalog-folder-dto';
 
-export interface ListLatexFoldersInputDTO {
-    teamId: string;
-    parentId?: string | null;
-    page?: number | string;
-    limit?: number | string;
-};
-
-export type ListLatexFoldersOutputDTO = PaginatedResult<LatexFolderDTO>;
+export type ListLatexFoldersInputDTO = ListCatalogFoldersInputDTO;
+export type ListLatexFoldersOutputDTO = ListCatalogFoldersOutputDTO;

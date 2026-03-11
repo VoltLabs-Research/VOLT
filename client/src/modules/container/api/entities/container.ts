@@ -7,6 +7,7 @@ export interface Container extends BaseEntity {
     name: string;
     image: string;
     containerId: string;
+    folder: string | null;
     status: string;
     memory: number;
     cpus: number;

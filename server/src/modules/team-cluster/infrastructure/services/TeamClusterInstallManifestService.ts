@@ -10,6 +10,7 @@ import { normalizeTeamClusterInstallRoot } from '@modules/team-cluster/utilities
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import DaemonCredentialGuard, { DecryptedTeamClusterServiceCredentials } from '@shared/application/team-cluster/DaemonCredentialGuard';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { gzipSync } from 'node:zlib';
@@ -106,8 +107,30 @@ const buildComposeFile = (daemonDistributionMode: DaemonDistributionMode): strin
     ].join('\n');
 };
 
+const resolveDaemonPackageRoot = (): string | null => {
+    const candidatePaths = [
+        path.resolve(process.cwd(), '..', 'cluster-daemon'),
+        path.resolve(process.cwd(), '..', 'ClusterDaemon'),
+        path.resolve(process.cwd(), '..', '..', 'ClusterDaemon'),
+        path.resolve(process.cwd(), 'app', 'ClusterDaemon')
+    ];
+
+    for (const candidatePath of candidatePaths) {
+        if (existsSync(candidatePath)) {
+            return candidatePath;
+        }
+    }
+
+    return null;
+};
+
 const getDaemonPackageRoot = (): string => {
-    return path.resolve(process.cwd(), '..', 'cluster-daemon');
+    const daemonPackageRoot = resolveDaemonPackageRoot();
+    if (!daemonPackageRoot) {
+        throw ApplicationError.internalServerError('Unable to locate local ClusterDaemon source directory for build distribution mode');
+    }
+
+    return daemonPackageRoot;
 };
 
 const readDaemonManifestFiles = async (): Promise<DaemonManifestFile[]> => {
@@ -148,6 +171,14 @@ const readDaemonManifestFiles = async (): Promise<DaemonManifestFile[]> => {
 const getDaemonDistributionMode = (): DaemonDistributionMode => {
     const rawDistributionMode = process.env.TEAM_CLUSTER_DAEMON_DISTRIBUTION_MODE?.trim().toLowerCase();
     if (rawDistributionMode === DaemonDistributionMode.Build) {
+        return DaemonDistributionMode.Build;
+    }
+
+    if (rawDistributionMode === DaemonDistributionMode.Image) {
+        return DaemonDistributionMode.Image;
+    }
+
+    if (resolveDaemonPackageRoot()) {
         return DaemonDistributionMode.Build;
     }
 

@@ -11,10 +11,18 @@ export default createHttpModule({
             .post(RATE_LIMIT_POLICIES.containerCreate, controllers.create.handle)
             .get(controllers.listByTeamId.handle);
 
+        router.get('/folders', controllers.listFolders.handle);
+        router.get('/folders/:folderId', controllers.getFolder.handle);
+        router.post('/folders', controllers.createFolder.handle);
+        router.patch('/folders/:folderId', controllers.updateFolder.handle);
+        router.delete('/folders/:folderId', controllers.deleteFolder.handle);
+
         router.route('/:containerId')
             .get(controllers.getById.handle)
             .patch(controllers.updateById.handle)
             .delete(RATE_LIMIT_POLICIES.containerDelete, controllers.deleteById.handle);
+
+        router.patch('/:containerId/folder', controllers.move.handle);
 
         router.get('/:containerId/files', controllers.getFilesById.handle);
         router.get('/:containerId/processes', controllers.getProcessesById.handle);

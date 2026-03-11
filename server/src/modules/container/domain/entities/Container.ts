@@ -5,6 +5,7 @@ export interface IContainerProps {
     name: string;
     image: string;
     containerId: string;
+    folder: string | null;
     createdBy: string;
     status: string;
     memory: number;
@@ -26,6 +27,7 @@ export class Container implements IContainerProps {
     public name!: string;
     public image!: string;
     public containerId!: string;
+    public folder!: string | null;
     public createdBy!: string;
     public status!: string;
     public memory!: number;

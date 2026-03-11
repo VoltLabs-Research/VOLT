@@ -19,6 +19,11 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
         const { teamId, page = 1, limit = 20, search } = input;
 
         const filter: Record<string, unknown> = { team: teamId };
+        if (input.folderId === 'root') {
+            filter.folder = null;
+        } else if (input.folderId) {
+            filter.folder = input.folderId;
+        }
         if(search){
             filter.name = { $regex: search, $options: 'i' };
         }

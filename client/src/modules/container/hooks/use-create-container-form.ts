@@ -2,7 +2,7 @@ import { CONTAINER_TEMPLATES } from '../services/container-templates';
 import { containerQuery } from './queries';
 import { teamClusterService } from '../api/service/team-cluster-service';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { showPromise } from '@/shared/presentation/hooks/toast';
@@ -50,7 +50,9 @@ export interface UseCreateContainerFormReturn {
 
 const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormReturn => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const createContainerMutation = containerQuery.useCreateMutation();
+    const currentFolderId = searchParams.get('folderId');
 
     const teams = useTeamsQuery(undefined).data ?? [];
     const selectedTeam = useSelectedTeam();
@@ -211,6 +213,7 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
             createContainerMutation.mutateAsync({
                 teamId: selectedTeamId,
                 teamClusterId: selectedTeamClusterId,
+                folderId: currentFolderId,
                 name: config.name,
                 image,
                 memory: config.memory,
@@ -228,8 +231,11 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
                 error: { title: 'Failed to create container' }
             }
         );
-        navigate('/dashboard/containers');
-    }, [config, selectedTeamClusterId, selectedTeamId, getSelectedImage, getSelectedTemplate, createContainerMutation, navigate]);
+        const nextPath = currentFolderId
+            ? `/dashboard/containers?folderId=${encodeURIComponent(currentFolderId)}`
+            : '/dashboard/containers';
+        navigate(nextPath);
+    }, [config, selectedTeamClusterId, selectedTeamId, currentFolderId, getSelectedImage, getSelectedTemplate, createContainerMutation, navigate]);
 
     return {
         config,

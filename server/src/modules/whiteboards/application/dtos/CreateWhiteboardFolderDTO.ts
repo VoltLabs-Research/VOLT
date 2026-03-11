@@ -1,10 +1,4 @@
-import type { WhiteboardFolderDTO } from './WhiteboardFolderDTO';
+import type { CreateCatalogFolderInputDTO, CatalogFolderDTO } from '@shared/application/catalog/catalog-folder-dto';
 
-export interface CreateWhiteboardFolderInputDTO {
-    teamId: string;
-    userId: string;
-    title: string;
-    parentId?: string | null;
-};
-
-export type CreateWhiteboardFolderOutputDTO = WhiteboardFolderDTO;
+export type CreateWhiteboardFolderInputDTO = CreateCatalogFolderInputDTO;
+export type CreateWhiteboardFolderOutputDTO = CatalogFolderDTO;

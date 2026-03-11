@@ -14,6 +14,11 @@ export default createHttpModule({
         router.route('/')
             .post(RATE_LIMIT_POLICIES.trajectoryUpload, upload.array('trajectoryFiles'), controllers.create.handle)
             .get(trajectoryValidation.listByTeamId, controllers.getByTeamId.handle);
+        router.get('/folders', trajectoryValidation.listFolders, controllers.listFolders.handle);
+        router.get('/folders/:folderId', trajectoryValidation.getFolder, controllers.getFolder.handle);
+        router.post('/folders', trajectoryValidation.createFolder, controllers.createFolder.handle);
+        router.patch('/folders/:folderId', trajectoryValidation.updateFolder, controllers.updateFolder.handle);
+        router.delete('/folders/:folderId', trajectoryValidation.deleteFolder, controllers.deleteFolder.handle);
         router.get('/metrics', trajectoryValidation.getMetrics, controllers.getMetrics.handle);
         router.get('/:trajectoryId/preview', trajectoryValidation.getPreview, controllers.getPreview.handle);
         router.get('/:trajectoryId/download', trajectoryValidation.downloadTrajectory, controllers.downloadTrajectory.handle);
@@ -21,6 +26,7 @@ export default createHttpModule({
         router.get('/:trajectoryId/atoms/:analysisId', trajectoryValidation.getAtomsByAnalysis, controllers.getAtoms.handle);
         router.get('/:trajectoryId/scene-artifacts', trajectoryValidation.getSceneArtifacts, controllers.getSceneArtifacts.handle);
         router.get('/:trajectoryId/glb/:timestep/:analysisId', trajectoryValidation.getGLB, controllers.getGLB.handle);
+        router.patch('/:trajectoryId/folder', trajectoryValidation.move, controllers.move.handle);
         router.route('/:trajectoryId')
             .get(trajectoryValidation.getById, controllers.getById.handle)
             .patch(trajectoryValidation.update, controllers.updateById.handle)

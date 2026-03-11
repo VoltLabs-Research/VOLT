@@ -25,6 +25,13 @@ import TrajectoryBackgroundProcessor from '@modules/trajectory/infrastructure/se
 import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
 import TrajectoryReader from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryReader';
 import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
+import CreateTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/CreateTrajectoryFolderUseCase';
+import DeleteTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/DeleteTrajectoryFolderUseCase';
+import GetTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTrajectoryFolderUseCase';
+import ListTrajectoryFoldersUseCase from '@modules/trajectory/application/use-cases/trajectory/ListTrajectoryFoldersUseCase';
+import MoveTrajectoryUseCase from '@modules/trajectory/application/use-cases/trajectory/MoveTrajectoryUseCase';
+import UpdateTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/UpdateTrajectoryFolderUseCase';
+import TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
 
 import type { ClassProvider } from 'tsyringe';
 import { container } from 'tsyringe';
@@ -35,6 +42,7 @@ export const registerTrajectoryDependencies = (): void => {
     registerModuleDependencies({
         singletons: [
             [TRAJECTORY_TOKENS.TrajectoryRepository, TrajectoryRepository],
+            [TRAJECTORY_TOKENS.TrajectoryFolderRepository, TrajectoryFolderRepository],
             [TRAJECTORY_TOKENS.TeamMetricsQueryService, TeamMetricsQueryService],
             [TRAJECTORY_TOKENS.SceneArtifactRepository, SceneArtifactRepository],
             [TRAJECTORY_TOKENS.CloudUploadProcessor, CloudUploadProcessor],
@@ -47,15 +55,21 @@ export const registerTrajectoryDependencies = (): void => {
             [TRAJECTORY_TOKENS.ParticleFilterService, ParticleFilterService],
             GetColorCodingPropertiesUseCase,
             GetColorCodingStatsUseCase,
+            CreateTrajectoryFolderUseCase,
             CreateColoredModelUseCase,
+            DeleteTrajectoryFolderUseCase,
             GetColoredModelStreamUseCase,
             GetParticleFilterPropertiesUseCase,
+            GetTrajectoryFolderUseCase,
             PreviewParticleFilterUseCase,
             ApplyParticleFilterActionUseCase,
             GetFilteredModelStreamUseCase,
             GetParticleFilterUniqueValuesUseCase,
+            ListTrajectoryFoldersUseCase,
             ListTrajectorySceneArtifactsUseCase,
+            MoveTrajectoryUseCase,
             GetTeamMetricsUseCase,
+            UpdateTrajectoryFolderUseCase,
             JobStatusChangedEventHandler
         ]
     });

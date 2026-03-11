@@ -16,6 +16,10 @@ const byContainerParamsSchema = byTeamParamsSchema.extend({
     containerId: identifierSchema
 }).strict();
 
+const byFolderParamsSchema = byTeamParamsSchema.extend({
+    folderId: identifierSchema
+}).strict();
+
 const containerPathQuerySchema = z.object({
     path: z.string().min(1)
 }).strict();
@@ -42,6 +46,7 @@ const createContainerSchema = z.object({
     name: z.string().min(1),
     image: z.string().min(1),
     teamClusterId: identifierSchema.optional(),
+    folderId: identifierSchema.nullable().optional(),
     env: z.array(environmentVariableSchema).optional(),
     ports: z.array(portMappingSchema).optional(),
     cmd: z.array(z.string()).optional(),
@@ -56,6 +61,19 @@ const updateContainerSchema = z.object({
     action: z.enum(['start', 'stop', 'restart']).optional(),
     env: z.array(environmentVariableSchema).optional(),
     ports: z.array(portMappingSchema).optional()
+}).strict();
+
+const createFolderSchema = z.object({
+    title: z.string().min(1).max(255),
+    parentId: identifierSchema.nullable().optional()
+}).strict();
+
+const updateFolderSchema = z.object({
+    title: z.string().min(1).max(255)
+}).strict();
+
+const moveContainerSchema = z.object({
+    folderId: identifierSchema.nullable()
 }).strict();
 
 const createContainerXrdpSessionSchema = z.object({
@@ -79,9 +97,35 @@ export const containerValidation = {
         params: byContainerParamsSchema,
         body: updateContainerSchema
     },
+    move: {
+        params: byContainerParamsSchema,
+        body: moveContainerSchema
+    },
     list: {
         params: byTeamParamsSchema,
-        query: paginationQuerySchema
+        query: paginationQuerySchema.extend({
+            folderId: z.string().optional()
+        })
+    },
+    createFolder: {
+        params: byTeamParamsSchema,
+        body: createFolderSchema
+    },
+    listFolders: {
+        params: byTeamParamsSchema,
+        query: createPaginationQuerySchema({ maxLimit: 500 }).extend({
+            parentId: z.string().optional()
+        })
+    },
+    getFolder: {
+        params: byFolderParamsSchema
+    },
+    updateFolder: {
+        params: byFolderParamsSchema,
+        body: updateFolderSchema
+    },
+    deleteFolder: {
+        params: byFolderParamsSchema
     },
     byId: {
         params: byContainerParamsSchema

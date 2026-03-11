@@ -9,6 +9,7 @@ export interface GetTrajectoriesByTeamIdInputDTO {
     teamId: string;
     page?: number;
     limit?: number;
+    folderId?: string;
     search?: string;
 };
 

@@ -18,6 +18,7 @@ export type TrajectoryStatus =
 export interface Trajectory extends BaseEntity {
     name: string;
     team: Team | string;
+    folder: string | null;
     analysis: Analysis[];
     frames: TimestepInfo[];
     stats: TrajectoryStats;
