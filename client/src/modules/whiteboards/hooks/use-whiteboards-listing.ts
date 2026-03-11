@@ -6,6 +6,7 @@ import {
     useDeleteWhiteboardFolderMutation,
     useDeleteWhiteboardMutation,
     useMoveWhiteboardMutation,
+    useUpdateWhiteboardMutation,
     useUpdateWhiteboardFolderMutation,
     whiteboardFolderQuery,
     whiteboardFoldersQuery,
@@ -60,6 +61,7 @@ const FOLDER_LIST_LIMIT = 500;
 const ROOT_FOLDER_ID = 'root';
 
 export const NEW_WHITEBOARD_FOLDER_MODAL_ID = 'new-whiteboard-folder-modal';
+export const RENAME_WHITEBOARD_MODAL_ID = 'rename-whiteboard-modal';
 export const RENAME_WHITEBOARD_FOLDER_MODAL_ID = 'rename-whiteboard-folder-modal';
 export const MOVE_WHITEBOARD_MODAL_ID = 'move-whiteboard-modal';
 
@@ -83,6 +85,12 @@ const CREATE_FOLDER_TOAST = {
     loading: { title: 'Creating folder...' },
     success: { title: 'Folder created successfully' },
     error: { title: 'Failed to create folder' }
+};
+
+const RENAME_WHITEBOARD_TOAST = {
+    loading: { title: 'Renaming whiteboard...' },
+    success: { title: 'Whiteboard renamed successfully' },
+    error: { title: 'Failed to rename whiteboard' }
 };
 
 const RENAME_FOLDER_TOAST = {
@@ -134,12 +142,14 @@ const useWhiteboardsListing = () => {
     const { currentFolderId, isInsideFolder, openFolder, goToRoot } = useFolderSearchParam();
     const { mutateAsync: deleteWhiteboard } = useDeleteWhiteboardMutation();
     const { mutateAsync: createWhiteboard } = useCreateWhiteboardMutation();
+    const { mutateAsync: updateWhiteboard } = useUpdateWhiteboardMutation();
     const { mutateAsync: createWhiteboardFolder } = useCreateWhiteboardFolderMutation();
     const { mutateAsync: updateWhiteboardFolder } = useUpdateWhiteboardFolderMutation();
     const { mutateAsync: deleteWhiteboardFolder } = useDeleteWhiteboardFolderMutation();
     const { mutateAsync: moveWhiteboard } = useMoveWhiteboardMutation();
     const context = useMemo(() => ({ folderId: currentFolderId }), [currentFolderId]);
 
+    const [renamingWhiteboard, setRenamingWhiteboard] = useState<Whiteboard | null>(null);
     const [renamingFolder, setRenamingFolder] = useState<WhiteboardFolder | null>(null);
     const [movingWhiteboard, setMovingWhiteboard] = useState<WhiteboardMoveTarget | null>(null);
     const [folderRefreshKey, setFolderRefreshKey] = useState(0);
@@ -222,6 +232,32 @@ const useWhiteboardsListing = () => {
             CREATE_FOLDER_TOAST
         );
     }, [createWhiteboardFolder, currentFolderId, teamId]);
+
+    const handleRenameWhiteboardOpen = useCallback((whiteboard: Whiteboard) => {
+        setRenamingWhiteboard(whiteboard);
+        openModal(RENAME_WHITEBOARD_MODAL_ID);
+    }, []);
+
+    const handleRenameWhiteboardClose = useCallback(() => {
+        closeModal(RENAME_WHITEBOARD_MODAL_ID);
+        setRenamingWhiteboard(null);
+    }, []);
+
+    const handleRenameWhiteboardSubmit = useCallback(async (title: string) => {
+        if (!renamingWhiteboard) {
+            return;
+        }
+
+        await showPromise(
+            updateWhiteboard({
+                whiteboardId: renamingWhiteboard._id,
+                title
+            }),
+            RENAME_WHITEBOARD_TOAST
+        );
+
+        handleRenameWhiteboardClose();
+    }, [handleRenameWhiteboardClose, renamingWhiteboard, updateWhiteboard]);
 
     const handleRenameFolderOpen = useCallback((folder: WhiteboardFolder) => {
         setRenamingFolder(folder);
@@ -339,6 +375,14 @@ const useWhiteboardsListing = () => {
                 },
                 requiredPermission: 'whiteboard:read'
             },
+            rename: {
+                label: 'Rename',
+                icon: Pencil,
+                handler: ({ item: whiteboard }) => {
+                    handleRenameWhiteboardOpen(whiteboard);
+                },
+                requiredPermission: 'whiteboard:update'
+            },
             move: {
                 label: 'Move to Folder',
                 icon: FolderInput,
@@ -451,6 +495,8 @@ const useWhiteboardsListing = () => {
         handleItemClick,
         handleMoveWhiteboardClose,
         handleMoveWhiteboardSubmit,
+        handleRenameWhiteboardClose,
+        handleRenameWhiteboardSubmit,
         handleRenameFolderClose,
         handleRenameFolderOpen,
         handleRenameFolderSubmit,
@@ -459,6 +505,7 @@ const useWhiteboardsListing = () => {
         movingWhiteboard,
         navigateToFolder,
         queryKey: whiteboardsQueryKey(),
+        renamingWhiteboard,
         renamingFolder,
         socketInvalidation: SOCKET_INVALIDATION
     };

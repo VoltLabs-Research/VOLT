@@ -12,6 +12,7 @@ import useSocket from '@/modules/socket/core/hooks/use-socket';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import AsyncMenuItemWrapper from '@/shared/presentation/components/AsyncMenuItemWrapper';
 import DocumentListingGrid from '@/shared/presentation/components/DocumentListingGrid';
 import DocumentListingTable from '@/shared/presentation/components/DocumentListingTable';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
@@ -19,6 +20,8 @@ import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import Popover from '@/shared/presentation/components/Popover';
+import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import Title from '@/shared/presentation/components/Title';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
@@ -80,6 +83,7 @@ interface DocumentListingProps<T extends { _id: string }, TContext = Record<stri
     emptyMessage?: string;
     createNew?: { buttonTitle: string; onCreate: () => void };
     headerActions?: React.ReactNode;
+    headerMenuOptions?: MenuOption[];
     gap?: string;
     // Table view props
     columns?: ColumnConfig<T>[];
@@ -165,6 +169,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     emptyMessage = 'No data available',
     createNew,
     headerActions,
+    headerMenuOptions = [],
     gap = 'gap-3',
     view = 'table',
     renderGridItem,
@@ -319,6 +324,26 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
             : <span className='sort-indicator'>↓</span>;
     }, [getColumnSortKey, sortConfig]);
 
+    const headerMenuTrigger = useMemo(() => {
+        if (!headerMenuOptions.length) {
+            return null;
+        }
+
+        return (
+            <Button
+                variant='ghost'
+                intent='neutral'
+                size='sm'
+                shape='circle'
+                iconOnly
+                title='Open listing actions'
+                aria-label='Open listing actions'
+            >
+                <RxDotsHorizontal />
+            </Button>
+        );
+    }, [headerMenuOptions.length]);
+
     const resetToLastContentTab = useCallback(() => {
         setActiveTabId(lastContentTabId);
     }, [lastContentTabId]);
@@ -466,7 +491,27 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                                 ) : (
                                     title
                                 )}
-                                <i><RxDotsHorizontal /></i>
+                                {headerMenuTrigger && (
+                                    <Popover
+                                        id='document-listing-header-menu'
+                                        trigger={headerMenuTrigger}
+                                        noPadding
+                                        className='context-menu-popover context-menu-popover--md'
+                                    >
+                                        {(close) => (
+                                            <PopoverMenu>
+                                                {headerMenuOptions.map((option, index) => (
+                                                    <AsyncMenuItemWrapper
+                                                        key={`document-listing-header-option-${option.label}-${index}`}
+                                                        option={option}
+                                                        size='md'
+                                                        onSuccess={close}
+                                                    />
+                                                ))}
+                                            </PopoverMenu>
+                                        )}
+                                    </Popover>
+                                )}
                             </Container>
                             <Container className='d-flex gap-2 items-center'>
                                 {headerActions}
