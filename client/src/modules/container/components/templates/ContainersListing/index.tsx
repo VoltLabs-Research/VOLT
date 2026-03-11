@@ -16,7 +16,7 @@ import RenameFolderModal from '@/shared/presentation/components/RenameFolderModa
 import Title from '@/shared/presentation/components/Title';
 import { openModal } from '@/shared/presentation/components/Modal';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
-import { Box, Folder, Pencil, Trash2 } from 'lucide-react';
+import { Box, Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
 
@@ -138,11 +138,19 @@ const ContainersListing = () => {
     useDashboardHeaderContent({ globalSearchBreadcrumb });
 
     const headerMenuOptions = useMemo<MenuOption[]>(() => {
+        const options: MenuOption[] = [
+            {
+                label: 'New Folder',
+                icon: FolderPlus,
+                onClick: () => openModal(NEW_CONTAINER_FOLDER_MODAL_ID)
+            }
+        ];
+
         if (!currentFolder) {
-            return [];
+            return options;
         }
 
-        return [
+        options.push(
             {
                 label: 'Rename Folder',
                 icon: Pencil,
@@ -155,7 +163,9 @@ const ContainersListing = () => {
                 destructive: true,
                 disabled: !handleDeleteCurrentFolder
             }
-        ];
+        );
+
+        return options;
     }, [currentFolder, handleDeleteCurrentFolder, handleRenameFolderOpen]);
 
     return (
