@@ -7,6 +7,7 @@ import Whiteboard from '@modules/whiteboards/domain/entities/Whiteboard';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 import type { IUseCase } from '@shared/application/IUseCase';
+import type { IWhiteboardFolderRepository } from '@modules/whiteboards/domain/port/IWhiteboardFolderRepository';
 import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { CreateWhiteboardInputDTO, CreateWhiteboardOutputDTO } from '@modules/whiteboards/application/dtos/CreateWhiteboardDTO';
@@ -19,16 +20,34 @@ export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDT
         @inject(WHITEBOARD_TOKENS.WhiteboardRepository)
         private readonly whiteboardRepository: IWhiteboardRepository,
 
+        @inject(WHITEBOARD_TOKENS.WhiteboardFolderRepository)
+        private readonly whiteboardFolderRepository: IWhiteboardFolderRepository,
+
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
     ) {}
 
     async execute(input: CreateWhiteboardInputDTO): Promise<Result<CreateWhiteboardOutputDTO, ApplicationError>> {
         try {
+            if (input.folderId) {
+                const folder = await this.whiteboardFolderRepository.findByTeamAndFolderId(
+                    input.teamId,
+                    input.folderId
+                );
+
+                if (!folder) {
+                    return Result.fail(ApplicationError.notFound(
+                        ErrorCodes.RESOURCE_NOT_FOUND,
+                        'Target whiteboard folder not found'
+                    ));
+                }
+            }
+
             const whiteboard = await this.whiteboardRepository.create({
                 team: input.teamId,
                 createdBy: input.userId,
                 title: input.title,
+                folder: input.folderId ?? null,
                 payloadKey: '',
                 createdAt: new Date(),
                 updatedAt: new Date()
@@ -52,6 +71,7 @@ export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDT
             return Result.ok({
                 _id: finalWhiteboard._id,
                 title: finalWhiteboard.props.title,
+                folder: finalWhiteboard.props.folder,
                 payloadKey: payloadKey,
                 createdAt: finalWhiteboard.props.createdAt,
                 updatedAt: finalWhiteboard.props.updatedAt

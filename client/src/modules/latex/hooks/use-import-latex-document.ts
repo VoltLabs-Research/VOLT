@@ -14,21 +14,21 @@ const ACCEPTED_TYPES = '.tex,.zip,.pdf';
  * Provides an import action that opens a hidden file input for `.tex`, `.zip`,
  * or `.pdf` selection, uploads the file, and invalidates the documents cache on success.
  */
-const useImportLatexDocument = () => {
+const useImportLatexDocument = (folderId?: string | null) => {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const { mutateAsync: importDocument } = useImportLatexDocumentMutation();
 
-    const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
+    const handleFileSelected = useCallback(async (input: HTMLInputElement) => {
+        const file = input.files?.[0];
         if (!file) return;
 
-        event.target.value = '';
+        input.value = '';
 
         await showPromise(
-            importDocument({ file }),
+            importDocument({ file, folderId }),
             IMPORT_TOAST
         );
-    }, [importDocument]);
+    }, [folderId, importDocument]);
 
     const openFilePicker = useCallback(() => {
         if (!fileInputRef.current) {
@@ -36,15 +36,17 @@ const useImportLatexDocument = () => {
             input.type = 'file';
             input.accept = ACCEPTED_TYPES;
             input.style.display = 'none';
-            input.addEventListener('change', (e) => {
-                handleFileChange(e as unknown as React.ChangeEvent<HTMLInputElement>);
-            });
             document.body.appendChild(input);
             fileInputRef.current = input;
         }
 
+        fileInputRef.current.onchange = () => {
+            if (fileInputRef.current) {
+                handleFileSelected(fileInputRef.current);
+            }
+        };
         fileInputRef.current.click();
-    }, [handleFileChange]);
+    }, [handleFileSelected]);
 
     return { openFilePicker };
 };

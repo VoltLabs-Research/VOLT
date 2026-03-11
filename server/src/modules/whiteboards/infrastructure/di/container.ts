@@ -11,6 +11,7 @@ import { SaveWhiteboardStateUseCase } from '@modules/whiteboards/application/use
 import { UploadWhiteboardAssetUseCase } from '@modules/whiteboards/application/use-cases/UploadWhiteboardAssetUseCase';
 import { GetWhiteboardAssetUseCase } from '@modules/whiteboards/application/use-cases/GetWhiteboardAssetUseCase';
 import { CreateWhiteboardFolderUseCase } from '@modules/whiteboards/application/use-cases/CreateWhiteboardFolderUseCase';
+import { GetWhiteboardFolderUseCase } from '@modules/whiteboards/application/use-cases/GetWhiteboardFolderUseCase';
 import { ListWhiteboardFoldersUseCase } from '@modules/whiteboards/application/use-cases/ListWhiteboardFoldersUseCase';
 import { UpdateWhiteboardFolderUseCase } from '@modules/whiteboards/application/use-cases/UpdateWhiteboardFolderUseCase';
 import { DeleteWhiteboardFolderUseCase } from '@modules/whiteboards/application/use-cases/DeleteWhiteboardFolderUseCase';
@@ -35,6 +36,7 @@ export const registerWhiteboardDependencies = (): void => {
             UploadWhiteboardAssetUseCase,
             GetWhiteboardAssetUseCase,
             CreateWhiteboardFolderUseCase,
+            GetWhiteboardFolderUseCase,
             ListWhiteboardFoldersUseCase,
             UpdateWhiteboardFolderUseCase,
             DeleteWhiteboardFolderUseCase,

@@ -6,18 +6,22 @@ import type { ListLatexDocumentsParams } from '../../dtos/list-latex-documents';
 import type { CreateLatexDocumentParams } from '../../dtos/create-latex-document';
 import type { DeleteLatexDocumentParams } from '../../dtos/delete-latex-document';
 import type { UpdateLatexDocumentParams } from '../../dtos/update-latex-document';
+import type { MoveLatexDocumentParams } from '../../dtos/move-latex-document';
 
 const endpoints = {
     listDocuments: paginated<ListLatexDocumentsParams, PaginatedResponse<LatexDocument>>(
         '/documents'
     ),
     createDocument: post<CreateLatexDocumentParams, LatexDocument>('/documents', {
-        body: ({ title, content }) => ({ title, content })
+        body: ({ title, content, folderId }) => ({ title, content, folderId })
     }),
     getDocument: get<GetLatexDocumentParams, LatexDocument>('/documents/:documentId'),
     deleteDocument: del<DeleteLatexDocumentParams>('/documents/:documentId'),
     updateDocument: patch<UpdateLatexDocumentParams, LatexDocument>('/documents/:documentId', {
         body: ({ title, content }) => ({ title, content })
+    }),
+    moveDocument: patch<MoveLatexDocumentParams, LatexDocument>('/documents/:documentId/folder', {
+        body: ({ folderId }) => ({ folderId })
     })
 };
 

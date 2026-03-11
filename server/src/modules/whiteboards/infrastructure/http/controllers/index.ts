@@ -8,6 +8,7 @@ import SaveWhiteboardStateController from './SaveWhiteboardStateController';
 import UploadWhiteboardAssetController from './UploadWhiteboardAssetController';
 import GetWhiteboardAssetController from './GetWhiteboardAssetController';
 import CreateWhiteboardFolderController from './CreateWhiteboardFolderController';
+import GetWhiteboardFolderController from './GetWhiteboardFolderController';
 import ListWhiteboardFoldersController from './ListWhiteboardFoldersController';
 import UpdateWhiteboardFolderController from './UpdateWhiteboardFolderController';
 import DeleteWhiteboardFolderController from './DeleteWhiteboardFolderController';
@@ -25,6 +26,7 @@ const whiteboardControllers = {
     uploadWhiteboardAsset: container.resolve(UploadWhiteboardAssetController),
     getWhiteboardAsset: container.resolve(GetWhiteboardAssetController),
     createFolder: container.resolve(CreateWhiteboardFolderController),
+    getFolder: container.resolve(GetWhiteboardFolderController),
     listFolders: container.resolve(ListWhiteboardFoldersController),
     updateFolder: container.resolve(UpdateWhiteboardFolderController),
     deleteFolder: container.resolve(DeleteWhiteboardFolderController),

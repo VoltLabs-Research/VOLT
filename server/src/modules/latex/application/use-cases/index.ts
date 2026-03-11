@@ -16,3 +16,4 @@ export { UpdateLatexFileUseCase } from './UpdateLatexFileUseCase';
 export { DeleteLatexFileUseCase } from './DeleteLatexFileUseCase';
 export { SetLatexFileEntrypointUseCase } from './SetLatexFileEntrypointUseCase';
 export { UpdateLatexAssetUseCase } from './UpdateLatexAssetUseCase';
+export { GetLatexFolderUseCase } from './GetLatexFolderUseCase';

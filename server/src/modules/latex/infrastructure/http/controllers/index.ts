@@ -17,6 +17,7 @@ import UpdateLatexFileController from './UpdateLatexFileController';
 import DeleteLatexFileController from './DeleteLatexFileController';
 import SetLatexFileEntrypointController from './SetLatexFileEntrypointController';
 import CreateLatexFolderController from './CreateLatexFolderController';
+import GetLatexFolderController from './GetLatexFolderController';
 import ListLatexFoldersController from './ListLatexFoldersController';
 import UpdateLatexFolderController from './UpdateLatexFolderController';
 import DeleteLatexFolderController from './DeleteLatexFolderController';
@@ -43,6 +44,7 @@ export default createControllerRegistry({
     deleteFile: DeleteLatexFileController,
     setFileEntrypoint: SetLatexFileEntrypointController,
     createFolder: CreateLatexFolderController,
+    getFolder: GetLatexFolderController,
     listFolders: ListLatexFoldersController,
     updateFolder: UpdateLatexFolderController,
     deleteFolder: DeleteLatexFolderController,

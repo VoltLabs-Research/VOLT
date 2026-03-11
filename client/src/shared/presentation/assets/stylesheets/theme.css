@@ -99,8 +99,8 @@
 :root[data-theme='light'] {
     color-scheme: light;
 
-    --color-bg: #ffffff;
-    --color-content-bg: #f0f0f2;
+    --color-bg: #f0f0f2;
+    --color-content-bg: #ffffff;
     --color-surface-1: #f5f5f7;
     --color-surface-2: #e8e8ed;
     --color-surface-3: #d1d1d6;
