@@ -98,6 +98,8 @@ const DashboardPage = () => {
         statCards = [<DashboardOverviewSkeleton key='loading' count={3} />];
     }
 
+    // TOOD: Possible dead code? We have now this:
+    // /home/rodyherrera/Desktop/voltlabs-ecosystem/app/Volt/client/src/modules/onboarding/components/templates/PostAuthOnboarding/index.tsx
     if (!selectedTeam) {
         return (
             <TrajectoryUploaderContainer>

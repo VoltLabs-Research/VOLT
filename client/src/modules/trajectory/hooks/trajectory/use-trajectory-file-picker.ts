@@ -25,9 +25,12 @@ const resolveUploadName = (files: FileWithPath[]): string => {
     return `upload_${Date.now()}`;
 };
 
-export default function useTrajectoryFilePicker(onAfterSelect?: () => void): UseTrajectoryFilePickerResult {
+export default function useTrajectoryFilePicker(
+    onAfterSelect?: () => void,
+    folderId?: string | null
+): UseTrajectoryFilePickerResult {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const { uploadTrajectory, isUploading } = useTrajectoryUpload();
+    const { uploadTrajectory, isUploading } = useTrajectoryUpload(folderId);
 
     const handlePickerChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         const input = event.target;

@@ -10,6 +10,7 @@ import type { ITeamClusterContainerRuntimeService } from '@modules/container/dom
 
 interface ListContainersFilter extends Record<string, unknown> {
     team: string;
+    folder?: string | null;
 };
 
 @injectable()
@@ -23,6 +24,12 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
         const filter: ListContainersFilter = {
             team: input.teamId
         };
+
+        if (input.folderId === 'root') {
+            filter.folder = null;
+        } else if (input.folderId) {
+            filter.folder = input.folderId;
+        }
 
         if (input.search) {
             filter.name = { $regex: input.search, $options: 'i' };

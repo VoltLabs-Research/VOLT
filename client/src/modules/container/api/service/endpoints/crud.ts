@@ -14,12 +14,29 @@ const endpoints = {
     create: post<CreateContainerParams, Container>('/', {
         client: 'scoped',
         omit: ['teamId'],
+        body: ({ teamClusterId, folderId, name, image, memory, cpus, env, ports, cmd, mountDockerSocket, useImageCmd, capabilities }) => ({
+            teamClusterId,
+            folderId,
+            name,
+            image,
+            memory,
+            cpus,
+            env,
+            ports,
+            cmd,
+            mountDockerSocket,
+            useImageCmd,
+            capabilities
+        }),
         unwrap: { field: 'container' }
     }),
     update: patch<UpdateContainerParams, Container>('/:containerId', {
         unwrap: { field: 'container' }
     }),
-    delete: del<ContainerRouteParams>('/:containerId')
+    delete: del<ContainerRouteParams>('/:containerId'),
+    move: patch<{ containerId: string; folderId: string | null }, void>('/:containerId/folder', {
+        body: ({ folderId }) => ({ folderId })
+    })
 };
 
 export default endpoints;

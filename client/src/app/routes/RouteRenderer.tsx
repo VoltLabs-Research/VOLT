@@ -8,19 +8,42 @@ import Loader from '@/shared/presentation/components/Loader';
 import PageTransition from '@/shared/presentation/components/PageTransition';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { Route } from 'react-router-dom';
-import type { ComponentType, ReactNode } from 'react';
-import type { RouteConfig } from './types';
+import { lazy, Suspense } from 'react';
+import type { ComponentType, ElementType, LazyExoticComponent, ReactNode } from 'react';
+import type { RouteConfig, RouteLoader } from './types';
 
 interface RoutePermissionGuardProps {
     route: RouteConfig;
     children: ReactNode;
 };
 
-const wrapWithPageTransition = (Component: ComponentType) => (
+const lazyRouteCache = new Map<RouteLoader, LazyExoticComponent<ComponentType>>();
+
+const wrapWithPageTransition = (Component: ElementType) => (
     <PageTransition>
         <Component />
     </PageTransition>
 );
+
+const resolveRouteComponent = (route: RouteConfig): ElementType => {
+    if (route.component) {
+        return route.component;
+    }
+
+    if (!route.loader) {
+        throw new Error(`Route "${route.path}" is missing a component.`);
+    }
+
+    const cachedComponent = lazyRouteCache.get(route.loader);
+    if (cachedComponent) {
+        return cachedComponent;
+    }
+
+    const LazyComponent = lazy(route.loader);
+    lazyRouteCache.set(route.loader, LazyComponent);
+
+    return LazyComponent;
+};
 
 const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) => {
     const selectedTeamId = useSelectedTeamId();
@@ -58,33 +81,40 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
     return <>{children}</>;
 };
 
-const renderRouteWithChildren = (route: RouteConfig, withTransition = true) => {
-    const renderElement = (Component: ComponentType) =>
-        (
-            <RoutePermissionGuard route={route}>
+const renderRouteElement = (route: RouteConfig, withTransition = true) => {
+    const Component = resolveRouteComponent(route);
+
+    return (
+        <RoutePermissionGuard route={route}>
+            <Suspense fallback={<Loader scale={0.6} />}>
                 {withTransition ? wrapWithPageTransition(Component) : <Component />}
-            </RoutePermissionGuard>
-        );
+            </Suspense>
+        </RoutePermissionGuard>
+    );
+};
+
+const renderRouteWithChildren = (route: RouteConfig, withTransition = true) => {
+    const routeElement = renderRouteElement(route, withTransition);
 
     if(route.children && route.children.length > 0){
         return (
             <Route
                 key={route.path}
                 path={route.path}
-                element={renderElement(route.component)}
+                element={routeElement}
             >
                 {route.children.map((child) => (
                     child.index ? (
                         <Route
                             key={child.path}
                             index
-                            element={renderElement(child.component)}
+                            element={renderRouteElement(child, withTransition)}
                         />
                     ) : (
                         <Route
                             key={child.path}
                             path={child.path}
-                            element={renderElement(child.component)}
+                            element={renderRouteElement(child, withTransition)}
                         />
                     )
                 ))}
@@ -97,7 +127,7 @@ const renderRouteWithChildren = (route: RouteConfig, withTransition = true) => {
             key={route.path}
             path={route.path}
             index={route.index}
-            element={renderElement(route.component)}
+            element={routeElement}
         />
     );
 };
@@ -105,12 +135,7 @@ const renderRouteWithChildren = (route: RouteConfig, withTransition = true) => {
 const renderProtectedRoute = (route: RouteConfig) => renderRouteWithChildren(route);
 
 export const renderPublicRoutes = () => {
-    return routesConfig.public.map((route: RouteConfig) => (
-        <Route
-            key={route.path}
-            path={route.path}
-            element={wrapWithPageTransition(route.component)} />
-    ));
+    return routesConfig.public.map((route: RouteConfig) => renderRouteWithChildren(route));
 };
 
 export const renderProtectedRoutes = () => {
@@ -139,12 +164,7 @@ export const renderProtectedRoutes = () => {
 export const renderGuestRoutes = () => {
     return (
         <Route element={<ProtectedRoute mode={RouteMode.Guest} />}>
-            {routesConfig.guest.map((route: RouteConfig) => (
-                <Route
-                    key={route.path}
-                    path={route.path}
-                    element={wrapWithPageTransition(route.component)} />
-            ))}
+            {routesConfig.guest.map((route: RouteConfig) => renderRouteWithChildren(route))}
         </Route>
     );
 };

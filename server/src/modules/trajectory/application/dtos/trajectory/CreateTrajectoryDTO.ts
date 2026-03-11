@@ -8,6 +8,7 @@ export interface CreateTrajectoryInputDTO {
     userId: string;
     teamId: string;
     teamClusterId?: string;
+    folderId?: string | null;
 };
 
 export interface CreateTrajectoryOutputDTO extends TrajectoryProps {

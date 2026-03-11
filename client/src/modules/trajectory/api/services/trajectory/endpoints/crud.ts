@@ -34,5 +34,8 @@ export default {
         map: (trajectory) => trajectory
     }),
     update: patch<UpdateTrajectoryInputDTO, Trajectory>('/:trajectoryId'),
-    delete: del<DeleteTrajectoryInputDTO>('/:trajectoryId')
+    delete: del<DeleteTrajectoryInputDTO>('/:trajectoryId'),
+    move: patch<{ trajectoryId: string; folderId: string | null }, void>('/:trajectoryId/folder', {
+        body: ({ folderId }) => ({ folderId })
+    })
 };

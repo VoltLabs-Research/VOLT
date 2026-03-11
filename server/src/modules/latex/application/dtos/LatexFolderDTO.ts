@@ -1,7 +1,3 @@
-export interface LatexFolderDTO {
-    _id: string;
-    title: string;
-    parent: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+import type { CatalogFolderDTO } from '@shared/application/catalog/catalog-folder-dto';
+
+export type LatexFolderDTO = CatalogFolderDTO;

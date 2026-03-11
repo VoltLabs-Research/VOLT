@@ -13,10 +13,17 @@ body {
     background-color: var(--color-bg);
 }
 
-#root {
-    width: 100%;
-    height: 100vh;
+html.desktop-window,
+body.desktop-window {
     background-color: transparent;
+}
+
+#root {
+    width: var(--volt-page-width, 100%);
+    min-height: var(--volt-page-min-height, 100vh);
+    background-color: transparent;
+    margin: 0 auto;
+    zoom: var(--volt-page-scale, 1);
 }
 
 body {

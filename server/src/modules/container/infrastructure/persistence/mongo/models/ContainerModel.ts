@@ -12,6 +12,7 @@ export interface IContainer extends Document {
     name: string;
     image: string;
     containerId: string;
+    folder: mongoose.Types.ObjectId | null;
     internalIp?: string;
     network?: mongoose.Types.ObjectId;
     volume?: mongoose.Types.ObjectId;
@@ -82,6 +83,12 @@ const ContainerSchema = new Schema<IContainer>({
         required: [true, ValidationCodes.CONTAINER_ID_REQUIRED],
         unique: true
     },
+    folder: {
+        type: Schema.Types.ObjectId,
+        ref: 'ContainerFolder',
+        required: false,
+        default: null
+    },
     internalIp: internalIpField,
     network: {
         type: Schema.Types.ObjectId,
@@ -122,5 +129,6 @@ const ContainerSchema = new Schema<IContainer>({
 });
 
 ContainerSchema.index({ name: 'text', image: 'text' });
+ContainerSchema.index({ team: 1, folder: 1, createdAt: -1 });
 
 export const ContainerModel = mongoose.model<IContainer>('Container', ContainerSchema);

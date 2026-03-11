@@ -57,6 +57,7 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
         const trajectory = await this.trajectoryRepo.create({
             name: cleanName,
             team: teamId,
+            folder: input.folderId ?? null,
             teamCluster: teamCluster.id,
             createdBy: userId,
             status: TrajectoryStatus.WaitingForProcess,

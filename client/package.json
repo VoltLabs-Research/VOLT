@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:electron-renderer": "cross-env VITE_ELECTRON_BUILD=true vite build",
+    "build:electron-renderer": "cross-env NODE_OPTIONS=--max-old-space-size=8192 VITE_ELECTRON_BUILD=true vite build",
     "build:electron-runtime": "tsc -p tsconfig.electron.json",
     "build-electron": "npm run build:electron-renderer && npm run build:electron-runtime && electron-builder --config electron-builder.yml",
     "lint": "eslint .",

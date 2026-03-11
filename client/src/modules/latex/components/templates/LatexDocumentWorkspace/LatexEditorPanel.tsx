@@ -1,7 +1,9 @@
 import Editor from '@monaco-editor/react';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import Container from '@/shared/presentation/components/Container';
-import { useEffect, useRef } from 'react';
+import Loader from '@/shared/presentation/components/Loader';
+import { ensureMonaco } from '@/shared/presentation/utilities/ensure-monaco';
+import { useEffect, useRef, useState } from 'react';
 import { FileCode } from 'lucide-react';
 import type { BeforeMount, OnMount } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
@@ -46,14 +48,29 @@ const handleBeforeMount: BeforeMount = (monaco) => {
 const LatexEditorPanel = ({ activeFile, content, onChange }: LatexEditorPanelProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+    const [isMonacoReady, setIsMonacoReady] = useState(false);
 
     const handleMount: OnMount = (editorInstance) => {
         editorRef.current = editorInstance;
     };
 
     useEffect(() => {
+        let isMounted = true;
+
+        void ensureMonaco().then(() => {
+            if (isMounted) {
+                setIsMonacoReady(true);
+            }
+        });
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    useEffect(() => {
         const container = containerRef.current;
-        if (!container) return;
+        if (!container || !isMonacoReady) return;
 
         const observer = new ResizeObserver(() => {
             editorRef.current?.layout();
@@ -61,7 +78,7 @@ const LatexEditorPanel = ({ activeFile, content, onChange }: LatexEditorPanelPro
 
         observer.observe(container);
         return () => observer.disconnect();
-    }, []);
+    }, [isMonacoReady]);
 
     return (
         <Container className='latex-workspace__editor d-flex column'>
@@ -74,25 +91,31 @@ const LatexEditorPanel = ({ activeFile, content, onChange }: LatexEditorPanelPro
                 ref={containerRef}
                 className='latex-workspace__editor-inner flex-1 min-h-0'
             >
-                <Editor
-                    height='100%'
-                    language='latex'
-                    value={content}
-                    onChange={onChange}
-                    theme='vs-dark'
-                    beforeMount={handleBeforeMount}
-                    onMount={handleMount}
-                    options={{
-                        fontSize: 13,
-                        minimap: { enabled: false },
-                        wordWrap: 'on',
-                        lineNumbers: 'on',
-                        scrollBeyondLastLine: false,
-                        renderWhitespace: 'none',
-                        padding: { top: 12 },
-                        fontLigatures: false
-                    }}
-                />
+                {isMonacoReady ? (
+                    <Editor
+                        height='100%'
+                        language='latex'
+                        value={content}
+                        onChange={onChange}
+                        theme='vs-dark'
+                        beforeMount={handleBeforeMount}
+                        onMount={handleMount}
+                        options={{
+                            fontSize: 13,
+                            minimap: { enabled: false },
+                            wordWrap: 'on',
+                            lineNumbers: 'on',
+                            scrollBeyondLastLine: false,
+                            renderWhitespace: 'none',
+                            padding: { top: 12 },
+                            fontLigatures: false
+                        }}
+                    />
+                ) : (
+                    <Container className='h-100 d-flex align-center justify-center'>
+                        <Loader scale={0.6} isFixed={false} />
+                    </Container>
+                )}
             </Container>
         </Container>
     );

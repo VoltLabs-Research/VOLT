@@ -1,0 +1,88 @@
+name: Volt Client Electron Build
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+    paths:
+      - 'app/Volt/client/**'
+      - 'tools/VoltSDK/node/VoltClient/**'
+      - '.github/workflows/volt-client-electron-build.yml'
+  pull_request:
+    paths:
+      - 'app/Volt/client/**'
+      - 'tools/VoltSDK/node/VoltClient/**'
+      - '.github/workflows/volt-client-electron-build.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: volt-client-electron-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Electron artifacts (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            label: linux
+            artifact_name: volt-electron-linux
+            artifact_path: |
+              app/Volt/client/release/*.AppImage
+              app/Volt/client/release/*.deb
+              app/Volt/client/release/*.yml
+          - os: windows-latest
+            label: windows
+            artifact_name: volt-electron-windows
+            artifact_path: |
+              app/Volt/client/release/*.exe
+              app/Volt/client/release/*.blockmap
+              app/Volt/client/release/*.yml
+          - os: macos-latest
+            label: macos
+            artifact_name: volt-electron-macos
+            artifact_path: |
+              app/Volt/client/release/*.dmg
+              app/Volt/client/release/*.zip
+              app/Volt/client/release/*.blockmap
+              app/Volt/client/release/*.yml
+    defaults:
+      run:
+        working-directory: app/Volt/client
+    env:
+      VITE_API_URL: https://example.invalid
+      VITE_ENV: production
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/Volt/client/package-lock.json
+
+      - name: Install client dependencies
+        run: npm ci
+
+      - name: Build Electron desktop artifacts
+        run: npm run build-electron
+
+      - name: Upload Electron artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
+          if-no-files-found: error
+          retention-days: 14

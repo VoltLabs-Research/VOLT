@@ -1,24 +1,30 @@
 import TokenStorage from '@/shared/auth/token-storage';
-import { AxiosHttpClient, VoltClient, dynamicToken } from '@voltstack/voltclient';
 import { buildBackendUrl } from './backend-origin';
+import { AxiosHttpClient, createVoltClient, dynamicToken } from '@voltstack/voltclient';
+import type { VoltClient, VoltClientOptions } from '@voltstack/voltclient';
 
-interface CreateApiClientOptions {
-    useRBAC?: boolean;
-    getTeamId?: () => string | null;
+export type CreateApiClientOptions = VoltClientOptions;
+
+const getStoredToken = (): string | null => {
+    return new TokenStorage().getToken();
 };
+
+const credential = dynamicToken(getStoredToken);
+const apiBaseUrl = buildBackendUrl('/api');
 
 /**
  * Shared Axios HTTP adapter for the frontend.
- * Reads the API base URL from the Vite environment and delegates token
- * resolution to `TokenStorage` (localStorage-backed).
- *
- * This is the only place in the frontend that references `import.meta.env`
- * and `localStorage` for HTTP auth - all other HTTP code lives in
- * `@voltstack/voltclient` and is environment-agnostic.
+ * Kept app-side because some browser-only flows need raw HTTP access
+ * without going through a scoped `VoltClient`.
  */
 export const http = new AxiosHttpClient({
-    baseUrl: buildBackendUrl('/api'),
-    credential: dynamicToken(() => new TokenStorage().getToken())
+    baseUrl: apiBaseUrl,
+    credential
+});
+
+const rootApiClient = createVoltClient(apiBaseUrl, {
+    adapter: 'axios',
+    credential
 });
 
 /**
@@ -40,15 +46,20 @@ export const setGetTeamId = (fn: () => string | null): void => {
 
 /**
  * Creates a `VoltClient` scoped to a base path.
- * When no `getTeamId` is provided, falls back to the global resolver
- * set via `setGetTeamId`.
+ * Reuses the shared SDK root client and only resolves app-owned RBAC state here.
  *
  * @example
  * const client = createApiClient('/container', { useRBAC: true });
  */
 export const createApiClient = (basePath: string, opts?: CreateApiClientOptions): VoltClient => {
-    return new VoltClient(http, basePath, {
+    const getTeamId = opts?.getTeamId ?? globalGetTeamId;
+
+    if (!opts && !getTeamId) {
+        return rootApiClient.withBasePath(basePath);
+    }
+
+    return rootApiClient.withBasePath(basePath, {
         ...opts,
-        getTeamId: opts?.getTeamId ?? globalGetTeamId
+        getTeamId
     });
 };

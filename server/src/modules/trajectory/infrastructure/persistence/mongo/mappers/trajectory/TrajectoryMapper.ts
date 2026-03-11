@@ -5,5 +5,6 @@ import Trajectory, { TrajectoryProps } from '@modules/trajectory/domain/entities
 export default createMongoMapper<Trajectory, TrajectoryProps, TrajectoryDocument>(Trajectory, [
     'createdBy',
     'team',
+    'folder',
     'teamCluster'
 ]);

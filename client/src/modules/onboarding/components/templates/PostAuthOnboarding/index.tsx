@@ -15,8 +15,8 @@ import { useState } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 
-/** Derive the `next` destination from the URL query string. */
 const useNextDestination = (): string => {
     const location = useLocation();
     const params = new URLSearchParams(location.search);
@@ -26,8 +26,10 @@ const useNextDestination = (): string => {
 const PostAuthOnboarding = () => {
     const navigate = useNavigate();
     const next = useNextDestination();
+    const user = useCurrentUser();
 
-    const [teamName, setTeamName] = useState('');
+    const [teamName, setTeamName] = useState(`${user?.firstName} ${user?.lastName} team's`);
+    // TODO: Delete description field in the onboarding, UI/UX noise
     const [teamDescription, setTeamDescription] = useState('');
     const [nameError, setNameError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,11 +100,11 @@ const PostAuthOnboarding = () => {
 
     return (
         <Container className='d-flex items-center content-center w-max vh-max'>
-            <Container className='d-flex column gap-2' style={{ width: '24rem', maxWidth: '90vw' }}>
-                <Container className='d-flex column gap-05'>
-                    <Title className='font-size-6 font-weight-6'>Create your first team</Title>
-                    <Paragraph className='color-secondary font-size-2-5'>
-                        Teams let you collaborate, manage clusters, and run simulations together.
+            <Container className='d-flex column gap-2' style={{ width: '30rem', maxWidth: '120vw' }}>
+                <Container className='d-flex column gap-1 text-center'>
+                    <Title className='font-size-6 font-weight-6'>Let's create a team for you!</Title>
+                    <Paragraph className='color-secondary font-size-3-5'>
+                        Invite other users to collaborate or join existing teams. You'll have the option to create new teams later.
                     </Paragraph>
                 </Container>
 
@@ -112,20 +114,13 @@ const PostAuthOnboarding = () => {
                         placeholder='e.g., Research Lab'
                         value={teamName}
                         error={nameError}
-                        onChange={(e) => {
+                        onChange={(e) => {  
                             setTeamName(e.target.value);
                             if (nameError) setNameError(undefined);
                         }}
                         inputProps={{
                             onKeyDown: (e) => { if (e.key === 'Enter') handleCreateTeam(); }
                         }}
-                    />
-
-                    <FormFieldRHF
-                        label='Description (optional)'
-                        placeholder='What is this team for?'
-                        value={teamDescription}
-                        onChange={(e) => setTeamDescription(e.target.value)}
                     />
                 </Container>
 

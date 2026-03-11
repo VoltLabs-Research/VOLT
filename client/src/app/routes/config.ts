@@ -1,12 +1,10 @@
-import { RouteGroup } from './types';
-import AIPage from '@/modules/ai/components/templates/AIPage';
+import type { RouteGroup } from './types';
 import AnalysesListing from '@/modules/analysis/components/templates/AnalysesListing';
 import AuthenticationSettings from '@/modules/auth/components/templates/AuthenticationSettings';
 import GeneralSettings from '@/modules/auth/components/templates/GeneralSettings';
 import OAuthCallbackPage from '@/modules/auth/components/templates/OAuthCallback';
 import SignInPage from '@/modules/auth/components/templates/SignIn';
 import ThemeSettings from '@/modules/auth/components/templates/ThemeSettings';
-import CanvasPage from '@/modules/canvas/components/templates/CanvasPage';
 import MessagesPage from '@/modules/chat/components/templates/MessagesPage';
 import ClusterMonitoringPage from '@/modules/cluster/components/templates/ClusterMonitoringPage';
 import ClusterOnboardingPage from '@/modules/cluster/components/templates/ClusterOnboardingPage';
@@ -22,27 +20,21 @@ import ContainersListing from '@/modules/container/components/templates/Containe
 import DashboardLayout from '@/modules/dashboard/components/organisms/DashboardLayout';
 import Dashboard from '@/modules/dashboard/components/templates/Dashboard';
 import LatexDocumentsListing from '@/modules/latex/components/templates/LatexDocumentsListing';
-import LatexDocumentWorkspace from '@/modules/latex/components/templates/LatexDocumentWorkspace';
 import NotebooksListing from '@/modules/scripting/components/templates/NotebooksListing';
 import WhiteboardsListing from '@/modules/whiteboards/components/templates/WhiteboardsListing';
-import WhiteboardEditorPage from '@/modules/whiteboards/components/templates/WhiteboardEditorPage';
 import SSHConnectionsPage from '@/modules/ssh/components/templates/SSHConnectionsPage';
 import SSHFileExplorerPage from '@/modules/ssh/components/templates/SSHFileExplorerPage';
 import StartPage from '@/modules/start/components/templates/StartPage';
 import PostAuthOnboarding from '@/modules/onboarding/components/templates/PostAuthOnboarding';
-import PluginBuilderPage from '@/modules/plugin/components/plugin/templates/PluginBuilderPage';
 import PluginListingPage from '@/modules/plugin/components/listing/templates/PluginListingPage';
 import PluginsListing from '@/modules/plugin/components/listing/templates/PluginsListing';
-import SimulationCellsListing from '@/modules/simulation-cell/components/templates/SimulationCellsListing';
 import SessionSettings from '@/modules/session/components/templates/SessionSettings';
 import IntegrationsSettings from '@/modules/team/components/templates/IntegrationsSettings';
 import ManageRolesTemplate from '@/modules/team/components/templates/ManageRoles';
 import MyTeamTemplate from '@/modules/team/components/templates/MyTeam';
 import SecretKeyMetrics from '@/modules/team/components/templates/SecretKeyMetrics';
 import SecretKeysListing from '@/modules/team/components/templates/SecretKeysListing';
-import SecretKeyUsage from '@/modules/team/components/templates/SecretKeyUsage';
 import TeamInvitationTemplate from '@/modules/team/components/templates/TeamInvitation';
-import PerAtomViewer from '@/modules/trajectory/components/templates/PerAtomViewer';
 import TrajectoriesListing from '@/modules/trajectory/components/templates/TrajectoriesListing';
 import ErrorPage from '@/shared/presentation/components/ErrorPage';
 
@@ -106,7 +98,7 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/dashboard/secret-keys/:secretKeyId/usage',
-            component: SecretKeyUsage,
+            loader: () => import('@/modules/team/components/templates/SecretKeyUsage'),
             requiredPermissions: ['team-secret-key:read']
         },
         {
@@ -116,17 +108,17 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/canvas/:trajectoryId',
-            component: CanvasPage,
+            loader: () => import('@/modules/canvas/components/templates/CanvasPage'),
             requiredPermissions: ['trajectory:read']
         },
         {
             path: '/dashboard/whiteboard/:whiteboardId',
-            component: WhiteboardEditorPage,
+            loader: () => import('@/modules/whiteboards/components/templates/WhiteboardEditorPage'),
             requiredPermissions: ['whiteboard:read']
         },
         {
             path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/atoms/:exposureId?',
-            component: PerAtomViewer,
+            loader: () => import('@/modules/trajectory/components/templates/PerAtomViewer'),
             requiredPermissions: ['trajectory:read', 'analysis:read'],
             permissionMode: 'all'
         },
@@ -137,7 +129,7 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/dashboard/simulation-cells/list',
-            component: SimulationCellsListing,
+            loader: () => import('@/modules/simulation-cell/components/templates/SimulationCellsListing'),
             requiredPermissions: ['simulation-cell:read']
         },
         {
@@ -147,7 +139,7 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/plugins/builder',
-            component: PluginBuilderPage,
+            loader: () => import('@/modules/plugin/components/plugin/templates/PluginBuilderPage'),
             requiredPermissions: ['plugin:create']
         },
         {
@@ -216,7 +208,7 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/dashboard/ai/:conversationId?',
-            component: AIPage,
+            loader: () => import('@/modules/ai/components/templates/AIPage'),
             requiredPermissions: ['ai-conversation:read']
         },
         {
@@ -226,7 +218,7 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/dashboard/latex/:documentId',
-            component: LatexDocumentWorkspace,
+            loader: () => import('@/modules/latex/components/templates/LatexDocumentWorkspace'),
             requiredPermissions: ['latex:read']
         },
         {

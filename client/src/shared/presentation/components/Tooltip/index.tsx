@@ -1,5 +1,5 @@
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
-import composeRefs from '@/shared/presentation/utils/compose-refs';
+import composeRefs from '@/shared/presentation/utilities/compose-refs';
 import './Tooltip.css';
 import { useFloating, useHover, useFocus, useDismiss, useRole, useInteractions, FloatingPortal, offset, flip, shift, autoUpdate } from '@floating-ui/react';
 import { useState, cloneElement, isValidElement } from 'react';

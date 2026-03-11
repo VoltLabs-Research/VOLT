@@ -1,10 +1,4 @@
-import type { LatexFolderDTO } from './LatexFolderDTO';
+import type { CreateCatalogFolderInputDTO, CatalogFolderDTO } from '@shared/application/catalog/catalog-folder-dto';
 
-export interface CreateLatexFolderInputDTO {
-    teamId: string;
-    userId: string;
-    title: string;
-    parentId?: string | null;
-};
-
-export type CreateLatexFolderOutputDTO = LatexFolderDTO;
+export type CreateLatexFolderInputDTO = CreateCatalogFolderInputDTO;
+export type CreateLatexFolderOutputDTO = CatalogFolderDTO;

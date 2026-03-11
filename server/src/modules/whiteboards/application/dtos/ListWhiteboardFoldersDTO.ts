@@ -1,11 +1,4 @@
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import type { WhiteboardFolderDTO } from './WhiteboardFolderDTO';
+import type { ListCatalogFoldersInputDTO, ListCatalogFoldersOutputDTO } from '@shared/application/catalog/catalog-folder-dto';
 
-export interface ListWhiteboardFoldersInputDTO {
-    teamId: string;
-    parentId?: string | null;
-    page?: number | string;
-    limit?: number | string;
-};
-
-export type ListWhiteboardFoldersOutputDTO = PaginatedResult<WhiteboardFolderDTO>;
+export type ListWhiteboardFoldersInputDTO = ListCatalogFoldersInputDTO;
+export type ListWhiteboardFoldersOutputDTO = ListCatalogFoldersOutputDTO;

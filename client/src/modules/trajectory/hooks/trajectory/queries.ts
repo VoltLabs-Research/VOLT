@@ -3,10 +3,12 @@ import { TRAJECTORY_MODULE_QUERY_KEYS } from '../shared';
 import {
     buildKeys,
     createInfiniteQuery,
+    createCachePolicy,
+    createManagedMutation,
     createMutation,
     createPaginatedQuery,
     createQuery
-} from '@/shared/infrastructure/query/create-paginated-query';
+} from '@/shared/infrastructure/query';
 import { batchInvalidateQueries } from '@/shared/infrastructure/query/cache-utils';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -19,7 +21,14 @@ import type {
     GetPreviewInputDTO,
     GetTrajectoriesInputDTO
 } from '../../api/dtos/trajectory';
+import type { CreateTrajectoryFolderParams } from '../../api/dtos/trajectory/create-trajectory-folder';
+import type { DeleteTrajectoryFolderParams } from '../../api/dtos/trajectory/delete-trajectory-folder';
+import type { GetTrajectoryFolderParams } from '../../api/dtos/trajectory/get-trajectory-folder';
+import type { ListTrajectoryFoldersParams } from '../../api/dtos/trajectory/list-trajectory-folders';
+import type { MoveTrajectoryParams } from '../../api/dtos/trajectory/move-trajectory';
+import type { UpdateTrajectoryFolderParams } from '../../api/dtos/trajectory/update-trajectory-folder';
 import type { Trajectory } from '../../api/entities/trajectory';
+import type { TrajectoryFolder } from '../../api/entities/trajectory/trajectory-folder';
 import type { InfiniteQueryOptions, QueryOptions } from '@/shared/infrastructure/query/create-paginated-query';
 
 const BASE_KEY = 'trajectory';
@@ -42,11 +51,13 @@ const KEYS = buildKeys<{
     simulationGrid: void;
     preview: GetPreviewInputDTO;
     atoms: GetAtomsInputDTO;
-    atomsInfinite: void;
-    perAtom: void;
-    samples: void;
-    metrics: void;
-}>(BASE_KEY);
+        atomsInfinite: void;
+        perAtom: void;
+        samples: void;
+        metrics: void;
+        folder: GetTrajectoryFolderParams;
+        folders: ListTrajectoryFoldersParams;
+    }>(BASE_KEY);
 
 const stripTrajectoryPage = ({ page: _page, ...params }: GetTrajectoriesInputDTO) => params;
 
@@ -101,6 +112,42 @@ export const trajectoryPreviewQuery = createQuery(KEYS.preview, trajectoryServic
 export const trajectoryAtomsQuery = createQuery(KEYS.atoms, trajectoryService.getAtoms);
 export const trajectorySamplesQuery = createQuery(KEYS.samples, () => trajectoryService.listSamples({}));
 export const trajectoryMetricsQuery = createQuery(KEYS.metrics, () => trajectoryService.getMetrics({}));
+export const trajectoryFoldersQuery = createQuery(KEYS.folders, trajectoryService.listFolders);
+export const trajectoryFolderQuery = createQuery(KEYS.folder, trajectoryService.getFolder);
+
+const trajectoryFoldersCache = createCachePolicy<void>(() => KEYS.folders());
+const trajectoryFolderCache = createCachePolicy<GetTrajectoryFolderParams>((params) => KEYS.folder(params));
+
+export const invalidateTrajectoryFoldersQuery = () => trajectoryFoldersCache.invalidate(undefined);
+export const invalidateTrajectoryFolderQuery = (params: GetTrajectoryFolderParams) => trajectoryFolderCache.invalidate(params);
+
+export const useCreateTrajectoryFolderMutation = createManagedMutation<TrajectoryFolder, CreateTrajectoryFolderParams>(
+    trajectoryService.createFolder,
+    () => invalidateTrajectoryFoldersQuery()
+);
+
+export const useUpdateTrajectoryFolderMutation = createManagedMutation<TrajectoryFolder, UpdateTrajectoryFolderParams>(
+    trajectoryService.updateFolder,
+    (_data, variables) => {
+        invalidateTrajectoryFoldersQuery();
+        queryClient.invalidateQueries({ queryKey: trajectoryQuery.QUERY_KEYS.lists() });
+        invalidateTrajectoryFolderQuery({ folderId: variables.folderId });
+    }
+);
+
+export const useDeleteTrajectoryFolderMutation = createManagedMutation<void, DeleteTrajectoryFolderParams>(
+    trajectoryService.deleteFolder,
+    (_data, variables) => {
+        invalidateTrajectoryFoldersQuery();
+        queryClient.invalidateQueries({ queryKey: trajectoryQuery.QUERY_KEYS.lists() });
+        invalidateTrajectoryFolderQuery({ folderId: variables.folderId });
+    }
+);
+
+export const useMoveTrajectoryMutation = createManagedMutation<void, MoveTrajectoryParams>(
+    trajectoryService.move,
+    () => queryClient.invalidateQueries({ queryKey: trajectoryQuery.QUERY_KEYS.lists() })
+);
 
 const trajectoriesInfiniteQuery = createInfiniteQuery<GetTrajectoriesInputDTO, Trajectory>(
     (params) => [...trajectoryQuery.QUERY_KEYS.infiniteLists(), stripTrajectoryPage(params)],
