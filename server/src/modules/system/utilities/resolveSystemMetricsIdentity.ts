@@ -11,6 +11,7 @@ const readIdentityEnv = (key: string): string | null => {
     return value ? value : null;
 };
 
+// TODO: Remove CLUSTER_ID
 export const resolveSystemMetricsIdentity = (): SystemMetricsIdentity => {
     const teamClusterId = readIdentityEnv('TEAM_CLUSTER_ID');
     const serverId = readIdentityEnv('CLUSTER_ID') ?? os.hostname();
