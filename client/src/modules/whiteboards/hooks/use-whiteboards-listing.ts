@@ -123,7 +123,7 @@ const fetchFolderById = (folderId: string): Promise<WhiteboardFolder> => {
 };
 
 const getDeleteFolderConfirmDescription = (folderTitle: string): string => {
-    return `Delete "${folderTitle}"? Nested folders will be removed and any whiteboards inside them will be moved to Root.`;
+    return `Delete "${folderTitle}"? Nested folders and all whiteboards inside them will be deleted recursively.`;
 };
 
 const useWhiteboardsListing = () => {
@@ -183,7 +183,7 @@ const useWhiteboardsListing = () => {
         deleteFolderToast: DELETE_FOLDER_TOAST,
         getDeleteFolderConfirm: (folder) => ({
             title: getDeleteFolderConfirmDescription(folder.title),
-            description: 'Nested folders are deleted recursively. Whiteboards inside deleted folders are moved to Root.'
+            description: 'This permanently deletes the folder tree and every whiteboard contained in it.'
         })
     });
 

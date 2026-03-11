@@ -5,12 +5,14 @@ import type { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 interface DeleteCatalogFolderTreeOptions<
     TFolder extends CatalogFolderEntity<TFolderProps>,
     TFolderProps extends CatalogFolderProps,
+    TItem extends { _id: string },
     TItemProps extends object
 > {
     teamId: string;
     folderId: string;
     folderRepository: ICatalogFolderRepository<TFolder, TFolderProps>;
-    itemRepository: IBaseRepository<unknown, TItemProps>;
+    itemRepository: IBaseRepository<TItem, TItemProps>;
+    deleteItem: (item: TItem, teamId: string) => Promise<void>;
     teamField?: keyof TItemProps & string;
     folderField?: keyof TItemProps & string;
 };
@@ -18,15 +20,17 @@ interface DeleteCatalogFolderTreeOptions<
 export const deleteCatalogFolderTree = async <
     TFolder extends CatalogFolderEntity<TFolderProps>,
     TFolderProps extends CatalogFolderProps,
+    TItem extends { _id: string },
     TItemProps extends object
 >({
     teamId,
     folderId,
     folderRepository,
     itemRepository,
+    deleteItem,
     teamField = 'team' as keyof TItemProps & string,
     folderField = 'folder' as keyof TItemProps & string
-}: DeleteCatalogFolderTreeOptions<TFolder, TFolderProps, TItemProps>): Promise<void> => {
+}: DeleteCatalogFolderTreeOptions<TFolder, TFolderProps, TItem, TItemProps>): Promise<void> => {
     const subfolders = await folderRepository.findAll({
         filter: {
             team: teamId,
@@ -40,20 +44,22 @@ export const deleteCatalogFolderTree = async <
             folderId: subfolder._id,
             folderRepository,
             itemRepository,
+            deleteItem,
             teamField,
             folderField
         });
     }
 
-    await itemRepository.updateMany(
-        {
+    const items = await itemRepository.export({
+        filter: {
             [teamField]: teamId,
             [folderField]: folderId
-        } as Partial<TItemProps>,
-        {
-            [folderField]: null
         } as Partial<TItemProps>
-    );
+    });
+
+    for (const item of items) {
+        await deleteItem(item, teamId);
+    }
 
     await folderRepository.deleteById(folderId);
 };

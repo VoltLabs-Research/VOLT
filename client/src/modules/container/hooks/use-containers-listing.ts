@@ -164,8 +164,8 @@ const useContainersListing = () => {
             error: { title: 'Failed to delete folder' }
         },
         getDeleteFolderConfirm: (folder) => ({
-            title: `Delete "${folder.title}"? Nested folders will be removed and any containers inside them will be moved to Root.`,
-            description: 'Nested folders are deleted recursively. Containers inside deleted folders are moved to Root.'
+            title: `Delete "${folder.title}"? Nested folders and all containers inside them will be deleted recursively.`,
+            description: 'This permanently deletes the folder tree and every container contained in it.'
         })
     });
 

@@ -3,7 +3,8 @@ import { useEffect } from 'react';
 const targetDesktopViewportWidth = 1800;
 const targetDesktopViewportHeight = 960;
 const desktopBreakpoint = 1024;
-const minimumPageScale = 0.1;
+const defaultRootFontSize = 16;
+const minimumPageScale = 0.75;
 
 const getNormalizedPageScale = () => {
     if (window.innerWidth < desktopBreakpoint) {
@@ -21,18 +22,12 @@ const getNormalizedPageScale = () => {
 
 const applyPageScale = () => {
     const pageScale = getNormalizedPageScale();
-    const pageWidthPercent = 100 / pageScale;
-    const pageMinHeightVh = 100 / pageScale;
 
-    document.documentElement.style.setProperty('--volt-page-scale', pageScale.toFixed(4));
-    document.documentElement.style.setProperty('--volt-page-width', `${pageWidthPercent}%`);
-    document.documentElement.style.setProperty('--volt-page-min-height', `${pageMinHeightVh}vh`);
+    document.documentElement.style.setProperty('--volt-root-font-size', `${(defaultRootFontSize * pageScale).toFixed(2)}px`);
 };
 
 const resetPageScale = () => {
-    document.documentElement.style.removeProperty('--volt-page-scale');
-    document.documentElement.style.removeProperty('--volt-page-width');
-    document.documentElement.style.removeProperty('--volt-page-min-height');
+    document.documentElement.style.removeProperty('--volt-root-font-size');
 };
 
 export const usePageScale = () => {
@@ -52,7 +47,6 @@ export const usePageScale = () => {
 
         syncPageScale();
         window.addEventListener('resize', syncPageScale);
-        window.visualViewport?.addEventListener('resize', syncPageScale);
 
         return () => {
             if (frameReference) {
@@ -60,7 +54,6 @@ export const usePageScale = () => {
             }
 
             window.removeEventListener('resize', syncPageScale);
-            window.visualViewport?.removeEventListener('resize', syncPageScale);
             resetPageScale();
         };
     }, []);

@@ -12,11 +12,13 @@ import type { CatalogFolderMessages } from './CatalogFolderMessages';
 export abstract class DeleteCatalogFolderUseCase<
     TFolder extends CatalogFolderEntity<TFolderProps>,
     TFolderProps extends CatalogFolderProps,
+    TItem extends { _id: string },
     TItemProps extends object
 > implements IUseCase<DeleteCatalogFolderInputDTO, null, ApplicationError> {
     constructor(
         private readonly folderRepository: ICatalogFolderRepository<TFolder, TFolderProps>,
-        private readonly itemRepository: IBaseRepository<unknown, TItemProps>,
+        private readonly itemRepository: IBaseRepository<TItem, TItemProps>,
+        private readonly deleteItem: (item: TItem, teamId: string) => Promise<void>,
         private readonly messages: CatalogFolderMessages
     ) {}
 
@@ -34,7 +36,8 @@ export abstract class DeleteCatalogFolderUseCase<
                 teamId: input.teamId,
                 folderId: input.folderId,
                 folderRepository: this.folderRepository,
-                itemRepository: this.itemRepository
+                itemRepository: this.itemRepository,
+                deleteItem: this.deleteItem
             });
 
             return Result.ok(null);
