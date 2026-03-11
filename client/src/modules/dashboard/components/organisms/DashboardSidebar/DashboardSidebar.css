@@ -119,7 +119,7 @@
         width: 280px !important;
     }
 
-    /* Undo collapsed styles on mobile — always show full sidebar */
+    /* Undo collapsed styles on mobile - always show full sidebar */
     .dashboard-sidebar.is-collapsed .sidebar-nav-label,
     .dashboard-sidebar.is-collapsed .sidebar-section-chevron {
         display: unset;

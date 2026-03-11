@@ -74,6 +74,7 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
             status: TeamClusterStatus.WaitingForConnection,
             enrollmentTokenHash: hashEnrollmentToken(enrollmentToken),
             installedVersion: null,
+            installRoot: null,
             lastHeartbeatAt: null,
             lastDisconnectAt: null,
             services: {

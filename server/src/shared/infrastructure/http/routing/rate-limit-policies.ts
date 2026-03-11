@@ -36,6 +36,7 @@ export const RATE_LIMIT_POLICIES = {
     teamAIIntegrationCreate: createStandardRateLimiter(5),
     teamClusterCreate: createStandardRateLimiter(5),
     teamClusterDelete: createStandardRateLimiter(5, 'Too many delete attempts, please try again later'),
+    teamClusterUpdate: createStandardRateLimiter(5, 'Too many update attempts, please try again later'),
     teamClusterLifecycle: createStandardRateLimiter(30, 'Too many team cluster lifecycle requests, please try again later'),
     teamClusterRevealCredentials: createStandardRateLimiter(5, 'Too many credential reveal attempts, please try again later'),
     teamCreate: createStandardRateLimiter(5),

@@ -96,6 +96,8 @@ const daemonMetricsSnapshotSchema = z.object({
 
 const portSchema = z.number().int().min(1).max(65535);
 
+const installRootSchema = requiredTextSchema.min(1).max(512);
+
 const teamClusterHealthcheckSchema = z.object({
     enrollmentToken: requiredTextSchema,
     installedVersion: installedVersionSchema
@@ -115,6 +117,7 @@ const teamClusterHeartbeatSchema = z.object({
 
 const teamClusterInstallManifestSchema = z.object({
     daemonPassword: requiredTextSchema,
+    installRoot: installRootSchema,
     ports: z.object({
         minio: portSchema,
         redis: portSchema,
@@ -126,6 +129,12 @@ const teamClusterInstallManifestSchema = z.object({
     }, {
         message: 'Ports must be unique'
     })
+}).strict();
+
+const requestUpdateSchema = z.object({
+    targetVersion: requiredTextSchema.max(128),
+    isEdge: z.boolean().default(false),
+    password: requiredTextSchema
 }).strict();
 
 export const teamClusterValidation = createResourceValidation({
@@ -140,9 +149,16 @@ export const teamClusterValidation = createResourceValidation({
     getById: {
         params: teamClusterParamsSchema
     },
+    fetchAvailableVersions: {
+        params: teamClusterParamsSchema
+    },
     deleteById: {
         params: teamClusterParamsSchema,
         body: passwordConfirmationSchema
+    },
+    requestUpdate: {
+        params: teamClusterParamsSchema,
+        body: requestUpdateSchema
     },
     createRemoteAccessSession: {
         params: teamClusterParamsSchema,

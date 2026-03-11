@@ -1,14 +1,25 @@
+import {
+    extractTrajectoryTimesteps,
+    getNearestTimestep,
+    getSelectedTimestepsForAnalysis
+} from '../utilities/selected-timestep-analysis';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
-
-import { useEffect, useRef } from 'react';
-import { useShallow } from 'zustand/react/shallow';
+import useCanvasUrlState from './use-canvas-url-state';
 import useGetTrajectoryById from '@/modules/trajectory/hooks/trajectory/use-get-trajectory-by-id';
+import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
+import { useEffect, useMemo, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
+    const { analysisId } = useCanvasUrlState();
     const { trajectory, isLoading, error } = useGetTrajectoryById({
         trajectoryId,
         enabled: !!trajectoryId
     });
+    const analysesQuery = useAnalysesByTrajectoryQuery(
+        { trajectoryId: trajectoryId ?? '', page: 1, limit: 100 },
+        { enabled: !!trajectoryId }
+    );
 
     const {
         currentTimestep,
@@ -26,23 +37,36 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
         resetModel: state.resetModel
     })));
 
-    useEffect(() => {
-        if (!trajectory || currentTimestep !== undefined) return;
+    const analyses = useMemo(() => {
+        return analysesQuery.data?.data ?? [];
+    }, [analysesQuery.data]);
 
-        if (!trajectory.frames || trajectory.frames.length === 0) {
+    const trajectoryTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
+    const selectedAnalysis = useMemo(() => {
+        if (!analysisId) {
+            return undefined;
+        }
+
+        return analyses.find((analysis) => analysis._id === analysisId);
+    }, [analyses, analysisId]);
+    const selectedAnalysisTimesteps = useMemo(() => {
+        return getSelectedTimestepsForAnalysis(selectedAnalysis, trajectoryTimesteps);
+    }, [selectedAnalysis, trajectoryTimesteps]);
+    const visibleTimesteps = selectedAnalysisTimesteps ?? trajectoryTimesteps;
+    const resolvedCurrentTimestep = getNearestTimestep(currentTimestep, visibleTimesteps);
+    const isAwaitingSelectedAnalysis = Boolean(analysisId && analysesQuery.isLoading && analyses.length === 0);
+
+    useEffect(() => {
+        if (!trajectory || isAwaitingSelectedAnalysis) {
             return;
         }
 
-        const timesteps = trajectory.frames
-            .map((frame: any) => frame.timestep)
-            .filter((ts: any) => ts !== undefined && ts !== null);
-
-        if (timesteps.length > 0) {
-            const firstTimestep = Math.min(...timesteps);
-            setCurrentTimestep(firstTimestep);
-
+        if (resolvedCurrentTimestep === undefined || resolvedCurrentTimestep === currentTimestep) {
+            return;
         }
-    }, [trajectory, currentTimestep, setCurrentTimestep]);
+
+        setCurrentTimestep(resolvedCurrentTimestep);
+    }, [trajectory, isAwaitingSelectedAnalysis, resolvedCurrentTimestep, currentTimestep, setCurrentTimestep]);
 
     const prevTrajectoryStatusRef = useRef<string | undefined>(undefined);
 
@@ -53,9 +77,9 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
             if (trajectory.status === 'completed' && prevTrajectoryStatusRef.current !== 'completed') {
                 resetModel();
 
-                if (currentTimestep !== undefined) {
+                if (resolvedCurrentTimestep !== undefined && !isAwaitingSelectedAnalysis) {
                     recomputeTimeoutId = window.setTimeout(() => {
-                        computeTimestepData(trajectory, currentTimestep, Date.now());
+                        computeTimestepData(trajectory, resolvedCurrentTimestep, Date.now(), selectedAnalysisTimesteps);
                     }, 100);
                 }
             }
@@ -67,17 +91,28 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
                 window.clearTimeout(recomputeTimeoutId);
             }
         };
-    }, [trajectory?.status, trajectory?._id, currentTimestep, computeTimestepData, resetModel]);
+    }, [
+        trajectory,
+        trajectory?.status,
+        trajectory?._id,
+        resolvedCurrentTimestep,
+        computeTimestepData,
+        isAwaitingSelectedAnalysis,
+        resetModel,
+        selectedAnalysisTimesteps
+    ]);
 
     useEffect(() => {
-        if (trajectory?._id && currentTimestep !== undefined) {
-            computeTimestepData(trajectory, currentTimestep);
+        if (!trajectory?._id || isAwaitingSelectedAnalysis) {
+            return;
         }
-    }, [trajectory?._id, currentTimestep, computeTimestepData]);
+
+        computeTimestepData(trajectory, resolvedCurrentTimestep, undefined, selectedAnalysisTimesteps);
+    }, [trajectory, computeTimestepData, isAwaitingSelectedAnalysis, resolvedCurrentTimestep, selectedAnalysisTimesteps]);
 
     return {
         trajectory,
-        currentTimestep,
+        currentTimestep: resolvedCurrentTimestep,
         timestepData,
         activeModel,
         isLoading,

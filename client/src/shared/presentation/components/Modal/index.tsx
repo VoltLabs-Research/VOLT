@@ -3,8 +3,9 @@ import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
 import FloatingRootContext from '@/shared/presentation/contexts/FloatingRootContext';
+import { getActiveDialog, setActiveDialog } from '@/shared/presentation/utilities/active-dialog-store';
 import './Modal.css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import React from 'react';
 import type { ReactNode } from 'react';
 
@@ -47,6 +48,32 @@ const Modal = ({
     // Callback ref stored in state so the context value triggers a re-render
     // once the <dialog> element mounts, giving consumers the actual DOM node.
     const [dialogElement, setDialogElement] = useState<HTMLDialogElement | null>(null);
+
+    /**
+     * Tracks this dialog in the active-dialog store so that top-layer-aware
+     * consumers (AppToaster) can portal their content here when this dialog
+     * is open, keeping them visible above the modal backdrop.
+     */
+    useEffect(() => {
+        if (!dialogElement) return;
+
+        const observer = new MutationObserver(() => {
+            if (dialogElement.open) {
+                setActiveDialog(dialogElement);
+            } else if (getActiveDialog() === dialogElement) {
+                setActiveDialog(null);
+            }
+        });
+
+        observer.observe(dialogElement, { attributes: true, attributeFilter: ['open'] });
+
+        return () => {
+            observer.disconnect();
+            if (getActiveDialog() === dialogElement) {
+                setActiveDialog(null);
+            }
+        };
+    }, [dialogElement]);
 
     const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
         const dialog = e.currentTarget;

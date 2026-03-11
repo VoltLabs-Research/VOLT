@@ -1,11 +1,6 @@
 .dashboard-stat-skeleton {
     grid-column: span 3;
-    background: var(--color-surface-1);
-    border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-xl);
     padding: 1rem;
-    position: relative;
-    overflow: hidden;
     min-height: 130px;
 }
 

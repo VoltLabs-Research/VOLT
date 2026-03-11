@@ -6,6 +6,7 @@ import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopo
 import Paragraph from '@/shared/presentation/components/Paragraph';
 
 import type { AnalysisSectionData } from '../../../hooks/use-canvas-sidebar-scene';
+import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { CanvasAnalysisStatusEntry } from '../../../utilities/analysis-status';
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 
@@ -15,7 +16,7 @@ interface SceneCollectionProps {
     toggleSection: (id: string) => void;
     showSectionsSkeleton: boolean;
     activeScene: SceneObjectType | null;
-    onSelectScene: (scene: SceneObjectType) => void;
+    onSelectScene: (scene: SceneObjectType, analysis?: Analysis) => void;
     isSceneInActiveScenes: (scene: SceneObjectType) => boolean;
     addScene: (scene: SceneObjectType) => void;
     removeScene: (scene: SceneObjectType) => void;
@@ -30,6 +31,7 @@ interface SceneCollectionProps {
         trajectoryId?: string;
         exposureName?: string;
     }) => void;
+    showDefaultScene?: boolean;
 };
 
 const SceneCollection = ({
@@ -46,47 +48,50 @@ const SceneCollection = ({
     statusMap,
     onDeleteAnalysis,
     onDownloadAnalysis,
-    onDownloadExposureListing
+    onDownloadExposureListing,
+    showDefaultScene = true
 }: SceneCollectionProps) => {
     const defaultScene = { sceneType: 'trajectory', source: 'default' as const };
     const isDefaultActive = activeScene?.source === 'default';
 
     return (
         <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Scene hierarchy">
-            <ContextMenuPopover
-                id="canvas-ctx-default-scene"
-                trigger={(
-                    <Container
-                        className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none ${isDefaultActive ? 'selected' : ''}`}
-                        style={{ paddingLeft: 16 }}
-                        onClick={() => {
-                            onSelectScene(defaultScene);
-                        }}
-                        role="treeitem"
-                        aria-selected={isDefaultActive}
-                        tabIndex={0}
-                    >
-                        <span className="canvas-tree-spacer" />
-                        <Atom style={{ width: 13, height: 13, color: '#60a5fa' }} />
-                        <span className={`${isDefaultActive ? 'color-primary' : 'color-secondary'}`}>
-                            Trajectory
-                        </span>
-                    </Container>
-                )}
-                options={[
-                    {
-                        label: 'Add to scene',
-                        onClick: () => addScene(defaultScene),
-                        disabled: isDefaultActive
-                    },
-                    {
-                        label: 'Remove from scene',
-                        onClick: () => removeScene(defaultScene),
-                        disabled: !isDefaultActive
-                    }
-                ]}
-                size='sm'
-            />
+            {showDefaultScene && (
+                <ContextMenuPopover
+                    id="canvas-ctx-default-scene"
+                    trigger={(
+                        <Container
+                            className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none ${isDefaultActive ? 'selected' : ''}`}
+                            style={{ paddingLeft: 16 }}
+                            onClick={() => {
+                                onSelectScene(defaultScene);
+                            }}
+                            role="treeitem"
+                            aria-selected={isDefaultActive}
+                            tabIndex={0}
+                        >
+                            <span className="canvas-tree-spacer" />
+                            <Atom style={{ width: 13, height: 13, color: '#60a5fa' }} />
+                            <span className={`${isDefaultActive ? 'color-primary' : 'color-secondary'}`}>
+                                Trajectory
+                            </span>
+                        </Container>
+                    )}
+                    options={[
+                        {
+                            label: 'Add to scene',
+                            onClick: () => addScene(defaultScene),
+                            disabled: isDefaultActive
+                        },
+                        {
+                            label: 'Remove from scene',
+                            onClick: () => removeScene(defaultScene),
+                            disabled: !isDefaultActive
+                        }
+                    ]}
+                    size='sm'
+                />
+            )}
 
             {showSectionsSkeleton && totalAnalyses > 0 && (
                 Array.from({ length: Math.min(totalAnalyses, 3) }).map((_, i) => (

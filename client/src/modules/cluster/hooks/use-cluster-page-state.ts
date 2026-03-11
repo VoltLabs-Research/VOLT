@@ -1,6 +1,7 @@
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import { useState } from 'react';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
+import type { RequestClusterUpdateOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/request-cluster-update';
 import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
 import type {
     TeamClusterRemoteAccessSession,
@@ -25,16 +26,20 @@ interface RemoteExplorerState extends RemoteTerminalState {
 
 export interface ClusterPageState {
     clusters: TeamCluster[];
+    selectedTeamId: string | null;
     selectedCluster: TeamCluster | null;
     selectedClusterId: string;
     setSelectedClusterId: (clusterId: string) => void;
     revealCredentials: (password: string) => Promise<void>;
     deleteCluster: (password: string) => Promise<DeleteTeamClusterOutputDTO>;
+    requestUpdate: (targetVersion: string, isEdge: boolean, password: string) => Promise<RequestClusterUpdateOutputDTO>;
     credentials: TeamClusterCredentialServices | null;
     credentialsCluster: TeamCluster | null;
     deleteTarget: TeamCluster | null;
+    updateTarget: TeamCluster | null;
     setCredentialsCluster: (teamCluster: TeamCluster | null) => void;
     setDeleteTarget: (teamCluster: TeamCluster | null) => void;
+    setUpdateTarget: (teamCluster: TeamCluster | null) => void;
     remoteAccessRequest: RemoteAccessRequestState | null;
     remoteTerminal: RemoteTerminalState | null;
     remoteExplorer: RemoteExplorerState | null;
@@ -62,6 +67,7 @@ const useClusterPageState = (): ClusterPageState => {
     const [credentials, setCredentials] = useState<TeamClusterCredentialServices | null>(null);
     const [credentialsCluster, setCredentialsCluster] = useState<TeamCluster | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<TeamCluster | null>(null);
+    const [updateTarget, setUpdateTarget] = useState<TeamCluster | null>(null);
     const [remoteAccessRequest, setRemoteAccessRequest] = useState<RemoteAccessRequestState | null>(null);
     const [remoteTerminal, setRemoteTerminal] = useState<RemoteTerminalState | null>(null);
     const [remoteExplorer, setRemoteExplorer] = useState<RemoteExplorerState | null>(null);
@@ -81,6 +87,14 @@ const useClusterPageState = (): ClusterPageState => {
         }
 
         return management.deleteCluster(deleteTarget._id, password);
+    };
+
+    const requestUpdate = async (targetVersion: string, isEdge: boolean, password: string) => {
+        if (!updateTarget) {
+            throw new Error('Missing cluster update target');
+        }
+
+        return management.requestUpdate(updateTarget._id, targetVersion, isEdge, password);
     };
 
     const submitRemoteAccessRequest = async (password: string) => {
@@ -115,19 +129,23 @@ const useClusterPageState = (): ClusterPageState => {
 
     return {
         clusters: management.clusters,
+        selectedTeamId: management.selectedTeamId,
         selectedCluster: management.selectedCluster,
         selectedClusterId: management.selectedClusterId,
         setSelectedClusterId: management.setSelectedClusterId,
         revealCredentials,
         deleteCluster,
+        requestUpdate,
         credentials,
         credentialsCluster,
         deleteTarget,
+        updateTarget,
         setCredentialsCluster: (teamCluster) => {
             setCredentials(null);
             setCredentialsCluster(teamCluster);
         },
         setDeleteTarget,
+        setUpdateTarget,
         remoteAccessRequest,
         remoteTerminal,
         remoteExplorer,

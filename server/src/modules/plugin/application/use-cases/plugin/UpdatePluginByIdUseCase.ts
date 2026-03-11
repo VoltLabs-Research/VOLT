@@ -78,7 +78,7 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
         }
 
         if(input.status === PluginStatus.Published && !input.workflow){
-            // No workflow provided with publish request — validate the existing workflow.
+            // No workflow provided with publish request - validate the existing workflow.
             const { isValid, errors } = this.workflowValidator.validate(plugin.props.workflow.props);
             if(!isValid){
                 return Result.fail(ApplicationError.badRequest(

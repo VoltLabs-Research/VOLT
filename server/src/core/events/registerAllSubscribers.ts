@@ -6,6 +6,8 @@ import { dailyActivitySubscriberManifest } from '@modules/daily-activity/infrast
 import { notificationSubscriberManifest } from '@modules/notification/infrastructure/events/subscribers';
 import { pluginSubscriberManifest } from '@modules/plugin/infrastructure/events/subscribers';
 import { scriptingSubscriberManifest } from '@modules/scripting/infrastructure/events/subscribers';
+import { whiteboardSubscriberManifest } from '@modules/whiteboards/infrastructure/events/subscribers';
+import { latexSubscriberManifest } from '@modules/latex/infrastructure/events/subscribers';
 import { sessionSubscriberManifest } from '@modules/session/infrastructure/events/subscribers';
 import { simulationCellSubscriberManifest } from '@modules/simulation-cell/infrastructure/events/subscribers';
 import { sshSubscriberManifest } from '@modules/ssh/infrastructure/events/subscribers';
@@ -23,11 +25,13 @@ const SUBSCRIBER_MANIFESTS: SubscriberManifest[] = [
     sshSubscriberManifest,
     pluginSubscriberManifest,
     scriptingSubscriberManifest,
+    latexSubscriberManifest,
     dailyActivitySubscriberManifest,
     containerSubscriberManifest,
     simulationCellSubscriberManifest,
     sessionSubscriberManifest,
-    authSubscriberManifest
+    authSubscriberManifest,
+    whiteboardSubscriberManifest
 ];
 
 /**

@@ -131,7 +131,7 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
                 const nodeTypes = nodes.map((n) => n.type);
 
                 if (!nodeTypes.includes('modifier')) {
-                    errors.push('Missing Modifier node — required as the plugin entry point.');
+                    errors.push('Missing Modifier node - required as the plugin entry point.');
                 }
                 if (nodeTypes.includes('modifier') && !edges.some((e) => {
                     const src = nodes.find((n) => n.id === e.source);

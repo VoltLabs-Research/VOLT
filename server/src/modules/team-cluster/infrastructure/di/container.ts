@@ -14,6 +14,7 @@ import TeamClusterTcpExposureRelayService from '@modules/team-cluster/infrastruc
 import DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
 import CompleteTeamClusterDeletionUseCase from '@modules/team-cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
 import CreateTeamClusterRemoteAccessSessionUseCase from '@modules/team-cluster/application/use-cases/CreateTeamClusterRemoteAccessSessionUseCase';
+import FetchAvailableClusterVersionsUseCase from '@modules/team-cluster/application/use-cases/FetchAvailableClusterVersionsUseCase';
 import ProcessDaemonJobCompletionUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonJobCompletionUseCase';
 import ProcessDaemonSceneArtifactUpsertUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
 import ProcessDaemonTrajectoryImportUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonTrajectoryImportUseCase';
@@ -41,6 +42,7 @@ export const registerTeamClusterDependencies = () => {
             [TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService, DaemonAnalysisCompletionService],
             CompleteTeamClusterDeletionUseCase,
             CreateTeamClusterRemoteAccessSessionUseCase,
+            FetchAvailableClusterVersionsUseCase,
             GetTeamClusterRemoteExplorerNodeUseCase,
             ListTeamClusterRemoteExplorerEntriesUseCase,
             ProcessDaemonJobCompletionUseCase,
@@ -50,6 +52,9 @@ export const registerTeamClusterDependencies = () => {
             RecordTeamClusterHeartbeatUseCase,
             UpdateTeamClusterLifecycleUseCase
         ],
-        aliases: [[SOCKET_TOKENS.SocketModule, TEAM_CLUSTER_TOKENS.TeamClusterSocketModule]]
+        aliases: [
+            [SOCKET_TOKENS.SocketModule, TEAM_CLUSTER_TOKENS.TeamClusterSocketModule],
+            [TeamClusterTcpExposureRelayService, TEAM_CLUSTER_TOKENS.TeamClusterTcpExposureRelayService]
+        ]
     });
 };

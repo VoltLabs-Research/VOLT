@@ -1,17 +1,17 @@
 import { CONTAINER_TEMPLATES } from '../services/container-templates';
 import { containerQuery } from './queries';
 import { teamClusterService } from '../api/service/team-cluster-service';
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
-import type { Team } from '@/modules/team/api/entities/team/team';
+import type { ContainerTemplate } from '../api/entities/container-template';
 import type { EnvVariable } from '../api/entities/env-variable';
 import type { PortMapping } from '../api/entities/port-mapping';
-import type { ContainerTemplate } from '../api/entities/container-template';
 import type { TeamClusterOption } from '../api/entities/team-cluster-option';
+import type { Team } from '@/modules/team/api/entities/team/team';
 
 export type { EnvVariable } from '../api/entities/env-variable';
 export type { PortMapping } from '../api/entities/port-mapping';
@@ -41,7 +41,7 @@ export interface UseCreateContainerFormReturn {
     setSelectedTeamClusterId: (id: string | null) => void;
     updateConfig: <K extends keyof ContainerConfig>(key: K, value: ContainerConfig[K]) => void;
     handleTemplateSelect: (templateId: string) => void;
-    setCustomImage: (image: string, goToConfig: () => void) => void;
+    setCustomImage: (image: string, goToConfigFunction: () => void) => void;
     handleCreate: () => Promise<void>;
     getSelectedImage: () => string | undefined;
     getSelectedTemplate: () => ContainerTemplate | undefined;
@@ -115,36 +115,41 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
     }, [selectedTeamId]);
 
     const updateConfig = useCallback(<K extends keyof ContainerConfig>(key: K, value: ContainerConfig[K]) => {
-        setConfig((prev) => ({ ...prev, [key]: value }));
+        setConfig((previousConfig) => ({
+            ...previousConfig,
+            [key]: value
+        }));
     }, []);
 
     const handleTemplateSelect = useCallback((templateId: string) => {
         const template = CONTAINER_TEMPLATES.find((containerTemplate) => containerTemplate.id === templateId);
-        if (template) {
-            let ports: PortMapping[] = [];
-            if (template.defaultPort) {
-                ports = [{
-                    private: template.defaultPort,
-                    public: 0
-                }];
-            }
-
-            let env: EnvVariable[] = [];
-            if (template.defaultEnv) {
-                env = [...template.defaultEnv];
-            }
-
-            setSelectedTemplate(templateId);
-            setCustomImageState('');
-            setConfig((prev) => ({
-                ...prev,
-                name: `${template.id}-${Math.floor(Math.random() * 1000)}`,
-                ports,
-                env,
-                mountDockerSocket: template.id === 'coder'
-            }));
-            goToConfig();
+        if (!template) {
+            return;
         }
+
+        let ports: PortMapping[] = [];
+        if (template.defaultPort) {
+            ports = [{
+                private: template.defaultPort,
+                public: 0
+            }];
+        }
+
+        let env: EnvVariable[] = [];
+        if (template.defaultEnv) {
+            env = [...template.defaultEnv];
+        }
+
+        setSelectedTemplate(templateId);
+        setCustomImageState('');
+        setConfig((previousConfig) => ({
+            ...previousConfig,
+            name: `${template.id}-${Math.floor(Math.random() * 1000)}`,
+            ports,
+            env,
+            mountDockerSocket: template.id === 'coder'
+        }));
+        goToConfig();
     }, [goToConfig]);
 
     const setCustomImage = useCallback((image: string, goToConfigFunction: () => void) => {
@@ -152,10 +157,11 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
             sileo.error({ title: 'Please enter a valid image name' });
             return;
         }
+
         setCustomImageState(image);
         setSelectedTemplate(null);
-        setConfig((prev) => ({
-            ...prev,
+        setConfig((previousConfig) => ({
+            ...previousConfig,
             name: `custom-${Math.floor(Math.random() * 1000)}`
         }));
         goToConfigFunction();
@@ -165,6 +171,7 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
         if (selectedTemplate) {
             return CONTAINER_TEMPLATES.find((containerTemplate) => containerTemplate.id === selectedTemplate)?.image;
         }
+
         return customImage || undefined;
     }, [selectedTemplate, customImage]);
 
@@ -172,6 +179,7 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
         if (selectedTemplate) {
             return CONTAINER_TEMPLATES.find((containerTemplate) => containerTemplate.id === selectedTemplate);
         }
+
         return undefined;
     }, [selectedTemplate]);
 
@@ -211,7 +219,8 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
                 env: config.env.filter((envVariable) => envVariable.key && envVariable.value),
                 mountDockerSocket: config.mountDockerSocket,
                 useImageCmd: template?.useImageCmd,
-                cmd: template?.defaultCmd
+                cmd: template?.defaultCmd,
+                capabilities: template?.capabilities
             }),
             {
                 loading: { title: 'Creating container...' },

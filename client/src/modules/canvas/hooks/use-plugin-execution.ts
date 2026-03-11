@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { sileo } from 'sileo';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { ModifierOption } from '../utilities/modifier-registry';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
@@ -16,6 +16,7 @@ interface ExecutePluginArgs {
     trajectoryId: string;
     teamClusterId: string;
     config: Record<string, unknown>;
+    selectedTimesteps?: number[];
     timestep?: number;
 };
 
@@ -24,6 +25,7 @@ interface UsePluginExecutionArgs {
     currentTimestep?: number;
     getPluginArguments: (pluginId: string) => IArgumentDefinition[];
     getSelectedTeamClusterId: (option: ModifierOption) => string;
+    getSelectedTimesteps: (pluginId: string) => number[] | undefined;
     executePlugin: (args: ExecutePluginArgs) => Promise<unknown>;
     pluginConfigs?: Record<string, Record<string, unknown>>;
 };
@@ -33,6 +35,7 @@ const usePluginExecution = ({
     currentTimestep,
     getPluginArguments,
     getSelectedTeamClusterId,
+    getSelectedTimesteps,
     executePlugin,
     pluginConfigs
 }: UsePluginExecutionArgs) => {
@@ -70,6 +73,7 @@ const usePluginExecution = ({
             const args = getPluginArguments(option.pluginModifierId);
             const userConfig = pluginConfigs?.[option.pluginModifierId] || {};
             const selectedTeamClusterId = getSelectedTeamClusterId(option);
+            const selectedTimesteps = getSelectedTimesteps(option.pluginModifierId);
             const config: Record<string, unknown> = {};
 
             if (!selectedTeamClusterId) {
@@ -93,6 +97,7 @@ const usePluginExecution = ({
                 trajectoryId,
                 teamClusterId: selectedTeamClusterId,
                 config,
+                selectedTimesteps,
                 timestep: currentTimestep
             });
 
@@ -103,7 +108,16 @@ const usePluginExecution = ({
             setExecStates((prev) => new Map(prev).set(modId, ExecState.Error));
             clearExecStateLater(modId);
         }
-    }, [trajectoryId, currentTimestep, getPluginArguments, getSelectedTeamClusterId, executePlugin, pluginConfigs, clearExecStateLater]);
+    }, [
+        trajectoryId,
+        currentTimestep,
+        getPluginArguments,
+        getSelectedTeamClusterId,
+        getSelectedTimesteps,
+        executePlugin,
+        pluginConfigs,
+        clearExecStateLater
+    ]);
 
     return { execStates, handleExecutePlugin };
 };

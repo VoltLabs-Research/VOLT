@@ -1,5 +1,9 @@
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import { TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
+import {
+    TeamClusterServiceExposureAccessMode,
+    TeamClusterServiceExposureStatus,
+    type TeamClusterServiceExposure
+} from '@modules/team-cluster/utilities/teamClusterSocket';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import logger from '@shared/infrastructure/logger';
@@ -16,6 +20,8 @@ interface PublicExposureBinding {
 
 const DEFAULT_PUBLIC_PORT_START = 23000;
 const DEFAULT_PUBLIC_PORT_END = 23999;
+const LOCAL_RELAY_HOST = '127.0.0.1';
+const XRDP_PRIVATE_PORT = 3389;
 
 const readPortRangeValue = (name: string, fallback: number): number => {
     const rawValue = process.env[name]?.trim();
@@ -33,10 +39,11 @@ const readPortRangeValue = (name: string, fallback: number): number => {
 
 @injectable()
 export default class TeamClusterTcpExposureRelayService {
-    private readonly host = process.env.SERVER_HOST || '0.0.0.0';
+    private readonly host = LOCAL_RELAY_HOST;
     private readonly portStart = readPortRangeValue('TEAM_CLUSTER_TCP_RELAY_PORT_START', DEFAULT_PUBLIC_PORT_START);
     private readonly portEnd = readPortRangeValue('TEAM_CLUSTER_TCP_RELAY_PORT_END', DEFAULT_PUBLIC_PORT_END);
     private readonly bindingsByExposureId = new Map<string, PublicExposureBinding>();
+    private readonly pendingBindingsByExposureId = new Map<string, Promise<number | null>>();
     private readonly usedPorts = new Set<number>();
     private started = false;
 
@@ -68,16 +75,39 @@ export default class TeamClusterTcpExposureRelayService {
         this.started = false;
         this.exposureRegistryService.offChanged(this.handleRegistryChanged);
         await Promise.all(Array.from(this.bindingsByExposureId.values()).map((binding) => {
-            return new Promise<void>((resolve) => {
-                binding.server.close(() => resolve());
-            });
+            return this.closeServer(binding.server);
         }));
         this.bindingsByExposureId.clear();
+        this.pendingBindingsByExposureId.clear();
         this.usedPorts.clear();
     }
 
     getPublicPort(exposureId: string): number | null {
         return this.bindingsByExposureId.get(exposureId)?.publicPort || null;
+    }
+
+    async ensurePublicPort(exposureId: string): Promise<number | null> {
+        const existingBinding = this.bindingsByExposureId.get(exposureId);
+        if (existingBinding) {
+            return existingBinding.publicPort;
+        }
+
+        const pendingBinding = this.pendingBindingsByExposureId.get(exposureId);
+        if (pendingBinding) {
+            return pendingBinding;
+        }
+
+        const bindingPromise = this.createBindingForExposure(exposureId)
+            .finally(() => {
+                this.pendingBindingsByExposureId.delete(exposureId);
+            });
+
+        this.pendingBindingsByExposureId.set(exposureId, bindingPromise);
+        return bindingPromise;
+    }
+
+    getRelayHost(): string {
+        return this.host;
     }
 
     private readonly handleRegistryChanged = (): void => {
@@ -87,38 +117,36 @@ export default class TeamClusterTcpExposureRelayService {
     };
 
     private async reconcileBindings(): Promise<void> {
-        const activeExposures = this.exposureRegistryService.listActiveTcpExposures();
-        const nextExposureIds = new Set(activeExposures.map((exposure) => exposure.id));
-
         for (const [exposureId, binding] of this.bindingsByExposureId.entries()) {
-            if (nextExposureIds.has(exposureId)) {
+            const exposure = this.exposureRegistryService.getExposure(exposureId);
+            if (exposure && this.isRelayableExposure(exposure)) {
                 continue;
             }
 
-            await new Promise<void>((resolve) => {
-                binding.server.close(() => resolve());
-            });
-            logger.info(
-                { exposureId, publicPort: binding.publicPort },
-                '[TcpExposureRelay] Released public relay port'
-            );
-            this.usedPorts.delete(binding.publicPort);
-            this.bindingsByExposureId.delete(exposureId);
+            await this.releaseBinding(binding);
+        }
+    }
+
+    private async createBindingForExposure(exposureId: string): Promise<number | null> {
+        const exposure = this.getRelayableExposure(exposureId);
+        if (!exposure) {
+            return null;
         }
 
-        for (const exposure of activeExposures) {
-            if (this.bindingsByExposureId.has(exposure.id)) {
-                continue;
-            }
+        const existingBinding = this.bindingsByExposureId.get(exposureId);
+        if (existingBinding) {
+            return existingBinding.publicPort;
+        }
 
-            const publicPort = this.reservePort();
-            const server = net.createServer((socket) => {
-                this.handleIncomingConnection(exposure.teamClusterId, exposure.id, socket).catch((error: unknown) => {
-                    logger.error({ err: error, exposureId: exposure.id }, '[TcpExposureRelay] Failed to open tunnel for incoming socket');
-                    socket.destroy();
-                });
+        const publicPort = this.reservePort();
+        const server = net.createServer((socket) => {
+            this.handleIncomingConnection(exposure.teamClusterId, exposure.id, socket).catch((error: unknown) => {
+                logger.error({ err: error, exposureId: exposure.id }, '[TcpExposureRelay] Failed to open tunnel for incoming socket');
+                socket.destroy();
             });
+        });
 
+        try {
             await new Promise<void>((resolve, reject) => {
                 server.once('error', reject);
                 server.listen(publicPort, this.host, () => {
@@ -126,18 +154,61 @@ export default class TeamClusterTcpExposureRelayService {
                     resolve();
                 });
             });
-
-            this.bindingsByExposureId.set(exposure.id, {
-                exposureId: exposure.id,
-                teamClusterId: exposure.teamClusterId,
-                publicPort,
-                server
-            });
-            logger.info(
-                { exposureId: exposure.id, publicPort, teamClusterId: exposure.teamClusterId },
-                '[TcpExposureRelay] Bound public relay port'
-            );
+        } catch (error) {
+            this.usedPorts.delete(publicPort);
+            throw error;
         }
+
+        const currentExposure = this.getRelayableExposure(exposureId);
+        if (!currentExposure) {
+            await this.closeServer(server);
+            this.usedPorts.delete(publicPort);
+            return null;
+        }
+
+        this.bindingsByExposureId.set(currentExposure.id, {
+            exposureId: currentExposure.id,
+            teamClusterId: currentExposure.teamClusterId,
+            publicPort,
+            server
+        });
+        logger.info(
+            { exposureId: currentExposure.id, publicPort, teamClusterId: currentExposure.teamClusterId, host: this.host },
+            '[TcpExposureRelay] Bound local XRDP relay port'
+        );
+
+        return publicPort;
+    }
+
+    private async releaseBinding(binding: PublicExposureBinding): Promise<void> {
+        await this.closeServer(binding.server);
+        logger.info(
+            { exposureId: binding.exposureId, publicPort: binding.publicPort },
+            '[TcpExposureRelay] Released local relay port'
+        );
+        this.usedPorts.delete(binding.publicPort);
+        this.bindingsByExposureId.delete(binding.exposureId);
+    }
+
+    private getRelayableExposure(exposureId: string): TeamClusterServiceExposure | null {
+        const exposure = this.exposureRegistryService.getExposure(exposureId);
+        if (!exposure || !this.isRelayableExposure(exposure)) {
+            return null;
+        }
+
+        return exposure;
+    }
+
+    private closeServer(server: net.Server): Promise<void> {
+        return new Promise<void>((resolve) => {
+            server.close(() => resolve());
+        });
+    }
+
+    private isRelayableExposure(exposure: TeamClusterServiceExposure): boolean {
+        return exposure.status === TeamClusterServiceExposureStatus.Active
+            && exposure.accessModes.includes(TeamClusterServiceExposureAccessMode.Tcp)
+            && exposure.containerPort === XRDP_PRIVATE_PORT;
     }
 
     private async handleIncomingConnection(teamClusterId: string, exposureId: string, socket: net.Socket): Promise<void> {

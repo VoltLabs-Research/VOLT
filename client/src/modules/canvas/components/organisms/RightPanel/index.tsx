@@ -1,6 +1,7 @@
 import { buildCanvasModifierOptions, LEGACY_MODIFIERS } from '../../../utilities/modifier-registry';
 import { ArgumentField } from '../../molecules/ModifierConfig';
 import PluginClusterField from '../../molecules/PluginClusterField';
+import SelectedTimestepsField from '../../molecules/SelectedTimestepsField';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import usePluginExecution from '../../../hooks/use-plugin-execution';
 import { ExecState } from '../../../hooks/use-plugin-execution';
@@ -13,15 +14,18 @@ import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { Wrench, Monitor } from 'lucide-react';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import Container from '@/shared/presentation/components/Container';
+
+import { extractTrajectoryTimesteps, normalizeSelectedTimesteps } from '../../../utilities/selected-timestep-analysis';
 
 import type { ModifierOption } from '../../../utilities/modifier-registry';
 import type { LegacyActionRef } from '../ColorCoding';
 import type { ComponentType, ReactNode } from 'react';
 import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 
 import './RightPanel.css';
 
@@ -34,12 +38,13 @@ interface PluginExecutionClusterConfig {
 };
 
 interface RightPanelProps {
+    trajectory?: Trajectory | null;
     trajectoryId?: string;
     analysisId?: string;
     currentTimestep?: number;
 };
 
-const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelProps) => {
+const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: RightPanelProps) => {
     const { activeModifiers, toggleModifier, pluginParam } = useCanvasUrlState();
     const selectedTeamId = useSelectedTeamId();
     const executePluginMutation = useExecutePluginMutation();
@@ -59,6 +64,9 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
     const legacyActionRef = useRef<Map<string, () => void>>(new Map());
     const [pluginConfigs, setPluginConfigs] = useState<Record<string, Record<string, unknown>>>({});
     const [pluginExecutionClusters, setPluginExecutionClusters] = useState<Record<string, PluginExecutionClusterConfig>>({});
+    const [pluginSelectedTimesteps, setPluginSelectedTimesteps] = useState<Record<string, number[] | undefined>>({});
+
+    const availableTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
 
     const teamClusterOptions = useMemo<SelectOption[]>(() => {
         return (teamClustersResponse?.data ?? []).map((teamCluster) => ({
@@ -78,6 +86,15 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
             }
         }));
     }, []);
+
+    const handlePluginSelectedTimestepsChange = useCallback((pluginId: string, selectedTimesteps?: number[]) => {
+        const normalizedTimesteps = normalizeSelectedTimesteps(selectedTimesteps, availableTimesteps);
+
+        setPluginSelectedTimesteps((prev) => ({
+            ...prev,
+            [pluginId]: normalizedTimesteps
+        }));
+    }, [availableTimesteps]);
 
     const handlePluginClusterChange = useCallback((pluginId: string, value: string | number | boolean) => {
         setPluginExecutionClusters((prev) => ({
@@ -100,6 +117,34 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
 
         return teamClusterOptions[0]?.value ?? '';
     }, [pluginExecutionClusters, teamClusterOptions]);
+
+    const getSelectedTimesteps = useCallback((pluginId: string): number[] | undefined => {
+        return normalizeSelectedTimesteps(pluginSelectedTimesteps[pluginId], availableTimesteps);
+    }, [availableTimesteps, pluginSelectedTimesteps]);
+
+    useEffect(() => {
+        setPluginSelectedTimesteps((prev) => {
+            const nextState: Record<string, number[] | undefined> = {};
+            let hasChanges = false;
+
+            Object.entries(prev).forEach(([pluginId, selectedTimesteps]) => {
+                const normalizedTimesteps = normalizeSelectedTimesteps(selectedTimesteps, availableTimesteps);
+                nextState[pluginId] = normalizedTimesteps;
+
+                const previousKey = JSON.stringify(selectedTimesteps ?? []);
+                const nextKey = JSON.stringify(normalizedTimesteps ?? []);
+                if (previousKey !== nextKey) {
+                    hasChanges = true;
+                }
+            });
+
+            if (!hasChanges) {
+                return prev;
+            }
+
+            return nextState;
+        });
+    }, [availableTimesteps]);
 
     const updateLegacyExecState = useCallback((id: string, state: ExecState) => {
         setLegacyExecStates((prev) => {
@@ -126,7 +171,8 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
             return getSelectedClusterId(option.pluginModifierId, option.plugin?.teamCluster);
         },
         executePlugin: executePluginMutation.mutateAsync,
-        pluginConfigs
+        pluginConfigs,
+        getSelectedTimesteps
     });
 
     const allModifiers = useMemo<ModifierOption[]>(() => buildCanvasModifierOptions(modifiers), [modifiers]);
@@ -192,6 +238,13 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
         if(option.isPlugin && option.pluginModifierId){
             const args = getPluginArguments(option.pluginModifierId).filter((a) => a.value === undefined);
             const selectedClusterId = getSelectedClusterId(option.pluginModifierId, option.plugin?.teamCluster);
+            const selectedTimestepsField = (
+                <SelectedTimestepsField
+                    availableTimesteps={availableTimesteps}
+                    selectedTimesteps={getSelectedTimesteps(option.pluginModifierId)}
+                    onChange={(selectedTimesteps) => handlePluginSelectedTimestepsChange(option.pluginModifierId!, selectedTimesteps)}
+                />
+            );
             const clusterField = (
                 hasTeamClusterOptions
                     ? (
@@ -211,6 +264,7 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
                 content = (
                     <Container className="d-flex column gap-05">
                         {clusterField}
+                        {selectedTimestepsField}
                         {args.map((arg, i) => {
                             const rawValue = pluginConfigs[option.pluginModifierId!]?.[arg.argument];
                             const val = typeof rawValue === 'string' || typeof rawValue === 'number' || typeof rawValue === 'boolean'
@@ -229,7 +283,12 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
                     </Container>
                 );
             } else {
-                content = clusterField;
+                content = (
+                    <Container className="d-flex column gap-05">
+                        {clusterField}
+                        {selectedTimestepsField}
+                    </Container>
+                );
             }
         }else{
             const LegacyComponent = LEGACY_COMPONENT_MAP.get(option.modifierId);
@@ -250,7 +309,22 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
                 {content}
             </ModifierConfig>
         );
-    }, [getPluginArguments, getSelectedClusterId, hasTeamClusterOptions, trajectoryId, analysisId, currentTimestep, legacyRef, pluginConfigs, handlePluginClusterChange, handlePluginConfigChange, teamClusterOptions]);
+    }, [
+        availableTimesteps,
+        getPluginArguments,
+        getSelectedClusterId,
+        getSelectedTimesteps,
+        hasTeamClusterOptions,
+        trajectoryId,
+        analysisId,
+        currentTimestep,
+        legacyRef,
+        pluginConfigs,
+        handlePluginClusterChange,
+        handlePluginConfigChange,
+        handlePluginSelectedTimestepsChange,
+        teamClusterOptions
+    ]);
 
     return (
         <Container className="d-flex h-max overflow-hidden">

@@ -1,15 +1,16 @@
 import useCanvasUrlState from './use-canvas-url-state';
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
-
+import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useExportAnalysisResultsMutation } from '@/modules/plugin/hooks/plugin/queries';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
+import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import useAnalysisAtomPropertiesAvailability from '@/modules/trajectory/hooks/trajectory/use-analysis-atom-properties-availability';
+import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
-import { useMemo, useState, useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 
 interface UsePluginResultsOptions {
     pluginId: string;
@@ -19,8 +20,10 @@ interface UsePluginResultsOptions {
 const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => {
     const { setResultsPluginId } = useCanvasUrlState();
     useEnsurePluginCatalogLoaded(Boolean(pluginId));
+
     const { pluginsById } = usePluginSelectors();
     const plugin = pluginsById[pluginId];
+    const currentTimestep = useEditorStore((state) => state.currentTimestep);
     const { trajectoryId: routeTrajectoryId } = useParams<{ trajectoryId?: string }>();
     const trajectoryId = routeTrajectoryId;
     const teamId = useSelectedTeamId();
@@ -30,17 +33,18 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
     const [activeTab, setActiveTab] = useState(0);
 
     const exposures = plugin?.exposures ?? [];
-
     const listingExposures = useMemo(() => getListingRelevantExposures(exposures), [exposures]);
-
-    const hasAtomProperties = useMemo(
-        () => exposures.some((e: any) => e.perAtomProperties?.length > 0),
-        [exposures]
-    );
+    const { hasAtomProperties } = useAnalysisAtomPropertiesAvailability({
+        trajectoryId,
+        analysisId,
+        timestep: currentTimestep
+    });
 
     const tabs = useMemo(() => {
-        const result = listingExposures.map((e: any) => e.name as string);
-        if (hasAtomProperties) result.push('Atoms');
+        const result = listingExposures.map((exposure) => exposure.name);
+        if (hasAtomProperties) {
+            result.push('Atoms');
+        }
         return result;
     }, [listingExposures, hasAtomProperties]);
 
@@ -69,8 +73,8 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
                     error: { title: 'Failed to download results' }
                 }
             );
-        } catch(error: unknown) {
-            if(isAccessDeniedError(error)) return;
+        } catch (error: unknown) {
+            if (isAccessDeniedError(error)) return;
         }
     }, [pluginId, analysisId, exportResultsMutation]);
 

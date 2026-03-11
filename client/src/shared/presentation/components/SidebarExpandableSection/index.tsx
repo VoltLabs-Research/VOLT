@@ -22,6 +22,7 @@ interface SidebarExpandableSectionProps {
     expanded?: boolean;
     onExpandedChange?: (expanded: boolean) => void;
     disabled?: boolean;
+    onRequestSidebarExpand?: () => void;
 };
 
 const SidebarExpandableSection = forwardRef<HTMLDivElement, SidebarExpandableSectionProps>(({
@@ -32,7 +33,8 @@ const SidebarExpandableSection = forwardRef<HTMLDivElement, SidebarExpandableSec
     defaultExpanded = false,
     expanded: controlledExpanded,
     onExpandedChange,
-    disabled = false
+    disabled = false,
+    onRequestSidebarExpand
 }, ref) => {
     const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
     
@@ -42,6 +44,9 @@ const SidebarExpandableSection = forwardRef<HTMLDivElement, SidebarExpandableSec
     const handleToggle = () => {
         if (disabled) return;
         const newExpanded = !expanded;
+        if (newExpanded) {
+            onRequestSidebarExpand?.();
+        }
         if (isControlled) {
             onExpandedChange?.(newExpanded);
         } else {

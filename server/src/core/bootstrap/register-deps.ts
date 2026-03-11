@@ -1,6 +1,8 @@
 import { registerAuthDependencies } from '@modules/auth/infrastructure/di/container';
 import { registerAnalysisDependencies } from '@modules/analysis/infrastructure/di/container';
+import { registerLatexDependencies } from '@modules/latex/infrastructure/di/container';
 import { registerAIDependencies } from '@modules/ai/infrastructure/di/container';
+import { registerWhiteboardDependencies } from '@modules/whiteboards/infrastructure/di/container';
 import { createRedisClient } from '@core/config/redis';
 import { registerChatDependencies } from '@modules/chat/infrastructure/di/container';
 import { registerContainerDependencies } from '@modules/container/infrastructure/di/container';
@@ -49,6 +51,7 @@ export const registerAllDependencies = (): void => {
     registerContainerDependencies();
     registerPluginDependencies();
     registerScriptingDependencies();
+    registerLatexDependencies();
     registerTrajectoryDependencies();
     registerSessionDependencies();
     registerRasterDependencies();
@@ -62,6 +65,7 @@ export const registerAllDependencies = (): void => {
     registerSocketDependencies();
     registerSimulationCellDependencies();
     registerAIDependencies();
+    registerWhiteboardDependencies();
 
     dependenciesRegistered = true;
 };

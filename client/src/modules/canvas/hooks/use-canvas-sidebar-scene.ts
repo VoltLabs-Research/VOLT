@@ -2,6 +2,11 @@ import { computeDifferingConfigFields } from '../utilities/canvas-sidebar-scene'
 import { isSameScene } from '../utilities/scene-identity';
 import { normalizeCanvasAnalysisStatus } from '../utilities/analysis-status';
 import { DEFAULT_ENTRY } from './use-exposure-manager';
+import {
+    extractTrajectoryTimesteps,
+    getNearestTimestep,
+    getSelectedTimestepsForAnalysis
+} from '../utilities/selected-timestep-analysis';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import useAnalysisStatus from './use-analysis-status';
 import useCanvasUrlState from './use-canvas-url-state';
@@ -40,12 +45,22 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
     const trajectoryId = propTrajectoryId || trajectory?._id;
 
-    const { setActiveScene, activeScene, addScene, removeScene, activeScenes } = useEditorStore(useShallow((s) => ({
+    const {
+        setActiveScene,
+        activeScene,
+        addScene,
+        removeScene,
+        activeScenes,
+        currentTimestep,
+        setCurrentTimestep
+    } = useEditorStore(useShallow((s) => ({
         setActiveScene: s.setActiveScene,
         activeScene: s.activeScene,
         addScene: s.addScene,
         removeScene: s.removeScene,
-        activeScenes: s.activeScenes
+        activeScenes: s.activeScenes,
+        currentTimestep: s.currentTimestep,
+        setCurrentTimestep: s.setCurrentTimestep
     })));
 
     const { analysisId: analysisConfigId, setAnalysisId } = useCanvasUrlState();
@@ -70,7 +85,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
     const bootstrapLoading = analysesQuery.isLoading;
 
-    const analyses = ((analysesQuery.data as { data?: Analysis[] } | undefined)?.data ?? []);
+    const analyses = analysesQuery.data?.data ?? [];
 
     useEffect(() => {
         if (analysesQuery.error) {
@@ -213,6 +228,8 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         return computeDifferingConfigFields(analyses);
     }, [analyses]);
 
+    const trajectoryTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
+
     const allAnalysisSections = useMemo((): AnalysisSectionData[] => {
         if (analyses.length === 0) return [];
 
@@ -236,6 +253,24 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         return allAnalysisSections.filter((section) => section.pluginDisplayName.toLowerCase().includes(query));
     }, [allAnalysisSections, searchQuery]);
 
+    const hasSelectedTimestepAnalyses = useMemo(() => {
+        return allAnalysisSections.some((section) => {
+            return Boolean(getSelectedTimestepsForAnalysis(section.analysis, trajectoryTimesteps));
+        });
+    }, [allAnalysisSections, trajectoryTimesteps]);
+
+    const sceneCollectionSections = useMemo(() => {
+        return filteredSections.filter((section) => {
+            return !getSelectedTimestepsForAnalysis(section.analysis, trajectoryTimesteps);
+        });
+    }, [filteredSections, trajectoryTimesteps]);
+
+    const selectedTimestepSections = useMemo(() => {
+        return filteredSections.filter((section) => {
+            return Boolean(getSelectedTimestepsForAnalysis(section.analysis, trajectoryTimesteps));
+        });
+    }, [filteredSections, trajectoryTimesteps]);
+
     const toggleSection = useCallback((analysisId: string) => {
         setExpandedSections(prev => {
             const next = new Set(prev);
@@ -253,11 +288,21 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         if (scene.source === 'plugin' && 'analysisId' in scene) {
             manualSelectionRef.current = scene.analysisId;
         }
+
+        if (analysis?._id) {
+            const selectedAnalysisTimesteps = getSelectedTimestepsForAnalysis(analysis, trajectoryTimesteps);
+            const nextTimestep = getNearestTimestep(currentTimestep, selectedAnalysisTimesteps ?? trajectoryTimesteps);
+
+            if (nextTimestep !== undefined && nextTimestep !== currentTimestep) {
+                setCurrentTimestep(nextTimestep);
+            }
+        }
+
         setActiveScene(scene);
         if (analysis?._id) {
             setAnalysisId(analysis._id, { replace: true });
         }
-    }, [setActiveScene, setAnalysisId]);
+    }, [currentTimestep, setActiveScene, setAnalysisId, setCurrentTimestep, trajectoryTimesteps]);
 
     const onDeleteAnalysis = useCallback(async (analysisId: string) => {
         await showPromise(
@@ -305,6 +350,9 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         accessDeniedMessage,
 
         filteredSections,
+        sceneCollectionSections,
+        selectedTimestepSections,
+        hasSelectedTimestepAnalyses,
         differingConfigByAnalysis,
         showSectionsSkeleton,
         headerPopoverCallbacks,

@@ -87,7 +87,12 @@ export interface TimestepState {
 };
 
 export interface TimestepActions {
-    computeTimestepData: (trajectory: Trajectory | null, currentTimestep?: number, cacheBuster?: number) => void;
+    computeTimestepData: (
+        trajectory: Trajectory | null,
+        currentTimestep?: number,
+        cacheBuster?: number,
+        allowedTimesteps?: number[]
+    ) => void;
     loadModels: (
         preloadBehavior?: boolean,
         onProgress?: (p: number, m?: { bps: number }) => void,

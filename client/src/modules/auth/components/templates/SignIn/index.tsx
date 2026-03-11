@@ -15,7 +15,7 @@ import useStepper from '@/shared/presentation/hooks/use-stepper';
 import useZodForm from '@/shared/presentation/hooks/use-zod-form';
 import { sileo } from 'sileo';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import type { FormEvent } from 'react';
 import type { StepTitles } from '@/shared/presentation/components/Stepper';
 import type { SignInForm } from './validation-schema';
@@ -43,6 +43,7 @@ const stepTitles: StepTitles<SignInStep> = {
 
 const SignInTemplate = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { step, goTo } = useStepper<SignInStep>(SignInStep.Email);
     const checkEmail = useCheckEmailMutation();
     const signIn = useSignInMutation();
@@ -61,12 +62,28 @@ const SignInTemplate = () => {
         mode: 'onTouched'
     });
 
+    const getNextDestination = (): string => {
+        const params = new URLSearchParams(location.search);
+        const queryNext = params.get('next');
+        if (queryNext) return queryNext;
+        const stateFrom = (location.state as { from?: { pathname?: string; search?: string } } | null)?.from;
+        if (stateFrom?.pathname) {
+            return stateFrom.pathname + (stateFrom.search ?? '');
+        }
+        return '/dashboard';
+    };
+
     const handleOAuthRedirect = (provider: string) => {
-        window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/${provider}`;
+        const next = getNextDestination();
+        const callbackUrl = new URL(`${import.meta.env.VITE_API_URL}/api/auth/${provider}`);
+        callbackUrl.searchParams.set('next', next);
+        window.location.href = callbackUrl.toString();
     };
 
     const finalizeAuth = () => {
-        navigate('/dashboard');
+        const next = getNextDestination();
+        const onboardingUrl = next === '/dashboard' ? '/onboarding' : `/onboarding?next=${encodeURIComponent(next)}`;
+        navigate(onboardingUrl);
     };
 
     const handleEmailStep = async () => {

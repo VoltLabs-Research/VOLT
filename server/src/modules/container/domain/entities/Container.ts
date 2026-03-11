@@ -1,3 +1,4 @@
+import type { ContainerCapabilities } from './ContainerCapabilities';
 import type { ContainerEnvironmentVariable, ContainerPortMapping } from '@modules/container/domain/port/IContainerService';
 
 export interface IContainerProps {
@@ -16,6 +17,7 @@ export interface IContainerProps {
     network?: string;
     volume?: string;
     mountDockerSocket?: boolean;
+    capabilities?: ContainerCapabilities;
     createdAt?: Date;
     updatedAt?: Date;
 };
@@ -36,6 +38,7 @@ export class Container implements IContainerProps {
     public network?: string;
     public volume?: string;
     public mountDockerSocket?: boolean;
+    public capabilities?: ContainerCapabilities;
     public createdAt?: Date;
     public updatedAt?: Date;
 

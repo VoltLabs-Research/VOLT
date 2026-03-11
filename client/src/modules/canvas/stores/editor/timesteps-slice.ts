@@ -17,10 +17,21 @@ const createInitialState = (): TimestepState => ({
     isRenderOptionsLoading: false
 });
 
-const extractTimestepsWorker = (frames: TimestepInfo[]): number[] => {
+const extractTimestepsWorker = (frames: TimestepInfo[], allowedTimesteps?: number[]): number[] => {
     if (!frames || frames.length === 0) return [];
-    return Array.from(new Set(frames.map((frame) => frame.timestep)))
-        .sort((a, b) => a - b);
+
+    const allowedTimestepsSet = allowedTimesteps ? new Set(allowedTimesteps) : undefined;
+    const resolvedTimesteps = frames
+        .map((frame) => frame.timestep)
+        .filter((timestep) => {
+            if (allowedTimestepsSet) {
+                return allowedTimestepsSet.has(timestep);
+            }
+
+            return true;
+        });
+
+    return Array.from(new Set(resolvedTimesteps)).sort((a, b) => a - b);
 };
 
 const createTimestepData = (timesteps: number[]): TimestepData => ({
@@ -40,7 +51,7 @@ const getAnalysisIdFromScene = (scene: SceneObjectType): string => {
 export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStore> = (set, get) => ({
     ...createInitialState(),
 
-    async computeTimestepData(trajectory: Trajectory | null, _currentTimestep?: number, _cacheBuster?: number) {
+    async computeTimestepData(trajectory: Trajectory | null, _currentTimestep?: number, _cacheBuster?: number, allowedTimesteps?: number[]) {
         if (!trajectory?.frames || trajectory.frames.length === 0) {
             set({
                 timestepData: initialTimestepData,
@@ -49,7 +60,7 @@ export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStor
             return;
         }
 
-        const timesteps = extractTimestepsWorker(trajectory.frames);
+        const timesteps = extractTimestepsWorker(trajectory.frames, allowedTimesteps);
         const timestepData = createTimestepData(timesteps);
 
         set({

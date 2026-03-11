@@ -66,7 +66,7 @@ export default function TeamInvitationTemplate() {
             afterSuccess: () => {
                 setSelectedTeamId(invitation.team._id);
                 setError(null);
-                window.location.href = '/dashboard';
+                navigate('/onboarding');
             },
             accessDeniedTitle: 'You do not have permission to perform this action.',
             onAccessDenied: setError,
@@ -86,7 +86,7 @@ export default function TeamInvitationTemplate() {
             toast: REJECT_INVITATION_TOAST_OPTIONS,
             afterSuccess: () => {
                 setError(null);
-                window.location.href = '/dashboard';
+                navigate('/onboarding');
             },
             accessDeniedTitle: 'You do not have permission to perform this action.',
             onAccessDenied: setError,

@@ -1,10 +1,11 @@
 import './DashboardPreviewCard.css';
+import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
 import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-config';
 import useDashboardPreview from '@/modules/dashboard/hooks/use-dashboard-preview';
 import SingleModelViewer from '@/modules/fractal/components/molecules/SingleModelViewer';
 import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
-import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import Loader from '@/shared/presentation/components/Loader';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
@@ -61,38 +62,38 @@ const DashboardPreviewCard = () => {
 
     if (isLoadingTrajectories) {
         return (
-            <Container className='dashboard-preview-card d-flex flex-center'>
+            <DashboardCard className='dashboard-preview-card d-flex flex-center' isRelative={true} overflowHidden={true}>
                 <Loader scale={0.4} />
-            </Container>
+            </DashboardCard>
         );
     }
 
     if (!completedTrajectory) {
         return (
-            <Container className='dashboard-preview-card'>
+            <DashboardCard className='dashboard-preview-card' isRelative={true} overflowHidden={true}>
                 <EmptyState
                     icon={<PiAtomThin size={32} />}
                     title='Simulation Preview'
                     description='Upload and process a trajectory file to see a real-time 3D visualization of your atomic structures here.'
                 />
-            </Container>
+            </DashboardCard>
         );
     }
 
     if (!isLoadingPreview && !hasPreviewData) {
         return (
-            <Container className='dashboard-preview-card'>
+            <DashboardCard className='dashboard-preview-card' isRelative={true} overflowHidden={true}>
                 <EmptyState
                     icon={<PiAtomThin size={32} />}
                     title='Preview unavailable'
                     description='We could not load the latest simulation preview right now. Please try opening the trajectory in Canvas.'
                 />
-            </Container>
+            </DashboardCard>
         );
     }
 
     return (
-        <Container className='dashboard-preview-card'>
+        <DashboardCard className='dashboard-preview-card' isRelative={true} overflowHidden={true}>
             {isLoadingPreview && (
                 <Container className='d-flex flex-center w-max h-max p-absolute inset-0 z-10'>
                     <Loader scale={0.4} />
@@ -146,7 +147,7 @@ const DashboardPreviewCard = () => {
                     />
                 )}
             </FractalScene>
-        </Container>
+        </DashboardCard>
     );
 };
 

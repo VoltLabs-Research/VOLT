@@ -20,6 +20,10 @@ export const getTeamClusterStatusLabel = (status: TeamClusterStatus): string => 
             return 'Deleting';
         case TeamClusterStatus.DeleteFailed:
             return 'Delete failed';
+        case TeamClusterStatus.Updating:
+            return 'Updating';
+        case TeamClusterStatus.UpdateFailed:
+            return 'Update failed';
     }
 };
 
@@ -35,9 +39,12 @@ export const getTeamClusterStatusVariant = (status: TeamClusterStatus): 'success
         case TeamClusterStatus.DependenciesInstallationFailed:
         case TeamClusterStatus.OperatingSystemNotSupported:
         case TeamClusterStatus.DeleteFailed:
+        case TeamClusterStatus.UpdateFailed:
             return 'danger';
         case TeamClusterStatus.Disconnected:
             return 'inactive';
+        case TeamClusterStatus.Updating:
+            return 'warning';
     }
 };
 

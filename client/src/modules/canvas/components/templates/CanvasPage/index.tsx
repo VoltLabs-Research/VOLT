@@ -272,7 +272,7 @@ const CanvasPage = () => {
                 />
 
                 <Container className="canvas-right-panel-container d-flex column f-shrink-0" style={{ width: rightPanel.size }}>
-                    <RightPanel trajectoryId={trajectoryId} analysisId={analysisId} currentTimestep={currentTimestep} />
+                    <RightPanel trajectory={trajectory} trajectoryId={trajectoryId} analysisId={analysisId} currentTimestep={currentTimestep} />
                 </Container>
             </Container>
 

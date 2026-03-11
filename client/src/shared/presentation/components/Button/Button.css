@@ -175,7 +175,7 @@
     color: var(--color-text-primary);
 }
 
-/* Intent: Brand — Dark mode: white bg, black text. Light mode: accent blue */
+/* Intent: Brand - Dark mode: white bg, black text. Light mode: accent blue */
 .button.intent-brand.variant-solid {
     background-color: #ffffff;
     color: #000000;
@@ -444,7 +444,7 @@
     width: 3.25rem;
 }
 
-/* --- Premium (CTA buttons) — Dark: white, Light: accent blue --- */
+/* --- Premium (CTA buttons) - Dark: white, Light: accent blue --- */
 .button.premium {
     background: #ffffff;
     color: #000000;

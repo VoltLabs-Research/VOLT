@@ -7,6 +7,9 @@ import type { CreateTeamInputDTO } from '../../api/dtos/team/create-team';
 import type { UpdateTeamInputDTO } from '../../api/dtos/team/update-team';
 import type { DeleteTeamInputDTO } from '../../api/dtos/team/delete-team';
 import type { LeaveTeamInputDTO } from '../../api/dtos/team/leave-team';
+import type { GenerateInviteCodeInputDTO } from '../../api/dtos/team/generate-invite-code';
+import type { DeleteInviteCodeInputDTO } from '../../api/dtos/team/delete-invite-code';
+import type { JoinByInviteCodeInputDTO } from '../../api/dtos/team/join-by-invite-code';
 import queryClient from '@/shared/infrastructure/query/query-client';
 
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
@@ -179,6 +182,42 @@ export const useLeaveTeamMutation = () => {
             window.setTimeout(() => {
                 invalidateTeamsQuery();
             }, 1500);
+        }
+    });
+};
+
+export const useGenerateInviteCodeMutation = () => {
+    return useMutation<Team, Error, GenerateInviteCodeInputDTO>({
+        mutationFn: teamService.generateInviteCode,
+        onSuccess: (updatedTeam) => {
+            setTeamsQueryData((previous) => {
+                if (!previous) return previous;
+                return previous.map((team) => team._id === updatedTeam._id ? updatedTeam : team);
+            });
+        }
+    });
+};
+
+export const useDeleteInviteCodeMutation = () => {
+    return useMutation<void, Error, DeleteInviteCodeInputDTO>({
+        mutationFn: teamService.deleteInviteCode,
+        onSuccess: (_data, variables) => {
+            setTeamsQueryData((previous) => {
+                if (!previous) return previous;
+                return previous.map((team) => {
+                    if (team._id !== variables.teamId) return team;
+                    return { ...team, inviteCode: undefined };
+                });
+            });
+        }
+    });
+};
+
+export const useJoinByCodeMutation = () => {
+    return useMutation<void, Error, JoinByInviteCodeInputDTO>({
+        mutationFn: teamService.joinByCode,
+        onSuccess: () => {
+            invalidateTeamsQuery();
         }
     });
 };

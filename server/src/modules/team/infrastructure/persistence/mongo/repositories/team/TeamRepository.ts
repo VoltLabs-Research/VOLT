@@ -123,4 +123,13 @@ export default class TeamRepository
 
         return docs.map((doc) => toPersistedEntity(this.mapper.toDomain(doc)));
     }
+
+    async findByInviteCode(code: string): Promise<Team | null> {
+        const doc = await this.model.findOne({ inviteCode: code }).populate('owner');
+        return doc ? this.mapper.toDomain(doc) : null;
+    }
+
+    async clearInviteCode(teamId: string): Promise<void> {
+        await this.model.findByIdAndUpdate(teamId, { $unset: { inviteCode: '' } });
+    }
 };

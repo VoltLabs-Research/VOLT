@@ -2,6 +2,7 @@ export enum Resource {
     ANALYSIS = 'analysis',
     CONTAINER = 'container',
     DAILY_ACTIVITY = 'daily-activity',
+    LATEX = 'latex',
     PLUGIN = 'plugin',
     SCRIPTING = 'scripting',
     SSH_CONNECTION = 'ssh-connection',
@@ -13,5 +14,6 @@ export enum Resource {
     TRAJECTORY = 'trajectory',
     RASTER = 'raster',
     SIMULATION_CELL = 'simulation-cell',
-    AI_CONVERSATION = 'ai-conversation'
+    AI_CONVERSATION = 'ai-conversation',
+    WHITEBOARD = 'whiteboard'
 };

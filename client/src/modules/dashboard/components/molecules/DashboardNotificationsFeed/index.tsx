@@ -1,4 +1,5 @@
 import './DashboardNotificationsFeed.css';
+import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
 import useNotificationData from '@/modules/notification/hooks/use-notification-data';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
@@ -69,7 +70,7 @@ const DashboardNotificationsFeed = () => {
     }
 
     return (
-        <Container className='dashboard-notifications-card'>
+        <DashboardCard className='dashboard-notifications-card d-flex column'>
             <Container className='dashboard-notifications-header'>
                 <Container className='d-flex items-center gap-05'>
                     <Title className='font-size-3 color-primary font-weight-5'>Notifications</Title>
@@ -85,7 +86,7 @@ const DashboardNotificationsFeed = () => {
             <Container className='dashboard-notifications-list d-flex column flex-1 min-h-0 y-auto'>
                 {content}
             </Container>
-        </Container>
+        </DashboardCard>
     );
 };
 

@@ -1,4 +1,5 @@
 import './DashboardClusterHealth.css';
+import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
 import DashboardClusterHealthGauge from '@/modules/dashboard/components/molecules/DashboardClusterHealthGauge';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-cluster-metric-id';
@@ -90,7 +91,7 @@ const DashboardClusterHealth = () => {
 
     if (!isConnected || !metrics || !isSelectedClusterConnected) {
         return (
-            <Container className='dashboard-cluster-card'>
+            <DashboardCard className='dashboard-cluster-card d-flex column'>
                 <Container className='dashboard-cluster-header'>
                     <Select
                         options={clusterOptions}
@@ -120,12 +121,12 @@ const DashboardClusterHealth = () => {
                         </Container>
                     ))}
                 </Container>
-            </Container>
+            </DashboardCard>
         );
     }
 
     return (
-        <Container className='dashboard-cluster-card'>
+        <DashboardCard className='dashboard-cluster-card d-flex column'>
             <Container className='dashboard-cluster-header'>
                 <Select
                     options={clusterOptions}
@@ -169,7 +170,7 @@ const DashboardClusterHealth = () => {
                     {metrics.status}
                 </StatusBadge>
             </Container>
-        </Container>
+        </DashboardCard>
     );
 };
 

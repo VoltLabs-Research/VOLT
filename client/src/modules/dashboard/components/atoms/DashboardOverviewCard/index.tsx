@@ -1,14 +1,15 @@
 import './DashboardOverviewCard.css';
 import TinyLineChart from '../TinyLineChart';
+import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
 import Container from '@/shared/presentation/components/Container';
 import { useNavigate } from 'react-router';
-import { GoArrowRight } from 'react-icons/go';
 import { FaArrowDownLong, FaArrowUpLong } from 'react-icons/fa6';
-import type { DashboardCard } from '@/modules/dashboard/api/entities/dashboard';
+import { GoArrowRight } from 'react-icons/go';
+import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/api/entities/dashboard';
 import type { ReactNode } from 'react';
 
 interface DashboardOverviewCardProps {
-    card: DashboardCard;
+    card: DashboardMetricsCard;
     icon: ReactNode;
 };
 
@@ -34,10 +35,12 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
     }
 
     return (
-        <Container
+        <DashboardCard
             className='dashboard-stat-card'
+            isClickable={isClickable}
+            isRelative={true}
+            overflowHidden={true}
             onClick={handleClick}
-            style={{ cursor: isClickable ? 'pointer' : 'default' }}
         >
             <Container className='d-flex column gap-1 p-relative z-5'>
                 <Container className='d-flex items-center gap-075'>
@@ -79,7 +82,7 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
                     height={60}
                 />
             </Container>
-        </Container>
+        </DashboardCard>
     );
 };
 

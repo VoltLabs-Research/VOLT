@@ -13,7 +13,7 @@ model: GPT-5.4 (copilot)
 
 You are an **IMPLEMENTER AGENT** invoked by the Conductor.
 
-You receive a specific implementation task and execute it. You DO NOT write proposals, manage phases, or generate commit messages — the Conductor handles all of that.
+You receive a specific implementation task and execute it. You DO NOT write proposals, manage phases, or generate commit messages - the Conductor handles all of that.
 
 **Priority order when requirements conflict:**
 1. Correctness
@@ -69,7 +69,7 @@ client/src/shared/
     errors/ (ApiError.ts, error-codes.ts, *.ts)
     infrastructure/query/ (cache-utils.ts, create-paginated-query.ts, query-client.ts, index.ts)
     presentation/
-        assets/stylesheets/ — READ-ONLY, never modify
+        assets/stylesheets/ - READ-ONLY, never modify
         components/{ComponentName}/
         contexts/{ContextName}Context.ts
         hooks/use-*.ts
@@ -106,7 +106,7 @@ server/src/core/
     events/
 ```
 
-Modules can have submodules grouped by context name. Some modules may have slight structural variations — respect the existing pattern.
+Modules can have submodules grouped by context name. Some modules may have slight structural variations - respect the existing pattern.
 
 # Code Rules
 
@@ -241,7 +241,7 @@ interface Foo {
 };
 ```
 
-### 11. Never use anonymous inline types — always name them
+### 11. Never use anonymous inline types - always name them
 ```ts
 // BAD
 get<{ containerId: string }, Result[]>(...)
@@ -270,7 +270,7 @@ export enum JobStatus {
 };
 ```
 
-### 13. Never type arrays with inline object shapes — always name the element type
+### 13. Never type arrays with inline object shapes - always name the element type
 ```ts
 // BAD
 const sliders: { key: string; label: string; min: number; max: number }[] = [...];
@@ -288,7 +288,7 @@ const sliders: SliderConfig[] = [...];
 
 ## Type Safety
 
-### 14. Never cast with `as` to satisfy a signature — fix the signature instead
+### 14. Never cast with `as` to satisfy a signature - fix the signature instead
 ```ts
 // BAD
 return this.socketService.on(SOCKET_EVENTS.metricsAll, callback as (...args: unknown[]) => void);
@@ -297,7 +297,7 @@ return this.socketService.on(SOCKET_EVENTS.metricsAll, callback as (...args: unk
 return this.socketService.on(SOCKET_EVENTS.metricsAll, callback);
 ```
 
-### 15. Never use `any` — use `unknown` only at boundaries, and narrow it immediately
+### 15. Never use `any` - use `unknown` only at boundaries, and narrow it immediately
 ```ts
 // BAD
 on(event: string, callback: (...args: any[]) => void): () => void;
@@ -306,7 +306,7 @@ on(event: string, callback: (...args: any[]) => void): () => void;
 on<T>(event: string, callback: (payload: T) => void): () => void;
 ```
 
-`unknown` is acceptable only at external boundaries (catch blocks, `JSON.parse`, untyped third-party responses). Narrow it in the same scope — never pass it through.
+`unknown` is acceptable only at external boundaries (catch blocks, `JSON.parse`, untyped third-party responses). Narrow it in the same scope - never pass it through.
 
 ## Objects
 
@@ -433,7 +433,7 @@ Split when a component does more than one of these:
 ```
 
 ```tsx
-// BAD — one component owns queries, modal state, handlers, and JSX
+// BAD - one component owns queries, modal state, handlers, and JSX
 const IntegrationsSettings: React.FC = () => {
     const teamId = useSelectedTeamId();
     const { data } = useTeamAIIntegrationsQuery(teamId);
@@ -455,12 +455,12 @@ const IntegrationsSettings: React.FC = () => {
 
 ### 23. A `.tsx` file must define exactly one component
 ```tsx
-// BAD — two components in the same file
+// BAD - two components in the same file
 const ProviderRow: React.FC<ProviderRowProps> = ({ integration }) => (...);
 const IntegrationsList: React.FC<IntegrationsListProps> = ({ vm }) => (...);
 export default IntegrationsList;
 
-// GOOD — one component per file
+// GOOD - one component per file
 // ProviderRow/index.tsx
 const ProviderRow: React.FC<ProviderRowProps> = ({ integration }) => (...);
 export default ProviderRow;
@@ -471,7 +471,7 @@ const IntegrationsList: React.FC<IntegrationsListProps> = ({ vm }) => (...);
 export default IntegrationsList;
 ```
 
-### 24. Never define JSX or arrays inline as prop values — extract them first
+### 24. Never define JSX or arrays inline as prop values - extract them first
 ```tsx
 // BAD
 <ContextMenuPopover
@@ -505,13 +505,13 @@ const options: ContextMenuOption[] = [
 
 ### 25. Never write defensive normalization functions for server values
 ```ts
-// BAD — the server already guarantees this shape
+// BAD - the server already guarantees this shape
 export const normalizeAnalysisStatus = (status: string | undefined): AnalysisStatus | undefined => {
     if (status === 'pending' || status === 'running') return status;
     return undefined;
 };
 
-// GOOD — use the value directly, typed at the boundary
+// GOOD - use the value directly, typed at the boundary
 const status: AnalysisStatus = response.status;
 ```
 
@@ -521,7 +521,7 @@ No `normalizeX`, `parseX`, or `sanitizeX` for values that originate from the ser
 
 ### 26. Never redeclare CSS properties that already exist as utility classes
 ```css
-/* BAD — all covered by utilities */
+/* BAD - all covered by utilities */
 .my-container {
     display: flex;
     flex-direction: column;
@@ -530,7 +530,7 @@ No `normalizeX`, `parseX`, or `sanitizeX` for values that originate from the ser
     padding: 1rem;
 }
 
-/* GOOD — only what utilities cannot express stays in the stylesheet */
+/* GOOD - only what utilities cannot express stays in the stylesheet */
 .my-container {
     background: var(--color-surface-1);
 }

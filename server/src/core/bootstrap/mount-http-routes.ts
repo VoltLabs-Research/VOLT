@@ -5,11 +5,14 @@ import { HttpModuleTeamScope, hasTeamIdInBasePath } from '@shared/infrastructure
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import AIConversationHttpModule from '@modules/ai/infrastructure/http/routes/ai-conversation-routes';
+import LatexHttpModule from '@modules/latex/infrastructure/http/routes/latex-routes';
+import WhiteboardHttpModule from '@modules/whiteboards/infrastructure/http/routes/whiteboard-routes';
 import AnalysisHttpModule from '@modules/analysis/infrastructure/http/routes/analysis-routes';
 import AuthHttpModule from '@modules/auth/infrastructure/http/routes/auth-routes';
 import ChatMessageHttpModule from '@modules/chat/infrastructure/http/routes/chat-message/chat-message-routes';
 import ChatHttpModule from '@modules/chat/infrastructure/http/routes/chat/chat-routes';
 import ContainerHttpModule from '@modules/container/infrastructure/http/routes/container-routes';
+import ContainerXrdpHttpModule from '@modules/container/infrastructure/http/routes/container-xrdp-routes';
 import DailyActivityHttpModule from '@modules/daily-activity/infrastructure/http/routes/daily-activity-routes';
 import NotificationHttpModule from '@modules/notification/infrastructure/http/routes/notification-routes';
 import PluginExposureHttpModule from '@modules/plugin/infrastructure/http/routes/exposure';
@@ -80,6 +83,7 @@ const HTTP_MODULES: HttpModule[] = [
     ScriptingJupyterHttpModule,
     SshConnectionHttpModule,
     ContainerHttpModule,
+    ContainerXrdpHttpModule,
     TrajectoryHttpModule,
     JobsHttpModule,
     AnalysisHttpModule,
@@ -90,7 +94,9 @@ const HTTP_MODULES: HttpModule[] = [
     SystemHttpModule,
     ColorCodingHttpModule,
     ParticleFilterHttpModule,
-    AIConversationHttpModule
+    AIConversationHttpModule,
+    LatexHttpModule,
+    WhiteboardHttpModule
 ];
 
 const assertUniqueModuleBasePaths = (modules: HttpModule[]): void => {

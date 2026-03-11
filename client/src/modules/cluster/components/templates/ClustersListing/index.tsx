@@ -10,12 +10,14 @@ import ClusterRemoteTerminal, {
 } from '@/modules/cluster/components/organisms/ClusterRemoteTerminal';
 import ClustersEmptyState from '@/modules/cluster/components/organisms/ClustersEmptyState';
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/DeleteClusterModal';
+import UpdateClusterModal, { UPDATE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/UpdateClusterModal';
 import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
 import useClustersListingPage from '@/modules/cluster/hooks/use-clusters-listing-page';
 import { TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
 import { formatClusterTimestamp } from '@/modules/cluster/utilities/format-cluster-timestamp';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import { TeamClusterRemoteAccessTarget } from '@/modules/cluster/api/entities/team-cluster-remote-access';
+import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import { TEAM_CLUSTER_SOCKET_EVENTS } from '@/modules/cluster/api/service/endpoints/team-cluster-socket-events';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import MetricBars from '@/modules/cluster/components/organisms/MetricBars';
@@ -23,7 +25,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
 import { openModal } from '@/shared/presentation/components/Modal';
-import { Database, FolderOpen, KeyRound, Monitor, Terminal, Trash2 } from 'lucide-react';
+import { Database, FolderOpen, KeyRound, Monitor, RefreshCw, Terminal, Trash2 } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
@@ -50,6 +52,11 @@ const ClustersListing = () => {
     const handleDeleteCluster = useCallback((cluster: TeamCluster) => {
         state.setDeleteTarget(cluster);
         openModal(DELETE_CLUSTER_MODAL_ID);
+    }, [state]);
+
+    const handleUpdateCluster = useCallback((cluster: TeamCluster) => {
+        state.setUpdateTarget(cluster);
+        openModal(UPDATE_CLUSTER_MODAL_ID);
     }, [state]);
 
     const handleRemoteAccessAction = useCallback((cluster: TeamCluster, target: TeamClusterRemoteAccessTarget) => {
@@ -212,6 +219,12 @@ const ClustersListing = () => {
             onClick: () => handleRevealCredentials(row.teamCluster)
         },
         {
+            label: 'Update cluster',
+            icon: RefreshCw,
+            disabled: row.teamCluster.status !== TeamClusterStatus.Connected && row.teamCluster.status !== TeamClusterStatus.UpdateFailed,
+            onClick: () => handleUpdateCluster(row.teamCluster)
+        },
+        {
             label: 'Open terminal',
             icon: Terminal,
             onClick: () => handleRemoteAccessAction(row.teamCluster, TeamClusterRemoteAccessTarget.HostTerminal)
@@ -237,7 +250,7 @@ const ClustersListing = () => {
             destructive: true,
             onClick: () => handleDeleteCluster(row.teamCluster)
         }
-    ], [handleDeleteCluster, handleRemoteAccessAction, handleRevealCredentials, navigate]);
+    ], [handleDeleteCluster, handleRemoteAccessAction, handleRevealCredentials, handleUpdateCluster, navigate]);
 
     return (
         <>
@@ -250,6 +263,12 @@ const ClustersListing = () => {
                 teamCluster={state.deleteTarget}
                 onDelete={state.deleteCluster}
                 onClose={() => state.setDeleteTarget(null)}
+            />
+            <UpdateClusterModal
+                teamCluster={state.updateTarget}
+                teamId={state.selectedTeamId}
+                onUpdate={state.requestUpdate}
+                onClose={() => state.setUpdateTarget(null)}
             />
             <ClusterRemoteAccessPasswordModal
                 teamCluster={state.remoteAccessRequest?.teamCluster ?? null}

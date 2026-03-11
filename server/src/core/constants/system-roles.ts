@@ -43,7 +43,8 @@ export const SystemRoles = Object.freeze({
             ...allActionsFor(Resource.TEAM_MEMBER),
             ...allActionsFor(Resource.TEAM_ROLE),
             ...allActionsFor(Resource.SIMULATION_CELL),
-            ...allActionsFor(Resource.AI_CONVERSATION)
+            ...allActionsFor(Resource.AI_CONVERSATION),
+            ...allActionsFor(Resource.WHITEBOARD)
         ],
         isSystem: true
     },
@@ -62,7 +63,8 @@ export const SystemRoles = Object.freeze({
             readOnlyFor(Resource.AI_CONVERSATION),
             `${Resource.AI_CONVERSATION}:${Action.CREATE}`,
             `${Resource.AI_CONVERSATION}:${Action.UPDATE}`,
-            `${Resource.AI_CONVERSATION}:${Action.DELETE}`
+            `${Resource.AI_CONVERSATION}:${Action.DELETE}`,
+            ...crudFor(Resource.WHITEBOARD)
         ],
         isSystem: true
     },
@@ -76,6 +78,7 @@ export const SystemRoles = Object.freeze({
             readOnlyFor(Resource.CONTAINER),
             readOnlyFor(Resource.DAILY_ACTIVITY),
             readOnlyFor(Resource.SIMULATION_CELL),
+            readOnlyFor(Resource.WHITEBOARD)
         ],
         isSystem: true
     }

@@ -158,7 +158,10 @@ export const ErrorCodes = createErrorCodes({
     SCRIPTING_SESSION_FAILED: 'Scripting::Session::Failed',
     SCRIPTING_DAEMON_UNAVAILABLE: 'Scripting::Daemon::Unavailable',
     SCRIPTING_NOTEBOOK_NOT_FOUND: 'Scripting::Notebook::NotFound',
-    SCRIPTING_LOCK_FAILED: 'Scripting::Lock::Failed'
+    SCRIPTING_LOCK_FAILED: 'Scripting::Lock::Failed',
+
+    TEAM_INVITE_CODE_NOT_FOUND: 'TeamInviteCode::NotFound',
+    TEAM_INVITE_CODE_ALREADY_MEMBER: 'TeamInviteCode::AlreadyMember'
 });
 
 export const isErrorCode = (value: string): value is ErrorCode => {

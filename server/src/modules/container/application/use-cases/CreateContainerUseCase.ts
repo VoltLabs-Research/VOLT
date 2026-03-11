@@ -1,14 +1,19 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import { CreateContainerInputDTO, CreateContainerOutputDTO } from '@modules/container/application/dtos/CreateContainerDTO';
+import type { ContainerCapabilities } from '@modules/container/domain/entities/ContainerCapabilities';
 import ContainerCreatedEvent from '@modules/container/domain/events/ContainerCreatedEvent';
-import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import { IEventBus } from '@shared/application/events/IEventBus';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
+
+const XRDP_PRIVATE_PORT = 3389;
 
 @injectable()
 export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO, CreateContainerOutputDTO> {
@@ -49,6 +54,24 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         };
     }
 
+    private resolveCapabilities(input: CreateContainerInputDTO): ContainerCapabilities | undefined {
+        if (!input.capabilities?.xrdp) {
+            return undefined;
+        }
+
+        const exposesXrdpPort = (input.ports || []).some((port) => port.private === XRDP_PRIVATE_PORT);
+        if (!exposesXrdpPort) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                `XRDP-capable containers must expose private port ${XRDP_PRIVATE_PORT}`
+            );
+        }
+
+        return {
+            xrdp: true
+        };
+    }
+
     async execute(input: CreateContainerInputDTO): Promise<Result<CreateContainerOutputDTO>> {
         const { name, image, env, ports, cmd, mountDockerSocket, useImageCmd, memory, cpus } = input;
         const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(input.teamId, input.teamClusterId);
@@ -60,6 +83,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
 
         const memoryInMegabytes = memory || 512;
         const cpuCount = cpus || 1;
+        const capabilities = this.resolveCapabilities(input);
 
         const sanitizedName = name.replace(/\s+/g, '-').toLowerCase();
         const binds: string[] = [`Volt-${sanitizedName}-data:/data`];
@@ -100,7 +124,8 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             team: input.teamId,
             teamCluster: teamClusterId,
             mountDockerSocket: mountDockerSocket || false,
-            internalIp: containerInfo.NetworkSettings?.IPAddress || '0.0.0.0'
+            internalIp: containerInfo.NetworkSettings?.IPAddress || '0.0.0.0',
+            capabilities
         });
 
         await this.eventBus.publish(new ContainerCreatedEvent({

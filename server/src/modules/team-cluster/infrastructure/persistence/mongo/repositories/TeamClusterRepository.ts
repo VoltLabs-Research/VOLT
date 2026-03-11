@@ -55,6 +55,17 @@ export default class TeamClusterRepository
         return documents.map((document) => this.mapper.toDomain(document));
     }
 
+    async findUpdatingTimedOutClusters(cutoff: Date): Promise<TeamCluster[]> {
+        const documents = await this.model.find({
+            status: TeamClusterStatus.Updating,
+            updatedAt: {
+                $lt: cutoff
+            }
+        }).exec();
+
+        return documents.map((document) => this.mapper.toDomain(document));
+    }
+
     async hasTeamEverConnected(teamId: string): Promise<boolean> {
         return !!(await this.model.exists({
             team: teamId,

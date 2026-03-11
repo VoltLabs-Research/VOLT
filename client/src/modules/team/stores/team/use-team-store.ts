@@ -74,11 +74,11 @@ export const resetTeamDependentStores = (): void => {
 /**
  * Query key prefixes that must survive a team switch (not team-scoped).
  *
- * - auth / teams  — user stays authenticated and the team list remains.
- * - cluster       — infrastructure-level metrics fed by WebSocket; the
+ * - auth / teams  - user stays authenticated and the team list remains.
+ * - cluster       - infrastructure-level metrics fed by WebSocket; the
  *                   observer uses `skipToken` so destroying the query
  *                   cache would leave it permanently empty.
- * - team-jobs     — job data is pushed via WebSocket; the hook already
+ * - team-jobs     - job data is pushed via WebSocket; the hook already
  *                   re-subscribes when the selected team changes and
  *                   clears stale data via `setQueryData`.
  */

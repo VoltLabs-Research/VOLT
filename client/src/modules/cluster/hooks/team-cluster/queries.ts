@@ -3,7 +3,15 @@ import { buildKeys, createMutation, createQuery, queryClient, withSuccess } from
 import type { MutationOptions, QueryOptions } from '@/shared/infrastructure/query';
 import type { CreateTeamClusterInputDTO, CreateTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster';
 import type { DeleteTeamClusterInputDTO, DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
+import type {
+    FetchAvailableClusterVersionsInputDTO,
+    FetchAvailableClusterVersionsOutputDTO
+} from '@/modules/cluster/api/dtos/team-cluster/fetch-available-cluster-versions';
 import type { ListTeamClustersInputDTO, ListTeamClustersOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/list-team-clusters';
+import type {
+    RequestClusterUpdateInputDTO,
+    RequestClusterUpdateOutputDTO
+} from '@/modules/cluster/api/dtos/team-cluster/request-cluster-update';
 import type {
     RevealTeamClusterCredentialsInputDTO,
     RevealTeamClusterCredentialsOutputDTO
@@ -12,6 +20,7 @@ import type { TeamCluster, TeamClusterLifecycleEvent } from '@/modules/cluster/a
 
 interface TeamClusterQueryKeyMap {
     byTeam: string;
+    availableVersions: FetchAvailableClusterVersionsInputDTO;
 };
 
 export const TEAM_CLUSTER_QUERY_KEYS = buildKeys<TeamClusterQueryKeyMap>('team-clusters');
@@ -130,6 +139,36 @@ export const useDeleteTeamClusterMutation = (options?: MutationOptions<DeleteTea
             if (data.teamCluster) {
                 upsertTeamClusterQueryData(variables.teamId, data.teamCluster);
             }
+        }, options)
+    });
+};
+
+const availableVersionsQuery = createQuery(
+    TEAM_CLUSTER_QUERY_KEYS.availableVersions,
+    teamClusterService.fetchAvailableVersions
+);
+
+export const useAvailableClusterVersionsQuery = (
+    teamId: string,
+    teamClusterId: string,
+    options?: QueryOptions<FetchAvailableClusterVersionsOutputDTO>
+) => {
+    return availableVersionsQuery(
+        { teamId, teamClusterId },
+        {
+            staleTime: 5 * 60 * 1000,
+            ...options
+        }
+    );
+};
+
+export const useRequestClusterUpdateMutation = (
+    options?: MutationOptions<RequestClusterUpdateOutputDTO, RequestClusterUpdateInputDTO>
+) => {
+    return createMutation<RequestClusterUpdateOutputDTO, RequestClusterUpdateInputDTO>(teamClusterService.requestUpdate)({
+        ...options,
+        onSuccess: withSuccess((data, variables) => {
+            upsertTeamClusterQueryData(variables.teamId, data.teamCluster);
         }, options)
     });
 };

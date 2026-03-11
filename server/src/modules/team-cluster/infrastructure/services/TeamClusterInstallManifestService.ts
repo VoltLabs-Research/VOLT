@@ -6,6 +6,7 @@ import {
 import TeamCluster from '@modules/team-cluster/domain/entities/TeamCluster';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import { normalizeTeamClusterInstallRoot } from '@modules/team-cluster/utilities/installRoot';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import DaemonCredentialGuard, { DecryptedTeamClusterServiceCredentials } from '@shared/application/team-cluster/DaemonCredentialGuard';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -215,6 +216,7 @@ const createBuildContextArchiveBase64 = (files: TeamClusterInstallManifestFileDT
 
 const buildRootEnvFile = (
     teamClusterId: string,
+    installRoot: string,
     ports: TeamClusterInstallManifestPortsDTO,
     cloudUrl: string
 ): string => {
@@ -223,7 +225,7 @@ const buildRootEnvFile = (
     return [
         `TEAM_CLUSTER_ID=${teamClusterId}`,
         `COMPOSE_PROJECT_NAME=${composeProjectName}`,
-        'TEAM_CLUSTER_INSTALL_ROOT=/opt/volt/team-clusters',
+        `TEAM_CLUSTER_INSTALL_ROOT=${installRoot}`,
         `VOLT_CLOUD_URL=${cloudUrl}`,
         `VOLT_CLUSTER_INSTALL_MANIFEST_VERSION=${TEAM_CLUSTER_INSTALL_MANIFEST_VERSION}`,
         `MINIO_IMAGE=${TEAM_CLUSTER_IMAGES.minio}`,
@@ -267,13 +269,14 @@ const buildRedisAclFile = (credentials: DecryptedTeamClusterServiceCredentials):
 
 const buildDaemonEnvFile = (
     teamClusterId: string,
+    installRoot: string,
     credentials: DecryptedTeamClusterServiceCredentials,
     cloudUrl: string
 ): string => {
     return [
         `TEAM_CLUSTER_ID=${teamClusterId}`,
         `COMPOSE_PROJECT_NAME=${sanitizeComposeProjectName(teamClusterId)}`,
-        'TEAM_CLUSTER_INSTALL_ROOT=/opt/volt/team-clusters',
+        `TEAM_CLUSTER_INSTALL_ROOT=${installRoot}`,
         `VOLT_CLOUD_URL=${cloudUrl}`,
         `TEAM_CLUSTER_DAEMON_PASSWORD=${credentials.daemonPassword}`,
         `TEAM_CLUSTER_HEARTBEAT_PATH=/api/team-clusters/${teamClusterId}/heartbeats`,
@@ -307,14 +310,16 @@ export default class TeamClusterInstallManifestService {
     async generateInstallManifest(
         teamClusterId: string,
         daemonPassword: string,
+        installRoot: string,
         ports: TeamClusterInstallManifestPortsDTO
     ): Promise<TeamClusterInstallManifestDTO> {
         const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
         const cloudUrl = this.requireCloudUrl();
+        const normalizedInstallRoot = this.requireInstallRoot(installRoot);
         const credentials = this.daemonCredentialGuard.getDecryptedServiceCredentials(teamCluster);
         const daemonDistributionMode = getDaemonDistributionMode();
 
-        await this.persistPorts(teamCluster, ports);
+        await this.persistInstallContext(teamCluster, normalizedInstallRoot, ports);
 
         let daemonFiles: TeamClusterInstallManifestFileDTO[] = [];
         if (daemonDistributionMode === DaemonDistributionMode.Build) {
@@ -334,7 +339,7 @@ export default class TeamClusterInstallManifestService {
             },
             {
                 path: '.env',
-                contents: buildRootEnvFile(teamCluster.id, ports, cloudUrl),
+                contents: buildRootEnvFile(teamCluster.id, normalizedInstallRoot, ports, cloudUrl),
                 mode: '0600'
             },
             {
@@ -359,7 +364,7 @@ export default class TeamClusterInstallManifestService {
             },
             {
                 path: 'daemon.env',
-                contents: buildDaemonEnvFile(teamCluster.id, credentials, cloudUrl),
+                contents: buildDaemonEnvFile(teamCluster.id, normalizedInstallRoot, credentials, cloudUrl),
                 mode: '0600'
             },
             ...daemonFiles
@@ -388,8 +393,22 @@ export default class TeamClusterInstallManifestService {
         return rawCloudUrl.replace(/\/+$/g, '');
     }
 
-    private async persistPorts(teamCluster: TeamCluster, ports: TeamClusterInstallManifestPortsDTO): Promise<void> {
+    private requireInstallRoot(installRoot: string): string {
+        const normalizedInstallRoot = normalizeTeamClusterInstallRoot(installRoot);
+        if (!normalizedInstallRoot) {
+            throw ApplicationError.badRequest('TeamCluster::InvalidInstallRoot', 'Install root is required');
+        }
+
+        return normalizedInstallRoot;
+    }
+
+    private async persistInstallContext(
+        teamCluster: TeamCluster,
+        installRoot: string,
+        ports: TeamClusterInstallManifestPortsDTO
+    ): Promise<void> {
         const updatedTeamCluster = await this.teamClusterRepository.updateById(teamCluster.id, {
+            installRoot,
             services: {
                 minio: {
                     ...teamCluster.props.services.minio,

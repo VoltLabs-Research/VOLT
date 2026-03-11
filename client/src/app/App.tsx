@@ -5,13 +5,15 @@ import { useRouteCleanup } from '@/shared/presentation/hooks/use-route-cleanup';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
 import { ensureApplicationStoreCleanupsRegistered } from '@/shared/utils/application-store-cleanups';
 import { buildErrorPath } from '@/shared/utils';
+import { isElectronEnvironment } from '@/shared/utils/electron-environment';
 import { notifyApiError } from '@/shared/errors/notify-api-error';
+import AppToaster from '@/shared/presentation/components/AppToaster';
+import DesktopShell from '@/shared/presentation/components/DesktopShell';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
 import GlobalErrorListener from '@/shared/presentation/components/GlobalErrorListener';
 import QueryProvider from '@/shared/presentation/components/QueryProvider';
-import { Toaster } from 'sileo';
 import { useCallback, useEffect } from 'react';
-import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import 'sileo/styles.css';
 import type { ErrorInfo } from 'react';
 
@@ -52,7 +54,9 @@ const AppRoutes = () => {
     });
 
     const handleRenderError = useCallback((error: Error, info: ErrorInfo) => {
-        if(notifyApiError(error)) return;
+        if (notifyApiError(error)) {
+            return;
+        }
 
         const stack = info.componentStack ?? error.stack;
         runErrorRecoveryCleanup(location.pathname, '/error');
@@ -75,18 +79,16 @@ const AppRoutes = () => {
 };
 
 export default function App() {
+    const Router = isElectronEnvironment() ? HashRouter : BrowserRouter;
+
     return (
         <QueryProvider>
-            <BrowserRouter unstable_useTransitions={false}>
-                <AppRoutes />
-                <Toaster
-                    position="bottom-right"
-                    theme="light"
-                    options={{
-                        fill: '#171717'
-                    }}
-                />
-            </BrowserRouter>
+            <Router unstable_useTransitions={false}>
+                <DesktopShell>
+                    <AppRoutes />
+                    <AppToaster />
+                </DesktopShell>
+            </Router>
         </QueryProvider>
     );
 }

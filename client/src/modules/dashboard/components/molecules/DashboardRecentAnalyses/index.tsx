@@ -1,4 +1,5 @@
 import './DashboardRecentAnalyses.css';
+import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
 import useDashboardRecentAnalyses from '@/modules/dashboard/hooks/use-dashboard-recent-analyses';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
@@ -80,7 +81,7 @@ const DashboardRecentAnalyses = () => {
     }
 
     return (
-        <Container className='dashboard-recent-analyses'>
+        <DashboardCard className='dashboard-recent-analyses d-flex column flex-1 min-h-0' overflowHidden={true}>
             <Container className='dashboard-recent-analyses-header d-flex items-center content-between w-max'>
                 <Title className='font-size-2 color-primary font-weight-6'>
                     Recent Analyses
@@ -100,7 +101,7 @@ const DashboardRecentAnalyses = () => {
             <Container className='dashboard-recent-analyses-list d-flex column flex-1 y-auto gap-1 min-h-0'>
                 {content}
             </Container>
-        </Container>
+        </DashboardCard>
     );
 };
 

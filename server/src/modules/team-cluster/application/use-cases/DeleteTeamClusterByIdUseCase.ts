@@ -1,5 +1,4 @@
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
 import {
     DeleteTeamClusterByIdInputDTO,
     DeleteTeamClusterByIdOutputDTO
@@ -8,6 +7,8 @@ import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/I
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
 import { assertConfirmedPassword } from '@modules/team-cluster/utilities/assertConfirmedPassword';
+import { buildManualTeamClusterUninstallCommand } from '@modules/team-cluster/utilities/installRoot';
+import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -17,14 +18,6 @@ import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCluster
 import { inject, injectable } from 'tsyringe';
 import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-
-const TEAM_CLUSTER_INSTALL_ROOT = '/opt/volt/team-clusters';
-
-const buildManualUninstallCommand = (teamClusterId: string): string => {
-    const installDirectory = `${TEAM_CLUSTER_INSTALL_ROOT}/${teamClusterId}`;
-
-    return `sudo bash -lc 'if [ -d "${installDirectory}" ]; then cd "${installDirectory}" && docker compose down -v --remove-orphans; fi && rm -rf "${installDirectory}"'`;
-};
 
 const shouldRequireManualUninstall = (status: TeamClusterStatus, installedVersion: string | null, daemonPort: number | null): boolean => {
     if (status === TeamClusterStatus.WaitingForConnection) {
@@ -123,7 +116,7 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
             teamCluster.props.services.daemon.port
         );
         const manualUninstallCommand = manualUninstallRequired
-            ? buildManualUninstallCommand(teamCluster.id)
+            ? buildManualTeamClusterUninstallCommand(teamCluster.id, teamCluster.props.installRoot)
             : undefined;
 
         await this.teamClusterLifecycleService.deleteTeamCluster(teamCluster);
