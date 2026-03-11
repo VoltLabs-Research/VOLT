@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { filterPersistableAppState } from '@/modules/whiteboards/utilities/whiteboards';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 
 type ExcalidrawElement = Record<string, unknown>;
@@ -40,7 +41,7 @@ const useWhiteboardSync = ({ whiteboardId, enabled = true, onRemoteDelta }: UseW
             socketService.emit('whiteboard_delta', {
                 whiteboardId,
                 elements,
-                appState,
+                appState: filterPersistableAppState(appState),
                 version: versionRef.current
             }).catch(console.warn);
         }, DELTA_DEBOUNCE_MS);

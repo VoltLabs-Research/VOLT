@@ -1,5 +1,6 @@
 import SocketIOAdapter from './socket-io-adapter';
 import TokenStorage from '@/shared/auth/token-storage';
+import { getBackendOrigin } from '@/app/core/http/utilities/backend-origin';
 import type { ISocketService } from './contracts/socket-service';
 import type { SocketConnectionStatus } from '@/modules/socket/core/socket-connection-status';
 
@@ -120,7 +121,7 @@ const getInitialAuth = (): Record<string, unknown> => {
     }
 };
 
-export const socketTransport = new SocketIOAdapter(import.meta.env.VITE_API_URL, {
+export const socketTransport = new SocketIOAdapter(getBackendOrigin(), {
     auth: getInitialAuth(),
     autoConnect: false
 });

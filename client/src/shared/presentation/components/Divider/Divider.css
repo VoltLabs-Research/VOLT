@@ -1,14 +1,12 @@
 .volt-divider {
-    border: none;
     background: var(--color-border-soft);
-    margin: 0;
 }
 
 .volt-divider--horizontal {
     height: 1px;
     width: 100%;
 }
-
+    
 .volt-divider--vertical {
     width: 1px;
     height: 100%;

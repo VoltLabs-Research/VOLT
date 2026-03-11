@@ -7,6 +7,11 @@ import GetWhiteboardStateController from './GetWhiteboardStateController';
 import SaveWhiteboardStateController from './SaveWhiteboardStateController';
 import UploadWhiteboardAssetController from './UploadWhiteboardAssetController';
 import GetWhiteboardAssetController from './GetWhiteboardAssetController';
+import CreateWhiteboardFolderController from './CreateWhiteboardFolderController';
+import ListWhiteboardFoldersController from './ListWhiteboardFoldersController';
+import UpdateWhiteboardFolderController from './UpdateWhiteboardFolderController';
+import DeleteWhiteboardFolderController from './DeleteWhiteboardFolderController';
+import MoveWhiteboardController from './MoveWhiteboardController';
 import { container } from 'tsyringe';
 
 const whiteboardControllers = {
@@ -18,7 +23,12 @@ const whiteboardControllers = {
     getWhiteboardState: container.resolve(GetWhiteboardStateController),
     saveWhiteboardState: container.resolve(SaveWhiteboardStateController),
     uploadWhiteboardAsset: container.resolve(UploadWhiteboardAssetController),
-    getWhiteboardAsset: container.resolve(GetWhiteboardAssetController)
+    getWhiteboardAsset: container.resolve(GetWhiteboardAssetController),
+    createFolder: container.resolve(CreateWhiteboardFolderController),
+    listFolders: container.resolve(ListWhiteboardFoldersController),
+    updateFolder: container.resolve(UpdateWhiteboardFolderController),
+    deleteFolder: container.resolve(DeleteWhiteboardFolderController),
+    moveWhiteboard: container.resolve(MoveWhiteboardController)
 };
 
 export default whiteboardControllers;

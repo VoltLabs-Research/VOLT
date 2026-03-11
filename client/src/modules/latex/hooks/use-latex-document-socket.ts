@@ -9,6 +9,8 @@ interface LatexPresenceState {
 
 interface LatexContentUpdatedPayload {
     documentId: string;
+    /** ID of the LatexFile that was updated. Absent in legacy documents. */
+    fileId?: string;
     content: string;
     timestamp: number;
     senderId: string;
@@ -18,7 +20,7 @@ interface UseLatexDocumentSocketProps {
     documentId?: string;
     teamId?: string;
     enabled?: boolean;
-    onRemoteContentUpdate?: (content: string, timestamp: number) => void;
+    onRemoteContentUpdate?: (content: string, timestamp: number, fileId?: string) => void;
 };
 
 /** Debounce interval before emitting a content update over the socket. */
@@ -83,7 +85,7 @@ const useLatexDocumentSocket = ({
                 if (!payload || payload.documentId !== documentId) {
                     return;
                 }
-                onRemoteContentUpdate?.(payload.content, payload.timestamp);
+                onRemoteContentUpdate?.(payload.content, payload.timestamp, payload.fileId);
             }
         );
 
@@ -110,7 +112,7 @@ const useLatexDocumentSocket = ({
         };
     }, [documentId, teamId, enabled, subscribeToDocument, socketService, onRemoteContentUpdate]);
 
-    const sendContentUpdate = useCallback((content: string): void => {
+    const sendContentUpdate = useCallback((content: string, fileId?: string): void => {
         if (!enabled || !documentId || !teamId) {
             return;
         }
@@ -124,6 +126,7 @@ const useLatexDocumentSocket = ({
             socketService.emit('latex_update_content', {
                 documentId,
                 teamId,
+                fileId,
                 content,
                 timestamp: Date.now()
             }).catch(console.warn);

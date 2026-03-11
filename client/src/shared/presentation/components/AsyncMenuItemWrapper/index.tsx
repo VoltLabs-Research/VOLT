@@ -10,6 +10,11 @@ interface AsyncMenuItemWrapperProps {
     size?: 'sm' | 'md';
 };
 
+const MENU_ICON_SIZES: Record<'sm' | 'md', number> = {
+    sm: 14,
+    md: 16
+};
+
 const AsyncMenuItemWrapper: React.FC<AsyncMenuItemWrapperProps> = ({ option, onSuccess, size = 'md' }) => {
     const [isLoading, setIsLoading] = useState(false);
 
@@ -29,9 +34,13 @@ const AsyncMenuItemWrapper: React.FC<AsyncMenuItemWrapperProps> = ({ option, onS
         }
     };
 
+    const menuIcon = option.icon
+        ? <option.icon size={MENU_ICON_SIZES[size]} />
+        : undefined;
+
     return (
         <PopoverMenuItem
-            icon={option.icon ? <option.icon /> : undefined}
+            icon={menuIcon}
             onClick={handleClick}
             variant={option.destructive ? 'danger' : 'default'}
             size={size}

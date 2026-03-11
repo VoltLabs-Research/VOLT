@@ -33,7 +33,7 @@ const requireContainerReadPermission = (
 export default createHttpModule({
     basePath: '/api/container-xrdp/:teamId',
     protected: true,
-    teamScope: HttpModuleTeamScope.Param,
+    teamScope: HttpModuleTeamScope.BasePath,
     middleware: requireContainerReadPermission,
     routes: (router) => {
         router.post('/:containerId/session', controllers.createXrdpSession.handle);

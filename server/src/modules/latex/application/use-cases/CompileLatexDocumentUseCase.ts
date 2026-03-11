@@ -4,6 +4,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
 import { spawn } from 'node:child_process';
@@ -17,6 +18,7 @@ import type { CompileLatexDocumentInputDTO, CompileLatexDocumentOutputDTO } from
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import type { ILatexAssetRepository } from '@modules/latex/domain/port/ILatexAssetRepository';
+import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { ITempFileService } from '@shared/domain/port/ITempFileService';
 
@@ -27,46 +29,53 @@ interface CompilerRunResult {
 
 interface CompilerConfig {
     binary: string;
-    buildArgs: (workDir: string) => string[];
+    args: string[];
 };
 
-const SUPPORTED_COMPILERS: CompilerConfig[] = [
+/**
+ * Compiler priority order:
+ * 1. latexmk  — preferred; handles multi-pass builds, BibTeX, glossaries automatically.
+ * 2. pdflatex — widest compatibility for standard documents.
+ * 3. xelatex  — Unicode / OpenType font support.
+ * 4. lualatex — Lua scripting, advanced font support.
+ *
+ * The entrypoint filename is injected at runtime from the LatexFile marked `isEntrypoint`.
+ */
+const buildCompilerConfigs = (entrypoint: string): CompilerConfig[] => [
+    {
+        binary: 'latexmk',
+        args: ['-pdf', '-interaction=nonstopmode', '-halt-on-error', '-file-line-error', entrypoint]
+    },
     {
         binary: 'pdflatex',
-        buildArgs: (workDir) => [
-            '-interaction=nonstopmode',
-            '-halt-on-error',
-            `-output-directory=${workDir}`,
-            'main.tex'
-        ]
+        args: ['-interaction=nonstopmode', '-halt-on-error', '-file-line-error', entrypoint]
     },
     {
         binary: 'xelatex',
-        buildArgs: (workDir) => [
-            '-interaction=nonstopmode',
-            '-halt-on-error',
-            `-output-directory=${workDir}`,
-            'main.tex'
-        ]
+        args: ['-interaction=nonstopmode', '-halt-on-error', '-file-line-error', entrypoint]
     },
     {
-        binary: 'latexmk',
-        buildArgs: (workDir) => [
-            '-pdf',
-            '-interaction=nonstopmode',
-            '-halt-on-error',
-            `-outdir=${workDir}`,
-            'main.tex'
-        ]
+        binary: 'lualatex',
+        args: ['-interaction=nonstopmode', '-halt-on-error', '-file-line-error', entrypoint]
     }
 ];
 
 /**
- * Resolves the first available LaTeX compiler from `SUPPORTED_COMPILERS`.
- * Returns `null` if none are installed on the system.
+ * Builds the environment for the compiler process.
+ *
+ * `TEXINPUTS`, `BIBINPUTS`, and `BSTINPUTS` all include the workDir with recursive
+ * search (`//`) so that `.cls`, `.sty`, `.bib`, `.bst`, and image assets placed in
+ * any subdirectory of workDir are always found by the compiler.
  */
-const resolveCompiler = async (): Promise<CompilerConfig | null> => {
-    for (const compiler of SUPPORTED_COMPILERS) {
+const buildCompileEnv = (workDir: string): NodeJS.ProcessEnv => ({
+    ...process.env,
+    TEXINPUTS: `.//:./:${workDir}//:${process.env['TEXINPUTS'] ?? ''}`,
+    BIBINPUTS: `.//:./:${workDir}//:${process.env['BIBINPUTS'] ?? ''}`,
+    BSTINPUTS: `.//:./:${workDir}//:${process.env['BSTINPUTS'] ?? ''}`,
+});
+
+const resolveCompiler = async (entrypoint: string): Promise<CompilerConfig | null> => {
+    for (const compiler of buildCompilerConfigs(entrypoint)) {
         const found = await new Promise<boolean>((resolve) => {
             const proc = spawn(compiler.binary, ['--version']);
             proc.on('error', () => resolve(false));
@@ -81,14 +90,12 @@ const resolveCompiler = async (): Promise<CompilerConfig | null> => {
     return null;
 };
 
-/**
- * Spawns the LaTeX compiler process and captures stdout + stderr into a log.
- * Resolves with the exit success state and combined compiler output.
- */
 const runCompiler = (compiler: CompilerConfig, workDir: string): Promise<CompilerRunResult> => {
     return new Promise((resolve) => {
-        const args = compiler.buildArgs(workDir);
-        const proc = spawn(compiler.binary, args, { cwd: workDir });
+        const proc = spawn(compiler.binary, compiler.args, {
+            cwd: workDir,
+            env: buildCompileEnv(workDir)
+        });
         let log = '';
 
         proc.stdout.on('data', (chunk: Buffer) => {
@@ -109,15 +116,18 @@ const runCompiler = (compiler: CompilerConfig, workDir: string): Promise<Compile
     });
 };
 
+const MAIN_TEX_FALLBACK = 'main.tex';
+
 /**
  * Compiles a LaTeX document to PDF using the first available system compiler.
  *
  * Steps:
- * 1. Resolve the LaTeX document and associated assets.
- * 2. Detect an available compiler (`pdflatex`, `xelatex`, or `latexmk`).
- * 3. Write `main.tex` and all assets into an isolated temp directory.
- * 4. Execute the compiler; on failure, surface the log as a structured error.
- * 5. Buffer the output PDF, clean up the temp directory, and stream it back.
+ * 1. Load the document and all associated LatexFiles.
+ * 2. Auto-migrate: if no LatexFile records exist, treat `document.content` as `main.tex`.
+ * 3. Write all LatexFiles to workDir respecting their `path` prefix.
+ * 4. Write all assets to workDir respecting their `path` field.
+ * 5. Detect an available compiler and run it against the entrypoint file.
+ * 6. Buffer the output PDF, clean up the temp directory, and stream it back.
  *
  * @throws {LATEX_COMPILER_NOT_FOUND} If no LaTeX compiler is available on the system.
  * @throws {LATEX_COMPILATION_FAILED} If the compiler exits with a non-zero code.
@@ -130,6 +140,9 @@ export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumen
 
         @inject(LATEX_TOKENS.LatexAssetRepository)
         private readonly latexAssetRepository: ILatexAssetRepository,
+
+        @inject(LATEX_TOKENS.LatexFileRepository)
+        private readonly latexFileRepository: ILatexFileRepository,
 
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
@@ -154,37 +167,55 @@ export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumen
                 ));
             }
 
-            const compiler = await resolveCompiler();
+            await this.tempFileService.ensureDir(workDir);
+
+            // Determine entrypoint filename; fall back to legacy document.content if no files exist.
+            const latexFiles = await this.latexFileRepository.findAllByDocument(input.documentId);
+            let entrypointFilename = MAIN_TEX_FALLBACK;
+
+            if (latexFiles.length === 0) {
+                const content = document.props.content ?? '';
+                await fs.writeFile(path.join(workDir, MAIN_TEX_FALLBACK), content, 'utf-8');
+            } else {
+                const entrypointFile = latexFiles.find((f) => f.props.isEntrypoint) ?? latexFiles[0];
+                entrypointFilename = entrypointFile.fullPath;
+
+                for (const file of latexFiles) {
+                    const destPath = path.join(workDir, file.fullPath);
+                    await fs.mkdir(path.dirname(destPath), { recursive: true });
+                    await fs.writeFile(destPath, file.props.content, 'utf-8');
+                }
+            }
+
+            const compiler = await resolveCompiler(entrypointFilename);
 
             if (!compiler) {
+                await this.tempFileService.delete(workDir, { recursive: true });
+
                 return Result.fail(new ApplicationError(
                     ErrorCodes.LATEX_COMPILER_NOT_FOUND,
-                    'No LaTeX compiler is available on this server. Install texlive (pdflatex, xelatex, or latexmk) to enable PDF compilation.',
-                    503
+                    'No LaTeX compiler is available on this server. Install texlive (textlive-full) (latexmk, pdflatex, xelatex, or lualatex) to enable PDF compilation.',
+                    503     
                 ));
             }
 
-            await this.tempFileService.ensureDir(workDir);
-
-            const content = document.props.content ?? '';
-            await fs.writeFile(path.join(workDir, 'main.tex'), content, 'utf-8');
-
             const assets = await this.latexAssetRepository.findAllByDocument(input.documentId);
-            if (assets.length > 0) {
-                const assetsDir = path.join(workDir, 'assets');
-                await fs.mkdir(assetsDir, { recursive: true });
 
-                for (const asset of assets) {
-                    try {
-                        const stream = await this.storageService.getStream(
-                            SYS_BUCKETS.LATEX_ASSETS,
-                            asset.props.storageKey
-                        );
-                        const destPath = path.join(assetsDir, asset.props.originalName);
-                        await pipeline(stream, createWriteStream(destPath));
-                    } catch {
-                        // Skip assets that cannot be retrieved; the compiler will report missing files.
-                    }
+            for (const asset of assets) {
+                try {
+                    const stream = await this.storageService.getStream(
+                        SYS_BUCKETS.LATEX_ASSETS,
+                        asset.props.storageKey
+                    );
+                    const relPath = asset.props.path
+                        ? sanitizeAssetPath(asset.props.path, asset.props.originalName)
+                        : path.basename(asset.props.originalName);
+
+                    const destPath = path.join(workDir, relPath);
+                    await fs.mkdir(path.dirname(destPath), { recursive: true });
+                    await pipeline(stream, createWriteStream(destPath));
+                } catch {
+                    // Skip assets that cannot be retrieved; the compiler will report missing files.
                 }
             }
 
@@ -200,14 +231,16 @@ export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumen
                 ));
             }
 
-            const pdfPath = path.join(workDir, 'main.pdf');
+            // The output PDF is always named after the entrypoint without extension.
+            const pdfName = entrypointFilename.replace(/\.tex$/, '.pdf');
+            const pdfPath = path.join(workDir, pdfName);
             const pdfBuffer = await fs.readFile(pdfPath);
             await this.tempFileService.delete(workDir, { recursive: true });
 
             const output = createDownloadStreamResponse({
                 stream: Readable.from(pdfBuffer),
                 contentType: 'application/pdf',
-                filename: 'main.pdf',
+                filename: path.basename(pdfName),
                 disposition: 'inline',
                 contentLength: pdfBuffer.byteLength,
                 cacheControl: 'no-cache'

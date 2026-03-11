@@ -13,6 +13,7 @@ import Stepper from '@/shared/presentation/components/Stepper';
 import Title from '@/shared/presentation/components/Title';
 import useStepper from '@/shared/presentation/hooks/use-stepper';
 import useZodForm from '@/shared/presentation/hooks/use-zod-form';
+import { buildBackendUrl } from '@/app/core/http/utilities/backend-origin';
 import { sileo } from 'sileo';
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -75,7 +76,7 @@ const SignInTemplate = () => {
 
     const handleOAuthRedirect = (provider: string) => {
         const next = getNextDestination();
-        const callbackUrl = new URL(`${import.meta.env.VITE_API_URL}/api/auth/${provider}`);
+        const callbackUrl = new URL(buildBackendUrl(`/api/auth/${provider}`));
         callbackUrl.searchParams.set('next', next);
         window.location.href = callbackUrl.toString();
     };

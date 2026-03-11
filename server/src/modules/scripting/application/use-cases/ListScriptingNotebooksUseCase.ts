@@ -1,3 +1,4 @@
+import { toScriptingNotebookDTO } from '@modules/scripting/application/utilities/to-scripting-notebook-dto';
 import {
     ListScriptingNotebooksInputDTO,
     ListScriptingNotebooksOutputDTO
@@ -22,31 +23,15 @@ export class ListScriptingNotebooksUseCase implements IUseCase<ListScriptingNote
         const result = await this.scriptingNotebookRepository.findAllByTeam(
             input.teamId,
             { page, limit },
-            input.trajectoryId
+            {
+                trajectoryId: input.trajectoryId,
+                scope: input.scope
+            }
         );
 
-        const value: ListScriptingNotebooksOutputDTO = {
+        return Result.ok({
             ...result,
-            data: result.data.map((notebook) => {
-                let trajectories: string[] = [];
-
-                if (Array.isArray(notebook.props.trajectories)) {
-                    trajectories = notebook.props.trajectories.map(String);
-                }
-
-                return {
-                    _id: notebook._id,
-                    teamCluster: notebook.props.teamCluster,
-                    title: notebook.props.title,
-                    notebookPath: notebook.props.notebookPath,
-                    trajectories,
-                    lastOpenedAt: notebook.props.lastOpenedAt,
-                    createdAt: notebook.props.createdAt,
-                    updatedAt: notebook.props.updatedAt
-                };
-            })
-        };
-
-        return Result.ok(value);
+            data: result.data.map(toScriptingNotebookDTO)
+        });
     }
 };

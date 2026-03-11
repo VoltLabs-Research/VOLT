@@ -1,7 +1,9 @@
 import { scriptingAiTools } from '@modules/scripting/application/ai-tools';
 import { CreateScriptingJupyterSessionUseCase } from '@modules/scripting/application/use-cases/CreateScriptingJupyterSessionUseCase';
+import { CreateScriptingNotebookUseCase } from '@modules/scripting/application/use-cases/CreateScriptingNotebookUseCase';
 import { DeleteScriptingNotebookUseCase } from '@modules/scripting/application/use-cases/DeleteScriptingNotebookUseCase';
 import { ListScriptingNotebooksUseCase } from '@modules/scripting/application/use-cases/ListScriptingNotebooksUseCase';
+import { UpdateScriptingNotebookUseCase } from '@modules/scripting/application/use-cases/UpdateScriptingNotebookUseCase';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
 import { DaemonScriptingSessionOrchestrator } from '@modules/scripting/infrastructure/services/DaemonScriptingSessionOrchestrator';
@@ -26,8 +28,10 @@ export const registerScriptingDependencies = (): void => {
             ScriptingJupyterAccessTokenService,
             ScriptingJupyterProxyService,
             CreateScriptingJupyterSessionUseCase,
+            CreateScriptingNotebookUseCase,
             ListScriptingNotebooksUseCase,
-            DeleteScriptingNotebookUseCase
+            DeleteScriptingNotebookUseCase,
+            UpdateScriptingNotebookUseCase
         ]
     });
 

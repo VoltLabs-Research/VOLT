@@ -143,6 +143,12 @@ export const useDeleteTeamClusterMutation = (options?: MutationOptions<DeleteTea
     });
 };
 
+export const invalidateAvailableVersionsQuery = (teamId: string, teamClusterId: string) => {
+    return queryClient.invalidateQueries({
+        queryKey: TEAM_CLUSTER_QUERY_KEYS.availableVersions({ teamId, teamClusterId })
+    });
+};
+
 const availableVersionsQuery = createQuery(
     TEAM_CLUSTER_QUERY_KEYS.availableVersions,
     teamClusterService.fetchAvailableVersions
@@ -156,7 +162,7 @@ export const useAvailableClusterVersionsQuery = (
     return availableVersionsQuery(
         { teamId, teamClusterId },
         {
-            staleTime: 5 * 60 * 1000,
+            staleTime: 0,
             ...options
         }
     );

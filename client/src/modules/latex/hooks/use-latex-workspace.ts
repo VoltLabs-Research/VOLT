@@ -1,25 +1,30 @@
-import { latexDocumentQuery, useUpdateLatexDocumentMutation, useExportLatexDocumentTexMutation, useExportLatexDocumentZipMutation, useCompileLatexDocumentMutation } from '@/modules/latex/hooks/queries';
+import { latexDocumentQuery, useUpdateLatexDocumentMutation, useExportLatexDocumentTexMutation, useExportLatexDocumentZipMutation, useCompileLatexDocumentMutation, useUpdateLatexFileMutation } from '@/modules/latex/hooks/queries';
 import useLatexDocumentSocket from '@/modules/latex/hooks/use-latex-document-socket';
+import useLatexFiles from '@/modules/latex/hooks/use-latex-files';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { LatexFile } from '@/modules/latex/api/entities/latex-file';
 
 interface UseLatexWorkspaceInput {
     documentId: string;
 };
 
-/** Virtual file entry shown in the left panel. In Phase 2 the document has a single file: main.tex. */
+/** Represents a LatexFile visible in the file panel. */
 export interface LatexFileEntry {
+    _id: string;
     name: string;
+    path: string;
+    isEntrypoint: boolean;
     isSelected: boolean;
 };
 
 const SAVE_TOAST = {
-    loading: { title: 'Saving document...' },
-    success: { title: 'Document saved' },
-    error: { title: 'Failed to save document' }
+    loading: { title: 'Saving file...' },
+    success: { title: 'File saved' },
+    error: { title: 'Failed to save file' }
 };
 
 const EXPORT_TEX_TOAST = {
@@ -40,7 +45,11 @@ const COMPILE_TOAST = {
     error: { title: 'Compilation failed' }
 };
 
-const MAIN_FILE_NAME = 'main.tex';
+const RENAME_TOAST = {
+    loading: { title: 'Renaming document...' },
+    success: { title: 'Document renamed' },
+    error: { title: 'Failed to rename document' }
+};
 
 const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const teamId = useSelectedTeamId();
@@ -48,20 +57,17 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
     const documentQueryResult = latexDocumentQuery({ documentId }, { enabled: !!documentId });
 
-    const document = documentQueryResult.data;
+    const latexDocument = documentQueryResult.data;
     const isLoading = documentQueryResult.isLoading;
 
+    const [activeFile, setActiveFile] = useState<LatexFile | null>(null);
     const [editorContent, setEditorContent] = useState<string>('');
     const [isDirty, setIsDirty] = useState(false);
 
-    /**
-     * Tracks the content value of the last remote update applied.
-     * Used to avoid re-broadcasting content back over the socket when
-     * Monaco fires onChange in response to a programmatic value change.
-     */
     const remoteContentRef = useRef<string>('');
 
-    const { mutateAsync: updateDocument, isPending: isSaving } = useUpdateLatexDocumentMutation();
+    const { mutateAsync: updateDocument } = useUpdateLatexDocumentMutation();
+    const { mutateAsync: updateFile, isPending: isSaving } = useUpdateLatexFileMutation();
     const { mutateAsync: exportTex, isPending: isExportingTex } = useExportLatexDocumentTexMutation();
     const { mutateAsync: exportZip, isPending: isExportingZip } = useExportLatexDocumentZipMutation();
     const { mutateAsync: compileDocument, isPending: isCompiling } = useCompileLatexDocumentMutation();
@@ -69,6 +75,24 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const [compiledPdfUrl, setCompiledPdfUrl] = useState<string | null>(null);
     const [compileError, setCompileError] = useState<string | null>(null);
     const compiledPdfUrlRef = useRef<string | null>(null);
+
+    const handleFileSelected = useCallback((file: LatexFile): void => {
+        setActiveFile(file);
+        setEditorContent(file.content);
+        setIsDirty(false);
+        remoteContentRef.current = '';
+    }, []);
+
+    const { files: latexFiles, isLoading: isLoadingFiles, ...fileActions } = useLatexFiles({        documentId,
+        onFileSelected: handleFileSelected
+    });
+
+    const handleSelectFileById = useCallback((fileId: string): void => {
+        const file = latexFiles.find((f) => f._id === fileId);
+        if (file) {
+            handleFileSelected(file);
+        }
+    }, [latexFiles, handleFileSelected]);
 
     useEffect(() => {
         if (!documentQueryResult.error) return;
@@ -84,17 +108,32 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         };
     }, []);
 
+    // When the file list loads, auto-select the entrypoint file.
     useEffect(() => {
-        if (!document) return;
-        setEditorContent(document.content ?? '');
-        setIsDirty(false);
-    }, [document]);
+        if (latexFiles.length === 0 || activeFile) return;
+        const entrypoint = latexFiles.find((f) => f.isEntrypoint) ?? latexFiles[0];
+        setActiveFile(entrypoint);
+        setEditorContent(entrypoint.content);
+    }, [latexFiles, activeFile]);
 
-    const handleRemoteContentUpdate = useCallback((content: string): void => {
+    // When the active file changes in the file list (e.g. content was updated by remote),
+    // sync the editor if the file matches the currently active file.
+    useEffect(() => {
+        if (!activeFile) return;
+        const updatedFile = latexFiles.find((f) => f._id === activeFile._id);
+        if (!updatedFile || updatedFile.content === editorContent) return;
+        // Only sync if we don't have unsaved local changes.
+        if (!isDirty) {
+            setEditorContent(updatedFile.content);
+        }
+    }, [latexFiles, activeFile, editorContent, isDirty]);
+
+    const handleRemoteContentUpdate = useCallback((content: string, _timestamp: number, fileId?: string): void => {
+        if (fileId && activeFile?._id !== fileId) return;
         remoteContentRef.current = content;
         setEditorContent(content);
         setIsDirty(false);
-    }, []);
+    }, [activeFile]);
 
     const { collaborators, sendContentUpdate } = useLatexDocumentSocket({
         documentId,
@@ -108,40 +147,56 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         setEditorContent(content);
         setIsDirty(true);
 
-        // Skip broadcasting if this onChange was triggered by applying a remote update,
-        // preventing an echo loop back to the server.
         if (content === remoteContentRef.current) {
             remoteContentRef.current = '';
             return;
         }
 
-        sendContentUpdate(content);
-    }, [sendContentUpdate]);
+        sendContentUpdate(content, activeFile?._id);
+    }, [sendContentUpdate, activeFile]);
 
-    const handleSave = useCallback(async (): Promise<void> => {
-        if (!documentId || isSaving) return;
-
+    const handleRenameDocument = useCallback(async (title: string): Promise<void> => {
         try {
             await showPromise(
-                updateDocument({ documentId, content: editorContent }),
-                SAVE_TOAST
+                updateDocument({ documentId, title }),
+                RENAME_TOAST
             );
+        } catch (error) {
+            checkAccessDeniedError(error);
+        }
+    }, [checkAccessDeniedError, documentId, updateDocument]);
+
+    const handleSave = useCallback(async (): Promise<void> => {
+        if (isSaving) return;
+
+        try {
+            if (activeFile) {
+                await showPromise(
+                    updateFile({ documentId, fileId: activeFile._id, content: editorContent }),
+                    SAVE_TOAST
+                );
+            } else {
+                await showPromise(
+                    updateDocument({ documentId, content: editorContent }),
+                    SAVE_TOAST
+                );
+            }
             setIsDirty(false);
         } catch (error) {
             checkAccessDeniedError(error);
         }
-    }, [checkAccessDeniedError, documentId, editorContent, isSaving, updateDocument]);
+    }, [activeFile, checkAccessDeniedError, documentId, editorContent, isSaving, updateDocument, updateFile]);
 
     const handleInsertAssetRef = useCallback((ref: string): void => {
         const next = `${editorContent}\n${ref}`;
         setEditorContent(next);
         setIsDirty(true);
-        sendContentUpdate(next);
-    }, [editorContent, sendContentUpdate]);
+        sendContentUpdate(next, activeFile?._id);
+    }, [activeFile, editorContent, sendContentUpdate]);
 
     const handleExportTex = useCallback(async (): Promise<void> => {
         if (!documentId) return;
-        const safeName = (document?.title ?? 'document').replace(/[^a-zA-Z0-9._-]+/g, '-');
+        const safeName = (latexDocument?.title ?? 'document').replace(/[^a-zA-Z0-9._-]+/g, '-');
 
         await showPromise(
             async () => {
@@ -150,11 +205,11 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
             },
             EXPORT_TEX_TOAST
         );
-    }, [document?.title, documentId, exportTex]);
+    }, [latexDocument?.title, documentId, exportTex]);
 
     const handleExportZip = useCallback(async (): Promise<void> => {
         if (!documentId) return;
-        const safeName = (document?.title ?? 'document').replace(/[^a-zA-Z0-9._-]+/g, '-');
+        const safeName = (latexDocument?.title ?? 'document').replace(/[^a-zA-Z0-9._-]+/g, '-');
 
         await showPromise(
             async () => {
@@ -163,7 +218,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
             },
             EXPORT_ZIP_TOAST
         );
-    }, [document?.title, documentId, exportZip]);
+    }, [latexDocument?.title, documentId, exportZip]);
 
     const handleCompile = useCallback(async (): Promise<void> => {
         if (!documentId) return;
@@ -189,14 +244,22 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         }
     }, [compileDocument, documentId]);
 
-    const files: LatexFileEntry[] = [
-        { name: MAIN_FILE_NAME, isSelected: true }
-    ];
+    const files = useMemo<LatexFileEntry[]>(
+        () => latexFiles.map((f) => ({
+            _id: f._id,
+            name: f.name,
+            path: f.path,
+            isEntrypoint: f.isEntrypoint,
+            isSelected: f._id === activeFile?._id
+        })),
+        [latexFiles, activeFile?._id]
+    );
 
     return {
-        document,
+        latexDocument,
         documentId,
-        isLoading,
+        isLoading: isLoading || isLoadingFiles,
+        activeFile,
         editorContent,
         isDirty,
         isSaving,
@@ -210,11 +273,14 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         files,
         collaborators,
         handleEditorChange,
+        handleRenameDocument,
         handleSave,
         handleInsertAssetRef,
         handleExportTex,
         handleExportZip,
-        handleCompile
+        handleCompile,
+        handleSelectFileById,
+        ...fileActions
     };
 };
 

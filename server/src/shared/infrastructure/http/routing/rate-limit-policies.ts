@@ -34,6 +34,7 @@ export const RATE_LIMIT_POLICIES = {
     sshConnectionTest: createStandardRateLimiter(10),
     systemAccess: createGeneralRateLimiter(60),
     teamAIIntegrationCreate: createStandardRateLimiter(5),
+    teamClusterAvailableVersions: createGeneralRateLimiter(30, 'Too many version-check requests, please try again later'),
     teamClusterCreate: createStandardRateLimiter(5),
     teamClusterDelete: createStandardRateLimiter(5, 'Too many delete attempts, please try again later'),
     teamClusterUpdate: createStandardRateLimiter(5, 'Too many update attempts, please try again later'),

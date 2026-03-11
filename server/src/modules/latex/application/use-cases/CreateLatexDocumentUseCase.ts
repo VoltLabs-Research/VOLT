@@ -6,14 +6,19 @@ import { inject, injectable } from 'tsyringe';
 import type { CreateLatexDocumentInputDTO, CreateLatexDocumentOutputDTO } from '@modules/latex/application/dtos/CreateLatexDocumentDTO';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
+import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 
 const DEFAULT_DOCUMENT_CONTENT = '';
+const MAIN_TEX_NAME = 'main.tex';
 
 @injectable()
 export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentInputDTO, CreateLatexDocumentOutputDTO, ApplicationError> {
     constructor(
         @inject(LATEX_TOKENS.LatexDocumentRepository)
-        private readonly latexDocumentRepository: ILatexDocumentRepository
+        private readonly latexDocumentRepository: ILatexDocumentRepository,
+
+        @inject(LATEX_TOKENS.LatexFileRepository)
+        private readonly latexFileRepository: ILatexFileRepository
     ) {}
 
     async execute(input: CreateLatexDocumentInputDTO): Promise<Result<CreateLatexDocumentOutputDTO, ApplicationError>> {
@@ -27,10 +32,27 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
                 ));
             }
 
+            const initialContent = input.content ?? DEFAULT_DOCUMENT_CONTENT;
+
             const document = await this.latexDocumentRepository.create({
                 team: input.teamId,
                 title,
-                content: input.content ?? DEFAULT_DOCUMENT_CONTENT,
+                content: initialContent,
+                createdBy: input.userId,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
+
+            // Create the default main.tex LatexFile so the workspace always has
+            // at least one file to display. The content mirrors the document
+            // content field for backward compatibility.
+            await this.latexFileRepository.create({
+                document: document._id,
+                team: input.teamId,
+                name: MAIN_TEX_NAME,
+                path: '',
+                content: initialContent,
+                isEntrypoint: true,
                 createdBy: input.userId,
                 createdAt: new Date(),
                 updatedAt: new Date()
@@ -40,6 +62,7 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
                 _id: document._id,
                 title: document.props.title,
                 content: document.props.content,
+                folder: document.props.folder,
                 createdAt: document.props.createdAt,
                 updatedAt: document.props.updatedAt
             });

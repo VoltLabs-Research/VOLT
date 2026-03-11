@@ -20,7 +20,8 @@ interface PublicExposureBinding {
 
 const DEFAULT_PUBLIC_PORT_START = 23000;
 const DEFAULT_PUBLIC_PORT_END = 23999;
-const LOCAL_RELAY_HOST = '127.0.0.1';
+const DEFAULT_RELAY_BIND_HOST = '127.0.0.1';
+const DEFAULT_RELAY_ADVERTISED_HOST = '127.0.0.1';
 const XRDP_PRIVATE_PORT = 3389;
 
 const readPortRangeValue = (name: string, fallback: number): number => {
@@ -37,9 +38,40 @@ const readPortRangeValue = (name: string, fallback: number): number => {
     return value;
 };
 
+const readHostValue = (name: string, fallback: string): string => {
+    const rawValue = process.env[name]?.trim();
+    if (!rawValue) {
+        return fallback;
+    }
+
+    return rawValue;
+};
+
+const isWildcardHost = (value: string): boolean => {
+    return value === '0.0.0.0' || value === '::' || value === '[::]';
+};
+
+const resolveRelayAdvertisedHost = (bindHost: string): string => {
+    const configuredAdvertisedHost = process.env.TEAM_CLUSTER_TCP_RELAY_ADVERTISED_HOST?.trim();
+    if (configuredAdvertisedHost) {
+        if (isWildcardHost(configuredAdvertisedHost)) {
+            throw new Error('TEAM_CLUSTER_TCP_RELAY_ADVERTISED_HOST must be a reachable host, not a wildcard bind address');
+        }
+
+        return configuredAdvertisedHost;
+    }
+
+    if (isWildcardHost(bindHost)) {
+        return readHostValue('SERVER_HOSTNAME', DEFAULT_RELAY_ADVERTISED_HOST);
+    }
+
+    return bindHost;
+};
+
 @injectable()
 export default class TeamClusterTcpExposureRelayService {
-    private readonly host = LOCAL_RELAY_HOST;
+    private readonly bindHost = readHostValue('TEAM_CLUSTER_TCP_RELAY_BIND_HOST', DEFAULT_RELAY_BIND_HOST);
+    private readonly advertisedHost = resolveRelayAdvertisedHost(this.bindHost);
     private readonly portStart = readPortRangeValue('TEAM_CLUSTER_TCP_RELAY_PORT_START', DEFAULT_PUBLIC_PORT_START);
     private readonly portEnd = readPortRangeValue('TEAM_CLUSTER_TCP_RELAY_PORT_END', DEFAULT_PUBLIC_PORT_END);
     private readonly bindingsByExposureId = new Map<string, PublicExposureBinding>();
@@ -106,8 +138,11 @@ export default class TeamClusterTcpExposureRelayService {
         return bindingPromise;
     }
 
-    getRelayHost(): string {
-        return this.host;
+    /**
+     * Returns the host that guacd should use when opening the allocated relay port.
+     */
+    getRelayAdvertisedHost(): string {
+        return this.advertisedHost;
     }
 
     private readonly handleRegistryChanged = (): void => {
@@ -149,7 +184,7 @@ export default class TeamClusterTcpExposureRelayService {
         try {
             await new Promise<void>((resolve, reject) => {
                 server.once('error', reject);
-                server.listen(publicPort, this.host, () => {
+                server.listen(publicPort, this.bindHost, () => {
                     server.removeListener('error', reject);
                     resolve();
                 });
@@ -172,10 +207,13 @@ export default class TeamClusterTcpExposureRelayService {
             publicPort,
             server
         });
-        logger.info(
-            { exposureId: currentExposure.id, publicPort, teamClusterId: currentExposure.teamClusterId, host: this.host },
-            '[TcpExposureRelay] Bound local XRDP relay port'
-        );
+        logger.info({
+            exposureId: currentExposure.id,
+            publicPort,
+            teamClusterId: currentExposure.teamClusterId,
+            bindHost: this.bindHost,
+            advertisedHost: this.advertisedHost
+        }, '[TcpExposureRelay] Bound local XRDP relay port');
 
         return publicPort;
     }

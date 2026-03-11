@@ -37,7 +37,6 @@
 }
 
 .container-details-status-badge.running {
-    background: var(--status-success-bg);
     color: var(--status-success);
     border: 1px solid var(--status-success-border);
 }
@@ -48,18 +47,14 @@
 }
 
 .container-details-status-badge.exited {
-    background: var(--status-error-bg);
     color: var(--status-error);
     border: 1px solid var(--status-error-border);
 }
 
 .container-details-status-badge.created {
-    background: var(--status-info-bg);
     color: var(--status-info);
     border: 1px solid var(--status-info-border);
 }
-
-
 
 .container-details-nav {
     padding: 1.5rem 0.75rem;
@@ -74,14 +69,8 @@
     padding: 0.75rem;
     text-decoration: none;
     color: var(--accent-blue);
-    border: 1px solid var(--accent-blue);
-    background: rgba(0, 98, 255, 0.05);
 }
 
-.container-details-visit-btn:hover {
-    background: var(--accent-blue);
-    color: white;
-}
 .container-details-content-area {
     background: var(--color-content-bg);
 }
@@ -90,8 +79,6 @@
     height: 100%;
     animation: animate-fade-in 0.3s ease-out;
 }
-
-
 
 .container-details-pane-header {
     margin-bottom: 0.5rem;

@@ -1,3 +1,4 @@
+import { buildScriptingNotebookPath, parseScriptingNotebookContent } from '@modules/scripting/application/utilities/build-scripting-notebook';
 import {
     CreateScriptingJupyterSessionInputDTO,
     CreateScriptingJupyterSessionOutputDTO
@@ -20,10 +21,6 @@ import type { IUseCase } from '@shared/application/IUseCase';
 
 interface ResolveNotebookForSessionInput extends CreateScriptingJupyterSessionInputDTO {
     userId: string;
-};
-
-const isNotebookContent = (value: unknown): value is Record<string, unknown> => {
-    return !!value && !Array.isArray(value) && typeof value === 'object';
 };
 
 const LOCK_TTL_MS = 30_000;
@@ -52,9 +49,16 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             ));
         }
 
+        const lockKey = this.buildLockKey(input);
+        if (!lockKey) {
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS,
+                'Trajectory id or notebook id is required'
+            ));
+        }
+
         let lease: Awaited<ReturnType<IScriptingSessionLock['acquire']>> = null;
         try {
-            const lockKey = `lock:jupyter:${input.teamId}:${input.trajectoryId}`;
             lease = await this.scriptingSessionLock.acquire(lockKey, LOCK_TTL_MS);
             if (!lease) {
                 return Result.fail(ApplicationError.conflict(
@@ -97,20 +101,10 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
 
             if (!notebook) {
                 throw new ApplicationError(
-                    ErrorCodes.RESOURCE_NOT_FOUND,
+                    ErrorCodes.SCRIPTING_NOTEBOOK_NOT_FOUND,
                     'Notebook not found',
                     404
                 );
-            }
-
-            let currentTrajectoryIds: string[] = [];
-            if (Array.isArray(notebook.props.trajectories)) {
-                currentTrajectoryIds = notebook.props.trajectories.map(String);
-            }
-
-            let nextTrajectoryIds = currentTrajectoryIds;
-            if (!currentTrajectoryIds.includes(input.trajectoryId)) {
-                nextTrajectoryIds = Array.from(new Set([...currentTrajectoryIds, input.trajectoryId]));
             }
 
             const now = new Date();
@@ -119,13 +113,27 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
                 updatedAt: now
             };
 
-            if (nextTrajectoryIds.length !== currentTrajectoryIds.length) {
-                updateData.trajectories = nextTrajectoryIds;
+            if (input.trajectoryId) {
+                let currentTrajectoryIds: string[] = [];
+                if (Array.isArray(notebook.props.trajectories)) {
+                    currentTrajectoryIds = notebook.props.trajectories.map(String);
+                }
+
+                if (!currentTrajectoryIds.includes(input.trajectoryId)) {
+                    updateData.trajectories = Array.from(new Set([...currentTrajectoryIds, input.trajectoryId]));
+                }
             }
 
             const touched = await this.scriptingNotebookRepository.updateById(notebook._id, updateData);
 
             return touched || notebook;
+        }
+
+        if (!input.trajectoryId) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS,
+                'Trajectory id or notebook id is required'
+            );
         }
 
         const existing = await this.scriptingNotebookRepository.findByTeamAndTrajectory(input.teamId, input.trajectoryId);
@@ -141,19 +149,21 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             return touched || existing;
         }
 
-        const notebookPath = `scripting-notebook-${input.trajectoryId}.ipynb`;
         const templateRaw = await this.scriptingSessionOrchestrator.resolveDefaultNotebookTemplateContent({
             trajectoryId: input.trajectoryId
         });
-        const createData: Partial<ScriptingNotebookProps> = {
+        const now = new Date();
+        const createData: ScriptingNotebookProps = {
             team: input.teamId,
             teamCluster: input.teamClusterId,
             title: 'Scripting Notebook',
-            notebookPath,
+            notebookPath: buildScriptingNotebookPath(input.trajectoryId),
             trajectories: [input.trajectoryId],
             createdBy: input.userId,
-            content: this.parseNotebookContent(templateRaw),
-            lastOpenedAt: new Date()
+            content: parseScriptingNotebookContent(templateRaw),
+            lastOpenedAt: now,
+            createdAt: now,
+            updatedAt: now
         };
 
         return this.scriptingNotebookRepository.create(createData);
@@ -176,18 +186,16 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         return teamClusterId;
     }
 
-    private parseNotebookContent(templateRaw: string): Record<string, unknown> {
-        const parsedTemplate: unknown = JSON.parse(templateRaw);
-
-        if (!isNotebookContent(parsedTemplate)) {
-            throw new ApplicationError(
-                ErrorCodes.RESOURCE_LOAD_ERROR,
-                'Default notebook template content must be an object',
-                500
-            );
+    private buildLockKey(input: CreateScriptingJupyterSessionInputDTO): string | null {
+        if (input.trajectoryId) {
+            return `lock:jupyter:${input.teamId}:trajectory:${input.trajectoryId}`;
         }
 
-        return parsedTemplate;
+        if (input.notebookId) {
+            return `lock:jupyter:${input.teamId}:notebook:${input.notebookId}`;
+        }
+
+        return null;
     }
 
     private mapError(error: unknown): Result<CreateScriptingJupyterSessionOutputDTO, ApplicationError> {

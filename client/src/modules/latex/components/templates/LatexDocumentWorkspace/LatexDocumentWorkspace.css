@@ -1,6 +1,5 @@
 .latex-workspace {
     height: 100%;
-    background: var(--color-surface-1);
 }
 
 .latex-workspace__layout {
@@ -8,22 +7,19 @@
     min-height: 0;
 }
 
-/** Left panel - file tree */
+/** Left panel — file tree */
 .latex-workspace__files {
-    width: 220px;
+    flex-shrink: 0;
     min-width: 160px;
-    max-width: 320px;
-    border-right: 1px solid var(--color-border-soft);
-    background: var(--color-surface-1);
+    max-width: 400px;
+    border-right: none;
     overflow: hidden;
 }
 
-/** Center panel - Monaco editor */
+/** Center panel — Monaco editor */
 .latex-workspace__editor {
     flex: 1;
-    min-width: 0;
-    border-right: 1px solid var(--color-border-soft);
-    background: var(--color-surface-2);
+    min-width: 300px;
     overflow: hidden;
 }
 
@@ -31,20 +27,50 @@
     height: 100%;
 }
 
-/** Right panel - math preview */
+/** Right panel — PDF preview */
 .latex-workspace__preview {
-    width: 340px;
-    min-width: 200px;
-    background: var(--color-surface-1);
+    flex-shrink: 0;
+    min-width: 260px;
+    max-width: 600px;
     overflow: hidden;
+}
+
+/** Drag handles between panels */
+.latex-drag-handle {
+    width: 5px;
+    flex-shrink: 0;
+    cursor: col-resize;
+    background: transparent;
+    position: relative;
+    z-index: 1;
+    user-select: none;
+    touch-action: none;
+    transition: background 150ms;
+}
+
+.latex-drag-handle::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1px;
+    background: var(--color-border-soft);
+    transition: background 150ms, width 150ms;
+}
+
+.latex-drag-handle:hover::after {
+    width: 2px;
+    background: var(--color-border);
 }
 
 /** Toolbar */
 .latex-workspace__toolbar {
     border-bottom: 1px solid var(--color-border-soft);
     padding: 0 0.75rem;
-    height: 40px;
-    background: var(--color-surface-1);
+    height: 38px;
+    flex-shrink: 0;
 }
 
 .latex-workspace__toolbar-title {
@@ -56,19 +82,24 @@
     max-width: 260px;
 }
 
+.latex-workspace__toolbar-title.is-editing {
+    overflow: visible;
+    white-space: normal;
+    max-width: none;
+}
+
 .latex-workspace__dirty-dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: var(--accent-blue);
     flex-shrink: 0;
 }
 
-/** File row in left panel */
+/** File rows in the left panel */
 .latex-workspace__file-row {
-    padding: 0.45rem 0.75rem;
+    padding: 0.4rem 0.75rem;
     cursor: pointer;
-    transition: background 0.12s;
+    transition: background 0.1s;
 }
 
 .latex-workspace__file-row:hover {
@@ -93,7 +124,7 @@
 
 /** Collaborator avatar stack in the toolbar */
 .latex-workspace__collaborators {
-    gap: -0.25rem;
+    gap: 0;
 }
 
 .latex-workspace__collaborator-avatar {
@@ -105,6 +136,7 @@
     margin-left: 0;
 }
 
+/** Assets section in the file panel */
 .latex-workspace__assets-section {
     border-top: 1px solid var(--color-border-soft);
     min-height: 0;
@@ -112,14 +144,14 @@
 }
 
 .latex-workspace__assets-header {
-    padding: 0.4rem 0.75rem;
+    padding: 0.35rem 0.75rem;
     border-bottom: 1px solid var(--color-border-soft);
     flex-shrink: 0;
 }
 
 .latex-workspace__asset-row {
-    padding: 0.35rem 0.5rem 0.35rem 0.75rem;
-    transition: background 0.12s;
+    padding: 0.3rem 0.5rem 0.3rem 0.75rem;
+    transition: background 0.1s;
 }
 
 .latex-workspace__asset-row:hover {
@@ -131,7 +163,7 @@
     white-space: nowrap;
 }
 
-/** Preview panel — math rendering */
+/** PDF preview panel */
 .latex-preview__content {
     flex: 1;
     min-height: 0;
@@ -150,26 +182,6 @@
     color: var(--color-text-secondary);
 }
 
-.latex-preview__block-math {
-    overflow-x: auto;
-    padding: 0.375rem 0;
-}
-
-.latex-preview__inline-math {
-    display: inline;
-}
-
-.latex-preview__text {
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-
-/** PDF tab */
-.latex-preview__tab-content {
-    overflow: hidden;
-}
-
 .latex-pdf-viewer {
     flex: 1;
     width: 100%;
@@ -178,9 +190,58 @@
     background: var(--color-surface-2);
 }
 
+.latex-pdf-shell {
+    flex: 1;
+    min-height: 0;
+    background: var(--color-surface-1);
+}
+
+.latex-pdf-toolbar {
+    padding: 0.5rem 0.625rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    background: var(--color-surface-1);
+    flex-shrink: 0;
+}
+
+.latex-pdf-toolbar__meta {
+    min-width: 4.5rem;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    text-align: center;
+}
+
+.latex-pdf-stage {
+    padding: 0.75rem;
+    overflow: auto;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent),
+        var(--color-surface-2);
+}
+
+.latex-pdf-document {
+    margin: 0 auto;
+}
+
+.latex-pdf-page {
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.latex-pdf-page canvas {
+    display: block;
+    max-width: 100%;
+    height: auto !important;
+    border-radius: 6px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+}
+
 /** Compilation error log */
 .latex-compile-error {
     flex: 1;
+}
+
+.latex-compile-error__title {
+    font-weight: 600;
 }
 
 .latex-compile-error__log {
@@ -197,4 +258,55 @@
     font-family: monospace;
     color: var(--color-text-secondary);
     max-height: 100%;
+    scrollbar-width: thin;
+}
+
+/** Thin scrollbars for panel content */
+.latex-workspace__files,
+.latex-workspace__preview {
+    scrollbar-width: thin;
+}
+
+/** ---- File tree ---- */
+
+.latex-tree__folder-row {
+    padding: 0.35rem 0.5rem 0.35rem 0.5rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.1s;
+    border-radius: 3px;
+}
+
+.latex-tree__folder-row:hover {
+    background: var(--hover-bg);
+}
+
+.latex-tree__name {
+    font-size: 0.8125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-secondary);
+}
+
+.latex-tree__drop-zone {
+    border-radius: 3px;
+    transition: background 0.12s;
+}
+
+.latex-tree__drop-zone.is-over {
+    background: var(--color-surface-2);
+    outline: 1px dashed var(--color-border);
+    outline-offset: -1px;
+}
+
+.latex-tree__root-drop {
+    flex: 1;
+    min-height: 0;
+}
+
+/** Dragging state for rows */
+.latex-workspace__file-row.is-dragging,
+.latex-workspace__asset-row.is-dragging {
+    opacity: 0.4;
 }

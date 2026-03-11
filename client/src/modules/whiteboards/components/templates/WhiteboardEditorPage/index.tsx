@@ -1,25 +1,28 @@
 import useWhiteboardEditor from '@/modules/whiteboards/hooks/use-whiteboard-editor';
 import useWhiteboardPresence from '@/modules/whiteboards/hooks/use-whiteboard-presence';
 import useWhiteboardSync from '@/modules/whiteboards/hooks/use-whiteboard-sync';
+import { DASHBOARD_LAYOUT_EVENTS } from '@/modules/dashboard/utilities/layout-events';
+import { filterPersistableAppState } from '@/modules/whiteboards/utilities/whiteboards';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import { useCallback, useEffect, useRef, lazy, Suspense } from 'react';
+import type { ComponentProps } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import type { Excalidraw as ExcalidrawComponent } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import './WhiteboardEditorPage.css';
 
-const Excalidraw = lazy(() =>
-    import('@excalidraw/excalidraw').then((module) => ({ default: module.Excalidraw }))
-);
-
-type ExcalidrawProps = React.ComponentProps<typeof ExcalidrawComponent>;
+type ExcalidrawProps = ComponentProps<typeof ExcalidrawComponent>;
 type ExcalidrawAPICallback = NonNullable<ExcalidrawProps['excalidrawAPI']>;
 type ExcalidrawAPI = Parameters<ExcalidrawAPICallback>[0];
 type ExcalidrawChangeHandler = NonNullable<ExcalidrawProps['onChange']>;
 type ExcalidrawElements = Parameters<ExcalidrawChangeHandler>[0];
 type ExcalidrawAppState = Parameters<ExcalidrawChangeHandler>[1];
+type RenderTopRightUI = NonNullable<ExcalidrawProps['renderTopRightUI']>;
+
+const WhiteboardCanvas = lazy(
+    () => import('./WhiteboardCanvas')
+);
 
 const WhiteboardEditorPage = () => {
     const { whiteboardId } = useParams<{ whiteboardId: string }>();
@@ -30,7 +33,6 @@ const WhiteboardEditorPage = () => {
         whiteboard,
         initialState,
         isLoading,
-        isSaving,
         handleChange,
         generateIdForFile
     } = useWhiteboardEditor({ whiteboardId: whiteboardId! });
@@ -44,7 +46,7 @@ const WhiteboardEditorPage = () => {
         (elements: Record<string, unknown>[], appState: Record<string, unknown>) => {
             excalidrawApiRef.current?.updateScene({
                 elements: elements as unknown as ExcalidrawElements,
-                appState: appState as unknown as ExcalidrawAppState
+                appState: filterPersistableAppState(appState) as unknown as ExcalidrawAppState
             });
         },
         []
@@ -69,14 +71,24 @@ const WhiteboardEditorPage = () => {
         excalidrawApiRef.current = api;
     }, []);
 
+    const handleBack = useCallback(() => navigate('/dashboard/whiteboards'), [navigate]);
+
     useEffect(() => {
-        document.body.classList.add('whiteboard-editor-fullscreen');
+        window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestHeaderHide));
+
         return () => {
-            document.body.classList.remove('whiteboard-editor-fullscreen');
+            window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestHeaderShow));
         };
     }, []);
 
-    const handleBack = () => navigate('/dashboard/whiteboards');
+    const renderTopRightUI = useCallback<RenderTopRightUI>(() => {
+        if (users.length === 0) return null;
+        return (
+            <div className='whiteboard-presence-indicator'>
+                {users.length} online
+            </div>
+        );
+    }, [users]);
 
     if (!whiteboardId) {
         return null;
@@ -91,41 +103,23 @@ const WhiteboardEditorPage = () => {
 
     return (
         <Container className='whiteboard-editor-root'>
-            <Container className='whiteboard-editor-toolbar'>
-                <button className='whiteboard-editor-back-btn' onClick={handleBack}>
-                    <ArrowLeft size={16} />
-                    <span>Whiteboards</span>
-                </button>
-                <span className='whiteboard-editor-title'>
-                    {whiteboard?.title || 'Untitled Whiteboard'}
-                </span>
-                <Container className='whiteboard-editor-presence'>
-                    {users.length > 0 && (
-                        <span className='whiteboard-editor-users'>
-                            {users.length} online
-                        </span>
-                    )}
-                    {isSaving && (
-                        <span className='whiteboard-editor-saving'>Saving...</span>
-                    )}
+            {isLoading ? (
+                <Container className='whiteboard-editor-loading'>
+                    <Loader scale={0.8} />
                 </Container>
-            </Container>
-            <Container className='whiteboard-editor-canvas'>
-                {isLoading ? (
-                    <Container className='whiteboard-editor-loading'>
-                        <Loader scale={0.8} />
-                    </Container>
-                ) : (
-                    <Suspense fallback={<Loader scale={0.8} />}>
-                        <Excalidraw
-                            excalidrawAPI={handleExcalidrawAPI}
-                            initialData={excalidrawInitialData}
-                            onChange={handleExcalidrawChange}
-                            generateIdForFile={generateIdForFile}
-                        />
-                    </Suspense>
-                )}
-            </Container>
+            ) : (
+                <Suspense fallback={<Loader scale={0.8} />}>
+                    <WhiteboardCanvas
+                        name={whiteboard?.title ?? 'Untitled Whiteboard'}
+                        initialData={excalidrawInitialData}
+                        onChange={handleExcalidrawChange}
+                        generateIdForFile={generateIdForFile}
+                        renderTopRightUI={renderTopRightUI}
+                        onExcalidrawAPI={handleExcalidrawAPI}
+                        onBack={handleBack}
+                    />
+                </Suspense>
+            )}
         </Container>
     );
 };

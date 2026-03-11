@@ -1,32 +1,45 @@
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import service from '@/modules/scripting/api/service';
 import {
-    scriptingNotebooksQuery,
     scriptingNotebooksQueryKey,
-    useDeleteScriptingNotebookMutation
+    useCreateScriptingNotebookMutation,
+    useCreateScriptingNotebookSessionMutation,
+    useDeleteScriptingNotebookMutation,
+    useUpdateScriptingNotebookMutation
 } from '@/modules/scripting/hooks/queries';
+import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripting-notebook-scope';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import { FolderOpen } from 'lucide-react';
-import { useCallback } from 'react';
+import { getValueByPath } from '@/shared/utils/format';
+import { sortData } from '@/shared/utils/sort';
+import { FolderOpen, Pencil } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sileo } from 'sileo';
 import {
     createEmptyNotebooksResponse,
+    createScriptingNotebooksExport,
     getDeleteConfirmationMessage,
     getTrajectoryIds
 } from '../utilities/notebooks';
+import { getJupyterStartErrorMessage } from '../utilities/workspace';
+import type { DocumentListingExportParams, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { ScriptingNotebook } from '@/modules/scripting/api/entities/scripting-notebook';
-import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 
-const fetchNotebooks = (params: PaginationParams): Promise<PaginatedResponse<ScriptingNotebook>> => {
-    return scriptingNotebooksQuery.fetch({
-        page: params.page,
-        limit: params.limit
-    });
+export interface NotebooksListingContext {
+    scope: ScriptingNotebookScope;
 };
+
+export const RENAME_SCRIPTING_NOTEBOOK_MODAL_ID = 'rename-scripting-notebook-modal';
+
+const EXPORT_PAGE_LIMIT = 500;
+const DEFAULT_NOTEBOOK_SCOPE = ScriptingNotebookScope.General;
+const JUPYTER_STARTING_ERROR = 'Jupyter is still starting. Please retry in a moment.';
+const NEW_TAB_BLOCKED_ERROR = 'Unable to open a new tab. Please allow pop-ups for this site.';
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'notebook.deleted', queryKeys: [scriptingNotebooksQueryKey()] }
@@ -38,20 +51,47 @@ const DELETE_NOTEBOOK_TOAST = {
     error: { title: 'Failed to delete notebook' }
 };
 
-const NOTEBOOK_OPEN_ERROR = 'This notebook has no associated trajectory.';
+const CREATE_NOTEBOOK_TOAST = {
+    loading: { title: 'Creating notebook...' },
+    success: {
+        title: 'Notebook created successfully',
+        description: 'General notebooks are added to the List tab.'
+    },
+    error: { title: 'Failed to create notebook' }
+};
+
+const RENAME_NOTEBOOK_TOAST = {
+    loading: { title: 'Renaming notebook...' },
+    success: { title: 'Notebook renamed successfully' },
+    error: { title: 'Failed to rename notebook' }
+};
+
+const resolveScope = (scope?: ScriptingNotebookScope): ScriptingNotebookScope => {
+    return scope || DEFAULT_NOTEBOOK_SCOPE;
+};
 
 const useNotebooksListing = () => {
     const navigate = useNavigate();
     const teamId = useSelectedTeamId();
+    const { mutateAsync: createNotebook } = useCreateScriptingNotebookMutation();
+    const { mutateAsync: createNotebookSession } = useCreateScriptingNotebookSessionMutation();
     const { mutateAsync: deleteNotebook } = useDeleteScriptingNotebookMutation();
+    const { mutateAsync: updateNotebook } = useUpdateScriptingNotebookMutation();
+    const [renamingNotebook, setRenamingNotebook] = useState<ScriptingNotebook | null>(null);
 
-    const fetchData = useCallback(async (params: PaginationParams): Promise<PaginatedResponse<ScriptingNotebook>> => {
+    const fetchData = useCallback(async (
+        params: PaginationParams & NotebooksListingContext
+    ): Promise<PaginatedResponse<ScriptingNotebook>> => {
         if (!teamId) {
             return createEmptyNotebooksResponse(params);
         }
 
         try {
-            const result = await fetchNotebooks(params);
+            const result = await service.listNotebooks({
+                page: params.page,
+                limit: params.limit,
+                scope: resolveScope(params.scope)
+            });
 
             return {
                 ...result,
@@ -67,22 +107,141 @@ const useNotebooksListing = () => {
         }
     }, [teamId]);
 
+    const handleCreate = useCallback(async () => {
+        if (!teamId) {
+            return;
+        }
+
+        await showPromise(
+            createNotebook({
+                teamId,
+                title: 'General Notebook'
+            }),
+            CREATE_NOTEBOOK_TOAST
+        );
+    }, [teamId, createNotebook]);
+
+    const handleRenameOpen = useCallback((notebook: ScriptingNotebook) => {
+        setRenamingNotebook(notebook);
+        openModal(RENAME_SCRIPTING_NOTEBOOK_MODAL_ID);
+    }, []);
+
+    const handleRenameClose = useCallback(() => {
+        closeModal(RENAME_SCRIPTING_NOTEBOOK_MODAL_ID);
+        setRenamingNotebook(null);
+    }, []);
+
+    const handleRenameSubmit = useCallback(async (title: string) => {
+        if (!renamingNotebook) {
+            return;
+        }
+
+        await showPromise(
+            updateNotebook({
+                notebookId: renamingNotebook._id,
+                title
+            }),
+            RENAME_NOTEBOOK_TOAST
+        );
+
+        handleRenameClose();
+    }, [renamingNotebook, updateNotebook, handleRenameClose]);
+
+    const handleOpenInNewTab = useCallback(async (notebook: ScriptingNotebook) => {
+        const trajectoryId = getTrajectoryIds(notebook)[0];
+
+        if (trajectoryId) {
+            navigate(`/canvas/${trajectoryId}?workspace=scripting&notebook=${encodeURIComponent(notebook._id)}`);
+            return;
+        }
+
+        if (!teamId) {
+            return;
+        }
+
+        const notebookTab = window.open('about:blank', '_blank');
+        if (!notebookTab) {
+            sileo.error({
+                title: 'Unable to open notebook',
+                description: NEW_TAB_BLOCKED_ERROR
+            });
+            return;
+        }
+
+        notebookTab.opener = null;
+        notebookTab.document.title = 'Opening notebook...';
+
+        try {
+            const session = await createNotebookSession({
+                notebookId: notebook._id,
+                teamClusterId: notebook.teamCluster
+            });
+
+            if (!session.jupyter.ready) {
+                notebookTab.close();
+                sileo.error({
+                    title: 'Jupyter is still starting',
+                    description: JUPYTER_STARTING_ERROR
+                });
+                return;
+            }
+
+            notebookTab.location.replace(session.jupyter.url);
+        } catch (error: unknown) {
+            notebookTab.close();
+
+            if (isAccessDeniedError(error)) {
+                return;
+            }
+
+            sileo.error({
+                title: 'Failed to start Jupyter session',
+                description: getJupyterStartErrorMessage(error)
+            });
+        }
+    }, [createNotebookSession, navigate, teamId]);
+
+    const exportNotebooks = useCallback(async (
+        params: DocumentListingExportParams<NotebooksListingContext>
+    ): Promise<Blob> => {
+        const notebooks: ScriptingNotebook[] = [];
+        const scope = resolveScope(params.context?.scope);
+        let page = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+            const response = await service.listNotebooks({
+                page,
+                limit: EXPORT_PAGE_LIMIT,
+                scope
+            });
+
+            notebooks.push(...(response.data || []));
+            hasMore = response.pagination.hasMore;
+            page += 1;
+        }
+
+        const sortedNotebooks = sortData(notebooks, params.sort || null, getValueByPath);
+        return createScriptingNotebooksExport(sortedNotebooks, params.format);
+    }, []);
+
     const { getMenuOptions } = useListingActions<ScriptingNotebook>({
         actions: {
             open: {
-                label: 'Open in Canvas Workspace',
+                label: 'Open in new Tab',
                 icon: FolderOpen,
-                handler: ({ item: notebook }) => {
-                    const trajectoryId = getTrajectoryIds(notebook)[0];
-
-                    if (!trajectoryId) {
-                        sileo.error({ title: NOTEBOOK_OPEN_ERROR });
-                        return;
-                    }
-
-                    navigate(`/canvas/${trajectoryId}?workspace=scripting&notebook=${encodeURIComponent(notebook._id)}`);
+                handler: async ({ item: notebook }) => {
+                    await handleOpenInNewTab(notebook);
                 },
                 requiredPermission: 'plugin:read'
+            },
+            rename: {
+                label: 'Rename',
+                icon: Pencil,
+                handler: ({ item: notebook }) => {
+                    handleRenameOpen(notebook);
+                },
+                requiredPermission: 'plugin:update'
             },
             delete: {
                 variant: 'danger',
@@ -99,8 +258,13 @@ const useNotebooksListing = () => {
     });
 
     return {
+        exportNotebooks,
         fetchData,
         getMenuOptions,
+        handleCreate,
+        handleRenameClose,
+        handleRenameSubmit,
+        renamingNotebook,
         queryKey: scriptingNotebooksQueryKey(),
         socketInvalidation: SOCKET_INVALIDATION
     };

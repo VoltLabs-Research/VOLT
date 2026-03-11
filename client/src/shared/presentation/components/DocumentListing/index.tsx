@@ -1,11 +1,11 @@
-import { ExportType } from '@/shared/domain/export/types';
-import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import { SortConfig } from '@/shared/domain/sorting/types';
-import { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import { closeModal, openModal } from '@/shared/presentation/components/Modal';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import { triggerBrowserDownload } from '@/shared/utils/file';
+import type { ExportType } from '@/shared/domain/export/types';
 import { getValueByPath } from '@/shared/utils/format';
+import { isAccessDeniedCode } from '@/shared/errors/notify-api-error';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import type { SortConfig } from '@/shared/domain/sorting/types';
+import { triggerBrowserDownload } from '@/shared/utils/file';
 import { sortData } from '@/shared/utils/sort';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import queryClient from '@/shared/infrastructure/query/query-client';
@@ -13,6 +13,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListingGrid from '@/shared/presentation/components/DocumentListingGrid';
 import DocumentListingTable from '@/shared/presentation/components/DocumentListingTable';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
@@ -25,14 +26,14 @@ import './DocumentListing.css';
 import { Skeleton } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { RxDotsHorizontal } from 'react-icons/rx';
 import { sileo } from 'sileo';
 import React from 'react';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { QueryKey } from '@tanstack/react-query';
-import { isAccessDeniedCode } from '@/shared/errors/notify-api-error';
 
 export type { ColumnConfig, MenuOption };
 export { getValueByPath };
@@ -42,8 +43,18 @@ export interface SocketInvalidationConfig {
     queryKeys: QueryKey[];
 };
 
+export enum DocumentListingTabAction {
+    View = 'view',
+    Export = 'export'
+};
+
+export interface DocumentListingTab {
+    id: string;
+    label: string;
+    action?: DocumentListingTabAction;
+};
+
 type ViewMode = 'table' | 'grid';
-type HeaderTabMode = 'list' | 'export';
 
 export interface DocumentListingExportParams<TContext = Record<string, never>> {
     format: ExportType;
@@ -86,9 +97,54 @@ interface DocumentListingProps<T, TContext = Record<string, never>> {
     // Layout options
     hideHeader?: boolean;
     hideTabs?: boolean;
+    tabs?: DocumentListingTab[];
+    defaultTabId?: string;
+    onTabChange?: (tabId: string) => void;
     exportConfig?: DocumentListingExportConfig<TContext>;
     onHideItemRef?: React.MutableRefObject<((id: string) => void) | null>;
     socketInvalidation?: SocketInvalidationConfig[];
+};
+
+interface ExportTypeOption {
+    title: string;
+    value: ExportType;
+};
+
+const DEFAULT_TABS: DocumentListingTab[] = [
+    {
+        id: 'list',
+        label: 'List',
+        action: DocumentListingTabAction.View
+    },
+    {
+        id: 'export',
+        label: 'Export',
+        action: DocumentListingTabAction.Export
+    }
+];
+
+const EXPORT_TYPE_OPTIONS: ExportTypeOption[] = [
+    {
+        title: 'JSON',
+        value: 'json'
+    },
+    {
+        title: 'CSV',
+        value: 'csv'
+    }
+];
+
+const isExportType = (value: string): value is ExportType => {
+    return value === 'json' || value === 'csv';
+};
+
+const resolveInitialTabId = (tabs: DocumentListingTab[], preferredTabId?: string): string => {
+    if (preferredTabId && tabs.some((tab) => tab.id === preferredTabId)) {
+        return preferredTabId;
+    }
+
+    const firstViewTab = tabs.find((tab) => tab.action !== DocumentListingTabAction.Export);
+    return firstViewTab?.id || tabs[0]?.id || 'list';
 };
 
 const DocumentListing = <T extends { _id: string }, TContext = Record<string, never>>({
@@ -116,11 +172,31 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     onEmptyButtonClick,
     hideHeader = false,
     hideTabs = false,
+    tabs,
+    defaultTabId,
+    onTabChange,
     exportConfig,
     onHideItemRef,
     socketInvalidation
 }: DocumentListingProps<T, TContext>) => {
     const socketService = useSocket();
+    const resolvedTabs = useMemo(() => {
+        return tabs?.length ? tabs : DEFAULT_TABS;
+    }, [tabs]);
+    const initialTabId = useMemo(() => {
+        return resolveInitialTabId(resolvedTabs, defaultTabId);
+    }, [defaultTabId, resolvedTabs]);
+    const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+    const [activeTabId, setActiveTabId] = useState(initialTabId);
+    const [lastContentTabId, setLastContentTabId] = useState(initialTabId);
+    const [selectedExportType, setSelectedExportType] = useState<ExportType>('json');
+    const [isExporting, setIsExporting] = useState(false);
+
+    useEffect(() => {
+        setActiveTabId(initialTabId);
+        setLastContentTabId(initialTabId);
+    }, [initialTabId]);
+
     const getColumnSortKey = useCallback((col: ColumnConfig<T>): string => {
         return String(col.key ?? (col as any).path ?? '');
     }, []);
@@ -149,10 +225,10 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
             return;
         }
 
-        const unsubscribers = socketInvalidation.map(({ event, queryKeys }) => {
+        const unsubscribers = socketInvalidation.map(({ event, queryKeys: invalidationQueryKeys }) => {
             return socketService.on(event, () => {
-                void Promise.allSettled(
-                    queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey }))
+                Promise.allSettled(
+                    invalidationQueryKeys.map((currentQueryKey) => queryClient.invalidateQueries({ queryKey: currentQueryKey }))
                 );
             });
         });
@@ -162,13 +238,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         };
     }, [socketService, socketInvalidation]);
 
-    // F5 keyboard shortcut to refresh data instead of reloading the page
     useKeyboardShortcut('F5', refresh);
-
-    const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
-    const [activeTab, setActiveTab] = useState<HeaderTabMode>('list');
-    const [selectedExportType, setSelectedExportType] = useState<ExportType>('json');
-    const [isExporting, setIsExporting] = useState(false);
 
     const exportModalId = useMemo(() => `document-listing-export-${Math.random().toString(36).slice(2)}`, []);
 
@@ -177,18 +247,22 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     });
 
     useEffect(() => {
-        if(onHideItemRef){
+        if (onHideItemRef) {
             onHideItemRef.current = addToHidden;
         }
+
         return () => {
-            if(onHideItemRef){
+            if (onHideItemRef) {
                 onHideItemRef.current = null;
             }
         };
     }, [onHideItemRef, addToHidden]);
 
     const wrappedGetMenuOptions = useCallback((item: T, selectedItems: T[]) => {
-        if(!getMenuOptions) return [];
+        if (!getMenuOptions) {
+            return [];
+        }
+
         const selectedIds = new Set(selectedItems.map((selectedItem) => selectedItem._id));
         const targetItems = selectedIds.has(item._id) ? selectedItems : [item];
         return wrapMenuOptions(item, targetItems, getMenuOptions(item, selectedItems));
@@ -201,34 +275,71 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     }, [visibleData, sortConfig]);
 
     const handleSort = useCallback((col: ColumnConfig<T>) => {
-        if(!col.sortable) return;
+        if (!col.sortable) {
+            return;
+        }
+
         const columnKey = getColumnSortKey(col);
-        if (!columnKey) return;
-        setSortConfig((prev) => {
-            if(prev && prev.key === columnKey){
-                return { key: columnKey, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+        if (!columnKey) {
+            return;
+        }
+
+        setSortConfig((previousSortConfig) => {
+            if (previousSortConfig && previousSortConfig.key === columnKey) {
+                return {
+                    key: columnKey,
+                    direction: previousSortConfig.direction === 'asc' ? 'desc' : 'asc'
+                };
             }
-            return { key: columnKey, direction: 'asc' };
+
+            return {
+                key: columnKey,
+                direction: 'asc'
+            };
         });
     }, [getColumnSortKey]);
 
     const getSortIndicator = useCallback((col: ColumnConfig<T>) => {
-        if(!col.sortable) return null;
-        const columnKey = getColumnSortKey(col);
-        if(!sortConfig || sortConfig.key !== columnKey) return <span className='sort-indicator'>⇅</span>;
-        return sortConfig.direction === 'asc' ? <span className='sort-indicator'>↑</span> : <span className='sort-indicator'>↓</span>;
-    }, [sortConfig, getColumnSortKey]);
-
-    const handleTabChange = useCallback((tab: HeaderTabMode) => {
-        setActiveTab(tab);
-        if (tab === 'export') {
-            openModal(exportModalId);
+        if (!col.sortable) {
+            return null;
         }
-    }, [exportModalId]);
+
+        const columnKey = getColumnSortKey(col);
+        if (!sortConfig || sortConfig.key !== columnKey) {
+            return <span className='sort-indicator'>⇅</span>;
+        }
+
+        return sortConfig.direction === 'asc'
+            ? <span className='sort-indicator'>↑</span>
+            : <span className='sort-indicator'>↓</span>;
+    }, [getColumnSortKey, sortConfig]);
+
+    const resetToLastContentTab = useCallback(() => {
+        setActiveTabId(lastContentTabId);
+    }, [lastContentTabId]);
+
+    const handleTabChange = useCallback((tabId: string) => {
+        const targetTab = resolvedTabs.find((tab) => tab.id === tabId);
+        if (!targetTab) {
+            return;
+        }
+
+        setActiveTabId(targetTab.id);
+
+        if (targetTab.action === DocumentListingTabAction.Export) {
+            openModal(exportModalId);
+            return;
+        }
+
+        setLastContentTabId(targetTab.id);
+        onTabChange?.(targetTab.id);
+    }, [exportModalId, onTabChange, resolvedTabs]);
 
     const handleConfirmExport = useCallback(async () => {
-        if (!exportConfig?.onExport) {
+        const onExport = exportConfig?.onExport;
+        if (!onExport) {
             sileo.error({ title: 'Export is not available for this module yet' });
+            resetToLastContentTab();
             return;
         }
 
@@ -236,7 +347,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         try {
             await showPromise(
                 (async () => {
-                    const result = await exportConfig.onExport!({
+                    const result = await onExport({
                         format: selectedExportType,
                         context,
                         search,
@@ -248,6 +359,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                             ?? `listing-export.${selectedExportType}`;
                         triggerBrowserDownload(result, filename);
                     }
+
                     return result;
                 })(),
                 {
@@ -257,17 +369,26 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                 }
             );
             closeModal(exportModalId);
-            setActiveTab('list');
+            resetToLastContentTab();
         } finally {
             setIsExporting(false);
         }
-    }, [exportConfig, selectedExportType, context, search, sortConfig, exportModalId]);
+    }, [context, exportConfig, exportModalId, resetToLastContentTab, search, selectedExportType, sortConfig]);
+
+    const handleExportTypeChange = useCallback((event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const { value } = event.target;
+        if (isExportType(value)) {
+            setSelectedExportType(value);
+        }
+    }, []);
 
     const isAccessDenied = !!errorCode && isAccessDeniedCode(errorCode);
 
     const renderContent = () => {
-        if(view === 'grid'){
-            if(!renderGridItem) return null;
+        if (view === 'grid') {
+            if (!renderGridItem) {
+                return null;
+            }
 
             return (
                 <DocumentListingGrid
@@ -354,18 +475,15 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                     {!hideTabs && (
                         <Container>
                             <Container className='d-flex w-max gap-1 document-listing-header-tabs-container'>
-                                <Container
-                                    className={`d-flex items-center gap-1 color-secondary document-listing-header-tab-container d-flex flex-center ${activeTab === 'list' ? 'is-active' : ''}`}
-                                    onClick={() => handleTabChange('list')}
-                                >
-                                    <Paragraph>{view === 'grid' ? 'Grid' : 'List'}</Paragraph>
-                                </Container>
-                                <Container
-                                    className={`d-flex items-center gap-1 color-secondary document-listing-header-tab-container d-flex flex-center ${activeTab === 'export' ? 'is-active' : ''}`}
-                                    onClick={() => handleTabChange('export')}
-                                >
-                                    <Paragraph>Export</Paragraph>
-                                </Container>
+                                {resolvedTabs.map((tab) => (
+                                    <Container
+                                        key={tab.id}
+                                        className={`d-flex items-center gap-1 color-secondary document-listing-header-tab-container d-flex flex-center ${activeTabId === tab.id ? 'is-active' : ''}`}
+                                        onClick={() => handleTabChange(tab.id)}
+                                    >
+                                        <Paragraph>{tab.label}</Paragraph>
+                                    </Container>
+                                ))}
                             </Container>
                             <Container className='document-listing-header-filters-container' />
                         </Container>
@@ -385,7 +503,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                             label: 'Cancel',
                             onClick: () => {
                                 closeModal(exportModalId);
-                                setActiveTab('list');
+                                resetToLastContentTab();
                             }
                         }}
                         primary={{
@@ -401,12 +519,9 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                         label='Format'
                         fieldType='select'
                         variant='inline'
-                        options={[
-                            { title: 'JSON', value: 'json' },
-                            { title: 'CSV', value: 'csv' }
-                        ]}
+                        options={EXPORT_TYPE_OPTIONS}
                         value={selectedExportType}
-                        onChange={(event) => setSelectedExportType(event.target.value as ExportType)}
+                        onChange={handleExportTypeChange}
                     />
                 </Container>
             </Modal>

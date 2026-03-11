@@ -1,5 +1,6 @@
 import TokenStorage from '@/shared/auth/token-storage';
 import { AxiosHttpClient, VoltClient, dynamicToken } from '@voltstack/voltclient';
+import { buildBackendUrl } from './backend-origin';
 
 interface CreateApiClientOptions {
     useRBAC?: boolean;
@@ -16,7 +17,7 @@ interface CreateApiClientOptions {
  * `@voltstack/voltclient` and is environment-agnostic.
  */
 export const http = new AxiosHttpClient({
-    baseUrl: import.meta.env.VITE_API_URL + '/api',
+    baseUrl: buildBackendUrl('/api'),
     credential: dynamicToken(() => new TokenStorage().getToken())
 });
 

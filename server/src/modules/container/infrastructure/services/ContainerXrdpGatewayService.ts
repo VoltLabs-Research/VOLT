@@ -13,7 +13,7 @@ interface ContainerXrdpRdpConnectionSettings {
     width: number;
     height: number;
     dpi: number;
-    security: 'any';
+    security: 'tls' | 'rdp' | 'nla' | 'any';
     'ignore-cert': true;
     'enable-wallpaper': false;
     'enable-theming': false;
@@ -34,6 +34,11 @@ interface ContainerXrdpTokenPayload {
         type: 'rdp';
         settings: ContainerXrdpRdpConnectionSettings;
     };
+    meta: ContainerXrdpTokenMetadata;
+};
+
+interface ContainerXrdpResolvedPayload {
+    connection: ContainerXrdpRdpConnectionSettings;
     meta: ContainerXrdpTokenMetadata;
 };
 
@@ -73,6 +78,7 @@ const DEFAULT_MAX_INACTIVITY_MS = 300_000;
 const DEFAULT_WIDTH = 1280;
 const DEFAULT_HEIGHT = 720;
 const DEFAULT_DPI = 96;
+const DEFAULT_XRDP_SECURITY_MODE: ContainerXrdpRdpConnectionSettings['security'] = 'rdp';
 
 const readNumberEnv = (name: string, fallback: number): number => {
     const rawValue = process.env[name]?.trim();
@@ -92,20 +98,43 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
+const isContainerXrdpMeta = (value: unknown): value is ContainerXrdpTokenMetadata => {
+    if (!isRecord(value)) {
+        return false;
+    }
+
+    return value.type === 'container-xrdp'
+        && typeof value.teamId === 'string'
+        && typeof value.containerId === 'string'
+        && typeof value.userId === 'string'
+        && typeof value.expiresAt === 'number';
+};
+
+const isContainerXrdpConnectionSettings = (value: unknown): value is ContainerXrdpRdpConnectionSettings => {
+    if (!isRecord(value)) {
+        return false;
+    }
+
+    return typeof value.hostname === 'string'
+        && typeof value.port === 'number'
+        && typeof value.username === 'string'
+        && typeof value.password === 'string';
+};
+
 const isContainerXrdpTokenPayload = (value: unknown): value is ContainerXrdpTokenPayload => {
-    if (!isRecord(value) || !isRecord(value.connection) || !isRecord(value.meta)) {
+    if (!isRecord(value) || !isRecord(value.connection) || !isContainerXrdpMeta(value.meta)) {
         return false;
     }
 
-    if (value.connection.type !== 'rdp' || !isRecord(value.connection.settings)) {
+    return value.connection.type === 'rdp' && isContainerXrdpConnectionSettings(value.connection.settings);
+};
+
+const isContainerXrdpResolvedPayload = (value: unknown): value is ContainerXrdpResolvedPayload => {
+    if (!isRecord(value) || !isContainerXrdpMeta(value.meta)) {
         return false;
     }
 
-    return value.meta.type === 'container-xrdp'
-        && typeof value.meta.teamId === 'string'
-        && typeof value.meta.containerId === 'string'
-        && typeof value.meta.userId === 'string'
-        && typeof value.meta.expiresAt === 'number';
+    return isContainerXrdpConnectionSettings(value.connection);
 };
 
 const getSecretKey = (): Buffer => {
@@ -124,7 +153,38 @@ export class ContainerXrdpGatewayService {
     private readonly guacdPort = readNumberEnv('GUACD_PORT', DEFAULT_GUACD_PORT);
     private readonly sessionTtlMs = readNumberEnv('CONTAINER_XRDP_SESSION_TTL_MS', DEFAULT_SESSION_TTL_MS);
     private readonly maxInactivityTimeMs = readNumberEnv('CONTAINER_XRDP_MAX_INACTIVITY_MS', DEFAULT_MAX_INACTIVITY_MS);
+    private readonly xrdpSecurityMode = this.readSecurityMode();
     private guacamoleServer: GuacamoleLite | null = null;
+
+    private formatLogMessage(...parts: unknown[]): string {
+        return parts
+            .filter((part) => part !== undefined)
+            .map((part) => {
+                if (part instanceof Error) {
+                    return part.stack || part.message;
+                }
+
+                if (typeof part === 'string') {
+                    return part;
+                }
+
+                return String(part);
+            })
+            .join(' ');
+    }
+
+    private readSecurityMode(): ContainerXrdpRdpConnectionSettings['security'] {
+        const value = process.env.XRDP_SECURITY_MODE?.trim().toLowerCase();
+        if (!value) {
+            return DEFAULT_XRDP_SECURITY_MODE;
+        }
+
+        if (value === 'tls' || value === 'rdp' || value === 'nla' || value === 'any') {
+            return value;
+        }
+
+        throw new Error(`XRDP_SECURITY_MODE must be one of: tls, rdp, nla, any`);
+    }
 
     public attach(server: HttpServer): void {
         if (this.guacamoleServer) {
@@ -151,8 +211,8 @@ export class ContainerXrdpGatewayService {
             maxInactivityTime: this.maxInactivityTimeMs,
             log: {
                 level: 'ERRORS',
-                stdLog: (message: string) => logger.info(message),
-                errorLog: (message: string) => logger.error(message)
+                stdLog: (...messages: unknown[]) => logger.info(this.formatLogMessage(...messages)),
+                errorLog: (...messages: unknown[]) => logger.error(this.formatLogMessage(...messages))
             }
         }, callbacks);
 
@@ -196,7 +256,7 @@ export class ContainerXrdpGatewayService {
                     width: input.width || DEFAULT_WIDTH,
                     height: input.height || DEFAULT_HEIGHT,
                     dpi: input.dpi || DEFAULT_DPI,
-                    security: 'any',
+                    security: this.xrdpSecurityMode,
                     'ignore-cert': true,
                     'enable-wallpaper': false,
                     'enable-theming': false,
@@ -221,7 +281,7 @@ export class ContainerXrdpGatewayService {
     }
 
     private processConnectionSettings(settings: unknown, callback: ProcessConnectionSettingsCallback): void {
-        if (!isContainerXrdpTokenPayload(settings)) {
+        if (!isContainerXrdpTokenPayload(settings) && !isContainerXrdpResolvedPayload(settings)) {
             callback(new Error('Invalid XRDP session token'));
             return;
         }

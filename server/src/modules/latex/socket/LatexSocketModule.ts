@@ -1,4 +1,5 @@
 import { UpdateLatexDocumentUseCase } from '@modules/latex/application/use-cases/UpdateLatexDocumentUseCase';
+import { UpdateLatexFileUseCase } from '@modules/latex/application/use-cases/UpdateLatexFileUseCase';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
@@ -23,18 +24,23 @@ import {
 /** Debounce in ms before persisting a received content update to the database. */
 const PERSIST_DEBOUNCE_MS = 2_000;
 
+/** Key used to uniquely identify a pending save timer: `{documentId}:{fileId}` or `{documentId}`. */
+const buildSaveKey = (documentId: string, fileId?: string): string =>
+    fileId ? `${documentId}:${fileId}` : documentId;
+
 @injectable()
 export default class LatexSocketModule extends BaseSocketModule {
     public readonly name = 'LatexSocketModule';
 
-    /** Pending auto-save timers keyed by documentId. */
+    /** Pending auto-save timers keyed by `{documentId}` or `{documentId}:{fileId}`. */
     private readonly saveTimers = new Map<string, NodeJS.Timeout>();
 
     constructor(
         @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
         @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
         @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry,
-        private readonly updateDocumentUseCase: UpdateLatexDocumentUseCase
+        private readonly updateDocumentUseCase: UpdateLatexDocumentUseCase,
+        private readonly updateFileUseCase: UpdateLatexFileUseCase
     ) {
         super(emitter, roomManager, eventRegistry);
     }
@@ -146,7 +152,7 @@ export default class LatexSocketModule extends BaseSocketModule {
                 return;
             }
 
-            const { documentId, teamId, content, timestamp } = parsed.data;
+            const { documentId, teamId, fileId, content, timestamp } = parsed.data;
             const room = this.buildRoomId(documentId);
 
             if (!this.roomManager.isInRoom(conn.id, room)) {
@@ -160,38 +166,60 @@ export default class LatexSocketModule extends BaseSocketModule {
 
             this.emitToRoomExcept(conn.id, room, 'latex_content_updated', {
                 documentId,
+                fileId,
                 content,
                 timestamp,
                 senderId: conn.user?._id
             });
 
-            this.schedulePersist(documentId, teamId, content);
+            this.schedulePersist(documentId, teamId, fileId, content);
         });
     }
 
     /**
      * Debounced persist: only writes to DB once activity stops for PERSIST_DEBOUNCE_MS.
-     * Prevents excessive DB writes during active collaborative editing.
+     * Keyed by `{documentId}:{fileId}` when a file is specified, so concurrent edits
+     * to different files in the same document do not cancel each other's timers.
      */
-    private schedulePersist(documentId: string, teamId: string, content: string): void {
-        const existing = this.saveTimers.get(documentId);
+    private schedulePersist(documentId: string, teamId: string, fileId: string | undefined, content: string): void {
+        const saveKey = buildSaveKey(documentId, fileId);
+        const existing = this.saveTimers.get(saveKey);
+
         if (existing) {
             clearTimeout(existing);
         }
 
         const timer = setTimeout(() => {
-            this.saveTimers.delete(documentId);
-            this.persistContent(documentId, teamId, content);
+            this.saveTimers.delete(saveKey);
+            this.persistContent(documentId, teamId, fileId, content);
         }, PERSIST_DEBOUNCE_MS);
 
-        this.saveTimers.set(documentId, timer);
+        this.saveTimers.set(saveKey, timer);
     }
 
-    private async persistContent(documentId: string, teamId: string, content: string): Promise<void> {
+    private async persistContent(
+        documentId: string,
+        teamId: string,
+        fileId: string | undefined,
+        content: string
+    ): Promise<void> {
         try {
-            const result = await this.updateDocumentUseCase.execute({ documentId, teamId, content });
-            if (!result.success) {
-                logger.warn(`@latex-socket - auto-save failed for document ${documentId}: ${result.error?.message}`);
+            if (fileId) {
+                const result = await this.updateFileUseCase.execute({
+                    documentId,
+                    teamId,
+                    fileId,
+                    content
+                });
+                if (!result.success) {
+                    logger.warn(`@latex-socket - auto-save failed for file ${fileId}: ${result.error?.message}`);
+                }
+            } else {
+                // Legacy path: no fileId → persist to document.content for backward compat.
+                const result = await this.updateDocumentUseCase.execute({ documentId, teamId, content });
+                if (!result.success) {
+                    logger.warn(`@latex-socket - auto-save failed for document ${documentId}: ${result.error?.message}`);
+                }
             }
         } catch (error) {
             logger.error(`@latex-socket - auto-save error for document ${documentId}: ${error}`);

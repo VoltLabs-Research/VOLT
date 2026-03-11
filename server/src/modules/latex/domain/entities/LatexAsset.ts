@@ -2,6 +2,8 @@ export interface LatexAssetProps {
     team: string;
     document: string;
     originalName: string;
+    /** Relative path within the document's virtual file tree (e.g. `images/fig1.png`). */
+    path?: string;
     storageKey: string;
     url: string;
     mimetype: string;

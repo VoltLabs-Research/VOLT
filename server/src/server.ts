@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import './core/config/env';
+import './shared/infrastructure/logging/installOutputDuplicateGuard';
 
 import { registerAllDependencies } from './core/bootstrap/register-deps';
 import { initializeMinio } from './core/config/minio';

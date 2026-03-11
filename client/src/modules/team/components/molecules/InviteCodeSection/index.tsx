@@ -1,7 +1,11 @@
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { Copy, RefreshCw, Trash2 } from 'lucide-react';
+import Popover from '@/shared/presentation/components/Popover';
+import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
+import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import { Copy, EllipsisVertical, RefreshCw, Trash2 } from 'lucide-react';
 import './InviteCodeSection.css';
 
 interface InviteCodeSectionProps {
@@ -40,44 +44,63 @@ export const InviteCodeSection = ({
                     <Container className='invite-code-badge radius-sm font-size-4 font-weight-6 font-mono flex-1'>
                         {inviteCode}
                     </Container>
-                    <Button
-                        variant='ghost'
-                        intent='neutral'
-                        size='sm'
-                        leftIcon={<Copy size={14} />}
-                        onClick={onCopy}
-                        title='Copy invite code'
+                    <Popover
+                        id='invite-code-actions-menu'
+                        placement='bottom-end'
+                        noPadding
+                        trigger={(
+                            <IconButton
+                                variant='ghost'
+                                size='sm'
+                                className='invite-code-actions-trigger'
+                                title='Invite code actions'
+                                disabled={isLoading}
+                            >
+                                <EllipsisVertical size={16} />
+                            </IconButton>
+                        )}
                     >
-                        Copy
-                    </Button>
-                    {canManageCode && (
-                        <>
-                            <Button
-                                variant='ghost'
-                                intent='neutral'
-                                size='sm'
-                                leftIcon={<RefreshCw size={14} />}
-                                onClick={onGenerate}
-                                disabled={isLoading}
-                                isLoading={isGenerating}
-                                title='Regenerate invite code'
-                            >
-                                Regenerate
-                            </Button>
-                            <Button
-                                variant='ghost'
-                                intent='danger'
-                                size='sm'
-                                leftIcon={<Trash2 size={14} />}
-                                onClick={onDelete}
-                                disabled={isLoading}
-                                isLoading={isDeleting}
-                                title='Delete invite code'
-                            >
-                                Delete
-                            </Button>
-                        </>
-                    )}
+                        {(close) => (
+                            <PopoverMenu>
+                                <PopoverMenuItem
+                                    icon={<Copy size={14} />}
+                                    onClick={() => {
+                                        onCopy();
+                                        close();
+                                    }}
+                                >
+                                    Copy
+                                </PopoverMenuItem>
+                                {canManageCode && (
+                                    <>
+                                        <PopoverMenuItem
+                                            icon={<RefreshCw size={14} />}
+                                            onClick={() => {
+                                                void onGenerate();
+                                                close();
+                                            }}
+                                            disabled={isLoading}
+                                            isLoading={isGenerating}
+                                        >
+                                            Regenerate
+                                        </PopoverMenuItem>
+                                        <PopoverMenuItem
+                                            icon={<Trash2 size={14} />}
+                                            onClick={() => {
+                                                void onDelete();
+                                                close();
+                                            }}
+                                            variant='danger'
+                                            disabled={isLoading}
+                                            isLoading={isDeleting}
+                                        >
+                                            Delete
+                                        </PopoverMenuItem>
+                                    </>
+                                )}
+                            </PopoverMenu>
+                        )}
+                    </Popover>
                 </Container>
             ) : (
                 canManageCode && (

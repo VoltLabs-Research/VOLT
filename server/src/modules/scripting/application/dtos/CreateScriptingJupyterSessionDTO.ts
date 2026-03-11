@@ -2,7 +2,7 @@ import type { ScriptingSessionJupyterInfo } from '@modules/scripting/domain/port
 
 export interface CreateScriptingJupyterSessionInputDTO {
     teamId: string;
-    trajectoryId: string;
+    trajectoryId?: string;
     userId?: string;
     notebookId?: string;
     teamClusterId?: string;

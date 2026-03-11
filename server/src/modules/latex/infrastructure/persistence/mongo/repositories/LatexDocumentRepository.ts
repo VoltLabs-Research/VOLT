@@ -3,9 +3,9 @@ import LatexDocument from '@modules/latex/domain/entities/LatexDocument';
 import latexDocumentMapper from '@modules/latex/infrastructure/persistence/mongo/mappers/LatexDocumentMapper';
 import LatexDocumentModel from '@modules/latex/infrastructure/persistence/mongo/models/LatexDocumentModel';
 import { injectable } from 'tsyringe';
-import type { PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { LatexDocumentProps } from '@modules/latex/domain/entities/LatexDocument';
-import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
+import type { ILatexDocumentRepository, LatexDocumentPaginationOptions } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import type { LatexDocumentDocument } from '@modules/latex/infrastructure/persistence/mongo/models/LatexDocumentModel';
 
 @injectable()
@@ -17,14 +17,23 @@ export default class LatexDocumentRepository
         super(LatexDocumentModel, latexDocumentMapper);
     }
 
-    async findAllByTeam(teamId: string, options: PaginationOptions): Promise<PaginatedResult<LatexDocument>> {
+    async findAllByTeam(teamId: string, options: LatexDocumentPaginationOptions): Promise<PaginatedResult<LatexDocument>> {
         const page = options.page ?? 1;
         const limit = options.limit ?? 100;
         const skip = (page - 1) * limit;
 
+        const filter: Record<string, unknown> = { team: teamId };
+        if (options.search) {
+            filter.title = { $regex: options.search, $options: 'i' };
+        }
+
+        if (options.folderId !== undefined && options.folderId !== 'all') {
+            filter.folder = options.folderId;
+        }
+
         const [docs, total] = await Promise.all([
-            this.model.find({ team: teamId }).skip(skip).limit(limit).sort({ updatedAt: -1 }).exec(),
-            this.model.countDocuments({ team: teamId })
+            this.model.find(filter).skip(skip).limit(limit).sort({ updatedAt: -1 }).exec(),
+            this.model.countDocuments(filter)
         ]);
 
         return {

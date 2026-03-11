@@ -5,6 +5,7 @@ import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import usePaginationParams from '@/shared/presentation/hooks/use-pagination-params';
 import './LatexDocumentsListing.css';
 import { FileText, Upload } from 'lucide-react';
 import type { LatexDocument } from '@/modules/latex/api/entities/latex-document';
@@ -68,21 +69,24 @@ const LatexDocumentsListing = () => {
     } = useLatexDocumentsListing();
 
     const { openFilePicker } = useImportLatexDocument();
+    const { search, setSearch } = usePaginationParams();
 
     const createNew = { ...CREATE_NEW_CONFIG, onCreate: handleCreate };
 
-    const importButton = (
-        <Button
-            variant='ghost'
-            intent='neutral'
-            size='sm'
-            shape='rounded'
-            onClick={openFilePicker}
-            title='Import .tex or .zip document'
-        >
-            <Upload size={14} />
-            Import
-        </Button>
+    const headerActions = (
+        <Container className='d-flex items-center gap-1'>
+            <Button
+                variant='ghost'
+                intent='neutral'
+                size='sm'
+                shape='rounded'
+                onClick={openFilePicker}
+                title='Import .tex or .zip document'
+            >
+                <Upload size={14} />
+                Import
+            </Button>
+        </Container>
     );
 
     return (
@@ -94,7 +98,7 @@ const LatexDocumentsListing = () => {
                 fetchData={fetchData}
                 getMenuOptions={getMenuOptions}
                 createNew={createNew}
-                headerActions={importButton}
+                headerActions={headerActions}
                 emptyMessage='No LaTeX documents found for this team.'
                 socketInvalidation={socketInvalidation}
             />

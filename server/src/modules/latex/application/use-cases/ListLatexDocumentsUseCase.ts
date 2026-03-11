@@ -16,7 +16,22 @@ export class ListLatexDocumentsUseCase implements IUseCase<ListLatexDocumentsInp
     async execute(input: ListLatexDocumentsInputDTO): Promise<Result<ListLatexDocumentsOutputDTO, ApplicationError>> {
         const page = Math.max(1, Number(input.page || 1));
         const limit = Math.max(1, Math.min(500, Number(input.limit || 500)));
-        const result = await this.latexDocumentRepository.findAllByTeam(input.teamId, { page, limit });
+
+        let folderId: string | null | 'all';
+        if (!input.folderId) {
+            folderId = 'all';
+        } else if (input.folderId === 'root') {
+            folderId = null;
+        } else {
+            folderId = input.folderId;
+        }
+
+        const result = await this.latexDocumentRepository.findAllByTeam(input.teamId, {
+            page,
+            limit,
+            search: input.search,
+            folderId
+        });
 
         const value: ListLatexDocumentsOutputDTO = {
             ...result,
@@ -24,6 +39,7 @@ export class ListLatexDocumentsUseCase implements IUseCase<ListLatexDocumentsInp
                 _id: document._id,
                 title: document.props.title,
                 content: document.props.content,
+                folder: document.props.folder,
                 createdAt: document.props.createdAt,
                 updatedAt: document.props.updatedAt
             }))

@@ -5,6 +5,8 @@ export interface ListLatexDocumentsInputDTO {
     teamId: string;
     page?: number | string;
     limit?: number | string;
+    search?: string;
+    folderId?: string;
 };
 
 export interface ListLatexDocumentsOutputDTO extends PaginatedResult<LatexDocumentDTO> {};

@@ -5,5 +5,5 @@ import type { WhiteboardDocument } from '@modules/whiteboards/infrastructure/per
 
 export default createMongoMapper<Whiteboard, WhiteboardProps, WhiteboardDocument>(
     Whiteboard,
-    ['team', 'createdBy']
+    ['team', 'createdBy', 'folder']
 );

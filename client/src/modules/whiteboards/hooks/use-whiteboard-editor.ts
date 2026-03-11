@@ -1,5 +1,6 @@
 import service from '@/modules/whiteboards/api/service';
-import { whiteboardQuery } from '@/modules/whiteboards/hooks/queries';
+import { useUpdateWhiteboardMutation, whiteboardQuery } from '@/modules/whiteboards/hooks/queries';
+import { filterPersistableAppState } from '@/modules/whiteboards/utilities/whiteboards';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
@@ -28,6 +29,8 @@ interface UseWhiteboardEditorProps {
 const SAVE_DEBOUNCE_MS = 500;
 /** Periodic full-save checkpoint interval in ms */
 const FULL_SAVE_INTERVAL_MS = 30_000;
+/** Title save debounce interval in ms */
+const TITLE_SAVE_DEBOUNCE_MS = 1_000;
 
 const blobToDataURL = (blob: Blob): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -51,11 +54,14 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     const [whiteboard, setWhiteboard] = useState<Whiteboard | null>(null);
     const [initialState, setInitialState] = useState<WhiteboardState | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
+
+    const { mutateAsync: updateWhiteboard } = useUpdateWhiteboardMutation();
 
     const pendingStateRef = useRef<WhiteboardState | null>(null);
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const fullSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const titleRef = useRef<string | null>(null);
+    const titleSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -94,7 +100,12 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
                 }
 
                 setWhiteboard(meta);
-                setInitialState({ ...parsed, files });
+                titleRef.current = meta.title ?? null;
+                setInitialState({
+                    ...parsed,
+                    appState: filterPersistableAppState(parsed.appState ?? {}),
+                    files
+                });
             } catch {
                 if (!cancelled) {
                     sileo.error({ title: 'Failed to load whiteboard' });
@@ -114,18 +125,18 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     }, [whiteboardId]);
 
     const saveState = useCallback(async (state: WhiteboardState) => {
-        setIsSaving(true);
         try {
             await service.saveWhiteboardState({ whiteboardId, state });
         } catch {
             sileo.error({ title: 'Auto-save failed' });
-        } finally {
-            setIsSaving(false);
         }
     }, [whiteboardId]);
 
     const handleChange = useCallback((elements: ExcalidrawElements, appState: AppState) => {
-        pendingStateRef.current = { elements, appState };
+        pendingStateRef.current = {
+            elements,
+            appState: filterPersistableAppState(appState)
+        };
 
         if (saveTimerRef.current) {
             clearTimeout(saveTimerRef.current);
@@ -137,7 +148,22 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
                 saveState(state);
             }
         }, SAVE_DEBOUNCE_MS);
-    }, [saveState]);
+
+        const incomingTitle = typeof appState['name'] === 'string' ? appState['name'] : null;
+        if (incomingTitle && incomingTitle !== titleRef.current) {
+            titleRef.current = incomingTitle;
+
+            if (titleSaveTimerRef.current) {
+                clearTimeout(titleSaveTimerRef.current);
+            }
+
+            titleSaveTimerRef.current = setTimeout(() => {
+                updateWhiteboard({ whiteboardId, title: incomingTitle }).catch(() => {
+                    sileo.error({ title: 'Failed to rename whiteboard' });
+                });
+            }, TITLE_SAVE_DEBOUNCE_MS);
+        }
+    }, [saveState, updateWhiteboard, whiteboardId]);
 
     useEffect(() => {
         fullSaveTimerRef.current = setInterval(() => {
@@ -154,6 +180,10 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
 
             if (fullSaveTimerRef.current) {
                 clearInterval(fullSaveTimerRef.current);
+            }
+
+            if (titleSaveTimerRef.current) {
+                clearTimeout(titleSaveTimerRef.current);
             }
         };
     }, [saveState]);
@@ -178,7 +208,6 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
         whiteboard,
         initialState,
         isLoading,
-        isSaving,
         handleChange,
         generateIdForFile
     };

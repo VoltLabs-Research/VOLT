@@ -8,11 +8,11 @@ const IMPORT_TOAST = {
     error: { title: 'Failed to import document' }
 };
 
-const ACCEPTED_TYPES = '.tex,.zip';
+const ACCEPTED_TYPES = '.tex,.zip,.pdf';
 
 /**
- * Provides an import action that opens a hidden file input for `.tex` / `.zip`
- * selection, uploads the file, and invalidates the documents cache on success.
+ * Provides an import action that opens a hidden file input for `.tex`, `.zip`,
+ * or `.pdf` selection, uploads the file, and invalidates the documents cache on success.
  */
 const useImportLatexDocument = () => {
     const fileInputRef = useRef<HTMLInputElement | null>(null);

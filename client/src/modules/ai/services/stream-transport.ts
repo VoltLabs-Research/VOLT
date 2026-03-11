@@ -1,4 +1,5 @@
 import TokenStorage from '@/shared/auth/token-storage';
+import { buildBackendUrl } from '@/app/core/http/utilities/backend-origin';
 import { DefaultChatTransport } from 'ai';
 import type {
     CreateConversationStreamTransportParams,
@@ -14,7 +15,7 @@ export const createConversationStreamTransport = ({
         throw new Error('teamId and conversationId are required to create a stream transport');
     }
 
-    const api = `${import.meta.env.VITE_API_URL}/api/ai/conversations/${teamId}/${conversationId}/messages/stream`;
+    const api = buildBackendUrl(`/api/ai/conversations/${teamId}/${conversationId}/messages/stream`);
 
     return new DefaultChatTransport({
         api,

@@ -11,13 +11,21 @@ import { Readable } from 'node:stream';
 import type { ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO } from '@modules/latex/application/dtos/ExportLatexDocumentDTO';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
+import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 
-/** Exports the LaTeX document content as a downloadable `.tex` file. */
+/**
+ * Exports the entrypoint LatexFile as a downloadable `.tex` file.
+ *
+ * Falls back to `document.content` if no LatexFile records exist (legacy compat).
+ */
 @injectable()
 export class ExportLatexDocumentTexUseCase implements IUseCase<ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO, ApplicationError> {
     constructor(
         @inject(LATEX_TOKENS.LatexDocumentRepository)
-        private readonly latexDocumentRepository: ILatexDocumentRepository
+        private readonly latexDocumentRepository: ILatexDocumentRepository,
+
+        @inject(LATEX_TOKENS.LatexFileRepository)
+        private readonly latexFileRepository: ILatexFileRepository
     ) {}
 
     async execute(input: ExportLatexDocumentInputDTO): Promise<Result<ExportLatexDocumentOutputDTO, ApplicationError>> {
@@ -34,7 +42,13 @@ export class ExportLatexDocumentTexUseCase implements IUseCase<ExportLatexDocume
                 ));
             }
 
-            const content = document.props.content ?? '';
+            let content = document.props.content ?? '';
+            const entrypoint = await this.latexFileRepository.findEntrypointByDocument(input.documentId);
+
+            if (entrypoint) {
+                content = entrypoint.props.content;
+            }
+
             const safeName = sanitizeDownloadName(document.props.title, 'document');
             const filename = `${safeName}.tex`;
 

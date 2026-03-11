@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream';
 import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -9,6 +10,9 @@ import type { IUseCase } from '@shared/application/IUseCase';
 import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { GetWhiteboardStateInputDTO, GetWhiteboardStateOutputDTO } from '@modules/whiteboards/application/dtos/GetWhiteboardStateDTO';
+
+/** Empty scene returned for whiteboards that have never been saved. */
+const EMPTY_SCENE_JSON = JSON.stringify({ elements: [], appState: {} });
 
 @injectable()
 export class GetWhiteboardStateUseCase implements IUseCase<GetWhiteboardStateInputDTO, GetWhiteboardStateOutputDTO, ApplicationError> {
@@ -35,8 +39,14 @@ export class GetWhiteboardStateUseCase implements IUseCase<GetWhiteboardStateInp
             }
 
             const key = whiteboard.props.payloadKey || `${input.teamId}/${input.whiteboardId}/state.json`;
-            const stream = await this.storageService.getStream(SYS_BUCKETS.WHITEBOARDS, key);
+            const stateExists = await this.storageService.exists(SYS_BUCKETS.WHITEBOARDS, key);
 
+            if (!stateExists) {
+                const stream = Readable.from(Buffer.from(EMPTY_SCENE_JSON));
+                return Result.ok({ stream });
+            }
+
+            const stream = await this.storageService.getStream(SYS_BUCKETS.WHITEBOARDS, key);
             return Result.ok({ stream });
         } catch (error) {
             if (error instanceof ApplicationError) {

@@ -147,7 +147,7 @@ const ContainerSidebar = ({
                         <Box size={24} />
                     </Container>
                     <Container className='container-details-identity-text d-flex column gap-05'>
-                        <Title className='font-size-4 font-weight-6'>{container.name}</Title>
+                        <Title className='font-size-2-5 font-weight-6'>{container.name}</Title>
                         <span className={`d-flex items-center gap-035 container-details-status-badge ${container.status} font-size-1 font-weight-5`}>
                             {container.status}
                         </span>
@@ -155,7 +155,7 @@ const ContainerSidebar = ({
                 </Container>
             </Container>
 
-            <nav className='container-details-nav d-flex column flex-1 y-auto'>
+            <nav className='container-details-nav d-flex gap-1 column flex-1 y-auto'>
                 {navItems.map(({ path, label, icon }) => (
                     <SidebarNavItem
                         key={path}

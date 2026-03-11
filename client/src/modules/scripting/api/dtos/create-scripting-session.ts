@@ -3,3 +3,8 @@ export interface CreateScriptingSessionParams {
     notebookId?: string;
     teamClusterId?: string;
 };
+
+export interface CreateScriptingNotebookSessionParams {
+    notebookId: string;
+    teamClusterId?: string;
+};
