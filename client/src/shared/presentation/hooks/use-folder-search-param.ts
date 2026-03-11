@@ -12,7 +12,8 @@ interface UseFolderSearchParamReturn {
 
 const useFolderSearchParam = (): UseFolderSearchParamReturn => {
     const { searchParams, updateSearchParams } = useSearchParamsState();
-    const currentFolderId = searchParams.get(FOLDER_ID_SEARCH_PARAM);
+    const rawFolderId = searchParams.get(FOLDER_ID_SEARCH_PARAM);
+    const currentFolderId = rawFolderId === 'root' ? null : rawFolderId;
 
     const openFolder = useCallback((folderId: string) => {
         updateSearchParams({

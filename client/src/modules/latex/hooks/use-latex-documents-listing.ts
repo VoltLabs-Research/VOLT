@@ -186,7 +186,7 @@ const useLatexDocumentsListing = () => {
                 params.page === 1 ? fetchFolders(params.folderId ?? null) : Promise.resolve(null)
             ]);
 
-            const filteredFolders = filterFoldersBySearch(foldersResponse?.data || [], params.search);
+            const filteredFolders = filterFoldersBySearch(foldersResponse?.data || [], params.search ?? '');
             const folderRows = filteredFolders.map(createLatexFolderRow);
             const documentRows = (documentsResponse.data || []).map(createLatexDocumentRow);
 

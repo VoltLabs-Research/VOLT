@@ -1,5 +1,6 @@
 import RenameLatexDocumentModal from '@/modules/latex/components/molecules/RenameLatexDocumentModal';
 import useImportLatexDocument from '@/modules/latex/hooks/use-import-latex-document';
+import useDashboardHeaderContent from '@/modules/dashboard/hooks/use-dashboard-header-content';
 import useLatexDocumentsListing, {
     MOVE_LATEX_DOCUMENT_MODAL_ID,
     NEW_LATEX_FOLDER_MODAL_ID,
@@ -8,7 +9,6 @@ import useLatexDocumentsListing, {
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
-import FolderBreadcrumbs from '@/shared/presentation/components/FolderBreadcrumbs';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { openModal } from '@/shared/presentation/components/Modal';
 import Button from '@/shared/presentation/components/Button';
@@ -17,7 +17,9 @@ import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import Title from '@/shared/presentation/components/Title';
 import './LatexDocumentsListing.css';
 import { FileText, Folder, Pencil, Trash2, Upload } from 'lucide-react';
+import { useMemo } from 'react';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import type { MenuOption } from '@/shared/presentation/components/DocumentListing';
 import type { LatexListingRow } from '@/modules/latex/utilities/listing';
 import { LatexListingRowType } from '@/modules/latex/utilities/listing';
 
@@ -101,13 +103,16 @@ const LatexDocumentsListing = () => {
     } = useLatexDocumentsListing();
 
     const { openFilePicker } = useImportLatexDocument(context.folderId);
+    const globalSearchBreadcrumb = useMemo(() => ({
+        items: breadcrumbs,
+        onNavigate: navigateToFolder
+    }), [breadcrumbs, navigateToFolder]);
 
-    const title = (
-        <Container className='d-flex column gap-05'>
-            <Title className='font-size-6 font-weight-5 sm:font-size-4'>LaTeX Documents</Title>
-            <FolderBreadcrumbs items={breadcrumbs} onNavigate={navigateToFolder} />
-        </Container>
-    );
+    useDashboardHeaderContent({
+        globalSearchBreadcrumb
+    });
+
+    const title = <Title className='font-size-6 font-weight-5 sm:font-size-4'>LaTeX Documents</Title>;
 
     const createNew = {
         buttonTitle: 'New Document',
@@ -115,57 +120,47 @@ const LatexDocumentsListing = () => {
     };
 
     const headerActions = (
-        <Container className='d-flex items-center gap-1'>
-            {currentFolder && (
-                <>
-                    <Button
-                        variant='ghost'
-                        intent='neutral'
-                        size='sm'
-                        shape='rounded'
-                        onClick={() => handleRenameFolderOpen(currentFolder)}
-                        title='Rename current folder'
-                    >
-                        <Pencil size={14} />
-                        Rename Folder
-                    </Button>
-                    <Button
-                        variant='ghost'
-                        intent='danger'
-                        size='sm'
-                        shape='rounded'
-                        onClick={handleDeleteCurrentFolder ?? undefined}
-                        title='Delete current folder'
-                    >
-                        <Trash2 size={14} />
-                        Delete Folder
-                    </Button>
-                </>
-            )}
-            <Button
-                variant='ghost'
-                intent='neutral'
-                size='sm'
-                shape='rounded'
-                onClick={() => openModal(NEW_LATEX_FOLDER_MODAL_ID)}
-                title='Create folder'
-            >
-                <Folder size={14} />
-                New Folder
-            </Button>
-            <Button
-                variant='ghost'
-                intent='neutral'
-                size='sm'
-                shape='rounded'
-                onClick={openFilePicker}
-                title='Import .tex or .zip document'
-            >
-                <Upload size={14} />
-                Import
-            </Button>
-        </Container>
+        <Button
+            variant='ghost'
+            intent='neutral'
+            size='sm'
+            shape='rounded'
+            onClick={() => openModal(NEW_LATEX_FOLDER_MODAL_ID)}
+            title='Create folder'
+        >
+            <Folder size={14} />
+            New Folder
+        </Button>
     );
+
+    const headerMenuOptions = useMemo<MenuOption[]>(() => {
+        const options: MenuOption[] = [];
+
+        if (currentFolder) {
+            options.push(
+                {
+                    label: 'Rename Folder',
+                    icon: Pencil,
+                    onClick: () => handleRenameFolderOpen(currentFolder)
+                },
+                {
+                    label: 'Delete Folder',
+                    icon: Trash2,
+                    onClick: () => handleDeleteCurrentFolder?.(),
+                    destructive: true,
+                    disabled: !handleDeleteCurrentFolder
+                }
+            );
+        }
+
+        options.push({
+            label: 'Import',
+            icon: Upload,
+            onClick: openFilePicker
+        });
+
+        return options;
+    }, [currentFolder, handleDeleteCurrentFolder, handleRenameFolderOpen, openFilePicker]);
 
     return (
         <>
@@ -180,6 +175,7 @@ const LatexDocumentsListing = () => {
                 dragAndDrop={dragAndDrop}
                 createNew={createNew}
                 headerActions={headerActions}
+                headerMenuOptions={headerMenuOptions}
                 emptyMessage='No LaTeX documents found in this location.'
                 socketInvalidation={socketInvalidation}
             />

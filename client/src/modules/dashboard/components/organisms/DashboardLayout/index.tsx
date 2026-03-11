@@ -7,8 +7,10 @@ import Container from '@/shared/presentation/components/Container';
 import PageTransition from '@/shared/presentation/components/PageTransition';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useGlobalSocketCacheSync from '@/shared/presentation/hooks/use-global-socket-cache-sync';
+import type { DashboardHeaderContext } from '@/modules/dashboard/hooks/use-dashboard-header-context';
+import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import './DashboardLayout.css';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { sileo } from 'sileo';
 
@@ -32,6 +34,7 @@ const DashboardLayout = () => {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [headerHidden, setHeaderHidden] = useState(false);
+    const [globalSearchBreadcrumb, setGlobalSearchBreadcrumb] = useState<DashboardGlobalSearchBreadcrumb | null>(null);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
     });
@@ -68,6 +71,10 @@ const DashboardLayout = () => {
     }, [location.state, location.pathname, navigate]);
 
     useEffect(() => {
+        setGlobalSearchBreadcrumb(null);
+    }, [location.pathname]);
+
+    useEffect(() => {
         const handleSidebarCollapseRequest = () => {
             setSidebarCollapsed(true);
             localStorage.setItem(SIDEBAR_COLLAPSED_KEY, 'true');
@@ -99,6 +106,10 @@ const DashboardLayout = () => {
         };
     }, []);
 
+    const outletContext = useMemo<DashboardHeaderContext>(() => ({
+        setGlobalSearchBreadcrumb
+    }), []);
+
     return (
         <main className={`dashboard-main d-flex vh-max ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
             <TeamCreatorModal isRequired={teams.length === 0} />
@@ -119,11 +130,16 @@ const DashboardLayout = () => {
             />
 
             <Container className='dashboard-content-wrapper'>
-                {!headerHidden && <DashboardHeader setSidebarOpen={setSidebarOpen} />}
+                {!headerHidden && (
+                    <DashboardHeader
+                        setSidebarOpen={setSidebarOpen}
+                        globalSearchBreadcrumb={globalSearchBreadcrumb}
+                    />
+                )}
 
                 <Container className='dashboard-content-main flex-1 min-h-0 y-auto'>
                     <PageTransition key={location.pathname}>
-                        <Outlet />
+                        <Outlet context={outletContext} />
                     </PageTransition>
                 </Container>
             </Container>

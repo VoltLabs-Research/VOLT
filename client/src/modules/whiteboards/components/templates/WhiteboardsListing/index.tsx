@@ -1,3 +1,5 @@
+import RenameWhiteboardModal from '@/modules/whiteboards/components/molecules/RenameWhiteboardModal';
+import useDashboardHeaderContent from '@/modules/dashboard/hooks/use-dashboard-header-content';
 import useWhiteboardsListing, {
     MOVE_WHITEBOARD_MODAL_ID,
     NEW_WHITEBOARD_FOLDER_MODAL_ID,
@@ -6,7 +8,6 @@ import useWhiteboardsListing, {
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
-import FolderBreadcrumbs from '@/shared/presentation/components/FolderBreadcrumbs';
 import { openModal } from '@/shared/presentation/components/Modal';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import Button from '@/shared/presentation/components/Button';
@@ -15,8 +16,10 @@ import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import Title from '@/shared/presentation/components/Title';
 import { Folder, Pencil, SquarePen, Trash2 } from 'lucide-react';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import type { MenuOption } from '@/shared/presentation/components/DocumentListing';
 import type { WhiteboardListingRow } from '@/modules/whiteboards/utilities/listing';
 import { WhiteboardListingRowType } from '@/modules/whiteboards/utilities/listing';
+import { useMemo } from 'react';
 
 const isWhiteboardFolder = (row: WhiteboardListingRow): boolean => {
     return row.rowType === WhiteboardListingRowType.Folder;
@@ -83,6 +86,8 @@ const WhiteboardsListing = () => {
         handleItemClick,
         handleMoveWhiteboardClose,
         handleMoveWhiteboardSubmit,
+        handleRenameWhiteboardClose,
+        handleRenameWhiteboardSubmit,
         handleRenameFolderClose,
         handleRenameFolderOpen,
         handleRenameFolderSubmit,
@@ -90,63 +95,63 @@ const WhiteboardsListing = () => {
         movingWhiteboard,
         navigateToFolder,
         queryKey,
+        renamingWhiteboard,
         renamingFolder,
         socketInvalidation
     } = useWhiteboardsListing();
 
-    const title = (
-        <Container className='d-flex column gap-05'>
-            <Title className='font-size-6 font-weight-5 sm:font-size-4'>Whiteboards</Title>
-            <FolderBreadcrumbs items={breadcrumbs} onNavigate={navigateToFolder} />
-        </Container>
-    );
+    const globalSearchBreadcrumb = useMemo(() => ({
+        items: breadcrumbs,
+        onNavigate: navigateToFolder
+    }), [breadcrumbs, navigateToFolder]);
 
-    const headerActions = (
-        <Container className='d-flex items-center gap-1'>
-            {currentFolder && (
-                <>
-                    <Button
-                        variant='ghost'
-                        intent='neutral'
-                        size='sm'
-                        shape='rounded'
-                        onClick={() => currentFolder && handleRenameFolderOpen(currentFolder)}
-                        title='Rename current folder'
-                    >
-                        <Pencil size={14} />
-                        Rename Folder
-                    </Button>
-                    <Button
-                        variant='ghost'
-                        intent='danger'
-                        size='sm'
-                        shape='rounded'
-                        onClick={handleDeleteCurrentFolder ?? undefined}
-                        title='Delete current folder'
-                    >
-                        <Trash2 size={14} />
-                        Delete Folder
-                    </Button>
-                </>
-            )}
-            <Button
-                variant='ghost'
-                intent='neutral'
-                size='sm'
-                shape='rounded'
-                onClick={() => openModal(NEW_WHITEBOARD_FOLDER_MODAL_ID)}
-                title='Create folder'
-            >
-                <Folder size={14} />
-                New Folder
-            </Button>
-        </Container>
-    );
+    useDashboardHeaderContent({
+        globalSearchBreadcrumb
+    });
+
+    const title = <Title className='font-size-6 font-weight-5 sm:font-size-4'>Whiteboards</Title>;
 
     const createNew = {
         buttonTitle: 'New Whiteboard',
         onCreate: handleCreate
     };
+
+    const headerActions = (
+        <Button
+            variant='ghost'
+            intent='neutral'
+            size='sm'
+            shape='rounded'
+            onClick={() => openModal(NEW_WHITEBOARD_FOLDER_MODAL_ID)}
+            title='Create folder'
+        >
+            <Folder size={14} />
+            New Folder
+        </Button>
+    );
+
+    const headerMenuOptions = useMemo<MenuOption[]>(() => {
+        const options: MenuOption[] = [];
+
+        if (currentFolder) {
+            options.push(
+                {
+                    label: 'Rename Folder',
+                    icon: Pencil,
+                    onClick: () => handleRenameFolderOpen(currentFolder)
+                },
+                {
+                    label: 'Delete Folder',
+                    icon: Trash2,
+                    onClick: () => handleDeleteCurrentFolder?.(),
+                    destructive: true,
+                    disabled: !handleDeleteCurrentFolder
+                }
+            );
+        }
+
+        return options;
+    }, [currentFolder, handleDeleteCurrentFolder, handleRenameFolderOpen]);
 
     return (
         <>
@@ -161,6 +166,7 @@ const WhiteboardsListing = () => {
                 dragAndDrop={dragAndDrop}
                 createNew={createNew}
                 headerActions={headerActions}
+                headerMenuOptions={headerMenuOptions}
                 emptyMessage='No whiteboards found in this location.'
                 socketInvalidation={socketInvalidation}
             />
@@ -169,6 +175,11 @@ const WhiteboardsListing = () => {
                 title='New Whiteboard Folder'
                 description='Create a folder in the current whiteboards location.'
                 onSubmit={handleCreateFolder}
+            />
+            <RenameWhiteboardModal
+                whiteboard={renamingWhiteboard}
+                onSubmit={handleRenameWhiteboardSubmit}
+                onClose={handleRenameWhiteboardClose}
             />
             <RenameFolderModal
                 id={RENAME_WHITEBOARD_FOLDER_MODAL_ID}

@@ -45,6 +45,30 @@
     margin: 0;
 }
 
+.global-search-breadcrumb {
+    min-width: 0;
+    pointer-events: none;
+}
+
+.global-search-breadcrumb-item {
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    pointer-events: auto;
+    white-space: nowrap;
+}
+
+.global-search-breadcrumb-item:hover {
+    color: var(--color-text-secondary);
+}
+
+.global-search-breadcrumb-item.is-current {
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
 /* Mobile Responsive */
 @media screen and (max-width: 768px) {
     .global-search-wrapper {

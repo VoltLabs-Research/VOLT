@@ -1,6 +1,7 @@
 import './GlobalSearch.css';
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import useDashboardGlobalSearch from '@/modules/dashboard/hooks/use-dashboard-global-search';
+import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
@@ -9,9 +10,10 @@ import SearchInput from '@/shared/presentation/components/SearchInput';
 import { FloatingPortal } from '@floating-ui/react';
 import { CiChat1 } from 'react-icons/ci';
 import { GoWorkflow } from 'react-icons/go';
-import { IoCubeOutline, IoPeopleOutline } from 'react-icons/io5';
+import { IoChevronForward, IoCubeOutline, IoPeopleOutline } from 'react-icons/io5';
 import { TbCube3dSphere, TbObjectScan } from 'react-icons/tb';
 import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/dtos/global-search';
+import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 type SectionConfig = {
@@ -53,7 +55,11 @@ const SECTIONS: SectionConfig[] = [
     }
 ];
 
-const GlobalSearch = () => {
+interface GlobalSearchProps {
+    contextBreadcrumb?: DashboardGlobalSearchBreadcrumb | null;
+};
+
+const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
     const {
         refs,
         floatingStyles,
@@ -71,7 +77,37 @@ const GlobalSearch = () => {
         handleSelect
     } = useDashboardGlobalSearch();
     const floatingRoot = useFloatingRoot();
+    const [isFocused, setIsFocused] = useState(false);
     let itemIndex = -1;
+
+    const showContextBreadcrumb = !isFocused && query.length === 0 && !!contextBreadcrumb?.items.length;
+
+    const breadcrumbOverlay = useMemo(() => {
+        if (!contextBreadcrumb?.items.length) {
+            return null;
+        }
+
+        return (
+            <Container className='global-search-breadcrumb d-flex items-center gap-05 font-size-2'>
+                {contextBreadcrumb.items.map((item, index) => {
+                    const isCurrent = index === contextBreadcrumb.items.length - 1;
+
+                    return (
+                        <Container key={item.id ?? 'root'} className='d-flex items-center gap-05'>
+                            {index > 0 && <IoChevronForward size={12} className='color-muted' />}
+                            <button
+                                type='button'
+                                className={`global-search-breadcrumb-item ${isCurrent ? 'is-current' : ''}`}
+                                onClick={() => contextBreadcrumb.onNavigate(item.id)}
+                            >
+                                {item.title}
+                            </button>
+                        </Container>
+                    );
+                })}
+            </Container>
+        );
+    }, [contextBreadcrumb]);
 
     const renderItem = (item: (typeof sections)[number]['items'][number]) => {
         itemIndex += 1;
@@ -117,8 +153,14 @@ const GlobalSearch = () => {
                 placeholder='Search...'
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onFocus={handleFocus}
+                onFocus={() => {
+                    setIsFocused(true);
+                    handleFocus();
+                }}
+                onBlur={() => setIsFocused(false)}
                 onKeyDown={handleKeyDown}
+                overlayContent={breadcrumbOverlay}
+                overlayVisible={showContextBreadcrumb}
             />
 
             {showResults && (

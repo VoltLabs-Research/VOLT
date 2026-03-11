@@ -60,13 +60,15 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
         setReloadKey(0);
     }, [itemId]);
 
+    const handleInvalidFolder = useCallback(() => {
+        setActiveFolderId(null);
+        setReloadKey((previousValue) => previousValue + 1);
+    }, []);
+
     const { breadcrumbs, currentFolder } = useFolderBreadcrumbs({
         currentFolderId: activeFolderId,
         getFolder,
-        onInvalidFolder: () => {
-            setActiveFolderId(null);
-            setReloadKey((previousValue) => previousValue + 1);
-        },
+        onInvalidFolder: handleInvalidFolder,
         refreshKey: reloadKey
     });
 

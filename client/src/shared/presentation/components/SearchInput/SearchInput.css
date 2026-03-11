@@ -29,12 +29,33 @@
     border: none;
     outline: none;
     min-width: 0;
+    width: 100%;
+    position: relative;
+    z-index: 1;
 }
 
 .search-input--small {
     font-size: 0.7rem;
     line-height: 1;
     color: var(--color-text-secondary);
+}
+
+.search-input-content {
+    min-width: 0;
+}
+
+.search-input-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.search-input--with-overlay {
+    color: transparent;
+    caret-color: var(--color-text-primary);
 }
 
 .search-input::placeholder {
