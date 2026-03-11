@@ -1,7 +1,8 @@
 import logger from '@shared/infrastructure/logger';
 import GuacamoleLite from 'guacamole-lite';
 import { createCipheriv, createHash, randomBytes } from 'node:crypto';
-import type { Server as HttpServer } from 'node:http';
+import type { IncomingMessage, Server as HttpServer } from 'node:http';
+import type { Duplex } from 'node:stream';
 import { injectable } from 'tsyringe';
 
 interface ContainerXrdpRdpConnectionSettings {
@@ -154,6 +155,32 @@ export class ContainerXrdpGatewayService {
                 errorLog: (message: string) => logger.error(message)
             }
         }, callbacks);
+
+        // The ws WebSocketServer auto-registers an `upgrade` listener that
+        // rejects non-matching paths with 400, which kills Socket.IO WebSocket
+        // handshakes. Replace it with a listener that silently skips
+        // non-matching paths so other upgrade handlers (Socket.IO) can proceed.
+        const wss = this.guacamoleServer.webSocketServer;
+        const removeAutoListeners = (wss as { _removeListeners?: () => void })._removeListeners;
+        if (typeof removeAutoListeners === 'function') {
+            removeAutoListeners();
+        }
+
+        server.on('upgrade', (request: IncomingMessage, socket: Duplex, head: Buffer) => {
+            if (!this.isXrdpUpgradeRequest(request)) {
+                return;
+            }
+
+            wss.handleUpgrade(request, socket, head, (ws) => {
+                wss.emit('connection', ws, request);
+            });
+        });
+    }
+
+    public isXrdpUpgradeRequest(request: IncomingMessage): boolean {
+        const url = request.url || '';
+        const pathname = url.indexOf('?') !== -1 ? url.slice(0, url.indexOf('?')) : url;
+        return pathname === XRDP_TUNNEL_PATH;
     }
 
     public createSession(input: CreateContainerXrdpSessionInput): ContainerXrdpSessionDescriptor {

@@ -6,6 +6,10 @@ import { GetLatexDocumentUseCase } from '@modules/latex/application/use-cases/Ge
 import { UploadLatexAssetUseCase } from '@modules/latex/application/use-cases/UploadLatexAssetUseCase';
 import { ListLatexAssetsUseCase } from '@modules/latex/application/use-cases/ListLatexAssetsUseCase';
 import { DeleteLatexAssetUseCase } from '@modules/latex/application/use-cases/DeleteLatexAssetUseCase';
+import { ExportLatexDocumentTexUseCase } from '@modules/latex/application/use-cases/ExportLatexDocumentTexUseCase';
+import { ExportLatexDocumentZipUseCase } from '@modules/latex/application/use-cases/ExportLatexDocumentZipUseCase';
+import { ImportLatexDocumentUseCase } from '@modules/latex/application/use-cases/ImportLatexDocumentUseCase';
+import { CompileLatexDocumentUseCase } from '@modules/latex/application/use-cases/CompileLatexDocumentUseCase';
 import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
 import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
 import LatexSocketModule from '@modules/latex/socket/LatexSocketModule';
@@ -26,7 +30,11 @@ export const registerLatexDependencies = (): void => {
             GetLatexDocumentUseCase,
             UploadLatexAssetUseCase,
             ListLatexAssetsUseCase,
-            DeleteLatexAssetUseCase
+            DeleteLatexAssetUseCase,
+            ExportLatexDocumentTexUseCase,
+            ExportLatexDocumentZipUseCase,
+            ImportLatexDocumentUseCase,
+            CompileLatexDocumentUseCase
         ],
         aliases: [
             [SOCKET_TOKENS.SocketModule, LATEX_TOKENS.LatexSocketModule]

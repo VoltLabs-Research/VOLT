@@ -9,3 +9,4 @@ export { DeleteLatexAssetUseCase } from './DeleteLatexAssetUseCase';
 export { ExportLatexDocumentTexUseCase } from './ExportLatexDocumentTexUseCase';
 export { ExportLatexDocumentZipUseCase } from './ExportLatexDocumentZipUseCase';
 export { ImportLatexDocumentUseCase } from './ImportLatexDocumentUseCase';
+export { CompileLatexDocumentUseCase } from './CompileLatexDocumentUseCase';

@@ -1,5 +1,6 @@
 declare module 'guacamole-lite' {
     import type { Server as HttpServer } from 'node:http';
+    import type { WebSocketServer } from 'ws';
 
     interface GuacamoleLiteWsOptions {
         server: HttpServer;
@@ -32,6 +33,7 @@ declare module 'guacamole-lite' {
     };
 
     class GuacamoleLite {
+        webSocketServer: WebSocketServer;
         constructor(
             wsOptions: GuacamoleLiteWsOptions,
             guacdOptions: GuacamoleLiteGuacdOptions,

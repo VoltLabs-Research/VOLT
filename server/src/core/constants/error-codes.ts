@@ -161,7 +161,10 @@ export const ErrorCodes = createErrorCodes({
     SCRIPTING_LOCK_FAILED: 'Scripting::Lock::Failed',
 
     TEAM_INVITE_CODE_NOT_FOUND: 'TeamInviteCode::NotFound',
-    TEAM_INVITE_CODE_ALREADY_MEMBER: 'TeamInviteCode::AlreadyMember'
+    TEAM_INVITE_CODE_ALREADY_MEMBER: 'TeamInviteCode::AlreadyMember',
+
+    LATEX_COMPILER_NOT_FOUND: 'Latex::Compiler::NotFound',
+    LATEX_COMPILATION_FAILED: 'Latex::Compilation::Failed'
 });
 
 export const isErrorCode = (value: string): value is ErrorCode => {

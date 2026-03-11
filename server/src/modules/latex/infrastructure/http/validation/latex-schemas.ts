@@ -55,5 +55,15 @@ export const latexValidation = {
     },
     deleteAsset: {
         params: assetParamsSchema
+    },
+    exportDocument: {
+        params: documentParamsSchema
+    },
+    importDocument: {
+        params: teamParamsSchema
+    },
+    compileDocument: {
+        params: documentParamsSchema
     }
 };
+

@@ -9,6 +9,9 @@ import type { UpdateLatexDocumentParams } from '../dtos/update-latex-document';
 import type { ListLatexAssetsParams } from '../dtos/list-latex-assets';
 import type { UploadLatexAssetParams } from '../dtos/upload-latex-asset';
 import type { DeleteLatexAssetParams } from '../dtos/delete-latex-asset';
+import type { ExportLatexDocumentParams } from '../dtos/export-latex-document';
+import type { ImportLatexDocumentParams, ImportLatexDocumentResult } from '../dtos/import-latex-document';
+import type { CompileLatexDocumentParams } from '../dtos/compile-latex-document';
 import type { LatexDocument } from '../entities/latex-document';
 import type { LatexAsset } from '../entities/latex-asset';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
@@ -22,6 +25,10 @@ type LatexService = {
     listAssets: (params: ListLatexAssetsParams) => Promise<LatexAsset[]>;
     uploadAsset: (params: UploadLatexAssetParams) => Promise<LatexAsset>;
     deleteAsset: (params: DeleteLatexAssetParams) => Promise<void>;
+    exportDocumentTex: (params: ExportLatexDocumentParams) => Promise<Blob>;
+    exportDocumentZip: (params: ExportLatexDocumentParams) => Promise<Blob>;
+    importDocument: (params: ImportLatexDocumentParams) => Promise<ImportLatexDocumentResult>;
+    compileDocument: (params: CompileLatexDocumentParams) => Promise<Blob>;
 };
 
 const service = defineServiceModule({

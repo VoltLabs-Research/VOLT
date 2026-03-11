@@ -9,7 +9,7 @@ import LatexEditorPanel from './LatexEditorPanel';
 import LatexFilePanel from './LatexFilePanel';
 import LatexPreviewPanel from './LatexPreviewPanel';
 import './LatexDocumentWorkspace.css';
-import { Save } from 'lucide-react';
+import { Download, FileArchive, Save } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import type { PresenceUser } from '@/modules/socket/trajectory/api/entities/presence-user';
 
@@ -31,13 +31,21 @@ const LatexDocumentWorkspace = () => {
         editorContent,
         isDirty,
         isSaving,
+        isExportingTex,
+        isExportingZip,
+        isCompiling,
+        compiledPdfUrl,
+        compileError,
         accessDenied,
         accessDeniedMessage,
         files,
         collaborators,
         handleEditorChange,
         handleSave,
-        handleInsertAssetRef
+        handleInsertAssetRef,
+        handleExportTex,
+        handleExportZip,
+        handleCompile
     } = useLatexWorkspace({ documentId });
 
     const activeFile = files.find((f) => f.isSelected);
@@ -71,6 +79,36 @@ const LatexDocumentWorkspace = () => {
         </Button>
     );
 
+    const exportTexButton = (
+        <Button
+            variant='ghost'
+            intent='neutral'
+            size='sm'
+            shape='rounded'
+            disabled={isExportingTex}
+            onClick={handleExportTex}
+            title='Export as .tex'
+        >
+            <Download size={14} />
+            .tex
+        </Button>
+    );
+
+    const exportZipButton = (
+        <Button
+            variant='ghost'
+            intent='neutral'
+            size='sm'
+            shape='rounded'
+            disabled={isExportingZip}
+            onClick={handleExportZip}
+            title='Export as .zip (with assets)'
+        >
+            <FileArchive size={14} />
+            .zip
+        </Button>
+    );
+
     const collaboratorAvatars = collaborators.map((user) => (
         <Avatar
             key={user.id}
@@ -94,6 +132,8 @@ const LatexDocumentWorkspace = () => {
                         </Container>
                     )}
                     {isDirty && <span className='latex-workspace__dirty-dot' title='Unsaved changes' />}
+                    {exportTexButton}
+                    {exportZipButton}
                     {saveButton}
                 </Container>
             </Container>
@@ -109,7 +149,13 @@ const LatexDocumentWorkspace = () => {
                     content={editorContent}
                     onChange={handleEditorChange}
                 />
-                <LatexPreviewPanel />
+                <LatexPreviewPanel
+                    content={editorContent}
+                    isCompiling={isCompiling}
+                    compiledPdfUrl={compiledPdfUrl}
+                    compileError={compileError}
+                    onCompile={handleCompile}
+                />
             </Container>
         </Container>
     );

@@ -1,6 +1,5 @@
 import {
     createPaginationQuerySchema,
-    createTeamScopedParamsSchema,
     objectIdSchema,
     teamParamsSchema
 } from '@shared/infrastructure/http/validation/shared-schemas';
@@ -30,7 +29,7 @@ const listWhiteboardsParamsSchema = z.object({
 
 export const whiteboardValidation = {
     createWhiteboard: {
-        params: createTeamScopedParamsSchema('teamId').omit({ teamId: true }).default({}).optional(),
+        params: teamParamsSchema,
         body: createWhiteboardBodySchema
     },
     listWhiteboards: {

@@ -26,7 +26,7 @@ const WhiteboardSchema: Schema<WhiteboardDocument> = new Schema({
     },
     payloadKey: {
         type: String,
-        required: true,
+        required: false,
         trim: true,
         default: ''
     },
