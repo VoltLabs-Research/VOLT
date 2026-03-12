@@ -11,6 +11,8 @@ interface SidebarNavItemProps {
     isSelected?: boolean;
     disabled?: boolean;
     onClick?: () => void;
+    onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
     commandFor?: string;
     command?: string;
 };
@@ -21,6 +23,8 @@ const SidebarNavItem = forwardRef<HTMLButtonElement, SidebarNavItemProps>(({
     isSelected = false, 
     disabled = false,
     onClick,
+    onMouseEnter,
+    onMouseLeave,
     commandFor,
     command
 }, ref) => {
@@ -31,6 +35,8 @@ const SidebarNavItem = forwardRef<HTMLButtonElement, SidebarNavItemProps>(({
             intent='neutral'
             className={`sidebar-nav-item ${isSelected ? 'is-selected' : ''} p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer transition-fast`}
             onClick={onClick}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
             disabled={disabled}
             {...(commandFor ? { commandfor: commandFor } : {})}
             {...(command ? { command } : {})}

@@ -67,7 +67,7 @@ export default class GetTeamAIIntegrationModelsUseCase implements IUseCase<GetTe
             const { integration, metadata, discovered } = result;
             const providerMeta = this.providerCatalog.getProviderMetadata(integration.props.provider);
             const enabledSet = integration.props.enabledModels?.length
-                ? new Set(integration.props.enabledModels)
+                ? new Set(integration.props.enabledModels.map((id) => this.stripProviderPrefix(id)))
                 : null;
 
             const providerModels = discovered
@@ -78,10 +78,14 @@ export default class GetTeamAIIntegrationModelsUseCase implements IUseCase<GetTe
                     description: m.description
                 }));
 
+            const strippedDefaultModel = integration.props.defaultModel
+                ? this.stripProviderPrefix(integration.props.defaultModel)
+                : undefined;
+
             providers.push({
                 provider: integration.props.provider,
                 providerName: providerMeta.name,
-                defaultModel: integration.props.defaultModel,
+                defaultModel: strippedDefaultModel,
                 metadata,
                 models: providerModels
             });
@@ -91,7 +95,7 @@ export default class GetTeamAIIntegrationModelsUseCase implements IUseCase<GetTe
                     ...model,
                     provider: integration.props.provider,
                     providerName: providerMeta.name,
-                    isDefault: integration.props.defaultModel === model.id
+                    isDefault: strippedDefaultModel === model.id
                 });
             });
         }
@@ -101,6 +105,17 @@ export default class GetTeamAIIntegrationModelsUseCase implements IUseCase<GetTe
             providers,
             models
         });
+    }
+
+    /**
+     * Strips the provider prefix from a model ID for backward compatibility.
+     * Old integrations may store OpenRouter-prefixed IDs (e.g. `x-ai/grok-4.1-fast`)
+     * while the discovery service now returns stripped IDs (e.g. `grok-4.1-fast`).
+     * Non-prefixed IDs (e.g. Ollama models) are returned unchanged.
+     */
+    private stripProviderPrefix(modelId: string): string {
+        const slashIndex = modelId.indexOf('/');
+        return slashIndex !== -1 ? modelId.slice(slashIndex + 1) : modelId;
     }
 
     private resolveOllamaBaseUrl(metadata?: Record<string, unknown>): string {

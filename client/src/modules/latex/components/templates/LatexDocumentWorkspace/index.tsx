@@ -12,11 +12,14 @@ import LatexEditorPanel from './LatexEditorPanel';
 import LatexFilePanel from './LatexFilePanel';
 import LatexPreviewPanel from './LatexPreviewPanel';
 import './LatexDocumentWorkspace.css';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Download, FileArchive, FileText, FolderUp, Sparkles } from 'lucide-react';
+import { IoSparklesOutline } from 'react-icons/io5';
 import { useParams } from 'react-router-dom';
 import type { ChangeEvent } from 'react';
 import type { PresenceUser } from '@/modules/socket/trajectory/api/entities/presence-user';
+
+const LatexAIPanel = lazy(() => import('./LatexAIPanel'));
 
 interface PanelWidths {
     files: number;
@@ -73,6 +76,7 @@ const LatexDocumentWorkspace = () => {
     const [hasEnteredWorkspace, setHasEnteredWorkspace] = useState(false);
     const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
     const [isImportingProject, setIsImportingProject] = useState(false);
+    const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
     const initialWorkspaceVisibilityResolvedRef = useRef(false);
 
     const {
@@ -246,6 +250,10 @@ const LatexDocumentWorkspace = () => {
 
     const shouldShowWorkspaceOnboarding = !hasWorkspaceContent && !hasEnteredWorkspace;
 
+    const toggleAIPanel = useCallback(() => {
+        setIsAIPanelOpen((current) => !current);
+    }, []);
+
     if (isLoading) {
         return (
             <Container className='d-flex column flex-center items-center gap-1 h-max'>
@@ -260,6 +268,25 @@ const LatexDocumentWorkspace = () => {
             <AccessDenied description={accessDeniedMessage} showBack={false} className='h-max w-max' />
         );
     }
+
+    const aiTriggerClassName = isAIPanelOpen
+        ? 'latex-workspace__ai-trigger is-active'
+        : 'latex-workspace__ai-trigger';
+
+    const writeWithAIButton = (
+        <Button
+            variant='ghost'
+            intent='neutral'
+            size='sm'
+            shape='rounded'
+            className={aiTriggerClassName}
+            onClick={toggleAIPanel}
+            title='Write with Volt AI'
+        >
+            <IoSparklesOutline size={14} />
+            Write with AI
+        </Button>
+    );
 
     const exportTexButton = (
         <Button
@@ -335,6 +362,7 @@ const LatexDocumentWorkspace = () => {
                     )}
                     {isDirty && <span className='latex-workspace__dirty-dot' title='Unsaved changes' />}
                     {isSaving && <span className='font-size-05 color-muted'>Saving…</span>}
+                    {writeWithAIButton}
                     {exportTexButton}
                     {exportPdfButton}
                     {exportZipButton}
@@ -458,13 +486,28 @@ const LatexDocumentWorkspace = () => {
                             onPointerCancel={handleDragPointerCancel}
                         />
 
-                        <LatexPreviewPanel
-                            isCompiling={isCompiling}
-                            compiledPdfUrl={compiledPdfUrl}
-                            compileError={compileError}
-                            onExportPdf={handleExportPdf}
-                            width={panelWidths.preview}
-                        />
+                        {isAIPanelOpen ? (
+                            <Suspense fallback={
+                                <Container className='latex-ai-panel d-flex column flex-center items-center' style={{ width: panelWidths.preview }}>
+                                    <Loader scale={0.5} isFixed={false} />
+                                </Container>
+                            }>
+                                <LatexAIPanel
+                                    documentId={documentId}
+                                    documentTitle={latexDocument?.title ?? 'LaTeX Document'}
+                                    width={panelWidths.preview}
+                                    onClose={toggleAIPanel}
+                                />
+                            </Suspense>
+                        ) : (
+                            <LatexPreviewPanel
+                                isCompiling={isCompiling}
+                                compiledPdfUrl={compiledPdfUrl}
+                                compileError={compileError}
+                                onExportPdf={handleExportPdf}
+                                width={panelWidths.preview}
+                            />
+                        )}
                     </>
                 )}
             </Container>

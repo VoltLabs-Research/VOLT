@@ -9,6 +9,7 @@ import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import Container from '@/shared/presentation/components/Container';
 import Divider from '@/shared/presentation/components/Divider';
+import PrefetchLink from '@/shared/presentation/components/PrefetchLink';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import Tooltip from '@/shared/presentation/components/Tooltip';
@@ -295,15 +296,17 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
         }
 
         const content = (
-            <Container className='sidebar-nav-item-wrapper'>
-                <SidebarNavItem
-                    label={item.label}
-                    icon={item.icon}
-                    isSelected={isSelected(item.to)}
-                    onClick={onClick}
-                    disabled={!isAllowed}
-                />
-            </Container>
+            <PrefetchLink prefetchPath={item.to}>
+                <Container className='sidebar-nav-item-wrapper'>
+                    <SidebarNavItem
+                        label={item.label}
+                        icon={item.icon}
+                        isSelected={isSelected(item.to)}
+                        onClick={onClick}
+                        disabled={!isAllowed}
+                    />
+                </Container>
+            </PrefetchLink>
         );
 
         return (
