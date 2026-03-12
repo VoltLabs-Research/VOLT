@@ -1,6 +1,5 @@
 import CreateTeamAIIntegrationController from './CreateTeamAIIntegrationController';
 import DeleteTeamAIIntegrationController from './DeleteTeamAIIntegrationController';
-import DiscoverTeamAIProviderModelsController from './DiscoverTeamAIProviderModelsController';
 import GetTeamAIIntegrationModelsController from './GetTeamAIIntegrationModelsController';
 import GetTeamAIIntegrationsController from './GetTeamAIIntegrationsController';
 import UpdateTeamAIIntegrationController from './UpdateTeamAIIntegrationController';
@@ -11,6 +10,5 @@ export default createControllerRegistry({
     createByProvider: CreateTeamAIIntegrationController,
     updateByProvider: UpdateTeamAIIntegrationController,
     deleteByProvider: DeleteTeamAIIntegrationController,
-    listModels: GetTeamAIIntegrationModelsController,
-    discoverModels: DiscoverTeamAIProviderModelsController
+    listModels: GetTeamAIIntegrationModelsController
 });

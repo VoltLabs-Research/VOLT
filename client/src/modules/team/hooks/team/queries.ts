@@ -45,8 +45,7 @@ const TEAM_SCOPED_QUERY_ROOTS = new Set<string>([
     'secret-key-usage',
     'secret-key-team-metrics',
     'team-ai-integrations',
-    'team-ai-integration-models',
-    'team-ai-integration-model-discovery'
+    'team-ai-integration-models'
 ]);
 
 interface TeamScopedValue {

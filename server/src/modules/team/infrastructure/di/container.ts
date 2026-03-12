@@ -24,7 +24,6 @@ import {
     UpdateTeamMemberAITool,
     UpdateTeamRoleAITool
 } from '@modules/team/application/ai-tools';
-import DiscoverTeamAIProviderModelsUseCase from '@modules/team/application/use-cases/ai-integration/DiscoverTeamAIProviderModelsUseCase';
 import SecretKeyRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyRepository';
 import SecretKeyUsageLogRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyUsageLogRepository';
 import TeamAIIntegrationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/ai-integration/TeamAIIntegrationRepository';
@@ -84,8 +83,6 @@ export const registerTeamDependencies = () => {
             [SOCKET_TOKENS.SocketModule, TEAM_TOKENS.TeamPresenceSocketModule]
         ]
     });
-
-    container.register(TEAM_TOKENS.DiscoverTeamAIProviderModelsUseCase, DiscoverTeamAIProviderModelsUseCase);
 
     for (const toolClassProvider of TEAM_AI_TOOL_CLASSES) {
         container.register(AI_TOKENS.AITool, toolClassProvider);

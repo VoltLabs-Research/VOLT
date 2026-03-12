@@ -14,14 +14,7 @@ const createTeamAIIntegrationSchema = z.object({
 
 const updateTeamAIIntegrationSchema = createTeamAIIntegrationSchema.partial();
 
-const discoverTeamAIProviderModelsSchema = z.object({
-    provider: z.string().min(1),
-    apiKey: z.string().min(1).optional(),
-    metadata: z.record(z.string(), z.unknown()).optional()
-}).strict();
-
 export const teamAIIntegrationValidation = createResourceValidation({
     create: createTeamAIIntegrationSchema,
-    update: updateTeamAIIntegrationSchema,
-    discoverModels: discoverTeamAIProviderModelsSchema
+    update: updateTeamAIIntegrationSchema
 });

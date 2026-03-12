@@ -65,18 +65,11 @@ const AIFloatingAssistantPanelContent = ({ onClose }: AIFloatingAssistantPanelCo
     }, [conversationId, handleSendMessage]);
 
     const modelOptions: SelectOption[] = useMemo(() => {
-        return availableModelsForProvider.map((model) => {
-            let description = model.providerName;
-            if (model.description) {
-                description = `${model.providerName} · ${model.description}`;
-            }
-
-            return {
-                value: `${model.provider}::${model.id}`,
-                title: model.name,
-                description
-            };
-        });
+        return availableModelsForProvider.map((model) => ({
+            value: `${model.provider}::${model.id}`,
+            title: model.name,
+            description: model.providerName
+        }));
     }, [availableModelsForProvider]);
 
     const handleSend = async () => {
