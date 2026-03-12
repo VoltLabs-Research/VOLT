@@ -17,5 +17,6 @@ export const createTeamRoleInputSchema = z.object({
     teamId: z.string().min(1, ErrorCodes.TEAM_ID_REQUIRED),
     name: teamRoleNameSchema,
     permissions: teamRolePermissionsSchema.optional().default([]),
-    isSystem: z.boolean().optional().default(false)
+    isSystem: z.boolean().optional().default(false),
+    userId: z.string().optional()
 });

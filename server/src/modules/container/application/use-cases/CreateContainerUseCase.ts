@@ -145,7 +145,8 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         await this.eventBus.publish(new ContainerCreatedEvent({
             containerId: container._id,
             teamId: input.teamId,
-            name
+            name,
+            userId: input.userId ?? ''
         }));
 
         return Result.ok({ container });

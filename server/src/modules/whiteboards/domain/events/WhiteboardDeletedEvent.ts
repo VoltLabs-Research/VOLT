@@ -3,6 +3,8 @@ import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 export interface WhiteboardDeletedEventPayload {
     whiteboardId: string;
     teamId: string;
+    userId: string;
+    whiteboardTitle: string;
 };
 
 export default class WhiteboardDeletedEvent extends BaseDomainEvent<WhiteboardDeletedEventPayload> {

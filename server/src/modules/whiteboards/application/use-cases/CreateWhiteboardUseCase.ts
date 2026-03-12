@@ -4,9 +4,11 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import Whiteboard from '@modules/whiteboards/domain/entities/Whiteboard';
+import WhiteboardCreatedEvent from '@modules/whiteboards/domain/events/WhiteboardCreatedEvent';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 import type { IUseCase } from '@shared/application/IUseCase';
+import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IWhiteboardFolderRepository } from '@modules/whiteboards/domain/port/IWhiteboardFolderRepository';
 import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
@@ -24,7 +26,10 @@ export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDT
         private readonly whiteboardFolderRepository: IWhiteboardFolderRepository,
 
         @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService
+        private readonly storageService: IStorageService,
+
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
     ) {}
 
     async execute(input: CreateWhiteboardInputDTO): Promise<Result<CreateWhiteboardOutputDTO, ApplicationError>> {
@@ -68,6 +73,13 @@ export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDT
             } as Partial<Whiteboard['props']>);
 
             const finalWhiteboard = updated ?? whiteboard;
+
+            await this.eventBus.publish(new WhiteboardCreatedEvent({
+                whiteboardId: finalWhiteboard._id,
+                teamId: input.teamId,
+                userId: input.userId,
+                whiteboardTitle: finalWhiteboard.props.title ?? ''
+            }));
 
             return Result.ok({
                 _id: finalWhiteboard._id,

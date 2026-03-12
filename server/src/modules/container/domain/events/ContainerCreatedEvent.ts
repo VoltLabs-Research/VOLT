@@ -4,6 +4,7 @@ export interface ContainerCreatedEventPayload {
     containerId: string;
     teamId: string;
     name: string;
+    userId: string;
 };
 
 export default class ContainerCreatedEvent extends BaseDomainEvent<ContainerCreatedEventPayload> {

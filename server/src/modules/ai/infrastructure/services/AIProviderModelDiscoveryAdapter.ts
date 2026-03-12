@@ -1,7 +1,11 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { readNumberEnv } from '@shared/infrastructure/utilities/env';
+import { createHash } from 'node:crypto';
+import { injectable, inject } from 'tsyringe';
+import logger from '@shared/infrastructure/logger';
 import type { AIDiscoveredModel, IAIProviderModelDiscovery } from '@modules/ai/domain/port/IAIProviderModelDiscovery';
 import type { TeamAIProvider } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
-import { injectable } from 'tsyringe';
-import logger from '@shared/infrastructure/logger';
+import type { Redis } from 'ioredis';
 
 interface OpenAICompatibleModelPayload {
     id?: string;
@@ -51,8 +55,12 @@ const FETCH_TIMEOUT_MS = 8_000;
 @injectable()
 export default class AIProviderModelDiscoveryAdapter implements IAIProviderModelDiscovery {
     private readonly endpointConfigs: Partial<Record<TeamAIProvider, ProviderEndpointConfig>>;
+    private readonly cacheTtlSeconds = readNumberEnv('AI_MODEL_DISCOVERY_CACHE_TTL_SECONDS', 3600);
 
-    constructor() {
+    constructor(
+        @inject(SHARED_TOKENS.RedisClient)
+        private readonly redis: Redis
+    ) {
         this.endpointConfigs = this.buildEndpointConfigs();
     }
 
@@ -67,6 +75,72 @@ export default class AIProviderModelDiscoveryAdapter implements IAIProviderModel
             return [];
         }
 
+        const cacheKey = this.buildCacheKey(provider, apiKey, metadata);
+        const cached = await this.readCache(cacheKey);
+        if (cached !== null) {
+            return cached;
+        }
+
+        const models = await this.fetchFromProvider(provider, apiKey, config, metadata);
+        await this.writeCache(cacheKey, models);
+        return models;
+    }
+
+    /**
+     * Builds a cache key that never contains raw API keys.
+     * For Ollama, the key is scoped by baseUrl; for all others, by a hashed API key.
+     */
+    private buildCacheKey(
+        provider: TeamAIProvider,
+        apiKey: string,
+        metadata?: Record<string, unknown>
+    ): string {
+        const seed = provider === 'ollama'
+            ? (typeof metadata?.baseUrl === 'string' ? metadata.baseUrl : 'localhost')
+            : apiKey;
+        const hash = createHash('sha256').update(seed).digest('hex').slice(0, 16);
+        return `ai:models:${provider}:${hash}`;
+    }
+
+    /**
+     * Attempts to read models from Redis cache.
+     * Returns null on miss or Redis error (non-blocking).
+     */
+    private async readCache(cacheKey: string): Promise<AIDiscoveredModel[] | null> {
+        try {
+            const raw = await this.redis.get(cacheKey);
+            if (raw !== null) {
+                return JSON.parse(raw) as AIDiscoveredModel[];
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            logger.warn('Redis cache read error for key %s: %s', cacheKey, message);
+        }
+        return null;
+    }
+
+    /**
+     * Writes discovered models to Redis cache with configured TTL.
+     * Silently logs and continues on Redis error (non-blocking).
+     */
+    private async writeCache(cacheKey: string, models: AIDiscoveredModel[]): Promise<void> {
+        try {
+            await this.redis.set(cacheKey, JSON.stringify(models), 'EX', this.cacheTtlSeconds);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            logger.warn('Redis cache write error for key %s: %s', cacheKey, message);
+        }
+    }
+
+    /**
+     * Fetches models from the provider API. Returns empty array on failure (never throws).
+     */
+    private async fetchFromProvider(
+        provider: TeamAIProvider,
+        apiKey: string,
+        config: ProviderEndpointConfig,
+        metadata?: Record<string, unknown>
+    ): Promise<AIDiscoveredModel[]> {
         const url = config.buildUrl(apiKey, metadata);
         const headers: Record<string, string> = {
             Accept: 'application/json',

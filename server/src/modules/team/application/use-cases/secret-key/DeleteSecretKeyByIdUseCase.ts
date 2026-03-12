@@ -34,7 +34,9 @@ export default class DeleteSecretKeyByIdUseCase implements IUseCase<DeleteSecret
 
         await this.eventBus.publish(new SecretKeyDeletedEvent({
             secretKeyId: key._id,
-            teamId: input.teamId
+            teamId: input.teamId,
+            userId: input.userId ?? '',
+            secretKeyName: key.props.name ?? ''
         }));
 
         return Result.ok(null);

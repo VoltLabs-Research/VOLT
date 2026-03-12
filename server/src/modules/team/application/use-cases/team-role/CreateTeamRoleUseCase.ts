@@ -43,7 +43,8 @@ export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInp
         await this.eventBus.publish(new TeamRoleCreatedEvent({
             teamRoleId: newRole._id,
             teamId: String(newRole.props.team),
-            name: newRole.props.name
+            name: newRole.props.name,
+            userId: parsed.data.userId ?? ''
         }));
 
         return Result.ok(toPersistedOutput(newRole));

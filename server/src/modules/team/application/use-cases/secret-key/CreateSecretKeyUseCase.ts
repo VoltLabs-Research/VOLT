@@ -68,7 +68,8 @@ export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyI
         await this.eventBus.publish(new SecretKeyCreatedEvent({
             secretKeyId: created._id,
             teamId,
-            name: created.props.name
+            name: created.props.name,
+            userId
         }));
 
         return Result.ok({

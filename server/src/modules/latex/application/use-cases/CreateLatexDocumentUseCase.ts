@@ -1,9 +1,12 @@
 import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
+import LatexDocumentCreatedEvent from '@modules/latex/domain/events/LatexDocumentCreatedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 import type { CreateLatexDocumentInputDTO, CreateLatexDocumentOutputDTO } from '@modules/latex/application/dtos/CreateLatexDocumentDTO';
+import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import type { ILatexFolderRepository } from '@modules/latex/domain/port/ILatexFolderRepository';
@@ -17,7 +20,10 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
         private readonly latexDocumentRepository: ILatexDocumentRepository,
 
         @inject(LATEX_TOKENS.LatexFolderRepository)
-        private readonly latexFolderRepository: ILatexFolderRepository
+        private readonly latexFolderRepository: ILatexFolderRepository,
+
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
     ) {}
 
     async execute(input: CreateLatexDocumentInputDTO): Promise<Result<CreateLatexDocumentOutputDTO, ApplicationError>> {
@@ -57,6 +63,13 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
                 createdAt: new Date(),
                 updatedAt: new Date()
             });
+
+            await this.eventBus.publish(new LatexDocumentCreatedEvent({
+                documentId: document._id,
+                teamId: input.teamId,
+                userId: input.userId,
+                documentTitle: document.props.title ?? ''
+            }));
 
             return Result.ok({
                 _id: document._id,
