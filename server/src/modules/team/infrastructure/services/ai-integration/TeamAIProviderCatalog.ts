@@ -33,7 +33,7 @@ export default class TeamAIProviderCatalog {
     private readonly catalog = buildTeamAIProviderCatalog();
 
     isSupported(provider: string): provider is TeamAIProvider {
-        return Object.prototype.hasOwnProperty.call(this.catalog, provider);
+        return this.catalog.has(provider as TeamAIProvider);
     }
 
     getProviderMetadata(provider: TeamAIProvider): TeamAIProviderMetadata {
