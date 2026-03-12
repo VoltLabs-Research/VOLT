@@ -16,6 +16,7 @@ import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import LiquidToggle from '@/shared/presentation/components/LiquidToggle';
 import Modal, { openModal } from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Select from '@/shared/presentation/components/Select';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
@@ -535,6 +536,14 @@ export default function IntegrationsSettings() {
                             </Container>
                         ))}
                     </Container>
+                ) : !isLoading && (integrationsError || modelsError) && configuredIntegrations.length === 0 ? (
+                    <RecoveryState
+                        title='Unable to load integrations'
+                        description='Something went wrong while loading your AI provider integrations.'
+                        tone={RecoveryStateTone.Error}
+                        retryLabel='Try again'
+                        onRetry={() => invalidateTeamAIIntegrationsQuery(teamId)}
+                    />
                 ) : configuredIntegrations.length === 0 ? (
                     <Container className='integrations-empty-state'>
                         <Paragraph className='font-size-2 color-muted'>

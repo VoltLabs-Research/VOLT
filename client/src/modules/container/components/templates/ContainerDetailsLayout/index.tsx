@@ -8,6 +8,7 @@ import { useEffect, useRef } from 'react';
 import { useParams, useNavigate, Outlet } from 'react-router-dom';
 import Container from '@/shared/presentation/components/Container';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import type { EnvVariable } from '@/modules/container/api/entities/env-variable';
@@ -131,7 +132,19 @@ const ContainerDetailsLayout = () => {
 
     if(accessDenied) return <AccessDenied />;
 
-    if(!container) return null;
+    if(!container){
+        return (
+            <Container className='d-flex flex-center h-max'>
+                <RecoveryState
+                    title='Container not found'
+                    description={isError && error instanceof Error ? error.message : 'The requested container could not be loaded.'}
+                    tone={RecoveryStateTone.Error}
+                    retryLabel='Go back'
+                    onRetry={() => navigate('/dashboard/containers')}
+                />
+            </Container>
+        );
+    }
 
     const outletContext: ContainerDetailsContext = {
         container,

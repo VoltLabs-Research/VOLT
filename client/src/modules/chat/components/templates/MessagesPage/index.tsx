@@ -24,6 +24,7 @@ const MessagesPage = () => {
         isChatsLoading,
         isMessagesLoading,
         hasMoreMessages,
+        chatsError,
         showDetails,
         handleSelectChat,
         handleStartChat,
@@ -50,6 +51,7 @@ const MessagesPage = () => {
                 currentUserId={currentUserId}
                 teamMembers={teamMembersAsUsers}
                 isLoading={isChatsLoading}
+                error={chatsError}
                 onSelectChat={handleSelectChat}
                 onStartChatWithMember={handleStartChat}
             />

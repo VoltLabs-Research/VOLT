@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useState, useMemo } from 'react';
 import { IoPersonAddOutline, IoPeopleOutline } from 'react-icons/io5';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import ChatListSkeleton from '../../atoms/ChatListSkeleton';
 import ChatListItem from '../../molecules/ChatListItem';
 import TeamMemberList from '../../molecules/TeamMemberList';
@@ -21,6 +22,7 @@ interface ChatSidebarProps {
     currentUserId?: string;
     teamMembers: User[];
     isLoading?: boolean;
+    error?: Error | null;
     onSelectChat: (chatId: string) => void;
     onStartChatWithMember: (memberId: string) => void;
 };
@@ -31,6 +33,7 @@ const ChatSidebar = ({
     currentUserId,
     teamMembers,
     isLoading,
+    error,
     onSelectChat,
     onStartChatWithMember
 }: ChatSidebarProps) => {
@@ -57,6 +60,14 @@ const ChatSidebar = ({
 
     if (isLoading) {
         chatListContent = <ChatListSkeleton count={5} />;
+    } else if (error && filteredChats.length === 0) {
+        chatListContent = (
+            <RecoveryState
+                title='Unable to load chats'
+                description={error.message || 'Something went wrong while loading conversations.'}
+                tone={RecoveryStateTone.Error}
+            />
+        );
     } else if (filteredChats.length === 0) {
         chatListContent = (
             <EmptyState

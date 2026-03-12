@@ -5,6 +5,7 @@ import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@mui/material';
@@ -93,7 +94,7 @@ const renderPieTooltip = ({ active, payload }: TooltipContentProps<string | numb
 export default function SecretKeyUsage() {
     const { secretKeyId } = useParams<SecretKeyUsageRouteParams>();
     const navigate = useNavigate();
-    const { usage, isLoading } = useSecretKeyUsage(secretKeyId);
+    const { usage, isLoading, error, refetch } = useSecretKeyUsage(secretKeyId);
 
     const hourlyData = useMemo(() => {
         if (!usage?.hourly) return [];
@@ -149,6 +150,30 @@ export default function SecretKeyUsage() {
                             <Skeleton key={i} variant='rectangular' width='100%' height={300} sx={{ borderRadius: '8px' }} />
                         ))}
                     </Container>
+                </Container>
+            </Container>
+        );
+    }
+
+    if (error && !usage) {
+        return (
+            <Container className='secret-key-page vh-max color-primary'>
+                <Container className='secret-key-page-main d-flex column gap-2 w-max'>
+                    <Container className='d-flex items-center gap-1'>
+                        <ArrowLeft
+                            className='secret-key-usage-back color-muted'
+                            style={{ width: 20, height: 20 }}
+                            onClick={handleBack}
+                        />
+                        <Title className='font-size-5 font-weight-6'>Key Usage</Title>
+                    </Container>
+                    <RecoveryState
+                        title='Unable to load usage data'
+                        description={error instanceof Error ? error.message : 'Something went wrong while loading usage data for this key.'}
+                        tone={RecoveryStateTone.Error}
+                        retryLabel='Try again'
+                        onRetry={() => refetch()}
+                    />
                 </Container>
             </Container>
         );
