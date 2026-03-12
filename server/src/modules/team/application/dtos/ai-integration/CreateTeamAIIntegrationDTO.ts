@@ -2,7 +2,7 @@ import { TeamAIIntegrationItemDTO } from '@modules/team/application/dtos/ai-inte
 import { ProviderScopedInputDTO, TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
 import type { EnabledModel } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
 
-interface TeamAIIntegrationMutationPayloadDTO {
+export interface TeamAIIntegrationMutationPayloadDTO {
     apiKey?: string;
     isEnabled?: boolean;
     defaultModel?: string;

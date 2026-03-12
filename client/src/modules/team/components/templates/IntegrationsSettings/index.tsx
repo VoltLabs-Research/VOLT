@@ -1,9 +1,4 @@
-import {
-    invalidateTeamAIIntegrationsQuery,
-    useDiscoverTeamAIProviderModelsQuery,
-    useTeamAIIntegrationsQuery,
-    useTeamAIIntegrationModelsQuery
-} from '@/modules/team/hooks/ai-integration/queries';
+import { invalidateTeamAIIntegrationsQuery, useTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { handleActionError, runHandledAction } from '@/shared/errors/handled-action';
 import useCreateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-create-team-ai-integration';
@@ -25,7 +20,7 @@ import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { Skeleton } from '@mui/material';
-import { Settings2, Trash2 } from 'lucide-react';
+import { Settings2, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { IoAddOutline } from 'react-icons/io5';
 import { sileo } from 'sileo';
@@ -35,20 +30,11 @@ import type { UpdateTeamAIIntegrationParams } from '@/modules/team/api/dtos/ai-i
 import type {
     AIProviderCatalogItem,
     TeamAIIntegration,
-    TeamAIModelMetadata,
-    TeamAIProviderModelsCatalog
+    TeamAIModelMetadata
 } from '@/modules/team/api/entities/ai-integration/team-ai-integration';
 import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { KeyboardEvent } from 'react';
 import './IntegrationsSettings.css';
-
-type ModalModelOption = Pick<TeamAIModelMetadata, 'id' | 'name' | 'description'>;
-
-interface TeamAIProviderDiscoveryInput {
-    teamId: string;
-    provider: AIProvider;
-    apiKey?: string;
-    metadata?: Record<string, unknown>;
-};
 
 interface IntegrationModalStatePreset {
     editingProvider?: AIProvider | null;
@@ -56,7 +42,7 @@ interface IntegrationModalStatePreset {
     apiKey?: string;
     endpoint?: string;
     defaultModel?: string | null;
-    enabledModels?: Iterable<string>;
+    enabledModels?: TeamAIModelMetadata[];
     enabled?: boolean;
 };
 
@@ -82,16 +68,12 @@ const getRemoveIntegrationToastOptions = (integration: TeamAIIntegration) => cre
     error: 'Failed to remove provider'
 });
 
-const getDefaultModelPlaceholder = (isDiscoveringModels: boolean, options: SelectOption[]): string => {
-    let placeholder = 'No models available';
-
-    if (isDiscoveringModels) {
-        placeholder = 'Loading models...';
-    } else if (options.length > 0) {
-        placeholder = 'Select model';
+const getDefaultModelPlaceholder = (options: SelectOption[]): string => {
+    if (options.length > 0) {
+        return 'Select model';
     }
 
-    return placeholder;
+    return 'No models available';
 };
 
 export default function IntegrationsSettings() {
@@ -99,22 +81,15 @@ export default function IntegrationsSettings() {
 
     const {
         data: integrationsData,
-        isLoading: isIntegrationsLoading,
+        isLoading,
         error: integrationsError
     } = useTeamAIIntegrationsQuery(teamId, { enabled: !!teamId });
-
-    const {
-        data: modelsData,
-        isLoading: isModelsLoading,
-        error: modelsError
-    } = useTeamAIIntegrationModelsQuery(teamId, { enabled: !!teamId });
 
     const createTeamAIIntegration = useCreateTeamAIIntegration();
     const updateTeamAIIntegration = useUpdateTeamAIIntegration();
     const deleteTeamAIIntegration = useDeleteTeamAIIntegration();
     const { confirm } = useConfirm();
 
-    const isLoading = isIntegrationsLoading || isModelsLoading;
     const [isSaving, setIsSaving] = useState(false);
     const [busyProvider, setBusyProvider] = useState<AIProvider | null>(null);
 
@@ -123,64 +98,25 @@ export default function IntegrationsSettings() {
     const [modalApiKey, setModalApiKey] = useState('');
     const [modalEndpoint, setModalEndpoint] = useState(OLLAMA_DEFAULT_BASE_URL);
     const [modalDefaultModel, setModalDefaultModel] = useState<string | null>(null);
-    const [modalEnabledModels, setModalEnabledModels] = useState<Set<string>>(new Set());
+    const [modalEnabledModels, setModalEnabledModels] = useState<TeamAIModelMetadata[]>([]);
     const [modalEnabled, setModalEnabled] = useState(true);
-
-    const discoveryApiKey = modalApiKey.trim();
+    const [newModelId, setNewModelId] = useState('');
+    const [newModelName, setNewModelName] = useState('');
 
     const integrations: TeamAIIntegration[] = integrationsData?.integrations ?? [];
     const providerCatalog: AIProviderCatalogItem[] = integrationsData?.providers ?? [];
-    const providerModels: TeamAIProviderModelsCatalog[] = modelsData?.providers ?? [];
-
-    const discoveryMetadata = useMemo(() => (
-        modalProvider === 'ollama'
-            ? { baseUrl: modalEndpoint.trim() || OLLAMA_DEFAULT_BASE_URL }
-            : undefined
-    ), [modalEndpoint, modalProvider]);
-
-    const shouldDiscoverModels = Boolean(
-        teamId
-        && modalProvider
-        && (
-            modalProvider === 'ollama'
-                ? (discoveryMetadata?.baseUrl?.trim().length ?? 0) > 0
-                : true
-        )
-    );
-
-    const discoveryQueryParams: TeamAIProviderDiscoveryInput = {
-        teamId,
-        provider: modalProvider ?? (providerCatalog[0]?.id as AIProvider),
-        apiKey: modalProvider === 'ollama' ? undefined : discoveryApiKey || undefined,
-        metadata: discoveryMetadata
-    };
-
-    const {
-        data: discoveredModelsData,
-        isFetching: isDiscoveringModels
-    } = useDiscoverTeamAIProviderModelsQuery(
-        discoveryQueryParams,
-        {
-            enabled: shouldDiscoverModels
-        }
-    );
 
     useEffect(() => {
-        const error = integrationsError || modelsError;
-        if (!error) return;
-        handleActionError(error, {
+        if (!integrationsError) return;
+        handleActionError(integrationsError, {
             accessDeniedTitle: 'You do not have permission to perform this action.',
             errorToast: { title: 'Failed to load integrations' }
         });
-    }, [integrationsError, modelsError]);
+    }, [integrationsError]);
 
     const integrationsByProvider = useMemo(() => {
         return new Map(integrations.map((integration) => [integration.provider, integration]));
     }, [integrations]);
-
-    const modelsByProvider = useMemo(() => {
-        return new Map(providerModels.map((provider) => [provider.provider, provider]));
-    }, [providerModels]);
 
     const configuredIntegrations = useMemo(() => {
         return integrations.filter((integration) => integration.hasApiKey);
@@ -201,68 +137,12 @@ export default function IntegrationsSettings() {
         }))
     ), [availableProviders]);
 
-    const getProviderModels = useCallback((provider: AIProvider): ModalModelOption[] => {
-        const discoveredModels = discoveredModelsData?.provider === provider
-            ? discoveredModelsData.models
-            : null;
-
-        if (discoveredModels?.length) {
-            return discoveredModels;
-        }
-
-        return modelsByProvider.get(provider)?.models || discoveredModels || [];
-    }, [discoveredModelsData, modelsByProvider]);
-
-    const allModalModels: ModalModelOption[] = useMemo(() => {
-        if (!modalProvider) {
-            return [];
-        }
-
-        return getProviderModels(modalProvider);
-    }, [getProviderModels, modalProvider]);
-
-    const selectableModalModels = useMemo(() => {
-        return modalEnabledModels.size > 0
-            ? allModalModels.filter((model) => modalEnabledModels.has(model.id))
-            : allModalModels;
-    }, [allModalModels, modalEnabledModels]);
-
     const modalModelOptions: SelectOption[] = useMemo(() => {
-        return selectableModalModels.map((model) => ({
+        return modalEnabledModels.map((model) => ({
             value: model.id,
-            title: model.name,
-            description: model.description
+            title: model.name
         }));
-    }, [selectableModalModels]);
-
-    const resolveDefaultModel = useCallback((provider: AIProvider, enabledModels?: Set<string>): string | null => {
-        const sourceModels = getProviderModels(provider);
-
-        if (!sourceModels.length) {
-            return null;
-        }
-
-        const availableModels = enabledModels?.size
-            ? sourceModels.filter((model: ModalModelOption) => enabledModels.has(model.id))
-            : sourceModels;
-
-        if (!availableModels.length) {
-            return null;
-        }
-
-        const discoveredCatalog = discoveredModelsData?.provider === provider
-            ? discoveredModelsData
-            : null;
-        const candidateDefault = discoveredCatalog?.models?.length
-            ? discoveredCatalog.defaultModel
-            : modelsByProvider.get(provider)?.defaultModel;
-
-        if (candidateDefault && availableModels.some((model: ModalModelOption) => model.id === candidateDefault)) {
-            return candidateDefault;
-        }
-
-        return availableModels[0]?.id || null;
-    }, [discoveredModelsData, getProviderModels, modelsByProvider]);
+    }, [modalEnabledModels]);
 
     useTeamAIIntegrationsSocketSync(teamId || null);
 
@@ -272,8 +152,10 @@ export default function IntegrationsSettings() {
         setModalApiKey(preset.apiKey ?? '');
         setModalEndpoint(preset.endpoint ?? OLLAMA_DEFAULT_BASE_URL);
         setModalDefaultModel(preset.defaultModel ?? null);
-        setModalEnabledModels(new Set(preset.enabledModels ?? []));
+        setModalEnabledModels(preset.enabledModels ?? []);
         setModalEnabled(preset.enabled ?? true);
+        setNewModelId('');
+        setNewModelName('');
     }, []);
 
     const resetModalState = useCallback(() => {
@@ -291,10 +173,7 @@ export default function IntegrationsSettings() {
             return;
         }
 
-        applyModalState({
-            provider: firstProvider,
-            defaultModel: resolveDefaultModel(firstProvider)
-        });
+        applyModalState({ provider: firstProvider });
         openModal(TEAM_AI_INTEGRATION_MODAL_ID);
     };
 
@@ -308,8 +187,8 @@ export default function IntegrationsSettings() {
             provider: integration.provider,
             endpoint: ollamaBaseUrl,
             enabled: integration.isEnabled,
-            enabledModels: integration.enabledModels || [],
-            defaultModel: integration.defaultModel || resolveDefaultModel(integration.provider)
+            enabledModels: integration.enabledModels ?? [],
+            defaultModel: integration.defaultModel ?? null
         });
         openModal(TEAM_AI_INTEGRATION_MODAL_ID);
     };
@@ -330,27 +209,42 @@ export default function IntegrationsSettings() {
             provider: nextProvider,
             endpoint: ollamaBaseUrl,
             enabled: modalEnabled,
-            defaultModel: resolveDefaultModel(nextProvider)
+            enabledModels: modalEnabledModels,
+            defaultModel: modalDefaultModel
         });
     };
 
-    const handleToggleModel = (modelId: string) => {
-        setModalEnabledModels((prev) => {
-            const next = new Set(prev);
-            if (next.has(modelId)) {
-                if (next.size === 1) {
-                    return prev;
-                }
-                next.delete(modelId);
-            } else {
-                next.add(modelId);
-            }
-            return next;
-        });
+    const handleAddModel = () => {
+        const id = newModelId.trim();
+        const name = newModelName.trim() || id;
+        if (!id) return;
+        if (modalEnabledModels.some((m) => m.id === id)) return;
+
+        setModalEnabledModels((prev) => [...prev, { id, name }]);
+        setNewModelId('');
+        setNewModelName('');
+
+        if (!modalDefaultModel) {
+            setModalDefaultModel(id);
+        }
     };
 
-    const renderModelOption = useCallback((model: ModalModelOption) => {
-        const isChecked = modalEnabledModels.has(model.id);
+    const handleAddModelKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            handleAddModel();
+        }
+    };
+
+    const handleRemoveModel = (modelId: string) => {
+        setModalEnabledModels((prev) => prev.filter((m) => m.id !== modelId));
+        if (modalDefaultModel === modelId) {
+            setModalDefaultModel(null);
+        }
+    };
+
+    const renderModelItem = useCallback((model: TeamAIModelMetadata) => {
+        const isDefault = modalDefaultModel === model.id;
 
         return (
             <Container
@@ -361,55 +255,21 @@ export default function IntegrationsSettings() {
                     <Paragraph className='font-size-2 color-primary text-truncate'>
                         {model.name}
                     </Paragraph>
-                    {model.description && (
-                        <Paragraph className='font-size-1 color-muted text-truncate'>
-                            {model.description}
-                        </Paragraph>
-                    )}
+                    <Paragraph className='font-size-1 color-muted text-truncate'>
+                        {model.id}
+                        {isDefault && ' · default'}
+                    </Paragraph>
                 </Container>
-                <LiquidToggle
-                    pressed={isChecked}
-                    onChange={() => handleToggleModel(model.id)}
+                <Button
+                    size='sm'
+                    variant='ghost'
+                    intent='neutral'
+                    leftIcon={<X size={14} />}
+                    onClick={() => handleRemoveModel(model.id)}
                 />
             </Container>
         );
-    }, [handleToggleModel, modalEnabledModels]);
-
-    useEffect(() => {
-        if (!modalProvider) {
-            return;
-        }
-
-        if (!selectableModalModels.length) {
-            if (modalDefaultModel !== null) {
-                setModalDefaultModel(null);
-            }
-            return;
-        }
-
-        const hasValidSelection = modalDefaultModel
-            ? selectableModalModels.some((model) => model.id === modalDefaultModel)
-            : false;
-
-        if (hasValidSelection) {
-            return;
-        }
-
-        setModalDefaultModel(resolveDefaultModel(modalProvider, modalEnabledModels));
-    }, [modalDefaultModel, modalEnabledModels, modalProvider, resolveDefaultModel, selectableModalModels]);
-
-    useEffect(() => {
-        if (editingProvider || !modalProvider || modalEnabledModels.size > 0) {
-            return;
-        }
-
-        const nextDefaultModel = resolveDefaultModel(modalProvider);
-        if (!nextDefaultModel) {
-            return;
-        }
-
-        setModalEnabledModels(new Set([nextDefaultModel]));
-    }, [editingProvider, modalEnabledModels, modalProvider, resolveDefaultModel]);
+    }, [modalDefaultModel]);
 
     const handleSaveIntegration = async () => {
         if (!modalProvider) {
@@ -431,7 +291,7 @@ export default function IntegrationsSettings() {
         const payload: CreateTeamAIIntegrationParams | UpdateTeamAIIntegrationParams = {
             isEnabled: modalEnabled,
             defaultModel: modalDefaultModel || undefined,
-            enabledModels: [...modalEnabledModels]
+            enabledModels: modalEnabledModels
         };
 
         if (apiKey) {
@@ -536,7 +396,7 @@ export default function IntegrationsSettings() {
                             </Container>
                         ))}
                     </Container>
-                ) : !isLoading && (integrationsError || modelsError) && configuredIntegrations.length === 0 ? (
+                ) : !isLoading && integrationsError && configuredIntegrations.length === 0 ? (
                     <RecoveryState
                         title='Unable to load integrations'
                         description='Something went wrong while loading your AI provider integrations.'
@@ -658,33 +518,48 @@ export default function IntegrationsSettings() {
                             />
                         )}
 
-                        {allModalModels.length > 0 && (
-                            <Container className='d-flex column gap-05'>
-                                <Paragraph className='font-size-2 font-weight-5 color-secondary'>
-                                    Enabled models
-                                </Paragraph>
-                                <Paragraph className='font-size-1 color-muted'>
-                                    {modalEnabledModels.size === 0
-                                        ? 'Only the default model is enabled.'
-                                        : `${modalEnabledModels.size} of ${allModalModels.length} models enabled.`}
-                                </Paragraph>
-                                <Container className='integrations-model-checklist'>
-                                    {allModalModels.map(renderModelOption)}
-                                </Container>
+                        <Container className='d-flex column gap-05'>
+                            <Paragraph className='font-size-2 font-weight-5 color-secondary'>
+                                Models
+                            </Paragraph>
+                            <Container className='d-flex gap-05 integrations-add-model-row'>
+                                <FormFieldRHF
+                                    placeholder='Model ID (e.g. gpt-4o)'
+                                    value={newModelId}
+                                    onChange={(event) => setNewModelId(event.target.value)}
+                                    inputProps={{ onKeyDown: handleAddModelKeyDown }}
+                                />
+                                <FormFieldRHF
+                                    placeholder='Display name'
+                                    value={newModelName}
+                                    onChange={(event) => setNewModelName(event.target.value)}
+                                    inputProps={{ onKeyDown: handleAddModelKeyDown }}
+                                />
+                                <Button
+                                    size='sm'
+                                    variant='outline'
+                                    intent='neutral'
+                                    onClick={handleAddModel}
+                                    disabled={!newModelId.trim()}
+                                >
+                                    Add
+                                </Button>
                             </Container>
-                        )}
+                            {modalEnabledModels.length > 0 && (
+                                <Container className='integrations-model-checklist'>
+                                    {modalEnabledModels.map(renderModelItem)}
+                                </Container>
+                            )}
+                        </Container>
 
                         <Container className='d-flex column gap-05'>
                             <Paragraph className='font-size-2 font-weight-5 color-secondary'>Default model</Paragraph>
-                            {isDiscoveringModels && modalModelOptions.length === 0 && (
-                                <Paragraph className='font-size-1 color-muted'>Loading available models...</Paragraph>
-                            )}
                             <Select
                                 options={modalModelOptions}
                                 value={modalDefaultModel}
                                 onChange={setModalDefaultModel}
-                                disabled={isDiscoveringModels || modalModelOptions.length === 0}
-                                placeholder={getDefaultModelPlaceholder(isDiscoveringModels, modalModelOptions)}
+                                disabled={modalModelOptions.length === 0}
+                                placeholder={getDefaultModelPlaceholder(modalModelOptions)}
                             />
                         </Container>
 

@@ -19,6 +19,10 @@ const MIN_COLUMN_WIDTH = 180;
 const MAX_COLUMN_WIDTH = 280;
 const COLUMN_GAP = 16;
 
+const COMPACT_MIN_COLUMN_WIDTH = 80;
+const COMPACT_MAX_COLUMN_WIDTH = 200;
+const COMPACT_COLUMN_GAP = 8;
+
 export interface Identifiable {
     _id: string;
 };
@@ -72,12 +76,6 @@ interface DocumentListingTableProps<T extends Identifiable> {
     compact?: boolean;
 };
 
-const getColumnWidth = <T,>(col: ColumnConfig<T>): number => {
-    if (typeof col.width === 'number' && col.width > 0) return col.width;
-    const title = typeof col.title === 'string' ? col.title : col.label;
-    const titleLength = typeof title === 'string' ? title.length : 10;
-    return Math.max(MIN_COLUMN_WIDTH, Math.min(titleLength * 14, MAX_COLUMN_WIDTH));
-};
 const getColumnTitle = <T,>(col: ColumnConfig<T>): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
 
 const DocumentListingTable = <T extends Identifiable>({

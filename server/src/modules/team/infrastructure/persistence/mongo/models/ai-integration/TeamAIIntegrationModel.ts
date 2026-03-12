@@ -1,5 +1,5 @@
-import { TeamAIIntegrationProps } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
-import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import type { TeamAIIntegrationProps } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
+import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 enum TeamAIIntegrationRelation {

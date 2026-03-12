@@ -47,7 +47,7 @@ export interface ClusterRemoteAccessPageState {
     isAuthenticated: boolean;
     isLoading: boolean;
     error: string | null;
-    handleSubmit: (password: string) => void;
+    handleSubmit: (password: string) => Promise<void>;
 };
 
 /**
@@ -93,7 +93,7 @@ const useClusterRemoteAccessPage = (target: TeamClusterRemoteAccessTarget): Clus
         }
     }, [clusterId, cluster, clusters.length, clustersQuery.isLoading, navigate]);
 
-    const handleSubmit = (password: string) => {
+    const handleSubmit = async (password: string): Promise<void> => {
         if (!selectedTeamId || !clusterId) {
             return;
         }
@@ -101,24 +101,24 @@ const useClusterRemoteAccessPage = (target: TeamClusterRemoteAccessTarget): Clus
         setIsLoading(true);
         setError(null);
 
-        showPromise(
-            teamClusterService.createRemoteAccessSession({
-                teamId: selectedTeamId,
-                teamClusterId: clusterId,
-                password,
-                target
-            }),
-            REMOTE_ACCESS_TOAST_OPTIONS[target]
-        )
-            .then((result) => {
-                setSession(result.session);
-            })
-            .catch((err: unknown) => {
-                setError(err instanceof Error ? err.message : 'Failed to create remote access session');
-            })
-            .finally(() => {
-                setIsLoading(false);
-            });
+        try {
+            const result = await showPromise(
+                teamClusterService.createRemoteAccessSession({
+                    teamId: selectedTeamId,
+                    teamClusterId: clusterId,
+                    password,
+                    target
+                }),
+                REMOTE_ACCESS_TOAST_OPTIONS[target]
+            );
+            setSession(result.session);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to create remote access session';
+            setError(message);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return {

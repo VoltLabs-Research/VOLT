@@ -1,8 +1,9 @@
-import ClusterRemoteAccessForm from '@/modules/cluster/components/organisms/ClusterRemoteAccessForm';
+import ClusterRemoteAccessModal, { CLUSTER_REMOTE_ACCESS_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterRemoteAccessModal';
 import ClusterRemoteExplorerContent from '@/modules/cluster/components/organisms/ClusterRemoteExplorerContent';
 import useClusterRemoteAccessPage from '@/modules/cluster/hooks/use-cluster-remote-access-page';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import { TeamClusterRemoteAccessTarget } from '@/modules/cluster/api/entities/team-cluster-remote-access';
+import { openModal } from '@/shared/presentation/components/Modal';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import { useEffect, useMemo } from 'react';
@@ -51,6 +52,16 @@ const ClusterRemoteExplorerPage = () => {
         }
     }, [target, navigate]);
 
+    useEffect(() => {
+        if (target && vm.cluster && !vm.isAuthenticated) {
+            openModal(CLUSTER_REMOTE_ACCESS_MODAL_ID);
+        }
+    }, [target, vm.cluster, vm.isAuthenticated]);
+
+    const handleDismiss = () => {
+        navigate('/dashboard/clusters', { replace: true });
+    };
+
     if (!target) {
         return null;
     }
@@ -61,13 +72,17 @@ const ClusterRemoteExplorerPage = () => {
 
     if (!vm.isAuthenticated || !vm.session) {
         return (
-            <ClusterRemoteAccessForm
-                target={target}
-                clusterName={vm.cluster.name}
-                isLoading={vm.isLoading}
-                error={vm.error}
-                onSubmit={vm.handleSubmit}
-            />
+            <>
+                <Loader scale={0.5} isFixed={false} />
+                <ClusterRemoteAccessModal
+                    target={target}
+                    clusterName={vm.cluster.name}
+                    isLoading={vm.isLoading}
+                    error={vm.error}
+                    onSubmit={vm.handleSubmit}
+                    onDismiss={handleDismiss}
+                />
+            </>
         );
     }
 
