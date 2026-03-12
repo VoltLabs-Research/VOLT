@@ -296,11 +296,7 @@ const useContainersListing = () => {
             delete: {
                 variant: 'danger',
                 handler: async ({ item: container }) => {
-                    await showPromise(deleteContainerMutation.mutateAsync(container._id), {
-                        loading: { title: 'Deleting container...' },
-                        success: { title: 'Container deleted successfully' },
-                        error: { title: 'Failed to delete container' }
-                    });
+                    await showPromise(deleteContainerMutation.mutateAsync(container._id), DELETE_CONTAINER_TOAST);
                 },
                 confirm: ({ selectedItems }) => getDeleteConfirmationMessage(selectedItems),
                 requiredPermission: 'container:delete'
