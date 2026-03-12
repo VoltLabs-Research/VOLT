@@ -4,7 +4,7 @@ import Button from '@/shared/presentation/components/Button';
 import Loader from '@/shared/presentation/components/Loader';
 import { AlertCircle, ChevronLeft, ChevronRight, Download, FileText, ZoomIn, ZoomOut } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
@@ -20,6 +20,13 @@ interface LatexPdfViewerProps {
 const MIN_SCALE = 0.8;
 const MAX_SCALE = 2.4;
 const SCALE_STEP = 0.2;
+
+const PDF_LOADING_PLACEHOLDER = (
+    <Container className='latex-preview__empty d-flex column flex-center items-center gap-1'>
+        <Loader scale={0.5} isFixed={false} />
+        <Paragraph className='color-muted font-size-1'>Loading PDF preview…</Paragraph>
+    </Container>
+);
 
 const LatexPdfViewer = ({
     pdfUrl,
@@ -40,15 +47,15 @@ const LatexPdfViewer = ({
         setScale(1);
     }, [pdfUrl]);
 
-    const handlePdfLoaded = ({ numPages: loadedPages }: { numPages: number }) => {
+    const handlePdfLoaded = useCallback(({ numPages: loadedPages }: { numPages: number }) => {
         setNumPages(loadedPages);
         setPdfError(null);
         setPageNumber((currentPage) => Math.min(currentPage, loadedPages));
-    };
+    }, []);
 
-    const handlePdfError = (nextError: Error) => {
+    const handlePdfError = useCallback((nextError: Error) => {
         setPdfError(nextError.message || 'Failed to render PDF preview');
-    };
+    }, []);
 
     const canGoPrevious = pageNumber > 1;
     const canGoNext = numPages !== null && pageNumber < numPages;
@@ -194,12 +201,7 @@ const LatexPdfViewer = ({
                     file={pdfUrl}
                     onLoadSuccess={handlePdfLoaded}
                     onLoadError={handlePdfError}
-                    loading={
-                        <Container className='latex-preview__empty d-flex column flex-center items-center gap-1'>
-                            <Loader scale={0.5} isFixed={false} />
-                            <Paragraph className='color-muted font-size-1'>Loading PDF preview…</Paragraph>
-                        </Container>
-                    }
+                    loading={PDF_LOADING_PLACEHOLDER}
                     error=''
                     className='latex-pdf-document'
                 >
@@ -217,4 +219,4 @@ const LatexPdfViewer = ({
     );
 };
 
-export default LatexPdfViewer;
+export default memo(LatexPdfViewer);

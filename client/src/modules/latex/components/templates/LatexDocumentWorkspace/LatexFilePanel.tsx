@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import useFileTree from '@/modules/latex/hooks/use-file-tree';
 import { buildLatexRef } from '@/modules/latex/hooks/use-latex-assets';
 import Container from '@/shared/presentation/components/Container';
@@ -268,4 +269,4 @@ const LatexFilePanel = ({
     );
 };
 
-export default LatexFilePanel;
+export default memo(LatexFilePanel);

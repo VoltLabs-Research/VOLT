@@ -15,7 +15,7 @@ const OAuthCallbackTemplate = () => {
     const navigate = useNavigate();
     const markAuthenticated = useAuthStore((state) => state.markAuthenticated);
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-    const redirectTimeoutReference = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+    const redirectTimeoutReference = useRef<number | null>(null);
 
     useEffect(() => {
         let isCancelled = false;

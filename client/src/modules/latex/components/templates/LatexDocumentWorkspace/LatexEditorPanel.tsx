@@ -5,7 +5,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import Button from '@/shared/presentation/components/Button';
 import { ensureMonaco } from '@/shared/presentation/utilities/ensure-monaco';
 import { cn } from '@/shared/utils';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Download, File, FileCode, FileImage, FileText, X } from 'lucide-react';
 import type { BeforeMount, OnMount } from '@monaco-editor/react';
@@ -54,6 +54,17 @@ const getFileLanguage = (filename: string): string => {
 };
 
 const PANEL_ICON = <FileCode size={14} />;
+
+const MONACO_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
+    fontSize: 13,
+    minimap: { enabled: false },
+    wordWrap: 'on',
+    lineNumbers: 'on',
+    scrollBeyondLastLine: false,
+    renderWhitespace: 'none',
+    padding: { top: 12 },
+    fontLigatures: false
+};
 
 const handleBeforeMount: BeforeMount = (monaco) => {
     const alreadyRegistered = monaco.languages.getLanguages().some((l) => l.id === 'latex');
@@ -159,9 +170,9 @@ const LatexEditorPanel = ({
         return items;
     }, []), [activeSelection, assets, dirtyFileIdSet, files, openTabs]);
 
-    const handleMount: OnMount = (editorInstance) => {
+    const handleMount: OnMount = useCallback((editorInstance) => {
         editorRef.current = editorInstance;
-    };
+    }, []);
 
     useEffect(() => {
         let isMounted = true;
@@ -269,16 +280,7 @@ const LatexEditorPanel = ({
                 theme='vs-dark'
                 beforeMount={handleBeforeMount}
                 onMount={handleMount}
-                options={{
-                    fontSize: 13,
-                    minimap: { enabled: false },
-                    wordWrap: 'on',
-                    lineNumbers: 'on',
-                    scrollBeyondLastLine: false,
-                    renderWhitespace: 'none',
-                    padding: { top: 12 },
-                    fontLigatures: false
-                }}
+                options={MONACO_OPTIONS}
             />
         );
     };
@@ -366,4 +368,4 @@ const LatexEditorPanel = ({
     );
 };
 
-export default LatexEditorPanel;
+export default memo(LatexEditorPanel);

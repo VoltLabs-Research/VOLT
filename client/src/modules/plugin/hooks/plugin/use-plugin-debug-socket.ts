@@ -63,14 +63,12 @@ interface UsePluginDebugSocketOptions {
 
 const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions = {}) => {
     const socket = useSocket();
-    const {
-        sessionId,
-        isDebugging,
-        selectedTrajectoryId,
-        selectedTimestep,
-        setStarting,
-        reset
-    } = usePluginDebugStore();
+    const sessionId = usePluginDebugStore((state) => state.sessionId);
+    const isDebugging = usePluginDebugStore((state) => state.isDebugging);
+    const selectedTrajectoryId = usePluginDebugStore((state) => state.selectedTrajectoryId);
+    const selectedTimestep = usePluginDebugStore((state) => state.selectedTimestep);
+    const setStarting = usePluginDebugStore((state) => state.setStarting);
+    const reset = usePluginDebugStore((state) => state.reset);
 
     const { searchParams } = useSearchParamsState();
     const currentPluginId = searchParams.get('id');

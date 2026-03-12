@@ -4,7 +4,10 @@ import { useMemo } from 'react';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 
 const useDebugTrajectorySelector = () => {
-    const { selectedTrajectoryId, selectedTimestep, setSelectedTrajectory, setSelectedTimestep } = usePluginDebugStore();
+    const selectedTrajectoryId = usePluginDebugStore((state) => state.selectedTrajectoryId);
+    const selectedTimestep = usePluginDebugStore((state) => state.selectedTimestep);
+    const setSelectedTrajectory = usePluginDebugStore((state) => state.setSelectedTrajectory);
+    const setSelectedTimestep = usePluginDebugStore((state) => state.setSelectedTimestep);
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
     const trajectoryQuery = debugTrajectoriesQuery(undefined, {
         meta: { checkAccessDeniedError }
