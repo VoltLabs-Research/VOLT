@@ -19,19 +19,10 @@ export interface ITrajectoryDumpStorageService{
         timestep: string
     ): string;
 
-    saveDump(
-        trajectoryId: string,
-        timestep: string,
-        data: Buffer | string,
-        onProgress?: (progress: number) => void
-    ): Promise<string>;
-
     getDump(
         trajectoryId: string,
         timestep: string
     ): Promise<string | null>;
-
-    calculateSize(trajectoryId: string): Promise<number>;
 
     getDumpStream(
         trajectoryId: string,
@@ -39,6 +30,4 @@ export interface ITrajectoryDumpStorageService{
     ): Promise<Readable>;
 
     listDumps(trajectoryId: string): Promise<string[]>;
-
-    deleteDumps(trajectoryId: string): Promise<void>;
 };

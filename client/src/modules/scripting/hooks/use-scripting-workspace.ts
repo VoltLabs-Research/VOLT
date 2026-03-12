@@ -55,6 +55,8 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
     const { mutateAsync: createScriptingSession, isPending: isCreatingJupyterSession } = useCreateScriptingSessionMutation();
 
     useEffect(() => {
+        isMountedRef.current = true;
+
         return () => {
             isMountedRef.current = false;
             activeStartRequestRef.current += 1;

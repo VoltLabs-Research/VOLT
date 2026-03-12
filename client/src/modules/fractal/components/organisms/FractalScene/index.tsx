@@ -1,9 +1,11 @@
-import { Canvas } from '@react-three/fiber';
 import FractalScenePipeline from '@/modules/fractal/components/organisms/FractalScenePipeline';
-import { useMemo, useRef, useState, useCallback, forwardRef, useImperativeHandle, useEffect } from 'react';
-import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
-import type { OrbitControlsHandle } from '@/modules/fractal/types';
+import { resolveCanvasRuntimeProps } from '@/shared/domain/rendering/performance';
+import { Canvas } from '@react-three/fiber';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { OrbitControlsHandle } from '@/modules/fractal/types';
+import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
 import type { ReactNode } from 'react';
 
 export interface FractalSceneRef {
@@ -40,15 +42,22 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     const initialDistanceRef = useRef<number | null>(null);
     const [isInteracting, setIsInteracting] = useState(false);
 
-    const dpr = useMemo<number | [number, number]>(() => {
-        if (config.dpr.mode === 'fixed') return config.dpr.fixed;
-        let min = config.dpr.min;
-        if (isInteracting && config.interactionDegradeEnabled) {
-            min = Math.min(config.dpr.interactionMin, config.dpr.min);
-        }
-        const range: [number, number] = [min, config.dpr.max];
-        return range;
-    }, [config.dpr, config.interactionDegradeEnabled, isInteracting]);
+    const canvasRuntimeProps = useMemo(() => {
+        return resolveCanvasRuntimeProps({
+            dpr: config.dpr,
+            performance: config.performance,
+            interactionDegradeEnabled: config.interactionDegradeEnabled
+        }, {
+            interacting: isInteracting,
+            boostScreenshot: screenshotCaptureRequested
+        });
+    }, [
+        config.dpr,
+        config.interactionDegradeEnabled,
+        config.performance,
+        isInteracting,
+        screenshotCaptureRequested
+    ]);
 
     useEffect(() => {
         if (!orbitControlsRef.current) return;
@@ -126,32 +135,33 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
         const { target, ...rest } = config.orbitControls;
         return rest;
     }, [config.orbitControls]);
+
     return (
         <div style={{ width: '100%', height: '100%' }}>
             <Canvas
                 gl={glProps}
-                dpr={dpr}
+                dpr={canvasRuntimeProps.dpr}
                 frameloop='demand'
-                performance={config.performance}
+                performance={canvasRuntimeProps.performance}
                 style={{ width: '100%', height: '100%' }}
                 onCreated={(state) => {
                     state.invalidate();
                 }}
             >
-            <FractalScenePipeline
-                config={config}
-                orbitRef={orbitControlsRef}
-                orbitProps={orbitProps}
-                showGizmo={showGizmo}
-                showGrid={showGrid}
-                modelWorldBounds={modelWorldBounds}
-                screenshotCaptureRequested={screenshotCaptureRequested}
-                onScreenshotCaptureHandled={onScreenshotCaptureHandled}
-                onControlsRef={onControlsRef}
-                markInteracting={markInteracting}
-            >
-                {children}
-            </FractalScenePipeline>
+                <FractalScenePipeline
+                    config={config}
+                    orbitRef={orbitControlsRef}
+                    orbitProps={orbitProps}
+                    showGizmo={showGizmo}
+                    showGrid={showGrid}
+                    modelWorldBounds={modelWorldBounds}
+                    screenshotCaptureRequested={screenshotCaptureRequested}
+                    onScreenshotCaptureHandled={onScreenshotCaptureHandled}
+                    onControlsRef={onControlsRef}
+                    markInteracting={markInteracting}
+                >
+                    {children}
+                </FractalScenePipeline>
             </Canvas>
         </div>
     );

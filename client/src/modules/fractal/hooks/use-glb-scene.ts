@@ -42,7 +42,8 @@ function extractEngineParams(params: UseGlbSceneParams): FractalParams {
         useFixedReference: params.useFixedReference,
         onEmptyData: params.onEmptyData,
         sceneKey: params.sceneKey,
-        boxBounds: params.boxBounds
+        boxBounds: params.boxBounds,
+        pointCloudSettings: params.pointCloudSettings
     };
 }
 
@@ -54,6 +55,7 @@ export default function useGlbScene(params: UseGlbSceneParams) {
 
     const {
         pointSizeMultiplier,
+        pointCloudSettings,
         sceneOpacities,
         activeModelBounds,
         onModelBoundsChanged,
@@ -118,12 +120,12 @@ export default function useGlbScene(params: UseGlbSceneParams) {
     }, [params]);
 
     useEffect(() => {
-        engineRef.current?.updatePointSize(pointSizeMultiplier);
-    }, [model, pointSizeMultiplier]);
+        engineRef.current?.updatePointCloudSettings(pointCloudSettings, pointSizeMultiplier);
+    }, [model, pointCloudSettings, pointSizeMultiplier]);
 
     useEffect(() => {
-        engineRef.current?.updateOpacity(params.sceneKey, sceneOpacities);
-    }, [model, sceneOpacities, params.sceneKey]);
+        engineRef.current?.updateOpacity(params.sceneKey, sceneOpacities, pointCloudSettings);
+    }, [model, pointCloudSettings, sceneOpacities, params.sceneKey]);
 
     const interaction = useModelInteraction({
         onSelect: params.onSelect,

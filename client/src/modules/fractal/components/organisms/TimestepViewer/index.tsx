@@ -4,6 +4,7 @@ import { useMemo, forwardRef, useState, useCallback } from 'react';
 import type { BoxBounds, ModelLoadingState, OrbitControlsHandle } from '@/modules/fractal/types';
 import type { SlicePlaneConfig } from '@/modules/fractal/types/configuration';
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
+import type { PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import type { RefObject } from 'react';
@@ -28,7 +29,7 @@ interface TimestepViewerProps {
     pluginScenes: PluginSceneDescriptor[];
     slicePlaneConfig: SlicePlaneConfig;
     boxBounds: BoxBounds;
-    pointSizeMultiplier: number;
+    pointCloudSettings: PointCloudSceneSettings;
     sceneOpacities: Record<string, number>;
     setModelWorldBounds?: (bounds: ModelWorldBounds | null) => void;
     activeModelBounds?: BoundsInfo | null;
@@ -59,7 +60,7 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     pluginScenes,
     slicePlaneConfig,
     boxBounds,
-    pointSizeMultiplier,
+    pointCloudSettings,
     sceneOpacities,
     setModelWorldBounds,
     activeModelBounds,
@@ -143,7 +144,8 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
                 sceneConfig={scene}
                 slicePlaneConfig={slicePlaneConfig}
                 boxBounds={boxBounds}
-                pointSizeMultiplier={pointSizeMultiplier}
+                pointSizeMultiplier={pointCloudSettings.pointSizeMultiplier}
+                pointCloudSettings={pointCloudSettings}
                 sceneOpacities={sceneOpacities}
                 setModelWorldBounds={setModelWorldBounds}
                 activeModelBounds={activeModelBounds}
@@ -175,7 +177,7 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         onLoadingStateChanged,
         onModelBoundsChanged,
         orbitControlsRef,
-        pointSizeMultiplier,
+        pointCloudSettings,
         position,
         rotation,
         scale,

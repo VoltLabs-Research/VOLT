@@ -11,6 +11,10 @@ export const selectFractalSceneConfig = (state: EditorStore) => ({
     effects: state.effects,
     lights: state.lights,
     renderConfig: state.renderConfig,
+    pointCloudSettings: {
+        ...state.pointCloudSettings,
+        pointSizeMultiplier: state.pointSizeMultiplier
+    },
     slicePlaneConfig: state.configuration.slicePlaneConfig,
     dpr: state.performanceSettings.dpr,
     performance: state.performanceSettings.performance,

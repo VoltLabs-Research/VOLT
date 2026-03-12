@@ -12,6 +12,8 @@ interface PointCloudUniforms extends Record<string, THREE.IUniform<number | THRE
     rimFactor: THREE.IUniform<number>;
     rimPower: THREE.IUniform<number>;
     pointScale: THREE.IUniform<number>;
+    edgeSoftness: THREE.IUniform<number>;
+    lightingMix: THREE.IUniform<number>;
     opacity: THREE.IUniform<number>;
 };
 
@@ -41,6 +43,8 @@ const createPointCloudUniforms = (): PointCloudUniforms => ({
     rimFactor: { value: 0.05 },
     rimPower: { value: 2.0 },
     pointScale: { value: 1.0 },
+    edgeSoftness: { value: 0.0 },
+    lightingMix: { value: 1.0 },
     opacity: { value: 1.0 }
 });
 
@@ -94,11 +98,11 @@ export class MaterialPipeline {
         return points;
     }
 
-    detectPointCloud(root: THREE.Group): THREE.Points | null {
-        let pointClouds: THREE.Points | null = null;
+    detectPointClouds(root: THREE.Group): THREE.Points[] {
+        const pointClouds: THREE.Points[] = [];
         root.traverse((child) => {
             if (child instanceof THREE.Points) {
-                pointClouds = child;
+                pointClouds.push(child);
             }
         });
 

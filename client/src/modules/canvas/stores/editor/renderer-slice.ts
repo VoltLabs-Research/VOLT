@@ -23,7 +23,6 @@ const INITIAL: RendererSettingsState = {
     },
     runtime: {
         toneMapping: ToneMappingMode.None,
-        toneMappingExposure: 1,
         outputColorSpace: OutputCS.SRGB,
 
         shadowEnabled: false,

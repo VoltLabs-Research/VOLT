@@ -6,15 +6,20 @@ import type {
     EffectsConfigState,
     LightsState
 } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { PowerPreference } from '@/shared/domain/rendering/performance';
 import type {
     RendererCreateState,
     RendererRuntimeState,
     RenderConfigState,
     DprSettings,
-    CanvasPerformanceProp,
-    PowerPreference
+    CanvasPerformanceProp
 } from '@/modules/fractal/stores/contracts/editor/performance-types';
+import type { PointCloudSettingsState } from '@/modules/fractal/stores/contracts/editor/scene-types';
 import type { SlicePlaneConfig, SceneObjectType } from '@/modules/fractal/api/entities/scene';
+
+export interface PointCloudSceneSettings extends PointCloudSettingsState {
+    pointSizeMultiplier: number;
+};
 
 export interface FractalSceneConfig {
     rendererCreate: RendererCreateState & { powerPreference: PowerPreference };
@@ -26,6 +31,7 @@ export interface FractalSceneConfig {
     effects: EffectsConfigState;
     lights: LightsState;
     renderConfig: RenderConfigState;
+    pointCloudSettings: PointCloudSceneSettings;
     slicePlaneConfig: SlicePlaneConfig;
     dpr: DprSettings;
     performance: CanvasPerformanceProp;

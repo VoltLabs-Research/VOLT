@@ -6,6 +6,12 @@ import { disposeObject3DResources } from '@/modules/fractal/utilities/resource-d
 import type IFractalAssetLoader from '@/modules/fractal/api/entities/asset-loader';
 import { ModelTransform } from '@/modules/fractal/utilities/model-transform';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
+import {
+    PointCloudDetailLevel,
+    PointCloudStyleMode
+} from '@/modules/fractal/stores/contracts/editor/scene-types';
+
+import type { PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 
 interface FractalSurface {
     scene: THREE.Scene;
@@ -36,12 +42,62 @@ export type FractalParams = {
     onEmptyData?: () => void;
     sceneKey?: string;
     boxBounds?: BoxBounds;
+    pointCloudSettings?: PointCloudSceneSettings;
 };
 
 type EngineCallbacks = {
     onModelLoaded?: (bounds: BoundsInfo) => void;
     onLoadingState?: (state: ModelLoadingState) => void;
     onModelAvailable?: (model: THREE.Group | null) => void;
+};
+
+const getPointCloudDetailRatio = (detailLevel: PointCloudDetailLevel, pointCount: number): number => {
+    if (detailLevel === PointCloudDetailLevel.Quality) {
+        return 1;
+    }
+
+    if (detailLevel === PointCloudDetailLevel.Balanced) {
+        return 0.7;
+    }
+
+    if (detailLevel === PointCloudDetailLevel.Performance) {
+        return 0.45;
+    }
+
+    if (pointCount > 2_000_000) {
+        return 0.35;
+    }
+
+    if (pointCount > 1_000_000) {
+        return 0.5;
+    }
+
+    if (pointCount > 500_000) {
+        return 0.7;
+    }
+
+    return 1;
+};
+
+const getPointCloudStyleUniforms = (settings: PointCloudSceneSettings) => {
+    if (!settings.overridesEnabled) {
+        return {
+            edgeSoftness: 0,
+            lightingMix: 1
+        };
+    }
+
+    if (settings.style === PointCloudStyleMode.Flat) {
+        return {
+            edgeSoftness: 0,
+            lightingMix: 0
+        };
+    }
+
+    return {
+        edgeSoftness: 0.18,
+        lightingMix: 1
+    };
 };
 
 export class FractalEngine {
@@ -143,11 +199,13 @@ export class FractalEngine {
                 this.params.onEmptyData?.();
             }
 
-            const pointCloud = this.materialPipeline.detectPointCloud(loadedModel);
+            const pointClouds = this.materialPipeline.detectPointClouds(loadedModel);
             let newMesh: THREE.Mesh | THREE.Points | null = null;
-            if (pointCloud) {
-                this.materialPipeline.configurePointCloud(pointCloud);
-                newMesh = pointCloud;
+            if (pointClouds.length > 0) {
+                pointClouds.forEach((pointCloud) => {
+                    this.materialPipeline.configurePointCloud(pointCloud);
+                });
+                newMesh = pointClouds[0] ?? null;
             } else {
                 newMesh = this.materialPipeline.configureGeometry(loadedModel, this.params.sliceClippingPlanes);
             }
@@ -167,6 +225,8 @@ export class FractalEngine {
             this.state.bounds = bounds;
             this.state.lastLoadedUrl = url;
             this.consecutiveLoadFailures = 0;
+
+            this.updatePointCloudSettings(this.params.pointCloudSettings, this.params.pointCloudSettings?.pointSizeMultiplier ?? 1);
 
             this.callbacks.onModelLoaded?.(bounds);
             this.callbacks.onModelAvailable?.(loadedModel);
@@ -236,25 +296,66 @@ export class FractalEngine {
         return hasData;
     }
 
-    updatePointSize(multiplier: number) {
-        const mesh = this.state.mesh;
-        if (!mesh || !(mesh instanceof THREE.Points) || !mesh.material) return;
-
-        const mat = mesh.material;
-        if (!(mat instanceof THREE.ShaderMaterial)) {
+    updatePointCloudSettings(settings: PointCloudSceneSettings | undefined, fallbackPointSizeMultiplier: number) {
+        if (!this.state.model) {
             return;
         }
 
-        const baseScale = mat.userData.basePointScale;
-        if (typeof baseScale !== 'number') return;
+        const pointCloudSettings: PointCloudSceneSettings = settings ?? {
+            overridesEnabled: false,
+            detailLevel: PointCloudDetailLevel.Auto,
+            useSceneOpacity: true,
+            style: PointCloudStyleMode.Softened,
+            pointSizeMultiplier: fallbackPointSizeMultiplier
+        };
+        const styleUniforms = getPointCloudStyleUniforms(pointCloudSettings);
 
-        mat.uniforms.pointScale.value = baseScale * multiplier;
+        this.state.model.traverse((child) => {
+            if (!(child instanceof THREE.Points) || !child.material) {
+                return;
+            }
+
+            const material = child.material;
+            if (!(material instanceof THREE.ShaderMaterial)) {
+                return;
+            }
+
+            const baseScale = material.userData.basePointScale;
+            if (typeof baseScale === 'number' && material.uniforms?.pointScale) {
+                material.uniforms.pointScale.value = baseScale * pointCloudSettings.pointSizeMultiplier;
+            }
+
+            if (material.uniforms?.edgeSoftness) {
+                material.uniforms.edgeSoftness.value = styleUniforms.edgeSoftness;
+            }
+
+            if (material.uniforms?.lightingMix) {
+                material.uniforms.lightingMix.value = styleUniforms.lightingMix;
+            }
+
+            const positions = child.geometry.getAttribute('position');
+            const pointCount = positions?.count ?? 0;
+            const drawRatio = pointCloudSettings.overridesEnabled
+                ? getPointCloudDetailRatio(pointCloudSettings.detailLevel, pointCount)
+                : 1;
+
+            child.geometry.setDrawRange(0, Math.max(1, Math.floor(pointCount * drawRatio)));
+        });
+
         this.surface.invalidate();
     }
 
-    updateOpacity(sceneKey: string | undefined, sceneOpacities: Record<string, number>) {
+    updateOpacity(
+        sceneKey: string | undefined,
+        sceneOpacities: Record<string, number>,
+        pointCloudSettings?: PointCloudSceneSettings
+    ) {
         if (!this.state.model || !sceneKey) return;
         const opacity = sceneOpacities[sceneKey] ?? 1.0;
+        const pointOpacity = pointCloudSettings?.overridesEnabled && !pointCloudSettings.useSceneOpacity
+            ? 1
+            : opacity;
+
         this.state.model.traverse((child) => {
             if (child instanceof THREE.Points && child.material) {
                 const mat = child.material;
@@ -263,7 +364,7 @@ export class FractalEngine {
                 }
 
                 if (mat.uniforms?.opacity) {
-                    mat.uniforms.opacity.value = opacity;
+                    mat.uniforms.opacity.value = pointOpacity;
                 }
             } else if (child instanceof THREE.Mesh && child.material) {
                 const mat = child.material;

@@ -31,6 +31,8 @@ uniform float specularFactor;
 uniform float shininess;
 uniform float rimFactor;
 uniform float rimPower;
+uniform float edgeSoftness;
+uniform float lightingMix;
 uniform float opacity;
 
 /**
@@ -45,7 +47,8 @@ void main(){
     vec2 coord = gl_PointCoord - vec2(0.5);
     
     // Keep only fragments inside a radius-0.5 circle (circular sprite).
-    if(length(coord) > 0.5) discard;
+    float radius = length(coord);
+    if(radius > 0.5) discard;
     
     // Reconstruct Z on a hemisphere of radius 0.5 to fake a spherical surface
     float z = sqrt(0.25 - dot(coord, coord));
@@ -76,7 +79,11 @@ void main(){
     vec3 rimColor = vec3(0.5) * rim * rimFactor * opacity; 
     
     // Final mix emphasizes the base color by down-weighting specular and rim.
-    vec3 finalColor = ambientColor + diffuseColor + specularColor * 0.3 + rimColor * 0.2;
-    
-    gl_FragColor = vec4(finalColor, opacity);
+    vec3 litColor = ambientColor + diffuseColor + specularColor * 0.3 + rimColor * 0.2;
+    vec3 finalColor = mix(vColor, litColor, lightingMix);
+    float alphaFactor = edgeSoftness > 0.0
+        ? smoothstep(0.5, 0.5 - edgeSoftness, radius)
+        : 1.0;
+
+    gl_FragColor = vec4(finalColor, opacity * alphaFactor);
 }

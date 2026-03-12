@@ -8,6 +8,7 @@ import { useMemo, useEffect, useCallback, createElement } from 'react';
 import type { BoxBounds, ModelLoadingState, OrbitControlsHandle } from '@/modules/fractal/types';
 import type { SlicePlaneConfig, ModelWorldBounds } from '@/modules/fractal/types/configuration';
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
+import type { PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 import type { FC, RefObject } from 'react';
 
@@ -26,6 +27,7 @@ interface SingleModelViewerProps {
     slicePlaneConfig: SlicePlaneConfig;
     boxBounds: BoxBounds;
     pointSizeMultiplier: number;
+    pointCloudSettings?: PointCloudSceneSettings;
     sceneOpacities: Record<string, number>;
     setModelWorldBounds?: (bounds: ModelWorldBounds | null) => void;
     activeModelBounds?: BoundsInfo | null;
@@ -54,6 +56,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     slicePlaneConfig,
     boxBounds,
     pointSizeMultiplier,
+    pointCloudSettings,
     sceneOpacities,
     setModelWorldBounds,
     activeModelBounds,
@@ -153,6 +156,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         sceneKey,
         boxBounds,
         pointSizeMultiplier,
+        pointCloudSettings,
         sceneOpacities,
         activeModelBounds,
         onModelBoundsChanged,
