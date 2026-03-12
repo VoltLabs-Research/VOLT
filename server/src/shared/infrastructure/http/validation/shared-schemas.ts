@@ -6,6 +6,7 @@ interface PaginationQuerySchemaOptions {
 };
 
 export const objectIdSchema = z.string().trim().regex(/^[a-fA-F0-9]{24}$/);
+export const domainExposureIdSchema = z.string().trim().min(1);
 
 export const paginationPageSchema = z.coerce.number().int().min(1).optional();
 

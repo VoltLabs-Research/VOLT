@@ -6,6 +6,7 @@ export interface RoutePluginExecutionInput {
     analysis: Analysis;
     analysisId: string;
     trajectoryId: string;
+    trajectoryName: string;
     trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
     teamId: string;
     plugin: Plugin;

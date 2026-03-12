@@ -9,15 +9,6 @@ import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatex
 import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 import type LatexFile from '@modules/latex/domain/entities/LatexFile';
 
-interface MongoDuplicateKeyError {
-    code?: number;
-};
-
-const isMongoDuplicateKeyError = (error: unknown): error is MongoDuplicateKeyError =>
-    typeof error === 'object' && error !== null && 'code' in error;
-
-const MAIN_TEX_NAME = 'main.tex';
-
 const toDTO = (file: LatexFile) => ({
     _id: file._id,
     documentId: file.props.document,
@@ -32,10 +23,6 @@ const toDTO = (file: LatexFile) => ({
 /**
  * Returns all LatexFile records for a document.
  *
- * **Auto-migration (lazy compat):** If no files exist yet but the document
- * has a non-empty `content` field (legacy single-file model), a `main.tex`
- * LatexFile is created transparently so existing documents continue working
- * without a destructive data migration.
  */
 @injectable()
 export class ListLatexFilesUseCase implements IUseCase<ListLatexFilesInputDTO, ListLatexFilesOutputDTO, ApplicationError> {
@@ -61,31 +48,7 @@ export class ListLatexFilesUseCase implements IUseCase<ListLatexFilesInputDTO, L
                 ));
             }
 
-            let files = await this.latexFileRepository.findAllByDocument(input.documentId);
-
-            if (files.length === 0) {
-                try {
-                    const migratedFile = await this.latexFileRepository.create({
-                        document: input.documentId,
-                        team: input.teamId,
-                        name: MAIN_TEX_NAME,
-                        path: '',
-                        content: document.props.content ?? '',
-                        isEntrypoint: true,
-                        createdBy: document.props.createdBy,
-                        createdAt: new Date(),
-                        updatedAt: new Date()
-                    });
-                    files = [migratedFile];
-                } catch (createError: unknown) {
-                    if (isMongoDuplicateKeyError(createError) && createError.code === 11000) {
-                        // Another concurrent request already seeded main.tex — re-read.
-                        files = await this.latexFileRepository.findAllByDocument(input.documentId);
-                    } else {
-                        throw createError;
-                    }
-                }
-            }
+            const files = await this.latexFileRepository.findAllByDocument(input.documentId);
 
             return Result.ok(files.map(toDTO));
         } catch (error) {

@@ -3,6 +3,7 @@ import {
     GetListingRowsByAnalysisIdOutputDTO,
     ListingRowByAnalysisData
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
+import { resolveListingPagination } from '@modules/plugin/application/use-cases/listing-row/listing-row-pagination';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 
@@ -43,8 +44,7 @@ export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRow
     ) {}
 
     async execute(input: GetListingRowsByAnalysisIdInputDTO): Promise<Result<GetListingRowsByAnalysisIdOutputDTO>> {
-        const page = Math.max(1, Number(input.page || 1));
-        const limit = Math.min(200, Math.max(1, Number(input.limit || 50)));
+        const { page, limit } = resolveListingPagination(input);
 
         const analysis = await this.analysisRepository.findById(input.analysisId);
         if (!analysis?.props.teamCluster) {
@@ -55,6 +55,7 @@ export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRow
             analysis.props.teamCluster,
             'plugin.listings.list',
             {
+                teamId: input.teamId,
                 analysisId: input.analysisId,
                 page,
                 limit

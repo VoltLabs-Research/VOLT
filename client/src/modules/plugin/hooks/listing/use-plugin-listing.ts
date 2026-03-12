@@ -84,6 +84,7 @@ const usePluginListing = ({
     const listingMetaQuery = usePluginListingQuery(
         {
             pluginId,
+            teamId,
             exposureName,
             exposureId,
             trajectoryId,
@@ -126,6 +127,7 @@ const usePluginListing = ({
     ): Promise<PaginatedResponse<ListingRow>> => {
         const response = await fetchPluginListing({
             pluginId: params.pluginId,
+            teamId: params.teamId,
             exposureName: params.exposureName,
             exposureId: params.exposureId,
             trajectoryId: params.trajectoryId,
@@ -145,13 +147,14 @@ const usePluginListing = ({
     const exportData = useCallback(async (format: ExportType): Promise<Blob> => {
         return exportListingMutation.mutateAsync({
             pluginId,
+            teamId,
             exposureName,
             exposureId,
             trajectoryId,
             analysisId,
             format
         });
-    }, [exportListingMutation, pluginId, exposureName, exposureId, trajectoryId, analysisId]);
+    }, [exportListingMutation, pluginId, teamId, exposureName, exposureId, trajectoryId, analysisId]);
 
     const handleDelete = useCallback(async (rows: ListingRow[]) => {
         await onDeleteRows?.(rows);

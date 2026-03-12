@@ -51,10 +51,20 @@ export class DeleteLatexFileUseCase implements IUseCase<DeleteLatexFileInputDTO,
             }
 
             if (file.props.isEntrypoint) {
-                return Result.fail(ApplicationError.badRequest(
-                    ErrorCodes.VALIDATION_INVALID_INPUT,
-                    'Cannot delete the entrypoint file. Set another file as entrypoint first.'
-                ));
+                const remainingFiles = (await this.latexFileRepository.findAllByDocument(input.documentId))
+                    .filter((currentFile) => currentFile._id !== input.fileId);
+
+                if (remainingFiles.length > 0) {
+                    const nextEntrypoint = remainingFiles.find((currentFile) =>
+                        currentFile.props.name.toLowerCase().endsWith('.tex')
+                    ) ?? remainingFiles[0];
+
+                    await this.latexFileRepository.clearEntrypointForDocument(input.documentId);
+                    await this.latexFileRepository.updateById(nextEntrypoint._id, {
+                        isEntrypoint: true,
+                        updatedAt: new Date()
+                    });
+                }
             }
 
             await this.latexFileRepository.deleteById(input.fileId);

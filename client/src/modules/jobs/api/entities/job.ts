@@ -3,6 +3,7 @@ export type JobMetadataValue = boolean | number | string | null | undefined;
 export interface Job {
     jobId: string;
     trajectoryId: string;
+    trajectoryName?: string;
     timestep: number;
     sessionId?: string;
     status: JobStatus;

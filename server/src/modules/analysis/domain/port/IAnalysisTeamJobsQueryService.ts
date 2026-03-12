@@ -1,5 +1,7 @@
 export interface AnalysisJobMetadata {
     analysisId?: string;
+    trajectoryId?: string;
+    trajectoryName?: string;
     timestep?: number;
     [key: string]: unknown;
 };
@@ -13,6 +15,8 @@ export interface AnalysisJobSummary {
     message?: string;
     metadata?: AnalysisJobMetadata;
     analysisId?: string;
+    trajectoryId?: string;
+    trajectoryName?: string;
     timestep?: number;
 };
 

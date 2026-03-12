@@ -26,6 +26,7 @@ export interface TeamJobSnapshot {
     updatedAt?: string;
     analysisId?: string;
     trajectoryId?: string;
+    trajectoryName?: string;
     timestep?: number;
     [key: string]: unknown;
 }

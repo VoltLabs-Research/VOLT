@@ -1,6 +1,5 @@
 import { ICON_LIB_LOADERS } from '@/shared/presentation/components/DynamicIcon/loaders';
 import { memo, useEffect, useState } from 'react';
-import { GrStatusUnknown } from 'react-icons/gr';
 import type { IconType, IconBaseProps } from 'react-icons';
 
 type IconLib = keyof typeof ICON_LIB_LOADERS;
@@ -31,6 +30,33 @@ const isRenderableComponent = (value: unknown): value is IconType => {
 
 const moduleCache = new Map<IconLib, Promise<Record<string, unknown>>>();
 const iconCache = new Map<string, IconType>();
+
+const DefaultFallbackIcon: IconType = ({
+    size = '1em',
+    color = 'currentColor',
+    className,
+    style,
+    title
+}) => (
+    <svg
+        aria-hidden='true'
+        viewBox='0 0 24 24'
+        width={size}
+        height={size}
+        fill='none'
+        stroke={color}
+        strokeWidth='1.8'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+        className={className}
+        style={style}
+    >
+        {title ? <title>{title}</title> : null}
+        <circle cx='12' cy='12' r='9' />
+        <path d='M9.75 9a2.25 2.25 0 0 1 4.16-1.18c.38.5.59 1.1.59 1.72 0 1.57-1.5 2.3-2.17 2.95-.42.41-.58.77-.58 1.51' />
+        <circle cx='12' cy='17' r='0.8' fill={color} stroke='none' />
+    </svg>
+);
 
 const resolveIcon = async (iconName: string, fallback: IconType): Promise<IconType> => {
     if (!iconName) return fallback;
@@ -68,7 +94,7 @@ export type DynamicIconProps = IconBaseProps & {
 
 const DynamicIcon = memo(function DynamicIcon({
     iconName,
-    fallback = GrStatusUnknown,
+    fallback = DefaultFallbackIcon,
     ...iconProps
 }: DynamicIconProps) {
     const [Icon, setIcon] = useState<IconType>(() => fallback);

@@ -23,7 +23,7 @@ interface ResolveNotebookForSessionInput extends CreateScriptingJupyterSessionIn
     userId: string;
 };
 
-const LOCK_TTL_MS = 30_000;
+const LOCK_TTL_MS = 90_000;
 
 @injectable()
 export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScriptingJupyterSessionInputDTO, CreateScriptingJupyterSessionOutputDTO, ApplicationError> {

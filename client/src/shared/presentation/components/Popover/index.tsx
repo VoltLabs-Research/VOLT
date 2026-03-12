@@ -140,10 +140,14 @@ const Popover: React.FC<PopoverProps> = ({
 
     const triggerElement = trigger && isValidElement(trigger)
         ? cloneElement(trigger as PopoverTriggerElement, {
-            ref: composeRefs(
-                refs.setReference,
-                (trigger as PopoverTriggerElement).props.ref
-            ),
+            ...(triggerAction === 'contextmenu'
+                ? {}
+                : {
+                    ref: composeRefs(
+                        refs.setReference,
+                        (trigger as PopoverTriggerElement).props.ref
+                    )
+                }),
             'data-popover-trigger': id,
             ...getReferenceProps({
                 onContextMenu: handleContextMenu

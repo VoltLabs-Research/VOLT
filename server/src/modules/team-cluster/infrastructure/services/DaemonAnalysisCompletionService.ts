@@ -17,10 +17,19 @@ const SESSION_TTL_SECONDS = 86400;
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const STATUS_TTL_SECONDS = 86400;
 
+interface JobTrajectoryContext {
+    trajectoryId?: string;
+    trajectoryName?: string;
+    timestep?: number;
+};
+
 interface DaemonJobCompletionInput {
     jobId: string;
     analysisId: string;
     teamId: string;
+    trajectoryId?: string;
+    trajectoryName?: string;
+    timestep?: number;
     success: boolean;
     error?: string;
 };
@@ -66,12 +75,13 @@ export default class DaemonAnalysisCompletionService {
     async handleJobCompletion(input: DaemonJobCompletionInput): Promise<void> {
         const { jobId, analysisId, teamId, success, error } = input;
         const status = success ? JobStatus.Completed : JobStatus.Failed;
+        const trajectoryContext = await this.resolveTrajectoryContext(input);
 
         // 1. Project job status to Redis for dashboard/socket consumers
-        await this.projectJobStatus(jobId, status, teamId, analysisId, error);
+        await this.projectJobStatus(jobId, status, teamId, analysisId, trajectoryContext, error);
 
         // 2. Publish socket event to frontend
-        await this.publishJobStatusChanged(jobId, teamId, status, analysisId);
+        await this.publishJobStatusChanged(jobId, teamId, status, analysisId, trajectoryContext, error);
 
         // 3. Increment completedFrames on analysis
         if (success) {
@@ -105,19 +115,43 @@ export default class DaemonAnalysisCompletionService {
         status: JobStatus,
         teamId: string,
         analysisId: string,
+        trajectoryContext: JobTrajectoryContext,
         error?: string
     ): Promise<void> {
+        const metadata: Record<string, unknown> = {
+            jobId,
+            analysisId,
+            status,
+            queueType: QUEUE_TYPE
+        };
         const statusData: Record<string, unknown> = {
             jobId,
             status,
             teamId,
             analysisId,
             queueType: QUEUE_TYPE,
+            metadata,
             timestamp: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
 
+        if (trajectoryContext.trajectoryId) {
+            metadata.trajectoryId = trajectoryContext.trajectoryId;
+            statusData.trajectoryId = trajectoryContext.trajectoryId;
+        }
+
+        if (trajectoryContext.trajectoryName) {
+            metadata.trajectoryName = trajectoryContext.trajectoryName;
+            statusData.trajectoryName = trajectoryContext.trajectoryName;
+        }
+
+        if (typeof trajectoryContext.timestep === 'number') {
+            metadata.timestep = trajectoryContext.timestep;
+            statusData.timestep = trajectoryContext.timestep;
+        }
+
         if (error) {
+            metadata.error = error;
             statusData.error = error;
         }
 
@@ -136,7 +170,9 @@ export default class DaemonAnalysisCompletionService {
         jobId: string,
         teamId: string,
         status: JobStatus,
-        analysisId: string
+        analysisId: string,
+        trajectoryContext: JobTrajectoryContext,
+        error?: string
     ): Promise<void> {
         const event = new JobStatusChangedEvent({
             jobId,
@@ -147,11 +183,36 @@ export default class DaemonAnalysisCompletionService {
                 jobId,
                 analysisId,
                 status,
-                queueType: QUEUE_TYPE
+                queueType: QUEUE_TYPE,
+                trajectoryId: trajectoryContext.trajectoryId,
+                trajectoryName: trajectoryContext.trajectoryName,
+                timestep: trajectoryContext.timestep,
+                error
             }
         });
 
         await this.eventBus.publish(event);
+    }
+
+    private async resolveTrajectoryContext(input: DaemonJobCompletionInput): Promise<JobTrajectoryContext> {
+        let trajectoryId = input.trajectoryId;
+
+        if (!trajectoryId) {
+            const analysis = await this.analysisRepo.findById(input.analysisId);
+            trajectoryId = trajectoryId || analysis?.props.trajectory;
+        }
+
+        let trajectoryName: string | undefined;
+        if (trajectoryId) {
+            const trajectory = await this.trajectoryRepo.findById(trajectoryId);
+            trajectoryName = trajectory?.props.name;
+        }
+
+        return {
+            trajectoryId,
+            trajectoryName,
+            timestep: input.timestep
+        };
     }
 
     private async recordFailure(analysisId: string): Promise<void> {

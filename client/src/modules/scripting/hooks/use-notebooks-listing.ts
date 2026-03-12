@@ -14,10 +14,11 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import { getValueByPath } from '@/shared/utils/format';
 import { sortData } from '@/shared/utils/sort';
-import { FolderOpen, Pencil } from 'lucide-react';
-import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { sileo } from 'sileo';
+import {
+    JUPYTER_SESSION_PENDING_MESSAGE,
+    JUPYTER_SESSION_TIMEOUT_MESSAGE,
+    waitForReadyScriptingSession
+} from '../utilities/jupyter-session';
 import {
     createEmptyNotebooksResponse,
     createScriptingNotebooksExport,
@@ -25,6 +26,10 @@ import {
     getTrajectoryIds
 } from '../utilities/notebooks';
 import { getJupyterStartErrorMessage } from '../utilities/workspace';
+import { FolderOpen, Pencil } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { sileo } from 'sileo';
 import type { DocumentListingExportParams, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { ScriptingNotebook } from '@/modules/scripting/api/entities/scripting-notebook';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
@@ -34,11 +39,15 @@ export interface NotebooksListingContext {
     scope: ScriptingNotebookScope;
 };
 
+interface NotebookStartupWindowState {
+    title: string;
+    description: string;
+};
+
 export const RENAME_SCRIPTING_NOTEBOOK_MODAL_ID = 'rename-scripting-notebook-modal';
 
 const EXPORT_PAGE_LIMIT = 500;
 const DEFAULT_NOTEBOOK_SCOPE = ScriptingNotebookScope.General;
-const JUPYTER_STARTING_ERROR = 'Jupyter is still starting. Please retry in a moment.';
 const NEW_TAB_BLOCKED_ERROR = 'Unable to open a new tab. Please allow pop-ups for this site.';
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
@@ -68,6 +77,48 @@ const RENAME_NOTEBOOK_TOAST = {
 
 const resolveScope = (scope?: ScriptingNotebookScope): ScriptingNotebookScope => {
     return scope || DEFAULT_NOTEBOOK_SCOPE;
+};
+
+const renderNotebookStartupTab = (notebookTab: Window, state: NotebookStartupWindowState): void => {
+    if (notebookTab.closed) {
+        return;
+    }
+
+    const { document } = notebookTab;
+    document.title = state.title;
+    if (!document.body) {
+        return;
+    }
+
+    document.body.replaceChildren();
+    document.body.style.margin = '0';
+    document.body.style.minHeight = '100vh';
+    document.body.style.display = 'flex';
+    document.body.style.alignItems = 'center';
+    document.body.style.justifyContent = 'center';
+    document.body.style.background = '#0f1115';
+    document.body.style.color = '#f7f8fa';
+    document.body.style.fontFamily = 'Inter, system-ui, sans-serif';
+
+    const container = document.createElement('main');
+    container.style.maxWidth = '480px';
+    container.style.padding = '32px';
+    container.style.textAlign = 'center';
+
+    const title = document.createElement('h1');
+    title.textContent = state.title;
+    title.style.margin = '0 0 12px';
+    title.style.fontSize = '24px';
+
+    const description = document.createElement('p');
+    description.textContent = state.description;
+    description.style.margin = '0';
+    description.style.fontSize = '14px';
+    description.style.lineHeight = '1.5';
+    description.style.color = '#c2c6cf';
+
+    container.append(title, description);
+    document.body.append(container);
 };
 
 const useNotebooksListing = () => {
@@ -169,24 +220,36 @@ const useNotebooksListing = () => {
         }
 
         notebookTab.opener = null;
-        notebookTab.document.title = 'Opening notebook...';
+        renderNotebookStartupTab(notebookTab, {
+            title: 'Opening notebook...',
+            description: JUPYTER_SESSION_PENDING_MESSAGE
+        });
 
         try {
-            const session = await createNotebookSession({
+            const result = await waitForReadyScriptingSession(() => createNotebookSession({
                 notebookId: notebook._id,
                 teamClusterId: notebook.teamCluster
+            }), {
+                isCancelled: () => notebookTab.closed
             });
 
-            if (!session.jupyter.ready) {
-                notebookTab.close();
+            if (notebookTab.closed) {
+                return;
+            }
+
+            if (result.timedOut || !result.session?.jupyter.ready) {
+                renderNotebookStartupTab(notebookTab, {
+                    title: 'Notebook is still starting',
+                    description: JUPYTER_SESSION_TIMEOUT_MESSAGE
+                });
                 sileo.error({
                     title: 'Jupyter is still starting',
-                    description: JUPYTER_STARTING_ERROR
+                    description: JUPYTER_SESSION_TIMEOUT_MESSAGE
                 });
                 return;
             }
 
-            notebookTab.location.replace(session.jupyter.url);
+            notebookTab.location.replace(result.session.jupyter.url);
         } catch (error: unknown) {
             notebookTab.close();
 

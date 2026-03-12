@@ -1,8 +1,6 @@
-import { usePluginListingSubListingQueries } from '@/modules/plugin/hooks/listing/queries';
 import usePluginCatalog from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import useAnalysisAtomPropertiesAvailability from '@/modules/trajectory/hooks/trajectory/use-analysis-atom-properties-availability';
@@ -12,13 +10,6 @@ import { useEffect, useMemo } from 'react';
 
 import type { RenderableExposurePayload } from '@/modules/trajectory/api/dtos/scene-artifacts';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-
-export interface SubListingEntry {
-    exposureId: string;
-    exposureName: string;
-    subListingName: string;
-    label: string;
-};
 
 interface FallbackListingExposure {
     exposureId: string;
@@ -43,6 +34,14 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
         if (!analysisId || !trajectory?.analysis?.length) return undefined;
         return trajectory.analysis.find((analysis) => analysis._id === analysisId);
     }, [trajectory?.analysis, analysisId]);
+    const pluginId = selectedAnalysis?.plugin;
+    const plugin = pluginId ? pluginsById[pluginId] : undefined;
+
+    const pluginListingExposures = useMemo(() => {
+        return getListingRelevantExposures(plugin?.exposures);
+    }, [plugin?.exposures]);
+
+    const shouldUseSceneExposureFallback = !pluginId || !plugin || pluginListingExposures.length === 0;
 
     const sceneArtifactsQueryResult = sceneArtifactsQuery(
         {
@@ -53,7 +52,7 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
             page: 1,
             limit: 1000
         },
-        { enabled: !!trajectoryId && !!analysisId }
+        { enabled: !!trajectoryId && !!analysisId && shouldUseSceneExposureFallback }
     );
 
     useEffect(() => {
@@ -67,24 +66,16 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
         return (sceneArtifactsQueryResult.data?.data ?? []) as RenderableExposurePayload[];
     }, [sceneArtifactsQueryResult.data?.data]);
 
-    useEnsurePluginCatalogLoaded(Boolean(sceneExposureFallback.length));
-
-    const pluginId = selectedAnalysis?.plugin;
-    const plugin = pluginId ? pluginsById[pluginId] : undefined;
-    const hasRenderablePluginData = sceneExposureFallback.length > 0;
+    useEnsurePluginCatalogLoaded(Boolean(pluginId || sceneExposureFallback.length));
 
     useEffect(() => {
-        if (!pluginId || plugin || !hasRenderablePluginData) return;
+        if (!pluginId || plugin) return;
         ensurePluginById(pluginId).catch((error: unknown) => {
             if (isAccessDeniedError(error)) {
                 notifyApiError(error, { fallbackTitle: 'You do not have permission to perform this action.' });
             }
         });
-    }, [pluginId, plugin, ensurePluginById, hasRenderablePluginData]);
-
-    const pluginListingExposures = useMemo(() => {
-        return getListingRelevantExposures(plugin?.exposures);
-    }, [plugin?.exposures]);
+    }, [pluginId, plugin, ensurePluginById]);
 
     const fallbackListingExposures = useMemo(() => {
         const uniqueById = new Map<string, FallbackListingExposure>();
@@ -104,6 +95,7 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
 
     const resolvedPluginId = useMemo(() => {
         if (pluginId && plugin) return pluginId;
+        if (pluginId) return pluginId;
         return sceneExposureFallback[0]?.pluginId;
     }, [pluginId, plugin, sceneExposureFallback]);
 
@@ -126,62 +118,11 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
 
     const hasAtomProperties = atomPropertiesAvailability.hasAtomProperties;
 
-    const subListingQueries = usePluginListingSubListingQueries(
-        listingExposures.map((exposure) => ({
-            pluginId: resolvedPluginId!,
-            exposureId: exposure.exposureId,
-            exposureName: exposure.name,
-            trajectoryId,
-            limit: 1,
-            page: 1
-        }))
-    );
-
-    useEffect(() => {
-        for (const result of subListingQueries) {
-            if (!result.error) continue;
-            if (isAccessDeniedError(result.error)) {
-                notifyApiError(result.error, { fallbackTitle: 'You do not have permission to perform this action.' });
-            }
-        }
-    }, [subListingQueries]);
-
-    const subListingMap = useMemo(() => {
-        const map = new Map<string, string[]>();
-        for (let i = 0; i < listingExposures.length; i++) {
-            const result = subListingQueries[i];
-            if (!result?.data) continue;
-            const subListingNames = result.data._meta?.subListingNames;
-            if (subListingNames && subListingNames.length > 0) {
-                map.set(listingExposures[i].exposureId, subListingNames);
-            }
-        }
-        return map;
-    }, [listingExposures, subListingQueries]);
-
-    const subListingEntries = useMemo<SubListingEntry[]>(() => {
-        const entries: SubListingEntry[] = [];
-        for (const exposure of listingExposures) {
-            const names = subListingMap.get(exposure.exposureId);
-            if (!names) continue;
-            for (const subListingName of names) {
-                entries.push({
-                    exposureId: exposure.exposureId,
-                    exposureName: exposure.name,
-                    subListingName,
-                    label: formatSnakeCaseToTitle(subListingName)
-                });
-            }
-        }
-        return entries;
-    }, [listingExposures, subListingMap]);
-
     return {
         pluginId: resolvedPluginId,
-        isPluginReady: Boolean(plugin),
+        isPluginReady: Boolean(plugin ?? resolvedPluginId),
         listingExposures,
-        hasAtomProperties,
-        subListingEntries
+        hasAtomProperties
     };
 };
 

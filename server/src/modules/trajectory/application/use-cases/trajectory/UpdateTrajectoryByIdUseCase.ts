@@ -21,6 +21,8 @@ export default class UpdateTrajectoryByIdUseCase implements IUseCase<UpdateTraje
         const result = await this.trajectoryRepo.updateById(trajectoryId, {
             name,
             isPublic
+        }, {
+            populate: ['team', 'analysis', 'frames.simulationCell']
         });
 
         if(!result){

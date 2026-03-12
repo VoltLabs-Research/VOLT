@@ -117,6 +117,7 @@ const runCompiler = (compiler: CompilerConfig, workDir: string): Promise<Compile
 };
 
 const MAIN_TEX_FALLBACK = 'main.tex';
+const TEX_EXTENSION = '.tex';
 
 /**
  * Compiles a LaTeX document to PDF using the first available system compiler.
@@ -177,7 +178,19 @@ export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumen
                 const content = document.props.content ?? '';
                 await fs.writeFile(path.join(workDir, MAIN_TEX_FALLBACK), content, 'utf-8');
             } else {
-                const entrypointFile = latexFiles.find((f) => f.props.isEntrypoint) ?? latexFiles[0];
+                const entrypointFile = latexFiles.find((f) => f.props.isEntrypoint)
+                    ?? latexFiles.find((f) => f.props.name.toLowerCase().endsWith(TEX_EXTENSION));
+
+                if (!entrypointFile) {
+                    await this.tempFileService.delete(workDir, { recursive: true });
+
+                    return Result.fail(new ApplicationError(
+                        ErrorCodes.LATEX_COMPILATION_FAILED,
+                        'No .tex file was found in this document. Add or select a .tex file to compile.',
+                        422
+                    ));
+                }
+
                 entrypointFilename = entrypointFile.fullPath;
 
                 for (const file of latexFiles) {
@@ -231,10 +244,31 @@ export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumen
                 ));
             }
 
-            // The output PDF is always named after the entrypoint without extension.
-            const pdfName = entrypointFilename.replace(/\.tex$/, '.pdf');
-            const pdfPath = path.join(workDir, pdfName);
-            const pdfBuffer = await fs.readFile(pdfPath);
+            const entrypointDir = path.dirname(entrypointFilename);
+            const entrypointBaseName = path.parse(entrypointFilename).name;
+            const pdfName = `${entrypointBaseName}.pdf`;
+            const pdfPath = entrypointDir === '.'
+                ? path.join(workDir, pdfName)
+                : path.join(workDir, entrypointDir, pdfName);
+            let pdfBuffer: Buffer;
+
+            try {
+                pdfBuffer = await fs.readFile(pdfPath);
+            } catch (error) {
+                if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+                    await this.tempFileService.delete(workDir, { recursive: true });
+
+                    return Result.fail(new ApplicationError(
+                        ErrorCodes.LATEX_COMPILATION_FAILED,
+                        result.log
+                            ? `${result.log}\n\nCompilation did not produce the expected PDF output (${pdfName}).`
+                            : `Compilation did not produce the expected PDF output (${pdfName}).`,
+                        422
+                    ));
+                }
+
+                throw error;
+            }
             await this.tempFileService.delete(workDir, { recursive: true });
 
             const output = createDownloadStreamResponse({

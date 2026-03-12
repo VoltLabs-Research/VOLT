@@ -44,6 +44,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
             const { trajectoryId, analysisId, timestep, exposureId } = input;
             const page = input.page ?? 1;
             const limit = input.limit ?? 100;
+            const timestepKey = String(timestep);
 
             const pageNum = Math.max(1, page);
             const limitNum = Math.min(100000, Math.max(1, limit));
@@ -63,7 +64,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
             const atomsPage = await this.trajectoryReader.readPage(
                 teamClusterId,
                 trajectoryId,
-                String(timestep),
+                timestep,
                 pageNum,
                 limitNum
             );
@@ -99,7 +100,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
                         trajectoryId,
                         normalizedAnalysisId,
                         currentExposureId,
-                        String(timestep)
+                        timestepKey
                     );
 
                     return {

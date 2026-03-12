@@ -7,18 +7,23 @@ import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/Scripting
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterExposureRegistryService from '@modules/team-cluster/infrastructure/services/TeamClusterExposureRegistryService';
-import { TeamClusterServiceExposureAccessMode, type TeamClusterServiceExposure } from '@modules/team-cluster/utilities/teamClusterSocket';
+import {
+    TeamClusterServiceExposureAccessMode,
+    TeamClusterServiceExposureStatus,
+    type TeamClusterServiceExposure
+} from '@modules/team-cluster/utilities/teamClusterSocket';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { inject, injectable } from 'tsyringe';
 import { WebSocketServer, WebSocket } from 'ws';
+import http from 'node:http';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { Request, Response } from 'express';
-import http, { type IncomingMessage, type IncomingHttpHeaders, type RequestOptions } from 'node:http';
+import type { IncomingHttpHeaders, IncomingMessage, RequestOptions } from 'node:http';
 import type { Duplex } from 'node:stream';
 
 interface ProxyPathMatch {
@@ -45,6 +50,7 @@ const ACCESS_TOKEN_COOKIE_NAME = 'voltScriptingJupyterAccessToken';
 const UPGRADE_ACTION = Action.READ;
 const PROXY_URL_ORIGIN = 'http://volt.local';
 const UPSTREAM_URL_ORIGIN = 'http://upstream.local';
+const JUPYTER_EXPOSURE_WAIT_TIMEOUT_MS = 5_000;
 
 const METHOD_ACTION_MAP: Record<string, Action> = {
     'GET': Action.READ,
@@ -139,7 +145,7 @@ export class ScriptingJupyterProxyService {
     public proxyHttpRequest = async (req: Request, res: Response): Promise<void> => {
         try {
             const context = await this.authorizeHttpRequest(req);
-            const exposure = this.requireNotebookExposure(context, TeamClusterServiceExposureAccessMode.Http);
+            const exposure = await this.requireNotebookExposure(context, TeamClusterServiceExposureAccessMode.Http);
             this.persistAccessTokenCookie(req, res, context);
             const target = this.extractProxyTarget(req.originalUrl, context);
             const tunnel = await this.teamClusterDaemonClient.openTunnel(
@@ -184,7 +190,7 @@ export class ScriptingJupyterProxyService {
 
         try {
             const context = await this.authorizeUpgradeRequest(request);
-            const exposure = this.requireNotebookExposure(
+            const exposure = await this.requireNotebookExposure(
                 context,
                 TeamClusterServiceExposureAccessMode.WebSocket
             );
@@ -409,20 +415,80 @@ export class ScriptingJupyterProxyService {
         return METHOD_ACTION_MAP[method] || Action.READ;
     }
 
-    private requireNotebookExposure(
+    private async requireNotebookExposure(
         context: AuthorizedProxyContext,
         accessMode: TeamClusterServiceExposureAccessMode
-    ): TeamClusterServiceExposure {
-        const exposure = this.exposureRegistryService.findTeamClusterExposure(context.teamClusterId, (candidate) => {
-            return candidate.labels['volt.notebook.id'] === context.runtimeNotebookId
-                && candidate.accessModes.includes(accessMode);
-        });
+    ): Promise<TeamClusterServiceExposure> {
+        const exposure = await this.waitForNotebookExposure(
+            context,
+            accessMode,
+            JUPYTER_EXPOSURE_WAIT_TIMEOUT_MS
+        );
 
         if (!exposure) {
             throw ApplicationError.conflict('Scripting::JupyterUnavailable', 'Jupyter runtime exposure is not available');
         }
 
         return exposure;
+    }
+
+    private findNotebookExposure(
+        context: AuthorizedProxyContext,
+        accessMode: TeamClusterServiceExposureAccessMode
+    ): TeamClusterServiceExposure | null {
+        return this.exposureRegistryService.findTeamClusterExposure(context.teamClusterId, (candidate) => {
+            return candidate.labels['volt.notebook.id'] === context.runtimeNotebookId
+                && candidate.status === TeamClusterServiceExposureStatus.Active
+                && candidate.accessModes.includes(accessMode);
+        });
+    }
+
+    private async waitForNotebookExposure(
+        context: AuthorizedProxyContext,
+        accessMode: TeamClusterServiceExposureAccessMode,
+        timeoutMs: number
+    ): Promise<TeamClusterServiceExposure | null> {
+        const existingExposure = this.findNotebookExposure(context, accessMode);
+        if (existingExposure) {
+            return existingExposure;
+        }
+
+        return new Promise((resolve) => {
+            let timeout: ReturnType<typeof setTimeout> | null = null;
+
+            const resolveExposure = (): boolean => {
+                const exposure = this.findNotebookExposure(context, accessMode);
+                if (!exposure) {
+                    return false;
+                }
+
+                cleanup();
+                resolve(exposure);
+                return true;
+            };
+
+            const handleRegistryChange = (): void => {
+                resolveExposure();
+            };
+
+            const cleanup = (): void => {
+                if (timeout) {
+                    clearTimeout(timeout);
+                }
+
+                this.exposureRegistryService.offChanged(handleRegistryChange);
+            };
+
+            this.exposureRegistryService.onChanged(handleRegistryChange);
+            if (resolveExposure()) {
+                return;
+            }
+
+            timeout = setTimeout(() => {
+                cleanup();
+                resolve(this.findNotebookExposure(context, accessMode));
+            }, timeoutMs);
+        });
     }
 
     private buildUpstreamHttpRequestOptions(

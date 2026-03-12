@@ -119,16 +119,17 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             ));
         }
 
-        const { isValid, errors: validationErrors } = this.workflowValidator.validate(plugin.props.workflow.props);
-        if (!isValid) {
-            const detail = validationErrors?.length
-                ? `: ${validationErrors.join('; ')}`
-                : '';
-            return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
-                `Plugin workflow is invalid${detail}`
-            ));
-        }
+        // TODO: REVIEW 
+        // const { isValid, errors: validationErrors } = this.workflowValidator.validate(plugin.props.workflow.props);
+        // if (!isValid) {
+        //    const detail = validationErrors?.length
+        //        ? `: ${validationErrors.join('; ')}`
+        //        : '';
+        //    return Result.fail(ApplicationError.badRequest(
+        //        ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
+        //        `Plugin workflow is invalid${detail}`
+        //    ));
+        // }
 
         if (!trajectory) {
             return Result.fail(ApplicationError.badRequest(
@@ -206,6 +207,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             analysis,
             analysisId: analysis.id,
             trajectoryId: input.trajectoryId,
+            trajectoryName: trajectory.props.name,
             trajectoryFrames: trajectory.props.frames,
             teamId: input.teamId,
             plugin,

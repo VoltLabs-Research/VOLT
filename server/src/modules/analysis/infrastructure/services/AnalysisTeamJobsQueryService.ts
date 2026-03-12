@@ -15,12 +15,14 @@ interface TeamJobSummaryRecord {
     message?: string;
     metadata?: AnalysisJobMetadata;
     analysisId?: string;
+    trajectoryId?: string;
+    trajectoryName?: string;
     timestep?: number;
-}
+};
 
 interface TeamJobsReader {
     getFlatTeamJobs(teamId: string): Promise<TeamJobSummaryRecord[]>;
-}
+};
 
 @injectable()
 export default class AnalysisTeamJobsQueryService implements IAnalysisTeamJobsQueryService {
@@ -41,7 +43,9 @@ export default class AnalysisTeamJobsQueryService implements IAnalysisTeamJobsQu
             message: job.message,
             metadata: job.metadata,
             analysisId: typeof job.analysisId === 'string' ? job.analysisId : undefined,
+            trajectoryId: typeof job.trajectoryId === 'string' ? job.trajectoryId : undefined,
+            trajectoryName: typeof job.trajectoryName === 'string' ? job.trajectoryName : undefined,
             timestep: typeof job.timestep === 'number' ? job.timestep : undefined
         }));
     }
-}
+};

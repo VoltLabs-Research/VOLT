@@ -48,11 +48,12 @@ interface DaemonAnalysisPayload {
     finishedAt?: Date;
     team: string;
     status: string;
+    trajectoryName: string;
     createdAt?: Date;
     updatedAt?: Date;
 };
 
-const serializeAnalysis = (analysis: Analysis): DaemonAnalysisPayload => {
+const serializeAnalysis = (analysis: Analysis, trajectoryName: string): DaemonAnalysisPayload => {
     return {
         _id: analysis.id,
         plugin: analysis.props.plugin,
@@ -67,6 +68,7 @@ const serializeAnalysis = (analysis: Analysis): DaemonAnalysisPayload => {
         finishedAt: analysis.props.finishedAt,
         team: analysis.props.team,
         status: analysis.props.status,
+        trajectoryName,
         createdAt: analysis.props.createdAt,
         updatedAt: analysis.props.updatedAt
     };
@@ -89,12 +91,13 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         await this.syncPluginBinaryIfNeeded(input.teamClusterId, input.plugin);
 
         const response = await this.teamClusterDaemonClient.command<DaemonAnalysisStartResponse>(input.teamClusterId, 'analysis.start', {
-            analysis: serializeAnalysis(input.analysis),
+            analysis: serializeAnalysis(input.analysis, input.trajectoryName),
             analysisId: input.analysisId,
             pluginId: input.plugin.id,
             teamId: input.teamId,
             teamClusterId: input.teamClusterId,
             trajectoryId: input.trajectoryId,
+            trajectoryName: input.trajectoryName,
             trajectoryFrames: input.trajectoryFrames,
             workflow: input.plugin.props.workflow.props as unknown as WorkflowSerializable,
             config: input.config,

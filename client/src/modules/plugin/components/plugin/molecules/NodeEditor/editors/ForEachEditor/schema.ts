@@ -1,4 +1,4 @@
-import { z } from 'zod/v4';
+import { z } from 'zod';
 
 export const forEachEditorSchema = z.object({
     iterableSource: z.string().default('')

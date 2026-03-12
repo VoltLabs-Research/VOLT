@@ -4,14 +4,17 @@ import DocumentListing, { type ColumnConfig as ListingColumnConfig } from '@/sha
 import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/components/listing/organisms/PluginCompactTable';
 import SubListingModal from '@/modules/plugin/components/listing/organisms/SubListingModal';
 import { LISTING_QUERY_KEYS, usePluginListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queries';
-import usePluginListing from '@/modules/plugin/hooks/listing/use-plugin-listing';
+import { SUB_LISTING_MODAL_ID } from '@/modules/plugin/hooks/listing/use-plugin-listing';
 import usePluginSubListing from '@/modules/plugin/hooks/listing/use-plugin-sub-listing';
 import useDeletePluginListingAnalyses from '@/modules/plugin/hooks/listing/use-delete-plugin-listing-analyses';
 import { getApiErrorMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import { openModal } from '@/shared/presentation/components/Modal';
+import usePluginListing from '@/modules/plugin/hooks/listing/use-plugin-listing';
 import '@/modules/plugin/components/listing/organisms/PluginExposureTable/PluginExposureTable.css';
+
+import type { PluginSubListingParams } from '@/modules/plugin/hooks/listing/use-plugin-sub-listing';
 
 export interface PluginExposureTableProps {
     pluginId: string;
@@ -64,6 +67,7 @@ const CompactPluginExposureTable = ({
     } = usePluginListingInfiniteQuery(
         {
             pluginId,
+            teamId,
             exposureName,
             exposureId,
             trajectoryId,
@@ -160,9 +164,9 @@ const FullPluginExposureTable = ({
     } = usePluginSubListing();
     const deleteRows = useDeletePluginListingAnalyses();
 
-    const openSubListing = useCallback((params: { analysisId: string; exposureId: string; timestep: number; subListingName: string }) => {
+    const openSubListing = useCallback((params: PluginSubListingParams) => {
         setSubListingParams(params);
-        openModal('sub-listing-modal');
+        openModal(SUB_LISTING_MODAL_ID);
     }, [setSubListingParams]);
 
     const listingHook = usePluginListing({
@@ -185,6 +189,7 @@ const FullPluginExposureTable = ({
                 title={displayExposureName || 'Listing'}
                 queryKey={LISTING_QUERY_KEYS.listingDetail({
                     pluginId,
+                    teamId,
                     exposureName,
                     exposureId,
                     trajectoryId,

@@ -1,5 +1,13 @@
 import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
-import { createPaginationLimitSchema, createPaginationQuerySchema, createTeamScopedParamsSchema, objectIdSchema, paginationPageSchema, teamParamsSchema } from '@shared/infrastructure/http/validation/shared-schemas';
+import {
+    createPaginationLimitSchema,
+    createPaginationQuerySchema,
+    createTeamScopedParamsSchema,
+    domainExposureIdSchema,
+    objectIdSchema,
+    paginationPageSchema,
+    teamParamsSchema
+} from '@shared/infrastructure/http/validation/shared-schemas';
 
 import { z } from 'zod/v4';
 
@@ -23,8 +31,8 @@ const trajectoryGlbParamsSchema = trajectoryParamsSchema.extend({
 }).strict();
 
 const getAtomsQuerySchema = z.object({
-    timestep: z.string().trim().min(1),
-    exposureId: objectIdSchema.optional(),
+    timestep: z.coerce.number().int().min(0),
+    exposureId: domainExposureIdSchema.optional(),
     page: paginationPageSchema,
     limit: createPaginationLimitSchema(100000)
 }).strict();

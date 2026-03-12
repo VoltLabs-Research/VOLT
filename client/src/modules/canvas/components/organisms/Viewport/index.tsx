@@ -2,7 +2,7 @@ import { setSceneInteracting } from '../../../hooks/use-scene-interaction';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
 
-import { getFrameBoxBounds, getTrajectoryFrameByTimestep } from '@/modules/fractal/utilities/frame-box-bounds';
+import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } from '@/modules/fractal/utilities/frame-box-bounds';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { Box, Camera, Gauge } from 'lucide-react';
@@ -105,7 +105,7 @@ const Viewport = ({
     });
 
     const currentFrame = getTrajectoryFrameByTimestep(trajectory, currentTimestep);
-    const currentFrameBoxBounds = currentFrame
+    const currentFrameBoxBounds = currentFrame && hasFrameBoxBounds(currentFrame)
         ? getFrameBoxBounds(currentFrame)
         : null;
 

@@ -12,6 +12,9 @@ export interface ProcessDaemonJobCompletionInputDTO {
     jobId: string;
     analysisId: string;
     teamId: string;
+    trajectoryId?: string;
+    trajectoryName?: string;
+    timestep?: number;
     success: boolean;
     error?: string;
 };
@@ -47,6 +50,9 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                 jobId: input.jobId,
                 analysisId: input.analysisId,
                 teamId: input.teamId,
+                trajectoryId: input.trajectoryId,
+                trajectoryName: input.trajectoryName,
+                timestep: input.timestep,
                 success: input.success,
                 error: input.error
             });

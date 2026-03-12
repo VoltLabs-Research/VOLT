@@ -35,20 +35,14 @@ const updateDocumentBodySchema = z.object({
 );
 
 const createFileBodySchema = z.object({
-    name: z.string().trim().min(1).max(255).refine(
-        (v) => v.endsWith('.tex'),
-        { message: 'File name must end with .tex' }
-    ),
+    name: z.string().trim().min(1).max(255),
     path: z.string().trim().max(512).optional(),
     content: z.string().optional(),
     isEntrypoint: z.boolean().optional()
 }).strict();
 
 const updateFileBodySchema = z.object({
-    name: z.string().trim().min(1).max(255).refine(
-        (v) => v.endsWith('.tex'),
-        { message: 'File name must end with .tex' }
-    ).optional(),
+    name: z.string().trim().min(1).max(255).optional(),
     path: z.string().trim().max(512).optional(),
     content: z.string().optional()
 }).strict().refine(

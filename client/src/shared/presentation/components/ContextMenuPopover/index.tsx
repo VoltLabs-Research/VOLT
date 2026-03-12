@@ -10,9 +10,16 @@ interface ContextMenuPopoverProps {
     trigger: ReactNode;
     options?: MenuOption[];
     size?: 'sm' | 'md';
+    triggerAction?: 'click' | 'contextmenu';
 };
 
-const ContextMenuPopover = ({ id, trigger, options = [], size = 'md' }: ContextMenuPopoverProps) => {
+const ContextMenuPopover = ({
+    id,
+    trigger,
+    options = [],
+    size = 'md',
+    triggerAction = 'contextmenu'
+}: ContextMenuPopoverProps) => {
     if (options.length === 0) {
         return <>{trigger}</>;
     }
@@ -21,7 +28,7 @@ const ContextMenuPopover = ({ id, trigger, options = [], size = 'md' }: ContextM
         <Popover
             id={id}
             trigger={trigger}
-            triggerAction='contextmenu'
+            triggerAction={triggerAction}
             noPadding
             className={`context-menu-popover context-menu-popover--${size}`}
         >
