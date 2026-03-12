@@ -23,6 +23,8 @@ import usePermission from '@/shared/presentation/hooks/use-permission';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { MenuOption } from '@/shared/presentation/types/menu';
+import { createCrudToastOptions } from '@/shared/presentation/toast-options';
+import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constants/foldered-listing';
 import { FileText, FolderInput, FolderOpen, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -48,9 +50,6 @@ interface LatexMoveTarget {
     folder: string | null;
 };
 
-const FOLDER_LIST_LIMIT = 500;
-const ROOT_FOLDER_ID = 'root';
-
 export const RENAME_LATEX_DOCUMENT_MODAL_ID = 'rename-latex-document-modal';
 export const NEW_LATEX_FOLDER_MODAL_ID = 'new-latex-folder-modal';
 export const RENAME_LATEX_FOLDER_MODAL_ID = 'rename-latex-folder-modal';
@@ -60,47 +59,13 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'latex-document.deleted', queryKeys: [latexDocumentsQueryKey()] }
 ];
 
-const DELETE_DOCUMENT_TOAST = {
-    loading: { title: 'Deleting document...' },
-    success: { title: 'Document deleted successfully' },
-    error: { title: 'Failed to delete document' }
-};
-
-const CREATE_DOCUMENT_TOAST = {
-    loading: { title: 'Creating document...' },
-    success: { title: 'Document created successfully' },
-    error: { title: 'Failed to create document' }
-};
-
-const CREATE_FOLDER_TOAST = {
-    loading: { title: 'Creating folder...' },
-    success: { title: 'Folder created successfully' },
-    error: { title: 'Failed to create folder' }
-};
-
-const RENAME_DOCUMENT_TOAST = {
-    loading: { title: 'Renaming document...' },
-    success: { title: 'Document renamed successfully' },
-    error: { title: 'Failed to rename document' }
-};
-
-const RENAME_FOLDER_TOAST = {
-    loading: { title: 'Renaming folder...' },
-    success: { title: 'Folder renamed successfully' },
-    error: { title: 'Failed to rename folder' }
-};
-
-const DELETE_FOLDER_TOAST = {
-    loading: { title: 'Deleting folder...' },
-    success: { title: 'Folder deleted successfully' },
-    error: { title: 'Failed to delete folder' }
-};
-
-const MOVE_DOCUMENT_TOAST = {
-    loading: { title: 'Moving document...' },
-    success: { title: 'Document moved successfully' },
-    error: { title: 'Failed to move document' }
-};
+const DELETE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Document', success: 'Document deleted successfully', error: 'Failed to delete document' });
+const CREATE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Document', success: 'Document created successfully', error: 'Failed to create document' });
+const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder', success: 'Folder created successfully', error: 'Failed to create folder' });
+const RENAME_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Document', success: 'Document renamed successfully', error: 'Failed to rename document' });
+const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder', success: 'Folder renamed successfully', error: 'Failed to rename folder' });
+const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder', success: 'Folder deleted successfully', error: 'Failed to delete folder' });
+const MOVE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Document', success: 'Document moved successfully', error: 'Failed to move document' });
 
 const fetchDocuments = (params: PaginationParams & FolderedListingContext): Promise<PaginatedResponse<LatexDocument>> => {
     return latexDocumentsQuery.fetch({

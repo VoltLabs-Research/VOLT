@@ -1,3 +1,4 @@
+import { TRAJECTORY_POPULATE, CLUSTER_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTeamIdDTO';
 import AnalysisPluginDisplayNameService, { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
@@ -45,21 +46,12 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
         const results = await this.analysisRepo.findAll({
             filter,
             populate: [
-                {
-                    path: 'trajectory',
-                    select: ['name']
-                },
+                TRAJECTORY_POPULATE,
                 {
                     path: 'plugin'
                 },
-                {
-                    path: 'teamCluster',
-                    select: ['name']
-                },
-                {
-                    path: 'createdBy',
-                    select: ['firstName', 'lastName', 'email', 'avatar']
-                }
+                CLUSTER_POPULATE,
+                USER_POPULATE
             ],
             sort,
             limit: search ? undefined : input.limit,
@@ -82,7 +74,7 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
                 plugin: pluginId,
                 pluginDisplayName,
                 trajectory: props.trajectory,
-                teamCluster: props.teamCluster ?? props.clusterId,
+                teamCluster: props.teamCluster,
                 createdBy: props.createdBy,
                 trajectoryName
             };

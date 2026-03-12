@@ -1,9 +1,8 @@
 import { analysisQuery } from '@/modules/analysis/hooks/queries';
-import { dateColumn } from '@/shared/presentation/utilities/column-presets';
+import { clusterColumn, dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useRetryFailedFrames from '@/modules/analysis/hooks/use-retry-failed-frames';
 import AnalysisConfigPreview from '@/modules/analysis/components/atoms/AnalysisConfigPreview';
-import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
@@ -44,10 +43,8 @@ const renderFrameCount: NonNullable<ColumnConfig<Analysis>['render']> = (value) 
 };
 
 const renderCreatedBy: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
-    const user = typeof row.createdBy === 'string'
-        ? null
-        : row.createdBy;
-    return <ListingUserCell user={user} />;
+    const user = typeof row.createdBy === 'string' ? null : row.createdBy;
+    return <span className='font-size-2 color-secondary'>{user?.email ?? '-'}</span>;
 };
 
 const renderConfig: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {

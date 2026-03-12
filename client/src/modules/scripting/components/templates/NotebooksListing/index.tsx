@@ -2,9 +2,7 @@ import RenameScriptingNotebookModal from '@/modules/scripting/components/molecul
 import useNotebooksListing from '@/modules/scripting/hooks/use-notebooks-listing';
 import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripting-notebook-scope';
 import { getPrimaryTrajectory } from '@/modules/scripting/utilities/notebooks';
-import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
-import { dateColumn } from '@/shared/presentation/utilities/column-presets';
-import Container from '@/shared/presentation/components/Container';
+import { clusterColumn, dateColumn, titleWithIconColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import DocumentListing, {
     DocumentListingTabAction,
     type ColumnConfig,
@@ -26,7 +24,6 @@ enum NotebooksListingTabId {
 };
 
 type NotebookDocument = ScriptingNotebook;
-type NotebookColumnRender = NonNullable<ColumnConfig<NotebookDocument>['render']>;
 
 const NOTEBOOK_TABS: DocumentListingTab[] = [
     {
@@ -43,14 +40,6 @@ const NOTEBOOK_TABS: DocumentListingTab[] = [
         action: DocumentListingTabAction.Export
     }
 ];
-
-const isNotebookDocument = (value: unknown): value is NotebookDocument => {
-    return typeof value === 'object'
-        && value !== null
-        && '_id' in value
-        && 'title' in value
-        && 'createdAt' in value;
-};
 
 const isNotebooksListingTabId = (value: string): value is NotebooksListingTabId => {
     return value === NotebooksListingTabId.List
@@ -70,65 +59,12 @@ const getTrajectoryLabel = (trajectory: ScriptingNotebookTrajectory | string | n
     return trajectory.name || trajectory._id;
 };
 
-const renderNotebookTitle: NotebookColumnRender = (value, row) => {
-    const notebook = isNotebookDocument(row) ? row : undefined;
-    let title = notebook?.title || 'Untitled Notebook';
-
-    if (typeof value === 'string' && value.trim().length > 0) {
-        title = value;
-    }
-
-    const shortId = notebook?._id?.substring(0, 12) || '-';
-
-    return (
-        <Container className='d-flex items-center gap-075'>
-            <Container className='d-flex flex-center color-primary'>
-                <BookOpen size={16} />
-            </Container>
-            <Container className='d-flex column gap-025 overflow-hidden'>
-                <span className='font-weight-6 color-primary'>{title}</span>
-                <span className='font-size-1 color-muted'>{shortId}</span>
-            </Container>
-        </Container>
-    );
-};
-
-const renderTrajectoryDetails: NotebookColumnRender = (_value, row) => {
-    if (!isNotebookDocument(row)) {
-        return <span className='font-size-2 color-muted'>-</span>;
-    }
-
+const renderTrajectoryDetails: NonNullable<ColumnConfig<NotebookDocument>['render']> = (_value, row) => {
     const trajectory = getPrimaryTrajectory(row);
     return <span className='font-size-2 color-secondary notebooks-listing-trajectory'>{getTrajectoryLabel(trajectory)}</span>;
 };
 
-const renderCluster: NotebookColumnRender = (_value, row) => {
-    const teamCluster = row.teamCluster;
-    if (!teamCluster) {
-        return <span className='font-size-2 color-muted'>-</span>;
-    }
-
-    if (typeof teamCluster === 'string') {
-        return <span className='font-size-2 color-secondary'>{teamCluster}</span>;
-    }
-
-    return <span className='font-size-2 color-secondary'>{teamCluster.name || teamCluster._id}</span>;
-};
-
-const renderCreatedBy: NotebookColumnRender = (_value, row) => {
-    const user = typeof row.createdBy === 'string'
-        ? null
-        : row.createdBy;
-    return <ListingUserCell user={user} />;
-};
-
-const TITLE_COLUMN: ColumnConfig<NotebookDocument> = {
-    key: 'title',
-    title: 'Title',
-    sortable: true,
-    render: renderNotebookTitle,
-    skeleton: { variant: 'text', width: 180 }
-};
+const TITLE_COLUMN = titleWithIconColumn<NotebookDocument>('title', 'Title', <BookOpen size={16} />, (row) => row.title || 'Untitled Notebook');
 
 const TRAJECTORY_COLUMN: ColumnConfig<NotebookDocument> = {
     key: 'trajectory',
@@ -138,21 +74,9 @@ const TRAJECTORY_COLUMN: ColumnConfig<NotebookDocument> = {
     skeleton: { variant: 'text', width: 150 }
 };
 
-const CLUSTER_COLUMN: ColumnConfig<NotebookDocument> = {
-    key: 'teamCluster',
-    title: 'Cluster',
-    sortable: false,
-    render: renderCluster,
-    skeleton: { variant: 'text', width: 150 }
-};
+const CLUSTER_COLUMN = clusterColumn<NotebookDocument>({ width: 150 });
 
-const CREATED_BY_COLUMN: ColumnConfig<NotebookDocument> = {
-    key: 'createdBy',
-    title: 'Created By',
-    sortable: false,
-    render: renderCreatedBy,
-    skeleton: { variant: 'text', width: 180 }
-};
+const CREATED_BY_COLUMN = userColumn<NotebookDocument>('createdBy', 'Created By');
 
 const LAST_OPENED_AT_COLUMN = dateColumn<NotebookDocument>('lastOpenedAt', 'Last Opened At', {
     width: 110,

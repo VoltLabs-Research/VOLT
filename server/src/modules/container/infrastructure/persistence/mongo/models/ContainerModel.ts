@@ -106,7 +106,7 @@ const ContainerSchema = new Schema<IContainer>({
     teamCluster: {
         type: Schema.Types.ObjectId,
         ref: 'TeamCluster',
-        required: false
+        required: true
     },
     status: statusField,
     memory: memoryField,

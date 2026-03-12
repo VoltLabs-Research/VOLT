@@ -14,7 +14,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import { openModal } from '@/shared/presentation/components/Modal';
-import { dateColumn } from '@/shared/presentation/utilities/column-presets';
+import { clusterColumn, dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { formatNumber, formatSize } from '@/shared/utils/format';
 import { Folder, Pencil, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';

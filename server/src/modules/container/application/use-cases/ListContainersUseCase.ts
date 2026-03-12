@@ -1,3 +1,4 @@
+import { USER_POPULATE, CLUSTER_POPULATE } from '@shared/application/PopulatePresets';
 import { ListContainersInputDTO, ListContainersOutputDTO } from '@modules/container/application/dtos/ListContainersDTO';
 import type { Container } from '@modules/container/domain/entities/Container';
 import type { RuntimeContainerSummary } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
@@ -60,14 +61,8 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
             limit: input.limit,
             sort: { updatedAt: -1 },
             populate: [
-                {
-                    path: 'createdBy',
-                    select: ['firstName', 'lastName', 'email', 'avatar']
-                },
-                {
-                    path: 'teamCluster',
-                    select: ['name']
-                }
+                USER_POPULATE,
+                CLUSTER_POPULATE
             ]
         });
 
