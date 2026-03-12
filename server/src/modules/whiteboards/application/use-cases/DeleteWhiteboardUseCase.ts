@@ -50,7 +50,9 @@ export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDT
 
             await this.eventBus.publish(new WhiteboardDeletedEvent({
                 whiteboardId: input.whiteboardId,
-                teamId: input.teamId
+                teamId: input.teamId,
+                userId: input.userId ?? '',
+                whiteboardTitle: whiteboard.props.title ?? ''
             }));
 
             return Result.ok(null);

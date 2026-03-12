@@ -285,64 +285,6 @@ const LatexEditorPanel = ({
         );
     };
 
-    const renderHeader = () => {
-        if (tabItems.length === 0) {
-            return (
-                <Container className='shared-panel-header panel-header-bordered d-flex items-center content-between f-shrink-0 shared-panel-header--compact'>
-                    <Container className='d-flex items-center gap-05'>
-                        <span className='shared-panel-header-icon d-flex items-center'>{PANEL_ICON}</span>
-                        <Paragraph className='shared-panel-header-title font-size-05 color-muted'>
-                            No file selected
-                        </Paragraph>
-                    </Container>
-                    <Container className='d-flex items-center gap-05' />
-                </Container>
-            );
-        }
-
-        return (
-            <Container className='shared-panel-header panel-header-bordered d-flex items-center content-between f-shrink-0 shared-panel-header--compact latex-editor-tabs__header'>
-                <Container
-                    className='latex-editor-tabs d-flex items-center gap-025 flex-1 min-w-0 overflow-x-auto'
-                    role='tablist'
-                    aria-label='Open LaTeX editor tabs'
-                >
-                    {tabItems.map((tab) => (
-                        <Container
-                            key={tab.key}
-                            className={cn('latex-editor-tab d-flex items-center', tab.isActive && 'is-active')}
-                        >
-                            <button
-                                type='button'
-                                className='latex-editor-tab__button d-flex items-center gap-05 min-w-0'
-                                role='tab'
-                                aria-selected={tab.isActive}
-                                tabIndex={tab.isActive ? 0 : -1}
-                                onClick={() => onTabSelect(tab.selection)}
-                            >
-                                <span className='latex-editor-tab__icon d-flex items-center'>{tab.icon}</span>
-                                <span className='latex-editor-tab__label'>{tab.title}</span>
-                                {tab.isDirty && <span className='latex-editor-tab__dirty-dot' aria-hidden='true' />}
-                            </button>
-                            <button
-                                type='button'
-                                className='latex-editor-tab__close d-flex items-center justify-center'
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    onTabClose(tab.selection);
-                                }}
-                                aria-label={`Close ${tab.title}`}
-                            >
-                                <X size={12} />
-                            </button>
-                        </Container>
-                    ))}
-                </Container>
-                <Container className='d-flex items-center gap-05' />
-            </Container>
-        );
-    };
-
     const renderContent = () => {
         if (activeFile) {
             return renderFileEditor();
@@ -357,7 +299,6 @@ const LatexEditorPanel = ({
 
     return (
         <Container className='latex-workspace__editor d-flex column'>
-            {renderHeader()}
             <Container
                 ref={containerRef}
                 className='latex-workspace__editor-inner flex-1 min-h-0'

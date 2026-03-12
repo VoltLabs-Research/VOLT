@@ -1,9 +1,12 @@
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import EditableTag from '@/shared/presentation/components/EditableTag';
+import Select from '@/shared/presentation/components/Select';
+import { EditableType } from '@/shared/presentation/components/DocumentListingTable';
 import { motion } from 'framer-motion';
 import { CSS } from '@dnd-kit/utilities';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import type { ColumnConfig, Identifiable } from '../DocumentListingTable';
+import type { ColumnConfig, Identifiable } from '@/shared/presentation/components/DocumentListingTable';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { CSSProperties } from 'react';
 
@@ -69,7 +72,7 @@ const TableRow = <T extends Identifiable>({
         zIndex: isDragging ? 10 : undefined
     };
 
-    const setRowNodeRef = (node: HTMLButtonElement | null) => {
+    const setRowNodeRef = (node: HTMLDivElement | null) => {
         setDraggableNodeRef(node);
         setDroppableNodeRef(node);
     };
@@ -88,10 +91,57 @@ const TableRow = <T extends Identifiable>({
     const dragListeners = draggableId ? listeners : undefined;
     const dragAttributes = draggableId ? attributes : undefined;
 
+    const renderCellContent = (col: ColumnConfig<T>, cellValue: unknown) => {
+        const defaultContent = col.render ? col.render(cellValue, item) : String(cellValue ?? '-');
+
+        if (!col.editable) return defaultContent;
+
+        const { editable } = col;
+        if (editable.canEdit && !editable.canEdit(item)) return defaultContent;
+
+        if (editable.type === EditableType.Text || editable.type === EditableType.Number) {
+            const handleSave = (newValue: string) => editable.onSave(item, newValue);
+            return (
+                <EditableTag as='span' onSave={handleSave}>
+                    {String(cellValue ?? '-')}
+                </EditableTag>
+            );
+        }
+
+        if (editable.type === EditableType.Select && editable.options) {
+            const handleChange = (newValue: string) => editable.onSave(item, newValue);
+            const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
+            return (
+                <span onClick={stopPropagation} onMouseDown={stopPropagation}>
+                    <Select
+                        options={editable.options}
+                        value={String(cellValue ?? '')}
+                        onChange={handleChange}
+                    />
+                </span>
+            );
+        }
+
+        return defaultContent;
+    };
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+
+        event.preventDefault();
+        const syntheticEvent = event as unknown as React.MouseEvent;
+        const isHandled = onItemClick?.(item, syntheticEvent);
+
+        if (isHandled) return;
+
+        onClick(syntheticEvent, item);
+    };
+
     const content = (
-        <motion.button
+        <motion.div
+            role='button'
+            tabIndex={0}
             ref={setRowNodeRef}
-            type='button'
             style={rowStyle}
             className={rowClassName}
             transition={{ duration: 0.1 }}
@@ -106,6 +156,7 @@ const TableRow = <T extends Identifiable>({
 
                 onClick(event, item);
             }}
+            onKeyDown={handleKeyDown}
             onContextMenu={() => onContextMenu(item)}
             aria-pressed={isSelected}
         >
@@ -133,12 +184,12 @@ const TableRow = <T extends Identifiable>({
                         }
                     >
                         <span className='document-listing-cell-value'>
-                            {col.render ? col.render(cellValue, item) : String(cellValue ?? '-')}
+                            {renderCellContent(col, cellValue)}
                         </span>
                     </Container>
                 );
             })}
-        </motion.button>
+        </motion.div>
     );
 
     if (menuOptions.length === 0) return content;

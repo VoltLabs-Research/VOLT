@@ -29,7 +29,9 @@ export class DeleteContainerUseCase implements IUseCase<DeleteContainerInputDTO,
 
         await this.eventBus.publish(new ContainerDeletedEvent({
             containerId: input.containerId,
-            teamId: container.team?.toString() ?? ''
+            teamId: container.team?.toString() ?? '',
+            userId: input.userId ?? '',
+            containerName: container.name ?? ''
         }));
 
         return Result.ok({ message: 'Container deleted successfully' });

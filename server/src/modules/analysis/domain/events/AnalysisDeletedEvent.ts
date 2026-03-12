@@ -5,6 +5,8 @@ export interface AnalysisDeletedEventPayload {
     trajectoryId: string;
     pluginId: string;
     teamId: string;
+    userId: string;
+    pluginDisplayName: string;
 };
 
 export default class AnalysisDeletedEvent extends BaseDomainEvent<AnalysisDeletedEventPayload> {

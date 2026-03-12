@@ -1,6 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
-import { getAIProviderCatalogModels } from '@modules/ai/domain/contracts/AIProviderModels';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamAIIntegrationSecretService from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationSecretService';
 import TeamAIProviderCatalog from '@modules/team/infrastructure/services/ai-integration/TeamAIProviderCatalog';
@@ -35,7 +34,6 @@ export default class DiscoverTeamAIProviderModelsUseCase implements IUseCase<Dis
     async execute(input: DiscoverTeamAIProviderModelsInputDTO): Promise<Result<DiscoverTeamAIProviderModelsOutputDTO>> {
         const existing = await this.integrationRepository.findByTeamAndProviderWithSecret(input.teamId, input.provider);
         const providerMeta = this.providerCatalog.getProviderMetadata(input.provider);
-        const fallbackModels = getAIProviderCatalogModels(input.provider);
 
         const apiKey = input.apiKey?.trim()
             || this.secretService.decryptApiKey(existing?.props.encryptedApiKey)
@@ -45,9 +43,9 @@ export default class DiscoverTeamAIProviderModelsUseCase implements IUseCase<Dis
                 teamId: input.teamId,
                 provider: input.provider,
                 providerName: providerMeta.name,
-                defaultModel: this.resolveDefaultModel(existing?.props.defaultModel, fallbackModels),
+                defaultModel: null,
                 metadata: input.metadata ?? existing?.props.metadata,
-                models: fallbackModels
+                models: []
             });
         }
 
@@ -69,14 +67,11 @@ export default class DiscoverTeamAIProviderModelsUseCase implements IUseCase<Dis
         }
 
         const discovered = await this.discoveryService.fetchModels(input.provider, apiKey, metadata);
-        const discoveredModels = discovered.map((model) => ({
+        const models = discovered.map((model) => ({
             id: model.id,
             name: model.name,
             description: model.description
         }));
-        const models = discoveredModels.length > 0 || input.provider === 'ollama'
-            ? discoveredModels
-            : fallbackModels;
         const defaultModel = this.resolveDefaultModel(existing?.props.defaultModel, models);
 
         return Result.ok({

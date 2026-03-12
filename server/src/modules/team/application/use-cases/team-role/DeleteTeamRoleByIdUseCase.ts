@@ -68,7 +68,9 @@ export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRol
 
         await this.eventBus.publish(new TeamRoleDeletedEvent({
             teamRoleId: roleId,
-            teamId
+            teamId,
+            userId: input.userId ?? '',
+            roleName: roleToDelete.props.name ?? ''
         }));
 
         return Result.ok({ success: true });

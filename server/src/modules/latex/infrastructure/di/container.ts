@@ -1,3 +1,4 @@
+import { container } from 'tsyringe';
 import { CreateLatexDocumentUseCase } from '@modules/latex/application/use-cases/CreateLatexDocumentUseCase';
 import { DeleteLatexDocumentUseCase } from '@modules/latex/application/use-cases/DeleteLatexDocumentUseCase';
 import { ListLatexDocumentsUseCase } from '@modules/latex/application/use-cases/ListLatexDocumentsUseCase';
@@ -27,9 +28,14 @@ import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mong
 import LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFileRepository';
 import LatexFolderRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFolderRepository';
 import LatexSocketModule from '@modules/latex/socket/LatexSocketModule';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import * as latexAiTools from '@modules/latex/application/ai-tools';
 import { LATEX_TOKENS } from './LatexTokens';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
+import type { ClassProvider } from 'tsyringe';
+
+const LATEX_AI_TOOL_CLASSES: ClassProvider<unknown>[] = Object.values(latexAiTools).map((useClass) => ({ useClass }));
 
 export const registerLatexDependencies = (): void => {
     registerModuleDependencies({
@@ -68,4 +74,9 @@ export const registerLatexDependencies = (): void => {
             [SOCKET_TOKENS.SocketModule, LATEX_TOKENS.LatexSocketModule]
         ]
     });
+
+    // AI Tools
+    for (const toolClassProvider of LATEX_AI_TOOL_CLASSES) {
+        container.register(AI_TOKENS.AITool, toolClassProvider);
+    }
 };
