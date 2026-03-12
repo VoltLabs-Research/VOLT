@@ -132,10 +132,20 @@ export default class AIProviderModelDiscoveryAdapter implements IAIProviderModel
             return [];
         }
 
-        return models.filter((model) => {
-            const idLower = model.id.toLowerCase();
-            return prefixes.some((prefix) => idLower.startsWith(`${prefix}/`));
-        });
+        return models
+            .filter((model) => {
+                const idLower = model.id.toLowerCase();
+                return prefixes.some((prefix) => idLower.startsWith(`${prefix}/`));
+            })
+            .map((model) => {
+                const slashIndex = model.id.indexOf('/');
+                const strippedId = slashIndex !== -1 ? model.id.slice(slashIndex + 1) : model.id;
+                return {
+                    id: strippedId,
+                    name: model.name,
+                    description: model.description
+                };
+            });
     }
 
     /** Fetches models from a local Ollama instance via its `/api/tags` endpoint. */

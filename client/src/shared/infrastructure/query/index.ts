@@ -28,3 +28,7 @@ export {
 } from './cache-utils';
 
 export { default as queryClient } from './query-client';
+
+export { registerPrefetch, getPrefetchFactory } from './prefetch';
+
+export type { PrefetchTarget, PrefetchContext, PrefetchFactory } from './prefetch';

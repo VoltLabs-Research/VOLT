@@ -434,6 +434,8 @@
 }
 
 .latex-ai-panel .ai-thread-list {
+    width: 100%;
+    margin: 0;
     padding: 0.75rem;
     gap: 0.6rem;
 }
@@ -451,6 +453,8 @@
 }
 
 .latex-ai-panel .ai-composer {
+    width: 100%;
+    margin: 0;
     padding: 0.65rem 0.75rem;
 }
 
