@@ -13,3 +13,6 @@ export default class TokenStorage {
         localStorage.removeItem(TOKEN_KEY);
     }
 };
+
+/** Shared singleton — import this instead of constructing `new TokenStorage()`. */
+export const tokenStorage = new TokenStorage();

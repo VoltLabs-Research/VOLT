@@ -1,22 +1,43 @@
-import type {
-    CanvasPerformanceProp,
-    DprSettings,
-    PerformanceSettingsState
-} from '@/modules/fractal/stores/contracts/editor/performance-types';
+import type { RenderingOption } from '@/shared/domain/rendering/renderer';
+
+export interface DprSettings {
+    mode: DprMode;
+    fixed: number;
+    min: number;
+    max: number;
+    pixelated: boolean;
+    snap: boolean;
+    interactionMin: number;
+};
+
+export interface CanvasPerformanceProp {
+    current: number;
+    min: number;
+    max: number;
+    debounce: number;
+};
+
+export interface AdaptiveEventsSettings {
+    enabled: boolean;
+};
+
+export interface InteractionDegradeSettings {
+    enabled: boolean;
+    debounceMs: number;
+};
+
+export interface PerformanceSettingsState {
+    preset: PerformancePreset;
+    dpr: DprSettings;
+    performance: CanvasPerformanceProp;
+    adaptiveEvents: AdaptiveEventsSettings;
+    interactionDegrade: InteractionDegradeSettings;
+};
 
 export interface PerformancePresetDefinition {
     label: string;
+    powerPreference: PowerPreference;
     settings: PerformanceSettingsState;
-};
-
-export interface PerformancePresetOption {
-    value: PerformancePreset;
-    title: string;
-};
-
-export interface PowerPreferenceOption {
-    value: PowerPreference;
-    title: string;
 };
 
 export interface CanvasRuntimeResolutionOptions {
@@ -41,6 +62,15 @@ export interface AdaptiveDprProps {
 export interface ResolvedCanvasRuntimeProps {
     dpr: number | [number, number];
     performance: CanvasPerformanceProp;
+};
+
+export type PerformancePresetOption = RenderingOption<PerformancePreset>;
+
+export type PowerPreferenceOption = RenderingOption<PowerPreference>;
+
+export enum DprMode {
+    Fixed = 'fixed',
+    Adaptive = 'adaptive'
 };
 
 export enum PerformancePreset {
@@ -74,19 +104,17 @@ export const POWER_PREFERENCE_OPTIONS: PowerPreferenceOption[] = [
 export const PERFORMANCE_PRESET_REGISTRY: Record<PerformancePreset, PerformancePresetDefinition> = {
     [PerformancePreset.Ultra]: {
         label: 'Ultra',
+        powerPreference: PowerPreference.HighPerformance,
         settings: {
             preset: PerformancePreset.Ultra,
             dpr: {
-                mode: 'adaptive',
+                mode: DprMode.Adaptive,
                 fixed: 2,
                 min: 1.5,
                 max: 2,
                 pixelated: false,
                 snap: true,
                 interactionMin: 1.25
-            },
-            canvas: {
-                powerPreference: PowerPreference.HighPerformance
             },
             performance: {
                 current: 1,
@@ -105,19 +133,17 @@ export const PERFORMANCE_PRESET_REGISTRY: Record<PerformancePreset, PerformanceP
     },
     [PerformancePreset.High]: {
         label: 'High',
+        powerPreference: PowerPreference.HighPerformance,
         settings: {
             preset: PerformancePreset.High,
             dpr: {
-                mode: 'adaptive',
+                mode: DprMode.Adaptive,
                 fixed: 1.5,
                 min: 1.25,
                 max: 1.75,
                 pixelated: false,
                 snap: true,
                 interactionMin: 1
-            },
-            canvas: {
-                powerPreference: PowerPreference.HighPerformance
             },
             performance: {
                 current: 1,
@@ -136,19 +162,17 @@ export const PERFORMANCE_PRESET_REGISTRY: Record<PerformancePreset, PerformanceP
     },
     [PerformancePreset.Balanced]: {
         label: 'Balanced',
+        powerPreference: PowerPreference.Default,
         settings: {
             preset: PerformancePreset.Balanced,
             dpr: {
-                mode: 'adaptive',
+                mode: DprMode.Adaptive,
                 fixed: 1.25,
                 min: 1,
                 max: 1.5,
                 pixelated: true,
                 snap: true,
                 interactionMin: 0.9
-            },
-            canvas: {
-                powerPreference: PowerPreference.Default
             },
             performance: {
                 current: 0.9,
@@ -167,19 +191,17 @@ export const PERFORMANCE_PRESET_REGISTRY: Record<PerformancePreset, PerformanceP
     },
     [PerformancePreset.Performance]: {
         label: 'Performance',
+        powerPreference: PowerPreference.HighPerformance,
         settings: {
             preset: PerformancePreset.Performance,
             dpr: {
-                mode: 'adaptive',
+                mode: DprMode.Adaptive,
                 fixed: 1,
                 min: 0.75,
                 max: 1.25,
                 pixelated: true,
                 snap: true,
                 interactionMin: 0.75
-            },
-            canvas: {
-                powerPreference: PowerPreference.HighPerformance
             },
             performance: {
                 current: 0.8,
@@ -198,19 +220,17 @@ export const PERFORMANCE_PRESET_REGISTRY: Record<PerformancePreset, PerformanceP
     },
     [PerformancePreset.Battery]: {
         label: 'Battery Saver',
+        powerPreference: PowerPreference.LowPower,
         settings: {
             preset: PerformancePreset.Battery,
             dpr: {
-                mode: 'fixed',
+                mode: DprMode.Fixed,
                 fixed: 1,
                 min: 0.75,
                 max: 1,
                 pixelated: true,
                 snap: true,
                 interactionMin: 0.75
-            },
-            canvas: {
-                powerPreference: PowerPreference.LowPower
             },
             performance: {
                 current: 0.7,
@@ -239,7 +259,6 @@ export const DEFAULT_PERFORMANCE_PRESET = PerformancePreset.Battery;
 const clonePerformanceSettings = (state: PerformanceSettingsState): PerformanceSettingsState => ({
     preset: state.preset,
     dpr: { ...state.dpr },
-    canvas: { ...state.canvas },
     performance: { ...state.performance },
     adaptiveEvents: { ...state.adaptiveEvents },
     interactionDegrade: { ...state.interactionDegrade }
@@ -253,6 +272,11 @@ export const getPerformancePresetState = (preset: PerformancePreset): Performanc
     return clonePerformanceSettings(PERFORMANCE_PRESET_REGISTRY[preset].settings);
 };
 
+/** Returns the renderer power preference owned by a performance preset. */
+export const getPerformancePresetPowerPreference = (preset: PerformancePreset): PowerPreference => {
+    return PERFORMANCE_PRESET_REGISTRY[preset].powerPreference;
+};
+
 /** Checks whether a runtime string matches a supported performance preset. */
 export const isPerformancePreset = (value: string): value is PerformancePreset => {
     return PERFORMANCE_PRESET_ORDER.some((preset) => preset === value);
@@ -263,15 +287,9 @@ export const isPowerPreference = (value: string): value is PowerPreference => {
     return POWER_PREFERENCE_OPTIONS.some((option) => option.value === value);
 };
 
-/** Ensures a persisted performance state falls back to its preset-owned power preference. */
+/** Ensures a persisted performance state remains isolated from preset registry references. */
 export const getValidatedPerformanceSettingsState = (state: PerformanceSettingsState): PerformanceSettingsState => {
-    const nextState = clonePerformanceSettings(state);
-    if (isPowerPreference(nextState.canvas.powerPreference)) {
-        return nextState;
-    }
-
-    nextState.canvas.powerPreference = getPerformancePresetState(nextState.preset).canvas.powerPreference;
-    return nextState;
+    return clonePerformanceSettings(state);
 };
 
 /** Resolves the runtime DPR value used by the canvas for the current interaction state. */
@@ -284,7 +302,7 @@ export const resolveCanvasDpr = (
         return [dpr.max, dpr.max];
     }
 
-    if (dpr.mode === 'fixed') {
+    if (dpr.mode === DprMode.Fixed) {
         return dpr.fixed;
     }
 
@@ -307,6 +325,6 @@ export const resolveCanvasRuntimeProps = (
 
 /** Resolves the AdaptiveDpr component props from a performance state snapshot. */
 export const resolveAdaptiveDprProps = (settings: Pick<CanvasRuntimeSource, 'dpr'>): AdaptiveDprProps => ({
-    enabled: settings.dpr.mode === 'adaptive',
+    enabled: settings.dpr.mode === DprMode.Adaptive,
     pixelated: settings.dpr.pixelated
 });

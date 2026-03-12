@@ -5,7 +5,6 @@ tools: [
   'search',
   'read'
 ]
-model: GPT-5.4 (copilot)
 ---
 
 You are a **REVIEWER AGENT** invoked by the Conductor after an implementation phase completes.

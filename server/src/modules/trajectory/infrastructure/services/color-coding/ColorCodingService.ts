@@ -192,6 +192,18 @@ export default class ColorCodingService implements IColorCodingService {
             throw buildClusterRequiredError();
         }
 
+        const dumpExists = await this.dumpStorage.existsDump(
+            String(trajectoryId),
+            String(timestep)
+        );
+
+        if (!dumpExists) {
+            throw ApplicationError.notFound(
+                ErrorCodes.TRAJECTORY_DUMP_NOT_FOUND,
+                `Trajectory dump for timestep ${timestep} not found`
+            );
+        }
+
         let externalValues: Float32Array | undefined;
 
         if (exposureId && resolvedAnalysisId) {

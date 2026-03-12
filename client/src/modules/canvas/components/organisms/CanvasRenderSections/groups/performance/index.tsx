@@ -15,7 +15,10 @@ import { useShallow } from 'zustand/react/shallow';
 import type { RenderGroup } from '../../types';
 
 const usePerformanceGroup = (): RenderGroup => {
-    const s = useEditorStore(useShallow((state) => state.performanceSettings));
+    const { performanceSettings, rendererSettings } = useEditorStore(useShallow((state) => ({
+        performanceSettings: state.performanceSettings,
+        rendererSettings: state.rendererSettings
+    })));
 
     return useMemo(() => ({
         id: 'performance',
@@ -30,20 +33,20 @@ const usePerformanceGroup = (): RenderGroup => {
                     enabled: true,
                     rows: [],
                     extras: (
-                        <Container className="canvas-render-grid">
+                        <Container className='canvas-render-grid'>
                             <Select
-                                value={s.preset}
+                                value={performanceSettings.preset}
                                 onChange={(value: string) => {
                                     if (isPerformancePreset(value)) {
-                                        s.setPreset(value);
+                                        performanceSettings.setPreset(value);
                                     }
                                 }}
-                                placeholder="Preset"
+                                placeholder='Preset'
                                 options={PERFORMANCE_PRESET_OPTIONS}
                             />
-                            {selectField('powerPref', s.canvas.powerPreference, (value: string) => {
+                            {selectField('powerPref', rendererSettings.create.powerPreference, (value: string) => {
                                 if (isPowerPreference(value)) {
-                                    s.setCanvas({ powerPreference: value });
+                                    rendererSettings.setCreate({ powerPreference: value });
                                 }
                             }, 'GPU Power', POWER_PREFERENCE_OPTIONS)}
                         </Container>
@@ -51,7 +54,7 @@ const usePerformanceGroup = (): RenderGroup => {
                 }]
             }
         ]
-    }), [s]);
+    }), [performanceSettings, rendererSettings]);
 };
 
 export default usePerformanceGroup;

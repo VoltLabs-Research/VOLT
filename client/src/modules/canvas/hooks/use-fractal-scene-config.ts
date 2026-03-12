@@ -10,10 +10,7 @@ const useFractalSceneConfig = (): FractalSceneConfig => {
     const selected = useEditorStore(useShallow(selectFractalSceneConfig));
 
     return useMemo<FractalSceneConfig>(() => ({
-        rendererCreate: {
-            ...selected.rendererCreate,
-            powerPreference: selected.powerPreference
-        },
+        rendererCreate: selected.rendererCreate,
         rendererRuntime: selected.rendererRuntime,
         camera: selected.camera,
         orbitControls: selected.orbitControls,
@@ -21,8 +18,10 @@ const useFractalSceneConfig = (): FractalSceneConfig => {
         environment: selected.environment,
         effects: selected.effects,
         lights: selected.lights,
-        renderConfig: selected.renderConfig,
-        pointCloudSettings: selected.pointCloudSettings,
+        pointCloudSettings: {
+            ...selected.pointCloudSettings,
+            pointSizeMultiplier: selected.pointSizeMultiplier
+        },
         slicePlaneConfig: selected.slicePlaneConfig,
         dpr: selected.dpr,
         performance: selected.performance,

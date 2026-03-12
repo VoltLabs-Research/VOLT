@@ -20,6 +20,7 @@ import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import { Box, Camera, Gauge } from 'lucide-react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -97,10 +98,16 @@ const Viewport = ({
         }));
     });
 
-    const currentFrame = getTrajectoryFrameByTimestep(trajectory, currentTimestep);
-    const currentFrameBoxBounds = currentFrame && hasFrameBoxBounds(currentFrame)
-        ? getFrameBoxBounds(currentFrame)
-        : null;
+    const currentFrame = useMemo(() => {
+        return getTrajectoryFrameByTimestep(trajectory, currentTimestep);
+    }, [trajectory, currentTimestep]);
+    const currentFrameBoxBounds = useMemo(() => {
+        if (!currentFrame || !hasFrameBoxBounds(currentFrame)) {
+            return null;
+        }
+
+        return getFrameBoxBounds(currentFrame);
+    }, [currentFrame]);
 
     return (
         <Container className="canvas-viewport d-flex column flex-1 overflow-hidden p-relative min-h-0">

@@ -1,5 +1,6 @@
 import teamService from '../../api/services/team';
 import { buildKeys, createCachePolicy } from '@/shared/infrastructure/query';
+import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import type { UseQueryOptions } from '@tanstack/react-query';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { Team } from '../../api/entities/team/team';
@@ -30,6 +31,8 @@ export const TEAM_QUERY_KEYS = {
     permissions: permissionKeys.permissions,
     teamPermissions: permissionKeys.teamPermissions
 };
+
+registerPreservedQueryKey(TEAM_QUERY_KEYS.teams()[0] as string);
 
 /** Team-scoped query roots used for bulk cache cleanup. */
 

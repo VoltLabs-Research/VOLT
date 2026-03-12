@@ -1,4 +1,5 @@
 import { buildKeys, createSocketQuery } from '@/shared/infrastructure/query';
+import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import type { QueryClient } from '@tanstack/react-query';
 import type { ClusterHistoryMetric, ClusterMetrics } from '../api/entities/cluster-metrics';
 import { MAX_HISTORY_POINTS } from '../utilities/history';
@@ -11,6 +12,8 @@ type ClusterQueryKeyMap = {
 };
 
 export const CLUSTER_QUERY_KEYS = buildKeys<ClusterQueryKeyMap>('cluster');
+
+registerPreservedQueryKey(CLUSTER_QUERY_KEYS.metrics()[0] as string);
 
 export const clusterMetricsQuery = createSocketQuery<void, ClusterMetrics[]>(CLUSTER_QUERY_KEYS.metrics, { initialData: [] });
 export const clusterHistoryQuery = createSocketQuery<string, ClusterMetrics[]>(CLUSTER_QUERY_KEYS.history, { initialData: [] });

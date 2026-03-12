@@ -1,70 +1,72 @@
-import { checkbox, selectField } from '../../../../molecules/CanvasRenderConfigHelpers';
+import { checkbox, row, selectField } from '../../../../molecules/CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
+import {
+    RENDERER_SHADOW_TYPE_OPTIONS,
+    RENDERER_SUBSECTION_TITLES,
+    RENDERER_TONE_MAPPING_OPTIONS,
+    ShadowType,
+    ToneMappingMode
+} from '@/shared/domain/rendering/renderer';
 
 import { useMemo } from 'react';
 import { MdTune } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';
 import Container from '@/shared/presentation/components/Container';
-import { ShadowType, ToneMappingMode } from '@/modules/fractal/stores/contracts/editor/performance-types';
 import { isEnumValue } from '../../utilities';
 
 import type { RenderGroup } from '../../types';
 
 const useRendererGroup = (): RenderGroup => {
-    const { runtime, setRuntime } = useEditorStore(useShallow((s) => s.rendererSettings));
+    const { runtime, setRuntime } = useEditorStore(useShallow((state) => state.rendererSettings));
 
     return useMemo(() => {
         const toneSection = {
-            key: 'tone', title: 'Tone Mapping', enabled: true,
-            rows: [],
+            key: 'tone',
+            title: RENDERER_SUBSECTION_TITLES.toneMapping,
+            enabled: true,
+            rows: [
+                row({ label: 'Exposure', min: 0, max: 10, step: 0.1, decimals: 1 }, () => runtime.toneMappingExposure, (value: number) => {
+                    setRuntime({ toneMappingExposure: value });
+                })
+            ],
             extras: (
-                <Container className="canvas-render-grid">
+                <Container className='canvas-render-grid'>
                     {selectField('toneMapping', runtime.toneMapping, (value) => {
                         if (isEnumValue(value, ToneMappingMode)) {
                             setRuntime({ toneMapping: value });
                         }
-                    }, 'Tone Mapping', [
-                        { title: 'None', value: ToneMappingMode.None },
-                        { title: 'Linear', value: ToneMappingMode.Linear },
-                        { title: 'Reinhard', value: ToneMappingMode.Reinhard },
-                        { title: 'Cineon', value: ToneMappingMode.Cineon },
-                        { title: 'ACES Filmic', value: ToneMappingMode.ACESFilmic },
-                        { title: 'AgX', value: ToneMappingMode.AgX },
-                        { title: 'Neutral', value: ToneMappingMode.Neutral }
-                    ])}
+                    }, 'Tone Mapping', RENDERER_TONE_MAPPING_OPTIONS)}
                 </Container>
             )
         };
 
         const shadowSection = {
-            key: 'shadows', title: 'Shadows', enabled: true,
+            key: 'shadows',
+            title: RENDERER_SUBSECTION_TITLES.shadows,
+            enabled: true,
             rows: [],
             extras: (
-                <Container className="canvas-render-grid">
-                    {checkbox('shadowEnabled', 'Enable Shadows', runtime.shadowEnabled, (v) => setRuntime({ shadowEnabled: v }))}
+                <Container className='canvas-render-grid'>
+                    {checkbox('shadowEnabled', 'Enable Shadows', runtime.shadowEnabled, (value) => setRuntime({ shadowEnabled: value }))}
                     {selectField('shadowType', runtime.shadowType, (value) => {
                         if (isEnumValue(value, ShadowType)) {
                             setRuntime({ shadowType: value });
                         }
-                    }, 'Shadow Type', [
-                        { title: 'Basic', value: ShadowType.Basic },
-                        { title: 'PCF', value: ShadowType.PCF },
-                        { title: 'PCF Soft', value: ShadowType.PCFSoft },
-                        { title: 'VSM', value: ShadowType.VSM }
-                    ])}
+                    }, 'Shadow Type', RENDERER_SHADOW_TYPE_OPTIONS)}
                 </Container>
             )
         };
 
         return {
-            id: 'renderer', title: 'Renderer',
+            id: 'renderer',
+            title: 'Renderer',
             icon: <MdTune size={12} />,
             subsections: [
-                { label: 'Tone Mapping', sections: [toneSection] },
-                { label: 'Shadows', sections: [shadowSection] }
+                { label: RENDERER_SUBSECTION_TITLES.toneMapping, sections: [toneSection] },
+                { label: RENDERER_SUBSECTION_TITLES.shadows, sections: [shadowSection] }
             ]
         };
-    }, [runtime]);
+    }, [runtime, setRuntime]);
 };
 
 export default useRendererGroup;

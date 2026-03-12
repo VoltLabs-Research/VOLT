@@ -50,7 +50,6 @@ export const useEditorStore = create<EditorStore>()(
                     state.effects.reset();
                     state.grid.reset();
                     state.environment.reset();
-                    state.renderConfig.reset();
 
                     useEditorStore.temporal.getState().clear();
                 }
@@ -98,13 +97,10 @@ export const useEditorStore = create<EditorStore>()(
                 },
                 environment: {
                     backgroundColor: state.environment.backgroundColor,
-                    backgroundType: state.environment.backgroundType,
-                    environmentPreset: state.environment.environmentPreset,
                     enableFog: state.environment.enableFog,
                     fogColor: state.environment.fogColor,
                     fogNear: state.environment.fogNear,
-                    fogFar: state.environment.fogFar,
-                    toneMappingExposure: state.environment.toneMappingExposure
+                    fogFar: state.environment.fogFar
                 },
                 orbitControls: {
                     enabled: state.orbitControls.enabled,
@@ -130,7 +126,6 @@ export const useEditorStore = create<EditorStore>()(
                 performanceSettings: {
                     preset: state.performanceSettings.preset,
                     dpr: state.performanceSettings.dpr,
-                    canvas: state.performanceSettings.canvas,
                     performance: state.performanceSettings.performance,
                     adaptiveEvents: state.performanceSettings.adaptiveEvents,
                     interactionDegrade: state.performanceSettings.interactionDegrade
@@ -138,11 +133,6 @@ export const useEditorStore = create<EditorStore>()(
                 rendererSettings: {
                     create: state.rendererSettings.create,
                     runtime: state.rendererSettings.runtime
-                },
-                renderConfig: {
-                    gl: state.renderConfig.gl,
-                    orbitControls: state.renderConfig.orbitControls,
-                    SSAO: state.renderConfig.SSAO
                 },
                 configuration: {
                     slicePlaneConfig: state.configuration.slicePlaneConfig,

@@ -203,6 +203,18 @@ export default class ParticleFilterService implements IParticleFilterService {
             throw buildClusterRequiredError();
         }
 
+        const dumpExists = await this.dumpStorage.existsDump(
+            String(trajectoryId),
+            String(timestep)
+        );
+
+        if (!dumpExists) {
+            throw ApplicationError.notFound(
+                ErrorCodes.TRAJECTORY_DUMP_NOT_FOUND,
+                `Trajectory dump for timestep ${timestep} not found`
+            );
+        }
+
         const filterResult = await this.getRemoteFilterResult(
             teamClusterId,
             String(trajectoryId),

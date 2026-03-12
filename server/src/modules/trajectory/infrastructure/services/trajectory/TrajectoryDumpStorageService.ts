@@ -133,6 +133,22 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         return createReadStream(localPath);
     }
 
+    async existsDump(trajectoryId: string, timestep: string): Promise<boolean> {
+        const objectName = this.getObjectName(trajectoryId, timestep);
+        const trajectory = await this.trajectoryRepo.findById(trajectoryId);
+
+        if (trajectory?.props.teamCluster) {
+            const result = await this.teamClusterDaemonClient.command<{ keys: string[] }>(
+                trajectory.props.teamCluster,
+                'object.list',
+                { bucket: SYS_BUCKETS.DUMPS, prefix: objectName }
+            );
+            return result.keys.includes(objectName);
+        }
+
+        return this.storageService.exists(SYS_BUCKETS.DUMPS, objectName);
+    }
+
     async listDumps(trajectoryId: string): Promise<string[]>{
         const trajectory = await this.trajectoryRepo.findById(trajectoryId);
         if(trajectory?.props.teamCluster){

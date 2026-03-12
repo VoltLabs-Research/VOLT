@@ -1,4 +1,5 @@
 import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
+import { areModelWorldBoundsEqual } from '@/modules/fractal/utilities/model-world-bounds';
 
 import type { EditorStore } from './types';
 import type { ModelLoadingState } from '@/modules/fractal/types';
@@ -82,7 +83,13 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
     },
 
     setModelWorldBounds(bounds: ModelWorldBounds | null) {
-        set({ modelWorldBounds: bounds });
+        set((state) => {
+            if (areModelWorldBoundsEqual(state.modelWorldBounds, bounds)) {
+                return state;
+            }
+
+            return { modelWorldBounds: bounds };
+        });
     },
 
     setIsModelLoading(loading: boolean) {

@@ -8,7 +8,6 @@ tools: [
   'edit',
   'read/problems',
 ]
-model: GPT-5.4 (copilot)
 ---
 
 You are a **CONDUCTOR AGENT** responsible for orchestrating the full development lifecycle.

@@ -46,7 +46,7 @@ const applyFilterBodySchema = z.object({
     action: z.enum(['delete', 'highlight']),
     property: z.string().min(1),
     operator: z.enum(['==', '!=', '>', '>=', '<', '<=']),
-    value: z.number(),
+    value: z.coerce.number().finite(),
     exposureId: exposureIdSchema.optional()
 }).strict();
 

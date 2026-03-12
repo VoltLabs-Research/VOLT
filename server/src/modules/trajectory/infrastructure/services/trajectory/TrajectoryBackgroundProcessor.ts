@@ -1,4 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import { JobStatus } from '@modules/jobs/domain/entities/Job';
+import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
@@ -15,6 +17,7 @@ import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/trajectory/TrajectoryParserFactory';
 import CloudUploadProcessor from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadProcessor';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import IORedis from 'ioredis';
 import logger from '@shared/infrastructure/logger';
 
 import { injectable, inject } from 'tsyringe';
@@ -33,6 +36,10 @@ type ParsedFrame = {
     [key: string]: unknown;
 };
 
+const TRAJECTORY_PREPROCESS_QUEUE_TYPE = 'trajectory_native_preprocess';
+const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
+const STATUS_TTL_SECONDS = 86400;
+
 @injectable()
 export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgroundProcessor {
     constructor(
@@ -50,6 +57,9 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
+
+        @inject(SHARED_TOKENS.RedisClient)
+        private readonly redis: IORedis,
 
         @inject(SHARED_TOKENS.FileExtractorService)
         private readonly extractor: IFileExtractorService
@@ -81,6 +91,11 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
             await this.persistTrajectory(trajectoryId, frames);
             await this.dispatchJobs(frames, trajectory, teamId);
+            await this.updateStatus(
+                trajectoryId,
+                teamId,
+                TrajectoryStatus.Completed
+            );
         }catch(error){
             const failure = normalizeTrajectoryWorkerFailure(
                 error,
@@ -320,12 +335,78 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
         for (const frame of frames) {
             const { cachePath, timestep } = frame;
-            await this.cloudUploadProcessor.process({
+            const jobId = `${trajectory._id}:${timestep}:native-preprocess`;
+            const metadata = {
                 trajectoryId: trajectory._id,
-                teamClusterId: trajectory.props.teamCluster,
-                timestep,
-                frameFilePath: cachePath
-            });
+                trajectoryName: trajectory.props.name,
+                timestep
+            };
+
+            await this.emitJobStatus(jobId, teamId, JobStatus.Queued, metadata);
+            await this.emitJobStatus(jobId, teamId, JobStatus.Running, metadata);
+
+            try {
+                await this.cloudUploadProcessor.process({
+                    trajectoryId: trajectory._id,
+                    teamClusterId: trajectory.props.teamCluster,
+                    timestep,
+                    frameFilePath: cachePath
+                });
+
+                await this.emitJobStatus(jobId, teamId, JobStatus.Completed, metadata);
+            } catch (error) {
+                const failureMessage = error instanceof Error ? error.message : 'Failed to preprocess trajectory frame';
+                await this.emitJobStatus(jobId, teamId, JobStatus.Failed, {
+                    ...metadata,
+                    error: failureMessage
+                });
+                throw error;
+            }
         }
+    }
+
+    private async emitJobStatus(
+        jobId: string,
+        teamId: string,
+        status: JobStatus,
+        metadata: {
+            trajectoryId: string;
+            trajectoryName: string;
+            timestep: number;
+            error?: string;
+        }
+    ): Promise<void> {
+        const timestamp = new Date().toISOString();
+        const statusData = {
+            jobId,
+            teamId,
+            status,
+            queueType: TRAJECTORY_PREPROCESS_QUEUE_TYPE,
+            trajectoryId: metadata.trajectoryId,
+            trajectoryName: metadata.trajectoryName,
+            timestep: metadata.timestep,
+            error: metadata.error,
+            metadata,
+            timestamp,
+            updatedAt: timestamp
+        };
+
+        const pipeline = this.redis.pipeline();
+        pipeline.set(
+            `${JOB_STATUS_KEY_PREFIX}${jobId}`,
+            JSON.stringify(statusData),
+            'EX',
+            STATUS_TTL_SECONDS
+        );
+        pipeline.sadd(`team:${teamId}:jobs`, jobId);
+        await pipeline.exec();
+
+        await this.eventBus.publish(new JobStatusChangedEvent({
+            jobId,
+            teamId,
+            status,
+            queueType: TRAJECTORY_PREPROCESS_QUEUE_TYPE,
+            metadata
+        }));
     }
 };

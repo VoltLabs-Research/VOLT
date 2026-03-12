@@ -1,15 +1,12 @@
-import { AUTH_QUERY_KEYS } from '@/modules/auth/hooks/queries';
-import { CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/queries';
 import { TEAM_INVITATION_QUERY_KEYS } from '@/modules/team/hooks/invitation/queries';
 import { TEAM_MEMBER_QUERY_KEYS } from '@/modules/team/hooks/member/queries';
 import { TEAM_QUERY_KEYS } from '@/modules/team/hooks/team/queries';
 import { TEAM_ROLE_QUERY_KEYS } from '@/modules/team/hooks/role/queries';
 import teamStorage from '@/modules/team/services/team/team-storage';
 import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
-import { TEAM_JOBS_QUERY_KEYS } from '@/modules/jobs/utilities/query-keys';
 import { resetTeamScopedStores } from '@/shared/utils/application-store-cleanups';
 import queryClient from '@/shared/infrastructure/query/query-client';
-import { runManualAppCleanup } from '@/shared/utils/app-cleanup-registry';
+import { getPreservedQueryPrefixes, runManualAppCleanup } from '@/shared/utils/app-cleanup-registry';
 import { create } from 'zustand';
 
 interface TeamStore {
@@ -24,13 +21,6 @@ const initialState = {
     selectedTeamId: null,
     hasHydratedSelection: false
 };
-
-const PRESERVED_QUERY_PREFIXES = [
-    AUTH_QUERY_KEYS.currentUser()[0],
-    TEAM_QUERY_KEYS.teams()[0],
-    CLUSTER_QUERY_KEYS.metrics()[0],
-    TEAM_JOBS_QUERY_KEYS.groups()[0]
-].filter((key): key is string => typeof key === 'string');
 
 export const useTeamStore = create<TeamStore>((set) => ({
     ...initialState,
@@ -72,20 +62,14 @@ export const resetTeamDependentStores = (): void => {
 };
 
 /**
- * Query key prefixes that must survive a team switch (not team-scoped).
- *
- * - auth / teams  - user stays authenticated and the team list remains.
- * - cluster       - infrastructure-level metrics fed by WebSocket; the
- *                   observer uses `skipToken` so destroying the query
- *                   cache would leave it permanently empty.
- * - team-jobs     - job data is pushed via WebSocket; the hook already
- *                   re-subscribes when the selected team changes and
- *                   clears stale data via `setQueryData`.
+ * Returns true for query keys whose prefix was registered via
+ * {@link registerPreservedQueryKey}. These queries survive a team switch
+ * because their data is fed by WebSocket subscriptions, not REST refetches.
  */
 const isPreservedQuery = (queryKey: readonly unknown[]): boolean => {
     const first = queryKey[0];
     if (typeof first !== 'string') return false;
-    return PRESERVED_QUERY_PREFIXES.includes(first);
+    return getPreservedQueryPrefixes().includes(first);
 };
 
 /**

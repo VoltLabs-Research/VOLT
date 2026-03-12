@@ -1,11 +1,12 @@
-import { PerspectiveCamera, OrthographicCamera } from '@react-three/drei';
+import { CameraType } from '@/shared/domain/rendering/camera';
+import { OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import { useEffect } from 'react';
-import type { PerspectiveCamera as ThreePerspective } from 'three';
-import type { OrbitControlsHandle } from '@/modules/fractal/types';
-import { CameraType } from '@/modules/fractal/stores/contracts/editor/visual-types';
+
 import type { CameraSettingsState } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { OrbitControlsHandle } from '@/modules/fractal/types';
 import type { FC, RefObject } from 'react';
+import type { PerspectiveCamera as ThreePerspective } from 'three';
 
 interface CameraRigProps {
     orbitRef?: RefObject<OrbitControlsHandle | null>;
@@ -26,7 +27,6 @@ const CameraRig: FC<CameraRigProps> = ({ orbitRef, camera }) => {
     const oNear = camera.orthographic.near;
     const oFar = camera.orthographic.far;
     const oZoom = camera.orthographic.zoom;
-
     const { scene } = useThree();
 
     useEffect(() => {
@@ -54,8 +54,8 @@ const CameraRig: FC<CameraRigProps> = ({ orbitRef, camera }) => {
                 near={oNear}
                 far={oFar}
                 zoom={oZoom}
-                onUpdate={(c) => {
-                    c.updateProjectionMatrix();
+                onUpdate={(cameraState) => {
+                    cameraState.updateProjectionMatrix();
                 }}
             />
         );
@@ -71,11 +71,11 @@ const CameraRig: FC<CameraRigProps> = ({ orbitRef, camera }) => {
             near={pNear}
             far={pFar}
             zoom={pZoom}
-            onUpdate={(cam: ThreePerspective) => {
-                cam.focus = pFocus;
-                cam.filmGauge = pFilmGauge;
-                cam.filmOffset = pFilmOffset;
-                cam.updateProjectionMatrix();
+            onUpdate={(cameraState: ThreePerspective) => {
+                cameraState.focus = pFocus;
+                cameraState.filmGauge = pFilmGauge;
+                cameraState.filmOffset = pFilmOffset;
+                cameraState.updateProjectionMatrix();
             }}
         />
     );
