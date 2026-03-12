@@ -6,11 +6,10 @@ import useLatexDocumentsListing, {
     NEW_LATEX_FOLDER_MODAL_ID,
     RENAME_LATEX_FOLDER_MODAL_ID
 } from '@/modules/latex/hooks/use-latex-documents-listing';
-import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
-import { dateColumn } from '@/shared/presentation/utilities/column-presets';
+import { dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import { openModal } from '@/shared/presentation/components/Modal';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
@@ -28,9 +27,7 @@ const isLatexFolder = (row: LatexListingRow): boolean => {
     return row.rowType === LatexListingRowType.Folder;
 };
 
-type ColumnRender = NonNullable<ColumnConfig<LatexListingRow>['render']>;
-
-const renderDocumentTitle: ColumnRender = (value, row) => {
+const renderDocumentTitle: NonNullable<ColumnConfig<LatexListingRow>['render']> = (value, row) => {
     let title = row.title || 'Untitled Document';
 
     if (typeof value === 'string' && value.trim().length > 0) {
@@ -56,30 +53,6 @@ const renderDocumentTitle: ColumnRender = (value, row) => {
     );
 };
 
-const renderUser = (user: LatexListingRow['createdBy'] | LatexListingRow['lastEditedBy']) => {
-    if (!user || typeof user === 'string') {
-        return <span className='font-size-2 color-muted'>-</span>;
-    }
-
-    return <ListingUserCell user={user} />;
-};
-
-const renderLastEditedBy: ColumnRender = (_value, row) => {
-    if (isLatexFolder(row)) {
-        return <span className='font-size-2 color-muted'>-</span>;
-    }
-
-    return renderUser(row.lastEditedBy);
-};
-
-const renderCreatedBy: ColumnRender = (_value, row) => {
-    if (isLatexFolder(row)) {
-        return <span className='font-size-2 color-muted'>-</span>;
-    }
-
-    return renderUser(row.createdBy);
-};
-
 const COLUMNS: ColumnConfig<LatexListingRow>[] = [
     {
         key: 'title',
@@ -88,20 +61,8 @@ const COLUMNS: ColumnConfig<LatexListingRow>[] = [
         render: renderDocumentTitle,
         skeleton: { variant: 'text', width: 200 }
     },
-    {
-        key: 'lastEditedBy',
-        title: 'Last Edited By',
-        sortable: false,
-        render: renderLastEditedBy,
-        skeleton: { variant: 'text', width: 180 }
-    },
-    {
-        key: 'createdBy',
-        title: 'Created By',
-        sortable: false,
-        render: renderCreatedBy,
-        skeleton: { variant: 'text', width: 180 }
-    },
+    userColumn<LatexListingRow>('lastEditedBy', 'Last Edited By', { isFolder: isLatexFolder }),
+    userColumn<LatexListingRow>('createdBy', 'Created By', { isFolder: isLatexFolder }),
     dateColumn<LatexListingRow>('updatedAt', 'Updated At', {
         width: 110,
         withTitle: true

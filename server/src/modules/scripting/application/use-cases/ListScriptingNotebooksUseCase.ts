@@ -1,3 +1,4 @@
+import { CLUSTER_POPULATE, TRAJECTORY_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
 import { toScriptingNotebookDTO } from '@modules/scripting/application/utilities/to-scripting-notebook-dto';
 import {
     ListScriptingNotebooksInputDTO,
@@ -24,39 +25,17 @@ export class ListScriptingNotebooksUseCase implements IUseCase<ListScriptingNote
         const filter: Record<string, unknown> = { team: input.teamId };
 
         if (input.trajectoryId) {
-            filter.$or = [
-                { trajectory: input.trajectoryId },
-                { trajectories: input.trajectoryId }
-            ];
+            filter.trajectory = input.trajectoryId;
         } else if (input.scope === ScriptingNotebookScope.General) {
-            filter.$and = [
-                {
-                    $or: [
-                        { trajectory: null },
-                        { trajectory: { $exists: false } }
-                    ]
-                },
-                {
-                    $or: [
-                        { trajectories: { $exists: false } },
-                        { trajectories: { $size: 0 } }
-                    ]
-                }
+            filter.$or = [
+                { trajectory: null },
+                { trajectory: { $exists: false } }
             ];
         } else if (input.scope === ScriptingNotebookScope.Trajectory) {
-            filter.$or = [
-                {
-                    trajectory: {
-                        $exists: true,
-                        $ne: null
-                    }
-                },
-                {
-                    'trajectories.0': {
-                        $exists: true
-                    }
-                }
-            ];
+            filter.trajectory = {
+                $exists: true,
+                $ne: null
+            };
         }
 
         const result = await this.scriptingNotebookRepository.findAll({
@@ -65,22 +44,9 @@ export class ListScriptingNotebooksUseCase implements IUseCase<ListScriptingNote
             limit,
             sort: { updatedAt: -1 },
             populate: [
-                {
-                    path: 'teamCluster',
-                    select: ['name']
-                },
-                {
-                    path: 'trajectory',
-                    select: ['name']
-                },
-                {
-                    path: 'trajectories',
-                    select: ['name']
-                },
-                {
-                    path: 'createdBy',
-                    select: ['firstName', 'lastName', 'email', 'avatar']
-                }
+                CLUSTER_POPULATE,
+                TRAJECTORY_POPULATE,
+                USER_POPULATE
             ]
         });
 

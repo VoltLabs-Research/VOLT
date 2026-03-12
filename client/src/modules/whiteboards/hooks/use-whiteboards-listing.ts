@@ -24,6 +24,8 @@ import usePermission from '@/shared/presentation/hooks/use-permission';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { MenuOption } from '@/shared/presentation/types/menu';
+import { createCrudToastOptions } from '@/shared/presentation/toast-options';
+import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constants/foldered-listing';
 import { FolderInput, FolderOpen, Pencil, SquarePen, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -48,9 +50,6 @@ interface WhiteboardMoveTarget {
     folder: string | null;
 };
 
-const FOLDER_LIST_LIMIT = 500;
-const ROOT_FOLDER_ID = 'root';
-
 export const NEW_WHITEBOARD_FOLDER_MODAL_ID = 'new-whiteboard-folder-modal';
 export const RENAME_WHITEBOARD_MODAL_ID = 'rename-whiteboard-modal';
 export const RENAME_WHITEBOARD_FOLDER_MODAL_ID = 'rename-whiteboard-folder-modal';
@@ -60,47 +59,13 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'whiteboard.deleted', queryKeys: [whiteboardsQueryKey()] }
 ];
 
-const DELETE_WHITEBOARD_TOAST = {
-    loading: { title: 'Deleting whiteboard...' },
-    success: { title: 'Whiteboard deleted successfully' },
-    error: { title: 'Failed to delete whiteboard' }
-};
-
-const CREATE_WHITEBOARD_TOAST = {
-    loading: { title: 'Creating whiteboard...' },
-    success: { title: 'Whiteboard created successfully' },
-    error: { title: 'Failed to create whiteboard' }
-};
-
-const CREATE_FOLDER_TOAST = {
-    loading: { title: 'Creating folder...' },
-    success: { title: 'Folder created successfully' },
-    error: { title: 'Failed to create folder' }
-};
-
-const RENAME_WHITEBOARD_TOAST = {
-    loading: { title: 'Renaming whiteboard...' },
-    success: { title: 'Whiteboard renamed successfully' },
-    error: { title: 'Failed to rename whiteboard' }
-};
-
-const RENAME_FOLDER_TOAST = {
-    loading: { title: 'Renaming folder...' },
-    success: { title: 'Folder renamed successfully' },
-    error: { title: 'Failed to rename folder' }
-};
-
-const DELETE_FOLDER_TOAST = {
-    loading: { title: 'Deleting folder...' },
-    success: { title: 'Folder deleted successfully' },
-    error: { title: 'Failed to delete folder' }
-};
-
-const MOVE_WHITEBOARD_TOAST = {
-    loading: { title: 'Moving whiteboard...' },
-    success: { title: 'Whiteboard moved successfully' },
-    error: { title: 'Failed to move whiteboard' }
-};
+const DELETE_WHITEBOARD_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Whiteboard', success: 'Whiteboard deleted successfully', error: 'Failed to delete whiteboard' });
+const CREATE_WHITEBOARD_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Whiteboard', success: 'Whiteboard created successfully', error: 'Failed to create whiteboard' });
+const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder', success: 'Folder created successfully', error: 'Failed to create folder' });
+const RENAME_WHITEBOARD_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Whiteboard', success: 'Whiteboard renamed successfully', error: 'Failed to rename whiteboard' });
+const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder', success: 'Folder renamed successfully', error: 'Failed to rename folder' });
+const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder', success: 'Folder deleted successfully', error: 'Failed to delete folder' });
+const MOVE_WHITEBOARD_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Whiteboard', success: 'Whiteboard moved successfully', error: 'Failed to move whiteboard' });
 
 const fetchWhiteboards = (params: PaginationParams & FolderedListingContext): Promise<PaginatedResponse<Whiteboard>> => {
     return whiteboardsQuery.fetch({

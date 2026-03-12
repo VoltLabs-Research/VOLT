@@ -1,13 +1,12 @@
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { openModal } from '@/shared/presentation/components/Modal';
 import { runHandledAction } from '@/shared/errors/handled-action';
-import { dateColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
+import { dateColumn, statusColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { SecretKeyCreationModal, SECRET_KEY_CREATION_MODAL_ID } from '../../organisms/SecretKeyCreationModal';
 import useDeleteSecretKey from '@/modules/team/hooks/secret-key/use-delete-secret-key';
 import useRevokeSecretKey from '@/modules/team/hooks/secret-key/use-revoke-secret-key';
 import useSecretKeysListing from '@/modules/team/hooks/secret-key/use-secret-keys-listing';
-import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
@@ -41,10 +40,8 @@ const getDeleteSecretKeyToastOptions = (key: SecretKey) => createPromiseToastOpt
 });
 
 const renderCreatedBy: NonNullable<ColumnConfig<SecretKey>['render']> = (_value, key) => {
-    const user = typeof key.createdBy === 'string'
-        ? null
-        : key.createdBy;
-    return <ListingUserCell user={user} />;
+    const user = typeof key.createdBy === 'string' ? null : key.createdBy;
+    return <span className='font-size-2 color-secondary'>{user?.email ?? '-'}</span>;
 };
 
 const COLUMNS: ColumnConfig<SecretKey>[] = [

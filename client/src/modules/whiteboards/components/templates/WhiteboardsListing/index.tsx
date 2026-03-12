@@ -5,12 +5,11 @@ import useWhiteboardsListing, {
     NEW_WHITEBOARD_FOLDER_MODAL_ID,
     RENAME_WHITEBOARD_FOLDER_MODAL_ID
 } from '@/modules/whiteboards/hooks/use-whiteboards-listing';
-import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
 import { openModal } from '@/shared/presentation/components/Modal';
-import { dateColumn } from '@/shared/presentation/utilities/column-presets';
+import { dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
@@ -26,9 +25,7 @@ const isWhiteboardFolder = (row: WhiteboardListingRow): boolean => {
     return row.rowType === WhiteboardListingRowType.Folder;
 };
 
-type WhiteboardColumnRender = NonNullable<ColumnConfig<WhiteboardListingRow>['render']>;
-
-const renderWhiteboardTitle: WhiteboardColumnRender = (value, row) => {
+const renderWhiteboardTitle: NonNullable<ColumnConfig<WhiteboardListingRow>['render']> = (value, row) => {
     let title = row.title || 'Untitled Whiteboard';
 
     if (typeof value === 'string' && value.trim().length > 0) {
@@ -54,17 +51,6 @@ const renderWhiteboardTitle: WhiteboardColumnRender = (value, row) => {
     );
 };
 
-const renderLastEditedBy: WhiteboardColumnRender = (_value, row) => {
-    if (isWhiteboardFolder(row)) {
-        return <span className='font-size-2 color-muted'>-</span>;
-    }
-
-    const user = typeof row.lastEditedBy === 'string'
-        ? null
-        : row.lastEditedBy;
-    return <ListingUserCell user={user} />;
-};
-
 const COLUMNS: ColumnConfig<WhiteboardListingRow>[] = [
     {
         key: 'title',
@@ -73,13 +59,7 @@ const COLUMNS: ColumnConfig<WhiteboardListingRow>[] = [
         render: renderWhiteboardTitle,
         skeleton: { variant: 'text', width: 180 }
     },
-    {
-        key: 'lastEditedBy',
-        title: 'Last Edited By',
-        sortable: false,
-        render: renderLastEditedBy,
-        skeleton: { variant: 'text', width: 180 }
-    },
+    userColumn<WhiteboardListingRow>('lastEditedBy', 'Last Edited By', { isFolder: isWhiteboardFolder }),
     dateColumn<WhiteboardListingRow>('updatedAt', 'Updated At', {
         width: 110,
         withTitle: true

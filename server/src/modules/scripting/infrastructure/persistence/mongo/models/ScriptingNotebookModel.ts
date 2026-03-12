@@ -23,7 +23,7 @@ const ScriptingNotebookSchema: Schema<ScriptingNotebookDocument> = new Schema({
     teamCluster: {
         type: Schema.Types.ObjectId,
         ref: 'TeamCluster',
-        required: false
+        required: true
     },
     runtimeNotebookId: {
         type: String,

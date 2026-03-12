@@ -19,7 +19,7 @@ const SceneArtifactSchema: Schema<SceneArtifactDocument> = new Schema({
     teamCluster: {
         type: Schema.Types.ObjectId,
         ref: 'TeamCluster',
-        required: false,
+        required: true,
         index: true
     },
     analysis: {

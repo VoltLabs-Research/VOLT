@@ -7,7 +7,6 @@ import useContainersListing, {
 import type { ContainerListingRow } from '@/modules/container/utilities/listing';
 import { isContainerFolderRow } from '@/modules/container/utilities/listing';
 import useDashboardHeaderContent from '@/modules/dashboard/hooks/use-dashboard-header-content';
-import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
@@ -16,7 +15,7 @@ import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
 import Title from '@/shared/presentation/components/Title';
 import { openModal } from '@/shared/presentation/components/Modal';
-import { dateColumn } from '@/shared/presentation/utilities/column-presets';
+import { clusterColumn, dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import { formatSize } from '@/shared/utils/format';
 import { Box, Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
@@ -60,10 +59,8 @@ const renderCreatedBy: NonNullable<ColumnConfig<ContainerListingRow>['render']> 
         return <span className='font-size-2 color-muted'>-</span>;
     }
 
-    const user = typeof row.createdBy === 'string'
-        ? null
-        : row.createdBy;
-    return <ListingUserCell user={user} />;
+    const user = typeof row.createdBy === 'string' ? null : row.createdBy;
+    return <span className='font-size-2 color-secondary'>{user?.email ?? '-'}</span>;
 };
 
 const COLUMNS: ColumnConfig<ContainerListingRow>[] = [

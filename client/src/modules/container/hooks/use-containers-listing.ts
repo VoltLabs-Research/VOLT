@@ -28,6 +28,8 @@ import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { createCrudToastOptions } from '@/shared/presentation/toast-options';
+import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constants/foldered-listing';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import queryClient from '@/shared/infrastructure/query/query-client';
@@ -37,9 +39,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiTerminalLine } from 'react-icons/ri';
 import { ContainerAction } from '../api/dtos/update-container';
-
-const ROOT_FOLDER_ID = 'root';
-const FOLDER_LIST_LIMIT = 500;
 
 export const NEW_CONTAINER_FOLDER_MODAL_ID = 'new-container-folder-modal';
 export const RENAME_CONTAINER_FOLDER_MODAL_ID = 'rename-container-folder-modal';
@@ -55,6 +54,15 @@ interface ContainerMoveTarget {
     name: string;
     folder: string | null;
 }
+
+const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder', success: 'Folder created successfully', error: 'Failed to create folder' });
+const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder', success: 'Folder renamed successfully', error: 'Failed to rename folder' });
+const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder', success: 'Folder deleted successfully', error: 'Failed to delete folder' });
+const MOVE_CONTAINER_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Container', success: 'Container moved successfully', error: 'Failed to move container' });
+const START_CONTAINER_TOAST = createCrudToastOptions({ action: 'Starting', subject: 'Container', success: 'Container started successfully', error: 'Failed to start container' });
+const STOP_CONTAINER_TOAST = createCrudToastOptions({ action: 'Stopping', subject: 'Container', success: 'Container stopped successfully', error: 'Failed to stop container' });
+const RESTART_CONTAINER_TOAST = createCrudToastOptions({ action: 'Restarting', subject: 'Container', success: 'Container restarted successfully', error: 'Failed to restart container' });
+const DELETE_CONTAINER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Container', success: 'Container deleted successfully', error: 'Failed to delete container' });
 
 const createEmptyResponse = <T extends { _id: string }>(params: PaginationParams): PaginatedResponse<T> => ({
     status: 'success',
@@ -140,11 +148,7 @@ const useContainersListing = () => {
         onFetchErrorTitle: 'Failed to fetch containers',
         invalidFolderMessage: 'This container folder no longer exists. Showing Root instead.',
         createFolder,
-        createFolderToast: {
-            loading: { title: 'Creating folder...' },
-            success: { title: 'Folder created successfully' },
-            error: { title: 'Failed to create folder' }
-        },
+        createFolderToast: CREATE_FOLDER_TOAST,
         afterCreateFolder: async () => {
             await Promise.all([
                 invalidateContainerFoldersQuery(),
@@ -152,17 +156,9 @@ const useContainersListing = () => {
             ]);
         },
         updateFolder,
-        renameFolderToast: {
-            loading: { title: 'Renaming folder...' },
-            success: { title: 'Folder renamed successfully' },
-            error: { title: 'Failed to rename folder' }
-        },
+        renameFolderToast: RENAME_FOLDER_TOAST,
         deleteFolder,
-        deleteFolderToast: {
-            loading: { title: 'Deleting folder...' },
-            success: { title: 'Folder deleted successfully' },
-            error: { title: 'Failed to delete folder' }
-        },
+        deleteFolderToast: DELETE_FOLDER_TOAST,
         getDeleteFolderConfirm: (folder) => ({
             title: `Delete "${folder.title}"? Nested folders and all containers inside them will be deleted recursively.`,
             description: 'This permanently deletes the folder tree and every container contained in it.'
@@ -219,11 +215,7 @@ const useContainersListing = () => {
                 containerId: movingContainer._id,
                 folderId
             }),
-            {
-                loading: { title: 'Moving container...' },
-                success: { title: 'Container moved successfully' },
-                error: { title: 'Failed to move container' }
-            }
+            MOVE_CONTAINER_TOAST
         );
     }, [moveContainer, movingContainer]);
 
@@ -244,11 +236,7 @@ const useContainersListing = () => {
                 containerId: activeItem._id,
                 folderId: overItem._id
             }),
-            {
-                loading: { title: 'Moving container...' },
-                success: { title: 'Container moved successfully' },
-                error: { title: 'Failed to move container' }
-            }
+            MOVE_CONTAINER_TOAST
         );
     }, [moveContainer]);
 
@@ -284,11 +272,7 @@ const useContainersListing = () => {
                 icon: Play,
                 handler: async ({ item: container }) => {
                     if (container.status === 'running') return;
-                    await showPromise(controlContainer(container._id, ContainerAction.Start), {
-                        loading: { title: 'Starting container...' },
-                        success: { title: 'Container started successfully' },
-                        error: { title: 'Failed to start container' }
-                    });
+                    await showPromise(controlContainer(container._id, ContainerAction.Start), START_CONTAINER_TOAST);
                 },
                 requiredPermission: 'container:update'
             },
@@ -297,11 +281,7 @@ const useContainersListing = () => {
                 icon: Square,
                 handler: async ({ item: container }) => {
                     if (container.status !== 'running') return;
-                    await showPromise(controlContainer(container._id, ContainerAction.Stop), {
-                        loading: { title: 'Stopping container...' },
-                        success: { title: 'Container stopped successfully' },
-                        error: { title: 'Failed to stop container' }
-                    });
+                    await showPromise(controlContainer(container._id, ContainerAction.Stop), STOP_CONTAINER_TOAST);
                 },
                 requiredPermission: 'container:update'
             },
@@ -309,11 +289,7 @@ const useContainersListing = () => {
                 label: 'Restart',
                 icon: RotateCcw,
                 handler: async ({ item: container }) => {
-                    await showPromise(controlContainer(container._id, ContainerAction.Restart), {
-                        loading: { title: 'Restarting container...' },
-                        success: { title: 'Container restarted successfully' },
-                        error: { title: 'Failed to restart container' }
-                    });
+                    await showPromise(controlContainer(container._id, ContainerAction.Restart), RESTART_CONTAINER_TOAST);
                 },
                 requiredPermission: 'container:update'
             },

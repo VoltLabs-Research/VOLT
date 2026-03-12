@@ -1,0 +1,55 @@
+.populated-cell-trigger {
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.15s ease, text-decoration 0.15s ease;
+}
+
+.populated-cell-trigger:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--color-text-secondary);
+    text-underline-offset: 2px;
+}
+
+.populated-cell-popover-header {
+    border-bottom: 1px solid var(--color-surface-3);
+}
+
+.populated-cell-popover-link {
+    color: var(--accent-blue);
+    font-size: 0.75rem;
+    text-decoration: none;
+    background: none;
+    border: none;
+    padding: 0;
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+}
+
+.populated-cell-popover-link:hover {
+    opacity: 0.8;
+}
+
+.populated-cell-popover-link svg {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+.populated-cell-popover-body {
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.populated-cell-popover-field-label {
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    min-width: 80px;
+    white-space: nowrap;
+}
+
+.populated-cell-popover-field-value {
+    color: var(--color-text-primary);
+    font-size: 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

@@ -1,3 +1,4 @@
+import { ROLE_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ListSecretKeysByTeamIdInputDTO, ListSecretKeysByTeamIdOutputDTO, SecretKeyListItemDTO } from '@modules/team/application/dtos/secret-key/ListSecretKeysByTeamIdDTO';
 import { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
@@ -26,14 +27,8 @@ export default class ListSecretKeysByTeamIdUseCase implements IUseCase<ListSecre
                 createdAt: -1
             },
             populate: [
-                {
-                    path: 'role',
-                    select: ['name']
-                },
-                {
-                    path: 'createdBy',
-                    select: ['firstName', 'lastName', 'email', 'avatar']
-                }
+                ROLE_POPULATE,
+                USER_POPULATE
             ]
         });
 

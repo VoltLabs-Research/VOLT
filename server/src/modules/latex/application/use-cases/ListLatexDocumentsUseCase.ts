@@ -1,3 +1,4 @@
+import { USER_POPULATE, LAST_EDITED_BY_POPULATE } from '@shared/application/PopulatePresets';
 import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -40,14 +41,8 @@ export class ListLatexDocumentsUseCase implements IUseCase<ListLatexDocumentsInp
             limit,
             sort: { updatedAt: -1 },
             populate: [
-                {
-                    path: 'createdBy',
-                    select: ['firstName', 'lastName', 'email', 'avatar']
-                },
-                {
-                    path: 'lastEditedBy',
-                    select: ['firstName', 'lastName', 'email', 'avatar']
-                }
+                USER_POPULATE,
+                LAST_EDITED_BY_POPULATE
             ]
         });
 
