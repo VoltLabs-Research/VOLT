@@ -106,6 +106,25 @@ const filterByMask = (positions: Float32Array, types: Uint16Array, mask: Uint8Ar
     };
 };
 
+/**
+ * Raised when a `delete` particle-filter action removes all atoms from the
+ * trajectory, leaving an empty particle set that cannot produce a valid GLB.
+ *
+ * Callers should treat this as a domain/validation error (4xx) rather than
+ * an infrastructure failure.
+ */
+export class EmptyFilterResultError extends Error {
+    readonly code = 'EMPTY_FILTER_RESULT';
+
+    constructor(totalAtoms: number) {
+        super(
+            `Particle filter deleted all ${totalAtoms} atom(s); the resulting model would be empty. ` +
+            'Adjust the filter mask so that at least one atom is retained.'
+        );
+        this.name = 'EmptyFilterResultError';
+    }
+};
+
 export interface FilterEvaluatorService {
     previewFilter(input: NativeFilterPreviewRequest): Promise<NativeFilterPreviewResponse>;
     exportColoredModel(input: NativeColorModelRequest): Promise<{ objectKey: string; }>;
@@ -216,6 +235,10 @@ export const createFilterEvaluatorService = (
                 }
 
                 const filtered = filterByMask(parsed.positions, parsed.types, inverseMask);
+                if (filtered.count === 0) {
+                    throw new EmptyFilterResultError(mask.length);
+                }
+
                 buffer = nativeModuleLoader.getExporterModule().generateGLB(
                     filtered.positions,
                     filtered.types,

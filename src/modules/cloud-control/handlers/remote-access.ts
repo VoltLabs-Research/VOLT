@@ -43,6 +43,18 @@ const normalizePath = (value: string): string => {
     return value.replace(/^\/+|\/+$/g, '');
 };
 
+const splitPathSegments = (value: string): string[] => {
+    return normalizePath(value).split('/').filter(Boolean);
+};
+
+/**
+ * Joins remote explorer path segments using POSIX-style separators while discarding
+ * duplicated leading, trailing, or intermediate slashes between provided segments.
+ */
+export const joinExplorerPathSegments = (...segments: string[]): string => {
+    return segments.flatMap(splitPathSegments).join('/');
+};
+
 const toMongoDocument = (value: unknown): MongoExplorerDocument => {
     const jsonString = JSON.stringify(value);
     const parsedValue: unknown = jsonString ? JSON.parse(jsonString) : {};
@@ -62,7 +74,7 @@ const toMongoDocument = (value: unknown): MongoExplorerDocument => {
 };
 
 const parseRedisDatabasePath = (path: string): number | null => {
-    const segments = normalizePath(path).split('/').filter(Boolean);
+    const segments = splitPathSegments(path);
     if (segments.length < 2 || segments[0] !== 'db') {
         return null;
     }
@@ -72,7 +84,7 @@ const parseRedisDatabasePath = (path: string): number | null => {
 };
 
 const parseRedisKeyPath = (path: string): { databaseId: number; key: string; } | null => {
-    const segments = normalizePath(path).split('/').filter(Boolean);
+    const segments = splitPathSegments(path);
     if (segments.length < 4 || segments[0] !== 'db' || segments[2] !== 'key') {
         return null;
     }
@@ -102,7 +114,7 @@ const buildMinioEntries = async (minioService: MinioService, path: string): Prom
         }));
     }
 
-    const segments = normalizedPath.split('/').filter(Boolean);
+    const segments = splitPathSegments(normalizedPath);
     const [bucket, ...prefixSegments] = segments;
     if (!bucket) {
         return [];
@@ -125,10 +137,7 @@ const buildMinioEntries = async (minioService: MinioService, path: string): Prom
         const nextSeparatorIndex = remainder.indexOf('/');
         if (nextSeparatorIndex >= 0) {
             const directoryName = remainder.slice(0, nextSeparatorIndex);
-            const childPath = [bucket, effectivePrefix, directoryName]
-                .join('')
-                .replace(/\/+$/g, '')
-                .replace(/\/{2,}/g, '/');
+            const childPath = joinExplorerPathSegments(bucket, effectivePrefix, directoryName);
 
             if (!entries.has(childPath)) {
                 entries.set(childPath, {
@@ -144,9 +153,7 @@ const buildMinioEntries = async (minioService: MinioService, path: string): Prom
             continue;
         }
 
-        const childPath = [bucket, effectivePrefix, remainder]
-            .join('')
-            .replace(/\/{2,}/g, '/');
+        const childPath = joinExplorerPathSegments(bucket, effectivePrefix, remainder);
 
         entries.set(childPath, {
             id: childPath,
@@ -164,7 +171,7 @@ const buildMinioEntries = async (minioService: MinioService, path: string): Prom
 
 const buildMinioNode = async (minioService: MinioService, path: string): Promise<RemoteExplorerNode> => {
     const normalizedPath = normalizePath(path);
-    const segments = normalizedPath.split('/').filter(Boolean);
+    const segments = splitPathSegments(normalizedPath);
     const [bucket, ...objectKeySegments] = segments;
     const objectKey = objectKeySegments.join('/');
 

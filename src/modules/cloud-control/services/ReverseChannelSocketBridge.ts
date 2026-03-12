@@ -1,4 +1,5 @@
 import { DockerRuntimeService, HostShellService } from '@/modules/platform/services';
+import { EmptyFilterResultError } from '@/modules/trajectory-native/services';
 import { REVERSE_CHANNEL, TeamClusterServiceExposureAccessMode } from '@/shared/contracts';
 import type { RuntimeTerminalAttachment } from '@/modules/platform/services';
 import type {
@@ -191,14 +192,37 @@ export class ReverseChannelSocketBridge {
     private adaptHandler(handler: ReverseChannelCommandHandler): ReverseChannelHandler {
         return {
             handle: async (payload, _ctx): Promise<CommandResult> => {
-                const result = await handler.execute(payload as Record<string, unknown> | undefined);
-                return {
-                    status: result.status,
-                    data: result.data,
-                    body: result.body,
-                    headers: result.headers,
-                    stream: result.stream
-                };
+                try {
+                    const result = await handler.execute(payload as Record<string, unknown> | undefined);
+                    return {
+                        status: result.status,
+                        data: result.data,
+                        body: result.body,
+                        headers: result.headers,
+                        stream: result.stream
+                    };
+                } catch (error: unknown) {
+                    if (error instanceof EmptyFilterResultError) {
+                        return {
+                            status: 422,
+                            data: {
+                                status: 'error',
+                                code: error.code,
+                                message: error.message
+                            }
+                        };
+                    }
+
+                    const message = error instanceof Error ? error.message : 'An unexpected error occurred';
+                    return {
+                        status: 500,
+                        data: {
+                            status: 'error',
+                            code: 'INTERNAL_ERROR',
+                            message
+                        }
+                    };
+                }
             }
         };
     }

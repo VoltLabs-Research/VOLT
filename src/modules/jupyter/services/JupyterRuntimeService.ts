@@ -11,9 +11,24 @@ interface EnsureNotebookSessionInput {
     publicBasePath: string;
 };
 
+interface EnsureJupyterServerInput {
+    notebookId: string;
+    containerId: string;
+    hostPort: number;
+    publicBasePath: string;
+};
+
 interface NotebookRuntimeContainer {
     containerId: string;
     hostPort: number;
+};
+
+interface JupyterStartupOperation {
+    containerId: string;
+    controller: AbortController;
+    hostPort: number;
+    promise: Promise<void>;
+    publicBasePath: string;
 };
 
 const JUPYTER_HEALTH_CHECK_INTERVAL_MS = 1000;
@@ -26,8 +41,26 @@ const TEAM_CLUSTER_ID_LABEL_KEY = 'volt.team-cluster.id';
 const HTTP_PORTS_LABEL_KEY = 'volt.exposure.http.ports';
 const WEBSOCKET_PORTS_LABEL_KEY = 'volt.exposure.websocket.ports';
 
-const sleep = async (delayMs: number): Promise<void> => {
-    await new Promise((resolve) => setTimeout(resolve, delayMs));
+const sleep = async (delayMs: number, signal?: AbortSignal): Promise<void> => {
+    await new Promise<void>((resolve) => {
+        if (signal?.aborted) {
+            resolve();
+            return;
+        }
+
+        const timeout = setTimeout(() => {
+            signal?.removeEventListener('abort', onAbort);
+            resolve();
+        }, delayMs);
+
+        const onAbort = (): void => {
+            clearTimeout(timeout);
+            signal?.removeEventListener('abort', onAbort);
+            resolve();
+        };
+
+        signal?.addEventListener('abort', onAbort, { once: true });
+    });
 };
 
 const getRemainingTimeMs = (deadlineMs: number): number => {
@@ -35,6 +68,8 @@ const getRemainingTimeMs = (deadlineMs: number): number => {
 };
 
 export class JupyterRuntimeService {
+    private readonly startupOperations = new Map<string, JupyterStartupOperation>();
+
     constructor(
         private readonly config: DaemonConfig,
         private readonly dockerRuntimeService: DockerRuntimeService
@@ -61,7 +96,12 @@ export class JupyterRuntimeService {
             JSON.stringify(input.notebook.content, null, 2)
         );
 
-        const ready = await this.ensureJupyterServer(runtimeContainer.containerId, runtimeContainer.hostPort, publicBasePath);
+        const ready = await this.ensureJupyterServer({
+            notebookId: input.notebook._id,
+            containerId: runtimeContainer.containerId,
+            hostPort: runtimeContainer.hostPort,
+            publicBasePath
+        });
         return {
             jupyter: {
                 internalPath,
@@ -72,6 +112,7 @@ export class JupyterRuntimeService {
     }
 
     async deleteSession(notebookId: string): Promise<boolean> {
+        await this.cancelStartupOperation(notebookId);
         const runtimeContainer = await this.findRuntimeContainer(notebookId);
         if (!runtimeContainer) {
             return false;
@@ -194,43 +235,188 @@ export class JupyterRuntimeService {
         await this.dockerRuntimeService.startContainer(containerId);
     }
 
-    private async ensureJupyterServer(containerId: string, hostPort: number, publicBasePath: string): Promise<boolean> {
-        const isAlreadyReady = await this.isJupyterReady(hostPort, publicBasePath, JUPYTER_HEALTH_CHECK_INTERVAL_MS);
+    /**
+     * Returns immediately when the runtime is still cold-starting so callers can
+     * respond with `ready: false` and rely on follow-up polling.
+     */
+    private async ensureJupyterServer(input: EnsureJupyterServerInput): Promise<boolean> {
+        const isAlreadyReady = await this.isJupyterReady(
+            input.hostPort,
+            input.publicBasePath,
+            JUPYTER_HEALTH_CHECK_INTERVAL_MS
+        );
         if (isAlreadyReady) {
             return true;
         }
 
-        const isJupyterProcessRunning = await this.isJupyterServerProcessRunning(containerId);
-        if (!isJupyterProcessRunning) {
-            try {
-                await this.startJupyterServer(containerId, publicBasePath);
-            } catch (error: unknown) {
-                logger.warn({ err: error, containerId }, 'Failed to start Jupyter server inside container');
+        this.ensureStartupInBackground(input);
+        return false;
+    }
+
+    private ensureStartupInBackground(input: EnsureJupyterServerInput): void {
+        const existingStartupOperation = this.startupOperations.get(input.notebookId);
+        if (existingStartupOperation) {
+            if (this.isSameStartupOperation(existingStartupOperation, input)) {
+                return;
             }
         }
 
-        const ready = await this.waitForJupyterReady(hostPort, publicBasePath, this.config.jupyter.startTimeoutMs);
-        if (!ready) {
-            await this.logJupyterStartupTimeout(containerId, hostPort, publicBasePath);
+        const controller = new AbortController();
+        const startupOperation: JupyterStartupOperation = {
+            containerId: input.containerId,
+            controller,
+            hostPort: input.hostPort,
+            promise: Promise.resolve(),
+            publicBasePath: input.publicBasePath
+        };
+        const startupPromise = this.runStartupOperation(input, startupOperation, existingStartupOperation)
+            .catch((error: unknown) => {
+                if (controller.signal.aborted) {
+                    return;
+                }
 
-            const isJupyterProcessStillRunning = await this.isJupyterServerProcessRunning(containerId);
-            try {
-                await this.startJupyterServer(containerId, publicBasePath);
                 logger.warn(
                     {
-                        containerId,
-                        hostPort,
-                        publicBasePath,
-                        wasProcessRunning: isJupyterProcessStillRunning
+                        err: error,
+                        notebookId: input.notebookId,
+                        containerId: input.containerId,
+                        hostPort: input.hostPort,
+                        publicBasePath: input.publicBasePath
                     },
-                    'Reset Jupyter server after readiness timeout'
+                    'Unexpected error while ensuring Jupyter server startup'
                 );
+            })
+            .finally(() => {
+                const currentStartupOperation = this.startupOperations.get(input.notebookId);
+                if (currentStartupOperation === startupOperation) {
+                    this.startupOperations.delete(input.notebookId);
+                }
+            });
+
+        startupOperation.promise = startupPromise;
+        this.startupOperations.set(input.notebookId, startupOperation);
+    }
+
+    private async runStartupOperation(
+        input: EnsureJupyterServerInput,
+        startupOperation: JupyterStartupOperation,
+        existingStartupOperation?: JupyterStartupOperation
+    ): Promise<void> {
+        if (existingStartupOperation) {
+            existingStartupOperation.controller.abort();
+            await existingStartupOperation.promise;
+        }
+
+        if (startupOperation.controller.signal.aborted) {
+            return;
+        }
+
+        await this.runJupyterStartup(input, startupOperation.controller.signal);
+    }
+
+    private async runJupyterStartup(input: EnsureJupyterServerInput, signal: AbortSignal): Promise<void> {
+        if (signal.aborted) {
+            return;
+        }
+
+        const isJupyterProcessRunning = await this.isJupyterServerProcessRunning(input.containerId);
+        if (signal.aborted) {
+            return;
+        }
+
+        if (!isJupyterProcessRunning) {
+            try {
+                if (signal.aborted) {
+                    return;
+                }
+
+                await this.startJupyterServer(input.containerId, input.publicBasePath);
             } catch (error: unknown) {
-                logger.warn({ err: error, containerId }, 'Failed to reset Jupyter server after readiness timeout');
+                if (signal.aborted) {
+                    return;
+                }
+
+                logger.warn({ err: error, containerId: input.containerId }, 'Failed to start Jupyter server inside container');
+                return;
             }
         }
 
-        return ready;
+        const ready = await this.waitForJupyterReady(
+            input.hostPort,
+            input.publicBasePath,
+            this.config.jupyter.startTimeoutMs,
+            signal
+        );
+        if (signal.aborted || ready) {
+            return;
+        }
+
+        if (signal.aborted) {
+            return;
+        }
+
+        await this.logJupyterStartupTimeout(input.containerId, input.hostPort, input.publicBasePath);
+        if (signal.aborted) {
+            return;
+        }
+
+        const isJupyterProcessStillRunning = await this.isJupyterServerProcessRunning(input.containerId);
+        if (signal.aborted) {
+            return;
+        }
+
+        try {
+            await this.startJupyterServer(input.containerId, input.publicBasePath);
+            if (signal.aborted) {
+                return;
+            }
+
+            logger.warn(
+                {
+                    containerId: input.containerId,
+                    hostPort: input.hostPort,
+                    publicBasePath: input.publicBasePath,
+                    wasProcessRunning: isJupyterProcessStillRunning
+                },
+                'Reset Jupyter server after readiness timeout'
+            );
+        } catch (error: unknown) {
+            if (signal.aborted) {
+                return;
+            }
+
+            logger.warn({ err: error, containerId: input.containerId }, 'Failed to reset Jupyter server after readiness timeout');
+            return;
+        }
+
+        const recovered = await this.waitForJupyterReady(
+            input.hostPort,
+            input.publicBasePath,
+            this.config.jupyter.startTimeoutMs,
+            signal
+        );
+        if (signal.aborted || recovered) {
+            return;
+        }
+
+        if (signal.aborted) {
+            return;
+        }
+
+        await this.logJupyterStartupTimeout(input.containerId, input.hostPort, input.publicBasePath);
+        if (signal.aborted) {
+            return;
+        }
+
+        logger.warn(
+            {
+                notebookId: input.notebookId,
+                containerId: input.containerId,
+                hostPort: input.hostPort,
+                publicBasePath: input.publicBasePath
+            },
+            'Jupyter server is still not ready after restart'
+        );
     }
 
     private async startJupyterServer(containerId: string, publicBasePath: string): Promise<void> {
@@ -249,11 +435,23 @@ export class JupyterRuntimeService {
         return result.trim() === 'running';
     }
 
-    private async isJupyterReady(hostPort: number, publicBasePath: string, timeoutMs: number): Promise<boolean> {
+    private async isJupyterReady(
+        hostPort: number,
+        publicBasePath: string,
+        timeoutMs: number,
+        signal?: AbortSignal
+    ): Promise<boolean> {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), timeoutMs);
+        const abortFetch = (): void => controller.abort();
+
+        signal?.addEventListener('abort', abortFetch, { once: true });
 
         try {
+            if (signal?.aborted) {
+                return false;
+            }
+
             const apiPath = path.posix.join(publicBasePath, 'api');
             const response = await fetch(`http://127.0.0.1:${hostPort}${apiPath}?token=${encodeURIComponent(this.config.jupyter.token)}`, {
                 signal: controller.signal
@@ -263,25 +461,35 @@ export class JupyterRuntimeService {
             return false;
         } finally {
             clearTimeout(timeout);
+            signal?.removeEventListener('abort', abortFetch);
         }
     }
 
-    private async waitForJupyterReady(hostPort: number, publicBasePath: string, timeoutMs: number): Promise<boolean> {
+    private async waitForJupyterReady(
+        hostPort: number,
+        publicBasePath: string,
+        timeoutMs: number,
+        signal?: AbortSignal
+    ): Promise<boolean> {
         const deadlineMs = Date.now() + Math.max(timeoutMs, 0);
         while (getRemainingTimeMs(deadlineMs) > 0) {
+            if (signal?.aborted) {
+                return false;
+            }
+
             const remainingTimeMs = getRemainingTimeMs(deadlineMs);
             const requestTimeoutMs = Math.min(JUPYTER_HEALTH_CHECK_INTERVAL_MS, remainingTimeMs);
             if (requestTimeoutMs === 0) {
                 break;
             }
 
-            if (await this.isJupyterReady(hostPort, publicBasePath, requestTimeoutMs)) {
+            if (await this.isJupyterReady(hostPort, publicBasePath, requestTimeoutMs, signal)) {
                 return true;
             }
 
             const delayMs = Math.min(JUPYTER_HEALTH_CHECK_INTERVAL_MS, getRemainingTimeMs(deadlineMs));
             if (delayMs > 0) {
-                await sleep(delayMs);
+                await sleep(delayMs, signal);
             }
         }
 
@@ -337,6 +545,26 @@ export class JupyterRuntimeService {
 
     private buildContainerName(notebookId: string): string {
         return `volt-jupyter-${notebookId}`;
+    }
+
+    private async cancelStartupOperation(notebookId: string): Promise<void> {
+        const startupOperation = this.startupOperations.get(notebookId);
+        if (!startupOperation) {
+            return;
+        }
+
+        startupOperation.controller.abort();
+        this.startupOperations.delete(notebookId);
+        await startupOperation.promise;
+    }
+
+    private isSameStartupOperation(
+        startupOperation: JupyterStartupOperation,
+        input: EnsureJupyterServerInput
+    ): boolean {
+        return startupOperation.containerId === input.containerId
+            && startupOperation.hostPort === input.hostPort
+            && startupOperation.publicBasePath === input.publicBasePath;
     }
 
     private getStopCommand(): string {
