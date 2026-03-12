@@ -1,8 +1,17 @@
+export interface PopulatedLatexUser {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    avatar?: string;
+};
+
 export interface LatexDocumentProps {
     team: string;
     title: string;
     content: string;
-    createdBy: string;
+    createdBy: string | PopulatedLatexUser;
+    lastEditedBy?: string | PopulatedLatexUser | null;
     folder: string | null;
     createdAt: Date;
     updatedAt: Date;

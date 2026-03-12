@@ -1,8 +1,10 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO } from '@modules/trajectory/application/dtos/trajectory/CreateTrajectoryDTO';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { ITrajectoryBackgroundProcessor } from '@modules/trajectory/domain/port/trajectory/ITrajectoryBackgroundProcessor';
+import { ITrajectoryFolderRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFolderRepository';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { resolveConnectedTeamCluster } from '@modules/trajectory/utilities/team-cluster/resolve-connected-team-cluster';
@@ -30,6 +32,9 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepo: ITrajectoryRepository,
 
+        @inject(TRAJECTORY_TOKENS.TrajectoryFolderRepository)
+        private readonly trajectoryFolderRepository: ITrajectoryFolderRepository,
+
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
         private readonly teamClusterRepository: ITeamClusterRepository,
 
@@ -42,6 +47,17 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
 
     async execute(input: CreateTrajectoryInputDTO): Promise<Result<CreateTrajectoryOutputDTO, ApplicationError>> {
         const { name, teamId, userId, files } = input;
+
+        if (input.folderId) {
+            const folder = await this.trajectoryFolderRepository.findByTeamAndFolderId(teamId, input.folderId);
+            if (!folder) {
+                return Result.fail(ApplicationError.notFound(
+                    ErrorCodes.RESOURCE_NOT_FOUND,
+                    'Target trajectory folder not found'
+                ));
+            }
+        }
+
         const teamCluster = await resolveConnectedTeamCluster(this.teamClusterRepository, {
             teamId,
             requestedTeamClusterId: input.teamClusterId

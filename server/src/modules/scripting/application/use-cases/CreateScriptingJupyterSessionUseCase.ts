@@ -25,6 +25,33 @@ interface ResolveNotebookForSessionInput extends CreateScriptingJupyterSessionIn
 
 const LOCK_TTL_MS = 90_000;
 
+const getLegacyTrajectoryIds = (notebook: ScriptingNotebook): string[] => {
+    if (!Array.isArray(notebook.props.trajectories)) {
+        return [];
+    }
+
+    return notebook.props.trajectories.map((entry) => {
+        if (typeof entry === 'string') {
+            return entry;
+        }
+
+        return entry._id;
+    });
+};
+
+const getPrimaryTrajectoryId = (notebook: ScriptingNotebook): string | null => {
+    if (typeof notebook.props.trajectory === 'string') {
+        return notebook.props.trajectory;
+    }
+
+    if (notebook.props.trajectory && typeof notebook.props.trajectory === 'object') {
+        return notebook.props.trajectory._id;
+    }
+
+    const legacyTrajectoryIds = getLegacyTrajectoryIds(notebook);
+    return legacyTrajectoryIds[0] ?? null;
+};
+
 @injectable()
 export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScriptingJupyterSessionInputDTO, CreateScriptingJupyterSessionOutputDTO, ApplicationError> {
     constructor(
@@ -114,13 +141,14 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             };
 
             if (input.trajectoryId) {
-                let currentTrajectoryIds: string[] = [];
-                if (Array.isArray(notebook.props.trajectories)) {
-                    currentTrajectoryIds = notebook.props.trajectories.map(String);
+                const currentPrimaryTrajectoryId = getPrimaryTrajectoryId(notebook);
+                const currentLegacyTrajectoryIds = getLegacyTrajectoryIds(notebook);
+                if (currentPrimaryTrajectoryId !== input.trajectoryId) {
+                    updateData.trajectory = input.trajectoryId;
                 }
 
-                if (!currentTrajectoryIds.includes(input.trajectoryId)) {
-                    updateData.trajectories = Array.from(new Set([...currentTrajectoryIds, input.trajectoryId]));
+                if (!currentLegacyTrajectoryIds.includes(input.trajectoryId)) {
+                    updateData.trajectories = [input.trajectoryId];
                 }
             }
 
@@ -141,6 +169,8 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         if (existing) {
             const now = new Date();
             const updateData: Partial<ScriptingNotebookProps> = {
+                trajectory: input.trajectoryId,
+                trajectories: [input.trajectoryId],
                 lastOpenedAt: now,
                 updatedAt: now
             };
@@ -158,6 +188,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             teamCluster: input.teamClusterId,
             title: 'Scripting Notebook',
             notebookPath: buildScriptingNotebookPath(input.trajectoryId),
+            trajectory: input.trajectoryId,
             trajectories: [input.trajectoryId],
             createdBy: input.userId,
             content: parseScriptingNotebookContent(templateRaw),
@@ -173,7 +204,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         notebook: ScriptingNotebook,
         input: ResolveNotebookForSessionInput
     ): Promise<string> {
-        const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(input.teamId, input.teamClusterId || notebook.props.teamCluster);
+        const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(input.teamId, input.teamClusterId || String(notebook.props.teamCluster || ''));
         if (notebook.props.teamCluster !== teamClusterId) {
             await this.scriptingNotebookRepository.updateById(notebook._id, {
                 teamCluster: teamClusterId,

@@ -1,6 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { CreateContainerInputDTO, CreateContainerOutputDTO } from '@modules/container/application/dtos/CreateContainerDTO';
 import type { ContainerCapabilities } from '@modules/container/domain/entities/ContainerCapabilities';
+import type { IContainerFolderRepository } from '@modules/container/domain/port/IContainerFolderRepository';
 import ContainerCreatedEvent from '@modules/container/domain/events/ContainerCreatedEvent';
 import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
@@ -19,6 +20,7 @@ const XRDP_PRIVATE_PORT = 3389;
 export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO, CreateContainerOutputDTO> {
     constructor(
         @inject(CONTAINER_TOKENS.ContainerRepository) private repository: IContainerRepository,
+        @inject(CONTAINER_TOKENS.ContainerFolderRepository) private readonly folderRepository: IContainerFolderRepository,
         @inject(CONTAINER_TOKENS.ContainerRuntimeService) private containerRuntimeService: ITeamClusterContainerRuntimeService,
         @inject(TeamClusterSelectionService) private readonly teamClusterSelectionService: TeamClusterSelectionService,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
@@ -74,6 +76,17 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
 
     async execute(input: CreateContainerInputDTO): Promise<Result<CreateContainerOutputDTO>> {
         const { name, image, env, ports, cmd, mountDockerSocket, useImageCmd, memory, cpus } = input;
+
+        if (input.folderId) {
+            const folder = await this.folderRepository.findByTeamAndFolderId(input.teamId, input.folderId);
+            if (!folder) {
+                return Result.fail(ApplicationError.notFound(
+                    ErrorCodes.RESOURCE_NOT_FOUND,
+                    'Target container folder not found'
+                ));
+            }
+        }
+
         const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(input.teamId, input.teamClusterId);
 
         let containerCmd = cmd && Array.isArray(cmd) && cmd.length > 0 ? cmd : undefined;

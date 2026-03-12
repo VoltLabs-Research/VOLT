@@ -1,16 +1,9 @@
-import type { IBaseRepository, PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
 import type { LatexFolderProps } from '@modules/latex/domain/entities/LatexFolder';
 import type LatexFolder from '@modules/latex/domain/entities/LatexFolder';
+import type { ICatalogFolderRepository } from '@shared/domain/catalog/ICatalogFolderRepository';
 
-export interface LatexFolderPaginationOptions extends PaginationOptions {
+export interface LatexFolderPaginationOptions {
     parentId?: string | null;
 };
 
-export interface ILatexFolderRepository extends IBaseRepository<LatexFolder, LatexFolderProps> {
-    findAllByTeamAndParent(
-        teamId: string,
-        parentId: string | null,
-        options: PaginationOptions
-    ): Promise<PaginatedResult<LatexFolder>>;
-    findByTeamAndFolderId(teamId: string, folderId: string): Promise<LatexFolder | null>;
-};
+export interface ILatexFolderRepository extends ICatalogFolderRepository<LatexFolder, LatexFolderProps> {}

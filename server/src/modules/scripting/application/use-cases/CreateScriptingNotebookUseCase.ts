@@ -11,6 +11,7 @@ import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { randomUUID } from 'node:crypto';
 import { inject, injectable } from 'tsyringe';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
@@ -24,7 +25,10 @@ export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingN
         private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
 
         @inject(JupyterNotebookService)
-        private readonly jupyterNotebookService: JupyterNotebookService
+        private readonly jupyterNotebookService: JupyterNotebookService,
+
+        @inject(TeamClusterSelectionService)
+        private readonly teamClusterSelectionService: TeamClusterSelectionService
     ) {}
 
     async execute(input: CreateScriptingNotebookInputDTO): Promise<Result<CreateScriptingNotebookOutputDTO, ApplicationError>> {
@@ -38,10 +42,13 @@ export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingN
         try {
             const templateRaw = await this.jupyterNotebookService.resolveDefaultNotebookTemplateContent({});
             const now = new Date();
+            const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(input.teamId);
             const createData: ScriptingNotebookProps = {
                 team: input.teamId,
+                teamCluster: teamClusterId,
                 title: input.title?.trim() || DEFAULT_NOTEBOOK_TITLE,
                 notebookPath: buildScriptingNotebookPath(randomUUID()),
+                trajectory: null,
                 trajectories: [],
                 createdBy: input.userId,
                 content: parseScriptingNotebookContent(templateRaw),

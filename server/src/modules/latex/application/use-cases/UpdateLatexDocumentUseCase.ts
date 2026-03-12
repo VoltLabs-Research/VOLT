@@ -38,6 +38,10 @@ export class UpdateLatexDocumentUseCase implements IUseCase<UpdateLatexDocumentI
                 patch.content = input.content;
             }
 
+            if (input.userId) {
+                patch.lastEditedBy = input.userId;
+            }
+
             const updated = await this.latexDocumentRepository.updateById(
                 input.documentId,
                 patch
@@ -55,6 +59,8 @@ export class UpdateLatexDocumentUseCase implements IUseCase<UpdateLatexDocumentI
                 title: updated.props.title,
                 content: updated.props.content,
                 folder: updated.props.folder,
+                createdBy: updated.props.createdBy,
+                lastEditedBy: updated.props.lastEditedBy,
                 createdAt: updated.props.createdAt,
                 updatedAt: updated.props.updatedAt
             });

@@ -6,6 +6,7 @@ import { inject, injectable } from 'tsyringe';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import type { UpdateWhiteboardInputDTO, UpdateWhiteboardOutputDTO } from '@modules/whiteboards/application/dtos/UpdateWhiteboardDTO';
+import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
 
 @injectable()
 export class UpdateWhiteboardUseCase implements IUseCase<UpdateWhiteboardInputDTO, UpdateWhiteboardOutputDTO, ApplicationError> {
@@ -27,10 +28,14 @@ export class UpdateWhiteboardUseCase implements IUseCase<UpdateWhiteboardInputDT
             ));
         }
 
-        const updates: Partial<{ title: string }> = {};
+        const updates: Partial<WhiteboardProps> = {};
 
         if (input.title !== undefined) {
             updates.title = input.title;
+        }
+
+        if (input.userId) {
+            updates.lastEditedBy = input.userId;
         }
 
         const updated = await this.whiteboardRepository.updateById(input.whiteboardId, updates);

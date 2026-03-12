@@ -1,3 +1,11 @@
+export interface PopulatedWhiteboardUser {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    avatar?: string;
+};
+
 export interface WhiteboardProps {
     team: string;
     createdBy: string;
@@ -5,7 +13,7 @@ export interface WhiteboardProps {
     folder: string | null;
     payloadKey: string;
     thumbnailKey?: string;
-    lastEditedAt?: Date;
+    lastEditedBy?: string | PopulatedWhiteboardUser | null;
     createdAt: Date;
     updatedAt: Date;
 };

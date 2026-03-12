@@ -1,11 +1,6 @@
-export interface LatexFolderProps {
-    team: string;
-    createdBy: string;
-    title: string;
-    parent: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+import type { CatalogFolderProps } from '@shared/domain/catalog/CatalogFolder';
+
+export type LatexFolderProps = CatalogFolderProps;
 
 export default class LatexFolder {
     constructor(

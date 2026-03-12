@@ -32,7 +32,10 @@ export default class ScriptingNotebookRepository
     async findByTeamAndTrajectory(teamId: string, trajectoryId: string): Promise<ScriptingNotebook | null> {
         return this.findOneByQuery({
             team: teamId,
-            trajectories: trajectoryId
+            $or: [
+                { trajectory: trajectoryId },
+                { trajectories: trajectoryId }
+            ]
         });
     }
 
@@ -61,15 +64,26 @@ export default class ScriptingNotebookRepository
     }
 
     async removeTrajectory(trajectoryId: string): Promise<void> {
-        const impactedNotebookIds = await this.model.find({ trajectories: trajectoryId }).distinct('_id').exec();
+        const impactedNotebookIds = await this.model.find({
+            $or: [
+                { trajectory: trajectoryId },
+                { trajectories: trajectoryId }
+            ]
+        }).distinct('_id').exec();
 
         await this.model.updateMany({
-            trajectories: trajectoryId
+            $or: [
+                { trajectory: trajectoryId },
+                { trajectories: trajectoryId }
+            ]
         }, {
+            $set: {
+                trajectory: null
+            },
             $pull: {
                 trajectories: trajectoryId
             }
-        });
+        }).exec();
 
         if (!impactedNotebookIds.length) {
             return;
@@ -79,14 +93,23 @@ export default class ScriptingNotebookRepository
             _id: {
                 $in: impactedNotebookIds
             },
+            $or: [
+                { trajectory: null },
+                { trajectory: { $exists: false } }
+            ],
             trajectories: {
                 $size: 0
             }
-        });
+        }).exec();
     }
 
     async findAllWithTrajectory(trajectoryId: string): Promise<ScriptingNotebook[]> {
-        const docs = await this.model.find({ trajectories: trajectoryId }).exec();
+        const docs = await this.model.find({
+            $or: [
+                { trajectory: trajectoryId },
+                { trajectories: trajectoryId }
+            ]
+        }).exec();
         return docs.map((doc) => this.mapper.toDomain(doc));
     }
 
@@ -97,16 +120,45 @@ export default class ScriptingNotebookRepository
         const query: FilterQuery<ScriptingNotebookDocument> = { team: teamId };
 
         if (filters?.trajectoryId) {
-            query.trajectories = filters.trajectoryId;
+            query.$or = [
+                { trajectory: filters.trajectoryId },
+                { trajectories: filters.trajectoryId }
+            ];
             return query;
         }
 
         if (filters?.scope === ScriptingNotebookScope.General) {
-            query.trajectories = { $size: 0 };
+            query.$and = [
+                {
+                    $or: [
+                        { trajectory: null },
+                        { trajectory: { $exists: false } }
+                    ]
+                },
+                {
+                    $or: [
+                        { trajectories: { $exists: false } },
+                        { trajectories: { $size: 0 } }
+                    ]
+                }
+            ];
+            return query;
         }
 
         if (filters?.scope === ScriptingNotebookScope.Trajectory) {
-            query['trajectories.0'] = { $exists: true };
+            query.$or = [
+                {
+                    trajectory: {
+                        $exists: true,
+                        $ne: null
+                    }
+                },
+                {
+                    'trajectories.0': {
+                        $exists: true
+                    }
+                }
+            ];
         }
 
         return query;

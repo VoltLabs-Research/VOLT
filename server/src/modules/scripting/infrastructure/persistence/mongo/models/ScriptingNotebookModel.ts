@@ -4,9 +4,11 @@ import mongoose from 'mongoose';
 import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-// TODO: Fix this
 export enum ScriptingNotebookRelation {
     Team = 'team',
+    TeamCluster = 'teamCluster',
+    RuntimeNotebookId = 'runtimeNotebookId',
+    Trajectory = 'trajectory',
     Trajectories = 'trajectories',
     CreatedBy = 'createdBy'
 };
@@ -38,8 +40,13 @@ const ScriptingNotebookSchema: Schema<ScriptingNotebookDocument> = new Schema({
         required: true,
         trim: true
     },
+    trajectory: {
+        ...trajectoryRefField(false),
+        required: false,
+        default: null
+    },
     trajectories: [{
-        ...trajectoryRefField(true)
+        ...trajectoryRefField(false)
     }],
     createdBy: {
         ...userRefField(true)
@@ -56,6 +63,11 @@ const ScriptingNotebookSchema: Schema<ScriptingNotebookDocument> = new Schema({
     minimize: false
 });
 
+ScriptingNotebookSchema.index({
+    team: 1,
+    trajectory: 1,
+    createdAt: -1
+});
 ScriptingNotebookSchema.index({
     team: 1,
     trajectories: 1,

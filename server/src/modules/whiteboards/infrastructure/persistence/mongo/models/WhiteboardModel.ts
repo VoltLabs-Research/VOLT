@@ -6,7 +6,8 @@ import type { Persistable } from '@shared/infrastructure/persistence/mongo/Mongo
 
 export enum WhiteboardRelation {
     Team = 'team',
-    CreatedBy = 'createdBy'
+    CreatedBy = 'createdBy',
+    LastEditedBy = 'lastEditedBy'
 };
 
 type WhiteboardDocumentBase = Persistable<WhiteboardProps, `${WhiteboardRelation}`>;
@@ -22,6 +23,11 @@ const WhiteboardSchema: Schema<WhiteboardDocument> = new Schema({
     },
     createdBy: {
         ...userRefField(true)
+    },
+    lastEditedBy: {
+        ...userRefField(false),
+        required: false,
+        default: null
     },
     title: {
         type: String,
@@ -39,13 +45,9 @@ const WhiteboardSchema: Schema<WhiteboardDocument> = new Schema({
         required: false,
         trim: true
     },
-    lastEditedAt: {
-        type: Date,
-        required: false
-    },
     folder: {
         type: Schema.Types.ObjectId,
-        ref: 'WhiteboardFolder',
+        ref: 'CatalogFolder',
         default: null,
         required: false
     }

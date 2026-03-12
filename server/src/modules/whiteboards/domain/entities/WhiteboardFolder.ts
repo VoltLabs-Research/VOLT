@@ -1,11 +1,6 @@
-export interface WhiteboardFolderProps {
-    team: string;
-    createdBy: string;
-    title: string;
-    parent: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+import type { CatalogFolderProps } from '@shared/domain/catalog/CatalogFolder';
+
+export type WhiteboardFolderProps = CatalogFolderProps;
 
 export default class WhiteboardFolder {
     constructor(

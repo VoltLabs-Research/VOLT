@@ -52,6 +52,7 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
                 title,
                 content: initialContent,
                 createdBy: input.userId,
+                lastEditedBy: input.userId,
                 folder: input.folderId ?? null,
                 createdAt: new Date(),
                 updatedAt: new Date()
@@ -62,6 +63,8 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
                 title: document.props.title,
                 content: document.props.content,
                 folder: document.props.folder,
+                createdBy: document.props.createdBy,
+                lastEditedBy: document.props.lastEditedBy,
                 createdAt: document.props.createdAt,
                 updatedAt: document.props.updatedAt
             });
