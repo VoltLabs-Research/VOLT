@@ -107,24 +107,10 @@ export const createEmptyNotebooksResponse = (
 });
 
 export const getPrimaryTrajectory = (notebook: ScriptingNotebook): ScriptingNotebookTrajectory | string | null => {
-    if (notebook.trajectory) {
-        return notebook.trajectory;
-    }
-
-    if (!Array.isArray(notebook.trajectories) || notebook.trajectories.length === 0) {
-        return null;
-    }
-
-    return notebook.trajectories[0];
+    return notebook.trajectory ?? null;
 };
 
 export const getTrajectoryIds = (notebook: ScriptingNotebook): string[] => {
-    if (Array.isArray(notebook.trajectories) && notebook.trajectories.length > 0) {
-        return notebook.trajectories
-            .map(getTrajectoryId)
-            .filter((id) => id.trim().length > 0);
-    }
-
     const primaryTrajectory = getPrimaryTrajectory(notebook);
     if (!primaryTrajectory) {
         return [];

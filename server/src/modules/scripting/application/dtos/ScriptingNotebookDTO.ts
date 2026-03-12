@@ -22,7 +22,6 @@ export interface ScriptingNotebookDTO {
     title: string;
     notebookPath: string;
     trajectory?: string | ScriptingNotebookPopulatedTrajectory | null;
-    trajectories?: Array<string | ScriptingNotebookPopulatedTrajectory>;
     createdBy?: string | ScriptingNotebookPopulatedUser;
     lastOpenedAt?: Date;
     createdAt: Date;

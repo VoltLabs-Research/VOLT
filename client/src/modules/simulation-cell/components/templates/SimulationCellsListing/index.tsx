@@ -1,6 +1,7 @@
 import { simulationCellsQuery, simulationCellsQueryKey } from '@/modules/simulation-cell/hooks/queries';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import type { SimulationCell } from '@/modules/simulation-cell/api/entities/simulation-cell';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
@@ -16,7 +17,11 @@ const COLUMNS: ColumnConfig<SimulationCell>[] = [
         key: 'trajectory.name',
         title: 'Trajectory',
         sortable: true,
-        render: (_, row) => row.trajectory.name,
+        render: (_, row) => (
+            <PopulatedCellPopover document={row.trajectory as unknown as Record<string, unknown>} modelName='Trajectory'>
+                <span>{row.trajectory.name}</span>
+            </PopulatedCellPopover>
+        ),
         skeleton: { variant: 'text', width: 120 }
     },
     {

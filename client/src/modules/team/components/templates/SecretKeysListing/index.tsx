@@ -39,11 +39,6 @@ const getDeleteSecretKeyToastOptions = (key: SecretKey) => createPromiseToastOpt
     error: 'Failed to delete secret key'
 });
 
-const renderCreatedBy: NonNullable<ColumnConfig<SecretKey>['render']> = (_value, key) => {
-    const user = typeof key.createdBy === 'string' ? null : key.createdBy;
-    return <span className='font-size-2 color-secondary'>{user?.email ?? '-'}</span>;
-};
-
 const COLUMNS: ColumnConfig<SecretKey>[] = [
     {
         key: 'name',
@@ -67,13 +62,7 @@ const COLUMNS: ColumnConfig<SecretKey>[] = [
         width: 70,
         resolveStatus: (_value, key) => key.isActive ? 'active' : 'revoked'
     }),
-    {
-        key: 'createdBy',
-        title: 'Created By',
-        sortable: false,
-        render: renderCreatedBy,
-        skeleton: { variant: 'text', width: 180 }
-    },
+    userColumn<SecretKey>('createdBy', 'Created By'),
     dateColumn<SecretKey>('lastUsedAt', 'Last Used', {
         width: 110,
         sortable: false,

@@ -42,27 +42,6 @@ const renderName: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (va
     );
 };
 
-const renderCluster: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (_value, row) => {
-    if (isContainerFolderRow(row) || !row.teamCluster) {
-        return <span className='font-size-2 color-muted'>-</span>;
-    }
-
-    if (typeof row.teamCluster === 'string') {
-        return <span className='font-size-2 color-secondary'>{row.teamCluster}</span>;
-    }
-
-    return <span className='font-size-2 color-secondary'>{row.teamCluster.name || row.teamCluster._id}</span>;
-};
-
-const renderCreatedBy: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (_value, row) => {
-    if (isContainerFolderRow(row)) {
-        return <span className='font-size-2 color-muted'>-</span>;
-    }
-
-    const user = typeof row.createdBy === 'string' ? null : row.createdBy;
-    return <span className='font-size-2 color-secondary'>{user?.email ?? '-'}</span>;
-};
-
 const COLUMNS: ColumnConfig<ContainerListingRow>[] = [
     {
         key: 'name',
@@ -84,13 +63,7 @@ const COLUMNS: ColumnConfig<ContainerListingRow>[] = [
         render: (value, row) => <span className='font-size-2 color-secondary font-family-mono'>{isContainerFolderRow(row) ? '-' : String(value || '-')}</span>,
         skeleton: { variant: 'text', width: 120 }
     },
-    {
-        key: 'teamCluster',
-        title: 'Cluster',
-        sortable: false,
-        render: renderCluster,
-        skeleton: { variant: 'text', width: 140 }
-    },
+    clusterColumn<ContainerListingRow>({ isFolder: isContainerFolderRow }),
     {
         key: 'cpus',
         title: 'Cores',
@@ -124,13 +97,7 @@ const COLUMNS: ColumnConfig<ContainerListingRow>[] = [
         },
         skeleton: { variant: 'text', width: 90 }
     },
-    {
-        key: 'createdBy',
-        title: 'Created By',
-        sortable: false,
-        render: renderCreatedBy,
-        skeleton: { variant: 'text', width: 180 }
-    },
+    userColumn<ContainerListingRow>('createdBy', 'Created By', { isFolder: isContainerFolderRow }),
     dateColumn<ContainerListingRow>('updatedAt', 'Updated At', {
         width: 110,
         withTitle: true

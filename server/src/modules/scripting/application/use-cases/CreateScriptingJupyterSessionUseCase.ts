@@ -29,25 +29,6 @@ const toPropsRecord = (notebook: ScriptingNotebook): Record<string, unknown> => 
     return notebook.props as unknown as Record<string, unknown>;
 };
 
-const getLegacyTrajectoryIds = (notebook: ScriptingNotebook): string[] => {
-    const trajectories = toPropsRecord(notebook).trajectories;
-    if (!Array.isArray(trajectories)) {
-        return [];
-    }
-
-    return trajectories.map((entry) => {
-        if (typeof entry === 'string') {
-            return entry;
-        }
-
-        if (typeof entry === 'object' && entry !== null && '_id' in entry && typeof entry._id === 'string') {
-            return entry._id;
-        }
-
-        return '';
-    }).filter((entry) => entry.length > 0);
-};
-
 const getPrimaryTrajectoryId = (notebook: ScriptingNotebook): string | null => {
     const trajectory = toPropsRecord(notebook).trajectory;
     if (typeof trajectory === 'string') {
@@ -58,8 +39,7 @@ const getPrimaryTrajectoryId = (notebook: ScriptingNotebook): string | null => {
         return trajectory._id;
     }
 
-    const legacyTrajectoryIds = getLegacyTrajectoryIds(notebook);
-    return legacyTrajectoryIds[0] ?? null;
+    return null;
 };
 
 const getNotebookTeamClusterId = (teamCluster: unknown): string | undefined => {
@@ -168,13 +148,8 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
 
             if (input.trajectoryId) {
                 const currentPrimaryTrajectoryId = getPrimaryTrajectoryId(notebook);
-                const currentLegacyTrajectoryIds = getLegacyTrajectoryIds(notebook);
                 if (currentPrimaryTrajectoryId !== input.trajectoryId) {
                     updateData.trajectory = input.trajectoryId;
-                }
-
-                if (!currentLegacyTrajectoryIds.includes(input.trajectoryId)) {
-                    updateData.trajectories = [input.trajectoryId];
                 }
             }
 
@@ -196,7 +171,6 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             const now = new Date();
             const updateData: Partial<ScriptingNotebookProps> = {
                 trajectory: input.trajectoryId,
-                trajectories: [input.trajectoryId],
                 lastOpenedAt: now,
                 updatedAt: now
             };
@@ -215,7 +189,6 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             title: 'Scripting Notebook',
             notebookPath: buildScriptingNotebookPath(input.trajectoryId),
             trajectory: input.trajectoryId,
-            trajectories: [input.trajectoryId],
             createdBy: input.userId,
             content: parseScriptingNotebookContent(templateRaw),
             lastOpenedAt: now,

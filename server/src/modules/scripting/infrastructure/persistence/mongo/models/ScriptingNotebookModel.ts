@@ -9,7 +9,6 @@ export enum ScriptingNotebookRelation {
     TeamCluster = 'teamCluster',
     RuntimeNotebookId = 'runtimeNotebookId',
     Trajectory = 'trajectory',
-    Trajectories = 'trajectories',
     CreatedBy = 'createdBy'
 };
 
@@ -45,9 +44,6 @@ const ScriptingNotebookSchema: Schema<ScriptingNotebookDocument> = new Schema({
         required: false,
         default: null
     },
-    trajectories: [{
-        ...trajectoryRefField(false)
-    }],
     createdBy: {
         ...userRefField(true)
     },
@@ -66,11 +62,6 @@ const ScriptingNotebookSchema: Schema<ScriptingNotebookDocument> = new Schema({
 ScriptingNotebookSchema.index({
     team: 1,
     trajectory: 1,
-    createdAt: -1
-});
-ScriptingNotebookSchema.index({
-    team: 1,
-    trajectories: 1,
     createdAt: -1
 });
 ScriptingNotebookSchema.index({ team: 1, notebookPath: 1 }, { unique: true });

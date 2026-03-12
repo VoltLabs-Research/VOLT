@@ -62,10 +62,6 @@ const getNotebookTeamClusterId = (teamCluster: unknown): string | null => {
 };
 
 const getNotebookTrajectoryCount = (notebook: { props: ScriptingNotebookProps }): number => {
-    if (Array.isArray(notebook.props.trajectories) && notebook.props.trajectories.length > 0) {
-        return notebook.props.trajectories.length;
-    }
-
     return notebook.props.trajectory ? 1 : 0;
 };
 

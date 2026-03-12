@@ -3,6 +3,7 @@ import { clusterColumn, dateColumn, userColumn } from '@/shared/presentation/uti
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useRetryFailedFrames from '@/modules/analysis/hooks/use-retry-failed-frames';
 import AnalysisConfigPreview from '@/modules/analysis/components/atoms/AnalysisConfigPreview';
+import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
@@ -15,23 +16,16 @@ import type { ColumnConfig } from '@/shared/presentation/components/DocumentList
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 
 const renderTrajectoryName: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
-    return row.trajectory?.name || '-';
+    const trajectory = row.trajectory as unknown as Record<string, unknown> | null;
+    return (
+        <PopulatedCellPopover document={trajectory} modelName='Trajectory'>
+            <span>{row.trajectory?.name || '-'}</span>
+        </PopulatedCellPopover>
+    );
 };
 
 const renderPluginName: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
     return row.pluginDisplayName || row.plugin || '-';
-};
-
-const renderCluster: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
-    if (!row.teamCluster) {
-        return <span className='font-size-2 color-muted'>-</span>;
-    }
-
-    if (typeof row.teamCluster === 'string') {
-        return <span className='font-size-2 color-secondary'>{row.teamCluster}</span>;
-    }
-
-    return <span className='font-size-2 color-secondary'>{row.teamCluster.name || row.teamCluster._id}</span>;
 };
 
 const renderFrameCount: NonNullable<ColumnConfig<Analysis>['render']> = (value) => {
@@ -40,11 +34,6 @@ const renderFrameCount: NonNullable<ColumnConfig<Analysis>['render']> = (value) 
     }
 
     return value.toLocaleString();
-};
-
-const renderCreatedBy: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
-    const user = typeof row.createdBy === 'string' ? null : row.createdBy;
-    return <span className='font-size-2 color-secondary'>{user?.email ?? '-'}</span>;
 };
 
 const renderConfig: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
@@ -76,13 +65,7 @@ const COLUMNS: ColumnConfig<Analysis>[] = [
         render: renderPluginName,
         skeleton: { variant: 'text', width: 110 }
     },
-    {
-        key: 'teamCluster',
-        title: 'Cluster',
-        sortable: false,
-        render: renderCluster,
-        skeleton: { variant: 'text', width: 140 }
-    },
+    clusterColumn<Analysis>(),
     {
         key: 'status',
         title: 'Status',
@@ -111,13 +94,7 @@ const COLUMNS: ColumnConfig<Analysis>[] = [
         render: renderConfig,
         skeleton: { variant: 'text', width: 110 }
     },
-    {
-        key: 'createdBy',
-        title: 'Created By',
-        sortable: false,
-        render: renderCreatedBy,
-        skeleton: { variant: 'text', width: 180 }
-    },
+    userColumn<Analysis>('createdBy', 'Created By'),
     dateColumn<Analysis>('startedAt', 'Started At', { sortable: false, withTitle: true, fallback: '-' }),
     dateColumn<Analysis>('finishedAt', 'Finished At', { sortable: false, withTitle: true, fallback: '-' }),
     dateColumn<Analysis>('createdAt', 'Created At', { sortable: false, withTitle: true })

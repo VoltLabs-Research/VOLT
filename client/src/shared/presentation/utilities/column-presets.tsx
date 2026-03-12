@@ -1,5 +1,6 @@
 import { formatDistanceToNow } from 'date-fns';
 import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
+import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
@@ -21,7 +22,6 @@ interface StatusColumnOptions<TRow> {
 
 interface UserColumnOptions<TRow> {
     width?: number;
-    showAvatar?: boolean;
     isFolder?: (row: TRow) => boolean;
 };
 
@@ -34,6 +34,7 @@ interface PopulatedNameColumnOptions<TRow> {
     width?: number;
     sortable?: boolean;
     isFolder?: (row: TRow) => boolean;
+    modelName?: string;
 };
 
 interface TitleWithIconColumnOptions {
@@ -112,7 +113,11 @@ export function userColumn<TRow = unknown>(
             }
 
             const user = resolvePopulatedUser((row as Record<string, unknown>)[key]);
-            return <ListingUserCell user={user} showAvatar={options?.showAvatar ?? false} />;
+            return (
+                <PopulatedCellPopover document={user as Record<string, unknown> | null} modelName='User'>
+                    <ListingUserCell user={user} />
+                </PopulatedCellPopover>
+            );
         },
         skeleton: { variant: 'text', width: options?.width ?? 180 }
     };
@@ -143,12 +148,19 @@ export function clusterColumn<TRow = unknown>(
                 return <span className='font-size-2 color-muted'>-</span>;
             }
 
-            const name = resolvePopulatedName((row as Record<string, unknown>).teamCluster);
-            if (!name) {
-                return <span className='font-size-2 color-muted'>-</span>;
-            }
+            const rawValue = (row as Record<string, unknown>).teamCluster;
+            const cluster = (!rawValue || typeof rawValue === 'string') ? null : rawValue as Record<string, unknown>;
+            const name = resolvePopulatedName(rawValue);
 
-            return <span className='font-size-2 color-secondary'>{name}</span>;
+            const content = name
+                ? <span className='font-size-2 color-secondary'>{name}</span>
+                : <span className='font-size-2 color-muted'>-</span>;
+
+            return (
+                <PopulatedCellPopover document={cluster} modelName='TeamCluster'>
+                    {content}
+                </PopulatedCellPopover>
+            );
         },
         skeleton: { variant: 'text', width: options?.width ?? 140 }
     };
@@ -159,6 +171,8 @@ export function populatedNameColumn<TRow = unknown>(
     label: string,
     options?: PopulatedNameColumnOptions<TRow>
 ): ColumnConfig<TRow> {
+    const modelName = options?.modelName ?? label;
+
     return {
         key,
         title: label,
@@ -168,12 +182,19 @@ export function populatedNameColumn<TRow = unknown>(
                 return <span className='font-size-2 color-muted'>-</span>;
             }
 
-            const name = resolvePopulatedName((row as Record<string, unknown>)[key]);
-            if (!name) {
-                return <span className='font-size-2 color-muted'>-</span>;
-            }
+            const rawValue = (row as Record<string, unknown>)[key];
+            const populated = (!rawValue || typeof rawValue === 'string') ? null : rawValue as Record<string, unknown>;
+            const name = resolvePopulatedName(rawValue);
 
-            return <span className='font-size-2 color-secondary'>{name}</span>;
+            const content = name
+                ? <span className='font-size-2 color-secondary'>{name}</span>
+                : <span className='font-size-2 color-muted'>-</span>;
+
+            return (
+                <PopulatedCellPopover document={populated} modelName={modelName}>
+                    {content}
+                </PopulatedCellPopover>
+            );
         },
         skeleton: { variant: 'text', width: options?.width ?? 140 }
     };

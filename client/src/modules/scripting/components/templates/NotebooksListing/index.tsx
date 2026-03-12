@@ -3,6 +3,7 @@ import useNotebooksListing from '@/modules/scripting/hooks/use-notebooks-listing
 import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripting-notebook-scope';
 import { getPrimaryTrajectory } from '@/modules/scripting/utilities/notebooks';
 import { clusterColumn, dateColumn, titleWithIconColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
+import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
 import DocumentListing, {
     DocumentListingTabAction,
     type ColumnConfig,
@@ -61,7 +62,12 @@ const getTrajectoryLabel = (trajectory: ScriptingNotebookTrajectory | string | n
 
 const renderTrajectoryDetails: NonNullable<ColumnConfig<NotebookDocument>['render']> = (_value, row) => {
     const trajectory = getPrimaryTrajectory(row);
-    return <span className='font-size-2 color-secondary notebooks-listing-trajectory'>{getTrajectoryLabel(trajectory)}</span>;
+    const populated = (!trajectory || typeof trajectory === 'string') ? null : trajectory as unknown as Record<string, unknown>;
+    return (
+        <PopulatedCellPopover document={populated} modelName='Trajectory'>
+            <span className='font-size-2 color-secondary notebooks-listing-trajectory'>{getTrajectoryLabel(trajectory)}</span>
+        </PopulatedCellPopover>
+    );
 };
 
 const TITLE_COLUMN = titleWithIconColumn<NotebookDocument>('title', 'Title', <BookOpen size={16} />, (row) => row.title || 'Untitled Notebook');

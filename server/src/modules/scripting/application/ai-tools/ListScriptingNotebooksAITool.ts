@@ -29,16 +29,10 @@ export class ListScriptingNotebooksAITool extends AITool {
         return {
             summary: `Found ${result.value.data.length} notebooks.`,
             data: result.value.data.map((nb) => {
-                let trajectories = 0;
-
-                if (Array.isArray(nb.trajectories)) {
-                    trajectories = nb.trajectories.length;
-                }
-
                 return {
                     notebookId: nb._id,
                     title: nb.title,
-                    trajectories,
+                    hasTrajectory: nb.trajectory !== null && nb.trajectory !== undefined,
                     lastOpenedAt: nb.lastOpenedAt ?? null,
                     createdAt: nb.createdAt ?? null
                 };

@@ -1,5 +1,6 @@
 import sceneArtifactService from '@/modules/trajectory/api/services/scene-artifacts';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import { clusterColumn, dateColumn, populatedNameColumn } from '@/shared/presentation/utilities/column-presets';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
@@ -20,61 +21,23 @@ const createEmptyResponse = (params: PaginationParams): PaginatedResponse<SceneA
     }
 });
 
-const renderTrajectory: NonNullable<ColumnConfig<SceneArtifact>['render']> = (_value, artifact) => {
-    if (typeof artifact.trajectory === 'string') {
-        return artifact.trajectory;
-    }
-
-    return artifact.trajectory.name || artifact.trajectory._id;
-};
-
-const renderCluster: NonNullable<ColumnConfig<SceneArtifact>['render']> = (_value, artifact) => {
-    const teamCluster = artifact.teamCluster
-        || (typeof artifact.trajectory === 'string' ? null : artifact.trajectory.teamCluster);
-
-    if (!teamCluster) {
-        return <span className='font-size-2 color-muted'>-</span>;
-    }
-
-    if (typeof teamCluster === 'string') {
-        return <span className='font-size-2 color-secondary'>{teamCluster}</span>;
-    }
-
-    return <span className='font-size-2 color-secondary'>{teamCluster.name || teamCluster._id}</span>;
-};
-
-const renderPlugin: NonNullable<ColumnConfig<SceneArtifact>['render']> = (_value, artifact) => {
-    if (!artifact.plugin) {
-        return <span className='font-size-2 color-muted'>-</span>;
-    }
-
-    if (typeof artifact.plugin === 'string') {
-        return <span className='font-size-2 color-secondary'>{artifact.plugin}</span>;
-    }
-
-    return <span className='font-size-2 color-secondary'>{artifact.plugin.name || artifact.plugin._id}</span>;
-};
-
 const renderAnalysisId: NonNullable<ColumnConfig<SceneArtifact>['render']> = (_value, artifact) => {
     if (!artifact.analysis) {
         return <span className='font-size-2 color-muted'>-</span>;
     }
 
-    if (typeof artifact.analysis === 'string') {
-        return artifact.analysis;
-    }
+    const analysis = typeof artifact.analysis === 'string' ? null : artifact.analysis as unknown as Record<string, unknown>;
+    const label = typeof artifact.analysis === 'string' ? artifact.analysis : artifact.analysis._id;
 
-    return artifact.analysis._id;
+    return (
+        <PopulatedCellPopover document={analysis} modelName='Analysis'>
+            <span>{label}</span>
+        </PopulatedCellPopover>
+    );
 };
 
 const COLUMNS: ColumnConfig<SceneArtifact>[] = [
-    {
-        key: 'trajectory',
-        title: 'Trajectory',
-        sortable: false,
-        render: renderTrajectory,
-        skeleton: { variant: 'text', width: 180 }
-    },
+    populatedNameColumn<SceneArtifact>('trajectory', 'Trajectory', { width: 180 }),
     {
         key: 'timestep',
         title: 'Timestep',
@@ -96,20 +59,8 @@ const COLUMNS: ColumnConfig<SceneArtifact>[] = [
         render: (value) => <span className='font-size-2 color-secondary'>{String(value)}</span>,
         skeleton: { variant: 'text', width: 180 }
     },
-    {
-        key: 'teamCluster',
-        title: 'Cluster',
-        sortable: false,
-        render: renderCluster,
-        skeleton: { variant: 'text', width: 140 }
-    },
-    {
-        key: 'plugin',
-        title: 'Plugin',
-        sortable: false,
-        render: renderPlugin,
-        skeleton: { variant: 'text', width: 140 }
-    },
+    clusterColumn<SceneArtifact>(),
+    populatedNameColumn<SceneArtifact>('plugin', 'Plugin'),
     {
         key: 'analysis',
         title: 'Analysis ID',

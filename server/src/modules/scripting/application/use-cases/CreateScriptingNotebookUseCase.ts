@@ -49,7 +49,6 @@ export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingN
                 title: input.title?.trim() || DEFAULT_NOTEBOOK_TITLE,
                 notebookPath: buildScriptingNotebookPath(randomUUID()),
                 trajectory: null,
-                trajectories: [],
                 createdBy: input.userId,
                 content: parseScriptingNotebookContent(templateRaw),
                 createdAt: now,
