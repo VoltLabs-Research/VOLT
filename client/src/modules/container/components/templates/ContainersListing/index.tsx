@@ -7,6 +7,7 @@ import useContainersListing, {
 import type { ContainerListingRow } from '@/modules/container/utilities/listing';
 import { isContainerFolderRow } from '@/modules/container/utilities/listing';
 import useDashboardHeaderContent from '@/modules/dashboard/hooks/use-dashboard-header-content';
+import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
@@ -16,6 +17,7 @@ import RenameFolderModal from '@/shared/presentation/components/RenameFolderModa
 import Title from '@/shared/presentation/components/Title';
 import { openModal } from '@/shared/presentation/components/Modal';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
+import { formatSize } from '@/shared/utils/format';
 import { Box, Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
@@ -41,12 +43,27 @@ const renderName: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (va
     );
 };
 
-const renderStatus: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (value, row) => {
-    if (isContainerFolderRow(row)) {
-        return <span className='font-size-2 color-muted'>Folder</span>;
+const renderCluster: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (_value, row) => {
+    if (isContainerFolderRow(row) || !row.teamCluster) {
+        return <span className='font-size-2 color-muted'>-</span>;
     }
 
-    return <span className='font-size-2 color-secondary text-transform-capitalize'>{String(value)}</span>;
+    if (typeof row.teamCluster === 'string') {
+        return <span className='font-size-2 color-secondary'>{row.teamCluster}</span>;
+    }
+
+    return <span className='font-size-2 color-secondary'>{row.teamCluster.name || row.teamCluster._id}</span>;
+};
+
+const renderCreatedBy: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (_value, row) => {
+    if (isContainerFolderRow(row)) {
+        return <span className='font-size-2 color-muted'>-</span>;
+    }
+
+    const user = typeof row.createdBy === 'string'
+        ? null
+        : row.createdBy;
+    return <ListingUserCell user={user} />;
 };
 
 const COLUMNS: ColumnConfig<ContainerListingRow>[] = [
@@ -58,45 +75,71 @@ const COLUMNS: ColumnConfig<ContainerListingRow>[] = [
         skeleton: { variant: 'text', width: 180 }
     },
     {
-        key: 'status',
-        title: 'Status',
-        sortable: true,
-        width: 90,
-        render: renderStatus,
-        skeleton: { variant: 'text', width: 80 }
-    },
-    {
         key: 'image',
         title: 'Image',
         sortable: true,
-        render: (value, row) => <span className='font-size-2 color-secondary'>{isContainerFolderRow(row) ? '—' : String(value)}</span>,
+        render: (value, row) => <span className='font-size-2 color-secondary'>{isContainerFolderRow(row) ? '-' : String(value)}</span>,
         skeleton: { variant: 'text', width: 150 }
     },
     {
         key: 'internalIp',
         title: 'Internal IP',
-        render: (value, row) => <span className='font-size-2 color-secondary font-family-mono'>{isContainerFolderRow(row) ? '—' : String(value)}</span>,
+        render: (value, row) => <span className='font-size-2 color-secondary font-family-mono'>{isContainerFolderRow(row) ? '-' : String(value || '-')}</span>,
         skeleton: { variant: 'text', width: 120 }
     },
     {
+        key: 'teamCluster',
+        title: 'Cluster',
+        sortable: false,
+        render: renderCluster,
+        skeleton: { variant: 'text', width: 140 }
+    },
+    {
+        key: 'cpus',
+        title: 'Cores',
+        sortable: true,
+        render: (value, row) => <span className='font-size-2 color-secondary'>{isContainerFolderRow(row) ? '-' : String(value)}</span>,
+        skeleton: { variant: 'text', width: 70 }
+    },
+    {
+        key: 'memory',
+        title: 'RAM',
+        sortable: true,
+        render: (value, row) => {
+            if (isContainerFolderRow(row)) {
+                return <span className='font-size-2 color-muted'>-</span>;
+            }
+
+            return <span className='font-size-2 color-secondary'>{formatSize(Number(value) * 1024 * 1024)}</span>;
+        },
+        skeleton: { variant: 'text', width: 90 }
+    },
+    {
         key: 'ports',
-        title: 'Ports',
+        title: 'Exposed Ports',
+        sortable: false,
         render: (_value, row) => {
             if (isContainerFolderRow(row)) {
-                return <span className='font-size-2 color-muted'>—</span>;
+                return <span className='font-size-2 color-muted'>-</span>;
             }
 
-            const port = row.ports?.[0];
-            if (!port) {
-                return <span className='font-size-2 color-muted'>No ports</span>;
-            }
-
-            return <span className='font-size-2 font-weight-5'>{port.private} {'->'} {port.public}</span>;
+            return <span className='font-size-2 color-secondary'>{row.ports.length}</span>;
         },
-        skeleton: { variant: 'text', width: 100 }
+        skeleton: { variant: 'text', width: 90 }
     },
-    dateColumn<ContainerListingRow>('createdAt', 'Created', {
-        width: 90,
+    {
+        key: 'createdBy',
+        title: 'Created By',
+        sortable: false,
+        render: renderCreatedBy,
+        skeleton: { variant: 'text', width: 180 }
+    },
+    dateColumn<ContainerListingRow>('updatedAt', 'Updated At', {
+        width: 110,
+        withTitle: true
+    }),
+    dateColumn<ContainerListingRow>('createdAt', 'Created At', {
+        width: 110,
         withTitle: true
     })
 ];
@@ -183,7 +226,7 @@ const ContainersListing = () => {
                     buttonTitle: 'New Container',
                     onCreate: handleCreate
                 } : undefined}
-                headerActions={
+                headerActions={(
                     <Button
                         variant='ghost'
                         intent='neutral'
@@ -195,7 +238,7 @@ const ContainersListing = () => {
                         <Folder size={14} />
                         New Folder
                     </Button>
-                }
+                )}
                 headerMenuOptions={headerMenuOptions}
                 emptyMessage='No containers found in this location.'
                 socketInvalidation={socketInvalidation}

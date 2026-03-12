@@ -124,6 +124,7 @@ export const ErrorCodes = createErrorCodes({
     PLUGIN_NOT_VALID_CANNOT_EXECUTE: 'Plugin::NotValid::CannotExecute',
 
     TRAJECTORY_NOT_FOUND: 'Trajectory::NotFound',
+    TRAJECTORY_TEAM_CLUSTER_REQUIRED: 'Trajectory::TeamCluster::Required',
     TRAJECTORY_DUMP_NOT_FOUND: 'Trajectory::Dump::NotFound',
     TRAJECTORY_FORMAT_UNSUPPORTED: 'Trajectory::Format::Unsupported',
     TRAJECTORY_DATA_PARSE_FAILED: 'Trajectory::Data::ParseFailed',

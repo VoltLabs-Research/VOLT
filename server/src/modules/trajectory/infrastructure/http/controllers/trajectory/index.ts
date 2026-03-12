@@ -21,6 +21,7 @@ import DownloadSampleSimulationsController from './DownloadSampleSimulationsCont
 import DownloadTrajectoryController from './DownloadTrajectoryController';
 import ListSampleSimulationsUseCase from '@modules/trajectory/application/use-cases/trajectory/ListSampleSimulationsUseCase';
 import GetTrajectorySceneArtifactsController from '@modules/trajectory/infrastructure/http/controllers/scene-artifacts/GetTrajectorySceneArtifactsController';
+import ListTeamSceneArtifactsController from '@modules/trajectory/infrastructure/http/controllers/scene-artifacts/ListTeamSceneArtifactsController';
 import { presentTeamMetrics } from '@modules/trajectory/infrastructure/http/presenters/trajectory';
 import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
@@ -50,6 +51,7 @@ const resolvedControllers = createControllerRegistry({
     getGLB: GetTrajectoryGLBController,
     getPreview: GetTrajectoryPreviewController,
     getSceneArtifacts: GetTrajectorySceneArtifactsController,
+    listTeamSceneArtifacts: ListTeamSceneArtifactsController,
     downloadSamples: DownloadSampleSimulationsController,
     downloadTrajectory: DownloadTrajectoryController
 });

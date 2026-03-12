@@ -1,6 +1,9 @@
 import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripting-notebook-scope';
 import type { ExportType } from '@/shared/domain/export/types';
-import type { ScriptingNotebook } from '@/modules/scripting/api/entities/scripting-notebook';
+import type {
+    ScriptingNotebook,
+    ScriptingNotebookTrajectory
+} from '@/modules/scripting/api/entities/scripting-notebook';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 
@@ -42,6 +45,14 @@ const serializeNotebookDate = (value: Date | string | undefined): string => {
 const escapeCsvValue = (value: string): string => {
     const normalizedValue = value.replace(/"/g, '""');
     return `"${normalizedValue}"`;
+};
+
+const getTrajectoryId = (trajectory: ScriptingNotebookTrajectory | string): string => {
+    if (typeof trajectory === 'string') {
+        return trajectory;
+    }
+
+    return trajectory._id;
 };
 
 const mapNotebookToExportRow = (notebook: ScriptingNotebook): NotebookExportRow => {
@@ -95,12 +106,31 @@ export const createEmptyNotebooksResponse = (
     }
 });
 
+export const getPrimaryTrajectory = (notebook: ScriptingNotebook): ScriptingNotebookTrajectory | string | null => {
+    if (notebook.trajectory) {
+        return notebook.trajectory;
+    }
+
+    if (!Array.isArray(notebook.trajectories) || notebook.trajectories.length === 0) {
+        return null;
+    }
+
+    return notebook.trajectories[0];
+};
+
 export const getTrajectoryIds = (notebook: ScriptingNotebook): string[] => {
-    if (!Array.isArray(notebook.trajectories)) {
+    if (Array.isArray(notebook.trajectories) && notebook.trajectories.length > 0) {
+        return notebook.trajectories
+            .map(getTrajectoryId)
+            .filter((id) => id.trim().length > 0);
+    }
+
+    const primaryTrajectory = getPrimaryTrajectory(notebook);
+    if (!primaryTrajectory) {
         return [];
     }
 
-    return notebook.trajectories.map(String).filter((id) => id.trim().length > 0);
+    return [getTrajectoryId(primaryTrajectory)].filter((id) => id.trim().length > 0);
 };
 
 export const getDeleteConfirmationMessage = (selectedItems: ScriptingNotebook[]): string => {

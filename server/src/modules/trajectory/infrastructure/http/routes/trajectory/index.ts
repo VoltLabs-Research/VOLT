@@ -11,6 +11,7 @@ export default createHttpModule({
     routes: (router) => {
         router.get('/samples', controllers.listSamples.handle);
         router.get('/samples/:filename', controllers.downloadSamples.handle);
+        router.get('/scene-artifacts', trajectoryValidation.listTeamSceneArtifacts, controllers.listTeamSceneArtifacts.handle);
         router.route('/')
             .post(RATE_LIMIT_POLICIES.trajectoryUpload, upload.array('trajectoryFiles'), controllers.create.handle)
             .get(trajectoryValidation.listByTeamId, controllers.getByTeamId.handle);

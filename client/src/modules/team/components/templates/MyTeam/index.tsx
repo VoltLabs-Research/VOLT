@@ -2,12 +2,10 @@ import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useRemoveTeamMemberMutation, useUpdateTeamMemberMutation } from '@/modules/team/hooks/member/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useUpdateTeamMutation } from '@/modules/team/hooks/team/queries';
-import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
-import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';
 import { runHandledAction } from '@/shared/errors/handled-action';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import ActivityHeatmap from '@/modules/daily-activity/components/molecules/ActivityHeatmap';
-import UserInfo from '@/modules/auth/components/atoms/UserInfo';
+import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import useTeamMembersListing from '@/modules/team/hooks/member/use-team-members-listing';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
@@ -74,6 +72,7 @@ const formatTrackedMinutes = (minutes: number): string => {
 export default function MyTeamTemplate() {
     const navigate = useNavigate();
 
+    const currentUser = useCurrentUser();
     const selectedTeam = useSelectedTeam()!;
     const { confirm } = useConfirm();
     const { canAccess } = useTeamPermissions();
@@ -82,15 +81,10 @@ export default function MyTeamTemplate() {
     const { roles } = useTeamRoleData({ teamId: selectedTeam._id });
     const { queryKey, fetchData } = useTeamMembersListing(selectedTeam._id);
 
-    const user = useCurrentUser()!;
-
     const updateTeamMutation = useUpdateTeamMutation();
     const updateTeamMemberMutation = useUpdateTeamMemberMutation();
     const removeTeamMemberMutation = useRemoveTeamMemberMutation();
     const { activityData } = useDailyActivityData();
-
-    const onlineUserIds = useTeamPresenceStore((s) => s.onlineUserIds);
-    const hasPresenceSnapshot = useTeamPresenceStore((s) => s.hasPresenceSnapshot);
 
     const handleSaveTeamName = useCallback(async (newName: string) => {
         await runHandledAction({
@@ -121,7 +115,7 @@ export default function MyTeamTemplate() {
             description: 'This action cannot be undone.',
             confirmText: 'Remove'
         });
-        if(!isConfirmed) return;
+        if (!isConfirmed) return;
 
         for (const member of members) {
             await runHandledAction({
@@ -130,7 +124,7 @@ export default function MyTeamTemplate() {
                 rethrow: false
             });
         }
-    }, [selectedTeam._id, removeTeamMemberMutation]);
+    }, [selectedTeam._id, removeTeamMemberMutation, confirm]);
 
     const roleOptions = useMemo(() => {
         return roles.map((role) => ({
@@ -162,30 +156,25 @@ export default function MyTeamTemplate() {
         {
             key: 'user',
             title: 'User',
-            render: (_value, member) => {
-                const isCurrentUser = member.user._id === user._id;
-                const isOnline = resolveTeamUserOnline(member.user, onlineUserIds, hasPresenceSnapshot);
-                return (
-                    <UserInfo
-                        user={member.user}
-                        showStatus
-                        isOnline={isOnline}
-                        suffix={isCurrentUser && <span className='color-secondary'>(You)</span>}
-                    />
-                );
-            }
+            render: (_value, member) => (
+                <ListingUserCell
+                    user={member.user}
+                    showStatus
+                    showCurrentUserSuffix
+                />
+            )
         },
         {
             key: 'role',
             title: 'Role',
             render: (_value, member) => {
                 const isOwner = selectedTeam.owner._id === member.user._id;
-                
-                if(isOwner){
+
+                if (isOwner) {
                     return <StatusBadge variant='primary'>Owner</StatusBadge>;
                 }
-                
-                if(canInvite && member.user._id !== user._id && roleOptions.length > 0){
+
+                if (canInvite && currentUser?._id !== member.user._id && roleOptions.length > 0) {
                     return (
                         <Select
                             options={roleOptions}
@@ -204,23 +193,18 @@ export default function MyTeamTemplate() {
             key: 'status',
             title: 'Status',
             render: (_value, member) => {
-                const isOnline = resolveTeamUserOnline(member.user, onlineUserIds, hasPresenceSnapshot);
                 const lastSeenAt = member.user.lastSeenAt ? new Date(member.user.lastSeenAt) : null;
-                return (
-                    <>
-                        {isOnline ? (
-                            <span className='color-success font-size-2 font-weight-5'>Online</span>
-                        ) : (
-                            <Container className='d-flex column'>
-                                <span className='color-secondary font-size-2'>Offline</span>
-                                <span className='color-muted font-size-2'>
-                                    {lastSeenAt
-                                        ? `Seen ${formatDistanceToNow(lastSeenAt)} ago`
-                                        : 'Last seen unavailable'}
-                                </span>
-                            </Container>
-                        )}
-                    </>
+                return member.user.isOnline ? (
+                    <span className='color-success font-size-2 font-weight-5'>Online</span>
+                ) : (
+                    <Container className='d-flex column'>
+                        <span className='color-secondary font-size-2'>Offline</span>
+                        <span className='color-muted font-size-2'>
+                            {lastSeenAt
+                                ? `Seen ${formatDistanceToNow(lastSeenAt)} ago`
+                                : 'Last seen unavailable'}
+                        </span>
+                    </Container>
                 );
             }
         },
@@ -235,6 +219,16 @@ export default function MyTeamTemplate() {
             render: (_value, member) => <span className='color-secondary font-size-2'>{member.analysesCount}</span>
         },
         {
+            key: 'latexCount',
+            title: 'LaTeX',
+            render: (_value, member) => <span className='color-secondary font-size-2'>{member.latexCount}</span>
+        },
+        {
+            key: 'whiteboardsCount',
+            title: 'Whiteboards',
+            render: (_value, member) => <span className='color-secondary font-size-2'>{member.whiteboardsCount}</span>
+        },
+        {
             key: 'timeSpentLast7Days',
             title: 'Time (7d)',
             render: (_value, member) => {
@@ -245,8 +239,8 @@ export default function MyTeamTemplate() {
                 );
             }
         },
-        dateColumn<TeamMemberStats>('joinedAt', 'Joined', { sortable: false })
-    ], [canInvite, user, selectedTeam, roleOptions, handleRoleChange, onlineUserIds, hasPresenceSnapshot]);
+        dateColumn<TeamMemberStats>('joinedAt', 'Joined At', { sortable: false, withTitle: true })
+    ], [canInvite, currentUser?._id, selectedTeam, roleOptions, handleRoleChange]);
 
     const { getMenuOptions, getSelectionActionOptions } = useListingActions<TeamMemberStats>({
         actions: {

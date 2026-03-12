@@ -79,6 +79,18 @@ const resolveScope = (scope?: ScriptingNotebookScope): ScriptingNotebookScope =>
     return scope || DEFAULT_NOTEBOOK_SCOPE;
 };
 
+const getTeamClusterId = (notebook: ScriptingNotebook): string | undefined => {
+    if (!notebook.teamCluster) {
+        return undefined;
+    }
+
+    if (typeof notebook.teamCluster === 'string') {
+        return notebook.teamCluster;
+    }
+
+    return notebook.teamCluster._id;
+};
+
 const renderNotebookStartupTab = (notebookTab: Window, state: NotebookStartupWindowState): void => {
     if (notebookTab.closed) {
         return;
@@ -228,7 +240,7 @@ const useNotebooksListing = () => {
         try {
             const result = await waitForReadyScriptingSession(() => createNotebookSession({
                 notebookId: notebook._id,
-                teamClusterId: notebook.teamCluster
+                teamClusterId: getTeamClusterId(notebook)
             }), {
                 isCancelled: () => notebookTab.closed
             });

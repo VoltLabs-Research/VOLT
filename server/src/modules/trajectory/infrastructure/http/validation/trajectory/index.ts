@@ -37,7 +37,7 @@ const getAtomsQuerySchema = z.object({
     limit: createPaginationLimitSchema(100000)
 }).strict();
 
-const getSceneArtifactsQuerySchema = z.object({
+const sceneArtifactsQuerySchema = z.object({
     analysisId: trajectoryAnalysisIdSchema.optional(),
     sourceType: z.enum(['color-coding', 'particle-filter', 'plugin-exposure']).optional(),
     type: z.enum(['color-coding', 'particle-filter', 'plugin-exposure']).optional(),
@@ -111,7 +111,11 @@ export const trajectoryValidation = createResourceValidation({
     },
     getSceneArtifacts: {
         params: trajectoryParamsSchema,
-        query: getSceneArtifactsQuerySchema
+        query: sceneArtifactsQuerySchema
+    },
+    listTeamSceneArtifacts: {
+        params: teamParamsSchema,
+        query: sceneArtifactsQuerySchema.omit({ projection: true })
     },
     getGLB: {
         params: trajectoryGlbParamsSchema

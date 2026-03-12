@@ -1,3 +1,5 @@
+import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
+
 export interface GetWhiteboardInputDTO {
     teamId: string;
     whiteboardId: string;
@@ -8,7 +10,7 @@ export interface GetWhiteboardOutputDTO {
     title: string;
     payloadKey: string;
     thumbnailKey?: string;
-    lastEditedAt?: Date;
+    lastEditedBy?: WhiteboardProps['lastEditedBy'];
     createdAt: Date;
     updatedAt: Date;
 };

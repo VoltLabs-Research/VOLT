@@ -13,6 +13,25 @@ interface ListContainersFilter extends Record<string, unknown> {
     folder?: string | null;
 };
 
+const getTeamClusterId = (teamCluster: unknown): string | null => {
+    if (!teamCluster) {
+        return null;
+    }
+
+    if (typeof teamCluster === 'string') {
+        return teamCluster;
+    }
+
+    if (typeof teamCluster === 'object' && teamCluster !== null && '_id' in teamCluster) {
+        const objectId = teamCluster._id;
+        if (typeof objectId === 'string') {
+            return objectId;
+        }
+    }
+
+    return null;
+};
+
 @injectable()
 export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, ListContainersOutputDTO> {
     constructor(
@@ -38,7 +57,18 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
         const result = await this.repository.findAll({
             filter,
             page: input.page,
-            limit: input.limit
+            limit: input.limit,
+            sort: { updatedAt: -1 },
+            populate: [
+                {
+                    path: 'createdBy',
+                    select: ['firstName', 'lastName', 'email', 'avatar']
+                },
+                {
+                    path: 'teamCluster',
+                    select: ['name']
+                }
+            ]
         });
 
         await this.syncRuntimeStatus(result.data);
@@ -49,7 +79,7 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
     private async syncRuntimeStatus(containers: Container[]): Promise<void> {
         const runtimeIndex = new Map<string, RuntimeContainerSummary>();
         const teamClusterIds = Array.from(new Set(containers
-            .map((container) => container.teamCluster)
+            .map((container) => getTeamClusterId(container.teamCluster))
             .filter((teamClusterId): teamClusterId is string => typeof teamClusterId === 'string' && teamClusterId.length > 0)));
 
         await Promise.all(teamClusterIds.map(async (teamClusterId) => {
@@ -63,11 +93,12 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
         }));
 
         containers.forEach((container) => {
-            if (!container.teamCluster) {
+            const teamClusterId = getTeamClusterId(container.teamCluster);
+            if (!teamClusterId) {
                 return;
             }
 
-            const runtimeContainer = runtimeIndex.get(`${container.teamCluster}:${container.containerId}`);
+            const runtimeContainer = runtimeIndex.get(`${teamClusterId}:${container.containerId}`);
             if (runtimeContainer?.State) {
                 container.status = runtimeContainer.State;
             }

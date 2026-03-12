@@ -25,6 +25,7 @@ export interface TrajectoryFolderRow extends TrajectoryFolder {
     folder: string | null;
     status: 'folder';
     isPublic: false;
+    teamCluster: null;
 }
 
 export interface TrajectoryItemRow extends Trajectory {
@@ -47,7 +48,8 @@ export const createTrajectoryFolderRow = (folder: TrajectoryFolder): TrajectoryF
     users: [],
     folder: folder.parent,
     status: 'folder',
-    isPublic: false
+    isPublic: false,
+    teamCluster: null
 });
 
 export const createTrajectoryItemRow = (trajectory: Trajectory): TrajectoryItemRow => ({

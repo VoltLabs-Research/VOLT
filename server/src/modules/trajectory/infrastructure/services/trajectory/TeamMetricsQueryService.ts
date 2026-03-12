@@ -6,9 +6,7 @@ import { TeamMetricsSnapshot } from '@modules/trajectory/domain/contracts/trajec
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ITeamMetricsQueryService } from '@modules/trajectory/domain/port/trajectory/ITeamMetricsQueryService';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import ListingRowModel from '@modules/plugin/infrastructure/persistence/mongo/models/listing-row/ListingRowModel';
 
-import { Types } from 'mongoose';
 import { inject, injectable } from 'tsyringe';
 
 const MAX_QUERY_LIMIT = 10000;
@@ -26,30 +24,6 @@ type TimeWindow = {
     monthStart: Date;
     prevMonthStart: Date;
     weeksAgo: Date;
-};
-
-type ListingTotalsAggregate = {
-    _id: {
-        pluginId: string;
-        exposureId: string;
-    };
-    total: number;
-    currMonth: number;
-    prevMonth: number;
-};
-
-type ListingWeeklyAggregate = {
-    _id: {
-        pluginId: string;
-        exposureId: string;
-        weekKey: string;
-    };
-    count: number;
-};
-
-type ListingAggregateResult = {
-    totals: ListingTotalsAggregate[];
-    weekly: ListingWeeklyAggregate[];
 };
 
 type PluginExposureReference = {
@@ -102,12 +76,6 @@ const updateBuckets = (buckets: MetricBuckets, createdAt: Date, window: TimeWind
         const key = toWeekKey(createdAt);
         buckets.weekly.set(key, (buckets.weekly.get(key) ?? 0) + 1);
     }
-};
-
-const toObjectIdList = (ids: string[]): Types.ObjectId[] => {
-    return ids
-        .filter((id) => Types.ObjectId.isValid(id))
-        .map((id) => new Types.ObjectId(id));
 };
 
 const toMonthChange = (current: number, previous: number): number => {
@@ -205,12 +173,6 @@ export default class TeamMetricsQueryService implements ITeamMetricsQueryService
         }
 
         const pluginExposures = this.collectPluginExposures(plugins);
-        const listingStatsByExposure = await this.aggregateListingStats(
-            analyses.map((analysis) => analysis._id),
-            pluginIds,
-            pluginExposures,
-            window
-        );
 
         for (const plugin of plugins) {
             const trajectoryId = pluginTrajectoryMap.get(plugin._id);
@@ -221,7 +183,7 @@ export default class TeamMetricsQueryService implements ITeamMetricsQueryService
             const pluginName = plugin.props.modifier?.name || plugin._id;
 
             for (const exposure of pluginExposures.get(plugin._id) ?? []) {
-                const listingBuckets = listingStatsByExposure.get(`${plugin._id}:${exposure.exposureId}`) ?? createBuckets();
+                const listingBuckets = createBuckets();
 
                 totals[exposure.exposureName] = listingBuckets.total;
                 lastMonth[exposure.exposureName] = toMonthChange(listingBuckets.currMonth, listingBuckets.prevMonth);
@@ -305,149 +267,5 @@ export default class TeamMetricsQueryService implements ITeamMetricsQueryService
         }
 
         return pluginExposures;
-    }
-
-    private async aggregateListingStats(
-        analysisIds: string[],
-        pluginIds: string[],
-        pluginExposures: Map<string, PluginExposureReference[]>,
-        window: TimeWindow
-    ): Promise<Map<string, MetricBuckets>> {
-        const statsByExposure = new Map<string, MetricBuckets>();
-        const exposureIds = Array.from(pluginExposures.values())
-            .flatMap((exposures) => exposures.map((exposure) => exposure.exposureId));
-
-        const aggregateFilter = {
-            analysis: { $in: toObjectIdList(analysisIds) },
-            plugin: { $in: toObjectIdList(pluginIds) },
-            exposureId: { $in: exposureIds }
-        };
-
-        if (!aggregateFilter.analysis.$in.length || !aggregateFilter.plugin.$in.length || !aggregateFilter.exposureId.$in.length) {
-            return statsByExposure;
-        }
-
-        const [listingAggregate] = await ListingRowModel.aggregate<ListingAggregateResult>([
-            {
-                $match: aggregateFilter
-            },
-            {
-                $project: {
-                    pluginId: {
-                        $toString: '$plugin'
-                    },
-                    exposureId: 1,
-                    createdAt: 1,
-                    weekKey: {
-                        $cond: [
-                            {
-                                $gte: ['$createdAt', window.weeksAgo]
-                            },
-                            {
-                                $dateToString: {
-                                    format: '%G-W%V',
-                                    date: '$createdAt',
-                                    timezone: 'UTC'
-                                }
-                            },
-                            null
-                        ]
-                    }
-                }
-            },
-            {
-                $facet: {
-                    totals: [
-                        {
-                            $group: {
-                                _id: {
-                                    pluginId: '$pluginId',
-                                    exposureId: '$exposureId'
-                                },
-                                total: {
-                                    $sum: 1
-                                },
-                                currMonth: {
-                                    $sum: {
-                                        $cond: [
-                                            {
-                                                $and: [
-                                                    {
-                                                        $gte: ['$createdAt', window.monthStart]
-                                                    },
-                                                    {
-                                                        $lt: ['$createdAt', window.now]
-                                                    }
-                                                ]
-                                            },
-                                            1,
-                                            0
-                                        ]
-                                    }
-                                },
-                                prevMonth: {
-                                    $sum: {
-                                        $cond: [
-                                            {
-                                                $and: [
-                                                    {
-                                                        $gte: ['$createdAt', window.prevMonthStart]
-                                                    },
-                                                    {
-                                                        $lt: ['$createdAt', window.monthStart]
-                                                    }
-                                                ]
-                                            },
-                                            1,
-                                            0
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    ],
-                    weekly: [
-                        {
-                            $match: {
-                                weekKey: {
-                                    $ne: null
-                                }
-                            }
-                        },
-                        {
-                            $group: {
-                                _id: {
-                                    pluginId: '$pluginId',
-                                    exposureId: '$exposureId',
-                                    weekKey: '$weekKey'
-                                },
-                                count: {
-                                    $sum: 1
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        ]);
-
-        for (const total of listingAggregate?.totals ?? []) {
-            statsByExposure.set(`${total._id.pluginId}:${total._id.exposureId}`, {
-                total: total.total,
-                currMonth: total.currMonth,
-                prevMonth: total.prevMonth,
-                weekly: new Map()
-            });
-        }
-
-        for (const weekly of listingAggregate?.weekly ?? []) {
-            const exposureKey = `${weekly._id.pluginId}:${weekly._id.exposureId}`;
-            const buckets = statsByExposure.get(exposureKey) ?? createBuckets();
-
-            buckets.weekly.set(weekly._id.weekKey, weekly.count);
-            statsByExposure.set(exposureKey, buckets);
-        }
-
-        return statsByExposure;
     }
 };

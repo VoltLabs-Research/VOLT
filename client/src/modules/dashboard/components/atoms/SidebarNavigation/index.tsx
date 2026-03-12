@@ -171,6 +171,14 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
             }
         },
         {
+            label: 'Artifacts',
+            isSelected: pathname === '/dashboard/trajectories/artifacts',
+            onClick: () => {
+                navigate('/dashboard/trajectories/artifacts');
+                setSidebarOpen(false);
+            }
+        },
+        {
             label: 'Simulation Cells',
             isSelected: pathname === '/dashboard/simulation-cells/list',
             onClick: () => {

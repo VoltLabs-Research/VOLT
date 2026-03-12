@@ -9,9 +9,7 @@ import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
-import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
 
 @injectable()
 export class ListScriptingNotebooksUseCase implements IUseCase<ListScriptingNotebooksInputDTO, ListScriptingNotebooksOutputDTO, ApplicationError> {
@@ -73,6 +71,10 @@ export class ListScriptingNotebooksUseCase implements IUseCase<ListScriptingNote
                 },
                 {
                     path: 'trajectory',
+                    select: ['name']
+                },
+                {
+                    path: 'trajectories',
                     select: ['name']
                 },
                 {

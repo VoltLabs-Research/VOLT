@@ -5,6 +5,7 @@ import useWhiteboardsListing, {
     NEW_WHITEBOARD_FOLDER_MODAL_ID,
     RENAME_WHITEBOARD_FOLDER_MODAL_ID
 } from '@/modules/whiteboards/hooks/use-whiteboards-listing';
+import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
@@ -53,6 +54,17 @@ const renderWhiteboardTitle: WhiteboardColumnRender = (value, row) => {
     );
 };
 
+const renderLastEditedBy: WhiteboardColumnRender = (_value, row) => {
+    if (isWhiteboardFolder(row)) {
+        return <span className='font-size-2 color-muted'>-</span>;
+    }
+
+    const user = typeof row.lastEditedBy === 'string'
+        ? null
+        : row.lastEditedBy;
+    return <ListingUserCell user={user} />;
+};
+
 const COLUMNS: ColumnConfig<WhiteboardListingRow>[] = [
     {
         key: 'title',
@@ -61,12 +73,19 @@ const COLUMNS: ColumnConfig<WhiteboardListingRow>[] = [
         render: renderWhiteboardTitle,
         skeleton: { variant: 'text', width: 180 }
     },
-    dateColumn<WhiteboardListingRow>('lastEditedAt', 'Last Edited', {
-        width: 90,
+    {
+        key: 'lastEditedBy',
+        title: 'Last Edited By',
+        sortable: false,
+        render: renderLastEditedBy,
+        skeleton: { variant: 'text', width: 180 }
+    },
+    dateColumn<WhiteboardListingRow>('updatedAt', 'Updated At', {
+        width: 110,
         withTitle: true
     }),
-    dateColumn<WhiteboardListingRow>('createdAt', 'Created', {
-        width: 90,
+    dateColumn<WhiteboardListingRow>('createdAt', 'Created At', {
+        width: 110,
         withTitle: true
     })
 ];

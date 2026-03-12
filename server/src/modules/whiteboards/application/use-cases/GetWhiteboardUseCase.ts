@@ -32,7 +32,7 @@ export class GetWhiteboardUseCase implements IUseCase<GetWhiteboardInputDTO, Get
             title: whiteboard.props.title,
             payloadKey: whiteboard.props.payloadKey,
             thumbnailKey: whiteboard.props.thumbnailKey,
-            lastEditedAt: whiteboard.props.lastEditedAt,
+            lastEditedBy: whiteboard.props.lastEditedBy,
             createdAt: whiteboard.props.createdAt,
             updatedAt: whiteboard.props.updatedAt
         });

@@ -2,6 +2,9 @@ import { analysisQuery } from '@/modules/analysis/hooks/queries';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useRetryFailedFrames from '@/modules/analysis/hooks/use-retry-failed-frames';
+import AnalysisConfigPreview from '@/modules/analysis/components/atoms/AnalysisConfigPreview';
+import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
+import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import { RiRefreshLine } from 'react-icons/ri';
@@ -12,29 +15,43 @@ import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 
-const renderTrajectoryName: NonNullable<ColumnConfig['render']> = (_value, row) => {
-    if (!row || typeof row !== 'object' || !('trajectory' in row)) {
-        return '-';
-    }
-
-    const { trajectory } = row;
-    if (!trajectory || typeof trajectory !== 'object' || !('name' in trajectory)) {
-        return '-';
-    }
-
-    if (typeof trajectory.name !== 'string') {
-        return '-';
-    }
-
-    return trajectory.name;
+const renderTrajectoryName: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
+    return row.trajectory?.name || '-';
 };
 
-const renderTotalFrames: NonNullable<ColumnConfig['render']> = (value) => {
+const renderPluginName: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
+    return row.pluginDisplayName || row.plugin || '-';
+};
+
+const renderCluster: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
+    if (!row.teamCluster) {
+        return <span className='font-size-2 color-muted'>-</span>;
+    }
+
+    if (typeof row.teamCluster === 'string') {
+        return <span className='font-size-2 color-secondary'>{row.teamCluster}</span>;
+    }
+
+    return <span className='font-size-2 color-secondary'>{row.teamCluster.name || row.teamCluster._id}</span>;
+};
+
+const renderFrameCount: NonNullable<ColumnConfig<Analysis>['render']> = (value) => {
     if (typeof value !== 'number') {
         return '-';
     }
 
     return value.toLocaleString();
+};
+
+const renderCreatedBy: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
+    const user = typeof row.createdBy === 'string'
+        ? null
+        : row.createdBy;
+    return <ListingUserCell user={user} />;
+};
+
+const renderConfig: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
+    return <AnalysisConfigPreview analysis={row} />;
 };
 
 const getDeleteConfirmationMessage = (selectedItems: Analysis[]): string => {
@@ -56,22 +73,57 @@ const COLUMNS: ColumnConfig<Analysis>[] = [
         skeleton: { variant: 'text', width: 140 }
     },
     {
-        key: 'plugin',
+        key: 'pluginDisplayName',
         title: 'Plugin',
         sortable: true,
-        render: String,
+        render: renderPluginName,
         skeleton: { variant: 'text', width: 110 }
+    },
+    {
+        key: 'teamCluster',
+        title: 'Cluster',
+        sortable: false,
+        render: renderCluster,
+        skeleton: { variant: 'text', width: 140 }
+    },
+    {
+        key: 'status',
+        title: 'Status',
+        sortable: true,
+        render: (value) => <StatusBadge status={String(value)} />,
+        skeleton: { variant: 'rounded', width: 90, height: 24 }
     },
     {
         key: 'totalFrames',
         title: 'Total Frames',
         sortable: true,
-        render: renderTotalFrames,
+        render: renderFrameCount,
         skeleton: { variant: 'text', width: 90 }
     },
-    dateColumn<Analysis>('startedAt', 'Started At', { sortable: false }),
-    dateColumn<Analysis>('finishedAt', 'Finished At', { sortable: false }),
-    dateColumn<Analysis>('createdAt', 'Created', { sortable: false })
+    {
+        key: 'completedFrames',
+        title: 'Completed Frames',
+        sortable: true,
+        render: renderFrameCount,
+        skeleton: { variant: 'text', width: 110 }
+    },
+    {
+        key: 'config',
+        title: 'Config',
+        sortable: false,
+        render: renderConfig,
+        skeleton: { variant: 'text', width: 110 }
+    },
+    {
+        key: 'createdBy',
+        title: 'Created By',
+        sortable: false,
+        render: renderCreatedBy,
+        skeleton: { variant: 'text', width: 180 }
+    },
+    dateColumn<Analysis>('startedAt', 'Started At', { sortable: false, withTitle: true, fallback: '-' }),
+    dateColumn<Analysis>('finishedAt', 'Finished At', { sortable: false, withTitle: true, fallback: '-' }),
+    dateColumn<Analysis>('createdAt', 'Created At', { sortable: false, withTitle: true })
 ];
 
 const AnalysesListing = () => {
@@ -114,7 +166,7 @@ const AnalysesListing = () => {
 
     return (
         <DocumentListing<Analysis>
-            title='Analyses'
+            title='Analysis Configs'
             queryKey={analysisQuery.QUERY_KEYS.all()}
             columns={COLUMNS}
             fetchData={fetchAnalysesData}

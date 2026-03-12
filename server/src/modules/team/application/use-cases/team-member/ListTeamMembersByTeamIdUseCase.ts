@@ -2,6 +2,8 @@ import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTok
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
 import { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
+import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
+import { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, TeamMemberStatsProps } from '@modules/team/application/dtos/team-member/ListTeamMembersByTeamIdDTO';
 import TeamPresenceService from '@modules/team/infrastructure/services/team-member/TeamPresenceService';
@@ -9,6 +11,8 @@ import { isPopulatedTeamMemberUser, getTeamMemberUserId } from '@modules/team/do
 import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
+import { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -30,12 +34,18 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private readonly analysisRepository: IAnalysisRepository,
 
+        @inject(LATEX_TOKENS.LatexDocumentRepository)
+        private readonly latexDocumentRepository: ILatexDocumentRepository,
+
+        @inject(WHITEBOARD_TOKENS.WhiteboardRepository)
+        private readonly whiteboardRepository: IWhiteboardRepository,
+
         @inject(DAILY_ACTIVITY_TOKENS.DailyActivityRepository)
         private readonly dailyActivityRepository: IDailyActivityRepository,
 
         @inject(TEAM_TOKENS.TeamPresenceService)
         private readonly teamPresenceService: TeamPresenceService
-    ){}
+    ) {}
 
     async execute(input: ListTeamMembersByTeamIdInputDTO): Promise<Result<ListTeamMembersByTeamIdOutputDTO, ApplicationError>> {
         const { teamId } = input;
@@ -51,16 +61,16 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
             limit: input.limit
         });
 
-        const userIds = teamMembers.data.map(
-            (member) => {
-                return getTeamMemberUserId(member.props.user);
-            }
-        );
+        const userIds = teamMembers.data.map((member) => {
+            return getTeamMemberUserId(member.props.user);
+        });
 
-        const [dailyActivities, trajectoryCounts, analysisCounts] = await Promise.all([
+        const [dailyActivities, trajectoryCounts, analysisCounts, latexCounts, whiteboardCounts] = await Promise.all([
             this.dailyActivityRepository.findActivityByTeamId(teamId, 7),
             this.trajectoryRepository.countGroupedBy('createdBy', userIds),
-            this.analysisRepository.countGroupedBy('createdBy', userIds)
+            this.analysisRepository.countGroupedBy('createdBy', userIds),
+            this.latexDocumentRepository.countGroupedBy('createdBy', userIds),
+            this.whiteboardRepository.countGroupedBy('createdBy', userIds)
         ]);
 
         const activityByUser = new Map<string, number>();
@@ -92,7 +102,9 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
                     : member.props.user,
                 timeSpentLast7Days: activityByUser.get(userId) || 0,
                 trajectoriesCount: trajectoryCounts.get(userId) || 0,
-                analysesCount: analysisCounts.get(userId) || 0
+                analysesCount: analysisCounts.get(userId) || 0,
+                latexCount: latexCounts.get(userId) || 0,
+                whiteboardsCount: whiteboardCounts.get(userId) || 0
             };
 
             return {
@@ -106,5 +118,4 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
             data
         });
     }
-
 };
