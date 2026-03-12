@@ -41,7 +41,7 @@ const TrajectorySchema: Schema<TrajectoryDocument> = new Schema({
     },
     folder: {
         type: Schema.Types.ObjectId,
-        ref: 'TrajectoryFolder',
+        ref: 'CatalogFolder',
         required: false,
         default: null
     },

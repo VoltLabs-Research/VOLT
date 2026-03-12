@@ -85,7 +85,7 @@ const ContainerSchema = new Schema<IContainer>({
     },
     folder: {
         type: Schema.Types.ObjectId,
-        ref: 'ContainerFolder',
+        ref: 'CatalogFolder',
         required: false,
         default: null
     },

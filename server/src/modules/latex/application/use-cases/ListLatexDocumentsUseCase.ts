@@ -26,11 +26,29 @@ export class ListLatexDocumentsUseCase implements IUseCase<ListLatexDocumentsInp
             folderId = input.folderId;
         }
 
-        const result = await this.latexDocumentRepository.findAllByTeam(input.teamId, {
+        const filter: Record<string, unknown> = { team: input.teamId };
+        if (input.search) {
+            filter.title = { $regex: input.search, $options: 'i' };
+        }
+        if (folderId !== 'all') {
+            filter.folder = folderId;
+        }
+
+        const result = await this.latexDocumentRepository.findAll({
+            filter,
             page,
             limit,
-            search: input.search,
-            folderId
+            sort: { updatedAt: -1 },
+            populate: [
+                {
+                    path: 'createdBy',
+                    select: ['firstName', 'lastName', 'email', 'avatar']
+                },
+                {
+                    path: 'lastEditedBy',
+                    select: ['firstName', 'lastName', 'email', 'avatar']
+                }
+            ]
         });
 
         const value: ListLatexDocumentsOutputDTO = {
@@ -40,6 +58,8 @@ export class ListLatexDocumentsUseCase implements IUseCase<ListLatexDocumentsInp
                 title: document.props.title,
                 content: document.props.content,
                 folder: document.props.folder,
+                createdBy: document.props.createdBy,
+                lastEditedBy: document.props.lastEditedBy,
                 createdAt: document.props.createdAt,
                 updatedAt: document.props.updatedAt
             }))

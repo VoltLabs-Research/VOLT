@@ -2,15 +2,16 @@ import type { LatexFolderProps } from '@modules/latex/domain/entities/LatexFolde
 import type LatexFolder from '@modules/latex/domain/entities/LatexFolder';
 import type { ILatexFolderRepository } from '@modules/latex/domain/port/ILatexFolderRepository';
 import latexFolderMapper from '@modules/latex/infrastructure/persistence/mongo/mappers/LatexFolderMapper';
-import LatexFolderModel, { type LatexFolderDocument } from '@modules/latex/infrastructure/persistence/mongo/models/LatexFolderModel';
+import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import { MongooseCatalogFolderRepository } from '@shared/infrastructure/persistence/mongo/MongooseCatalogFolderRepository';
+import CatalogFolderModel, { type CatalogFolderDocument } from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
 import { injectable } from 'tsyringe';
 
 @injectable()
 export default class LatexFolderRepository
-    extends MongooseCatalogFolderRepository<LatexFolder, LatexFolderProps, LatexFolderDocument>
+    extends MongooseCatalogFolderRepository<LatexFolder, LatexFolderProps, CatalogFolderDocument>
     implements ILatexFolderRepository {
     constructor() {
-        super(LatexFolderModel, latexFolderMapper);
+        super(CatalogFolderModel, latexFolderMapper, CatalogFolderKind.Latex);
     }
 }

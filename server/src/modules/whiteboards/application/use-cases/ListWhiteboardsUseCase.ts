@@ -1,5 +1,4 @@
 import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
-import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
@@ -27,7 +26,21 @@ export class ListWhiteboardsUseCase implements IUseCase<ListWhiteboardsInputDTO,
             folderId = input.folderId;
         }
 
-        const result = await this.whiteboardRepository.findAllByTeam(input.teamId, { page, limit, folderId });
+        const filter: Record<string, unknown> = { team: input.teamId };
+        if (folderId !== 'all') {
+            filter.folder = folderId;
+        }
+
+        const result = await this.whiteboardRepository.findAll({
+            filter,
+            page,
+            limit,
+            sort: { updatedAt: -1 },
+            populate: {
+                path: 'lastEditedBy',
+                select: ['firstName', 'lastName', 'email', 'avatar']
+            }
+        });
 
         const value: ListWhiteboardsOutputDTO = {
             ...result,
@@ -37,7 +50,7 @@ export class ListWhiteboardsUseCase implements IUseCase<ListWhiteboardsInputDTO,
                 folder: whiteboard.props.folder,
                 payloadKey: whiteboard.props.payloadKey,
                 thumbnailKey: whiteboard.props.thumbnailKey,
-                lastEditedAt: whiteboard.props.lastEditedAt,
+                lastEditedBy: whiteboard.props.lastEditedBy,
                 createdAt: whiteboard.props.createdAt,
                 updatedAt: whiteboard.props.updatedAt
             }))

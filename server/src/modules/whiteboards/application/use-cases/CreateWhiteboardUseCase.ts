@@ -46,6 +46,7 @@ export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDT
             const whiteboard = await this.whiteboardRepository.create({
                 team: input.teamId,
                 createdBy: input.userId,
+                lastEditedBy: input.userId,
                 title: input.title,
                 folder: input.folderId ?? null,
                 payloadKey: '',
@@ -72,7 +73,7 @@ export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDT
                 _id: finalWhiteboard._id,
                 title: finalWhiteboard.props.title,
                 folder: finalWhiteboard.props.folder,
-                payloadKey: payloadKey,
+                payloadKey,
                 createdAt: finalWhiteboard.props.createdAt,
                 updatedAt: finalWhiteboard.props.updatedAt
             });

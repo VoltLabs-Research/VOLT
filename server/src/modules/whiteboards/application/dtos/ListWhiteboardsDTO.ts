@@ -1,4 +1,5 @@
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
 
 export interface ListWhiteboardsInputDTO {
     teamId: string;
@@ -13,7 +14,7 @@ export interface WhiteboardListItem {
     folder: string | null;
     payloadKey: string;
     thumbnailKey?: string;
-    lastEditedAt?: Date;
+    lastEditedBy?: WhiteboardProps['lastEditedBy'];
     createdAt: Date;
     updatedAt: Date;
 };

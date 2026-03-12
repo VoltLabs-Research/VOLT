@@ -5,5 +5,5 @@ import type { LatexDocumentDocument } from '@modules/latex/infrastructure/persis
 
 export default createMongoMapper<LatexDocument, LatexDocumentProps, LatexDocumentDocument>(
     LatexDocument,
-    ['team', 'createdBy', 'folder']
+    ['team', 'createdBy', 'lastEditedBy', 'folder']
 );

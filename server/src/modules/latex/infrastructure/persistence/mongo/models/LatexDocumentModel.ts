@@ -6,7 +6,8 @@ import type { Persistable } from '@shared/infrastructure/persistence/mongo/Mongo
 
 export enum LatexDocumentRelation {
     Team = 'team',
-    CreatedBy = 'createdBy'
+    CreatedBy = 'createdBy',
+    LastEditedBy = 'lastEditedBy'
 };
 
 type LatexDocumentDocumentBase = Persistable<LatexDocumentProps, `${LatexDocumentRelation}`>;
@@ -32,12 +33,17 @@ const LatexDocumentSchema: Schema<LatexDocumentDocument> = new Schema({
     },
     folder: {
         type: Schema.Types.ObjectId,
-        ref: 'LatexFolder',
+        ref: 'CatalogFolder',
         default: null,
         required: false
     },
     createdBy: {
         ...userRefField(true)
+    },
+    lastEditedBy: {
+        ...userRefField(false),
+        required: false,
+        default: null
     }
 }, {
     timestamps: true

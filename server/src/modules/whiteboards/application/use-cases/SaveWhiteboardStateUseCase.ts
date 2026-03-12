@@ -44,9 +44,12 @@ export class SaveWhiteboardStateUseCase implements IUseCase<SaveWhiteboardStateI
                 { 'Content-Type': 'application/json' }
             );
 
-            await this.whiteboardRepository.updateById(input.whiteboardId, {
-                lastEditedAt: new Date()
-            } as Partial<WhiteboardProps>);
+            const updates: Partial<WhiteboardProps> = {};
+            if (input.userId) {
+                updates.lastEditedBy = input.userId;
+            }
+
+            await this.whiteboardRepository.updateById(input.whiteboardId, updates);
 
             return Result.ok(null);
         } catch (error) {

@@ -1,5 +1,6 @@
 export interface UpdateWhiteboardInputDTO {
     teamId: string;
+    userId?: string;
     whiteboardId: string;
     title?: string;
 };

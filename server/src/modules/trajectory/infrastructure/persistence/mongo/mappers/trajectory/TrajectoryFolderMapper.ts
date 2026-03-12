@@ -1,8 +1,8 @@
 import TrajectoryFolder, { type TrajectoryFolderProps } from '@modules/trajectory/domain/entities/trajectory/TrajectoryFolder';
 import { createMongoMapper } from '@shared/infrastructure/persistence/mongo/createMongoMapper';
-import type { TrajectoryFolderDocument } from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryFolderModel';
+import type { CatalogFolderDocument } from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
 
-export default createMongoMapper<TrajectoryFolder, TrajectoryFolderProps, TrajectoryFolderDocument>(
+export default createMongoMapper<TrajectoryFolder, TrajectoryFolderProps, CatalogFolderDocument>(
     TrajectoryFolder,
     ['team', 'createdBy', 'parent']
 );
