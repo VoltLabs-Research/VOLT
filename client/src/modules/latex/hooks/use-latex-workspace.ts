@@ -138,6 +138,8 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const lastTexWorkspaceFingerprintRef = useRef<string | null>(null);
     const compileRequestIdRef = useRef(0);
     const hasBootstrappedSelectionRef = useRef(false);
+    const isBatchUploadingRef = useRef(false);
+    const pendingCompileAfterBatchRef = useRef(false);
 
     const isTexFile = useCallback((name: string): boolean => name.toLowerCase().endsWith(TEX_EXTENSION), []);
 
@@ -579,6 +581,12 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         }
 
         lastTexWorkspaceFingerprintRef.current = texWorkspaceFingerprint;
+
+        if (isBatchUploadingRef.current) {
+            pendingCompileAfterBatchRef.current = true;
+            return;
+        }
+
         void compileSilently();
     }, [compileSilently, isLoading, isLoadingFiles, latexDocument, texWorkspaceFingerprint]);
 
@@ -683,23 +691,35 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         const textEntries = entries.filter((entry) => isWorkspaceTextLikeFile(entry.path, entry.file.type));
         const binaryEntries = entries.filter((entry) => !isWorkspaceTextLikeFile(entry.path, entry.file.type));
 
-        for (const entry of textEntries) {
-            const { path, name } = (() => {
-                const normalized = entry.path.replace(/\\/g, '/').replace(/^\/+/, '');
-                const index = normalized.lastIndexOf('/');
-                return {
-                    path: index >= 0 ? normalized.slice(0, index + 1) : '',
-                    name: index >= 0 ? normalized.slice(index + 1) : normalized
-                };
-            })();
+        isBatchUploadingRef.current = true;
+        pendingCompileAfterBatchRef.current = false;
 
-            await handleCreateFile(name, path || undefined, await entry.file.text());
-        }
+        try {
+            for (const entry of textEntries) {
+                const { path, name } = (() => {
+                    const normalized = entry.path.replace(/\\/g, '/').replace(/^\/+/, '');
+                    const index = normalized.lastIndexOf('/');
+                    return {
+                        path: index >= 0 ? normalized.slice(0, index + 1) : '',
+                        name: index >= 0 ? normalized.slice(index + 1) : normalized
+                    };
+                })();
 
-        if (binaryEntries.length > 0) {
-            await handleUploadEntries(binaryEntries);
+                await handleCreateFile(name, path || undefined, await entry.file.text());
+            }
+
+            if (binaryEntries.length > 0) {
+                await handleUploadEntries(binaryEntries);
+            }
+        } finally {
+            isBatchUploadingRef.current = false;
+
+            if (pendingCompileAfterBatchRef.current) {
+                pendingCompileAfterBatchRef.current = false;
+                void compileSilently();
+            }
         }
-    }, [handleCreateFile, handleUploadEntries]);
+    }, [compileSilently, handleCreateFile, handleUploadEntries]);
 
     const handleWorkspaceFilesSelected = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
         const fileList = event.target.files;

@@ -1,4 +1,10 @@
 import './SidebarNavigation.css';
+import ClusterCredentialsModal from '@/modules/cluster/components/organisms/ClusterCredentialsModal';
+import ClusterRemoteAccessPasswordModal from '@/modules/cluster/components/organisms/ClusterRemoteAccessPasswordModal';
+import ClusterRemoteExplorerModal from '@/modules/cluster/components/organisms/ClusterRemoteExplorerModal';
+import ClusterRemoteTerminal from '@/modules/cluster/components/organisms/ClusterRemoteTerminal';
+import UpdateClusterModal from '@/modules/cluster/components/organisms/UpdateClusterModal';
+import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import Container from '@/shared/presentation/components/Container';
@@ -100,11 +106,6 @@ const SECONDARY_NAV_ITEMS: NavItem[] = [
         disabledReason: 'You do not have permission to access Volt AI.'
     },
     {
-        label: 'Clusters',
-        icon: HiOutlineServer,
-        to: '/dashboard/clusters'
-    },
-    {
         label: 'Import',
         icon: MdImportExport,
         to: '/dashboard/ssh-connections',
@@ -141,6 +142,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
     const { canAccess: canAccessPermissions } = useTeamPermissions();
     const { plugins } = usePluginSelectors();
     useEnsurePluginCatalogLoaded();
+    const sidebarClusters = useSidebarClusters(setSidebarOpen);
     const isAnalysisPluginListingRoute = pathname.includes('/dashboard/plugins/') && pathname.includes('/listing');
 
     const handleNavigate = (to: string) => {
@@ -227,6 +229,51 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
             })
     ], [pathname, searchParams, navigate, setSidebarOpen, plugins]);
 
+    const clustersSubItems = useMemo(() => [
+        {
+            label: 'View all',
+            isSelected: pathname === '/dashboard/clusters',
+            onClick: () => {
+                navigate('/dashboard/clusters');
+                setSidebarOpen(false);
+            }
+        },
+        ...sidebarClusters.clusters.map((cluster) => ({
+            label: cluster.name,
+            isSelected: pathname === `/dashboard/clusters/${cluster._id}`,
+            subItems: [
+                {
+                    label: 'Monitor',
+                    onClick: () => sidebarClusters.handleMonitor(cluster)
+                },
+                {
+                    label: 'Reveal Credentials',
+                    onClick: () => sidebarClusters.handleRevealCredentials(cluster)
+                },
+                {
+                    label: 'Update Cluster',
+                    onClick: () => sidebarClusters.handleUpdateCluster(cluster)
+                },
+                {
+                    label: 'Open Terminal',
+                    onClick: () => sidebarClusters.handleOpenTerminal(cluster)
+                },
+                {
+                    label: 'Explore Mongo Documents',
+                    onClick: () => sidebarClusters.handleExploreMongo(cluster)
+                },
+                {
+                    label: 'Explore Redis Data',
+                    onClick: () => sidebarClusters.handleExploreRedis(cluster)
+                },
+                {
+                    label: 'Explore MinIO',
+                    onClick: () => sidebarClusters.handleExploreMinio(cluster)
+                }
+            ]
+        }))
+    ], [pathname, navigate, setSidebarOpen, sidebarClusters]);
+
     const canAccessTrajectories = canAccess({
         label: '',
         icon: TbCube3dSphere,
@@ -305,6 +352,14 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                 />
             </Tooltip>
 
+            <SidebarExpandableSection
+                label='Clusters'
+                icon={HiOutlineServer}
+                isActive={pathname.includes('/dashboard/clusters')}
+                subItems={clustersSubItems}
+                onRequestSidebarExpand={onExpandSidebar}
+            />
+
             {SECONDARY_NAV_ITEMS.map(renderNavItem)}
 
             <Divider className={`sidebar-divider ${collapsed ? 'is-hidden' : ''}`} />
@@ -329,6 +384,41 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                     commandFor='join-team-modal'
                     command='show-modal'
                 />
+            )}
+
+            {!sidebarClusters.isOnClustersRoute && (
+                <>
+                    <ClusterCredentialsModal
+                        teamCluster={sidebarClusters.credentialsCluster}
+                        credentials={sidebarClusters.credentials}
+                        onReveal={sidebarClusters.revealCredentials}
+                    />
+                    <UpdateClusterModal
+                        teamCluster={sidebarClusters.updateTarget}
+                        teamId={sidebarClusters.selectedTeamId}
+                        onUpdate={sidebarClusters.requestUpdate}
+                        onClose={() => sidebarClusters.setUpdateTarget(null)}
+                    />
+                    <ClusterRemoteAccessPasswordModal
+                        teamCluster={sidebarClusters.remoteAccessRequest?.teamCluster ?? null}
+                        target={sidebarClusters.remoteAccessRequest?.target ?? null}
+                        onSubmit={sidebarClusters.submitRemoteAccessRequest}
+                        onClose={() => sidebarClusters.setRemoteAccessRequest(null)}
+                    />
+                    <ClusterRemoteTerminal
+                        teamCluster={sidebarClusters.remoteTerminal?.teamCluster ?? null}
+                        session={sidebarClusters.remoteTerminal?.session ?? null}
+                        onClose={sidebarClusters.closeRemoteTerminal}
+                    />
+                    <ClusterRemoteExplorerModal
+                        teamCluster={sidebarClusters.remoteExplorer?.teamCluster ?? null}
+                        target={sidebarClusters.remoteExplorer?.target ?? null}
+                        session={sidebarClusters.remoteExplorer?.session ?? null}
+                        onClose={sidebarClusters.closeRemoteExplorer}
+                        listEntries={sidebarClusters.listRemoteExplorerEntries}
+                        getNode={sidebarClusters.getRemoteExplorerNode}
+                    />
+                </>
             )}
         </nav>
     );

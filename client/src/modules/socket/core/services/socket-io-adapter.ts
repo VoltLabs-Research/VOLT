@@ -9,6 +9,7 @@ class SocketIOAdapter implements ISocketService {
     private connectionUrl: string;
     private options: SocketOptions;
     private connectionPromise: Promise<void> | null = null;
+    private pendingReject: ((reason?: unknown) => void) | null = null;
     private connectionListeners: Array<(connected: boolean) => void> = [];
     private connectionStatus = SocketConnectionStatus.Disconnected;
     private connectionStatusListeners: Array<(status: SocketConnectionStatus) => void> = [];
@@ -43,6 +44,7 @@ class SocketIOAdapter implements ISocketService {
 
         this.cleanupSocket();
         this.connectionPromise = new Promise((resolve, reject) => {
+            this.pendingReject = reject;
             try {
                 this.socket = io(this.connectionUrl, {
                     path: this.options.path,
@@ -57,21 +59,20 @@ class SocketIOAdapter implements ISocketService {
                 });
 
                 this.socket.on(SOCKET_CONNECTION_EVENTS.CONNECT, () => {
+                    this.pendingReject = null;
                     this.handleConnect();
                     resolve();
                 });
 
                 this.socket.on(SOCKET_CONNECTION_EVENTS.CONNECT_ERROR, (error) => {
-                    this.connectionPromise = null;
                     this.handleConnectError(error);
-                    reject(error);
                 });
 
                 this.socket.on(SOCKET_CONNECTION_EVENTS.DISCONNECT, () => {
-                    this.connectionPromise = null;
                     this.handleDisconnect();
                 });
             } catch (error) {
+                this.pendingReject = null;
                 this.connectionPromise = null;
                 this.setConnectionStatus(SocketConnectionStatus.Error);
                 reject(error);
@@ -82,6 +83,10 @@ class SocketIOAdapter implements ISocketService {
     }
 
     disconnect(): void {
+        if (this.pendingReject) {
+            this.pendingReject(new Error('Socket disconnected'));
+            this.pendingReject = null;
+        }
         this.connectionPromise = null;
         this.cleanupSocket();
         this.setConnectionStatus(SocketConnectionStatus.Disconnected);

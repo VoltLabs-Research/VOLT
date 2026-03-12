@@ -38,16 +38,6 @@ export default class DiscoverTeamAIProviderModelsUseCase implements IUseCase<Dis
         const apiKey = input.apiKey?.trim()
             || this.secretService.decryptApiKey(existing?.props.encryptedApiKey)
             || '';
-        if (!apiKey && input.provider !== 'ollama') {
-            return Result.ok({
-                teamId: input.teamId,
-                provider: input.provider,
-                providerName: providerMeta.name,
-                defaultModel: null,
-                metadata: input.metadata ?? existing?.props.metadata,
-                models: []
-            });
-        }
 
         const metadata = input.provider === 'ollama'
             ? {
