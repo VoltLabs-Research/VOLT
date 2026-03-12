@@ -16,6 +16,7 @@ import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useSecretKeyTeamMetrics from '@/modules/team/hooks/secret-key/use-secret-key-team-metrics';
 import { CHART_COLORS } from '@/modules/team/utilities/secret-key/chart-helpers';
 import { createTooltipRenderer } from '@/modules/team/components/templates/secret-key/shared/chart-tooltip-renderer';
@@ -26,7 +27,7 @@ const renderAreaTooltip = createTooltipRenderer('date', 'Requests', CHART_COLORS
 const renderBarTooltip = createTooltipRenderer('endpoint', 'Requests', CHART_COLORS.endpoints);
 
 export default function SecretKeyMetrics() {
-    const { metrics, isLoading } = useSecretKeyTeamMetrics();
+    const { metrics, isLoading, error, refetch } = useSecretKeyTeamMetrics();
 
     const requestsOverTime = useMemo(() => {
         if(!metrics?.daily) return [];
@@ -72,6 +73,25 @@ export default function SecretKeyMetrics() {
                         <Skeleton variant='rectangular' width='100%' height={340} sx={{ borderRadius: '8px' }} />
                         <Skeleton variant='rectangular' width='100%' height={340} sx={{ borderRadius: '8px' }} />
                     </Container>
+                </Container>
+            </Container>
+        );
+    }
+
+    if(error && !metrics){
+        return (
+            <Container className='secret-key-page vh-max color-primary'>
+                <Container className='secret-key-page-main d-flex column gap-2 w-max'>
+                    <Container className='d-flex column gap-05'>
+                        <Title className='font-size-5 font-weight-6 color-primary'>Secret Key Metrics</Title>
+                    </Container>
+                    <RecoveryState
+                        title='Unable to load metrics'
+                        description={error instanceof Error ? error.message : 'Something went wrong while loading secret key metrics.'}
+                        tone={RecoveryStateTone.Error}
+                        retryLabel='Try again'
+                        onRetry={() => refetch()}
+                    />
                 </Container>
             </Container>
         );

@@ -130,7 +130,9 @@ const useChatData = () => {
         addMessage,
         updateMessage,
         isChatsLoading: chatsResult.isLoading,
-        isMessagesLoading: messagesQuery.isLoading || messagesQuery.isFetchingNextPage
+        isMessagesLoading: messagesQuery.isLoading || messagesQuery.isFetchingNextPage,
+        chatsError: chatsResult.error,
+        messagesError: messagesQuery.error
     };
 };
 

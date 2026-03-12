@@ -13,7 +13,9 @@ import ResponseTimeChart from '@/modules/cluster/components/molecules/ResponseTi
 import { invalidateAvailableVersionsQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import useClusterMonitoringPage from '@/modules/cluster/hooks/use-cluster-monitoring-page';
 import Container from '@/shared/presentation/components/Container';
+import Loader from '@/shared/presentation/components/Loader';
 import NetworkChart from '@/shared/presentation/components/NetworkChart';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { openModal } from '@/shared/presentation/components/Modal';
 import { useCallback, useMemo } from 'react';
 
@@ -81,7 +83,19 @@ const ClusterMonitoringPage = () => {
             />
             <Container className='clusters-page vh-max color-primary'>
                 <Container className='clusters-main d-flex column gap-1-5 w-max'>
-                    {!vm.hasClusters && <ClustersEmptyState />}
+                    {vm.isLoading && !vm.hasClusters && (
+                        <Loader scale={0.5} isFixed={false} />
+                    )}
+
+                    {!vm.isLoading && !vm.hasClusters && <ClustersEmptyState />}
+
+                    {vm.hasClusters && !vm.isMetricsConnected && !vm.metrics && (
+                        <RecoveryState
+                            title='Metrics unavailable'
+                            description='Unable to connect to the metrics stream. The cluster may be offline or unreachable.'
+                            tone={RecoveryStateTone.Error}
+                        />
+                    )}
 
                     {vm.hasClusters && (
                         <>
