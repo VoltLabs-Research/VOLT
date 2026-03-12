@@ -12,6 +12,7 @@ export interface PluginListingMeta extends Record<string, unknown> {
 
 export interface GetPluginListingInputDTO {
     pluginId: string;
+    teamId?: string;
     exposureName?: string;
     exposureId?: string;
     trajectoryId?: string;

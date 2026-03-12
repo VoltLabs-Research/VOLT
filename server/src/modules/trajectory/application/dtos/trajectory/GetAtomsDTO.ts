@@ -1,7 +1,7 @@
 export interface GetAtomsInputDTO {
     trajectoryId: string;
     analysisId?: string;
-    timestep?: string;
+    timestep: number;
     exposureId?: string;
     page?: number;
     limit?: number;

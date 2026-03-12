@@ -32,6 +32,12 @@ const MOVE_FILE_TOAST = {
     error: { title: 'Failed to move file' }
 };
 
+const RENAME_FILE_TOAST = {
+    loading: { title: 'Renaming file...' },
+    success: { title: 'File renamed' },
+    error: { title: 'Failed to rename file' }
+};
+
 /**
  * Manages the list of LatexFile records for a document.
  * Provides handlers for creating, deleting, setting the entrypoint, and moving files.
@@ -48,13 +54,17 @@ const useLatexFiles = ({ documentId, onFileSelected }: UseLatexFilesInput) => {
     const { mutateAsync: createFile, isPending: isCreating } = useCreateLatexFileMutation();
     const { mutateAsync: deleteFile, isPending: isDeleting } = useDeleteLatexFileMutation();
     const { mutateAsync: setEntrypoint } = useSetLatexFileEntrypointMutation();
-    const { mutateAsync: updateFile } = useUpdateLatexFileMutation();
+    const { mutateAsync: updateFile, isPending: isSaving } = useUpdateLatexFileMutation();
 
-    const handleCreateFile = useCallback(async (name: string, path?: string): Promise<LatexFile | null> => {
+    const handleCreateFile = useCallback(async (
+        name: string,
+        path?: string,
+        content?: string
+    ): Promise<LatexFile | null> => {
         if (!name.trim()) return null;
 
         const created = await showPromise(
-            createFile({ documentId, name: name.trim(), path }),
+            createFile({ documentId, name: name.trim(), path, content }),
             CREATE_FILE_TOAST
         );
 
@@ -92,15 +102,26 @@ const useLatexFiles = ({ documentId, onFileSelected }: UseLatexFilesInput) => {
         );
     }, [documentId, updateFile]);
 
+    const handleRenameFile = useCallback(async (fileId: string, name: string): Promise<void> => {
+        await showPromise(
+            updateFile({ documentId, fileId, name }),
+            RENAME_FILE_TOAST
+        );
+    }, [documentId, updateFile]);
+
     return {
         files,
         isLoading,
         isCreating,
         isDeleting,
+        isSaving,
         handleCreateFile,
         handleDeleteFile,
         handleSetEntrypoint,
-        handleMoveFile
+        handleMoveFile,
+        handleRenameFile,
+        deleteFile,
+        updateFile
     };
 };
 

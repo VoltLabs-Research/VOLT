@@ -4,6 +4,7 @@ import { createTeamScopedParamsSchema, objectIdSchema } from '@shared/infrastruc
 import { z } from 'zod/v4';
 
 const analysisIdSchema = z.union([objectIdSchema, z.literal('default')]);
+const exposureIdSchema = z.string().trim().min(1);
 
 const particleFilterParamsSchema = createTeamScopedParamsSchema('trajectoryId');
 
@@ -13,7 +14,7 @@ const particleFilterAnalysisParamsSchema = particleFilterParamsSchema.extend({
 
 const particleFilterPropertiesQuerySchema = z.object({
     timestep: z.string().trim().min(1),
-    exposureId: objectIdSchema.optional()
+    exposureId: exposureIdSchema.optional()
 }).strict();
 
 const particleFilterPreviewQuerySchema = z.object({
@@ -21,13 +22,13 @@ const particleFilterPreviewQuerySchema = z.object({
     property: z.string().trim().min(1),
     operator: z.enum(['==', '!=', '>', '>=', '<', '<=']),
     value: z.coerce.number().finite(),
-    exposureId: objectIdSchema.optional()
+    exposureId: exposureIdSchema.optional()
 }).strict();
 
 const particleFilterUniqueValuesQuerySchema = z.object({
     timestep: z.string().trim().min(1),
     property: z.string().trim().min(1),
-    exposureId: objectIdSchema.optional(),
+    exposureId: exposureIdSchema.optional(),
     maxValues: z.coerce.number().int().min(1).optional()
 }).strict();
 
@@ -37,7 +38,7 @@ const particleFilterModelQuerySchema = z.object({
     operator: z.enum(['==', '!=', '>', '>=', '<', '<=']),
     value: z.union([z.coerce.number().finite(), z.string().trim().min(1)]),
     action: z.enum(['delete', 'highlight']).optional(),
-    exposureId: objectIdSchema.optional()
+    exposureId: exposureIdSchema.optional()
 }).strict();
 
 const applyFilterBodySchema = z.object({
@@ -46,7 +47,7 @@ const applyFilterBodySchema = z.object({
     property: z.string().min(1),
     operator: z.enum(['==', '!=', '>', '>=', '<', '<=']),
     value: z.number(),
-    exposureId: objectIdSchema.optional()
+    exposureId: exposureIdSchema.optional()
 }).strict();
 
 export const particleFilterValidation = createResourceValidation({

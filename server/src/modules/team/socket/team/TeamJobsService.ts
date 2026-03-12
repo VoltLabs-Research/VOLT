@@ -31,6 +31,7 @@ interface TeamJobStatusRecord {
     updatedAt?: string;
     analysisId?: string;
     trajectoryId?: string;
+    trajectoryName?: string;
     timestep?: number;
 };
 
@@ -139,31 +140,38 @@ export default class TeamJobsService {
     private groupJobsByTrajectory(jobs: TeamJobSummary[]): TrajectoryJobGroup[] {
         const trajectoryMap = new Map<string, TeamJobSummary[]>();
 
-        // Group by trajectoryId
         for (const job of jobs) {
-            const trajectoryId = job.trajectoryId || job.metadata?.trajectoryId || 'unknown';
+            const trajectoryId = this.resolveTrajectoryId(job);
+            const trajectoryName = this.resolveTrajectoryName(job);
+
+            if (!trajectoryId || !trajectoryName) {
+                continue;
+            }
+
             if (!trajectoryMap.has(trajectoryId)) {
                 trajectoryMap.set(trajectoryId, []);
             }
-            trajectoryMap.get(trajectoryId)!.push(job);
+
+            trajectoryMap.get(trajectoryId)?.push({
+                ...job,
+                trajectoryId,
+                trajectoryName
+            });
         }
 
-        // Convert to TrajectoryJobGroup format
         const groups: TrajectoryJobGroup[] = [];
 
         for (const [trajectoryId, trajectoryJobs] of trajectoryMap.entries()) {
             const frameMap = new Map<number, TeamJobSummary[]>();
 
-            // Group by timestep within trajectory
             for (const job of trajectoryJobs) {
                 const timestep = job.timestep ?? 0;
                 if (!frameMap.has(timestep)) {
                     frameMap.set(timestep, []);
                 }
-                frameMap.get(timestep)!.push(job);
+                frameMap.get(timestep)?.push(job);
             }
 
-            // Convert frames to FrameJobGroup
             const frameGroups: FrameJobGroup[] = [];
             for (const [timestep, jobs] of frameMap.entries()) {
                 const overallStatus = this.computeFrameStatus(jobs);
@@ -174,17 +182,20 @@ export default class TeamJobsService {
                 });
             }
 
-            // Sort frames by timestep descending (newest first)
             frameGroups.sort((a, b) => b.timestep - a.timestep);
 
-            // Compute overall trajectory status
             const allJobs = trajectoryJobs;
             const overallStatus = this.computeFrameStatus(allJobs);
             const completedCount = allJobs.filter((job) => job.status === JobStatus.Completed).length;
+            const trajectoryName = trajectoryJobs[0]?.trajectoryName;
+
+            if (!trajectoryName) {
+                continue;
+            }
 
             groups.push({
                 trajectoryId,
-                trajectoryName: trajectoryJobs[0]?.message || trajectoryJobs[0]?.metadata?.trajectoryName || `Trajectory ${trajectoryId.slice(-6)}`,
+                trajectoryName,
                 frameGroups,
                 latestTimestamp: trajectoryJobs[0]?.timestamp || trajectoryJobs[0]?.createdAt || new Date().toISOString(),
                 overallStatus,
@@ -199,6 +210,30 @@ export default class TeamJobsService {
         );
 
         return groups;
+    }
+
+    private resolveTrajectoryId(job: TeamJobSummary): string | undefined {
+        if (typeof job.trajectoryId === 'string') {
+            return job.trajectoryId;
+        }
+
+        if (typeof job.metadata?.trajectoryId === 'string') {
+            return job.metadata.trajectoryId;
+        }
+
+        return undefined;
+    }
+
+    private resolveTrajectoryName(job: TeamJobSummary): string | undefined {
+        if (typeof job.trajectoryName === 'string') {
+            return job.trajectoryName;
+        }
+
+        if (typeof job.metadata?.trajectoryName === 'string') {
+            return job.metadata.trajectoryName;
+        }
+
+        return undefined;
     }
 
     private computeFrameStatus(jobs: TeamJobSummary[]): TeamJobStatus {

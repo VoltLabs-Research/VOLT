@@ -7,6 +7,22 @@
     min-height: 0;
 }
 
+.latex-workspace__empty-layout {
+    width: 100%;
+}
+
+.latex-workspace__empty-shell {
+    max-width: 34rem;
+}
+
+.latex-workspace__empty-shell .empty-state-container {
+    width: 100%;
+}
+
+.latex-workspace__empty-shell .empty-state-content {
+    gap: 1rem;
+}
+
 /** Left panel — file tree */
 .latex-workspace__files {
     flex-shrink: 0;
@@ -25,6 +41,90 @@
 
 .latex-workspace__editor-inner {
     height: 100%;
+}
+
+.latex-editor-tabs__header {
+    gap: 0.5rem;
+    overflow: hidden;
+}
+
+.latex-editor-tabs {
+    scrollbar-width: thin;
+}
+
+.latex-editor-tab {
+    flex: 0 0 auto;
+    min-width: 0;
+    max-width: 18rem;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    transition: background 120ms, border-color 120ms, color 120ms;
+}
+
+.latex-editor-tab:hover {
+    background: var(--hover-bg);
+}
+
+.latex-editor-tab.is-active {
+    background: var(--color-surface-2);
+    border-color: var(--color-border-soft);
+    color: var(--color-text-primary);
+}
+
+.latex-editor-tab__button {
+    min-width: 0;
+    padding: 0.3rem 0 0.3rem 0.5rem;
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+}
+
+.latex-editor-tab__button:focus-visible,
+.latex-editor-tab__close:focus-visible {
+    outline: 1px solid var(--color-border);
+    outline-offset: 1px;
+}
+
+.latex-editor-tab__icon {
+    flex-shrink: 0;
+}
+
+.latex-editor-tab__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 11rem;
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+.latex-editor-tab__dirty-dot {
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+.latex-editor-tab__close {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-right: 0.125rem;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.latex-editor-tab__close:hover {
+    background: var(--hover-bg);
 }
 
 /** Right panel — PDF preview */

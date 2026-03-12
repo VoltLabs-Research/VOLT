@@ -1,6 +1,5 @@
 import {
     useInfiniteQuery,
-    useQueries,
     useQuery,
     type QueryKey,
     type UseQueryOptions
@@ -58,17 +57,6 @@ export const fetchPluginListing = (params: GetPluginListingInputDTO) => {
     return queryClient.fetchQuery(buildPluginListingQueryOptions(params));
 };
 
-export const usePluginListingSubListingQueries = (paramsList: GetPluginListingInputDTO[]) => {
-    return useQueries({
-        queries: paramsList.map((params) => ({
-            ...buildPluginListingQueryOptions(params),
-            staleTime: 5 * 60 * 1000,
-            enabled: Boolean(params.pluginId) && Boolean(params.trajectoryId),
-            retry: false
-        }))
-    });
-};
-
 export const usePluginListingQuery = (
     params: GetPluginListingInputDTO,
     options?: QueryOptions<GetPluginListingOutputDTO, GetPluginListingOutputDTO>
@@ -87,6 +75,7 @@ export const usePluginListingInfiniteQuery = (
         queryKey: LISTING_QUERY_KEYS.listingInfiniteDetail(params),
         queryFn: ({ pageParam }) => listingService.getListing({
             pluginId: params.pluginId,
+            teamId: params.teamId,
             exposureName: params.exposureName,
             exposureId: params.exposureId,
             trajectoryId: params.trajectoryId,

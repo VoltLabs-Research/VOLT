@@ -2,6 +2,7 @@ import {
     GetPluginListingDocumentsInputDTO,
     GetPluginListingDocumentsOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
+import { resolveListingPagination } from '@modules/plugin/application/use-cases/listing-row/listing-row-pagination';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 
@@ -61,8 +62,7 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<
     ){}
 
     async execute(input: GetPluginListingDocumentsInputDTO): Promise<Result<GetPluginListingDocumentsOutputDTO>> {
-        const page = input.page ?? 1;
-        const limit = input.limit ?? 50;
+        const { page, limit } = resolveListingPagination(input);
 
         const resolved = await this.resolveTeamCluster(input);
         if (!resolved) {
@@ -74,6 +74,7 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<
             'plugin.listings.list',
             {
                 pluginId: input.pluginId,
+                teamId: input.teamId,
                 analysisId: resolved.analysisId,
                 trajectoryId: input.trajectoryId,
                 exposureId: input.exposureId,
@@ -100,9 +101,11 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<
     ): Promise<{ teamClusterId: string; analysisId: string } | null> {
         if (input.analysisId) {
             const analysis = await this.analysisRepository.findById(input.analysisId);
-            if (analysis?.props.teamCluster) {
-                return { teamClusterId: analysis.props.teamCluster, analysisId: input.analysisId };
+            if (!analysis?.props.teamCluster) {
+                return null;
             }
+
+            return { teamClusterId: analysis.props.teamCluster, analysisId: input.analysisId };
         }
 
         const filter: Record<string, unknown> = {

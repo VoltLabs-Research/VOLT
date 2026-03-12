@@ -10,6 +10,7 @@ interface PluginAtomsTableProps {
     trajectoryId: string;
     analysisId?: string;
     exposureId?: string;
+    timestep?: number;
     onDataReady?: (columns: ColumnConfig[], data: Record<string, unknown>[]) => void;
 }
 
@@ -29,18 +30,25 @@ const getTypeColor = (t?: number): string => {
 
 const ATOMS_PAGE_SIZE = 100;
 
-const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId, onDataReady }: PluginAtomsTableProps) => {
+const PluginAtomsTable = ({
+    trajectoryId,
+    analysisId,
+    exposureId,
+    timestep,
+    onDataReady
+}: PluginAtomsTableProps) => {
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
+    const resolvedTimestep = timestep ?? currentTimestep;
 
     const resolvedAnalysisId = analysisId || 'default';
-    const enabled = Boolean(trajectoryId && currentTimestep !== undefined);
+    const enabled = Boolean(trajectoryId && resolvedTimestep !== undefined);
     const baseAtomsParams = useMemo(() => ({
         trajectoryId,
         analysisId: resolvedAnalysisId,
         exposureId,
-        timestep: currentTimestep ?? 0,
+        timestep: resolvedTimestep ?? 0,
         limit: ATOMS_PAGE_SIZE
-    }), [trajectoryId, resolvedAnalysisId, exposureId, currentTimestep]);
+    }), [trajectoryId, resolvedAnalysisId, exposureId, resolvedTimestep]);
 
     const {
         data: infiniteData,

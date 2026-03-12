@@ -1,5 +1,6 @@
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
 import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
+import { getAssetDisplayName, isFolderPlaceholderAsset } from '@/modules/latex/utilities/workspace';
 
 /** A node in the virtual file tree derived from path prefixes. */
 export interface FileTreeNode {
@@ -75,6 +76,7 @@ export const buildFileTree = (
     files: LatexFileEntry[],
     assets: LatexAsset[]
 ): FileTreeNode[] => {
+    const visibleAssets = assets.filter((asset) => !isFolderPlaceholderAsset(asset));
     const folderMap = new Map<string, FileTreeNode>();
 
     // Ensure all required ancestor folders exist.
@@ -128,11 +130,11 @@ export const buildFileTree = (
     }
 
     // Add asset nodes under their respective folder or root.
-    for (const asset of assets) {
+    for (const asset of visibleAssets) {
         const fp = assetFolderPath(asset);
         const assetNode: FileTreeNode = {
             id: `asset:${asset._id}`,
-            name: asset.originalName,
+            name: getAssetDisplayName(asset),
             type: 'asset',
             folderPath: fp,
             data: asset,

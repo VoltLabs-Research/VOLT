@@ -7,10 +7,8 @@ import type { CreateLatexDocumentInputDTO, CreateLatexDocumentOutputDTO } from '
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import type { ILatexFolderRepository } from '@modules/latex/domain/port/ILatexFolderRepository';
-import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 
 const DEFAULT_DOCUMENT_CONTENT = '';
-const MAIN_TEX_NAME = 'main.tex';
 
 @injectable()
 export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentInputDTO, CreateLatexDocumentOutputDTO, ApplicationError> {
@@ -19,10 +17,7 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
         private readonly latexDocumentRepository: ILatexDocumentRepository,
 
         @inject(LATEX_TOKENS.LatexFolderRepository)
-        private readonly latexFolderRepository: ILatexFolderRepository,
-
-        @inject(LATEX_TOKENS.LatexFileRepository)
-        private readonly latexFileRepository: ILatexFileRepository
+        private readonly latexFolderRepository: ILatexFolderRepository
     ) {}
 
     async execute(input: CreateLatexDocumentInputDTO): Promise<Result<CreateLatexDocumentOutputDTO, ApplicationError>> {
@@ -58,21 +53,6 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
                 content: initialContent,
                 createdBy: input.userId,
                 folder: input.folderId ?? null,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            });
-
-            // Create the default main.tex LatexFile so the workspace always has
-            // at least one file to display. The content mirrors the document
-            // content field for backward compatibility.
-            await this.latexFileRepository.create({
-                document: document._id,
-                team: input.teamId,
-                name: MAIN_TEX_NAME,
-                path: '',
-                content: initialContent,
-                isEntrypoint: true,
-                createdBy: input.userId,
                 createdAt: new Date(),
                 updatedAt: new Date()
             });

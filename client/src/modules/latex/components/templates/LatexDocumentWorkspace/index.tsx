@@ -5,6 +5,7 @@ import Avatar from '@/shared/presentation/components/Avatar';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import EditableTag from '@/shared/presentation/components/EditableTag';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import LatexEditorPanel from './LatexEditorPanel';
@@ -12,8 +13,9 @@ import LatexFilePanel from './LatexFilePanel';
 import LatexPreviewPanel from './LatexPreviewPanel';
 import './LatexDocumentWorkspace.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Download, FileArchive, Save } from 'lucide-react';
+import { Download, FileArchive, FileText, FolderUp, Sparkles } from 'lucide-react';
 import { useParams } from 'react-router-dom';
+import type { ChangeEvent } from 'react';
 import type { PresenceUser } from '@/modules/socket/trajectory/api/entities/presence-user';
 
 interface PanelWidths {
@@ -33,6 +35,14 @@ const FILES_MAX = 400;
 const PREVIEW_MIN = 260;
 const PREVIEW_MAX = 600;
 const DEFAULT_WIDTHS: PanelWidths = { files: 220, preview: 340 };
+const LATEX_TEMPLATE_CONTENT = `\\documentclass{article}
+
+\\begin{document}
+
+Hello, world!
+
+\\end{document}
+`;
 
 const loadPanelWidths = (): PanelWidths => {
     try {
@@ -60,15 +70,21 @@ const LatexDocumentWorkspace = () => {
     const { documentId = '' } = useParams<{ documentId: string }>();
     const [panelWidths, setPanelWidths] = useState<PanelWidths>(loadPanelWidths);
     const dragStateRef = useRef<DragState | null>(null);
+    const [hasEnteredWorkspace, setHasEnteredWorkspace] = useState(false);
+    const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+    const [isImportingProject, setIsImportingProject] = useState(false);
+    const initialWorkspaceVisibilityResolvedRef = useRef(false);
 
     const {
         latexDocument,
-        documentId: resolvedDocumentId,
         isLoading,
-        activeFile: activeLatexFile,
+        selection,
+        openTabs,
         editorContent,
         isDirty,
+        dirtyFileIds,
         isSaving,
+        isUploading,
         isExportingTex,
         isExportingZip,
         isCompiling,
@@ -77,19 +93,34 @@ const LatexDocumentWorkspace = () => {
         accessDenied,
         accessDeniedMessage,
         files,
+        rawAssets,
         collaborators,
+        fileInputRef,
+        folderInputRef,
         handleEditorChange,
         handleRenameDocument,
-        handleSave,
         handleInsertAssetRef,
         handleExportTex,
         handleExportZip,
-        handleCompile,
+        handleExportPdf,
         handleSelectFileById,
+        handleSelectAssetById,
+        handleSelectTab,
+        handleCloseTab,
         handleCreateFile,
+        handleCreateFolder,
         handleDeleteFile,
-        handleSetEntrypoint,
-        handleMoveFile
+        deleteFile,
+        handleDeleteAsset,
+        deleteAsset,
+        updateFile,
+        updateAsset,
+        handleMoveFile,
+        handleMoveAsset,
+        handleRenameFile,
+        handleRenameAsset,
+        handleWorkspaceFilesSelected,
+        handleWorkspaceFoldersSelected
     } = useLatexWorkspace({ documentId });
 
     /** Collapse the dashboard sidebar while the editor is mounted. */
@@ -160,7 +191,60 @@ const LatexDocumentWorkspace = () => {
         dragStateRef.current = null;
     }, []);
 
-    const activeFile = files.find((f) => f._id === activeLatexFile?._id);
+    const hasWorkspaceContent = files.length > 0 || rawAssets.length > 0;
+
+    useEffect(() => {
+        if (initialWorkspaceVisibilityResolvedRef.current || isLoading) {
+            return;
+        }
+
+        setHasEnteredWorkspace(hasWorkspaceContent);
+        initialWorkspaceVisibilityResolvedRef.current = true;
+    }, [hasWorkspaceContent, isLoading]);
+
+    const handleStartFromTemplate = useCallback(async (): Promise<void> => {
+        setIsCreatingTemplate(true);
+
+        const safeBaseName = (latexDocument?.title ?? 'document')
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '') || 'document';
+
+        try {
+            await handleCreateFile(`${safeBaseName}.tex`, undefined, LATEX_TEMPLATE_CONTENT);
+            setHasEnteredWorkspace(true);
+        } catch {
+            setHasEnteredWorkspace(false);
+        } finally {
+            setIsCreatingTemplate(false);
+        }
+    }, [handleCreateFile, latexDocument?.title]);
+
+    const handleUploadProject = useCallback((): void => {
+        folderInputRef.current?.click();
+    }, [folderInputRef]);
+
+    const handleOnboardingFolderSelection = useCallback(async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
+        const fileList = event.target.files;
+
+        if (!fileList || fileList.length === 0) {
+            return;
+        }
+
+        setIsImportingProject(true);
+
+        try {
+            await handleWorkspaceFoldersSelected(event);
+            setHasEnteredWorkspace(true);
+        } catch {
+            setHasEnteredWorkspace(false);
+        } finally {
+            setIsImportingProject(false);
+        }
+    }, [handleWorkspaceFoldersSelected]);
+
+    const shouldShowWorkspaceOnboarding = !hasWorkspaceContent && !hasEnteredWorkspace;
 
     if (isLoading) {
         return (
@@ -176,20 +260,6 @@ const LatexDocumentWorkspace = () => {
             <AccessDenied description={accessDeniedMessage} showBack={false} className='h-max w-max' />
         );
     }
-
-    const saveButton = (
-        <Button
-            variant='solid'
-            intent='brand'
-            size='sm'
-            shape='rounded'
-            disabled={!isDirty || isSaving}
-            onClick={handleSave}
-        >
-            <Save size={14} />
-            {isSaving ? 'Saving...' : 'Save'}
-        </Button>
-    );
 
     const exportTexButton = (
         <Button
@@ -221,6 +291,21 @@ const LatexDocumentWorkspace = () => {
         </Button>
     );
 
+    const exportPdfButton = (
+        <Button
+            variant='ghost'
+            intent='neutral'
+            size='sm'
+            shape='rounded'
+            disabled={isCompiling}
+            onClick={handleExportPdf}
+            title='Export as .pdf'
+        >
+            <FileText size={14} />
+            .pdf
+        </Button>
+    );
+
     const collaboratorAvatars = collaborators.map((user) => (
         <Avatar
             key={user.id}
@@ -249,60 +334,139 @@ const LatexDocumentWorkspace = () => {
                         </Container>
                     )}
                     {isDirty && <span className='latex-workspace__dirty-dot' title='Unsaved changes' />}
+                    {isSaving && <span className='font-size-05 color-muted'>Saving…</span>}
                     {exportTexButton}
+                    {exportPdfButton}
                     {exportZipButton}
-                    {saveButton}
                 </Container>
             </Container>
 
             <Container className='latex-workspace__layout d-flex flex-1 min-h-0'>
-                <LatexFilePanel
-                    documentId={resolvedDocumentId}
-                    files={files}
-                    onInsertRef={handleInsertAssetRef}
-                    onFileSelect={handleSelectFileById}
-                    onCreateFile={handleCreateFile}
-                    onDeleteFile={handleDeleteFile}
-                    onSetEntrypoint={handleSetEntrypoint}
-                    onMoveFile={handleMoveFile}
-                    width={panelWidths.files}
-                />
+                {shouldShowWorkspaceOnboarding ? (
+                    <Container className='latex-workspace__empty-layout d-flex flex-1 items-center content-center p-2'>
+                        <input
+                            ref={fileInputRef}
+                            type='file'
+                            className='d-none'
+                            multiple
+                            onChange={handleWorkspaceFilesSelected}
+                        />
 
-                <div
-                    className='latex-drag-handle'
-                    role='separator'
-                    aria-label='Resize file panel'
-                    aria-orientation='vertical'
-                    onPointerDown={handleFilesPointerDown}
-                    onPointerMove={handleDragPointerMove}
-                    onPointerUp={handleDragPointerUp}
-                    onPointerCancel={handleDragPointerCancel}
-                />
+                        <input
+                            ref={folderInputRef}
+                            type='file'
+                            className='d-none'
+                            onChange={(event) => {
+                                void handleOnboardingFolderSelection(event);
+                            }}
+                            {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
+                        />
 
-                <LatexEditorPanel
-                    activeFile={activeFile}
-                    content={editorContent}
-                    onChange={handleEditorChange}
-                />
+                        <Container className='latex-workspace__empty-shell d-flex column items-center gap-1'>
+                            <EmptyState
+                                title='Start your LaTeX project'
+                                description='Create a starter .tex file from a template or upload an existing project folder to begin working.'
+                                icon={<FileText size={28} />}
+                            />
+                            <Container className='d-flex items-center gap-075'>
+                                <Button
+                                    variant='ghost'
+                                    intent='neutral'
+                                    size='md'
+                                    shape='pill'
+                                    onClick={handleStartFromTemplate}
+                                    isLoading={isCreatingTemplate}
+                                    leftIcon={<Sparkles size={14} />}
+                                >
+                                    Start from a template
+                                </Button>
+                                <Button
+                                    variant='solid'
+                                    intent='white'
+                                    size='md'
+                                    shape='pill'
+                                    onClick={handleUploadProject}
+                                    disabled={isUploading || isImportingProject}
+                                    isLoading={isImportingProject}
+                                    leftIcon={<FolderUp size={14} />}
+                                >
+                                    Upload Project
+                                </Button>
+                            </Container>
+                        </Container>
+                    </Container>
+                ) : (
+                    <>
+                        <LatexFilePanel
+                            documentId={documentId}
+                            files={files}
+                            assets={rawAssets}
+                            fileInputRef={fileInputRef}
+                            folderInputRef={folderInputRef}
+                            isUploading={isUploading}
+                            onInsertRef={handleInsertAssetRef}
+                            onFileSelect={handleSelectFileById}
+                            onAssetSelect={handleSelectAssetById}
+                            onCreateFile={handleCreateFile}
+                            onCreateFolder={handleCreateFolder}
+                            onDeleteFile={handleDeleteFile}
+                            onDeleteAsset={handleDeleteAsset}
+                            onDeleteFileDirect={deleteFile}
+                            onDeleteAssetDirect={deleteAsset}
+                            onUpdateFileDirect={updateFile}
+                            onUpdateAssetDirect={updateAsset}
+                            onMoveFile={handleMoveFile}
+                            onMoveAsset={handleMoveAsset}
+                            onRenameFile={handleRenameFile}
+                            onRenameAsset={handleRenameAsset}
+                            onUploadFiles={handleWorkspaceFilesSelected}
+                            onUploadFolders={handleWorkspaceFoldersSelected}
+                            width={panelWidths.files}
+                        />
 
-                <div
-                    className='latex-drag-handle'
-                    role='separator'
-                    aria-label='Resize preview panel'
-                    aria-orientation='vertical'
-                    onPointerDown={handlePreviewPointerDown}
-                    onPointerMove={handleDragPointerMove}
-                    onPointerUp={handleDragPointerUp}
-                    onPointerCancel={handleDragPointerCancel}
-                />
+                        <div
+                            className='latex-drag-handle'
+                            role='separator'
+                            aria-label='Resize file panel'
+                            aria-orientation='vertical'
+                            onPointerDown={handleFilesPointerDown}
+                            onPointerMove={handleDragPointerMove}
+                            onPointerUp={handleDragPointerUp}
+                            onPointerCancel={handleDragPointerCancel}
+                        />
 
-                <LatexPreviewPanel
-                    isCompiling={isCompiling}
-                    compiledPdfUrl={compiledPdfUrl}
-                    compileError={compileError}
-                    onCompile={handleCompile}
-                    width={panelWidths.preview}
-                />
+                        <LatexEditorPanel
+                            activeSelection={selection}
+                            openTabs={openTabs}
+                            files={files}
+                            assets={rawAssets}
+                            dirtyFileIds={dirtyFileIds}
+                            content={editorContent}
+                            onChange={handleEditorChange}
+                            onTabSelect={handleSelectTab}
+                            onTabClose={handleCloseTab}
+                        />
+
+                        <div
+                            className='latex-drag-handle'
+                            role='separator'
+                            aria-label='Resize preview panel'
+                            aria-orientation='vertical'
+                            onPointerDown={handlePreviewPointerDown}
+                            onPointerMove={handleDragPointerMove}
+                            onPointerUp={handleDragPointerUp}
+                            onPointerCancel={handleDragPointerCancel}
+                        />
+
+                        <LatexPreviewPanel
+                            isCompiling={isCompiling}
+                            compiledPdfUrl={compiledPdfUrl}
+                            compileError={compileError}
+                            onExportPdf={handleExportPdf}
+                            width={panelWidths.preview}
+                        />
+                    </>
+                )}
             </Container>
         </Container>
     );

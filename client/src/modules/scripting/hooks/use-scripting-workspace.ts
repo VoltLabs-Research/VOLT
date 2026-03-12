@@ -1,11 +1,15 @@
 import { useCreateScriptingSessionMutation, scriptingNotebooksQuery } from './queries';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { sileo } from 'sileo';
+import {
+    JUPYTER_SESSION_TIMEOUT_MESSAGE,
+    waitForReadyScriptingSession
+} from '../utilities/jupyter-session';
 import {
     getJupyterStartErrorMessage,
     pickActiveNotebook
 } from '../utilities/workspace';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { sileo } from 'sileo';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ScriptingNotebook } from '../api/entities/scripting-notebook';
 
@@ -19,9 +23,12 @@ const WORKSPACE_NOTEBOOKS_FETCH_LIMIT = 500;
 const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspaceInput) => {
     const [jupyterUrl, setJupyterUrl] = useState<string | null>(null);
     const [jupyterError, setJupyterError] = useState<string | null>(null);
+    const [isWaitingForJupyter, setIsWaitingForJupyter] = useState(false);
     const [startAttempt, setStartAttempt] = useState(0);
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
     const hasAutoStartedRef = useRef(false);
+    const isMountedRef = useRef(true);
+    const activeStartRequestRef = useRef(0);
 
     const notebooksQuery = scriptingNotebooksQuery(
         {
@@ -45,42 +52,71 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         [notebooks, notebookId]
     );
 
-    const { mutateAsync: createScriptingSession, isPending: isStartingJupyter } = useCreateScriptingSessionMutation();
+    const { mutateAsync: createScriptingSession, isPending: isCreatingJupyterSession } = useCreateScriptingSessionMutation();
+
+    useEffect(() => {
+        return () => {
+            isMountedRef.current = false;
+            activeStartRequestRef.current += 1;
+        };
+    }, []);
 
     const startJupyterSession = useCallback(async () => {
         if (!trajectoryId) {
             return;
         }
 
+        const requestId = activeStartRequestRef.current + 1;
+        activeStartRequestRef.current = requestId;
         setJupyterUrl(null);
         setJupyterError(null);
+        setIsWaitingForJupyter(true);
 
         sileo.info({ title: 'Starting Jupyter session...' });
 
         try {
-            const session = await createScriptingSession({
+            const result = await waitForReadyScriptingSession(() => createScriptingSession({
                 trajectoryId,
                 notebookId: activeNotebook?._id,
                 teamClusterId: activeNotebook?.teamCluster
+            }), {
+                isCancelled: () => {
+                    return !isMountedRef.current || activeStartRequestRef.current !== requestId;
+                }
             });
 
-            if (session.jupyter.ready) {
-                setJupyterUrl(session.jupyter.url);
+            if (!isMountedRef.current || activeStartRequestRef.current !== requestId) {
+                return;
+            }
+
+            if (result.session?.jupyter.ready) {
+                setJupyterUrl(result.session.jupyter.url);
                 sileo.success({ title: 'Jupyter session ready' });
-            } else {
-                setJupyterError('Jupyter is still starting. Please retry in a moment.');
+                return;
+            }
+
+            if (result.timedOut) {
+                setJupyterError(JUPYTER_SESSION_TIMEOUT_MESSAGE);
                 sileo.error({
                     title: 'Jupyter is still starting',
-                    description: 'Please retry in a moment.'
+                    description: JUPYTER_SESSION_TIMEOUT_MESSAGE
                 });
             }
         } catch (error: unknown) {
+            if (!isMountedRef.current || activeStartRequestRef.current !== requestId) {
+                return;
+            }
+
             if (!checkAccessDeniedError(error)) {
                 setJupyterError(getJupyterStartErrorMessage(error));
                 sileo.error({ title: 'Failed to start Jupyter session' });
             }
+        } finally {
+            if (isMountedRef.current && activeStartRequestRef.current === requestId) {
+                setIsWaitingForJupyter(false);
+            }
         }
-    }, [activeNotebook?._id, checkAccessDeniedError, createScriptingSession, trajectoryId]);
+    }, [activeNotebook?._id, activeNotebook?.teamCluster, checkAccessDeniedError, createScriptingSession, trajectoryId]);
 
     useEffect(() => {
         if (!trajectoryId || notebooksQuery.isLoading) {
@@ -92,11 +128,11 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         }
 
         hasAutoStartedRef.current = true;
-        void startJupyterSession();
+        startJupyterSession();
     }, [trajectoryId, startAttempt, notebooksQuery.isLoading, startJupyterSession]);
 
     const retryStartJupyter = () => {
-        if (!trajectoryId || isStartingJupyter) {
+        if (!trajectoryId || isWaitingForJupyter || isCreatingJupyterSession) {
             return;
         }
 
@@ -106,7 +142,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
     return {
         isLoading: notebooksQuery.isLoading,
         activeNotebook,
-        isStartingJupyter,
+        isStartingJupyter: isWaitingForJupyter || isCreatingJupyterSession,
         error: jupyterError,
         accessDenied,
         accessDeniedMessage,

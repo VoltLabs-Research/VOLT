@@ -54,6 +54,7 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
                 'plugin.listings.list',
                 {
                     pluginId: input.pluginId,
+                    teamId: input.teamId,
                     analysisId: resolved.analysisId,
                     trajectoryId: input.trajectoryId,
                     exposureId: input.exposureId,

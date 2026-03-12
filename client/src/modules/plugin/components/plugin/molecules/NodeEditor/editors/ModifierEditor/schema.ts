@@ -1,4 +1,4 @@
-import { z } from 'zod/v4';
+import { z } from 'zod';
 
 export const modifierEditorSchema = z.object({
     name: z.string().default(''),

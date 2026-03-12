@@ -1,25 +1,41 @@
 import { buildFileTree } from '@/modules/latex/utilities/file-tree';
+import { getAssetDisplayName, splitWorkspacePath } from '@/modules/latex/utilities/workspace';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEndEvent } from '@dnd-kit/core';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
 import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
 import type { FileTreeNode } from '@/modules/latex/utilities/file-tree';
 
+interface RenameTarget {
+    id: string;
+    type: 'folder' | 'file' | 'asset';
+    initialName: string;
+}
+
 interface UseFileTreeInput {
     files: LatexFileEntry[];
     assets: LatexAsset[];
     onMoveFile: (fileId: string, newPath: string) => Promise<void>;
     onMoveAsset: (assetId: string, newPath: string) => Promise<void>;
-    onCreateFile: (name: string, path?: string) => Promise<unknown>;
-};
+    onCreateFile: (name: string, path?: string, content?: string) => Promise<unknown>;
+    onCreateFolder: (folderPath: string) => Promise<void>;
+    onRenameFile: (fileId: string, name: string) => Promise<void>;
+    onRenameAsset: (asset: LatexAsset, name: string) => Promise<void>;
+    onDeleteFileDirect: (input: { documentId: string; fileId: string }) => Promise<unknown>;
+    onDeleteAssetDirect: (input: { documentId: string; assetId: string }) => Promise<unknown>;
+    onUpdateFileDirect: (input: { documentId: string; fileId: string; path?: string; name?: string; content?: string }) => Promise<unknown>;
+    onUpdateAssetDirect: (input: { documentId: string; assetId: string; path: string }) => Promise<unknown>;
+    documentId: string;
+}
 
 interface UseFileTreeOutput {
     treeNodes: FileTreeNode[];
     expandedFolders: Set<string>;
-    /** Folder path where a new-file input should appear, or null if hidden. */
     newFileTargetFolder: string | null;
-    /** Folder path where a new-folder input should appear, or null if hidden. */
     newFolderTargetFolder: string | null;
+    renamingTarget: RenameTarget | null;
     toggleFolder: (folderPath: string) => void;
     openNewFileIn: (folderPath: string) => void;
     closeNewFile: () => void;
@@ -27,38 +43,65 @@ interface UseFileTreeOutput {
     openNewFolderIn: (folderPath: string) => void;
     closeNewFolder: () => void;
     handleConfirmNewFolder: (name: string) => Promise<void>;
+    startRenameFolder: (folderPath: string) => void;
+    startRenameFile: (file: LatexFileEntry) => void;
+    startRenameAsset: (asset: LatexAsset) => void;
+    cancelRename: () => void;
+    handleConfirmRename: (name: string) => Promise<void>;
+    handleDeleteFolder: (folderPath: string) => Promise<void>;
     handleDragEnd: (event: DragEndEvent) => void;
+}
+
+const normalizeFolderPath = (value: string): string => {
+    if (!value) {
+        return '';
+    }
+
+    return value.endsWith('/') ? value : `${value}/`;
 };
 
-/**
- * Manages virtual file tree state including folder expansion, new-file
- * creation target, and drag-and-drop move operations.
- */
+const getFolderDisplayName = (folderPath: string): string => {
+    const normalized = folderPath.replace(/\/$/, '');
+    const parts = normalized.split('/').filter(Boolean);
+    return parts[parts.length - 1] ?? '';
+};
+
+const getFolderParentPath = (folderPath: string): string => {
+    const normalized = folderPath.replace(/\/$/, '');
+    const parts = normalized.split('/').filter(Boolean);
+    parts.pop();
+    return parts.length > 0 ? `${parts.join('/')}/` : '';
+};
+
 const useFileTree = ({
     files,
     assets,
     onMoveFile,
     onMoveAsset,
-    onCreateFile
+    onCreateFile,
+    onCreateFolder,
+    onRenameFile,
+    onRenameAsset,
+    onDeleteFileDirect,
+    onDeleteAssetDirect,
+    onUpdateFileDirect,
+    onUpdateAssetDirect,
+    documentId
 }: UseFileTreeInput): UseFileTreeOutput => {
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
     const [newFileTargetFolder, setNewFileTargetFolder] = useState<string | null>(null);
     const [newFolderTargetFolder, setNewFolderTargetFolder] = useState<string | null>(null);
-
-    /** Tracks whether the initial auto-expand of root folders has already run. */
+    const [renamingTarget, setRenamingTarget] = useState<RenameTarget | null>(null);
     const hasAutoExpandedRef = useRef(false);
+    const { confirm } = useConfirm();
 
-    const treeNodes = useMemo(
-        () => buildFileTree(files, assets),
-        [files, assets]
-    );
+    const treeNodes = useMemo(() => buildFileTree(files, assets), [files, assets]);
 
-    // Auto-expand root-level folders on the first load so imported files inside
-    // them are immediately visible and their FileNodes are mounted in the DOM.
     useEffect(() => {
         if (hasAutoExpandedRef.current) return;
-        const rootFolders = treeNodes.filter((n) => n.type === 'folder');
+        const rootFolders = treeNodes.filter((node) => node.type === 'folder');
         if (rootFolders.length === 0) return;
+
         hasAutoExpandedRef.current = true;
         setExpandedFolders((prev) => {
             const next = new Set(prev);
@@ -82,8 +125,9 @@ const useFileTree = ({
     }, []);
 
     const openNewFileIn = useCallback((folderPath: string): void => {
-        // Expand the folder so the user sees the new file input inside it.
         setExpandedFolders((prev) => new Set([...prev, folderPath]));
+        setNewFolderTargetFolder(null);
+        setRenamingTarget(null);
         setNewFileTargetFolder(folderPath);
     }, []);
 
@@ -92,8 +136,9 @@ const useFileTree = ({
     }, []);
 
     const handleConfirmNewFile = useCallback(async (name: string): Promise<void> => {
-        const rawName = name.trim();
-        const finalName = rawName.endsWith('.tex') ? rawName : `${rawName}.tex`;
+        const finalName = name.trim();
+        if (!finalName) return;
+
         const path = newFileTargetFolder ?? '';
         setNewFileTargetFolder(null);
         await onCreateFile(finalName, path || undefined);
@@ -101,6 +146,8 @@ const useFileTree = ({
 
     const openNewFolderIn = useCallback((folderPath: string): void => {
         setExpandedFolders((prev) => new Set([...prev, folderPath]));
+        setNewFileTargetFolder(null);
+        setRenamingTarget(null);
         setNewFolderTargetFolder(folderPath);
     }, []);
 
@@ -108,76 +155,163 @@ const useFileTree = ({
         setNewFolderTargetFolder(null);
     }, []);
 
-    /**
-     * Creates a virtual folder by placing an empty `main.tex` seed file
-     * inside the new folder's path.
-     *
-     * @param name - The desired folder name. Slashes and invalid characters are stripped.
-     */
     const handleConfirmNewFolder = useCallback(async (name: string): Promise<void> => {
         const folderName = name.trim().replace(/[/\\:*?"<>|]/g, '');
         if (!folderName) return;
+
         const parentPath = newFolderTargetFolder ?? '';
         setNewFolderTargetFolder(null);
-        await onCreateFile('main.tex', `${parentPath}${folderName}/`);
-    }, [newFolderTargetFolder, onCreateFile]);
+        await onCreateFolder(`${parentPath}${folderName}`);
+        setExpandedFolders((prev) => new Set([...prev, normalizeFolderPath(parentPath), `${parentPath}${folderName}/`]));
+    }, [newFolderTargetFolder, onCreateFolder]);
 
-    /**
-     * Handles a drag-end event from @dnd-kit.
-     *
-     * Draggable IDs follow the pattern `file:<id>` or `asset:<id>`.
-     * Droppable IDs follow the pattern `folder:<path>` where `<path>`
-     * is the directory prefix (e.g. `"chapters/"` or `""` for root).
-     */
+    const startRenameFolder = useCallback((folderPath: string): void => {
+        setNewFileTargetFolder(null);
+        setNewFolderTargetFolder(null);
+        setRenamingTarget({
+            id: `folder:${folderPath}`,
+            type: 'folder',
+            initialName: getFolderDisplayName(folderPath)
+        });
+    }, []);
+
+    const startRenameFile = useCallback((file: LatexFileEntry): void => {
+        setNewFileTargetFolder(null);
+        setNewFolderTargetFolder(null);
+        setRenamingTarget({
+            id: `file:${file._id}`,
+            type: 'file',
+            initialName: file.name
+        });
+    }, []);
+
+    const startRenameAsset = useCallback((asset: LatexAsset): void => {
+        setNewFileTargetFolder(null);
+        setNewFolderTargetFolder(null);
+        setRenamingTarget({
+            id: `asset:${asset._id}`,
+            type: 'asset',
+            initialName: getAssetDisplayName(asset)
+        });
+    }, []);
+
+    const cancelRename = useCallback(() => {
+        setRenamingTarget(null);
+    }, []);
+
+    const renameFolder = useCallback(async (folderPath: string, nextName: string) => {
+        const parentPath = getFolderParentPath(folderPath);
+        const nextPrefix = `${parentPath}${nextName.trim()}/`;
+        const operations: Promise<unknown>[] = [];
+
+        for (const file of files) {
+            if (file.path.startsWith(folderPath)) {
+                operations.push(onUpdateFileDirect({
+                    documentId,
+                    fileId: file._id,
+                    path: `${nextPrefix}${file.path.slice(folderPath.length)}`
+                }));
+            }
+        }
+
+        for (const asset of assets) {
+            const currentPath = asset.path ?? asset.originalName;
+            if (currentPath.startsWith(folderPath)) {
+                operations.push(onUpdateAssetDirect({
+                    documentId,
+                    assetId: asset._id,
+                    path: `${nextPrefix}${currentPath.slice(folderPath.length)}`
+                }));
+            }
+        }
+
+        await Promise.all(operations);
+    }, [assets, documentId, files, onUpdateAssetDirect, onUpdateFileDirect]);
+
+    const handleConfirmRename = useCallback(async (name: string): Promise<void> => {
+        const nextName = name.trim();
+        if (!renamingTarget || !nextName) return;
+
+        if (renamingTarget.type === 'folder') {
+            const folderPath = renamingTarget.id.replace(/^folder:/, '');
+            await renameFolder(folderPath, nextName);
+        } else if (renamingTarget.type === 'file') {
+            const fileId = renamingTarget.id.replace(/^file:/, '');
+            await onRenameFile(fileId, nextName);
+        } else {
+            const assetId = renamingTarget.id.replace(/^asset:/, '');
+            const asset = assets.find((currentAsset) => currentAsset._id === assetId);
+            if (asset) {
+                await onRenameAsset(asset, nextName);
+            }
+        }
+
+        setRenamingTarget(null);
+    }, [assets, onRenameAsset, onRenameFile, renameFolder, renamingTarget]);
+
+    const handleDeleteFolder = useCallback(async (folderPath: string): Promise<void> => {
+        const folderName = getFolderDisplayName(folderPath);
+        const accepted = await confirm({
+            title: 'Delete folder',
+            description: `Delete "${folderName}" and everything inside it? This cannot be undone.`,
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            tone: ConfirmActionTone.Danger
+        });
+
+        if (!accepted) {
+            return;
+        }
+
+        const fileOperations = files
+            .filter((file) => file.path.startsWith(folderPath))
+            .map((file) => onDeleteFileDirect({ documentId, fileId: file._id }));
+        const assetOperations = assets
+            .filter((asset) => (asset.path ?? asset.originalName).startsWith(folderPath))
+            .map((asset) => onDeleteAssetDirect({ documentId, assetId: asset._id }));
+
+        await Promise.all([...fileOperations, ...assetOperations]);
+    }, [assets, confirm, documentId, files, onDeleteAssetDirect, onDeleteFileDirect]);
+
     const handleDragEnd = useCallback((event: DragEndEvent): void => {
         const { active, over } = event;
         if (!over) return;
 
         const activeId = String(active.id);
         const overId = String(over.id);
-
-        const activeType = activeId.startsWith('file:')
-            ? 'file'
-            : activeId.startsWith('asset:')
-                ? 'asset'
-                : null;
-
-        if (!activeType) return;
         if (!overId.startsWith('folder:')) return;
 
-        const itemId = activeId.substring(activeId.indexOf(':') + 1);
         const targetFolder = overId.substring('folder:'.length);
 
-        if (activeType === 'file') {
-            // newPath is the directory prefix, e.g. "" or "chapters/"
-            const newPath = targetFolder;
-            const file = files.find((f) => f._id === itemId);
-            if (file && file.path !== newPath) {
-                onMoveFile(itemId, newPath);
+        if (activeId.startsWith('file:')) {
+            const fileId = activeId.substring('file:'.length);
+            const file = files.find((item) => item._id === fileId);
+            if (file && file.path !== targetFolder) {
+                void onMoveFile(fileId, targetFolder);
             }
-        } else {
-            // For assets, newPath is <folder><originalName>
-            const asset = assets.find((a) => a._id === itemId);
+            return;
+        }
+
+        if (activeId.startsWith('asset:')) {
+            const assetId = activeId.substring('asset:'.length);
+            const asset = assets.find((item) => item._id === assetId);
             if (!asset) return;
 
-            const existingFolder = asset.path
-                ? (asset.path.includes('/') ? asset.path.substring(0, asset.path.lastIndexOf('/') + 1) : '')
-                : '';
-
-            if (existingFolder !== targetFolder) {
-                const newPath = targetFolder
-                    ? `${targetFolder}${asset.originalName}`
-                    : asset.originalName;
-                onMoveAsset(itemId, newPath);
+            const currentPath = asset.path ?? asset.originalName;
+            const { name } = splitWorkspacePath(currentPath);
+            const nextPath = targetFolder ? `${targetFolder}${name}` : name;
+            if (currentPath !== nextPath) {
+                void onMoveAsset(assetId, nextPath);
             }
         }
-    }, [files, assets, onMoveFile, onMoveAsset]);
+    }, [assets, files, onMoveAsset, onMoveFile]);
 
     return {
         treeNodes,
         expandedFolders,
         newFileTargetFolder,
         newFolderTargetFolder,
+        renamingTarget,
         toggleFolder,
         openNewFileIn,
         closeNewFile,
@@ -185,6 +319,12 @@ const useFileTree = ({
         openNewFolderIn,
         closeNewFolder,
         handleConfirmNewFolder,
+        startRenameFolder,
+        startRenameFile,
+        startRenameAsset,
+        cancelRename,
+        handleConfirmRename,
+        handleDeleteFolder,
         handleDragEnd
     };
 };

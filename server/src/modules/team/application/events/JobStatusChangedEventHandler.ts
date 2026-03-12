@@ -25,8 +25,10 @@ export default class TeamJobStatusChangedEventHandler implements IEventHandler<J
                     queueType,
                     timestamp: new Date().toISOString(),
                     trajectoryId: metadata?.trajectoryId,
+                    trajectoryName: metadata?.trajectoryName,
                     timestep: metadata?.timestep,
                     message: metadata?.message,
+                    error: metadata?.error,
                     analysisId: metadata?.analysisId,
                     teamId
                 }

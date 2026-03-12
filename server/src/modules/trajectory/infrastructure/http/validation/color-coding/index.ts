@@ -1,5 +1,9 @@
 import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
-import { createTeamScopedParamsSchema, objectIdSchema } from '@shared/infrastructure/http/validation/shared-schemas';
+import {
+    createTeamScopedParamsSchema,
+    domainExposureIdSchema,
+    objectIdSchema
+} from '@shared/infrastructure/http/validation/shared-schemas';
 
 import { z } from 'zod/v4';
 
@@ -13,20 +17,20 @@ const colorCodingAnalysisParamsSchema = colorCodingParamsSchema.extend({
 
 const colorCodingPropertiesQuerySchema = z.object({
     timestep: z.string().trim().min(1),
-    exposureId: objectIdSchema.optional()
+    exposureId: domainExposureIdSchema.optional()
 }).strict();
 
 const colorCodingStatsQuerySchema = z.object({
     timestep: z.string().trim().min(1),
     property: z.string().trim().min(1),
     type: z.string().trim().min(1),
-    exposureId: objectIdSchema.optional()
+    exposureId: domainExposureIdSchema.optional()
 }).strict();
 
 const colorCodingModelQuerySchema = z.object({
     timestep: z.string().trim().min(1),
     property: z.string().trim().min(1),
-    exposureId: objectIdSchema.optional(),
+    exposureId: domainExposureIdSchema.optional(),
     startValue: z.coerce.number().finite(),
     endValue: z.coerce.number().finite(),
     gradient: z.string().trim().min(1)
@@ -38,7 +42,7 @@ const applyColorCodingBodySchema = z.object({
     startValue: z.number(),
     endValue: z.number(),
     gradient: z.string().min(1),
-    exposureId: objectIdSchema.optional()
+    exposureId: domainExposureIdSchema.optional()
 }).strict();
 
 export const colorCodingValidation = createResourceValidation({

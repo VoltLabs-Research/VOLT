@@ -14,12 +14,14 @@ export const computeGroupStatus = (jobs: Job[]): FrameJobGroupStatus => {
     return FrameJobGroupStatus.Partial;
 };
 
-const buildTrajectoryGroup = (updatedJob: Job): TrajectoryJobGroup => {
-    const trajectoryName = updatedJob.message || `Trajectory ${updatedJob.trajectoryId.slice(-6)}`;
+const buildTrajectoryGroup = (updatedJob: Job): TrajectoryJobGroup | null => {
+    if (!updatedJob.trajectoryName) {
+        return null;
+    }
 
     return {
         trajectoryId: updatedJob.trajectoryId,
-        trajectoryName,
+        trajectoryName: updatedJob.trajectoryName,
         frameGroups: [{
             timestep: updatedJob.timestep,
             jobs: [updatedJob],
@@ -38,7 +40,13 @@ export const applyJobUpdate = (
 ): TrajectoryJobGroup[] => {
     const trajIndex = groups.findIndex((group) => group.trajectoryId === updatedJob.trajectoryId);
     if (trajIndex === -1) {
-        return [buildTrajectoryGroup(updatedJob), ...groups];
+        const trajectoryGroup = buildTrajectoryGroup(updatedJob);
+
+        if (!trajectoryGroup) {
+            return groups;
+        }
+
+        return [trajectoryGroup, ...groups];
     }
 
     return groups.map((group, index) => {
@@ -86,6 +94,7 @@ export const applyJobUpdate = (
 
         return {
             ...group,
+            trajectoryName: updatedJob.trajectoryName || group.trajectoryName,
             frameGroups: newFrameGroups,
             overallStatus,
             completedCount: allJobs.filter((job) => job.status === JobStatus.Completed).length,

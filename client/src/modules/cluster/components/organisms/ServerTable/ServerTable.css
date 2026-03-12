@@ -16,14 +16,6 @@
     overflow-x: auto;
 }
 
-.server-table-status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: var(--radius-full);
-    background-color: var(--status-success);
-    box-shadow: 0 0 8px var(--status-success);
-}
-
 .server-table-status {
     display: inline-flex;
     align-items: center;

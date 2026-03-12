@@ -43,7 +43,10 @@ export class ExportLatexDocumentTexUseCase implements IUseCase<ExportLatexDocume
             }
 
             let content = document.props.content ?? '';
-            const entrypoint = await this.latexFileRepository.findEntrypointByDocument(input.documentId);
+            const files = await this.latexFileRepository.findAllByDocument(input.documentId);
+            const entrypoint = files.find((file) => file.props.isEntrypoint)
+                ?? files.find((file) => file.props.name.toLowerCase().endsWith('.tex'))
+                ?? null;
 
             if (entrypoint) {
                 content = entrypoint.props.content;
