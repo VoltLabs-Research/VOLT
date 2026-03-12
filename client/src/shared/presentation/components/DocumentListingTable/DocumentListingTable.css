@@ -86,7 +86,7 @@
     z-index: 101;
 }
 
-/** Compact variant — pixel-match PluginCompactTable */
+/** Compact variant — dense rows for embedded/panel contexts */
 .document-listing-table-container.is-compact .document-listing-table-header-container {
     padding: 0.25rem 0.5rem;
     background: var(--color-surface-1);
