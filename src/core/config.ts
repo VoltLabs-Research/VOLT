@@ -192,7 +192,7 @@ export const loadConfig = (): DaemonConfig => {
             token: process.env.JUPYTER_TOKEN?.trim() || 'volt-scripting',
             uiPath: normalizePath(process.env.JUPYTER_UI_PATH?.trim() || '/lab'),
             frameAncestors: process.env.JUPYTER_FRAME_ANCESTORS?.trim() || '*',
-            startTimeoutMs: readNumber('JUPYTER_START_TIMEOUT_MS', 30_000),
+            startTimeoutMs: readNumber('JUPYTER_START_TIMEOUT_MS', 60_000),
             hostPortRange: readJupyterHostPortRange(),
             publicBasePath: normalizePath(process.env.JUPYTER_PUBLIC_BASE_PATH?.trim() || '/api/notebooks/proxy')
         },

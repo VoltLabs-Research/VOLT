@@ -30,6 +30,10 @@ const sleep = async (delayMs: number): Promise<void> => {
     await new Promise((resolve) => setTimeout(resolve, delayMs));
 };
 
+const getRemainingTimeMs = (deadlineMs: number): number => {
+    return Math.max(0, deadlineMs - Date.now());
+};
+
 export class JupyterRuntimeService {
     constructor(
         private readonly config: DaemonConfig,
@@ -191,37 +195,58 @@ export class JupyterRuntimeService {
     }
 
     private async ensureJupyterServer(containerId: string, hostPort: number, publicBasePath: string): Promise<boolean> {
-        try {
-            await this.dockerRuntimeService.exec(containerId, ['/bin/sh', '-lc', this.getStopCommand()]);
-            await this.dockerRuntimeService.exec(containerId, ['/bin/sh', '-lc', 'rm -f /tmp/volt-jupyter.log']);
-            await this.dockerRuntimeService.execDetached(containerId, ['/bin/sh', '-lc', this.getStartCommand(publicBasePath)]);
-        } catch (error: unknown) {
-            logger.warn({ err: error, containerId }, 'Failed to start Jupyter server inside container');
+        const isAlreadyReady = await this.isJupyterReady(hostPort, publicBasePath, JUPYTER_HEALTH_CHECK_INTERVAL_MS);
+        if (isAlreadyReady) {
+            return true;
+        }
+
+        const isJupyterProcessRunning = await this.isJupyterServerProcessRunning(containerId);
+        if (!isJupyterProcessRunning) {
+            try {
+                await this.startJupyterServer(containerId, publicBasePath);
+            } catch (error: unknown) {
+                logger.warn({ err: error, containerId }, 'Failed to start Jupyter server inside container');
+            }
         }
 
         const ready = await this.waitForJupyterReady(hostPort, publicBasePath, this.config.jupyter.startTimeoutMs);
         if (!ready) {
+            await this.logJupyterStartupTimeout(containerId, hostPort, publicBasePath);
+
+            const isJupyterProcessStillRunning = await this.isJupyterServerProcessRunning(containerId);
             try {
-                const jupyterLog = await this.dockerRuntimeService.exec(containerId, [
-                    '/bin/sh',
-                    '-lc',
-                    'tail -n 100 /tmp/volt-jupyter.log 2>/dev/null || true'
-                ]);
+                await this.startJupyterServer(containerId, publicBasePath);
                 logger.warn(
                     {
                         containerId,
                         hostPort,
-                        jupyterLog: jupyterLog.trim() || undefined,
-                        publicBasePath
+                        publicBasePath,
+                        wasProcessRunning: isJupyterProcessStillRunning
                     },
-                    'Jupyter server did not become ready before timeout'
+                    'Reset Jupyter server after readiness timeout'
                 );
             } catch (error: unknown) {
-                logger.warn({ err: error, containerId }, 'Failed to collect Jupyter startup log output');
+                logger.warn({ err: error, containerId }, 'Failed to reset Jupyter server after readiness timeout');
             }
         }
 
         return ready;
+    }
+
+    private async startJupyterServer(containerId: string, publicBasePath: string): Promise<void> {
+        await this.dockerRuntimeService.exec(containerId, ['/bin/sh', '-lc', this.getStopCommand()]);
+        await this.dockerRuntimeService.exec(containerId, ['/bin/sh', '-lc', 'rm -f /tmp/volt-jupyter.log']);
+        await this.dockerRuntimeService.execDetached(containerId, ['/bin/sh', '-lc', this.getStartCommand(publicBasePath)]);
+    }
+
+    private async isJupyterServerProcessRunning(containerId: string): Promise<boolean> {
+        const result = await this.dockerRuntimeService.exec(containerId, [
+            '/bin/sh',
+            '-lc',
+            "if pgrep -f '[p]ython3 -m jupyter lab' >/dev/null 2>&1; then printf running; fi"
+        ]);
+
+        return result.trim() === 'running';
     }
 
     private async isJupyterReady(hostPort: number, publicBasePath: string, timeoutMs: number): Promise<boolean> {
@@ -242,18 +267,46 @@ export class JupyterRuntimeService {
     }
 
     private async waitForJupyterReady(hostPort: number, publicBasePath: string, timeoutMs: number): Promise<boolean> {
-        const maxAttempts = Math.max(1, Math.ceil(Math.max(timeoutMs, 0) / JUPYTER_HEALTH_CHECK_INTERVAL_MS));
-        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-            if (await this.isJupyterReady(hostPort, publicBasePath, JUPYTER_HEALTH_CHECK_INTERVAL_MS)) {
+        const deadlineMs = Date.now() + Math.max(timeoutMs, 0);
+        while (getRemainingTimeMs(deadlineMs) > 0) {
+            const remainingTimeMs = getRemainingTimeMs(deadlineMs);
+            const requestTimeoutMs = Math.min(JUPYTER_HEALTH_CHECK_INTERVAL_MS, remainingTimeMs);
+            if (requestTimeoutMs === 0) {
+                break;
+            }
+
+            if (await this.isJupyterReady(hostPort, publicBasePath, requestTimeoutMs)) {
                 return true;
             }
 
-            if (attempt < maxAttempts) {
-                await sleep(JUPYTER_HEALTH_CHECK_INTERVAL_MS);
+            const delayMs = Math.min(JUPYTER_HEALTH_CHECK_INTERVAL_MS, getRemainingTimeMs(deadlineMs));
+            if (delayMs > 0) {
+                await sleep(delayMs);
             }
         }
 
         return false;
+    }
+
+    private async logJupyterStartupTimeout(containerId: string, hostPort: number, publicBasePath: string): Promise<void> {
+        try {
+            const jupyterLog = await this.dockerRuntimeService.exec(containerId, [
+                '/bin/sh',
+                '-lc',
+                'tail -n 100 /tmp/volt-jupyter.log 2>/dev/null || true'
+            ]);
+            logger.warn(
+                {
+                    containerId,
+                    hostPort,
+                    jupyterLog: jupyterLog.trim() || undefined,
+                    publicBasePath
+                },
+                'Jupyter server did not become ready before timeout'
+            );
+        } catch (error: unknown) {
+            logger.warn({ err: error, containerId }, 'Failed to collect Jupyter startup log output');
+        }
     }
 
     private buildJupyterPath(notebookPath?: string): string {
