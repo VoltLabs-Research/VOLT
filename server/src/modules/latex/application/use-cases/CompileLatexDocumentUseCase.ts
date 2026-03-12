@@ -244,30 +244,37 @@ export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumen
                 ));
             }
 
-            const entrypointDir = path.dirname(entrypointFilename);
             const entrypointBaseName = path.parse(entrypointFilename).name;
             const pdfName = `${entrypointBaseName}.pdf`;
-            const pdfPath = entrypointDir === '.'
-                ? path.join(workDir, pdfName)
-                : path.join(workDir, entrypointDir, pdfName);
-            let pdfBuffer: Buffer;
+            const entrypointDir = path.dirname(entrypointFilename);
 
-            try {
-                pdfBuffer = await fs.readFile(pdfPath);
-            } catch (error) {
-                if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-                    await this.tempFileService.delete(workDir, { recursive: true });
+            // The compiler runs with cwd=workDir, so the PDF is typically written
+            // to workDir directly. When the entrypoint lives in a subdirectory,
+            // also check next to it as a fallback.
+            const pdfCandidates = [path.join(workDir, pdfName)];
+            if (entrypointDir !== '.') {
+                pdfCandidates.push(path.join(workDir, entrypointDir, pdfName));
+            }
 
-                    return Result.fail(new ApplicationError(
-                        ErrorCodes.LATEX_COMPILATION_FAILED,
-                        result.log
-                            ? `${result.log}\n\nCompilation did not produce the expected PDF output (${pdfName}).`
-                            : `Compilation did not produce the expected PDF output (${pdfName}).`,
-                        422
-                    ));
+            let pdfBuffer: Buffer | null = null;
+            for (const candidate of pdfCandidates) {
+                try {
+                    pdfBuffer = await fs.readFile(candidate);
+                    break;
+                } catch (err) {
+                    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
                 }
+            }
 
-                throw error;
+            if (!pdfBuffer) {
+                await this.tempFileService.delete(workDir, { recursive: true });
+                return Result.fail(new ApplicationError(
+                    ErrorCodes.LATEX_COMPILATION_FAILED,
+                    result.log
+                        ? `${result.log}\n\nCompilation did not produce the expected PDF output (${pdfName}).`
+                        : `Compilation did not produce the expected PDF output (${pdfName}).`,
+                    422
+                ));
             }
             await this.tempFileService.delete(workDir, { recursive: true });
 
