@@ -24,6 +24,18 @@ const normalizeNumber = (value: unknown): number => {
     return Number(value);
 };
 
+const getArtifactAnalysisId = (analysis: SceneArtifact['analysis']): string | undefined => {
+    if (!analysis) {
+        return undefined;
+    }
+
+    if (typeof analysis === 'string') {
+        return analysis;
+    }
+
+    return analysis._id;
+};
+
 export const isSameScene = (left?: MaybeScene | null, right?: MaybeScene | null): boolean => {
     if (!left || !right) return false;
 
@@ -52,6 +64,8 @@ export const isSameScene = (left?: MaybeScene | null, right?: MaybeScene | null)
 };
 
 export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectType | null => {
+    const analysisId = getArtifactAnalysisId(artifact.analysis);
+
     if (artifact.sourceType === 'color-coding') {
         if (
             typeof artifact.params.property !== 'string'
@@ -65,7 +79,7 @@ export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectT
         return {
             sceneType: 'color-coding',
             source: 'color-coding',
-            analysisId: artifact.analysis,
+            analysisId,
             exposureId: String(artifact.params.exposureId || ''),
             property: artifact.params.property,
             startValue: String(artifact.params.startValue),
@@ -87,7 +101,7 @@ export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectT
         return {
             sceneType: 'particle-filter',
             source: 'particle-filter',
-            analysisId: artifact.analysis,
+            analysisId,
             exposureId: artifact.params.exposureId,
             property: artifact.params.property,
             operator: artifact.params.operator,

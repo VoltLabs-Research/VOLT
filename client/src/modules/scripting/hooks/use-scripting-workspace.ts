@@ -20,6 +20,18 @@ interface UseScriptingWorkspaceInput {
 
 const WORKSPACE_NOTEBOOKS_FETCH_LIMIT = 500;
 
+const getTeamClusterId = (notebook?: ScriptingNotebook | null): string | undefined => {
+    if (!notebook?.teamCluster) {
+        return undefined;
+    }
+
+    if (typeof notebook.teamCluster === 'string') {
+        return notebook.teamCluster;
+    }
+
+    return notebook.teamCluster._id;
+};
+
 const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspaceInput) => {
     const [jupyterUrl, setJupyterUrl] = useState<string | null>(null);
     const [jupyterError, setJupyterError] = useState<string | null>(null);
@@ -80,7 +92,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
             const result = await waitForReadyScriptingSession(() => createScriptingSession({
                 trajectoryId,
                 notebookId: activeNotebook?._id,
-                teamClusterId: activeNotebook?.teamCluster
+                teamClusterId: getTeamClusterId(activeNotebook)
             }), {
                 isCancelled: () => {
                     return !isMountedRef.current || activeStartRequestRef.current !== requestId;
@@ -118,7 +130,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                 setIsWaitingForJupyter(false);
             }
         }
-    }, [activeNotebook?._id, activeNotebook?.teamCluster, checkAccessDeniedError, createScriptingSession, trajectoryId]);
+    }, [activeNotebook, checkAccessDeniedError, createScriptingSession, trajectoryId]);
 
     useEffect(() => {
         if (!trajectoryId || notebooksQuery.isLoading) {

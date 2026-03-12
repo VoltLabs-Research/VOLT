@@ -1,5 +1,6 @@
 import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 import type { User } from '@/modules/auth/api/entities/user';
+import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { Team } from '@/modules/team/api/entities/team/team';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { TrajectoryStats } from './trajectory-stats';
@@ -28,5 +29,6 @@ export interface Trajectory extends BaseEntity {
     processingProgress?: TrajectoryProcessingProgress;
     users: (User | string)[];
     createdBy?: User | string;
+    teamCluster?: TeamCluster | string | null;
     availableModels?: AvailableModels;
 };

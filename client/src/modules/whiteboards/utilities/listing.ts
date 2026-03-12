@@ -13,7 +13,8 @@ enum WhiteboardListingDndPrefix {
 
 export interface WhiteboardFolderRow extends WhiteboardFolder {
     rowType: WhiteboardListingRowType.Folder;
-    lastEditedAt: Date;
+    lastEditedBy: null;
+    payloadKey: string;
 };
 
 export interface WhiteboardItemRow extends Whiteboard {
@@ -26,7 +27,8 @@ export const createWhiteboardFolderRow = (folder: WhiteboardFolder): WhiteboardF
     return {
         ...folder,
         rowType: WhiteboardListingRowType.Folder,
-        lastEditedAt: folder.updatedAt
+        lastEditedBy: null,
+        payloadKey: ''
     };
 };
 

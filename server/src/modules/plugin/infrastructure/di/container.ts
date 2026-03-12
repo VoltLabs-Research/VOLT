@@ -18,11 +18,9 @@ import { ValidateWorkflowUseCase } from '@modules/plugin/application/use-cases/p
 import { ListingRowsExportPresenter } from '@modules/plugin/infrastructure/http/presenters/listing-row/ListingRowsExportPresenter';
 import { DefaultPluginBootstrapService } from '@modules/plugin/infrastructure/services/plugin/DefaultPluginBootstrapService';
 import { PluginExposureExportService } from '@modules/plugin/infrastructure/services/exposure/PluginExposureExportService';
-import { PluginListingService } from '@modules/plugin/infrastructure/services/listing-row/PluginListingService';
+import { DaemonPluginListingService } from '@modules/plugin/infrastructure/services/listing-row/DaemonPluginListingService';
 import { WorkflowValidatorService } from '@modules/plugin/infrastructure/services/plugin/WorkflowValidatorService';
-import ListingRowRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/listing-row/ListingRowRepository';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
-import SubListingRowRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/listing-row/SubListingRowRepository';
 import PluginBinaryCacheService from '@modules/plugin/infrastructure/services/plugin/PluginBinaryCacheService';
 import PluginExecutionRouter from '@modules/plugin/infrastructure/services/plugin/PluginExecutionRouter';
 import PluginStorageService from '@modules/plugin/infrastructure/services/plugin/PluginStorageService';
@@ -37,7 +35,7 @@ const PLUGIN_AI_TOOL_CLASSES: ClassProvider<unknown>[] = Object.values(pluginAiT
 export const registerPluginDependencies = (): void => {
     registerModuleDependencies({
         singletons: [
-            [PLUGIN_TOKENS.PluginListingService, PluginListingService],
+            [PLUGIN_TOKENS.PluginListingService, DaemonPluginListingService],
             [PLUGIN_TOKENS.WorkflowValidatorService, WorkflowValidatorService],
             [PLUGIN_TOKENS.PluginStorageService, PluginStorageService],
             [PLUGIN_TOKENS.DefaultPluginBootstrapService, DefaultPluginBootstrapService],
@@ -46,8 +44,6 @@ export const registerPluginDependencies = (): void => {
             [PLUGIN_TOKENS.ListingRowsExportPresenter, ListingRowsExportPresenter],
             [PLUGIN_TOKENS.PluginExposureExportService, PluginExposureExportService],
             [PLUGIN_TOKENS.PluginRepository, PluginRepository],
-            [PLUGIN_TOKENS.ListingRowRepository, ListingRowRepository],
-            [PLUGIN_TOKENS.SubListingRowRepository, SubListingRowRepository],
             CreatePluginUseCase,
             GetPluginByIdUseCase,
             UpdatePluginByIdUseCase,

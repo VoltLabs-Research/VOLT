@@ -25,10 +25,16 @@ export default class ListSecretKeysByTeamIdUseCase implements IUseCase<ListSecre
             sort: {
                 createdAt: -1
             },
-            populate: {
-                path: 'role',
-                select: ['name']
-            }
+            populate: [
+                {
+                    path: 'role',
+                    select: ['name']
+                },
+                {
+                    path: 'createdBy',
+                    select: ['firstName', 'lastName', 'email', 'avatar']
+                }
+            ]
         });
 
         const data = result.data.map((secretKey) => {
@@ -39,6 +45,7 @@ export default class ListSecretKeysByTeamIdUseCase implements IUseCase<ListSecre
                 roleName: secretKey.getRoleName(),
                 name: secretKey.props.name,
                 keyPrefix: secretKey.props.keyPrefix,
+                createdBy: secretKey.props.createdBy,
                 isActive: secretKey.props.isActive,
                 lastUsedAt: secretKey.props.lastUsedAt,
                 createdAt: secretKey.props.createdAt,

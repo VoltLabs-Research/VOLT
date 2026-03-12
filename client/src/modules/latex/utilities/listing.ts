@@ -13,6 +13,8 @@ enum LatexListingDndPrefix {
 
 export interface LatexFolderRow extends LatexFolder {
     rowType: LatexListingRowType.Folder;
+    createdBy: null;
+    lastEditedBy: null;
 };
 
 export interface LatexDocumentRow extends LatexDocument {
@@ -24,7 +26,9 @@ export type LatexListingRow = LatexFolderRow | LatexDocumentRow;
 export const createLatexFolderRow = (folder: LatexFolder): LatexFolderRow => {
     return {
         ...folder,
-        rowType: LatexListingRowType.Folder
+        rowType: LatexListingRowType.Folder,
+        createdBy: null,
+        lastEditedBy: null
     };
 };
 

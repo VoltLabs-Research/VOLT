@@ -21,11 +21,11 @@ export interface TrajectoryStats {
 
 export interface TrajectoryProps {
     name: string;
-    team: any;
+    team: string;
     folder: string | null;
     teamCluster?: string;
-    createdBy: any;
-    status: TrajectoryStatus,
+    createdBy: string;
+    status: TrajectoryStatus;
     isPublic: boolean;
     frames: TrajectoryFrame[];
     analysis?: string[];
@@ -39,7 +39,7 @@ export default class Trajectory {
     constructor(
         public readonly _id: string,
         public props: TrajectoryProps
-    ){}
+    ) {}
 
     get id(): string {
         return this._id;

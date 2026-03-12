@@ -51,6 +51,14 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
                 },
                 {
                     path: 'plugin'
+                },
+                {
+                    path: 'teamCluster',
+                    select: ['name']
+                },
+                {
+                    path: 'createdBy',
+                    select: ['firstName', 'lastName', 'email', 'avatar']
                 }
             ],
             sort,
@@ -73,6 +81,9 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
                 _id: analysis._id,
                 plugin: pluginId,
                 pluginDisplayName,
+                trajectory: props.trajectory,
+                teamCluster: props.teamCluster ?? props.clusterId,
+                createdBy: props.createdBy,
                 trajectoryName
             };
         }));

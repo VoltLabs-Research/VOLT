@@ -7,6 +7,7 @@ import { SecretKeyCreationModal, SECRET_KEY_CREATION_MODAL_ID } from '../../orga
 import useDeleteSecretKey from '@/modules/team/hooks/secret-key/use-delete-secret-key';
 import useRevokeSecretKey from '@/modules/team/hooks/secret-key/use-revoke-secret-key';
 import useSecretKeysListing from '@/modules/team/hooks/secret-key/use-secret-keys-listing';
+import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
@@ -39,6 +40,13 @@ const getDeleteSecretKeyToastOptions = (key: SecretKey) => createPromiseToastOpt
     error: 'Failed to delete secret key'
 });
 
+const renderCreatedBy: NonNullable<ColumnConfig<SecretKey>['render']> = (_value, key) => {
+    const user = typeof key.createdBy === 'string'
+        ? null
+        : key.createdBy;
+    return <ListingUserCell user={user} />;
+};
+
 const COLUMNS: ColumnConfig<SecretKey>[] = [
     {
         key: 'name',
@@ -62,14 +70,23 @@ const COLUMNS: ColumnConfig<SecretKey>[] = [
         width: 70,
         resolveStatus: (_value, key) => key.isActive ? 'active' : 'revoked'
     }),
-    dateColumn<SecretKey>('createdAt', 'Created At', {
-        width: 90,
-        sortable: false
-    }),
-    dateColumn<SecretKey>('lastUsedAt', 'Last Used', {
-        width: 90,
+    {
+        key: 'createdBy',
+        title: 'Created By',
         sortable: false,
-        fallback: 'Never'
+        render: renderCreatedBy,
+        skeleton: { variant: 'text', width: 180 }
+    },
+    dateColumn<SecretKey>('lastUsedAt', 'Last Used', {
+        width: 110,
+        sortable: false,
+        fallback: 'Never',
+        withTitle: true
+    }),
+    dateColumn<SecretKey>('createdAt', 'Created At', {
+        width: 110,
+        sortable: false,
+        withTitle: true
     })
 ];
 
@@ -179,7 +196,7 @@ export default function SecretKeysListing() {
                     buttonTitle: 'Create new',
                     onCreate: handleCreateKey
                 } : undefined}
-                headerActions={
+                headerActions={(
                     <Button
                         variant='ghost'
                         intent='neutral'
@@ -188,7 +205,7 @@ export default function SecretKeysListing() {
                     >
                         Metrics
                     </Button>
-                }
+                )}
                 socketInvalidation={SOCKET_INVALIDATION}
             />
 

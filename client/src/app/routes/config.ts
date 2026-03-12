@@ -35,6 +35,7 @@ import MyTeamTemplate from '@/modules/team/components/templates/MyTeam';
 import SecretKeyMetrics from '@/modules/team/components/templates/SecretKeyMetrics';
 import SecretKeysListing from '@/modules/team/components/templates/SecretKeysListing';
 import TeamInvitationTemplate from '@/modules/team/components/templates/TeamInvitation';
+import TrajectoryArtifactsListing from '@/modules/trajectory/components/templates/TrajectoryArtifactsListing';
 import TrajectoriesListing from '@/modules/trajectory/components/templates/TrajectoriesListing';
 import ErrorPage from '@/shared/presentation/components/ErrorPage';
 
@@ -104,6 +105,11 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/trajectories/list',
             component: TrajectoriesListing,
+            requiredPermissions: ['trajectory:read']
+        },
+        {
+            path: '/dashboard/trajectories/artifacts',
+            component: TrajectoryArtifactsListing,
             requiredPermissions: ['trajectory:read']
         },
         {

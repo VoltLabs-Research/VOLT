@@ -13,7 +13,7 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepo: ITrajectoryRepository
-    ){}
+    ) {}
 
     async execute(input: GetTrajectoriesByTeamIdInputDTO): Promise<Result<GetTrajectoriesByTeamIdOutputDTO, ApplicationError>> {
         const { teamId, page = 1, limit = 20, search } = input;
@@ -24,13 +24,26 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
         } else if (input.folderId) {
             filter.folder = input.folderId;
         }
-        if(search){
+        if (search) {
             filter.name = { $regex: search, $options: 'i' };
         }
 
         const results = await this.trajectoryRepo.findAll({
             filter,
-            populate: ['analysis', 'createdBy', 'frames.simulationCell'],
+            populate: [
+                {
+                    path: 'createdBy',
+                    select: ['firstName', 'lastName', 'email', 'avatar']
+                },
+                {
+                    path: 'teamCluster',
+                    select: ['name']
+                },
+                {
+                    path: 'frames.simulationCell'
+                }
+            ],
+            sort: { updatedAt: -1 },
             page,
             limit
         });

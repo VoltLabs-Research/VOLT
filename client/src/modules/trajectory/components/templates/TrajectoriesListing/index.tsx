@@ -20,6 +20,18 @@ import { Folder, Pencil, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
 
+const renderCluster: NonNullable<ColumnConfig<TrajectoryListingRow>['render']> = (_value, row) => {
+    if (isTrajectoryFolderRow(row) || !row.teamCluster) {
+        return <span className='font-size-2 color-muted'>-</span>;
+    }
+
+    if (typeof row.teamCluster === 'string') {
+        return <span className='font-size-2 color-secondary'>{row.teamCluster}</span>;
+    }
+
+    return <span className='font-size-2 color-secondary'>{row.teamCluster.name || row.teamCluster._id}</span>;
+};
+
 const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
     {
         key: 'name',
@@ -39,15 +51,28 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
         skeleton: { variant: 'text', width: 160 }
     },
     {
-        key: 'status',
-        title: 'Status',
-        render: (value, row) => <span className='font-size-2 color-secondary'>{isTrajectoryFolderRow(row) ? 'Folder' : String(value)}</span>,
-        skeleton: { variant: 'text', width: 70 }
-    },
-    {
         key: 'atoms',
         title: 'Atoms',
         render: (_value, row) => formatNumber(isTrajectoryFolderRow(row) ? 0 : row.frames[0]?.natoms ?? 0),
+        skeleton: { variant: 'text', width: 70 }
+    },
+    {
+        key: 'teamCluster',
+        title: 'Cluster',
+        sortable: false,
+        render: renderCluster,
+        skeleton: { variant: 'text', width: 150 }
+    },
+    {
+        key: 'status',
+        title: 'Status',
+        render: (value, row) => <span className='font-size-2 color-secondary'>{isTrajectoryFolderRow(row) ? '-' : String(value)}</span>,
+        skeleton: { variant: 'text', width: 90 }
+    },
+    {
+        key: 'isPublic',
+        title: 'Public',
+        render: (value, row) => <span className='font-size-2 color-secondary'>{isTrajectoryFolderRow(row) ? '-' : value ? 'Yes' : 'No'}</span>,
         skeleton: { variant: 'text', width: 70 }
     },
     {
@@ -58,17 +83,17 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
     },
     {
         key: 'stats.totalSize',
-        title: 'Total Size',
+        title: 'Size',
         render: (_value, row) => formatSize(isTrajectoryFolderRow(row) ? 0 : row.stats.totalSize),
-        skeleton: { variant: 'text', width: 70 }
+        skeleton: { variant: 'text', width: 90 }
     },
-    dateColumn<TrajectoryListingRow>('createdAt', 'Created At', {
-        width: 90,
-        sortable: false
-    }),
     dateColumn<TrajectoryListingRow>('updatedAt', 'Updated At', {
-        width: 90,
-        sortable: false
+        width: 110,
+        withTitle: true
+    }),
+    dateColumn<TrajectoryListingRow>('createdAt', 'Created At', {
+        width: 110,
+        withTitle: true
     })
 ];
 
@@ -144,7 +169,7 @@ export default function TrajectoriesListing() {
                 dragAndDrop={dragAndDrop}
                 emptyMessage='No trajectories found in this location.'
                 socketInvalidation={socketInvalidation}
-                headerActions={
+                headerActions={(
                     <>
                         <input
                             ref={fileInputRef}
@@ -165,7 +190,7 @@ export default function TrajectoriesListing() {
                             New Folder
                         </Button>
                     </>
-                }
+                )}
                 headerMenuOptions={headerMenuOptions}
                 createNew={canCreate ? {
                     buttonTitle: 'Upload',

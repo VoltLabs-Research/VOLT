@@ -21,7 +21,8 @@ export interface ContainerFolderRow extends ContainerFolder {
     memory: number;
     cpus: number;
     team: string;
-    createdBy: string;
+    teamCluster: null;
+    createdBy: null;
     env: [];
     ports: [];
     folder: string | null;
@@ -44,7 +45,8 @@ export const createContainerFolderRow = (folder: ContainerFolder): ContainerFold
     memory: 0,
     cpus: 0,
     team: '',
-    createdBy: '',
+    teamCluster: null,
+    createdBy: null,
     env: [],
     ports: [],
     folder: folder.parent

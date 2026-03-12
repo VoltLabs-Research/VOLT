@@ -1,7 +1,8 @@
 import RenameScriptingNotebookModal from '@/modules/scripting/components/molecules/RenameScriptingNotebookModal';
 import useNotebooksListing from '@/modules/scripting/hooks/use-notebooks-listing';
 import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripting-notebook-scope';
-import { getTrajectoryIds } from '@/modules/scripting/utilities/notebooks';
+import { getPrimaryTrajectory } from '@/modules/scripting/utilities/notebooks';
+import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing, {
@@ -13,7 +14,10 @@ import './NotebooksListing.css';
 import { BookOpen } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { NotebooksListingContext } from '@/modules/scripting/hooks/use-notebooks-listing';
-import type { ScriptingNotebook } from '@/modules/scripting/api/entities/scripting-notebook';
+import type {
+    ScriptingNotebook,
+    ScriptingNotebookTrajectory
+} from '@/modules/scripting/api/entities/scripting-notebook';
 
 enum NotebooksListingTabId {
     List = 'list',
@@ -45,7 +49,6 @@ const isNotebookDocument = (value: unknown): value is NotebookDocument => {
         && value !== null
         && '_id' in value
         && 'title' in value
-        && 'trajectories' in value
         && 'createdAt' in value;
 };
 
@@ -53,6 +56,18 @@ const isNotebooksListingTabId = (value: string): value is NotebooksListingTabId 
     return value === NotebooksListingTabId.List
         || value === NotebooksListingTabId.Trajectory
         || value === NotebooksListingTabId.Export;
+};
+
+const getTrajectoryLabel = (trajectory: ScriptingNotebookTrajectory | string | null): string => {
+    if (!trajectory) {
+        return 'General';
+    }
+
+    if (typeof trajectory === 'string') {
+        return trajectory;
+    }
+
+    return trajectory.name || trajectory._id;
 };
 
 const renderNotebookTitle: NotebookColumnRender = (value, row) => {
@@ -83,15 +98,28 @@ const renderTrajectoryDetails: NotebookColumnRender = (_value, row) => {
         return <span className='font-size-2 color-muted'>-</span>;
     }
 
-    const trajectoryIds = getTrajectoryIds(row);
-    if (!trajectoryIds.length) {
-        return <span className='font-size-2 color-muted'>General</span>;
+    const trajectory = getPrimaryTrajectory(row);
+    return <span className='font-size-2 color-secondary notebooks-listing-trajectory'>{getTrajectoryLabel(trajectory)}</span>;
+};
+
+const renderCluster: NotebookColumnRender = (_value, row) => {
+    const teamCluster = row.teamCluster;
+    if (!teamCluster) {
+        return <span className='font-size-2 color-muted'>-</span>;
     }
 
-    const [primaryId, ...rest] = trajectoryIds;
-    const label = rest.length ? `${primaryId} +${rest.length}` : primaryId;
+    if (typeof teamCluster === 'string') {
+        return <span className='font-size-2 color-secondary'>{teamCluster}</span>;
+    }
 
-    return <span className='font-size-2 color-secondary notebooks-listing-trajectory'>{label}</span>;
+    return <span className='font-size-2 color-secondary'>{teamCluster.name || teamCluster._id}</span>;
+};
+
+const renderCreatedBy: NotebookColumnRender = (_value, row) => {
+    const user = typeof row.createdBy === 'string'
+        ? null
+        : row.createdBy;
+    return <ListingUserCell user={user} />;
 };
 
 const TITLE_COLUMN: ColumnConfig<NotebookDocument> = {
@@ -103,26 +131,54 @@ const TITLE_COLUMN: ColumnConfig<NotebookDocument> = {
 };
 
 const TRAJECTORY_COLUMN: ColumnConfig<NotebookDocument> = {
-    key: 'trajectories',
+    key: 'trajectory',
     title: 'Trajectory',
     sortable: false,
     render: renderTrajectoryDetails,
     skeleton: { variant: 'text', width: 150 }
 };
 
-const CREATED_AT_COLUMN = dateColumn<NotebookDocument>('createdAt', 'Created', {
-    width: 90,
+const CLUSTER_COLUMN: ColumnConfig<NotebookDocument> = {
+    key: 'teamCluster',
+    title: 'Cluster',
+    sortable: false,
+    render: renderCluster,
+    skeleton: { variant: 'text', width: 150 }
+};
+
+const CREATED_BY_COLUMN: ColumnConfig<NotebookDocument> = {
+    key: 'createdBy',
+    title: 'Created By',
+    sortable: false,
+    render: renderCreatedBy,
+    skeleton: { variant: 'text', width: 180 }
+};
+
+const LAST_OPENED_AT_COLUMN = dateColumn<NotebookDocument>('lastOpenedAt', 'Last Opened At', {
+    width: 110,
+    withTitle: true,
+    fallback: '-'
+});
+
+const CREATED_AT_COLUMN = dateColumn<NotebookDocument>('createdAt', 'Created At', {
+    width: 110,
     withTitle: true
 });
 
 const LIST_NOTEBOOK_COLUMNS: ColumnConfig<NotebookDocument>[] = [
     TITLE_COLUMN,
+    CLUSTER_COLUMN,
+    CREATED_BY_COLUMN,
+    LAST_OPENED_AT_COLUMN,
     CREATED_AT_COLUMN
 ];
 
 const TRAJECTORY_NOTEBOOK_COLUMNS: ColumnConfig<NotebookDocument>[] = [
     TITLE_COLUMN,
     TRAJECTORY_COLUMN,
+    CLUSTER_COLUMN,
+    CREATED_BY_COLUMN,
+    LAST_OPENED_AT_COLUMN,
     CREATED_AT_COLUMN
 ];
 

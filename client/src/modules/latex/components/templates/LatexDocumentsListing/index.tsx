@@ -6,6 +6,7 @@ import useLatexDocumentsListing, {
     NEW_LATEX_FOLDER_MODAL_ID,
     RENAME_LATEX_FOLDER_MODAL_ID
 } from '@/modules/latex/hooks/use-latex-documents-listing';
+import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
@@ -55,6 +56,30 @@ const renderDocumentTitle: ColumnRender = (value, row) => {
     );
 };
 
+const renderUser = (user: LatexListingRow['createdBy'] | LatexListingRow['lastEditedBy']) => {
+    if (!user || typeof user === 'string') {
+        return <span className='font-size-2 color-muted'>-</span>;
+    }
+
+    return <ListingUserCell user={user} />;
+};
+
+const renderLastEditedBy: ColumnRender = (_value, row) => {
+    if (isLatexFolder(row)) {
+        return <span className='font-size-2 color-muted'>-</span>;
+    }
+
+    return renderUser(row.lastEditedBy);
+};
+
+const renderCreatedBy: ColumnRender = (_value, row) => {
+    if (isLatexFolder(row)) {
+        return <span className='font-size-2 color-muted'>-</span>;
+    }
+
+    return renderUser(row.createdBy);
+};
+
 const COLUMNS: ColumnConfig<LatexListingRow>[] = [
     {
         key: 'title',
@@ -63,12 +88,26 @@ const COLUMNS: ColumnConfig<LatexListingRow>[] = [
         render: renderDocumentTitle,
         skeleton: { variant: 'text', width: 200 }
     },
-    dateColumn<LatexListingRow>('updatedAt', 'Last Modified', {
+    {
+        key: 'lastEditedBy',
+        title: 'Last Edited By',
+        sortable: false,
+        render: renderLastEditedBy,
+        skeleton: { variant: 'text', width: 180 }
+    },
+    {
+        key: 'createdBy',
+        title: 'Created By',
+        sortable: false,
+        render: renderCreatedBy,
+        skeleton: { variant: 'text', width: 180 }
+    },
+    dateColumn<LatexListingRow>('updatedAt', 'Updated At', {
         width: 110,
         withTitle: true
     }),
-    dateColumn<LatexListingRow>('createdAt', 'Created', {
-        width: 90,
+    dateColumn<LatexListingRow>('createdAt', 'Created At', {
+        width: 110,
         withTitle: true
     })
 ];

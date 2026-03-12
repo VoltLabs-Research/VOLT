@@ -25,31 +25,57 @@ interface ResolveNotebookForSessionInput extends CreateScriptingJupyterSessionIn
 
 const LOCK_TTL_MS = 90_000;
 
+const toPropsRecord = (notebook: ScriptingNotebook): Record<string, unknown> => {
+    return notebook.props as unknown as Record<string, unknown>;
+};
+
 const getLegacyTrajectoryIds = (notebook: ScriptingNotebook): string[] => {
-    if (!Array.isArray(notebook.props.trajectories)) {
+    const trajectories = toPropsRecord(notebook).trajectories;
+    if (!Array.isArray(trajectories)) {
         return [];
     }
 
-    return notebook.props.trajectories.map((entry) => {
+    return trajectories.map((entry) => {
         if (typeof entry === 'string') {
             return entry;
         }
 
-        return entry._id;
-    });
+        if (typeof entry === 'object' && entry !== null && '_id' in entry && typeof entry._id === 'string') {
+            return entry._id;
+        }
+
+        return '';
+    }).filter((entry) => entry.length > 0);
 };
 
 const getPrimaryTrajectoryId = (notebook: ScriptingNotebook): string | null => {
-    if (typeof notebook.props.trajectory === 'string') {
-        return notebook.props.trajectory;
+    const trajectory = toPropsRecord(notebook).trajectory;
+    if (typeof trajectory === 'string') {
+        return trajectory;
     }
 
-    if (notebook.props.trajectory && typeof notebook.props.trajectory === 'object') {
-        return notebook.props.trajectory._id;
+    if (typeof trajectory === 'object' && trajectory !== null && '_id' in trajectory && typeof trajectory._id === 'string') {
+        return trajectory._id;
     }
 
     const legacyTrajectoryIds = getLegacyTrajectoryIds(notebook);
     return legacyTrajectoryIds[0] ?? null;
+};
+
+const getNotebookTeamClusterId = (teamCluster: unknown): string | undefined => {
+    if (!teamCluster) {
+        return undefined;
+    }
+
+    if (typeof teamCluster === 'string') {
+        return teamCluster;
+    }
+
+    if (typeof teamCluster === 'object' && teamCluster !== null && '_id' in teamCluster && typeof teamCluster._id === 'string') {
+        return teamCluster._id;
+    }
+
+    return undefined;
 };
 
 @injectable()
@@ -204,8 +230,12 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         notebook: ScriptingNotebook,
         input: ResolveNotebookForSessionInput
     ): Promise<string> {
-        const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(input.teamId, input.teamClusterId || String(notebook.props.teamCluster || ''));
-        if (notebook.props.teamCluster !== teamClusterId) {
+        const notebookTeamClusterId = getNotebookTeamClusterId(toPropsRecord(notebook).teamCluster);
+        const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(
+            input.teamId,
+            input.teamClusterId || notebookTeamClusterId
+        );
+        if (notebookTeamClusterId !== teamClusterId) {
             await this.scriptingNotebookRepository.updateById(notebook._id, {
                 teamCluster: teamClusterId,
                 runtimeNotebookId: undefined

@@ -1,6 +1,17 @@
-import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
+import { IBaseRepository, PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
 import SceneArtifact, { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
+
+export interface TeamSceneArtifactFilters {
+    sourceType?: SceneArtifactProps['sourceType'];
+    analysisId?: string;
+    timestep?: number;
+};
 
 export interface ISceneArtifactRepository extends IBaseRepository<SceneArtifact, SceneArtifactProps> {
     upsertByObjectName(objectName: string, data: Partial<SceneArtifactProps>): Promise<SceneArtifact>;
+    findAllByTeamId(
+        teamId: string,
+        options: PaginationOptions,
+        filters?: TeamSceneArtifactFilters
+    ): Promise<PaginatedResult<SceneArtifact>>;
 };

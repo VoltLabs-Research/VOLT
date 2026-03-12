@@ -14,6 +14,7 @@ import type {
     ScriptingSessionStartResult
 } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
 
 interface DaemonNotebookJupyterResponse {
     internalPath?: string;
@@ -43,6 +44,30 @@ interface DaemonNotebookSessionRequest {
 };
 
 const LEGACY_DAEMON_PROXY_BASE_PATH = '/api/notebooks/proxy';
+
+const getNotebookTeamClusterId = (teamCluster: unknown): string | null => {
+    if (!teamCluster) {
+        return null;
+    }
+
+    if (typeof teamCluster === 'string') {
+        return teamCluster;
+    }
+
+    if (typeof teamCluster === 'object' && teamCluster !== null && '_id' in teamCluster && typeof teamCluster._id === 'string') {
+        return teamCluster._id;
+    }
+
+    return null;
+};
+
+const getNotebookTrajectoryCount = (notebook: { props: ScriptingNotebookProps }): number => {
+    if (Array.isArray(notebook.props.trajectories) && notebook.props.trajectories.length > 0) {
+        return notebook.props.trajectories.length;
+    }
+
+    return notebook.props.trajectory ? 1 : 0;
+};
 
 const buildServerBaseUrl = (): string => {
     const configuredServerUrl = process.env.SERVER_ENDPOINT?.trim();
@@ -131,14 +156,15 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         const notebooks = await this.scriptingNotebookRepository.findAllWithTrajectory(trajectoryId);
 
         for (const notebook of notebooks) {
-            const isOrphaned = notebook.props.trajectories.length <= 1;
-            if (!isOrphaned || !notebook.props.runtimeNotebookId || !notebook.props.teamCluster) {
+            const isOrphaned = getNotebookTrajectoryCount(notebook) <= 1;
+            const notebookTeamClusterId = getNotebookTeamClusterId((notebook.props as unknown as Record<string, unknown>).teamCluster);
+            if (!isOrphaned || !notebook.props.runtimeNotebookId || !notebookTeamClusterId) {
                 continue;
             }
 
             try {
                 await this.teamClusterDaemonClient.command(
-                    notebook.props.teamCluster,
+                    notebookTeamClusterId,
                     'notebook.delete',
                     {
                         notebookId: notebook.props.runtimeNotebookId

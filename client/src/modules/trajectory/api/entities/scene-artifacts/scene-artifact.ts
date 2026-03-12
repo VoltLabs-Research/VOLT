@@ -1,4 +1,5 @@
-import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
+import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
+import type { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 
 export type SceneArtifactSourceType = 'color-coding' | 'particle-filter' | 'plugin-exposure';
 
@@ -13,10 +14,26 @@ export interface SceneArtifactParams {
     exposureId?: string;
 };
 
+export interface SceneArtifactTrajectory {
+    _id: string;
+    name?: string;
+    teamCluster?: TeamCluster | string | null;
+};
+
+export interface SceneArtifactAnalysis {
+    _id: string;
+};
+
+export interface SceneArtifactPlugin {
+    _id: string;
+    name?: string;
+};
+
 export interface SceneArtifact extends BaseEntity {
-    trajectory: string;
-    analysis?: string;
-    plugin?: string;
+    trajectory: SceneArtifactTrajectory | string;
+    analysis?: SceneArtifactAnalysis | string;
+    plugin?: SceneArtifactPlugin | string;
+    teamCluster?: TeamCluster | string | null;
     sourceType: SceneArtifactSourceType;
     timestep: number;
     objectName: string;
