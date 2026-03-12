@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
-import { Fog } from 'three';
+import { Color, Fog } from 'three';
+
 import type { EnvironmentConfigState } from '@/modules/fractal/stores/contracts/editor/visual-types';
 
 interface DynamicEnvironmentProps {
@@ -8,7 +9,15 @@ interface DynamicEnvironmentProps {
 };
 
 const DynamicEnvironment = ({ settings }: DynamicEnvironmentProps) => {
-    const { scene, gl } = useThree();
+    const { scene } = useThree();
+
+    useEffect(() => {
+        scene.background = new Color(settings.backgroundColor);
+
+        return () => {
+            scene.background = null;
+        };
+    }, [scene, settings.backgroundColor]);
 
     useEffect(() => {
         if (settings.enableFog) {
@@ -21,10 +30,6 @@ const DynamicEnvironment = ({ settings }: DynamicEnvironmentProps) => {
             scene.fog = null;
         };
     }, [scene, settings.enableFog, settings.fogColor, settings.fogNear, settings.fogFar]);
-
-    useEffect(() => {
-        gl.toneMappingExposure = settings.toneMappingExposure;
-    }, [gl, settings.toneMappingExposure]);
 
     return null;
 };

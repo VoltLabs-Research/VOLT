@@ -1,4 +1,4 @@
-import TokenStorage from '@/shared/auth/token-storage';
+import { tokenStorage } from '@/shared/auth/token-storage';
 import { buildBackendUrl } from '@/app/core/http/utilities/backend-origin';
 import { DefaultChatTransport } from 'ai';
 import type {
@@ -20,7 +20,7 @@ export const createConversationStreamTransport = ({
     return new DefaultChatTransport({
         api,
         headers: () => {
-            const token = new TokenStorage().getToken();
+            const token = tokenStorage.getToken();
             if (!token) {
                 const requestHeaders: Record<string, string> = {};
                 return requestHeaders;

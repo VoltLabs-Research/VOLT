@@ -39,8 +39,8 @@ const colorCodingModelQuerySchema = z.object({
 const applyColorCodingBodySchema = z.object({
     timestep: z.string().min(1),
     property: z.string().min(1),
-    startValue: z.number(),
-    endValue: z.number(),
+    startValue: z.coerce.number().finite(),
+    endValue: z.coerce.number().finite(),
     gradient: z.string().min(1),
     exposureId: domainExposureIdSchema.optional()
 }).strict();

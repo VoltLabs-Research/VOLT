@@ -5,7 +5,6 @@ tools: [
   'edit',
   'search',
 ]
-model: GPT-5.4 (copilot)
 ---
 
 You are a **PROPOSAL AGENT** invoked by the Conductor.

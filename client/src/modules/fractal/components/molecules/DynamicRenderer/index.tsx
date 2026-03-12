@@ -1,21 +1,13 @@
+import {
+    resolveOutputColorSpace,
+    resolveShadowMapType,
+    resolveToneMapping
+} from '@/shared/domain/rendering/renderer';
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
-import {
-    ACESFilmicToneMapping,
-    AgXToneMapping,
-    NeutralToneMapping,
-    CineonToneMapping,
-    LinearToneMapping,
-    NoToneMapping,
-    PCFShadowMap,
-    PCFSoftShadowMap,
-    ReinhardToneMapping,
-    VSMShadowMap,
-    BasicShadowMap
-} from 'three';
-import type { ShadowMapType, ToneMapping, WebGLRenderer } from 'three';
-import { OutputCS, ShadowType, ToneMappingMode } from '@/modules/fractal/stores/contracts/editor/performance-types';
+
 import type { RendererRuntimeState } from '@/modules/fractal/stores/contracts/editor/performance-types';
+import type { WebGLRenderer } from 'three';
 
 interface DynamicRendererProps {
     settings: RendererRuntimeState;
@@ -29,44 +21,22 @@ const DynamicRenderer = ({ settings }: DynamicRendererProps) => {
     const { gl } = useThree();
 
     useEffect(() => {
-        let tm: ToneMapping = NoToneMapping;
-        if (settings.toneMapping === ToneMappingMode.ACESFilmic) {
-            tm = ACESFilmicToneMapping;
-        } else if (settings.toneMapping === ToneMappingMode.AgX) {
-            tm = AgXToneMapping;
-        } else if (settings.toneMapping === ToneMappingMode.Neutral) {
-            tm = NeutralToneMapping;
-        } else if (settings.toneMapping === ToneMappingMode.Cineon) {
-            tm = CineonToneMapping;
-        } else if (settings.toneMapping === ToneMappingMode.Reinhard) {
-            tm = ReinhardToneMapping;
-        } else if (settings.toneMapping === ToneMappingMode.Linear) {
-            tm = LinearToneMapping;
-        }
-        gl.toneMapping = tm;
+        gl.toneMapping = resolveToneMapping(settings.toneMapping);
     }, [gl, settings.toneMapping]);
 
     useEffect(() => {
-        let colorSpace = 'srgb';
-        if (settings.outputColorSpace === OutputCS.LinearSRGB) {
-            colorSpace = 'srgb-linear';
-        }
         const renderer = gl as WebGLRendererWithOutputColorSpace;
-        renderer.outputColorSpace = colorSpace;
+        renderer.outputColorSpace = resolveOutputColorSpace(settings.outputColorSpace);
     }, [gl, settings.outputColorSpace]);
+
+    useEffect(() => {
+        gl.toneMappingExposure = settings.toneMappingExposure;
+    }, [gl, settings.toneMappingExposure]);
 
     useEffect(() => {
         gl.shadowMap.enabled = settings.shadowEnabled;
         gl.shadowMap.autoUpdate = settings.shadowAutoUpdate;
-        let shadowType: ShadowMapType = BasicShadowMap;
-        if (settings.shadowType === ShadowType.PCF) {
-            shadowType = PCFShadowMap;
-        } else if (settings.shadowType === ShadowType.PCFSoft) {
-            shadowType = PCFSoftShadowMap;
-        } else if (settings.shadowType === ShadowType.VSM) {
-            shadowType = VSMShadowMap;
-        }
-        gl.shadowMap.type = shadowType;
+        gl.shadowMap.type = resolveShadowMapType(settings.shadowType);
         gl.shadowMap.needsUpdate = true;
     }, [gl, settings.shadowEnabled, settings.shadowType, settings.shadowAutoUpdate]);
 

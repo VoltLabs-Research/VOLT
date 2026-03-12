@@ -1,4 +1,4 @@
-import TokenStorage from '@/shared/auth/token-storage';
+import { tokenStorage } from '@/shared/auth/token-storage';
 import { buildBackendUrl } from './backend-origin';
 import { AxiosHttpClient, createVoltClient, dynamicToken } from '@voltstack/voltclient';
 import type { VoltClient, VoltClientOptions } from '@voltstack/voltclient';
@@ -6,7 +6,7 @@ import type { VoltClient, VoltClientOptions } from '@voltstack/voltclient';
 export type CreateApiClientOptions = VoltClientOptions;
 
 const getStoredToken = (): string | null => {
-    return new TokenStorage().getToken();
+    return tokenStorage.getToken();
 };
 
 const credential = dynamicToken(getStoredToken);

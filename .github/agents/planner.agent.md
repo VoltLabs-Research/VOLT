@@ -6,7 +6,6 @@ tools: [
   'read',
   'web'
 ]
-model: GPT-5.4 (copilot)
 ---
 
 You are a **PLANNER AGENT** invoked by the Conductor.

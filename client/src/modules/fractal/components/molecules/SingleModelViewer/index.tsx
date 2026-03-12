@@ -1,10 +1,11 @@
 import useSlicingPlanes from '@/modules/fractal/hooks/use-slicing-planes';
 import useGlbScene from '@/modules/fractal/hooks/use-glb-scene';
 import SimulationCellBox from '@/modules/fractal/components/molecules/SimulationCellBox';
+import { areModelWorldBoundsEqual } from '@/modules/fractal/utilities/model-world-bounds';
 import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/utilities/box-utils';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import { computeGlbUrl } from '@/modules/fractal/api/service/compute-glb-url';
-import { useMemo, useEffect, useCallback, createElement } from 'react';
+import { useMemo, useEffect, useCallback, createElement, useRef } from 'react';
 import type { BoxBounds, ModelLoadingState, OrbitControlsHandle } from '@/modules/fractal/types';
 import type { SlicePlaneConfig, ModelWorldBounds } from '@/modules/fractal/types/configuration';
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
@@ -79,6 +80,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     onSelect,
     isSelected = false
 }) => {
+    const lastEmittedModelWorldBoundsReference = useRef<ModelWorldBounds | null>(null);
     const boxTransforms = useMemo(() => {
         return calculateBoxTransforms(boxBounds);
     }, [boxBounds]);
@@ -112,6 +114,11 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     }, [boxBounds, cellBoxTransforms]);
 
     useEffect(() => {
+        if (areModelWorldBoundsEqual(lastEmittedModelWorldBoundsReference.current, modelWorldBounds)) {
+            return;
+        }
+
+        lastEmittedModelWorldBoundsReference.current = modelWorldBounds;
         setModelWorldBounds?.(modelWorldBounds);
     }, [modelWorldBounds, setModelWorldBounds]);
 

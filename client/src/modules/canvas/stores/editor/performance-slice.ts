@@ -1,7 +1,7 @@
 import { mergeNestedSectionState, resetSectionState } from './store-section';
 import {
     DEFAULT_PERFORMANCE_PRESET,
-    PerformancePreset,
+    getPerformancePresetPowerPreference,
     getPerformancePresetState,
     getValidatedPerformanceSettingsState,
     resolveAdaptiveDprProps,
@@ -13,7 +13,6 @@ import type { EditorStore } from './types';
 import type {
     AdaptiveEventsSettings,
     CanvasPerformanceProp,
-    CanvasSettings,
     DprSettings,
     InteractionDegradeSettings,
     PerformanceSettingsState,
@@ -32,27 +31,26 @@ const getInitialPerformanceSettings = (): PerformanceSettingsState => {
 export const createPerformanceSlice: StateCreator<EditorStore, [], [], PerformanceSlice> = (set, get) => ({
     performanceSettings: {
         ...getInitialPerformanceSettings(),
+        setPreset: (preset) => set((state) => {
+            const nextPerformanceSettings = getValidatedPerformanceSettingsState(getPerformancePresetState(preset));
 
-        setPreset: (preset: PerformancePreset) => set((state) => {
-            const nextPerformanceSettings = getValidatedPerformanceSettingsState(
-                getPerformancePresetState(preset)
-            );
-
-            return resetSectionState(state, 'performanceSettings', nextPerformanceSettings);
+            return {
+                ...resetSectionState(state, 'performanceSettings', nextPerformanceSettings),
+                ...mergeNestedSectionState(state, 'rendererSettings', 'create', {
+                    powerPreference: getPerformancePresetPowerPreference(preset)
+                })
+            };
         }),
-
         setDpr: (partial: Partial<DprSettings>) => set((state) => mergeNestedSectionState(state, 'performanceSettings', 'dpr', partial)),
-
-        setCanvas: (partial: Partial<CanvasSettings>) => set((state) => mergeNestedSectionState(state, 'performanceSettings', 'canvas', partial)),
-
         setPerformance: (partial: Partial<CanvasPerformanceProp>) => set((state) => mergeNestedSectionState(state, 'performanceSettings', 'performance', partial)),
-
         setAdaptiveEvents: (partial: Partial<AdaptiveEventsSettings>) => set((state) => mergeNestedSectionState(state, 'performanceSettings', 'adaptiveEvents', partial)),
-
         setInteractionDegrade: (partial: Partial<InteractionDegradeSettings>) => set((state) => mergeNestedSectionState(state, 'performanceSettings', 'interactionDegrade', partial)),
-
-        reset: () => set((state) => resetSectionState(state, 'performanceSettings', getInitialPerformanceSettings())),
-
+        reset: () => set((state) => ({
+            ...resetSectionState(state, 'performanceSettings', getInitialPerformanceSettings()),
+            ...mergeNestedSectionState(state, 'rendererSettings', 'create', {
+                powerPreference: getPerformancePresetPowerPreference(DEFAULT_PERFORMANCE_PRESET)
+            })
+        })),
         selectCanvasDpr: (options) => {
             const performanceState = get().performanceSettings;
             return resolveCanvasDpr({
@@ -60,7 +58,6 @@ export const createPerformanceSlice: StateCreator<EditorStore, [], [], Performan
                 interactionDegradeEnabled: performanceState.interactionDegrade.enabled
             }, options);
         },
-
         selectCanvasProps: (options) => {
             const performanceState = get().performanceSettings;
             return resolveCanvasRuntimeProps({
@@ -69,7 +66,6 @@ export const createPerformanceSlice: StateCreator<EditorStore, [], [], Performan
                 interactionDegradeEnabled: performanceState.interactionDegrade.enabled
             }, options);
         },
-
         selectAdaptiveDprProps: () => {
             const performanceState = get().performanceSettings;
             return resolveAdaptiveDprProps({ dpr: performanceState.dpr });

@@ -8,7 +8,6 @@ tools: [
   'execute/getTerminalOutput',
   'read',
 ]
-model: GPT-5.4 (copilot)
 ---
 
 You are an **IMPLEMENTER AGENT** invoked by the Conductor.

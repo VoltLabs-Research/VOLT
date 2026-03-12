@@ -1,5 +1,5 @@
 import SocketIOAdapter from './socket-io-adapter';
-import TokenStorage from '@/shared/auth/token-storage';
+import { tokenStorage } from '@/shared/auth/token-storage';
 import { getBackendOrigin } from '@/app/core/http/utilities/backend-origin';
 import type { ISocketService } from './contracts/socket-service';
 import type { SocketConnectionStatus } from '@/modules/socket/core/socket-connection-status';
@@ -113,7 +113,6 @@ class SocketService implements ISocketService {
 
 const getInitialAuth = (): Record<string, unknown> => {
     try {
-        const tokenStorage = new TokenStorage();
         const token = tokenStorage.getToken();
         return token ? { token } : {};
     } catch {

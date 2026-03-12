@@ -1,27 +1,26 @@
+import { resolveSSAOSettings } from '@/shared/domain/rendering/effects';
 import {
-    EffectComposer,
-    SSAO,
     Bloom,
     ChromaticAberration,
-    Vignette,
     DepthOfField,
+    EffectComposer,
     Noise,
-    Sepia
+    SSAO,
+    Sepia,
+    Vignette
 } from '@react-three/postprocessing';
 import { useMemo } from 'react';
 import { Vector2 } from 'three';
+
 import type { EffectsConfigState } from '@/modules/fractal/stores/contracts/editor/visual-types';
-import type { RenderConfigState } from '@/modules/fractal/stores/contracts/editor/performance-types';
 
 interface DynamicEffectsProps {
     settings: EffectsConfigState;
     isDefectScene?: boolean;
-    renderConfig?: RenderConfigState;
 };
 
-const DynamicEffects = ({ settings, isDefectScene, renderConfig }: DynamicEffectsProps) => {
+const DynamicEffects = ({ settings, isDefectScene }: DynamicEffectsProps) => {
     const {
-        ssao,
         bloom,
         chromaticAberration,
         vignette,
@@ -29,13 +28,19 @@ const DynamicEffects = ({ settings, isDefectScene, renderConfig }: DynamicEffect
         sepia,
         noise
     } = settings;
+    const ssao = useMemo(() => {
+        return resolveSSAOSettings(settings.ssao, { isDefectScene });
+    }, [isDefectScene, settings.ssao]);
 
-    const hasUserEffect = ssao.enabled || bloom.enabled || chromaticAberration.enabled || vignette.enabled ||
-        depthOfField.enabled || sepia.enabled || noise.enabled;
-    const hasDefectSSAO = isDefectScene === true;
-    const hasAnyEffect = hasUserEffect || hasDefectSSAO;
-    const needsNormalPass = ssao.enabled || hasDefectSSAO;
-
+    const hasAnyEffect = Boolean(
+        ssao ||
+        bloom.enabled ||
+        chromaticAberration.enabled ||
+        vignette.enabled ||
+        depthOfField.enabled ||
+        sepia.enabled ||
+        noise.enabled
+    );
     const caOffsetVec = useMemo(() => new Vector2(
         chromaticAberration.offset[0],
         chromaticAberration.offset[1]
@@ -45,21 +50,16 @@ const DynamicEffects = ({ settings, isDefectScene, renderConfig }: DynamicEffect
         <>
             {hasAnyEffect && (
                 <EffectComposer
-                    key={`effects-${hasAnyEffect}-${hasDefectSSAO}`}
-                    enableNormalPass={needsNormalPass}
+                    key={`effects-${hasAnyEffect}-${Boolean(ssao)}`}
+                    enableNormalPass={Boolean(ssao)}
                     multisampling={0}
                     renderPriority={1}
                 >
-                    {hasDefectSSAO && renderConfig && (
+                    {ssao && (
                         <SSAO
-                            key="defect-ssao"
-                            {...renderConfig.SSAO}
-                        />
-                    )}
-                    {ssao.enabled && (
-                        <SSAO
-                            key={`ssao-${ssao.intensity}-${ssao.radius}`}
+                            key={`ssao-${ssao.intensity}-${ssao.radius}-${ssao.samples}`}
                             blendFunction={ssao.blendFunction}
+                            samples={ssao.samples}
                             intensity={ssao.intensity}
                             radius={ssao.radius}
                             luminanceInfluence={ssao.luminanceInfluence}

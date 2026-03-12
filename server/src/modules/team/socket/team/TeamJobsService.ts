@@ -1,11 +1,16 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import logger from '@shared/infrastructure/logger';
+import IORedis from 'ioredis';
 import { inject, injectable } from 'tsyringe';
 import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+
+const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 
 type TeamJobStatus = JobStatus | 'retrying' | 'partial';
 
@@ -70,7 +75,13 @@ export default class TeamJobsService {
         private readonly teamClusterRepository: ITeamClusterRepository,
 
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
+
+        @inject(SHARED_TOKENS.RedisClient)
+        private readonly redis: IORedis,
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
+        private readonly trajectoryRepository: ITrajectoryRepository
     ) { }
 
     async getTeamJobs(teamId: string): Promise<TrajectoryJobGroup[]> {
@@ -87,12 +98,18 @@ export default class TeamJobsService {
     async getFlatTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
         const jobsById = new Map<string, TeamJobSummary>();
 
-        const clusterJobs = await this.getClusterTeamJobs(teamId);
-        for (const job of clusterJobs) {
+        const [clusterJobs, projectedJobs] = await Promise.all([
+            this.getClusterTeamJobs(teamId),
+            this.getProjectedTeamJobs(teamId)
+        ]);
+
+        for (const job of [...clusterJobs, ...projectedJobs]) {
             jobsById.set(job.jobId, job);
         }
 
-        return Array.from(jobsById.values()).sort((left, right) => {
+        const enrichedJobs = await this.enrichTrajectoryNames(Array.from(jobsById.values()));
+
+        return enrichedJobs.sort((left, right) => {
             const leftTimestamp = left.timestamp || left.updatedAt || left.createdAt || '';
             const rightTimestamp = right.timestamp || right.updatedAt || right.createdAt || '';
             return new Date(rightTimestamp).getTime() - new Date(leftTimestamp).getTime();
@@ -131,6 +148,33 @@ export default class TeamJobsService {
                 }
             } catch (error) {
                 logger.warn(error, `[TeamJobsService] Failed to fetch daemon jobs for cluster ${teamCluster.id}`);
+            }
+        }
+
+        return jobs;
+    }
+
+    private async getProjectedTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
+        const jobIds = await this.redis.smembers(`team:${teamId}:jobs`);
+        if (jobIds.length === 0) {
+            return [];
+        }
+
+        const records = await this.redis.mget(jobIds.map((jobId) => `${JOB_STATUS_KEY_PREFIX}${jobId}`));
+        const jobs: TeamJobSummary[] = [];
+
+        for (const record of records) {
+            if (!record) {
+                continue;
+            }
+
+            try {
+                const parsed = JSON.parse(record) as Record<string, unknown> | null;
+                if (this.isTeamJobSummary(parsed)) {
+                    jobs.push(parsed);
+                }
+            } catch {
+                continue;
             }
         }
 
@@ -210,6 +254,55 @@ export default class TeamJobsService {
         );
 
         return groups;
+    }
+
+    private async enrichTrajectoryNames(jobs: TeamJobSummary[]): Promise<TeamJobSummary[]> {
+        const missingTrajectoryIds = Array.from(new Set(
+            jobs
+                .filter((job) => !this.resolveTrajectoryName(job))
+                .map((job) => this.resolveTrajectoryId(job))
+                .filter((trajectoryId): trajectoryId is string => typeof trajectoryId === 'string' && trajectoryId.length > 0)
+        ));
+
+        if (missingTrajectoryIds.length === 0) {
+            return jobs;
+        }
+
+        const trajectoryNames = new Map<string, string>();
+        await Promise.all(missingTrajectoryIds.map(async (trajectoryId) => {
+            const trajectory = await this.trajectoryRepository.findById(trajectoryId);
+            const trajectoryName = trajectory?.props.name;
+            if (trajectoryName) {
+                trajectoryNames.set(trajectoryId, trajectoryName);
+            }
+        }));
+
+        return jobs.map((job) => {
+            if (this.resolveTrajectoryName(job)) {
+                return job;
+            }
+
+            const trajectoryId = this.resolveTrajectoryId(job);
+            if (!trajectoryId) {
+                return job;
+            }
+
+            const trajectoryName = trajectoryNames.get(trajectoryId);
+            if (!trajectoryName) {
+                return job;
+            }
+
+            return {
+                ...job,
+                trajectoryId,
+                trajectoryName,
+                metadata: {
+                    ...job.metadata,
+                    trajectoryId,
+                    trajectoryName
+                }
+            };
+        });
     }
 
     private resolveTrajectoryId(job: TeamJobSummary): string | undefined {

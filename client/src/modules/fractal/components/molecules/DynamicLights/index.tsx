@@ -1,15 +1,12 @@
+import { LightingPreset } from '@/shared/domain/rendering/lights';
 import { useThree } from '@react-three/fiber';
 import { Color, DirectionalLight, DirectionalLightHelper, HemisphereLight, HemisphereLightHelper, PointLight, PointLightHelper, RectAreaLight, SpotLight, SpotLightHelper } from 'three';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { useEffect, useMemo, useRef } from 'react';
-import type { LightsState } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { LightsState } from '@/shared/domain/rendering/lights';
 import type { FC } from 'react';
 
-export enum LightingPreset {
-    Trajectory = 'trajectory',
-    Defect = 'defect',
-    Custom = 'custom'
-};
+export { LightingPreset };
 
 interface DynamicLightsProps {
     settings?: LightsState;

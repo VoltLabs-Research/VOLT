@@ -1,8 +1,9 @@
 import { updateSocketAuthToken } from '@/modules/socket/core/services/socket-auth-session';
 import { buildKeys, createManagedMutation, createMutation, createQuery, withSuccess } from '@/shared/infrastructure/query';
+import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import service from '../api/service';
 import queryClient from '@/shared/infrastructure/query/query-client';
-import TokenStorage from '@/shared/auth/token-storage';
+import { tokenStorage } from '@/shared/auth/token-storage';
 import { useMutation } from '@tanstack/react-query';
 import type { ChangePasswordInputDTO, ChangePasswordOutputDTO } from '../api/dtos/change-password';
 import type { CheckEmailInputDTO, CheckEmailOutputDTO } from '../api/dtos/check-email';
@@ -18,6 +19,8 @@ type AuthQueryKeyMap = Record<'currentUser' | 'passwordInfo', void>;
 export const KEYS = buildKeys<AuthQueryKeyMap>('auth');
 
 export const AUTH_QUERY_KEYS = KEYS;
+
+registerPreservedQueryKey(KEYS.currentUser()[0] as string);
 
 const currentUser = createQuery(KEYS.currentUser, () => service.getMe({}));
 export const passwordInfoQuery = createQuery(KEYS.passwordInfo, () => service.getPasswordInfo({}));
@@ -52,8 +55,6 @@ export const useDeleteMeMutation = createManagedMutation<void, void>(
 );
 
 export const useChangePasswordMutation = (options?: MutationOptions<ChangePasswordOutputDTO, ChangePasswordInputDTO>) => {
-    const tokenStorage = new TokenStorage();
-    
     return useMutation({
         ...options,
         mutationFn: async (data) => {

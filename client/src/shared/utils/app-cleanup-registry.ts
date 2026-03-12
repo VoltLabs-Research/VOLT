@@ -93,3 +93,30 @@ export const runManualAppCleanup = (
         nextPathname
     });
 };
+
+/**
+ * Query-key prefixes registered by each WebSocket-managed module.
+ * These prefixes survive a team switch (their data is fed by sockets,
+ * not REST refetches, so clearing them would leave caches permanently empty).
+ *
+ * Modules call {@link registerPreservedQueryKey} at module-init time.
+ * {@link useTeamStore} reads the set at team-switch time via
+ * {@link getPreservedQueryPrefixes}.
+ */
+const preservedQueryPrefixes = new Set<string>();
+
+/**
+ * Registers a query-key prefix that must survive a team switch.
+ * Call this at the top level of any module whose query data is
+ * driven by a WebSocket subscription rather than a REST refetch.
+ *
+ * @param prefix - The first element of the query key array (e.g. `'cluster'`).
+ */
+export const registerPreservedQueryKey = (prefix: string): void => {
+    preservedQueryPrefixes.add(prefix);
+};
+
+/** Returns the current set of preserved query-key prefixes as a readonly array. */
+export const getPreservedQueryPrefixes = (): readonly string[] => {
+    return [...preservedQueryPrefixes];
+};
