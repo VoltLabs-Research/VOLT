@@ -5,7 +5,6 @@ export interface ScriptingNotebookProps {
     title: string;
     notebookPath: string;
     trajectory?: string | null;
-    trajectories?: string[];
     createdBy: string;
     content: Record<string, unknown>;
     lastOpenedAt?: Date;

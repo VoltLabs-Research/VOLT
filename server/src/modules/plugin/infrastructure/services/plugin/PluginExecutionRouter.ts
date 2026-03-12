@@ -37,7 +37,6 @@ interface WorkflowSerializable {
 interface DaemonAnalysisPayload {
     _id: string;
     plugin: string;
-    clusterId?: string;
     teamCluster?: string;
     config: Record<string, unknown>;
     trajectory: string;
@@ -57,7 +56,6 @@ const serializeAnalysis = (analysis: Analysis, trajectoryName: string): DaemonAn
     return {
         _id: analysis.id,
         plugin: analysis.props.plugin,
-        clusterId: analysis.props.clusterId,
         teamCluster: analysis.props.teamCluster,
         config: analysis.props.config,
         trajectory: analysis.props.trajectory,

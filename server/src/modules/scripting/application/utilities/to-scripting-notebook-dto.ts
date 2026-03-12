@@ -29,16 +29,6 @@ const toTrajectoryOutput = (value: unknown): string | ScriptingNotebookPopulated
     return null;
 };
 
-const toTrajectoryList = (value: unknown): Array<string | ScriptingNotebookPopulatedTrajectory> => {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-
-    return value
-        .map((entry) => toTrajectoryOutput(entry))
-        .filter((entry): entry is string | ScriptingNotebookPopulatedTrajectory => Boolean(entry));
-};
-
 const toTeamClusterOutput = (value: unknown): string | ScriptingNotebookPopulatedTeamCluster | null => {
     if (!value) {
         return null;
@@ -82,17 +72,13 @@ const toUserOutput = (value: unknown): string | ScriptingNotebookPopulatedUser |
 
 export const toScriptingNotebookDTO = (notebook: ScriptingNotebook): ScriptingNotebookDTO => {
     const notebookProps = notebook.props as unknown as Record<string, unknown>;
-    const trajectory = toTrajectoryOutput(notebookProps.trajectory);
-    const trajectories = toTrajectoryList(notebookProps.trajectories);
-    const primaryTrajectory = trajectory ?? trajectories[0] ?? null;
 
     return {
         _id: notebook._id,
         teamCluster: toTeamClusterOutput(notebookProps.teamCluster),
         title: notebook.props.title,
         notebookPath: notebook.props.notebookPath,
-        trajectory: primaryTrajectory,
-        trajectories,
+        trajectory: toTrajectoryOutput(notebookProps.trajectory),
         createdBy: toUserOutput(notebookProps.createdBy),
         lastOpenedAt: notebook.props.lastOpenedAt,
         createdAt: notebook.props.createdAt,

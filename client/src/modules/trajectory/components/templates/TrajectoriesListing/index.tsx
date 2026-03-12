@@ -20,18 +20,6 @@ import { Folder, Pencil, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
 
-const renderCluster: NonNullable<ColumnConfig<TrajectoryListingRow>['render']> = (_value, row) => {
-    if (isTrajectoryFolderRow(row) || !row.teamCluster) {
-        return <span className='font-size-2 color-muted'>-</span>;
-    }
-
-    if (typeof row.teamCluster === 'string') {
-        return <span className='font-size-2 color-secondary'>{row.teamCluster}</span>;
-    }
-
-    return <span className='font-size-2 color-secondary'>{row.teamCluster.name || row.teamCluster._id}</span>;
-};
-
 const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
     {
         key: 'name',
@@ -56,13 +44,7 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
         render: (_value, row) => formatNumber(isTrajectoryFolderRow(row) ? 0 : row.frames[0]?.natoms ?? 0),
         skeleton: { variant: 'text', width: 70 }
     },
-    {
-        key: 'teamCluster',
-        title: 'Cluster',
-        sortable: false,
-        render: renderCluster,
-        skeleton: { variant: 'text', width: 150 }
-    },
+    clusterColumn<TrajectoryListingRow>({ isFolder: isTrajectoryFolderRow, width: 150 }),
     {
         key: 'status',
         title: 'Status',

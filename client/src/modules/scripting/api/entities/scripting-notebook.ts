@@ -12,7 +12,6 @@ export interface ScriptingNotebook {
     title: string;
     notebookPath: string;
     trajectory?: ScriptingNotebookTrajectory | string | null;
-    trajectories?: Array<ScriptingNotebookTrajectory | string>;
     createdBy?: User | string;
     lastOpenedAt?: Date;
     createdAt: Date;

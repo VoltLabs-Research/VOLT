@@ -5,5 +5,5 @@ import type { ScriptingNotebookDocument } from '@modules/scripting/infrastructur
 
 export default createMongoMapper<ScriptingNotebook, ScriptingNotebookProps, ScriptingNotebookDocument>(
     ScriptingNotebook,
-    ['team', 'teamCluster', 'runtimeNotebookId', 'trajectory', 'trajectories', 'createdBy']
+    ['team', 'teamCluster', 'runtimeNotebookId', 'trajectory', 'createdBy']
 );
