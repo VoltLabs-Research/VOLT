@@ -1,17 +1,17 @@
 import { setSceneInteracting } from '../../../hooks/use-scene-interaction';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
-
-import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } from '@/modules/fractal/utilities/frame-box-bounds';
-import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
-import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { Box, Camera, Gauge } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useShallow } from 'zustand/react/shallow';
 import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
 import TimestepViewer from '@/modules/fractal/components/organisms/TimestepViewer';
+import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } from '@/modules/fractal/utilities/frame-box-bounds';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
+import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import EditableTrajectoryName from '@/modules/trajectory/components/atoms/EditableTrajectoryName';
+import {
+    getPerformancePresetLabel,
+    PERFORMANCE_PRESET_OPTIONS
+} from '@/shared/domain/rendering/performance';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
@@ -19,11 +19,14 @@ import Loader from '@/shared/presentation/components/Loader';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import { PerformancePreset } from '@/modules/fractal/stores/contracts/editor/performance-types';
+import { Box, Camera, Gauge } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
 
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { ReactNode, RefObject } from 'react';
 
 import './Viewport.css';
 
@@ -34,10 +37,10 @@ interface ViewportProps {
     analysisId: string | undefined;
     showGrid: boolean;
     isLoading: boolean;
-    sceneRef: React.RefObject<FractalSceneRef | null>;
-    bodyContent?: React.ReactNode;
+    sceneRef: RefObject<FractalSceneRef | null>;
+    bodyContent?: ReactNode;
     hideGradient?: boolean;
-    headerActionsBeforePerformance?: React.ReactNode;
+    headerActionsBeforePerformance?: ReactNode;
 };
 
 const TIMESTEP_VIEWER_DEFAULTS = {
@@ -45,14 +48,6 @@ const TIMESTEP_VIEWER_DEFAULTS = {
     rotation: { x: 0, y: 0, z: 0 },
     position: { x: 0, y: 0, z: 0 }
 } as const;
-
-const PERFORMANCE_PRESETS: { label: string; value: PerformancePreset }[] = [
-    { label: 'Ultra', value: PerformancePreset.Ultra },
-    { label: 'High', value: PerformancePreset.High },
-    { label: 'Balanced', value: PerformancePreset.Balanced },
-    { label: 'Performance', value: PerformancePreset.Performance },
-    { label: 'Battery', value: PerformancePreset.Battery }
-];
 
 const Viewport = ({
     trajectory,
@@ -74,7 +69,6 @@ const Viewport = ({
     const {
         activeScenes,
         slicePlaneConfig,
-        pointSizeMultiplier,
         sceneOpacities,
         activeModelBounds,
         modelWorldBounds,
@@ -86,7 +80,6 @@ const Viewport = ({
     } = useEditorStore(useShallow((s) => ({
         activeScenes: s.activeScenes,
         slicePlaneConfig: s.configuration.slicePlaneConfig,
-        pointSizeMultiplier: s.pointSizeMultiplier,
         sceneOpacities: s.sceneOpacities,
         activeModelBounds: s.activeModel?.modelBounds,
         modelWorldBounds: s.modelWorldBounds,
@@ -164,13 +157,13 @@ const Viewport = ({
                             className="font-size-05 canvas-btn-compact"
                             leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Gauge size={12} /></span>}
                         >
-                            {PERFORMANCE_PRESETS.find((p) => p.value === performancePreset)?.label ?? 'Battery'}
+                            {getPerformancePresetLabel(performancePreset)}
                         </Button>
                     )}
                 >
                     {(close) => (
                         <PopoverMenu>
-                            {PERFORMANCE_PRESETS.map((preset) => (
+                            {PERFORMANCE_PRESET_OPTIONS.map((preset) => (
                                 <Button
                                     key={preset.value}
                                     variant={preset.value === performancePreset ? 'solid' : 'ghost'}
@@ -180,9 +173,12 @@ const Viewport = ({
                                     className="font-size-05"
                                     block
                                     align="start"
-                                    onClick={() => { setPerformancePreset(preset.value); close(); }}
+                                    onClick={() => {
+                                        setPerformancePreset(preset.value);
+                                        close();
+                                    }}
                                 >
-                                    {preset.label}
+                                    {preset.title}
                                 </Button>
                             ))}
                         </PopoverMenu>
@@ -226,9 +222,9 @@ const Viewport = ({
                                     analysisId={analysisId}
                                     activeScenes={activeScenes}
                                     pluginScenes={pluginScenes}
+                                    pointCloudSettings={sceneConfig.pointCloudSettings}
                                     slicePlaneConfig={slicePlaneConfig}
                                     boxBounds={currentFrameBoxBounds}
-                                    pointSizeMultiplier={pointSizeMultiplier}
                                     sceneOpacities={sceneOpacities}
                                     setModelWorldBounds={setModelWorldBounds}
                                     activeModelBounds={activeModelBounds}

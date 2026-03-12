@@ -51,16 +51,6 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
 
             const trajectory = await this.trajectoryRepository.findById(trajectoryId);
             const teamClusterId = trajectory?.props.teamCluster;
-
-            if (!teamClusterId) {
-                return Result.fail(
-                    ApplicationError.badRequest(
-                        'Trajectory::ClusterRequired',
-                        'Trajectory does not have an associated team cluster'
-                    )
-                );
-            }
-
             const atomsPage = await this.trajectoryReader.readPage(
                 teamClusterId,
                 trajectoryId,

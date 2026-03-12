@@ -15,16 +15,12 @@ import { injectable, inject } from 'tsyringe';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import pLimit from 'p-limit';
 
 @injectable()
 export default class TrajectoryDumpStorageService implements ITrajectoryDumpStorageService{
-    private static readonly COMPRESSION_LEVEL = zlib.constants.Z_BEST_SPEED;
-    private static RAM_THRESHOLD = 4 * 1024 * 1024;
     private static readonly CACHE_TTL_MS = 30 * 60 * 1000;
     private readonly cacheDir: string;
     private readonly pendingRequests = new Map<string, Promise<string | null>>();
-    public static storageLimit = pLimit(50);
 
     constructor(
         @inject(SHARED_TOKENS.StorageService)
@@ -54,75 +50,6 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         return path.join(this.cacheDir, trajectoryId, `${timestep}.dump`);   
     }
 
-    async saveDump(
-        trajectoryId: string,
-        timestep: string,
-        data: Buffer | string,
-        onProgress?: (progress: number) => void
-    ): Promise<string>{
-        const objectName = this.getObjectName(trajectoryId, timestep);
-        // Small Buffer -> Compress in RAM -> Upload
-        if(Buffer.isBuffer(data) && data.length <= TrajectoryDumpStorageService.RAM_THRESHOLD){
-            const compressed = zlib.gzipSync(data, {
-                level: TrajectoryDumpStorageService.COMPRESSION_LEVEL
-            });
-
-            await this.storageService.upload(
-                SYS_BUCKETS.DUMPS,
-                objectName,
-                compressed,
-                {
-                    'Content-Type': 'application/gzip',
-                    'Content-Encoding': 'gzip'
-                }
-            );
-
-            return objectName;
-        }
-
-        // Large Buffer of File Path -> Pipe Gzip stream directly to Storage.
-        // this avoids creating an intermediate compressed file on disk.
-        const sourceStream = typeof data === 'string'
-            ? createReadStream(data)
-            : Readable.from(data);
-        
-        let totalSize = 0;
-        if(typeof data === 'string'){
-            const stat = await fs.stat(data);
-            totalSize = stat.size;
-        }else if(Buffer.isBuffer(data)){
-            totalSize = data.length;
-        }
-
-        // Monitor input stream progress
-        if(onProgress){
-            let processedBytes = 0;
-            sourceStream.on('data', (chunk: Buffer | string) => {
-                processedBytes += chunk.length;
-                const percentage = Math.min(1, processedBytes / totalSize);
-                onProgress(percentage);
-            });
-        }
-
-        const gzip = zlib.createGzip({
-            level: TrajectoryDumpStorageService.COMPRESSION_LEVEL
-        });
-
-        // Pipe source -> gzip -> storage service
-        const uploadStream = sourceStream.pipe(gzip);
-        await this.storageService.upload(
-            SYS_BUCKETS.DUMPS,
-            objectName,
-            uploadStream,
-            {
-                'Content-Type': 'application/gzip',
-                'Content-Encoding': 'gzip'
-            }
-        );
-
-        return objectName;
-    }
-
     async getDump(
         trajectoryId: string,
         timestep: string
@@ -147,41 +74,6 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         const downloadTask = this.downloadDump(objectName, cachePath, cacheKey);
         this.pendingRequests.set(cacheKey, downloadTask);
         return downloadTask;
-    }
-
-    async calculateSize(trajectoryId: string): Promise<number>{
-        const prefix = this.getPrefix(trajectoryId);
-        let totalSize = 0;
-
-        const pendingTasks: Promise<number>[] = [];
-        const BATCH_SIZE = 50;
-        for await(const key of this.storageService.listByPrefix(SYS_BUCKETS.DUMPS, prefix)){
-            if(!key.endsWith('.dump.gz')) continue;
-
-            const task = TrajectoryDumpStorageService.storageLimit(async () => {
-                try{
-                    const stat = await this.storageService.getStat(SYS_BUCKETS.DUMPS, key);
-                    return stat.size;
-                }catch{
-                    return 0;
-                }
-            });
-
-            pendingTasks.push(task);
-
-            if(pendingTasks.length >= BATCH_SIZE){
-                const results = await Promise.all(pendingTasks);
-                totalSize += results.reduce((acc, size) => acc + size, 0);
-                pendingTasks.length = 0;
-            }
-        }
-
-        if(pendingTasks.length > 0){
-            const results = await Promise.all(pendingTasks);
-            totalSize += results.reduce((acc, size) => acc + size, 0);
-        }
-
-        return totalSize;
     }
 
     private async downloadDump(
@@ -280,15 +172,6 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
 
         logger.info(`@trajectory-dump-storage-service: Found ${timesteps.length} dumps from daemon for trajectory ${trajectoryId}`);
         return timesteps.sort((a, b) => Number(a) - Number(b));
-    }
-
-    async deleteDumps(trajectoryId: string): Promise<void>{
-        const prefix = this.getPrefix(trajectoryId);
-        await Promise.all([
-            this.storageService.deleteByPrefix(SYS_BUCKETS.DUMPS, prefix),
-            fs.rm(path.join(this.cacheDir, trajectoryId), { recursive: true, force: true })
-        ]);
-        logger.info(`@trajectory-dump-storage-service: deleted dumps for trajectory ${trajectoryId}`);
     }
 
     private async isCacheValid(filePath: string): Promise<boolean>{

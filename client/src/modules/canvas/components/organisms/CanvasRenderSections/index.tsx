@@ -5,6 +5,7 @@ import useGridGroup from './groups/grid';
 import useLightsGroup from './groups/lights';
 import useOrbitGroup from './groups/orbit';
 import usePerformanceGroup from './groups/performance';
+import usePointCloudGroup from './groups/point-clouds';
 import useRendererGroup from './groups/renderer';
 
 import { memo, useMemo, useState } from 'react';
@@ -28,11 +29,12 @@ const CanvasRenderSections = () => {
     const cameraGroup = useCameraGroup();
     const orbitGroup = useOrbitGroup();
     const rendererGroup = useRendererGroup();
+    const pointCloudGroup = usePointCloudGroup();
     const gridGroup = useGridGroup();
 
     const groups = useMemo<RenderGroup[]>(
-        () => [lightsGroup, effectsGroup, performanceGroup, environmentGroup, cameraGroup, orbitGroup, rendererGroup, gridGroup],
-        [lightsGroup, effectsGroup, performanceGroup, environmentGroup, cameraGroup, orbitGroup, rendererGroup, gridGroup]
+        () => [lightsGroup, effectsGroup, performanceGroup, rendererGroup, pointCloudGroup, environmentGroup, cameraGroup, orbitGroup, gridGroup],
+        [lightsGroup, effectsGroup, performanceGroup, rendererGroup, pointCloudGroup, environmentGroup, cameraGroup, orbitGroup, gridGroup]
     );
 
     return (

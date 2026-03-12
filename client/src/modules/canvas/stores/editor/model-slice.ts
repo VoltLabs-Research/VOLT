@@ -3,8 +3,26 @@ import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
 import type { EditorStore } from './types';
 import type { ModelLoadingState } from '@/modules/fractal/types';
 import type { ModelWorldBounds } from '@/modules/fractal/types/configuration';
-import type { ModelStore, ModelState, SceneObjectType, ModelData } from '@/modules/fractal/stores/contracts/editor/scene-types';
+import {
+    PointCloudDetailLevel,
+    PointCloudStyleMode
+} from '@/modules/fractal/stores/contracts/editor/scene-types';
+
+import type {
+    ModelStore,
+    ModelState,
+    PointCloudSettingsState,
+    SceneObjectType,
+    ModelData
+} from '@/modules/fractal/stores/contracts/editor/scene-types';
 import type { StateCreator } from 'zustand';
+
+const POINT_CLOUD_SETTINGS_INITIAL: PointCloudSettingsState = {
+    overridesEnabled: false,
+    detailLevel: PointCloudDetailLevel.Auto,
+    useSceneOpacity: true,
+    style: PointCloudStyleMode.Softened
+};
 
 const createInitialState = (): ModelState => ({
     activeModel: null,
@@ -14,6 +32,7 @@ const createInitialState = (): ModelState => ({
     modelLoadProgress: 0,
     modelLoadError: null,
     pointSizeMultiplier: 1.0,
+    pointCloudSettings: POINT_CLOUD_SETTINGS_INITIAL,
     sceneOpacities: {},
     modelWorldBounds: null
 });
@@ -104,6 +123,19 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
         set((state) => ({
             pointSizeMultiplier: Math.max(0.1, state.pointSizeMultiplier - 0.1)
         }));
+    },
+
+    setPointCloudSettings(partial: Partial<PointCloudSettingsState>) {
+        set((state) => ({
+            pointCloudSettings: {
+                ...state.pointCloudSettings,
+                ...partial
+            }
+        }));
+    },
+
+    resetPointCloudSettings() {
+        set({ pointCloudSettings: POINT_CLOUD_SETTINGS_INITIAL });
     },
 
     setSceneOpacity(sceneKey: string, opacity: number) {

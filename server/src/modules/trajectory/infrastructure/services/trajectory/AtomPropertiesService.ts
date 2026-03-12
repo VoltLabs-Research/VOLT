@@ -5,10 +5,7 @@ import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTok
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
-import { IAtomPropertiesService, FilterExpression, FilterResult, ExposureAtomConfig } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
-import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { getPropertyValues } from '@modules/trajectory/utilities/trajectory/get-property-values';
+import { IAtomPropertiesService, ExposureAtomConfig } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { decodeMultiStream } from '@shared/infrastructure/utilities/msgpack';
@@ -50,10 +47,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         private readonly analysisRepository: IAnalysisRepository,
 
         @inject(PLUGIN_TOKENS.PluginRepository)
-        private readonly pluginRepository: IPluginRepository,
-
-        @inject(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
-        private readonly dumpStorage: ITrajectoryDumpStorageService
+        private readonly pluginRepository: IPluginRepository
     ) { }
 
     async getModifierPerAtomProps(analysisId: string): Promise<Record<string, string[]>> {
@@ -264,93 +258,6 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         }
 
         return undefined;
-    }
-
-    evaluateFilter(values: Float32Array, operator: string, compareValue: number): FilterResult {
-        const mask = new Uint8Array(values.length);
-        let matchCount = 0;
-        const val = compareValue;
-
-        switch (operator) {
-            case '==':
-                for (let i = 0; i < values.length; i++) {
-                    if (values[i] === val) { mask[i] = 1; matchCount++; }
-                }
-                break;
-            case '!=':
-                for (let i = 0; i < values.length; i++) {
-                    if (values[i] !== val) { mask[i] = 1; matchCount++; }
-                }
-                break;
-            case '>':
-                for (let i = 0; i < values.length; i++) {
-                    if (values[i] > val) { mask[i] = 1; matchCount++; }
-                }
-                break;
-            case '>=':
-                for (let i = 0; i < values.length; i++) {
-                    if (values[i] >= val) { mask[i] = 1; matchCount++; }
-                }
-                break;
-            case '<':
-                for (let i = 0; i < values.length; i++) {
-                    if (values[i] < val) { mask[i] = 1; matchCount++; }
-                }
-                break;
-            case '<=':
-                for (let i = 0; i < values.length; i++) {
-                    if (values[i] <= val) { mask[i] = 1; matchCount++; }
-                }
-                break;
-        }
-
-        return { mask, matchCount };
-    }
-
-    filterByMask(positions: Float32Array, types: Uint16Array, mask: Uint8Array): {
-        positions: Float32Array;
-        types: Uint16Array;
-        count: number;
-    } {
-        let count = 0;
-        for (let i = 0; i < mask.length; i++) {
-            if (mask[i]) count++;
-        }
-
-        const newPos = new Float32Array(count * 3);
-        const newTypes = new Uint16Array(count);
-
-        let idx = 0;
-        for (let i = 0; i < mask.length; i++) {
-            if (mask[i]) {
-                const p3 = i * 3;
-                const n3 = idx * 3;
-                newPos[n3] = positions[p3];
-                newPos[n3 + 1] = positions[p3 + 1];
-                newPos[n3 + 2] = positions[p3 + 2];
-                newTypes[idx] = types[i];
-                idx++;
-            }
-        }
-
-        return { positions: newPos, types: newTypes, count };
-    }
-
-    async evaluateFilterExpression(
-        trajectoryId: string,
-        analysisId: string | undefined,
-        exposureId: string | null | undefined,
-        timestep: string,
-        expression: FilterExpression
-    ): Promise<FilterResult> {
-        // This method previously relied on TrajectoryParserFactory.parse() (native).
-        // It is now only callable from cluster-side code paths.
-        // On the server, all callers should go through the cluster daemon instead.
-        throw new ApplicationError(
-            ErrorCodes.TRAJECTORY_DATA_PARSE_FAILED,
-            'Filter expression evaluation requires a team cluster. No local native modules available.',
-            501
-        );
     }
 
     private async discoverPerAtomPropertyNames(

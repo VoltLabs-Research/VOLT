@@ -1,16 +1,4 @@
-export enum PerformancePreset {
-    Ultra = 'ultra',
-    High = 'high',
-    Balanced = 'balanced',
-    Performance = 'performance',
-    Battery = 'battery'
-};
-
-export enum PowerPreference {
-    Default = 'default',
-    HighPerformance = 'high-performance',
-    LowPower = 'low-power'
-};
+import { PerformancePreset, PowerPreference } from '@/shared/domain/rendering/performance';
 
 export interface DprSettings {
     mode: 'fixed' | 'adaptive';
@@ -117,7 +105,6 @@ export type RendererCreateState = {
 
 export type RendererRuntimeState = {
     toneMapping: ToneMappingMode;
-    toneMappingExposure: number;
     outputColorSpace: OutputCS;
 
     shadowEnabled: boolean;

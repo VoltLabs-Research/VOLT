@@ -44,8 +44,7 @@ const DynamicRenderer = ({ settings }: DynamicRendererProps) => {
             tm = LinearToneMapping;
         }
         gl.toneMapping = tm;
-        gl.toneMappingExposure = settings.toneMappingExposure;
-    }, [gl, settings.toneMapping, settings.toneMappingExposure]);
+    }, [gl, settings.toneMapping]);
 
     useEffect(() => {
         let colorSpace = 'srgb';

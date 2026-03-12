@@ -5,6 +5,25 @@ import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 
 export type { SceneObjectType };
 
+export enum PointCloudDetailLevel {
+    Auto = 'auto',
+    Performance = 'performance',
+    Balanced = 'balanced',
+    Quality = 'quality'
+};
+
+export enum PointCloudStyleMode {
+    Flat = 'flat',
+    Softened = 'softened'
+};
+
+export interface PointCloudSettingsState {
+    overridesEnabled: boolean;
+    detailLevel: PointCloudDetailLevel;
+    useSceneOpacity: boolean;
+    style: PointCloudStyleMode;
+};
+
 export interface TrajectoryGLBs {
     trajectory: string;
     defect_mesh: string;
@@ -27,6 +46,7 @@ export interface ModelState {
     modelLoadProgress: number;
     modelLoadError: string | null;
     pointSizeMultiplier: number;
+    pointCloudSettings: PointCloudSettingsState;
     sceneOpacities: Record<string, number>;
     modelWorldBounds: ModelWorldBounds | null;
 };
@@ -46,6 +66,8 @@ export interface ModelActions {
     setPointSizeMultiplier: (multiplier: number) => void;
     increasePointSize: () => void;
     decreasePointSize: () => void;
+    setPointCloudSettings: (partial: Partial<PointCloudSettingsState>) => void;
+    resetPointCloudSettings: () => void;
     setSceneOpacity: (sceneKey: string, opacity: number) => void;
     getSceneOpacity: (sceneKey: string) => number;
 };

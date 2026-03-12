@@ -150,6 +150,7 @@ export const useEditorStore = create<EditorStore>()(
                     activeModifier: state.configuration.activeModifier
                 },
                 pointSizeMultiplier: state.pointSizeMultiplier,
+                pointCloudSettings: state.pointCloudSettings,
                 sceneOpacities: state.sceneOpacities
             }),
             limit: UNDO_HISTORY_LIMIT,
