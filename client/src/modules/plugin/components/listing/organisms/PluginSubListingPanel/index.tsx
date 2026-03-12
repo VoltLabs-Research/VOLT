@@ -1,10 +1,10 @@
-import PluginCompactTable from '@/modules/plugin/components/listing/organisms/PluginCompactTable';
+import DocumentListingTable from '@/shared/presentation/components/DocumentListingTable';
 import { usePluginSubListingData } from '@/modules/plugin/hooks/listing/use-plugin-sub-listing-data';
 import { useMemo } from 'react';
 
 import type { PluginSubListingParams } from '@/modules/plugin/hooks/listing/use-plugin-sub-listing';
 
-interface PluginSubListingPanelProps extends PluginSubListingParams {}
+interface PluginSubListingPanelProps extends PluginSubListingParams {};
 
 const PluginSubListingPanel = ({
     analysisId,
@@ -25,23 +25,20 @@ const PluginSubListingPanel = ({
         isLoading,
         isFetchingNextPage,
         hasNextPage,
-        error,
+        errorMessage,
         handleLoadMore
     } = usePluginSubListingData(subListingParams);
 
-    const errorMessage = error
-        ? (error instanceof Error ? error : 'Failed to load sub-listing data.')
-        : null;
-
     return (
-        <PluginCompactTable
+        <DocumentListingTable
             columns={columns}
             data={rows}
             isLoading={isLoading}
             isFetchingMore={isFetchingNextPage}
             hasMore={hasNextPage}
             onLoadMore={handleLoadMore}
-            error={errorMessage}
+            errorMessage={errorMessage}
+            compact
         />
     );
 };
