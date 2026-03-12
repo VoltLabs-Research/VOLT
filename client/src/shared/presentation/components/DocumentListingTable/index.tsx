@@ -111,11 +111,21 @@ const DocumentListingTable = <T extends Identifiable>({
         })
     );
 
-    const columnWidths = useMemo(() => columns.map(getColumnWidth), [columns]);
+    const resolvedMinWidth = compact ? COMPACT_MIN_COLUMN_WIDTH : MIN_COLUMN_WIDTH;
+    const resolvedMaxWidth = compact ? COMPACT_MAX_COLUMN_WIDTH : MAX_COLUMN_WIDTH;
+    const resolvedGap = compact ? COMPACT_COLUMN_GAP : COLUMN_GAP;
+
+    const columnWidths = useMemo(() => columns.map((col) => {
+        if (typeof col.width === 'number' && col.width > 0) return col.width;
+        const title = typeof col.title === 'string' ? col.title : col.label;
+        const titleLength = typeof title === 'string' ? title.length : 10;
+        return Math.max(resolvedMinWidth, Math.min(titleLength * 14, resolvedMaxWidth));
+    }), [columns, resolvedMinWidth, resolvedMaxWidth]);
+
     const minContentWidth = useMemo(() => {
         const sum = columnWidths.reduce((acc, w) => acc + w, 0);
-        return sum + (columns.length - 1) * COLUMN_GAP;
-    }, [columnWidths, columns.length]);
+        return sum + (columns.length - 1) * resolvedGap;
+    }, [columnWidths, columns.length, resolvedGap]);
 
     const useFlexDistribution = useMemo(() => {
         if (typeof window === 'undefined') {
@@ -290,7 +300,7 @@ const DocumentListingTable = <T extends Identifiable>({
             onItemClick={onItemClick}
             onContextMenu={handleRowContextMenu}
             useFlexDistribution={useFlexDistribution}
-            columnGap={COLUMN_GAP}
+            columnGap={resolvedGap}
             draggableId={draggableIdsByItemId.get(item._id) ?? null}
             droppableId={droppableIdsByItemId.get(item._id) ?? null}
         />
@@ -303,7 +313,7 @@ const DocumentListingTable = <T extends Identifiable>({
                     className='document-listing-table-header-container p-sticky top-0 d-flex'
                     style={{
                         width: effectiveWidth,
-                        gap: useFlexDistribution ? undefined : `${COLUMN_GAP}px`,
+                        gap: useFlexDistribution ? undefined : `${resolvedGap}px`,
                         justifyContent: useFlexDistribution ? 'space-between' : 'flex-start'
                     }}
                 >
@@ -341,7 +351,7 @@ const DocumentListingTable = <T extends Identifiable>({
                         columns={columns} 
                         columnWidths={columnWidths} 
                         useFlexDistribution={useFlexDistribution}
-                        columnGap={COLUMN_GAP}
+                        columnGap={resolvedGap}
                     />
                 ))}
 
@@ -385,7 +395,7 @@ const DocumentListingTable = <T extends Identifiable>({
                                     columns={columns} 
                                     columnWidths={columnWidths} 
                                     useFlexDistribution={useFlexDistribution}
-                                    columnGap={COLUMN_GAP}
+                                    columnGap={resolvedGap}
                                 />
                             ))}
                         </Container>

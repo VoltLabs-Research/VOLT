@@ -2,17 +2,21 @@ import { useSubListingInfiniteQuery } from './queries';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import { useCallback, useMemo } from 'react';
 
-import type { ColumnConfig } from '@/modules/plugin/components/listing/organisms/PluginCompactTable';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import type { PluginSubListingParams } from './use-plugin-sub-listing';
+
+interface RowWithId extends Record<string, unknown> {
+    _id: string;
+};
 
 interface UsePluginSubListingDataResult {
     title: string;
     columns: ColumnConfig[];
-    rows: Record<string, unknown>[];
+    rows: RowWithId[];
     isLoading: boolean;
     isFetchingNextPage: boolean;
     hasNextPage: boolean;
-    error: unknown;
+    errorMessage: string | null;
     handleLoadMore: () => void;
 };
 
@@ -64,10 +68,15 @@ export const usePluginSubListingData = (
         }));
     }, [infiniteData]);
 
-    const rows: Record<string, unknown>[] = useMemo(() => {
+    const rows: RowWithId[] = useMemo(() => {
         if (!infiniteData?.pages) return [];
 
-        return infiniteData.pages.flatMap((page) => page.rows ?? []);
+        return infiniteData.pages
+            .flatMap((page) => page.rows ?? [])
+            .map((row, idx) => ({
+                ...row,
+                _id: String(row._id ?? row.id ?? idx)
+            }));
     }, [infiniteData]);
 
     const handleLoadMore = useCallback(() => {
@@ -76,6 +85,10 @@ export const usePluginSubListingData = (
         }
     }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
+    const errorMessage = error instanceof Error ? error.message
+        : typeof error === 'string' ? error
+        : null;
+
     return {
         title,
         columns,
@@ -83,7 +96,7 @@ export const usePluginSubListingData = (
         isLoading,
         isFetchingNextPage,
         hasNextPage: hasNextPage ?? false,
-        error,
+        errorMessage,
         handleLoadMore
     };
 };
