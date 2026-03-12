@@ -176,6 +176,22 @@ export const routesConfig: RouteGroup = {
             component: ClusterMonitoringPage
         },
         {
+            path: '/dashboard/clusters/:clusterId/terminal',
+            loader: () => import('@/modules/cluster/components/templates/ClusterTerminalPage')
+        },
+        {
+            path: '/dashboard/clusters/:clusterId/mongo',
+            loader: () => import('@/modules/cluster/components/templates/ClusterRemoteExplorerPage')
+        },
+        {
+            path: '/dashboard/clusters/:clusterId/redis',
+            loader: () => import('@/modules/cluster/components/templates/ClusterRemoteExplorerPage')
+        },
+        {
+            path: '/dashboard/clusters/:clusterId/minio',
+            loader: () => import('@/modules/cluster/components/templates/ClusterRemoteExplorerPage')
+        },
+        {
             path: '/dashboard/containers',
             component: ContainersListing,
             requiredPermissions: ['container:read']

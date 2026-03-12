@@ -242,7 +242,8 @@ export default class AISDKChatTransport implements IAIChatTransport {
                 );
             }
 
-            return { provider: integration.props.provider, model, apiKey, metadata: integration.props.metadata };
+            console.log('[DEBUG-CHAT] resolveProviderConfig returning provider:', integration.props.provider, 'model:', model, 'raw defaultModel:', integration.props.defaultModel);
+            return { provider: integration.props.provider, model: this.stripModelPrefix(model), apiKey, metadata: integration.props.metadata };
         }
 
         const first = integrations[0];
@@ -256,10 +257,25 @@ export default class AISDKChatTransport implements IAIChatTransport {
             );
         }
 
-        return { provider, model, apiKey, metadata: first.props.metadata };
+        console.log('[DEBUG-CHAT] resolveProviderConfig returning provider:', provider, 'model:', model, 'raw defaultModel:', first.props.defaultModel);
+        return { provider, model: this.stripModelPrefix(model), apiKey, metadata: first.props.metadata };
+    }
+
+    /**
+     * Strips the OpenRouter-style provider prefix from a model ID.
+     *
+     * Model IDs stored in DB integrations may include a provider prefix
+     * (e.g. `x-ai/grok-4.1-fast`), but provider SDKs expect just the
+     * model name (`grok-4.1-fast`). Ollama IDs use colons (`llama3:latest`)
+     * and pass through unchanged.
+     */
+    private stripModelPrefix(modelId: string): string {
+        const slashIndex = modelId.indexOf('/');
+        return slashIndex !== -1 ? modelId.slice(slashIndex + 1) : modelId;
     }
 
     private buildModel(provider: AIProvider, model: string, apiKey: string, metadata?: Record<string, unknown>): LanguageModel {
+        console.log('[DEBUG-CHAT] buildModel called with provider:', provider, 'model:', model);
         if (provider !== AIProvider.Ollama) {
             const factory = PROVIDER_FACTORIES[provider];
             return factory({ apiKey })(model);

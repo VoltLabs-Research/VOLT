@@ -2,7 +2,8 @@
     display: grid;
     grid-template-columns: minmax(0, 1.5fr) minmax(340px, 0.9fr);
     gap: 1rem;
-    height: 70vh;
+    flex: 1;
+    min-height: 0;
 }
 
 .cluster-remote-explorer-detail {

@@ -24,6 +24,7 @@ export interface PluginExposureTableProps {
     analysisId?: string;
     teamId?: string;
     compact?: boolean;
+    compactStyle?: boolean;
     showTrajectoryColumn?: boolean;
     headerActions?: ReactNode;
     onDataReady?: (columns: ColumnConfig[], data: Record<string, unknown>[]) => void;
@@ -155,7 +156,8 @@ const FullPluginExposureTable = ({
     analysisId,
     teamId,
     showTrajectoryColumn,
-    headerActions
+    headerActions,
+    compactStyle
 }: PluginExposureTableProps) => {
     const {
         subListingParams,
@@ -207,6 +209,8 @@ const FullPluginExposureTable = ({
                     getFilename: (format) => `${pluginId}_${displayExposureName || 'listing'}.${format}`
                 }}
                 headerActions={headerActions}
+                compact={compactStyle}
+                hideHeader={compactStyle}
             />
             <SubListingModal
                 subListingParams={subListingParams}

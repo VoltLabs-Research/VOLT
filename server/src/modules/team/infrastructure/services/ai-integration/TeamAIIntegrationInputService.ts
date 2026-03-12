@@ -2,7 +2,7 @@ import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { isRecord } from '@modules/team/utilities/isRecord';
 import TeamAIProviderCatalog from '@modules/team/infrastructure/services/ai-integration/TeamAIProviderCatalog';
 import { inject, injectable } from 'tsyringe';
-import type { TeamAIProvider } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
+import type { EnabledModel, TeamAIProvider } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
 
 @injectable()
 export default class TeamAIIntegrationInputService {
@@ -20,17 +20,37 @@ export default class TeamAIIntegrationInputService {
         return resolved || null;
     }
 
-    normalizeEnabledModels(enabledModels: unknown, fallback: string[] = []): string[] {
+    /**
+     * Normalizes and deduplicates enabled models.
+     * Handles backward compatibility: plain string entries (old format)
+     * are converted to `{ id, name }` where name defaults to the id.
+     */
+    normalizeEnabledModels(enabledModels: unknown, fallback: EnabledModel[] = []): EnabledModel[] {
         if (!Array.isArray(enabledModels)) {
             return fallback;
         }
 
-        const normalized = enabledModels
-            .filter((model): model is string => typeof model === 'string')
-            .map((model) => model.trim())
-            .filter((model) => model.length > 0);
+        const normalized: EnabledModel[] = [];
 
-        return [...new Set(normalized)];
+        for (const entry of enabledModels) {
+            if (typeof entry === 'string') {
+                const id = entry.trim();
+                if (id.length > 0) {
+                    normalized.push({ id, name: id });
+                }
+                continue;
+            }
+
+            if (isRecord(entry) && typeof entry.id === 'string' && typeof entry.name === 'string') {
+                const id = entry.id.trim();
+                const name = entry.name.trim();
+                if (id.length > 0 && name.length > 0) {
+                    normalized.push({ id, name });
+                }
+            }
+        }
+
+        return [...new Map(normalized.map((m) => [m.id, m])).values()];
     }
 
     resolveMetadata(

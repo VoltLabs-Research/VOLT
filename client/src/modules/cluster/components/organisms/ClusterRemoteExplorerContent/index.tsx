@@ -1,28 +1,29 @@
 import { TeamClusterRemoteAccessTarget, TeamClusterRemoteExplorerContentType, TeamClusterRemoteExplorerEntryType } from '@/modules/cluster/api/entities/team-cluster-remote-access';
 import ClusterMongoDocumentViewer from '@/modules/cluster/components/molecules/ClusterMongoDocumentViewer';
-import { getTeamClusterRemoteAccessLabel } from '@/modules/cluster/utilities/team-cluster-remote-access';
 import { useRemoteExplorer } from '@/shared/api/remote-explorer';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FileExplorer from '@/shared/presentation/components/FileExplorer';
 import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileExplorerRow';
-import Modal from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
 import Title from '@/shared/presentation/components/Title';
 import { Database, FolderOpen, HardDrive, Package } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import './ClusterRemoteExplorerModal.css';
-import type { TeamClusterRemoteAccessSession, TeamClusterRemoteExplorerEntry, TeamClusterRemoteExplorerNode } from '@/modules/cluster/api/entities/team-cluster-remote-access';
+import './ClusterRemoteExplorerContent.css';
+import type {
+    TeamClusterRemoteAccessSession,
+    TeamClusterRemoteExplorerEntry,
+    TeamClusterRemoteExplorerNode
+} from '@/modules/cluster/api/entities/team-cluster-remote-access';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 
-export const CLUSTER_REMOTE_EXPLORER_MODAL_ID = 'cluster-remote-explorer-modal';
+type LucideIconComponent = typeof Database;
 
-interface ClusterRemoteExplorerModalProps {
-    teamCluster: TeamCluster | null;
-    target: TeamClusterRemoteAccessTarget | null;
-    session: TeamClusterRemoteAccessSession | null;
-    onClose: () => void;
+interface ClusterRemoteExplorerContentProps {
+    teamCluster: TeamCluster;
+    target: TeamClusterRemoteAccessTarget;
+    session: TeamClusterRemoteAccessSession;
     listEntries: (
         teamClusterId: string,
         sessionId: string,
@@ -36,8 +37,6 @@ interface ClusterRemoteExplorerModalProps {
         path: string
     ) => Promise<TeamClusterRemoteExplorerNode>;
 };
-
-type LucideIconComponent = typeof Database;
 
 const toExplorerPath = (path: string): string => {
     return path ? `/${path.replace(/^\/+/g, '')}` : '/';
@@ -71,14 +70,18 @@ const getEntryIcon = (entry: TeamClusterRemoteExplorerEntry): LucideIconComponen
     return Database;
 };
 
-const ClusterRemoteExplorerModal = ({
+/**
+ * Renders the shared file-explorer UI for cluster remote resources (Mongo, Redis, MinIO).
+ * This is the content-only component without any modal wrapper,
+ * intended to be embedded in a full-page layout.
+ */
+const ClusterRemoteExplorerContent = ({
     teamCluster,
     target,
     session,
-    onClose,
     listEntries,
     getNode
-}: ClusterRemoteExplorerModalProps) => {
+}: ClusterRemoteExplorerContentProps) => {
     const remoteExplorer = useRemoteExplorer({
         initialPath: '/',
         normalizeRootPath: (path) => path || '/',
@@ -95,13 +98,9 @@ const ClusterRemoteExplorerModal = ({
 
     useEffect(() => {
         remoteExplorer.navigateTo('/');
-    }, [session?.sessionId, target]);
+    }, [session.sessionId, target]);
 
     const loadEntries = async (refresh = false) => {
-        if (!teamCluster || !session || !target) {
-            return;
-        }
-
         if (refresh) {
             setIsEntriesRefreshing(true);
         } else {
@@ -135,19 +134,15 @@ const ClusterRemoteExplorerModal = ({
     });
 
     useEffect(() => {
-        if (!teamCluster || !session || !target) {
-            return;
-        }
-
-        void loadEntries();
-    }, [teamCluster?._id, session?.sessionId, target, explorerState.path]);
+        loadEntries();
+    }, [teamCluster._id, session.sessionId, target, explorerState.path]);
 
     const selectedEntry = useMemo(() => {
         return entries.find((entry) => toExplorerPath(entry.path) === explorerState.selectedPath) ?? null;
     }, [entries, explorerState.selectedPath]);
 
     useEffect(() => {
-        if (!teamCluster || !session || !target || !selectedEntry || isNavigableEntry(selectedEntry)) {
+        if (!selectedEntry || isNavigableEntry(selectedEntry)) {
             setNode(null);
             setNodeError(null);
             return;
@@ -167,7 +162,7 @@ const ClusterRemoteExplorerModal = ({
             .finally(() => {
                 setIsNodeLoading(false);
             });
-    }, [teamCluster?._id, session?.sessionId, target, selectedEntry?.path]);
+    }, [teamCluster._id, session.sessionId, target, selectedEntry?.path]);
 
     const handleEntryClick = (entry: TeamClusterRemoteExplorerEntry) => {
         explorerState.setSelectedPath(toExplorerPath(entry.path));
@@ -180,6 +175,24 @@ const ClusterRemoteExplorerModal = ({
         }
 
         explorerState.navigateTo(toExplorerPath(entry.path));
+    };
+
+    const renderEntryRow = (entry: TeamClusterRemoteExplorerEntry) => {
+        const Icon = getEntryIcon(entry);
+
+        return (
+            <FileExplorerRow
+                key={entry.id}
+                icon={<Icon size={16} />}
+                name={entry.name}
+                type={entry.type}
+                size={entry.size !== null ? String(entry.size) : undefined}
+                date={entry.updatedAt ?? entry.description ?? undefined}
+                isSelected={explorerState.selectedPath === toExplorerPath(entry.path)}
+                onClick={() => handleEntryClick(entry)}
+                onDoubleClick={() => handleEntryDoubleClick(entry)}
+            />
+        );
     };
 
     const columns = (
@@ -214,7 +227,7 @@ const ClusterRemoteExplorerModal = ({
             variant='outline'
             intent='white'
             onClick={() => {
-                void loadEntries(true);
+                loadEntries(true);
             }}
             isLoading={isEntriesRefreshing}
         />
@@ -265,63 +278,38 @@ const ClusterRemoteExplorerModal = ({
     }, [isNodeLoading, nodeError, node, selectedEntry]);
 
     return (
-        <Modal
-            id={CLUSTER_REMOTE_EXPLORER_MODAL_ID}
-            title={`${target ? getTeamClusterRemoteAccessLabel(target) : 'Remote Explorer'}${teamCluster ? ` · ${teamCluster.name}` : ''}`}
-            description='Shared explorer UI for cluster resources.'
-            className='cluster-remote-explorer-modal'
-            width='min(96vw, 1480px)'
-            onClose={onClose}
-        >
-            <Container className='cluster-remote-explorer-layout'>
-                <Container className='cluster-remote-explorer-panel radius-md overflow-hidden'>
-                    <FileExplorer
-                        headerLeft={headerLeft}
-                        headerRight={headerRight}
-                        columns={columns}
-                        isLoading={isEntriesLoading}
-                        isEmpty={!entriesError && entries.length === 0}
-                        emptyMessage='No entries found'
-                        error={entriesError}
-                        onRetry={() => {
-                            void loadEntries(true);
-                        }}
-                        isRetrying={isEntriesRefreshing}
-                    >
-                        {entries.map((entry) => {
-                            const Icon = getEntryIcon(entry);
-
-                            return (
-                                <FileExplorerRow
-                                    key={entry.id}
-                                    icon={<Icon size={16} />}
-                                    name={entry.name}
-                                    type={entry.type}
-                                    size={entry.size !== null ? String(entry.size) : undefined}
-                                    date={entry.updatedAt ?? entry.description ?? undefined}
-                                    isSelected={explorerState.selectedPath === toExplorerPath(entry.path)}
-                                    onClick={() => handleEntryClick(entry)}
-                                    onDoubleClick={() => handleEntryDoubleClick(entry)}
-                                />
-                            );
-                        })}
-                    </FileExplorer>
-                </Container>
-
-                <Container className='cluster-remote-explorer-detail cluster-remote-explorer-panel radius-md p-1 d-flex column gap-1'>
-                    <Container className='d-flex column gap-025'>
-                        <Title className='font-size-3 font-weight-6 color-primary'>Details</Title>
-                        <Paragraph className='font-size-2 color-secondary'>
-                            {selectedEntry
-                                ? selectedEntry.path
-                                : 'Select a collection, key or object to inspect its contents.'}
-                        </Paragraph>
-                    </Container>
-                    {detailContent}
-                </Container>
+        <Container className='cluster-remote-explorer-layout'>
+            <Container className='cluster-remote-explorer-panel radius-md overflow-hidden'>
+                <FileExplorer
+                    headerLeft={headerLeft}
+                    headerRight={headerRight}
+                    columns={columns}
+                    isLoading={isEntriesLoading}
+                    isEmpty={!entriesError && entries.length === 0}
+                    emptyMessage='No entries found'
+                    error={entriesError}
+                    onRetry={() => {
+                        loadEntries(true);
+                    }}
+                    isRetrying={isEntriesRefreshing}
+                >
+                    {entries.map(renderEntryRow)}
+                </FileExplorer>
             </Container>
-        </Modal>
+
+            <Container className='cluster-remote-explorer-detail cluster-remote-explorer-panel radius-md p-1 d-flex column gap-1'>
+                <Container className='d-flex column gap-025'>
+                    <Title className='font-size-3 font-weight-6 color-primary'>Details</Title>
+                    <Paragraph className='font-size-2 color-secondary'>
+                        {selectedEntry
+                            ? selectedEntry.path
+                            : 'Select a collection, key or object to inspect its contents.'}
+                    </Paragraph>
+                </Container>
+                {detailContent}
+            </Container>
+        </Container>
     );
 };
 
-export default ClusterRemoteExplorerModal;
+export default ClusterRemoteExplorerContent;

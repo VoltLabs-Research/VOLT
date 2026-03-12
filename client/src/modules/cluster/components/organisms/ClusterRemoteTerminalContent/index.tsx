@@ -1,8 +1,5 @@
 import '@/modules/container/components/organisms/ContainerTerminal/ContainerTerminal.css';
-import { closeModal } from '@/shared/presentation/components/Modal';
-import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
-import Modal from '@/shared/presentation/components/Modal';
 import Terminal from '@/shared/presentation/components/Terminal';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import { sileo } from 'sileo';
@@ -11,34 +8,32 @@ import type { TerminalHandle } from '@/shared/presentation/components/Terminal';
 import type { TeamClusterRemoteAccessSession } from '@/modules/cluster/api/entities/team-cluster-remote-access';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 
-export const CLUSTER_REMOTE_TERMINAL_MODAL_ID = 'cluster-remote-terminal-modal';
-
 interface ClusterRemoteTerminalSocketError {
     code: string;
     message: string;
     details?: string;
 };
 
-interface ClusterRemoteTerminalProps {
-    teamCluster: TeamCluster | null;
-    session: TeamClusterRemoteAccessSession | null;
-    onClose: () => void;
+interface ClusterRemoteTerminalContentProps {
+    teamCluster: TeamCluster;
+    session: TeamClusterRemoteAccessSession;
 };
 
 const isClusterRemoteTerminalSocketError = (value: unknown): value is ClusterRemoteTerminalSocketError => {
     return typeof value === 'object' && value !== null && 'message' in value && 'code' in value;
 };
 
-const ClusterRemoteTerminal = ({ teamCluster, session, onClose }: ClusterRemoteTerminalProps) => {
+/**
+ * Renders an interactive terminal connected to a cluster host via socket.
+ * This is the content-only component without any modal wrapper,
+ * intended to be embedded in a full-page layout.
+ */
+const ClusterRemoteTerminalContent = ({ teamCluster, session }: ClusterRemoteTerminalContentProps) => {
     const socketService = useSocket();
     const terminalRef = useRef<TerminalHandle>(null);
     const isAttachedRef = useRef(false);
 
     useEffect(() => {
-        if (!session) {
-            return;
-        }
-
         socketService.connect().catch(() => undefined);
 
         return () => {
@@ -49,13 +44,9 @@ const ClusterRemoteTerminal = ({ teamCluster, session, onClose }: ClusterRemoteT
             socketService.emit('team-cluster:terminal:detach').catch(() => undefined);
             isAttachedRef.current = false;
         };
-    }, [session?.sessionId, socketService]);
+    }, [session.sessionId, socketService]);
 
     useEffect(() => {
-        if (!session) {
-            return;
-        }
-
         const attach = () => {
             if (isAttachedRef.current || !socketService.isConnected()) {
                 return;
@@ -110,40 +101,24 @@ const ClusterRemoteTerminal = ({ teamCluster, session, onClose }: ClusterRemoteT
             unsubscribeError();
             unsubscribeConnection();
         };
-    }, [session?.sessionId, socketService]);
+    }, [session.sessionId, socketService]);
 
     const handleTerminalData = (data: string) => {
         socketService.emit('team-cluster:terminal:input', data).catch(() => undefined);
     };
 
-    const handleClose = () => {
-        closeModal(CLUSTER_REMOTE_TERMINAL_MODAL_ID);
-        onClose();
-    };
-
     return (
-        <Modal
-            id={CLUSTER_REMOTE_TERMINAL_MODAL_ID}
-            title={teamCluster ? `${teamCluster.name} Terminal` : 'Cluster Terminal'}
-            description='Interactive shell running on the selected cluster host.'
-            width='min(96vw, 1400px)'
-            onClose={onClose}
-        >
-            <Container className='container-terminal-window embedded d-flex column overflow-hidden'>
-                <Container className='container-terminal-header d-flex items-center content-between'>
-                    <Container className='container-terminal-title d-flex items-center gap-05'>
-                        <span>root@{teamCluster?.name ?? 'cluster'}:~</span>
-                    </Container>
-                    <Button variant='ghost' intent='neutral' size='sm' onClick={handleClose}>
-                        Close
-                    </Button>
-                </Container>
-                <Container className='container-terminal-body flex-1 overflow-hidden p-relative p-1'>
-                    <Terminal ref={terminalRef} onData={handleTerminalData} />
+        <Container className='container-terminal-window embedded d-flex column overflow-hidden flex-1'>
+            <Container className='container-terminal-header d-flex items-center content-between'>
+                <Container className='container-terminal-title d-flex items-center gap-05'>
+                    <span>root@{teamCluster.name}:~</span>
                 </Container>
             </Container>
-        </Modal>
+            <Container className='container-terminal-body flex-1 overflow-hidden p-relative p-1'>
+                <Terminal ref={terminalRef} onData={handleTerminalData} />
+            </Container>
+        </Container>
     );
 };
 
-export default ClusterRemoteTerminal;
+export default ClusterRemoteTerminalContent;

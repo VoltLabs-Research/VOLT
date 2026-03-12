@@ -3,7 +3,6 @@ import { TeamAIProvider } from '@modules/team/domain/entities/ai-integration/Tea
 export interface TeamAIModelMetadataDTO {
     id: string;
     name: string;
-    description?: string;
 };
 
 export interface GetTeamAIIntegrationModelsInputDTO {
