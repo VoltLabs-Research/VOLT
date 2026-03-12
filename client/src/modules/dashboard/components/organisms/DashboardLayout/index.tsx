@@ -7,7 +7,6 @@ import Container from '@/shared/presentation/components/Container';
 import PageTransition from '@/shared/presentation/components/PageTransition';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useGlobalSocketCacheSync from '@/shared/presentation/hooks/use-global-socket-cache-sync';
-import '@/shared/infrastructure/query/prefetch/registrations';
 import type { DashboardHeaderContext } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import './DashboardLayout.css';

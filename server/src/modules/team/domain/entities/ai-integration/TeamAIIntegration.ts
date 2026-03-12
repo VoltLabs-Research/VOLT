@@ -2,6 +2,11 @@ import type { AIProvider } from '@modules/ai/domain/contracts/AIProviders';
 
 export type TeamAIProvider = AIProvider;
 
+export interface EnabledModel {
+    id: string;
+    name: string;
+};
+
 type TeamAIIntegrationCreatedBy = string | { _id?: unknown; toString?: () => string };
 
 export interface TeamAIIntegrationProps {
@@ -10,7 +15,7 @@ export interface TeamAIIntegrationProps {
     encryptedApiKey: string;
     isEnabled: boolean;
     defaultModel?: string;
-    enabledModels?: string[];
+    enabledModels?: EnabledModel[];
     metadata?: Record<string, unknown>;
     createdBy: TeamAIIntegrationCreatedBy;
     createdAt: Date;
@@ -41,7 +46,7 @@ export default class TeamAIIntegration {
         encryptedApiKey: string;
         isEnabled: boolean;
         defaultModel: string;
-        enabledModels: string[];
+        enabledModels: EnabledModel[];
         metadata?: Record<string, unknown>;
         userId: string;
         now?: Date;
@@ -54,7 +59,7 @@ export default class TeamAIIntegration {
             encryptedApiKey: input.encryptedApiKey,
             isEnabled: input.isEnabled,
             defaultModel: input.defaultModel,
-            enabledModels: [...new Set(input.enabledModels)],
+            enabledModels: TeamAIIntegration.deduplicateModels(input.enabledModels),
             metadata: input.metadata,
             createdBy: input.userId,
             createdAt: now,
@@ -66,7 +71,7 @@ export default class TeamAIIntegration {
         encryptedApiKey: string;
         isEnabled: boolean;
         defaultModel: string;
-        enabledModels: string[];
+        enabledModels: EnabledModel[];
         metadata?: Record<string, unknown>;
         now?: Date;
     }): Partial<TeamAIIntegrationProps> {
@@ -74,10 +79,15 @@ export default class TeamAIIntegration {
             encryptedApiKey: input.encryptedApiKey,
             isEnabled: input.isEnabled,
             defaultModel: input.defaultModel,
-            enabledModels: [...new Set(input.enabledModels)],
+            enabledModels: TeamAIIntegration.deduplicateModels(input.enabledModels),
             metadata: input.metadata,
             updatedAt: input.now ?? new Date()
         };
+    }
+
+    /** Deduplicates enabled models by id, keeping the last occurrence. */
+    private static deduplicateModels(models: EnabledModel[]): EnabledModel[] {
+        return [...new Map(models.map((m) => [m.id, m])).values()];
     }
 
     private static getRefId(value: TeamAIIntegrationCreatedBy | string): string {

@@ -38,7 +38,11 @@ const TeamAIIntegrationSchema: Schema<TeamAIIntegrationDocument> = new Schema({
         trim: true
     },
     enabledModels: {
-        type: [String],
+        type: [{
+            id: { type: String, required: true },
+            name: { type: String, required: true },
+            _id: false
+        }],
         default: []
     },
     metadata: {

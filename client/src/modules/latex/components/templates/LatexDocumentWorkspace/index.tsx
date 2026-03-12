@@ -37,7 +37,7 @@ const FILES_MIN = 160;
 const FILES_MAX = 400;
 const PREVIEW_MIN = 260;
 const PREVIEW_MAX = 600;
-const DEFAULT_WIDTHS: PanelWidths = { files: 220, preview: 340 };
+const DEFAULT_WIDTHS: PanelWidths = { files: 220, preview: PREVIEW_MAX };
 const LATEX_TEMPLATE_CONTENT = `\\documentclass{article}
 
 \\begin{document}

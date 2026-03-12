@@ -1,15 +1,11 @@
 import './SidebarNavigation.css';
 import ClusterCredentialsModal from '@/modules/cluster/components/organisms/ClusterCredentialsModal';
-import ClusterRemoteAccessPasswordModal from '@/modules/cluster/components/organisms/ClusterRemoteAccessPasswordModal';
-import ClusterRemoteExplorerModal from '@/modules/cluster/components/organisms/ClusterRemoteExplorerModal';
-import ClusterRemoteTerminal from '@/modules/cluster/components/organisms/ClusterRemoteTerminal';
 import UpdateClusterModal from '@/modules/cluster/components/organisms/UpdateClusterModal';
 import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import Container from '@/shared/presentation/components/Container';
 import Divider from '@/shared/presentation/components/Divider';
-import PrefetchLink from '@/shared/presentation/components/PrefetchLink';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import Tooltip from '@/shared/presentation/components/Tooltip';
@@ -296,17 +292,15 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
         }
 
         const content = (
-            <PrefetchLink prefetchPath={item.to}>
-                <Container className='sidebar-nav-item-wrapper'>
-                    <SidebarNavItem
-                        label={item.label}
-                        icon={item.icon}
-                        isSelected={isSelected(item.to)}
-                        onClick={onClick}
-                        disabled={!isAllowed}
-                    />
-                </Container>
-            </PrefetchLink>
+            <Container className='sidebar-nav-item-wrapper'>
+                <SidebarNavItem
+                    label={item.label}
+                    icon={item.icon}
+                    isSelected={isSelected(item.to)}
+                    onClick={onClick}
+                    disabled={!isAllowed}
+                />
+            </Container>
         );
 
         return (
@@ -401,25 +395,6 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                         teamId={sidebarClusters.selectedTeamId}
                         onUpdate={sidebarClusters.requestUpdate}
                         onClose={() => sidebarClusters.setUpdateTarget(null)}
-                    />
-                    <ClusterRemoteAccessPasswordModal
-                        teamCluster={sidebarClusters.remoteAccessRequest?.teamCluster ?? null}
-                        target={sidebarClusters.remoteAccessRequest?.target ?? null}
-                        onSubmit={sidebarClusters.submitRemoteAccessRequest}
-                        onClose={() => sidebarClusters.setRemoteAccessRequest(null)}
-                    />
-                    <ClusterRemoteTerminal
-                        teamCluster={sidebarClusters.remoteTerminal?.teamCluster ?? null}
-                        session={sidebarClusters.remoteTerminal?.session ?? null}
-                        onClose={sidebarClusters.closeRemoteTerminal}
-                    />
-                    <ClusterRemoteExplorerModal
-                        teamCluster={sidebarClusters.remoteExplorer?.teamCluster ?? null}
-                        target={sidebarClusters.remoteExplorer?.target ?? null}
-                        session={sidebarClusters.remoteExplorer?.session ?? null}
-                        onClose={sidebarClusters.closeRemoteExplorer}
-                        listEntries={sidebarClusters.listRemoteExplorerEntries}
-                        getNode={sidebarClusters.getRemoteExplorerNode}
                     />
                 </>
             )}

@@ -5,7 +5,10 @@ const createTeamAIIntegrationSchema = z.object({
     apiKey: z.string().min(1).optional(),
     isEnabled: z.boolean().optional(),
     defaultModel: z.string().min(1).optional(),
-    enabledModels: z.array(z.string().min(1)).optional(),
+    enabledModels: z.array(z.object({
+        id: z.string().min(1),
+        name: z.string().min(1)
+    }).strict()).optional(),
     metadata: z.record(z.string(), z.unknown()).optional()
 }).strict();
 

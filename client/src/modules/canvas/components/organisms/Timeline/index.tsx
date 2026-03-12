@@ -356,6 +356,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
                         analysisId={analysisId}
                         teamId={selectedTeamId}
                         showTrajectoryColumn={false}
+                        compactStyle
                     />
                 </Container>
             )}

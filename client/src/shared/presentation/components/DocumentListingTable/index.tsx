@@ -69,6 +69,7 @@ interface DocumentListingTableProps<T extends Identifiable> {
     isAccessDenied?: boolean;
     onRetry?: () => void;
     retryButtonText?: string;
+    compact?: boolean;
 };
 
 const getColumnWidth = <T,>(col: ColumnConfig<T>): number => {
@@ -99,7 +100,8 @@ const DocumentListingTable = <T extends Identifiable>({
     errorMessage,
     isAccessDenied = false,
     onRetry,
-    retryButtonText
+    retryButtonText,
+    compact = false
 }: DocumentListingTableProps<T>) => {
     const bodyRef = useRef<HTMLDivElement | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -297,7 +299,7 @@ const DocumentListingTable = <T extends Identifiable>({
     ));
 
     return (
-        <Container className='d-flex column document-listing-table-container h-max'>
+        <Container className={`d-flex column document-listing-table-container h-max ${compact ? 'is-compact' : ''}`}>
             {columns.length > 0 && shouldShowContent && (
                 <Container
                     className='document-listing-table-header-container p-sticky top-0 d-flex'

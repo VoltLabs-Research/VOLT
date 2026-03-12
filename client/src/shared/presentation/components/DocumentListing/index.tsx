@@ -110,6 +110,7 @@ interface DocumentListingProps<T extends { _id: string }, TContext = Record<stri
     exportConfig?: DocumentListingExportConfig<TContext>;
     onHideItemRef?: React.MutableRefObject<((id: string) => void) | null>;
     socketInvalidation?: SocketInvalidationConfig[];
+    compact?: boolean;
 };
 
 interface ExportTypeOption {
@@ -187,7 +188,8 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     onTabChange,
     exportConfig,
     onHideItemRef,
-    socketInvalidation
+    socketInvalidation,
+    compact = false
 }: DocumentListingProps<T, TContext>) => {
     const socketService = useSocket();
     const resolvedTabs = useMemo(() => {
@@ -471,6 +473,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                         isAccessDenied={isAccessDenied}
                         onRetry={refresh}
                         retryButtonText='Try again'
+                        compact={compact}
                     />
                 </motion.div>
             </Container>
@@ -478,7 +481,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     };
 
     return (
-        <Container className='d-flex column h-max document-listing-container color-primary'>
+        <Container className={`d-flex column h-max document-listing-container color-primary ${compact ? 'is-compact' : ''}`}>
             {!hideHeader && (
                 <Container className={`d-flex column ${gap}`}>
                     <Container className='d-flex column gap-1-5 document-listing-header-top-container p-2'>

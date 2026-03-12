@@ -33,6 +33,19 @@
     opacity: 0.6;
 }
 
+/** Compact variant */
+.document-listing-container.is-compact .document-listing-header-tabs-container {
+    padding: 0 0.5rem;
+}
+
+.document-listing-container.is-compact .document-listing-header-top-container {
+    padding: 0.5rem;
+}
+
+.document-listing-container.is-compact .document-listing-body-container {
+    border-top: none;
+}
+
 @media screen and (max-width: 768px) {
     .document-listing-body-container {
         overflow: visible;

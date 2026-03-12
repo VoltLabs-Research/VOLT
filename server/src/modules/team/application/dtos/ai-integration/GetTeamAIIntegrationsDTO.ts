@@ -1,5 +1,5 @@
 import { TeamScopedInputDTO } from '@modules/team/application/dtos/common';
-import { TeamAIProvider } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
+import type { EnabledModel, TeamAIProvider } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
 
 export type GetTeamAIIntegrationsInputDTO = TeamScopedInputDTO;
 
@@ -10,7 +10,7 @@ export interface TeamAIIntegrationItemDTO {
     providerName: string;
     isEnabled: boolean;
     defaultModel?: string;
-    enabledModels?: string[];
+    enabledModels?: EnabledModel[];
     metadata?: Record<string, unknown>;
     hasApiKey: boolean;
     createdBy?: string;

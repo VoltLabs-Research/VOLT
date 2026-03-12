@@ -86,6 +86,38 @@
     z-index: 101;
 }
 
+/** Compact variant — matches PluginCompactTable visual density */
+.document-listing-table-container.is-compact .document-listing-table-header-container {
+    padding: 0.25rem 0.5rem;
+    background: var(--color-surface-1);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.document-listing-table-container.is-compact .document-listing-table-header-container .header-cell .font-size-2-5 {
+    font-size: 0.6875rem;
+    color: var(--color-text-tertiary);
+}
+
+.document-listing-table-container.is-compact .document-listing-table-row-container {
+    padding: 0.1875rem 0.5rem;
+}
+
+.document-listing-table-container.is-compact .document-listing-cell {
+    font-size: 0.75rem;
+}
+
+.document-listing-table-container.is-compact .document-listing-table-body-container {
+    min-height: 0;
+}
+
+.document-listing-table-container.is-compact .document-listing-table-footer-container {
+    padding: 0.25rem 0;
+}
+
+.document-listing-table-container.is-compact .document-listing-infinite-skeleton-loader .skeleton-row {
+    padding: 0.1875rem 0.5rem;
+}
+
 /* Responsive stacked layout for small screens */
 @media screen and (max-width: 768px) {
     .document-listing-table-header-container {
