@@ -6,8 +6,7 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "build": "rm -rf dist && tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
-    "rebuild:installed-daemon": "bash ./scripts/rebuild-installed-daemon.sh"
+    "build": "rm -rf dist && tsc -p tsconfig.json && tsc-alias -p tsconfig.json"
   },
   "dependencies": {
     "@msgpack/msgpack": "^3.1.3",

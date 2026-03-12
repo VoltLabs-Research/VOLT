@@ -1,6 +1,7 @@
 import { DockerRuntimeService, HostShellService } from '@/modules/platform/services';
 import { EmptyFilterResultError } from '@/modules/trajectory-native/services';
 import { REVERSE_CHANNEL, TeamClusterServiceExposureAccessMode } from '@/shared/contracts';
+import { logger } from '@/core/logger';
 import type { RuntimeTerminalAttachment } from '@/modules/platform/services';
 import type {
     TeamClusterDaemonTunnelClosePayload,
@@ -203,6 +204,10 @@ export class ReverseChannelSocketBridge {
                     };
                 } catch (error: unknown) {
                     if (error instanceof EmptyFilterResultError) {
+                        logger.warn(
+                            { command: handler.command, code: error.code, message: error.message },
+                            'Daemon command rejected: empty filter result'
+                        );
                         return {
                             status: 422,
                             data: {
@@ -214,6 +219,11 @@ export class ReverseChannelSocketBridge {
                     }
 
                     const message = error instanceof Error ? error.message : 'An unexpected error occurred';
+                    const stack = error instanceof Error ? error.stack : undefined;
+                    logger.error(
+                        { command: handler.command, code: 'INTERNAL_ERROR', message, stack },
+                        'Daemon command failed with unhandled exception'
+                    );
                     return {
                         status: 500,
                         data: {
