@@ -40,15 +40,13 @@ interface DebugConfigField {
 
 const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) => {
     const nodes = usePluginBuilderStore((s) => s.nodes);
-    const {
-        debugConfig,
-        showArgumentsPanel,
-        setDebugConfigField,
-        setDebugConfig,
-        setShowArgumentsPanel,
-        isDebugging,
-        isStarting
-    } = usePluginDebugStore();
+    const debugConfig = usePluginDebugStore((state) => state.debugConfig);
+    const showArgumentsPanel = usePluginDebugStore((state) => state.showArgumentsPanel);
+    const setDebugConfigField = usePluginDebugStore((state) => state.setDebugConfigField);
+    const setDebugConfig = usePluginDebugStore((state) => state.setDebugConfig);
+    const setShowArgumentsPanel = usePluginDebugStore((state) => state.setShowArgumentsPanel);
+    const isDebugging = usePluginDebugStore((state) => state.isDebugging);
+    const isStarting = usePluginDebugStore((state) => state.isStarting);
 
     const { selectedTrajectory } = useDebugTrajectorySelector();
 

@@ -40,7 +40,7 @@ const CANCEL_INVITATION_TOAST_OPTIONS = createPromiseToastOptions({
 export default function useInvitePanel(): UseInvitePanelReturn {
     const [buttonState, setButtonState] = useState<InviteButtonState>('idle');
     const [cancelingId, setCancelingId] = useState<string | null>(null);
-    const buttonResetTimeoutReference = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+    const buttonResetTimeoutReference = useRef<number | null>(null);
 
     const { invitations, isLoading: loadingInvitations, teamId } = useTeamInvitationData();
 

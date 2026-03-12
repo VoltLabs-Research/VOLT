@@ -1,5 +1,4 @@
 import { formatDistanceToNow } from 'date-fns';
-import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
@@ -115,7 +114,7 @@ export function userColumn<TRow = unknown>(
             const user = resolvePopulatedUser((row as Record<string, unknown>)[key]);
             return (
                 <PopulatedCellPopover document={user as Record<string, unknown> | null} modelName='User'>
-                    <ListingUserCell user={user} />
+                    <span className='font-size-2 color-secondary'>{user?.email ?? '-'}</span>
                 </PopulatedCellPopover>
             );
         },

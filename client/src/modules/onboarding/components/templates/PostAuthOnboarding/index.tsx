@@ -30,7 +30,7 @@ const PostAuthOnboarding = () => {
 
     const [teamName, setTeamName] = useState(`${user?.firstName} ${user?.lastName} team's`);
     // TODO: Delete description field in the onboarding, UI/UX noise
-    const [teamDescription, setTeamDescription] = useState('');
+    const [teamDescription, _setTeamDescription] = useState('');
     const [nameError, setNameError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
 

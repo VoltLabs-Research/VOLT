@@ -736,11 +736,11 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
             _id: file._id,
             name: file.name,
             path: file.path,
-            content: fileEditorStates[file._id]?.content ?? file.content,
+            content: file.content,
             isEntrypoint: isTexFile(file.name) && file.isEntrypoint,
             isSelected: selection?.type === 'file' && selection.id === file._id
         })),
-        [fileEditorStates, isTexFile, latexFiles, selection]
+        [isTexFile, latexFiles, selection]
     );
 
     return {

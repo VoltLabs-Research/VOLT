@@ -40,18 +40,16 @@ const DebugToolbar = () => {
         subscribe: false
     });
 
-    const {
-        isPaused,
-        isStarting,
-        currentNodeId,
-        currentNodeIndex,
-        totalNodes,
-        totalDuration,
-        sessionError,
-        nodeStates,
-        executionOrder,
-        setShowArgumentsPanel
-    } = usePluginDebugStore();
+    const isPaused = usePluginDebugStore((state) => state.isPaused);
+    const isStarting = usePluginDebugStore((state) => state.isStarting);
+    const currentNodeId = usePluginDebugStore((state) => state.currentNodeId);
+    const currentNodeIndex = usePluginDebugStore((state) => state.currentNodeIndex);
+    const totalNodes = usePluginDebugStore((state) => state.totalNodes);
+    const totalDuration = usePluginDebugStore((state) => state.totalDuration);
+    const sessionError = usePluginDebugStore((state) => state.sessionError);
+    const nodeStates = usePluginDebugStore((state) => state.nodeStates);
+    const executionOrder = usePluginDebugStore((state) => state.executionOrder);
+    const setShowArgumentsPanel = usePluginDebugStore((state) => state.setShowArgumentsPanel);
 
     const nodes = usePluginBuilderStore((s) => s.nodes);
 

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import Button from '@/shared/presentation/components/Button';
@@ -55,4 +56,4 @@ const LatexPreviewPanel = ({
     );
 };
 
-export default LatexPreviewPanel;
+export default memo(LatexPreviewPanel);

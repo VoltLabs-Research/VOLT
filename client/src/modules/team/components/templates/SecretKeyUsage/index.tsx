@@ -27,7 +27,9 @@ import {
     ResponsiveContainer
 } from 'recharts';
 import type { Params } from 'react-router-dom';
+import type { ContentType } from 'recharts/types/component/Tooltip';
 import type { TooltipContentProps } from 'recharts';
+import type { ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent';
 import '../secret-key/shared/SecretKeyShared.css';
 import './SecretKeyUsage.css';
 
@@ -74,7 +76,7 @@ const isTooltipPayloadRecord = (value: unknown): value is TooltipPayloadRecord =
     return Object.values(value).every((entry) => typeof entry === 'string' || typeof entry === 'number');
 };
 
-const renderPieTooltip = ({ active, payload }: TooltipContentProps<string | number, string>) => {
+const renderPieTooltip: ContentType<ValueType, NameType> = ({ active, payload }: TooltipContentProps<ValueType, NameType>) => {
     if (!active || !payload?.length) return null;
 
     const firstPayload = payload[0]?.payload;
