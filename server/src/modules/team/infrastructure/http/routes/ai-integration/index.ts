@@ -9,7 +9,6 @@ export default createHttpModule({
     resource: Resource.TEAM,
     routes: (router) => {
         router.get('/models', controllers.listModels.handle);
-        router.post('/model-discovery', teamAIIntegrationValidation.discoverModels, controllers.discoverModels.handle);
         router.route('/').get(controllers.listByTeamId.handle);
         router.route('/:provider')
             .post(RATE_LIMIT_POLICIES.teamAIIntegrationCreate, teamAIIntegrationValidation.create, controllers.createByProvider.handle)

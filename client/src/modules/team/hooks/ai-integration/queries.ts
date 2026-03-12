@@ -1,6 +1,5 @@
 import aiIntegrationService from '../../api/services/ai-integration';
 import { createInvalidatingMutation, createQueryResource } from '@/shared/api/query-resources';
-import type { DiscoverTeamAIProviderModelsInputDTO, DiscoverTeamAIProviderModelsOutputDTO } from '../../api/dtos/ai-integration/discover-team-ai-provider-models';
 import type { ListTeamAIIntegrationsResponse } from '../../api/dtos/ai-integration/get-team-ai-integrations';
 import type { ListTeamAIIntegrationModelsResponse } from '../../api/dtos/ai-integration/get-team-ai-integration-models';
 import type { CreateTeamAIIntegrationInputDTO, CreateTeamAIIntegrationResponse } from '../../api/dtos/ai-integration/create-team-ai-integration';
@@ -23,25 +22,11 @@ const teamAIIntegrationModelsResource = createQueryResource<string, string, List
     query: (teamId) => aiIntegrationService.listModels({ teamId })
 });
 
-const aiIntegrationDiscoveryResource = createQueryResource<
-    DiscoverTeamAIProviderModelsInputDTO,
-    DiscoverTeamAIProviderModelsInputDTO,
-    DiscoverTeamAIProviderModelsOutputDTO
->({
-    baseKey: 'team-ai-integration-model-discovery',
-    rootKey: 'aiIntegrationModelDiscovery',
-    itemKey: 'discoverAIIntegrationModels',
-    getKeyParam: (params) => params,
-    query: aiIntegrationService.discoverModels
-});
-
 export const AI_INTEGRATION_QUERY_KEYS = {
     aiIntegrations: teamAIIntegrationsResource.keys.root,
     teamAIIntegrations: teamAIIntegrationsResource.keys.item,
     aiIntegrationModels: teamAIIntegrationModelsResource.keys.root,
-    teamAIIntegrationModels: teamAIIntegrationModelsResource.keys.item,
-    aiIntegrationModelDiscovery: aiIntegrationDiscoveryResource.keys.root,
-    discoverAIIntegrationModels: aiIntegrationDiscoveryResource.keys.item
+    teamAIIntegrationModels: teamAIIntegrationModelsResource.keys.item
 };
 
 export const invalidateTeamAIIntegrationsQuery = (teamId: string) => {
@@ -54,8 +39,6 @@ export const invalidateTeamAIIntegrationsQuery = (teamId: string) => {
 export const useTeamAIIntegrationsQuery = teamAIIntegrationsResource.query;
 
 export const useTeamAIIntegrationModelsQuery = teamAIIntegrationModelsResource.query;
-
-export const useDiscoverTeamAIProviderModelsQuery = aiIntegrationDiscoveryResource.query;
 
 export const useCreateTeamAIIntegrationMutation = createInvalidatingMutation<
     CreateTeamAIIntegrationResponse,

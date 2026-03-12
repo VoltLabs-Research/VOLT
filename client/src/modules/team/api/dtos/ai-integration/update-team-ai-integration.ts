@@ -1,11 +1,11 @@
 import type { AIProvider } from '@/modules/ai/api/entities/ai-provider';
-import type { TeamAIIntegration } from '../../entities/ai-integration';
+import type { TeamAIIntegration, TeamAIModelMetadata } from '../../entities/ai-integration';
 
 export interface UpdateTeamAIIntegrationParams {
     apiKey?: string;
     isEnabled?: boolean;
     defaultModel?: string;
-    enabledModels?: string[];
+    enabledModels?: TeamAIModelMetadata[];
     metadata?: Record<string, unknown>;
 };
 
@@ -19,7 +19,7 @@ export interface UpdateTeamAIIntegrationInputDTO {
     apiKey?: string;
     isEnabled?: boolean;
     defaultModel?: string;
-    enabledModels?: string[];
+    enabledModels?: TeamAIModelMetadata[];
     metadata?: Record<string, unknown>;
 };
 

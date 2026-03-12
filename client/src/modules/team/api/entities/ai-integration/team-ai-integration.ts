@@ -7,7 +7,7 @@ export interface TeamAIIntegration extends BaseEntity {
     providerName: string;
     isEnabled: boolean;
     defaultModel?: string;
-    enabledModels?: string[];
+    enabledModels?: TeamAIModelMetadata[];
     metadata?: Record<string, unknown>;
     hasApiKey: boolean;
     createdBy?: string;
@@ -16,10 +16,6 @@ export interface TeamAIIntegration extends BaseEntity {
 export interface TeamAIModelMetadata {
     id: string;
     name: string;
-    description?: string;
-    contextWindow?: number;
-    inputModalities: string[];
-    outputModalities: string[];
 };
 
 export interface TeamAIProviderModelsCatalog {

@@ -9,7 +9,6 @@ import ListAIConversationMessagesUseCase from '@modules/ai/application/use-cases
 import ListAIConversationsUseCase from '@modules/ai/application/use-cases/ListAIConversationsUseCase';
 import SendAIConversationMessageUseCase from '@modules/ai/application/use-cases/SendAIConversationMessageUseCase';
 import UpdateAIConversationUseCase from '@modules/ai/application/use-cases/UpdateAIConversationUseCase';
-import AIProviderModelDiscoveryAdapter from '@modules/ai/infrastructure/services/AIProviderModelDiscoveryAdapter';
 import AISDKChatTransport from '@modules/ai/infrastructure/services/AISDKChatTransport';
 import AIConversationRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIConversationRepository';
 import AIMessageRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIMessageRepository';
@@ -33,7 +32,6 @@ export const registerAIDependencies = () => {
             [AI_TOKENS.AIMessageRepository, AIMessageRepository],
             [AI_TOKENS.AIToolService, AIToolService],
             [AI_TOKENS.AIChatTransport, AISDKChatTransport],
-            [AI_TOKENS.AIProviderModelDiscovery, AIProviderModelDiscoveryAdapter],
             [AI_TOKENS.AIMessageDTOMapper, AIMessageDTOMapper],
             [AI_TOKENS.AIUIMessageUtils, AIUIMessageUtils],
             [AI_TOKENS.AIResponseMessagePartsMapper, AIResponseMessagePartsMapper],

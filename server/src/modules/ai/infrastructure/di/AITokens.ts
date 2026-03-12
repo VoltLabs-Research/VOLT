@@ -2,7 +2,6 @@ export const AI_TOKENS = {
     AIConversationRepository: Symbol.for('AIConversationRepository'),
     AIMessageRepository: Symbol.for('AIMessageRepository'),
     AIChatTransport: Symbol.for('AIChatTransport'),
-    AIProviderModelDiscovery: Symbol.for('AIProviderModelDiscovery'),
     AIToolService: Symbol.for('AIToolService'),
     AIMessageDTOMapper: Symbol.for('AIMessageDTOMapper'),
     AIUIMessageUtils: Symbol.for('AIUIMessageUtils'),
