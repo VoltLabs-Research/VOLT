@@ -54,6 +54,10 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
         ? listingExposures[activeTab].name
         : null;
 
+    const activeExposureId = !isAtomsTab && activeTab < listingExposures.length
+        ? listingExposures[activeTab].exposureId
+        : null;
+
     const close = useCallback(
         () => setResultsPluginId(undefined, { replace: true }),
         [setResultsPluginId]
@@ -84,6 +88,7 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
         activeTab,
         setActiveTab,
         activeExposureName,
+        activeExposureId,
         isAtomsTab,
         hasAtomProperties,
         trajectoryId,
