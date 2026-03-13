@@ -145,6 +145,55 @@ export const readOptionalUnknownRecord = (value: unknown, fieldName: string): Re
     return readRecord(value, fieldName);
 };
 
+export const readPluginPropertyNamesRequest = (payload: unknown) => {
+    const record = readOptionalPayloadRecord(payload);
+    return {
+        trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
+        analysisId: readString(record.analysisId, 'analysisId'),
+        exposureId: readString(record.exposureId, 'exposureId')
+    };
+};
+
+export const readPluginModifierAnalysisRequest = (payload: unknown) => {
+    const request = readPluginPropertyNamesRequest(payload);
+    const record = readOptionalPayloadRecord(payload);
+    return {
+        ...request,
+        timestep: readNumber(record.timestep, 'timestep')
+    };
+};
+
+export const readPluginAtomIndexRequest = (payload: unknown) => {
+    const request = readPluginModifierAnalysisRequest(payload);
+    const record = readOptionalPayloadRecord(payload);
+    return {
+        ...request,
+        targetIds: readOptionalNumberArray(record.targetIds, 'targetIds') || []
+    };
+};
+
+export const readPluginModifierValuesRequest = (payload: unknown) => {
+    const request = readPluginModifierAnalysisRequest(payload);
+    const record = readOptionalPayloadRecord(payload);
+    return {
+        ...request,
+        property: readString(record.property, 'property')
+    };
+};
+
+export const readPluginModifierStatsRequest = (payload: unknown) => {
+    return readPluginModifierValuesRequest(payload);
+};
+
+export const readPluginModifierUniqueValuesRequest = (payload: unknown) => {
+    const request = readPluginModifierValuesRequest(payload);
+    const record = readOptionalPayloadRecord(payload);
+    return {
+        ...request,
+        maxValues: readOptionalNumber(record.maxValues)
+    };
+};
+
 export const readObjectBucketName = (value: unknown, fieldName: string): ObjectBucketName => {
     const bucketName = readString(value, fieldName);
 

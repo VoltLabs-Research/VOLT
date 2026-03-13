@@ -14,7 +14,13 @@ import {
 } from './services';
 import type { JupyterRuntimeService } from '@/modules/jupyter/services';
 import type { MetricsService } from '@/modules/metrics/services';
-import type { FilterEvaluatorService, GlbExporterService, RasterizerService, TrajectoryParserService } from '@/modules/trajectory-native/services';
+import type { 
+    FilterEvaluatorService, 
+    GlbExporterService, 
+    RasterizerService, 
+    TrajectoryParserService,
+    TrajectoryPluginParserService
+} from '@/modules/trajectory-native/services';
 import {
     createAnalysisHandlers,
     createJobHandlers,
@@ -45,6 +51,7 @@ export const createCloudControlModule = (deps: {
     queueService: QueueService;
     redisConnectionService: RedisConnectionService;
     trajectoryParserService: TrajectoryParserService;
+    trajectoryPluginParserService: TrajectoryPluginParserService;
     glbExporterService: GlbExporterService;
     rasterizerService: RasterizerService;
     filterEvaluatorService: FilterEvaluatorService;
@@ -67,6 +74,7 @@ export const createCloudControlModule = (deps: {
             minioService: deps.minioService,
             rasterizerService: deps.rasterizerService,
             trajectoryParserService: deps.trajectoryParserService,
+            trajectoryPluginParserService: deps.trajectoryPluginParserService,
             glbExporterService: deps.glbExporterService,
             filterEvaluatorService: deps.filterEvaluatorService
         }),

@@ -4,3 +4,4 @@ export * from './NativeModuleLoader';
 export * from './RasterizerService';
 export * from './TrajectoryParserService';
 export * from './TrajectoryRasterService';
+export * from './TrajectoryPluginParserService';

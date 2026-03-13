@@ -37,6 +37,7 @@ export const bootstrap = async (): Promise<void> => {
         queueService: platform.queueService,
         redisConnectionService: platform.redisConnectionService,
         trajectoryParserService: trajectoryNative.trajectoryParserService,
+        trajectoryPluginParserService: trajectoryNative.trajectoryPluginParserService,
         glbExporterService: trajectoryNative.glbExporterService,
         rasterizerService: trajectoryNative.rasterizerService,
         filterEvaluatorService: trajectoryNative.filterEvaluatorService,

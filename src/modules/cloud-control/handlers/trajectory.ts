@@ -10,17 +10,31 @@ import type {
     NativeTrajectoryRequest,
     NativeUniqueValuesRequest,
     RasterizerService,
-    TrajectoryParserService
+    TrajectoryParserService,
+    TrajectoryPluginParserService
 } from '@/modules/trajectory-native/services';
 import type { MinioService } from '@/modules/platform/services';
 import type { RasterizeTrajectoryRequest } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
-import { readNumber, readOptionalNumber, readOptionalPayloadRecord, readOptionalString, readString } from './payloadValidation';
+import { 
+    readNumber, 
+    readOptionalNumber, 
+    readOptionalPayloadRecord, 
+    readOptionalString, 
+    readString,
+    readPluginPropertyNamesRequest,
+    readPluginModifierAnalysisRequest,
+    readPluginAtomIndexRequest,
+    readPluginModifierValuesRequest,
+    readPluginModifierStatsRequest,
+    readPluginModifierUniqueValuesRequest
+} from './payloadValidation';
 
 interface TrajectoryHandlersDependencies {
     minioService: MinioService;
     rasterizerService: RasterizerService;
     trajectoryParserService: TrajectoryParserService;
+    trajectoryPluginParserService: TrajectoryPluginParserService;
     glbExporterService: GlbExporterService;
     filterEvaluatorService: FilterEvaluatorService;
 };
@@ -202,6 +216,42 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
             command: 'trajectory.native.particle-filter-model',
             execute: async (payload) => ({
                 data: await deps.filterEvaluatorService.exportParticleFilterModel(readNativeParticleFilterModelRequest(payload))
+            })
+        },
+        {
+            command: 'trajectory.plugin.property-names',
+            execute: async (payload) => ({
+                data: await deps.trajectoryPluginParserService.discoverPerAtomPropertyNames(readPluginPropertyNamesRequest(payload))
+            })
+        },
+        {
+            command: 'trajectory.plugin.modifier-analysis',
+            execute: async (payload) => ({
+                data: await deps.trajectoryPluginParserService.getModifierAnalysisData(readPluginModifierAnalysisRequest(payload))
+            })
+        },
+        {
+            command: 'trajectory.plugin.atom-index',
+            execute: async (payload) => ({
+                data: await deps.trajectoryPluginParserService.buildPluginIndexForAtomIds(readPluginAtomIndexRequest(payload))
+            })
+        },
+        {
+            command: 'trajectory.plugin.modifier-values',
+            execute: async (payload) => ({
+                data: await deps.trajectoryPluginParserService.getModifierValues(readPluginModifierValuesRequest(payload))
+            })
+        },
+        {
+            command: 'trajectory.plugin.modifier-stats',
+            execute: async (payload) => ({
+                data: await deps.trajectoryPluginParserService.getModifierStats(readPluginModifierStatsRequest(payload))
+            })
+        },
+        {
+            command: 'trajectory.plugin.modifier-unique-values',
+            execute: async (payload) => ({
+                data: await deps.trajectoryPluginParserService.getModifierUniqueValues(readPluginModifierUniqueValuesRequest(payload))
             })
         }
     ];
