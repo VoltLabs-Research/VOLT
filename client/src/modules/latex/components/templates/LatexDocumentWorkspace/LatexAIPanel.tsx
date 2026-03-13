@@ -16,18 +16,18 @@ import type { ReactNode } from 'react';
 interface LatexAIPanelProps {
     documentId: string;
     documentTitle: string;
-    width: number;
+    width?: number;
+    height?: number;
     onClose: () => void;
 };
 
 const buildDocumentContext = (documentId: string, documentTitle: string): string =>
     `[Context: LaTeX document "${documentTitle}", documentId: ${documentId}]\n\n`;
 
-const LatexAIPanel = ({ documentId, documentTitle, width, onClose }: LatexAIPanelProps) => {
+const LatexAIPanel = ({ documentId, documentTitle, width, height, onClose }: LatexAIPanelProps) => {
     const navigate = useNavigate();
     const [conversationId, setConversationId] = useState<string | undefined>();
     const [messageDraft, setMessageDraft] = useState('');
-    const pendingMessageRef = useRef<string | null>(null);
     const contextInjectedRef = useRef(false);
 
     const {
@@ -64,13 +64,15 @@ const LatexAIPanel = ({ documentId, documentTitle, width, onClose }: LatexAIPane
     }, [conversationId]);
 
     useEffect(() => {
-        if (!conversationId || !pendingMessageRef.current) return;
+        if (!conversationId) return;
 
-        const pendingMessage = pendingMessageRef.current;
-        pendingMessageRef.current = null;
+        const pendingMessage = sessionStorage.getItem('volt:ai:pending-message');
+        if (!pendingMessage) return;
+
+        sessionStorage.removeItem('volt:ai:pending-message');
 
         handleSendMessage(pendingMessage).catch(() => {
-            pendingMessageRef.current = pendingMessage;
+            sessionStorage.setItem('volt:ai:pending-message', pendingMessage);
             setMessageDraft(pendingMessage);
         });
     }, [conversationId, handleSendMessage]);
@@ -98,7 +100,7 @@ const LatexAIPanel = ({ documentId, documentTitle, width, onClose }: LatexAIPane
         try {
             if (!conversationId) {
                 const contextualMessage = prependContext(rawDraft);
-                pendingMessageRef.current = contextualMessage;
+                sessionStorage.setItem('volt:ai:pending-message', contextualMessage);
                 await handleCreateConversation(rawDraft);
                 return;
             }
@@ -217,7 +219,7 @@ const LatexAIPanel = ({ documentId, documentTitle, width, onClose }: LatexAIPane
     }
 
     return (
-        <Container className='latex-ai-panel d-flex column' style={{ width }}>
+        <Container className='latex-ai-panel d-flex column' style={{ width, height }}>
             <Container className='latex-ai-panel__header d-flex items-center content-between'>
                 <Container className='d-flex items-center gap-025'>
                     <Tooltip content='New conversation' placement='top'>

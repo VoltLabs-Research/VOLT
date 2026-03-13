@@ -24,12 +24,14 @@ const LatexAIPanel = lazy(() => import('./LatexAIPanel'));
 interface PanelWidths {
     files: number;
     preview: number;
+    ai: number;
 };
 
 interface DragState {
-    panel: 'files' | 'preview';
+    panel: 'files' | 'preview' | 'ai';
     startX: number;
-    startWidth: number;
+    startY: number;
+    startDimension: number;
 };
 
 const STORAGE_KEY = 'volt:latex-panel-widths';
@@ -37,7 +39,9 @@ const FILES_MIN = 160;
 const FILES_MAX = 400;
 const PREVIEW_MIN = 260;
 const PREVIEW_MAX = 600;
-const DEFAULT_WIDTHS: PanelWidths = { files: 220, preview: PREVIEW_MAX };
+const AI_MIN = 100;
+const AI_MAX = 600;
+const DEFAULT_WIDTHS: PanelWidths = { files: 220, preview: PREVIEW_MAX, ai: 300 };
 const LATEX_TEMPLATE_CONTENT = `\\documentclass{article}
 
 \\begin{document}
@@ -54,7 +58,8 @@ const loadPanelWidths = (): PanelWidths => {
         const parsed = JSON.parse(saved) as Partial<PanelWidths>;
         return {
             files: Math.min(FILES_MAX, Math.max(FILES_MIN, parsed.files ?? DEFAULT_WIDTHS.files)),
-            preview: Math.min(PREVIEW_MAX, Math.max(PREVIEW_MIN, parsed.preview ?? DEFAULT_WIDTHS.preview))
+            preview: Math.min(PREVIEW_MAX, Math.max(PREVIEW_MIN, parsed.preview ?? DEFAULT_WIDTHS.preview)),
+            ai: Math.min(AI_MAX, Math.max(AI_MIN, parsed.ai ?? DEFAULT_WIDTHS.ai))
         };
     } catch {
         return DEFAULT_WIDTHS;
@@ -145,7 +150,8 @@ const LatexDocumentWorkspace = () => {
         dragStateRef.current = {
             panel: 'files',
             startX: e.clientX,
-            startWidth: panelWidths.files
+            startY: e.clientY,
+            startDimension: panelWidths.files
         };
     }, [panelWidths.files]);
 
@@ -156,9 +162,22 @@ const LatexDocumentWorkspace = () => {
         dragStateRef.current = {
             panel: 'preview',
             startX: e.clientX,
-            startWidth: panelWidths.preview
+            startY: e.clientY,
+            startDimension: panelWidths.preview
         };
     }, [panelWidths.preview]);
+
+    /** Pointer Capture drag — AI panel handle (vertical). */
+    const handleAiPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>): void => {
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        dragStateRef.current = {
+            panel: 'ai',
+            startX: e.clientX,
+            startY: e.clientY,
+            startDimension: panelWidths.ai
+        };
+    }, [panelWidths.ai]);
 
     /**
      * Shared pointermove for both handles.
@@ -168,14 +187,19 @@ const LatexDocumentWorkspace = () => {
     const handleDragPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>): void => {
         const state = dragStateRef.current;
         if (!state || !e.currentTarget.hasPointerCapture(e.pointerId)) return;
-        const delta = e.clientX - state.startX;
 
         if (state.panel === 'files') {
-            const w = Math.min(FILES_MAX, Math.max(FILES_MIN, state.startWidth + delta));
+            const delta = e.clientX - state.startX;
+            const w = Math.min(FILES_MAX, Math.max(FILES_MIN, state.startDimension + delta));
             setPanelWidths((prev) => ({ ...prev, files: w }));
-        } else {
-            const w = Math.min(PREVIEW_MAX, Math.max(PREVIEW_MIN, state.startWidth - delta));
+        } else if (state.panel === 'preview') {
+            const delta = e.clientX - state.startX;
+            const w = Math.min(PREVIEW_MAX, Math.max(PREVIEW_MIN, state.startDimension - delta));
             setPanelWidths((prev) => ({ ...prev, preview: w }));
+        } else if (state.panel === 'ai') {
+            const delta = e.clientY - state.startY;
+            const h = Math.min(AI_MAX, Math.max(AI_MIN, state.startDimension - delta));
+            setPanelWidths((prev) => ({ ...prev, ai: h }));
         }
     }, []);
 
@@ -463,17 +487,46 @@ const LatexDocumentWorkspace = () => {
                             onPointerCancel={handleDragPointerCancel}
                         />
 
-                        <LatexEditorPanel
-                            activeSelection={selection}
-                            openTabs={openTabs}
-                            files={files}
-                            assets={rawAssets}
-                            dirtyFileIds={dirtyFileIds}
-                            content={editorContent}
-                            onChange={handleEditorChange}
-                            onTabSelect={handleSelectTab}
-                            onTabClose={handleCloseTab}
-                        />
+                        <Container className='latex-workspace__main-content d-flex column flex-1 min-w-0'>
+                            <LatexEditorPanel
+                                activeSelection={selection}
+                                openTabs={openTabs}
+                                files={files}
+                                assets={rawAssets}
+                                dirtyFileIds={dirtyFileIds}
+                                content={editorContent}
+                                onChange={handleEditorChange}
+                                onTabSelect={handleSelectTab}
+                                onTabClose={handleCloseTab}
+                            />
+
+                            {isAIPanelOpen && (
+                                <>
+                                    <div
+                                        className='latex-drag-handle-horizontal'
+                                        role='separator'
+                                        aria-label='Resize AI panel'
+                                        aria-orientation='horizontal'
+                                        onPointerDown={handleAiPointerDown}
+                                        onPointerMove={handleDragPointerMove}
+                                        onPointerUp={handleDragPointerUp}
+                                        onPointerCancel={handleDragPointerCancel}
+                                    />
+                                    <Suspense fallback={
+                                        <Container className='latex-ai-panel d-flex column flex-center items-center' style={{ height: panelWidths.ai }}>
+                                            <Loader scale={0.5} isFixed={false} />
+                                        </Container>
+                                    }>
+                                        <LatexAIPanel
+                                            documentId={documentId}
+                                            documentTitle={latexDocument?.title ?? 'LaTeX Document'}
+                                            height={panelWidths.ai}
+                                            onClose={toggleAIPanel}
+                                        />
+                                    </Suspense>
+                                </>
+                            )}
+                        </Container>
 
                         <div
                             className='latex-drag-handle'
@@ -486,28 +539,13 @@ const LatexDocumentWorkspace = () => {
                             onPointerCancel={handleDragPointerCancel}
                         />
 
-                        {isAIPanelOpen ? (
-                            <Suspense fallback={
-                                <Container className='latex-ai-panel d-flex column flex-center items-center' style={{ width: panelWidths.preview }}>
-                                    <Loader scale={0.5} isFixed={false} />
-                                </Container>
-                            }>
-                                <LatexAIPanel
-                                    documentId={documentId}
-                                    documentTitle={latexDocument?.title ?? 'LaTeX Document'}
-                                    width={panelWidths.preview}
-                                    onClose={toggleAIPanel}
-                                />
-                            </Suspense>
-                        ) : (
-                            <LatexPreviewPanel
-                                isCompiling={isCompiling}
-                                compiledPdfUrl={compiledPdfUrl}
-                                compileError={compileError}
-                                onExportPdf={handleExportPdf}
-                                width={panelWidths.preview}
-                            />
-                        )}
+                        <LatexPreviewPanel
+                            isCompiling={isCompiling}
+                            compiledPdfUrl={compiledPdfUrl}
+                            compileError={compileError}
+                            onExportPdf={handleExportPdf}
+                            width={panelWidths.preview}
+                        />
                     </>
                 )}
             </Container>
