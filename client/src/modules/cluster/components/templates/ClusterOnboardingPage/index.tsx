@@ -4,6 +4,7 @@ import ClusterListPanel from '@/modules/cluster/components/molecules/ClusterList
 import Container from '@/shared/presentation/components/Container';
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/DeleteClusterModal';
+import { JoinTeamModal } from '@/modules/team/components/organisms/JoinTeamModal';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import NotificationsPopover from '@/modules/notification/components/organisms/NotificationsPopover';
@@ -49,7 +50,6 @@ const ClusterOnboardingPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [createdCluster, setCreatedCluster] = useState<TeamCluster | null>(null);
     const [enrollmentToken, setEnrollmentToken] = useState<string | null>(null);
-    const [enrollmentTokens, setEnrollmentTokens] = useState<Map<string, string>>(new Map());
     const [deleteTarget, setDeleteTarget] = useState<TeamCluster | null>(null);
     const [connectedClusterName, setConnectedClusterName] = useState<string | null>(null);
     const hasRedirected = useRef(false);
@@ -83,6 +83,8 @@ const ClusterOnboardingPage = () => {
         return () => clearTimeout(timer);
     }, [step, navigate]);
 
+    const handleOpenJoinModal = () => openModal('join-team-modal');
+
     const handleSignOut = () => {
         try {
             setIsSigningOut(true);
@@ -115,21 +117,12 @@ const ClusterOnboardingPage = () => {
             const result = await createCluster(name.trim());
             setCreatedCluster(result.teamCluster);
             setEnrollmentToken(result.enrollmentToken);
-            setEnrollmentTokens((prev) => new Map(prev).set(result.teamCluster._id, result.enrollmentToken));
             openModal(INSTALL_MODAL_ID);
         } catch {
             // Error toast is already shown by showPromise in useClusterManagement
         } finally {
             setIsSubmitting(false);
         }
-    };
-
-    const handlePanelConnect = (cluster: TeamCluster) => {
-        const token = enrollmentTokens.get(cluster._id);
-        if (!token) return;
-        setCreatedCluster(cluster);
-        setEnrollmentToken(token);
-        openModal(INSTALL_MODAL_ID);
     };
 
     const handlePanelDelete = (cluster: TeamCluster) => {
@@ -157,9 +150,21 @@ const ClusterOnboardingPage = () => {
     if (step === 'success') {
         return (
             <Container className='cluster-onboarding-success d-flex items-center content-center'>
+                <Button
+                    className='cluster-onboarding-invite-btn'
+                    variant='ghost'
+                    intent='neutral'
+                    size='sm'
+                    onClick={handleOpenJoinModal}
+                >
+                    Have an invite code?
+                </Button>
+
                 <Title className='cluster-onboarding-success-title font-size-7 font-weight-6 color-primary'>
                     {connectedClusterName} connected!
                 </Title>
+
+                <JoinTeamModal />
             </Container>
         );
     }
@@ -174,6 +179,15 @@ const ClusterOnboardingPage = () => {
 
     return (
         <Container className='cluster-onboarding-page'>
+            <Button
+                className='cluster-onboarding-invite-btn'
+                variant='ghost'
+                intent='neutral'
+                size='sm'
+                onClick={handleOpenJoinModal}
+            >
+                Have an invite code?
+            </Button>
             {hasConnectedCluster ? (
                 <nav className='cluster-onboarding-breadcrumb'>
                     <span
@@ -303,8 +317,6 @@ const ClusterOnboardingPage = () => {
             {clusters.length > 0 && (
                 <ClusterListPanel
                     clusters={clusters}
-                    enrollmentTokens={enrollmentTokens}
-                    onConnect={handlePanelConnect}
                     onDelete={handlePanelDelete}
                 />
             )}
@@ -328,6 +340,8 @@ const ClusterOnboardingPage = () => {
             <Container className='cluster-onboarding-notifications'>
                 <NotificationsPopover />
             </Container>
+
+            <JoinTeamModal />
         </Container>
     );
 };

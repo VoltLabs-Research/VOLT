@@ -21,6 +21,7 @@ import ProcessDaemonTrajectoryImportUseCase from '@modules/team-cluster/applicat
 import GetTeamClusterRemoteExplorerNodeUseCase from '@modules/team-cluster/application/use-cases/GetTeamClusterRemoteExplorerNodeUseCase';
 import ListTeamClusterRemoteExplorerEntriesUseCase from '@modules/team-cluster/application/use-cases/ListTeamClusterRemoteExplorerEntriesUseCase';
 import ProcessTeamClusterHealthcheckUseCase from '@modules/team-cluster/application/use-cases/ProcessTeamClusterHealthcheckUseCase';
+import RegenerateTeamClusterEnrollmentTokenUseCase from '@modules/team-cluster/application/use-cases/RegenerateTeamClusterEnrollmentTokenUseCase';
 import RecordTeamClusterHeartbeatUseCase from '@modules/team-cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
 import UpdateTeamClusterLifecycleUseCase from '@modules/team-cluster/application/use-cases/UpdateTeamClusterLifecycleUseCase';
 import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
@@ -49,6 +50,7 @@ export const registerTeamClusterDependencies = () => {
             ProcessDaemonSceneArtifactUpsertUseCase,
             ProcessDaemonTrajectoryImportUseCase,
             ProcessTeamClusterHealthcheckUseCase,
+            RegenerateTeamClusterEnrollmentTokenUseCase,
             RecordTeamClusterHeartbeatUseCase,
             UpdateTeamClusterLifecycleUseCase
         ],

@@ -118,11 +118,18 @@ const useAIChatStream = ({
         onFinish: () => {
             if (!isMountedRef.current) return;
 
-            invalidateConversationsQueries().catch(console.warn);
+            // Small delay to let streamStatus settle to 'ready' so that
+            // the setMessages sync effect does not skip the update due
+            // to the isSendingMessage guard.
+            setTimeout(() => {
+                if (!isMountedRef.current) return;
 
-            if (messagesQueryParams) {
-                invalidateConversationMessagesQuery(messagesQueryParams).catch(console.warn);
-            }
+                invalidateConversationsQueries().catch(console.warn);
+
+                if (messagesQueryParams) {
+                    invalidateConversationMessagesQuery(messagesQueryParams).catch(console.warn);
+                }
+            }, 100);
         }
     });
 

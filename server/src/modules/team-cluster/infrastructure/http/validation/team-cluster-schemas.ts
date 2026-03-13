@@ -138,6 +138,9 @@ const requestUpdateSchema = z.object({
 }).strict();
 
 export const teamClusterValidation = createResourceValidation({
+    regenerateEnrollmentToken: {
+        params: teamClusterParamsSchema
+    },
     create: {
         params: teamParamsSchema,
         body: createTeamClusterSchema

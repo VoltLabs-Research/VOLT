@@ -14,6 +14,7 @@ import Analysis from '@modules/analysis/domain/entities/Analysis';
 import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 import mergeChunkedValue from '@modules/plugin/utilities/exposure/merge-chunked-value';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import TeamClusterStorageResolver from '@shared/infrastructure/services/TeamClusterStorageResolver';
 
 import { injectable, inject } from 'tsyringe';
 
@@ -43,6 +44,9 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
+        @inject(SHARED_TOKENS.TeamClusterStorageResolver)
+        private readonly clusterStorageResolver: TeamClusterStorageResolver,
+
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private readonly analysisRepository: IAnalysisRepository,
 
@@ -54,6 +58,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         const { analysis, plugin } = await this.getAnalysisAndPlugin(analysisId);
         const workflow = plugin.props.workflow;
         const trajectoryId = analysis.props.trajectory;
+        const storage = await this.resolvePluginStorage(analysis);
         const props: Record<string, string[]> = {};
 
         const exposureNodes = workflow.props.nodes.filter(
@@ -62,6 +67,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
         for (const exposureNode of exposureNodes) {
             const propertyNames = await this.discoverPerAtomPropertyNames(
+                storage,
                 trajectoryId,
                 analysisId,
                 String(exposureNode.id)
@@ -79,6 +85,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         const { analysis, plugin } = await this.getAnalysisAndPlugin(analysisId);
         const workflow = plugin.props.workflow;
         const trajectoryId = analysis.props.trajectory;
+        const storage = await this.resolvePluginStorage(analysis);
 
         const exposureNode = workflow.props.nodes
             .filter((node) => node.type === WorkflowNodeType.Exposure)
@@ -91,6 +98,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             : '';
 
         const perAtomProperties = await this.discoverPerAtomPropertyNames(
+            storage,
             trajectoryId,
             analysisId,
             String(exposureId)
@@ -110,8 +118,9 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         exposureId: string,
         timestep: string
     ): Promise<Record<string, unknown>[] | null> {
+        const storage = await this.resolvePluginStorageByAnalysisId(analysisId);
         const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, timestep);
-        const stream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, key);
+        const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, key);
 
         let decoded: Record<string, unknown> | null = null;
 
@@ -141,8 +150,9 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         const config = await this.getExposureAtomConfig(analysisId, exposureId);
         if (config.perAtomProperties.length === 0) return null;
 
+        const storage = await this.resolvePluginStorageByAnalysisId(analysisId);
         const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, timestep);
-        const pluginStream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, key);
+        const pluginStream = await storage.getStream(SYS_BUCKETS.PLUGINS, key);
 
         const pluginIndex = new Map<number, Record<string, unknown>>();
         const stream = pluginStream as unknown as AsyncIterable<Uint8Array>;
@@ -261,6 +271,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
     }
 
     private async discoverPerAtomPropertyNames(
+        storage: IStorageService,
         trajectoryId: string,
         analysisId: string,
         exposureId: string
@@ -268,7 +279,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         const prefix = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/`;
         let firstObjectName: string | null = null;
 
-        for await (const objectName of this.storageService.listByPrefix(SYS_BUCKETS.PLUGINS, prefix, true)) {
+        for await (const objectName of storage.listByPrefix(SYS_BUCKETS.PLUGINS, prefix, true)) {
             if (objectName.endsWith('.msgpack')) {
                 firstObjectName = objectName;
                 break;
@@ -277,7 +288,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
         if (!firstObjectName) return [];
 
-        const stream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, firstObjectName);
+        const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, firstObjectName);
         let decoded: Record<string, unknown> | null = null;
 
         for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
@@ -296,6 +307,18 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
     private getPluginMsgpackKey(trajectoryId: string, analysisId: string, exposureId: string, timestep: string): string {
         return `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
+    }
+
+    private async resolvePluginStorage(analysis: Analysis): Promise<IStorageService> {
+        const teamClusterId = analysis.props.teamCluster;
+        if (!teamClusterId) return this.storageService;
+        return this.clusterStorageResolver.resolve(teamClusterId);
+    }
+
+    private async resolvePluginStorageByAnalysisId(analysisId: string): Promise<IStorageService> {
+        const analysis = await this.analysisRepository.findById(analysisId);
+        if (!analysis) return this.storageService;
+        return this.resolvePluginStorage(analysis);
     }
 
     private async getAnalysisAndPlugin(analysisId: string): Promise<{ analysis: Analysis; plugin: Plugin }> {

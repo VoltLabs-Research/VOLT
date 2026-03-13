@@ -13,6 +13,10 @@ import type {
     RequestClusterUpdateOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/request-cluster-update';
 import type {
+    RegenerateTeamClusterEnrollmentTokenInputDTO,
+    RegenerateTeamClusterEnrollmentTokenOutputDTO
+} from '@/modules/cluster/api/dtos/team-cluster/regenerate-team-cluster-enrollment-token';
+import type {
     RevealTeamClusterCredentialsInputDTO,
     RevealTeamClusterCredentialsOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/reveal-team-cluster-credentials';
@@ -177,4 +181,12 @@ export const useRequestClusterUpdateMutation = (
             upsertTeamClusterQueryData(variables.teamId, data.teamCluster);
         }, options)
     });
+};
+
+export const useRegenerateTeamClusterEnrollmentTokenMutation = (
+    options?: MutationOptions<RegenerateTeamClusterEnrollmentTokenOutputDTO, RegenerateTeamClusterEnrollmentTokenInputDTO>
+) => {
+    return createMutation<RegenerateTeamClusterEnrollmentTokenOutputDTO, RegenerateTeamClusterEnrollmentTokenInputDTO>(
+        teamClusterService.regenerateEnrollmentToken
+    )(options);
 };

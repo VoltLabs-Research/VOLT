@@ -46,6 +46,11 @@ export default createHttpModule({
             controllers.downloadRemoteExplorerObject.handle
         );
         router.post(
+            '/:teamClusterId/enrollment-token/regenerate',
+            teamClusterValidation.regenerateEnrollmentToken,
+            controllers.regenerateEnrollmentToken.handle
+        );
+        router.post(
             '/:teamClusterId/delete-requests',
             RATE_LIMIT_POLICIES.teamClusterDelete,
             teamClusterValidation.deleteById,

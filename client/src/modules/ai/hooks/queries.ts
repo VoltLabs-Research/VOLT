@@ -108,7 +108,7 @@ export const useCreateConversationMutation = (
     options?: MutationOptions<CreateAIConversationResult, CreateAIConversationParams>
 ) => createManagedMutation<CreateAIConversationResult, CreateAIConversationParams>(
     service.createConversation,
-    ({ conversation, userMessage }) => {
+    ({ conversation }) => {
         patchConversations(conversationsQueryParams, (current) => ({
             ...current,
             data: sortConversations([
@@ -116,26 +116,6 @@ export const useCreateConversationMutation = (
                 ...current.data.filter((item) => item._id !== conversation._id)
             ])
         }));
-
-        if (!userMessage) return;
-
-        messagesQuery.set(
-            buildConversationMessagesQueryParams(conversation.teamId, conversation._id, {
-                page: 1,
-                limit: 200
-            }),
-            {
-                status: 'success',
-                data: [userMessage],
-                pagination: {
-                    page: 1,
-                    limit: 200,
-                    total: 1,
-                    totalPages: 1,
-                    hasMore: false
-                }
-            }
-        );
     }
 )(options);
 
