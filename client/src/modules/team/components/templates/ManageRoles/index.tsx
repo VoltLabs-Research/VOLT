@@ -52,7 +52,7 @@ const COLUMNS: ColumnConfig<TeamRole>[] = [
         render: (_value, role) => (
             <Container className='d-flex items-center gap-1'>
                 <IoShieldCheckmarkOutline size={18} className='color-secondary' />
-                <span className='font-weight-5 color-primary'>{role.name}</span>
+                <span className='font-weight-5 color-secondary'>{role.name}</span>
             </Container>
         )
     },

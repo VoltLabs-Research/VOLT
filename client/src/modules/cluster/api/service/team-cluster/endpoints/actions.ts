@@ -1,8 +1,9 @@
-import { get, post } from '@/app/core/http/utilities/create-service';
+import { get, post, download } from '@/app/core/http/utilities/create-service';
 import type {
     CreateTeamClusterRemoteAccessSessionInputDTO,
     CreateTeamClusterRemoteAccessSessionOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster-remote-access-session';
+import type { DownloadTeamClusterRemoteExplorerObjectInputDTO } from '@/modules/cluster/api/dtos/team-cluster/download-team-cluster-remote-explorer-object';
 import type { DeleteTeamClusterInputDTO, DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type {
     FetchAvailableClusterVersionsInputDTO,
@@ -42,5 +43,8 @@ export default {
     ),
     revealCredentials: post<RevealTeamClusterCredentialsInputDTO, RevealTeamClusterCredentialsOutputDTO>(
         '/:teamId/clusters/:teamClusterId/credentials/reveal'
+    ),
+    downloadRemoteExplorerObject: download<DownloadTeamClusterRemoteExplorerObjectInputDTO>(
+        'POST', '/:teamId/clusters/:teamClusterId/remote-access/explorer/download'
     )
 };

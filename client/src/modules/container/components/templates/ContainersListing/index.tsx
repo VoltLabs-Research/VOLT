@@ -31,11 +31,11 @@ const renderName: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (va
 
     return (
         <Container className='d-flex items-center gap-075'>
-            <Container className='d-flex flex-center color-primary'>
+            <Container className='d-flex flex-center color-secondary'>
                 {icon}
             </Container>
             <Container className='d-flex column gap-025 overflow-hidden'>
-                <span className='font-weight-6 color-primary'>{String(value)}</span>
+                <span className='font-weight-6 color-secondary'>{String(value)}</span>
                 <span className='font-size-1 color-muted'>{subtitle}</span>
             </Container>
         </Container>

@@ -172,6 +172,10 @@ export const teamClusterValidation = createResourceValidation({
         params: teamClusterParamsSchema,
         body: remoteExplorerRequestSchema
     },
+    downloadRemoteExplorerObject: {
+        params: teamClusterParamsSchema,
+        body: remoteExplorerRequestSchema
+    },
     revealCredentials: {
         params: teamClusterParamsSchema,
         body: passwordConfirmationSchema

@@ -17,8 +17,27 @@ import type {
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
 import type { IListingRowsExportPresenter } from '@modules/plugin/domain/port/listing-row/IListingRowsExportPresenter';
 
+/**
+ * Converts a snake_case or hyphen-separated name to Title-Case with hyphens.
+ *
+ * @example titleCaseName('dislocation_segments') // 'Dislocation-Segments'
+ * @example titleCaseName('facets') // 'Facets'
+ * @example titleCaseName('grain-points') // 'Grain-Points'
+ */
+const titleCaseName = (name: string): string => {
+    return name
+        .split(/[_-]+/)
+        .filter(Boolean)
+        .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+        .join('-');
+};
+
 @injectable()
 export class ListingRowsExportPresenter implements IListingRowsExportPresenter {
+    private rootDir(analysisId: string): string {
+        return `AnalysisID-${analysisId}`;
+    }
+
     private getEmptyListing(analysisId: string): AnalysisListingExportData {
         return {
             listingId: 'listing',
@@ -28,12 +47,29 @@ export class ListingRowsExportPresenter implements IListingRowsExportPresenter {
         };
     }
 
+    private appendConfigCsv(
+        archive: Parameters<NonNullable<Parameters<typeof createZipDownloadResponse>[0]['appendEntries']>>[0],
+        analysisId: string,
+        config: Record<string, unknown>
+    ): void {
+        const rows = Object.entries(config).map(([key, value]) => ({
+            Key: key,
+            Value: String(value)
+        }));
+        const csvContent = toCsvContent(rows, ['Key', 'Value']);
+
+        archive.append(Readable.from([csvContent]), {
+            name: `${this.rootDir(analysisId)}/Config.csv`
+        });
+    }
+
     private appendListingCsv(
         archive: Parameters<NonNullable<Parameters<typeof createZipDownloadResponse>[0]['appendEntries']>>[0],
         analysisId: string,
         listing: AnalysisListingExportData
     ): void {
-        const csvName = `${analysisId}_${sanitizeDownloadName(listing.listingName, 'listing')}_listing.csv`;
+        const listingName = sanitizeDownloadName(listing.listingName, 'listing');
+        const csvName = `${this.rootDir(analysisId)}/${listingName}.csv`;
         const csvContent = toCsvContent(listing.rows, listing.columns);
 
         archive.append(Readable.from([csvContent]), {
@@ -47,8 +83,8 @@ export class ListingRowsExportPresenter implements IListingRowsExportPresenter {
         subListing: AnalysisSubListingExportData
     ): void {
         const exposureName = sanitizeDownloadName(subListing.exposureName, subListing.exposureId || 'exposure');
-        const subListingName = sanitizeDownloadName(subListing.subListingName, 'sub-listing');
-        const csvName = `${analysisId}_${exposureName}_${subListingName}_timestep-${subListing.timestep}_sub-listing.csv`;
+        const subListingName = titleCaseName(sanitizeDownloadName(subListing.subListingName, 'sub-listing'));
+        const csvName = `${this.rootDir(analysisId)}/TS-${subListing.timestep}/${exposureName}/${subListingName}.csv`;
         const csvContent = toCsvContent(subListing.rows, subListing.columns);
 
         archive.append(Readable.from([csvContent]), {
@@ -56,12 +92,19 @@ export class ListingRowsExportPresenter implements IListingRowsExportPresenter {
         });
     }
 
+    private hasConfig(config: Record<string, unknown> | undefined): config is Record<string, unknown> {
+        return config !== undefined && Object.keys(config).length > 0;
+    }
+
     present(payload: ExportListingRowsByAnalysisIdOutputDTO): DownloadStreamOutputDTO {
-        if (payload.listings.length <= 1 && payload.subListings.length === 0) {
+        const hasConfig = this.hasConfig(payload.config);
+
+        if (payload.listings.length <= 1 && payload.subListings.length === 0 && !hasConfig) {
             const listing = payload.listings[0] || this.getEmptyListing(payload.analysisId);
+            const listingName = sanitizeDownloadName(listing.listingName, 'listing');
 
             return createSerializedDownloadResponse({
-                filename: `${payload.analysisId}_${sanitizeDownloadName(listing.listingName, 'listing')}_listing`,
+                filename: `AnalysisID-${payload.analysisId}_${listingName}`,
                 format: ExportType.Csv,
                 rows: listing.rows,
                 columns: listing.columns
@@ -69,8 +112,12 @@ export class ListingRowsExportPresenter implements IListingRowsExportPresenter {
         }
 
         return createZipDownloadResponse({
-            filename: `${payload.analysisId}_analysis_listings`,
+            filename: `AnalysisID-${payload.analysisId}`,
             appendEntries: async (archive) => {
+                if (hasConfig) {
+                    this.appendConfigCsv(archive, payload.analysisId, payload.config!);
+                }
+
                 for (const listing of payload.listings) {
                     this.appendListingCsv(archive, payload.analysisId, listing);
                 }

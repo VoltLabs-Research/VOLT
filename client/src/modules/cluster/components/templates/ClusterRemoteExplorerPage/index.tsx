@@ -94,6 +94,7 @@ const ClusterRemoteExplorerPage = () => {
                 session={vm.session}
                 listEntries={clusterManagement.listRemoteExplorerEntries}
                 getNode={clusterManagement.getRemoteExplorerNode}
+                downloadObject={clusterManagement.downloadRemoteExplorerObject}
             />
         </Container>
     );

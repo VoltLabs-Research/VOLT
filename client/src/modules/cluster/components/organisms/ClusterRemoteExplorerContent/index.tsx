@@ -1,6 +1,8 @@
 import { TeamClusterRemoteAccessTarget, TeamClusterRemoteExplorerContentType, TeamClusterRemoteExplorerEntryType } from '@/modules/cluster/api/entities/team-cluster-remote-access';
 import ClusterMongoDocumentViewer from '@/modules/cluster/components/molecules/ClusterMongoDocumentViewer';
 import { useRemoteExplorer } from '@/shared/api/remote-explorer';
+import { triggerBrowserDownload } from '@/shared/utils/file';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FileExplorer from '@/shared/presentation/components/FileExplorer';
@@ -8,7 +10,7 @@ import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileE
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
 import Title from '@/shared/presentation/components/Title';
-import { Database, FolderOpen, HardDrive, Package } from 'lucide-react';
+import { Database, Download, FolderOpen, HardDrive, Package } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import './ClusterRemoteExplorerContent.css';
 import type {
@@ -36,6 +38,12 @@ interface ClusterRemoteExplorerContentProps {
         target: TeamClusterRemoteAccessTarget,
         path: string
     ) => Promise<TeamClusterRemoteExplorerNode>;
+    downloadObject: (
+        teamClusterId: string,
+        sessionId: string,
+        target: TeamClusterRemoteAccessTarget,
+        path: string
+    ) => Promise<Blob>;
 };
 
 const toExplorerPath = (path: string): string => {
@@ -52,6 +60,13 @@ const isNavigableEntry = (entry: TeamClusterRemoteExplorerEntry): boolean => {
     return entry.type === TeamClusterRemoteExplorerEntryType.Directory
         || entry.type === TeamClusterRemoteExplorerEntryType.Bucket
         || entry.type === TeamClusterRemoteExplorerEntryType.RedisDatabase;
+};
+
+/** Returns true when the entry represents a leaf resource that can be downloaded. */
+const isDownloadableEntry = (entry: TeamClusterRemoteExplorerEntry): boolean => {
+    return entry.type === TeamClusterRemoteExplorerEntryType.Object
+        || entry.type === TeamClusterRemoteExplorerEntryType.Collection
+        || entry.type === TeamClusterRemoteExplorerEntryType.RedisKey;
 };
 
 const getEntryIcon = (entry: TeamClusterRemoteExplorerEntry): LucideIconComponent => {
@@ -80,7 +95,8 @@ const ClusterRemoteExplorerContent = ({
     target,
     session,
     listEntries,
-    getNode
+    getNode,
+    downloadObject
 }: ClusterRemoteExplorerContentProps) => {
     const remoteExplorer = useRemoteExplorer({
         initialPath: '/',
@@ -95,6 +111,7 @@ const ClusterRemoteExplorerContent = ({
     const [node, setNode] = useState<TeamClusterRemoteExplorerNode | null>(null);
     const [nodeError, setNodeError] = useState<string | null>(null);
     const [isNodeLoading, setIsNodeLoading] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     useEffect(() => {
         remoteExplorer.navigateTo('/');
@@ -175,6 +192,28 @@ const ClusterRemoteExplorerContent = ({
         }
 
         explorerState.navigateTo(toExplorerPath(entry.path));
+    };
+
+    const handleDownload = async () => {
+        if (!selectedEntry || !isDownloadableEntry(selectedEntry)) return;
+
+        setIsDownloading(true);
+
+        try {
+            const blob = await showPromise(
+                downloadObject(teamCluster._id, session.sessionId, target, selectedEntry.path),
+                {
+                    loading: { title: 'Downloading...' },
+                    success: { title: 'Download complete' },
+                    error: { title: 'Failed to download' }
+                }
+            );
+
+            const filename = selectedEntry.name || selectedEntry.path.split('/').pop() || 'download';
+            triggerBrowserDownload(blob, filename);
+        } finally {
+            setIsDownloading(false);
+        }
     };
 
     const renderEntryRow = (entry: TeamClusterRemoteExplorerEntry) => {
@@ -298,13 +337,27 @@ const ClusterRemoteExplorerContent = ({
             </Container>
 
             <Container className='cluster-remote-explorer-detail cluster-remote-explorer-panel radius-md p-1 d-flex column gap-1'>
-                <Container className='d-flex column gap-025'>
-                    <Title className='font-size-3 font-weight-6 color-primary'>Details</Title>
-                    <Paragraph className='font-size-2 color-secondary'>
-                        {selectedEntry
-                            ? selectedEntry.path
-                            : 'Select a collection, key or object to inspect its contents.'}
-                    </Paragraph>
+                <Container className='d-flex items-center gap-1'>
+                    <Container className='d-flex column gap-025 flex-1'>
+                        <Title className='font-size-3 font-weight-6 color-primary'>Details</Title>
+                        <Paragraph className='font-size-2 color-secondary'>
+                            {selectedEntry
+                                ? selectedEntry.path
+                                : 'Select a collection, key or object to inspect its contents.'}
+                        </Paragraph>
+                    </Container>
+                    {selectedEntry && isDownloadableEntry(selectedEntry) && (
+                        <Button
+                            variant='outline'
+                            intent='white'
+                            size='sm'
+                            leftIcon={<Download size={14} />}
+                            isLoading={isDownloading}
+                            onClick={handleDownload}
+                        >
+                            Download
+                        </Button>
+                    )}
                 </Container>
                 {detailContent}
             </Container>

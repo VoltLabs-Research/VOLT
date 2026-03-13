@@ -25,7 +25,7 @@ const TableSkeletonRow = <TRow,>({
         >
             {columns.map((col, colIdx) => (
                 <Container
-                    className='document-listing-cell overflow-hidden d-flex items-center color-primary'
+                    className='document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary'
                     data-label={col.title}
                     key={col.key}
                     style={

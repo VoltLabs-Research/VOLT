@@ -1,8 +1,10 @@
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 import { AITool } from '@shared/application/ai/AITool';
 import { UpdateLatexFileUseCase } from '@modules/latex/application/use-cases/UpdateLatexFileUseCase';
 import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
+import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 
 @injectable()
 export class EditLatexFileAITool extends AITool {
@@ -17,7 +19,10 @@ export class EditLatexFileAITool extends AITool {
 
     constructor(
         @inject(UpdateLatexFileUseCase)
-        protected readonly useCase: UpdateLatexFileUseCase
+        protected readonly useCase: UpdateLatexFileUseCase,
+
+        @inject(SOCKET_TOKENS.SocketEmitter)
+        private readonly socketEmitter: ISocketEmitter
     ) {
         super();
     }
@@ -30,6 +35,18 @@ export class EditLatexFileAITool extends AITool {
             content: params.content
         });
         if (!result.success) throw result.error;
+
+        this.socketEmitter.emitToRoom(
+            `latex-doc-${params.documentId}`,
+            'latex_content_updated',
+            {
+                documentId: params.documentId,
+                fileId: params.fileId,
+                content: params.content,
+                timestamp: Date.now(),
+                senderId: 'ai-assistant'
+            }
+        );
 
         return {
             summary: `Updated file "${result.value.name}".`,

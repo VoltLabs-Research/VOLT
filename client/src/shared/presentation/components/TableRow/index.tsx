@@ -168,7 +168,7 @@ const TableRow = <T extends Identifiable>({
 
                 return (
                     <Container
-                        className='document-listing-cell overflow-hidden d-flex items-center color-primary'
+                        className='document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary'
                         data-label={columnTitle}
                         key={`cell-${columnTitle}-${colIdx}`}
                         title={title}

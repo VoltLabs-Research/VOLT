@@ -355,6 +355,7 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
         const payload: ExportListingRowsByAnalysisIdOutputDTO = {
             analysisId: input.analysisId,
             format,
+            config: analysis?.props.config,
             listings,
             subListings
         };

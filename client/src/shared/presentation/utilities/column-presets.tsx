@@ -212,10 +212,10 @@ export function titleWithIconColumn<TRow = unknown>(
         sortable: options?.sortable ?? true,
         render: (_value: unknown, row: TRow) => (
             <Container className='d-flex items-center gap-075'>
-                <Container className='d-flex flex-center color-primary'>
+                <Container className='d-flex flex-center color-secondary'>
                     {icon}
                 </Container>
-                <span className='font-weight-6 color-primary text-truncate'>{resolveTitle(row)}</span>
+                <span className='font-weight-6 color-secondary text-truncate'>{resolveTitle(row)}</span>
             </Container>
         ),
         skeleton: { variant: 'text', width: options?.width ?? 180 }

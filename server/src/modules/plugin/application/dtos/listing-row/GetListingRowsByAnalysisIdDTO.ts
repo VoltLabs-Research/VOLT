@@ -53,6 +53,7 @@ export interface AnalysisSubListingExportData {
 export interface ExportListingRowsByAnalysisIdOutputDTO {
     analysisId: string;
     format: ExportType;
+    config?: Record<string, unknown>;
     listings: AnalysisListingExportData[];
     subListings: AnalysisSubListingExportData[];
 };

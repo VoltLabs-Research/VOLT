@@ -3,6 +3,7 @@ import CreateTeamClusterController from '@modules/team-cluster/infrastructure/ht
 import FetchAvailableClusterVersionsController from '@modules/team-cluster/infrastructure/http/controllers/FetchAvailableClusterVersionsController';
 import CreateTeamClusterRemoteAccessSessionController from '@modules/team-cluster/infrastructure/http/controllers/CreateTeamClusterRemoteAccessSessionController';
 import DeleteTeamClusterByIdController from '@modules/team-cluster/infrastructure/http/controllers/DeleteTeamClusterByIdController';
+import DownloadTeamClusterRemoteExplorerObjectController from '@modules/team-cluster/infrastructure/http/controllers/DownloadTeamClusterRemoteExplorerObjectController';
 import GenerateTeamClusterInstallManifestController from '@modules/team-cluster/infrastructure/http/controllers/GenerateTeamClusterInstallManifestController';
 import GetTeamClusterRemoteExplorerNodeController from '@modules/team-cluster/infrastructure/http/controllers/GetTeamClusterRemoteExplorerNodeController';
 import GetTeamClusterByIdController from '@modules/team-cluster/infrastructure/http/controllers/GetTeamClusterByIdController';
@@ -20,6 +21,7 @@ export default createControllerRegistry({
     create: CreateTeamClusterController,
     createRemoteAccessSession: CreateTeamClusterRemoteAccessSessionController,
     deleteById: DeleteTeamClusterByIdController,
+    downloadRemoteExplorerObject: DownloadTeamClusterRemoteExplorerObjectController,
     fetchAvailableVersions: FetchAvailableClusterVersionsController,
     generateInstallManifest: GenerateTeamClusterInstallManifestController,
     getById: GetTeamClusterByIdController,

@@ -319,7 +319,7 @@ const DocumentListingTable = <T extends Identifiable>({
                 >
                     {columns.map((col, colIdx) => (
                         <Container
-                            className={`document-listing-cell header-cell ${col.sortable ? 'sortable cursor-pointer' : ''} overflow-hidden d-flex items-center color-primary`}
+                            className={`document-listing-cell header-cell ${col.sortable ? 'sortable cursor-pointer' : ''} overflow-hidden d-flex items-center color-secondary`}
                             key={`header-${getColumnTitle(col)}-${colIdx}`}
                             onClick={() => onCellClick(col)}
                             style={
