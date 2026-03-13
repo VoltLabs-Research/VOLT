@@ -9,7 +9,7 @@ import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import { Download, Upload } from 'lucide-react';
 import { sileo } from 'sileo';
-import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
+import { useEffect, useCallback, useState, useMemo } from 'react';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
@@ -25,10 +25,9 @@ export default function SimulationGrid() {
     const selectedTeam = useSelectedTeam();
     const selectedTeamId = selectedTeam?._id;
 
-    const { selectedIds, isSelected, toggleSelection } = useSelectionParams();
+    const { selectedIds, isSelected, toggleSelection, clearSelection } = useSelectionParams();
     const deleteSelectedTrajectories = useDeleteSelectedTrajectories();
 
-    const hideItemRef = useRef<((id: string) => void) | null>(null);
 
     const [samplesDownloaded, setSamplesDownloaded] = useState(false);
     const { downloadAllSamples, isDownloading } = useDownloadSamples();
@@ -41,10 +40,12 @@ export default function SimulationGrid() {
         const isDeleteShortcut = hasModifierKey && isDeleteKey;
         if(isDeleteShortcut){
             e.preventDefault();
-            selectedIds.forEach((id) => hideItemRef.current?.(id));
-            await deleteSelectedTrajectories();
+            if (selectedIds.length) {
+                await deleteSelectedTrajectories();
+                clearSelection();
+            }
         }
-    }, [selectedIds.length, deleteSelectedTrajectories]);
+    }, [selectedIds.length, deleteSelectedTrajectories, clearSelection]);
 
     const handleDownloadSamples = useCallback(async () => {
         try{
@@ -70,10 +71,6 @@ export default function SimulationGrid() {
         };
     }, []);
 
-    const handleHideItem = useCallback((id: string) => {
-        hideItemRef.current?.(id);
-    }, []);
-
     const renderGridItem = useCallback((item: SimulationGridItem) => {
         return (
             <SimulationCard
@@ -81,10 +78,9 @@ export default function SimulationGrid() {
                 trajectory={item}
                 isSelected={isSelected(item._id)}
                 onSelect={toggleSelection}
-                onDelete={handleHideItem}
             />
         );
-    }, [isSelected, toggleSelection, handleHideItem]);
+    }, [isSelected, toggleSelection]);
 
     const renderGridSkeleton = useCallback(() => (
         <SimulationSkeletonCard />
@@ -128,7 +124,6 @@ export default function SimulationGrid() {
             emptyButtonText={emptyStateConfig.buttonText}
             emptyButtonIsLoading={isDownloading}
             onEmptyButtonClick={emptyStateConfig.onButtonClick}
-            onHideItemRef={hideItemRef}
             socketInvalidation={[
                 {
                     event: 'trajectory.created',

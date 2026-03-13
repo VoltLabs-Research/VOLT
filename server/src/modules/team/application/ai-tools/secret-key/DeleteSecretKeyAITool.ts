@@ -17,7 +17,6 @@ export class DeleteSecretKeyAITool extends TeamUseCaseAITool<
     readonly name = 'delete_secret_key';
     readonly description = 'Permanently delete an API secret key.';
     readonly parameters = deleteSecretKeyParametersSchema;
-    protected needsApproval = true;
 
     constructor(
         @inject(DeleteSecretKeyByIdUseCase)

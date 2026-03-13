@@ -9,7 +9,6 @@ export class DeleteTrajectoryAITool extends AITool {
     readonly name = 'delete_trajectory';
     readonly description = 'Delete a trajectory.';
     readonly parameters = z.object({ trajectoryId: z.string(), reason: z.string().optional() });
-    protected needsApproval = true;
 
     constructor(
         @inject(DeleteTrajectoryByIdUseCase)

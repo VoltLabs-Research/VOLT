@@ -10,7 +10,7 @@ import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/t
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { buildColorCodingObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
-import { normalizeAnalysisId, extractModifierAtomData } from '@modules/trajectory/utilities/trajectory/modifier-data';
+import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import { resolveSceneArtifactTeamCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-team-cluster';
 import { IStorageService } from '@shared/domain/port/IStorageService';
@@ -111,15 +111,13 @@ export default class ColorCodingService implements IColorCodingService {
                 );
             }
 
-            const modifierData = await this.atomProps.getModifierAnalysis(
+            const stats = await this.atomProps.getModifierStats(
                 String(trajectoryId),
                 String(resolvedAnalysisId),
                 String(exposureId),
-                String(timestep)
+                String(timestep),
+                property
             );
-
-            const atomsData = extractModifierAtomData(modifierData);
-            const stats = this.atomProps.getMinMaxFromData(atomsData, property);
             if (stats) {
                 min = stats.min;
                 max = stats.max;
@@ -207,15 +205,13 @@ export default class ColorCodingService implements IColorCodingService {
         let externalValues: Float32Array | undefined;
 
         if (exposureId && resolvedAnalysisId) {
-            const modifierData = await this.atomProps.getModifierAnalysis(
+            externalValues = await this.atomProps.getModifierValues(
                 String(trajectoryId),
                 String(resolvedAnalysisId),
                 String(exposureId),
-                String(timestep)
+                String(timestep),
+                String(property)
             );
-
-            const atomsData = extractModifierAtomData(modifierData);
-            externalValues = this.atomProps.toFloat32ByAtomId(atomsData, String(property));
         }
 
         await this.trajectoryNativeDaemonService.exportColoredModel({

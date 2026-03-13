@@ -79,7 +79,6 @@ export class FixLatexErrorsAITool extends AITool {
     readonly parameters = z.object({
         documentId: z.string()
     });
-    protected needsApproval = true;
 
     constructor(
         @inject(LATEX_TOKENS.LatexDocumentRepository)

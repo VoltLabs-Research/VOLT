@@ -12,7 +12,6 @@ export class DeleteConversationAITool extends AITool {
     readonly parameters = z.object({
         conversationId: z.string()
     });
-    protected needsApproval = true;
 
     constructor(
         @inject(AI_TOKENS.DeleteAIConversationUseCase)

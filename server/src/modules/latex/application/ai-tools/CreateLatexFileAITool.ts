@@ -15,7 +15,6 @@ export class CreateLatexFileAITool extends AITool {
         filename: z.string(),
         content: z.string().optional().default('')
     });
-    protected needsApproval = true;
 
     constructor(
         @inject(CreateLatexFileUseCase)

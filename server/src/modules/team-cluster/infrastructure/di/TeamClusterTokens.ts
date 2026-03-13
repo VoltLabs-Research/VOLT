@@ -9,6 +9,7 @@ export const TEAM_CLUSTER_TOKENS = Object.freeze({
     TeamClusterRemoteTerminalService: Symbol.for('TeamClusterRemoteTerminalService'),
     TeamClusterTcpExposureRelayService: Symbol.for('TeamClusterTcpExposureRelayService'),
     TeamClusterSocketModule: Symbol.for('TeamClusterSocketModule'),
+    TeamClusterDaemonClient: Symbol.for('TeamClusterDaemonClient'),
     DaemonAnalysisCompletionService: Symbol.for('DaemonAnalysisCompletionService'),
     TeamClusterRemoteAccessSessionService: Symbol.for('TeamClusterRemoteAccessSessionService')
 });

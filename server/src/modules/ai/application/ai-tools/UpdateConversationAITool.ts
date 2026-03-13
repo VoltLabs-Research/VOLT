@@ -13,7 +13,6 @@ export class UpdateConversationAITool extends AITool {
         conversationId: z.string(),
         title: z.string().optional()
     });
-    protected needsApproval = true;
 
     constructor(
         @inject(AI_TOKENS.UpdateAIConversationUseCase)

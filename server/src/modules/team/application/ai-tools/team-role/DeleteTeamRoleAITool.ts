@@ -17,7 +17,6 @@ export class DeleteTeamRoleAITool extends TeamUseCaseAITool<
     readonly name = 'delete_team_role';
     readonly description = 'Delete a team role.';
     readonly parameters = deleteTeamRoleParametersSchema;
-    protected needsApproval = true;
 
     constructor(
         @inject(DeleteTeamRoleByIdUseCase)

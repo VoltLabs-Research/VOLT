@@ -8,7 +8,6 @@ export class DeleteContainerAITool extends AITool {
     readonly name = 'delete_container';
     readonly description = 'Delete a Docker container.';
     readonly parameters = z.object({ containerId: z.string(), reason: z.string().optional() });
-    protected needsApproval = true;
 
     constructor(
         @inject(DeleteContainerUseCase)
