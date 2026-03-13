@@ -137,9 +137,9 @@ const LatexPdfViewer = ({
         </Container>
     );
 
-    if (isLoading) {
+    if (isLoading && !pdfUrl) {
         return (
-            <Container className='latex-preview__empty d-flex column flex-center items-center gap-1'>
+            <Container className='latex-preview__empty d-flex column flex-center items-center gap-2'>
                 <Loader scale={0.5} isFixed={false} />
                 <Paragraph className='color-muted font-size-1'>Compiling document…</Paragraph>
             </Container>
@@ -193,7 +193,13 @@ const LatexPdfViewer = ({
     }
 
     return (
-        <Container className='latex-pdf-shell d-flex column flex-1 min-h-0'>
+        <Container className='latex-pdf-shell d-flex column flex-1 min-h-0 position-relative'>
+            {isLoading && pdfUrl && (
+                <Container className='latex-pdf-compiling-indicator d-flex items-center gap-05'>
+                    <Loader scale={0.3} isFixed={false} />
+                    <span className='font-size-075 color-muted'>Compiling…</span>
+                </Container>
+            )}
             {toolbar}
             <Container className='latex-pdf-stage d-flex column flex-1 min-h-0'>
                 <Document
