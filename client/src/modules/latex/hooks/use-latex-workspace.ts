@@ -62,40 +62,48 @@ const asRecord = (value: unknown): Record<string, unknown> | null => {
 };
 
 const extractErrorMessage = async (error: unknown): Promise<string> => {
-    if (error instanceof Error && error.message) {
-        return error.message;
-    }
+    if (typeof error === 'string') return error;
 
     const errorRecord = asRecord(error);
     const response = asRecord(errorRecord?.response);
     const data = response?.data;
 
+    // 1. Try to extract from Blob (often used for PDF responses that might contain error JSON)
     if (data instanceof Blob) {
         try {
             const text = await data.text();
-            const parsed = JSON.parse(text) as unknown;
-            const parsedRecord = asRecord(parsed);
-            if (typeof parsedRecord?.message === 'string' && parsedRecord.message.trim()) {
-                return parsedRecord.message;
-            }
-            if (text.trim()) {
-                return text.trim();
+            try {
+                const parsed = JSON.parse(text) as Record<string, unknown>;
+                if (typeof parsed.logs === 'string' && parsed.logs.trim()) return parsed.logs;
+                if (typeof parsed.message === 'string' && parsed.message.trim()) return parsed.message;
+                if (typeof parsed.error === 'string' && parsed.error.trim()) return parsed.error;
+            } catch {
+                if (text.trim()) return text.trim();
             }
         } catch {
-            return 'Compilation failed';
+            // Fall through
         }
     }
 
+    // 2. Try to extract from data record directly
     const dataRecord = asRecord(data);
-    if (typeof dataRecord?.message === 'string' && dataRecord.message.trim()) {
-        return dataRecord.message;
+    if (dataRecord) {
+        if (typeof dataRecord.logs === 'string' && dataRecord.logs.trim()) return dataRecord.logs;
+        if (typeof dataRecord.message === 'string' && dataRecord.message.trim()) return dataRecord.message;
+        if (typeof dataRecord.error === 'string' && dataRecord.error.trim()) return dataRecord.error;
     }
 
+    // 3. Fallback to generic Error message
+    if (error instanceof Error && error.message) {
+        return error.message;
+    }
+
+    // 4. Fallback to record message
     if (typeof errorRecord?.message === 'string' && errorRecord.message.trim()) {
         return errorRecord.message;
     }
 
-    return 'Compilation failed';
+    return 'Compilation failed: An unknown error occurred while processing the LaTeX document.';
 };
 
 const EXPORT_TEX_TOAST = {
@@ -134,7 +142,6 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const sendContentUpdateRef = useRef<((content: string, fileId?: string) => void) | null>(null);
     const compiledPdfUrlRef = useRef<string | null>(null);
     const autosaveTimersRef = useRef<Record<string, number>>({});
-    const lastCompiledFingerprintRef = useRef('');
     const lastTexWorkspaceFingerprintRef = useRef<string | null>(null);
     const compileRequestIdRef = useRef(0);
     const hasBootstrappedSelectionRef = useRef(false);
@@ -341,11 +348,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
                         };
                     });
 
-                    const fingerprint = `${fileId}:${content}`;
-                    if (fingerprint !== lastCompiledFingerprintRef.current) {
-                        lastCompiledFingerprintRef.current = fingerprint;
-                        await compileSilently();
-                    }
+                    await compileSilently();
                 } catch (error) {
                     checkAccessDeniedError(error);
                     sileo.error({ title: 'Failed to save file' });

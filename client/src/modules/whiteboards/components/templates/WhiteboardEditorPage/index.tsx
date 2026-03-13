@@ -5,6 +5,7 @@ import { DASHBOARD_LAYOUT_EVENTS } from '@/modules/dashboard/utilities/layout-ev
 import { filterPersistableAppState } from '@/modules/whiteboards/utilities/whiteboards';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
+import AIFloatingAssistantPanel from '@/modules/ai/components/organisms/AIFloatingAssistantPanel';
 import { useCallback, useEffect, useRef, lazy, Suspense } from 'react';
 import type { ComponentProps } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -82,10 +83,14 @@ const WhiteboardEditorPage = () => {
     }, []);
 
     const renderTopRightUI = useCallback<RenderTopRightUI>(() => {
-        if (users.length === 0) return null;
         return (
-            <div className='whiteboard-presence-indicator'>
-                {users.length} online
+            <div className='whiteboard-presence-indicator d-flex items-center gap-05'>
+                {users.length > 0 && (
+                    <div className='whiteboard-presence-count'>
+                        {users.length} online
+                    </div>
+                )}
+                <AIFloatingAssistantPanel />
             </div>
         );
     }, [users]);

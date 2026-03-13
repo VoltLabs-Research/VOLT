@@ -35,12 +35,17 @@
 /** Center panel — Monaco editor */
 .latex-workspace__editor {
     flex: 1;
+    display: flex;
     min-width: 300px;
     overflow: hidden;
 }
 
 .latex-workspace__editor-inner {
     height: 100%;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: center;
 }
 
 .latex-workspace__main-content {
@@ -326,13 +331,38 @@
 .latex-pdf-shell {
     flex: 1;
     min-height: 0;
-    background: var(--color-surface-1);
+}
+
+.latex-pdf-compiling-indicator {
+    position: absolute;
+    top: 4rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-soft);
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+    animation: pdf-indicator-fade-in 0.2s ease-out;
+}
+
+@keyframes pdf-indicator-fade-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
 }
 
 .latex-pdf-toolbar {
     padding: 0.5rem 0.625rem;
     border-bottom: 1px solid var(--color-border-soft);
-    background: var(--color-surface-1);
     flex-shrink: 0;
 }
 
@@ -346,9 +376,6 @@
 .latex-pdf-stage {
     padding: 0.75rem;
     overflow: auto;
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent),
-        var(--color-surface-2);
 }
 
 .latex-pdf-document {
@@ -456,9 +483,34 @@
 }
 
 .latex-ai-panel__header {
-    padding: 0.5rem 0.75rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.75rem;
     border-bottom: 1px solid var(--color-border-soft);
     flex-shrink: 0;
+    gap: 0.5rem;
+}
+
+.latex-ai-panel__header-select {
+    height: 24px !important;
+    padding: 0 0.5rem !important;
+    font-size: 0.75rem !important;
+    border-radius: 4px !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    max-width: 14rem;
+}
+
+.latex-ai-panel__header-select:hover {
+    background: var(--hover-bg) !important;
+    border-color: var(--color-border-soft) !important;
+}
+
+.latex-ai-panel__header-select .select-value {
+    font-weight: 500;
+}
+
+.latex-ai-panel__header-select .select-chevron {
+    width: 14px !important;
+    height: 14px !important;
 }
 
 .latex-ai-panel__alert {

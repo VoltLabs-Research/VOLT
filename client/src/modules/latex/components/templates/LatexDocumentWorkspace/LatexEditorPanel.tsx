@@ -201,7 +201,7 @@ const LatexEditorPanel = ({
     }, [isMonacoReady]);
 
     const renderEmpty = () => (
-        <Container className='h-100 d-flex column flex-center items-center gap-1'>
+        <Container className='h-100 d-flex column justify-center items-center gap-1'>
             <File size={28} className='color-muted' />
             <Paragraph className='color-muted'>Open a file or asset to start working.</Paragraph>
         </Container>
