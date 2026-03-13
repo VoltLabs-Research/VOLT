@@ -12,7 +12,7 @@ import {
 } from '@/shared/utils/app-cleanup-registry';
 import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
 import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import useTrajectoryStore from '@/modules/trajectory/stores/trajectory/use-trajectory-store';
+
 import queryClient from '@/shared/infrastructure/query/query-client';
 
 /**
@@ -38,7 +38,6 @@ const teamScopedStoreResetters = [
     () => useScreenshotStore.getState().reset(),
     () => useKeyboardShortcutsStore.getState().reset(),
     () => useChatPresenceStore.getState().reset(),
-    () => useTrajectoryStore.getState().reset(),
     () => usePluginBuilderStore.getState().reset(),
     () => usePluginDebugStore.getState().reset(),
     () => useTeamPresenceStore.getState().reset()

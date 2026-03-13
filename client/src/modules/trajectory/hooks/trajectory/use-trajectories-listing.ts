@@ -13,7 +13,6 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { closeModal, openModal } from '@/shared/presentation/components/Modal';
-import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
@@ -51,12 +50,6 @@ const DELETE_TRAJECTORY_TOAST: PromiseToastOptions = createPromiseToastOptions({
     success: 'Trajectory deleted',
     error: 'Failed to delete trajectory'
 });
-
-const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: 'trajectory.created', queryKeys: [trajectoryQuery.QUERY_KEYS.lists()] },
-    { event: 'trajectory.deleted', queryKeys: [trajectoryQuery.QUERY_KEYS.lists()] },
-    { event: 'trajectory.updated', queryKeys: [trajectoryQuery.QUERY_KEYS.lists()] }
-];
 
 interface TrajectoryMoveTarget {
     _id: string;
@@ -354,8 +347,7 @@ const useTrajectoriesListing = () => {
         movingTrajectory,
         navigateToFolder,
         queryKey: trajectoryQuery.QUERY_KEYS.lists(),
-        renamingFolder,
-        socketInvalidation: SOCKET_INVALIDATION
+        renamingFolder
     };
 };
 
