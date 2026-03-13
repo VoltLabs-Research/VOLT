@@ -193,7 +193,8 @@ async function precomputeListingRows(
 
     await pluginListingRepository.deleteSubListingRows({
         analysis: executionData.analysisId,
-        exposureId: exposure.nodeId
+        exposureId: exposure.nodeId,
+        timestep
     });
 
     let subListings: Record<string, Array<Record<string, unknown>>> = {};
