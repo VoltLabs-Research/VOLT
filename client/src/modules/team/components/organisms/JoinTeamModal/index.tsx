@@ -1,7 +1,7 @@
 import Container from '@/shared/presentation/components/Container';
 import { useJoinByCodeMutation } from '@/modules/team/hooks/team/queries';
-import { runHandledAction } from '@/shared/errors/handled-action';
-import { getApiErrorMessage } from '@/shared/errors/notify-api-error';
+import { normalizeError } from '@/shared/errors/core';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
@@ -47,19 +47,17 @@ export const JoinTeamModal = ({
 
     const onSubmit = async (data: JoinTeamForm) => {
         setApiError(null);
-        await runHandledAction({
-            action: () => joinByCodeMutation.mutateAsync({ code: data.code }),
-            afterSuccess: () => {
-                modalForm.close();
-                onSuccess?.();
-            },
-            accessDeniedTitle: 'You do not have permission to join this team.',
-            onAccessDenied: setApiError,
-            onError: (message) => {
-                setApiError(getApiErrorMessage(message, 'Invalid invite code. Please check and try again.'));
-            },
-            rethrow: false
-        });
+        try {
+            await runAction({
+                action: () => joinByCodeMutation.mutateAsync({ code: data.code }),
+                afterSuccess: () => {
+                    modalForm.close();
+                    onSuccess?.();
+                }
+            });
+        } catch (error: unknown) {
+            setApiError(normalizeError(error).friendlyMessage || 'Invalid invite code. Please check and try again.');
+        }
     };
 
     return (

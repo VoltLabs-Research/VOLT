@@ -1,7 +1,8 @@
 import { useGenerateInviteCodeMutation, useDeleteInviteCodeMutation, useTeamsQuery } from '@/modules/team/hooks/team/queries';
+import { ErrorSurface, executeTask } from '@/shared/errors/core';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import { runHandledAction } from '@/shared/errors/handled-action';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { useCallback, useMemo } from 'react';
 
@@ -43,18 +44,24 @@ export default function useInviteCode(): UseInviteCodeReturn {
 
     const handleGenerate = useCallback(async () => {
         if (!teamId) return;
-        await runHandledAction({
-            action: () => generateMutation.mutateAsync({ teamId }),
-            toast: GENERATE_INVITE_CODE_TOAST_OPTIONS,
+        await executeTask({
+            action: () => runAction({
+                action: () => generateMutation.mutateAsync({ teamId }),
+                toast: GENERATE_INVITE_CODE_TOAST_OPTIONS
+            }),
+            surface: ErrorSurface.Silent,
             rethrow: false
         });
     }, [generateMutation, teamId]);
 
     const handleDelete = useCallback(async () => {
         if (!teamId) return;
-        await runHandledAction({
-            action: () => deleteMutation.mutateAsync({ teamId }),
-            toast: DELETE_INVITE_CODE_TOAST_OPTIONS,
+        await executeTask({
+            action: () => runAction({
+                action: () => deleteMutation.mutateAsync({ teamId }),
+                toast: DELETE_INVITE_CODE_TOAST_OPTIONS
+            }),
+            surface: ErrorSurface.Silent,
             rethrow: false
         });
     }, [deleteMutation, teamId]);

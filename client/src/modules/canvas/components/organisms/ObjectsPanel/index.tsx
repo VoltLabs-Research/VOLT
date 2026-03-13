@@ -1,18 +1,22 @@
 import { isArtifactSceneActive, toSceneObjectFromArtifact } from '@/modules/canvas/utilities/scene-identity';
+import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import useAnalysisStatus from '../../../hooks/use-analysis-status';
 import useCanvasSidebarState from '../../../hooks/use-canvas-sidebar-state';
 import useSceneArtifacts from '../../../hooks/use-scene-artifacts';
 import PanelHeader from '../../atoms/PanelHeader';
 import SceneCollection from '../../molecules/SceneCollection';
 
-import { Filter, Layers, Palette, SlidersHorizontal } from 'lucide-react';
-import { useState } from 'react';
+import { Eye, Filter, Layers, Minus, Palette, Plus, SlidersHorizontal } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import Container from '@/shared/presentation/components/Container';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import IconButton from '@/shared/presentation/components/IconButton';
+import Slider from '@/shared/presentation/components/Slider';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useShallow } from 'zustand/react/shallow';
 
+import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 
@@ -61,14 +65,68 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
         particleFilterArtifacts
     } = useSceneArtifacts({ trajectoryId: trajectory?._id });
 
-    const { showSimulationCell, setShowSimulationCell } = useEditorStore(useShallow((s) => ({
+    const {
+        showSimulationCell,
+        setShowSimulationCell,
+        sceneOpacities,
+        setSceneOpacity
+    } = useEditorStore(useShallow((s) => ({
         showSimulationCell: s.showSimulationCell,
-        setShowSimulationCell: s.setShowSimulationCell
+        setShowSimulationCell: s.setShowSimulationCell,
+        sceneOpacities: s.sceneOpacities,
+        setSceneOpacity: s.setSceneOpacity
     })));
 
     const handleToggleSimulationCell = () => setShowSimulationCell(!showSimulationCell);
 
     const isArtifactActive = (artifact: SceneArtifact): boolean => isArtifactSceneActive(activeScene, artifact);
+
+    const getArtifactMenuOptions = useCallback((artifact: SceneArtifact): MenuOption[] => {
+        const scene = toSceneObjectFromArtifact(artifact);
+        if (!scene) return [];
+
+        const isActive = isSceneInActiveScenes(scene);
+        const sceneKey = getSceneKey(scene);
+        const currentOpacity = sceneOpacities[sceneKey] ?? 1;
+
+        const options: MenuOption[] = [];
+
+        if (isActive) {
+            options.push({
+                label: 'Remove from scene',
+                icon: Minus,
+                destructive: true,
+                onClick: () => removeScene(scene)
+            });
+        } else {
+            options.push({
+                label: 'Add to scene',
+                icon: Plus,
+                onClick: () => addScene(scene)
+            });
+        }
+
+        const transparencySubmenu = (
+            <div className="context-menu-transparency">
+                <span className="context-menu-transparency__label">Transparency</span>
+                <Slider
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={currentOpacity}
+                    onChange={(value: number) => setSceneOpacity(sceneKey, value)}
+                />
+            </div>
+        );
+
+        options.push({
+            label: 'Transparency',
+            icon: Eye,
+            submenuContent: transparencySubmenu
+        });
+
+        return options;
+    }, [isSceneInActiveScenes, sceneOpacities, addScene, removeScene, setSceneOpacity]);
 
     return (
         <Container className="canvas-objects-panel d-flex column min-h-0 overflow-auto">
@@ -115,12 +173,14 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
                     onDownloadExposureListing={onDownloadExposureListing}
                     showSimulationCell={showSimulationCell}
                     onToggleSimulationCell={handleToggleSimulationCell}
+                    sceneOpacities={sceneOpacities}
+                    setSceneOpacity={setSceneOpacity}
                 />
             </CollapsibleSection>
 
             {hasSelectedTimestepAnalyses && (
                 <CollapsibleSection
-                    title="Selected timestep analysis"
+                    title="Timestep-scoped analyses"
                     icon={<Layers style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.25)' }} />}
                     expanded={selectedTimestepAnalysisOpen}
                     onExpandedChange={setSelectedTimestepAnalysisOpen}
@@ -151,6 +211,8 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
                         onDownloadAnalysis={onDownloadAnalysis ?? (() => undefined)}
                         onDownloadExposureListing={onDownloadExposureListing}
                         showDefaultScene={false}
+                        sceneOpacities={sceneOpacities}
+                        setSceneOpacity={setSceneOpacity}
                     />
                 </CollapsibleSection>
             )}
@@ -183,19 +245,26 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
                         </Container>
                     )}
                     {colorCodingArtifacts.map((artifact: SceneArtifact) => (
-                        <Container
+                        <ContextMenuPopover
                             key={artifact._id}
-                            className={`canvas-tree-item canvas-tree-item--indent font-size-1 color-secondary cursor-pointer u-select-none ${isArtifactActive(artifact) ? 'selected' : ''}`}
-                            onClick={() => {
-                                const scene = toSceneObjectFromArtifact(artifact);
-                                if (!scene) return;
-                                onSelectScene(scene);
-                            }}
-                        >
-                            <span className={`${isArtifactActive(artifact) ? 'color-primary' : 'color-secondary'}`}>
-                                {artifact.displayName}
-                            </span>
-                        </Container>
+                            id={`canvas-ctx-color-coding-${artifact._id}`}
+                            trigger={(
+                                <Container
+                                    className={`canvas-tree-item canvas-tree-item--indent font-size-1 color-secondary cursor-pointer u-select-none ${isArtifactActive(artifact) ? 'selected' : ''}`}
+                                    onClick={() => {
+                                        const scene = toSceneObjectFromArtifact(artifact);
+                                        if (!scene) return;
+                                        onSelectScene(scene);
+                                    }}
+                                >
+                                    <span className={`${isArtifactActive(artifact) ? 'color-primary' : 'color-secondary'}`}>
+                                        {artifact.displayName}
+                                    </span>
+                                </Container>
+                            )}
+                            options={getArtifactMenuOptions(artifact)}
+                            size='sm'
+                        />
                     ))}
                 </Container>
             </CollapsibleSection>
@@ -228,19 +297,26 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
                         </Container>
                     )}
                     {particleFilterArtifacts.map((artifact: SceneArtifact) => (
-                        <Container
+                        <ContextMenuPopover
                             key={artifact._id}
-                            className={`canvas-tree-item canvas-tree-item--indent font-size-1 color-secondary cursor-pointer u-select-none ${isArtifactActive(artifact) ? 'selected' : ''}`}
-                            onClick={() => {
-                                const scene = toSceneObjectFromArtifact(artifact);
-                                if (!scene) return;
-                                onSelectScene(scene);
-                            }}
-                        >
-                            <span className={`${isArtifactActive(artifact) ? 'color-primary' : 'color-secondary'}`}>
-                                {artifact.displayName}
-                            </span>
-                        </Container>
+                            id={`canvas-ctx-particle-filter-${artifact._id}`}
+                            trigger={(
+                                <Container
+                                    className={`canvas-tree-item canvas-tree-item--indent font-size-1 color-secondary cursor-pointer u-select-none ${isArtifactActive(artifact) ? 'selected' : ''}`}
+                                    onClick={() => {
+                                        const scene = toSceneObjectFromArtifact(artifact);
+                                        if (!scene) return;
+                                        onSelectScene(scene);
+                                    }}
+                                >
+                                    <span className={`${isArtifactActive(artifact) ? 'color-primary' : 'color-secondary'}`}>
+                                        {artifact.displayName}
+                                    </span>
+                                </Container>
+                            )}
+                            options={getArtifactMenuOptions(artifact)}
+                            size='sm'
+                        />
                     ))}
                 </Container>
             </CollapsibleSection>

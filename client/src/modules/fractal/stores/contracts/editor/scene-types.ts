@@ -84,6 +84,8 @@ export interface PlaybackState {
     didPreload?: boolean;
     preloadProgress?: number;
     downlinkMbps?: number | null;
+    rangeStart?: number;
+    rangeEnd?: number;
 };
 
 export interface PlaybackActions {
@@ -93,6 +95,9 @@ export interface PlaybackActions {
     playNextFrame: () => void;
     stopPlayback: () => void;
     resetPlayback: () => void;
+    setRangeStart: (value: number | undefined) => void;
+    setRangeEnd: (value: number | undefined) => void;
+    getRangedTimesteps: () => number[];
 };
 
 export type PlaybackStore = PlaybackState & PlaybackActions;

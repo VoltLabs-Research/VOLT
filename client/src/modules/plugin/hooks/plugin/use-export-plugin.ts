@@ -1,8 +1,8 @@
 import { useExportPluginMutation } from './queries';
+import { isAccessDeniedError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback } from 'react';
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 const useExportPlugin = () => {
     const exportPluginMutationResult = useExportPluginMutation();

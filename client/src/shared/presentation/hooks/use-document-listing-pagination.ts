@@ -1,7 +1,7 @@
 import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import { deduplicateById } from '@/shared/domain/utils/deduplicateById';
 import usePaginationParams from './use-pagination-params';
-import { getApiErrorCode, getApiErrorMessage, isApiError } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, isApiError, normalizeError, reportError } from '@/shared/errors/core';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useCallback, useRef, useEffect, useMemo } from 'react';
@@ -113,12 +113,15 @@ export function useDocumentListingPagination<T extends { _id: string }, TContext
     // Extract error info
     const error = useMemo<string | null>(() => {
         if (!queryError) return null;
-        return getApiErrorMessage(queryError, 'Failed to fetch data');
+        return reportError(queryError, {
+            surface: ErrorSurface.Silent,
+            fallbackTitle: 'Failed to fetch data'
+        }).title;
     }, [queryError]);
 
     const errorCode = useMemo<string | null>(() => {
         if (!queryError) return null;
-        return getApiErrorCode(queryError);
+        return normalizeError(queryError).code;
     }, [queryError]);
 
     const hasMore = hasNextPage ?? false;

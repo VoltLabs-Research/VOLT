@@ -4,7 +4,7 @@ import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import { OnboardingStep, resolveOnboardingStep } from '@/modules/onboarding/utilities/resolve-onboarding-step';
-import { notifyApiError } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { JoinTeamModal } from '@/modules/team/components/organisms/JoinTeamModal';
 import { openModal } from '@/shared/presentation/components/Modal';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
@@ -89,13 +89,12 @@ const PostAuthOnboarding = () => {
                 replace: true,
                 state: { next }
             });
-        } catch (err) {
-            if (!notifyApiError(err, { fallbackDescription: 'Could not create team. Please try again.' })) {
-                sileo.error({
-                    title: 'Team creation failed',
-                    description: 'Could not create team. Please try again.'
-                });
-            }
+        } catch (err: unknown) {
+            reportError(err, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'Team creation failed',
+                fallbackDescription: 'Could not create team. Please try again.'
+            });
         } finally {
             setIsSubmitting(false);
         }

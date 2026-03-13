@@ -1,4 +1,4 @@
-import { getAccessDeniedMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { useCallback, useState } from 'react';
 
 const useAccessDenied = () => {
@@ -7,7 +7,8 @@ const useAccessDenied = () => {
 
     const setDeniedState = useCallback((error: unknown) => {
         setAccessDenied(true);
-        setAccessDeniedMessage(getAccessDeniedMessage(error));
+        const userError = reportError(error, { surface: ErrorSurface.Silent });
+        setAccessDeniedMessage(userError.title);
     }, []);
 
     const checkAccessDeniedError = useCallback((error: unknown): boolean => {

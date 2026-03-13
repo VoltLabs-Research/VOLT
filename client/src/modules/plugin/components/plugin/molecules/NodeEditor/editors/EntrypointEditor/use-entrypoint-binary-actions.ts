@@ -1,17 +1,32 @@
-import { useCallback, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { sileo } from 'sileo';
 import type { IEntrypointData } from '@/modules/plugin/api/entities/plugin/workflow';
 import { useDeleteBinaryMutation, useUploadBinaryMutation } from '@/modules/plugin/hooks/plugin/queries';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { getAccessDeniedMessage, isAccessDeniedError, notifyApiError } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, isAccessDeniedError, mapErrorToUserMessage, normalizeError, reportError } from '@/shared/errors/core';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { EntrypointEditorFormValues } from './schema';
 
 const UPLOAD_ACCESS_DENIED_MESSAGE = 'You do not have permission to upload binaries';
-const DELETE_ACCESS_DENIED_MESSAGE = 'You do not have permission to delete binaries';
+
+const createEntrypointPayload = (data: EntrypointEditorFormValues): IEntrypointData => {
+    let timeout: number | undefined;
+
+    if (typeof data.timeout === 'number') {
+        timeout = data.timeout;
+    } else if (typeof data.timeout === 'string' && data.timeout !== '') {
+        timeout = Number(data.timeout);
+    }
+
+    return {
+        ...data,
+        timeout
+    };
+};
 
 export const useEntrypointBinaryActions = (
     nodeId: string,
@@ -31,12 +46,19 @@ export const useEntrypointBinaryActions = (
 
     const updateEntrypointData = useCallback((data: EntrypointEditorFormValues) => {
         form.reset(data);
-        updateNodeData(nodeId, { entrypoint: data as IEntrypointData });
+        updateNodeData(nodeId, { entrypoint: createEntrypointPayload(data) });
     }, [form, nodeId, updateNodeData]);
 
     const setAccessDeniedError = useCallback((error: unknown, fallbackMessage: string) => {
-        notifyApiError(error, { fallbackTitle: fallbackMessage });
-        setUploadError(getAccessDeniedMessage(error, fallbackMessage) ?? fallbackMessage);
+        const userError = reportError(error, {
+            surface: ErrorSurface.Toast,
+            fallbackTitle: fallbackMessage
+        });
+        setUploadError(userError.title);
+    }, []);
+
+    const getInlineErrorTitle = useCallback((error: unknown, fallbackTitle: string) => {
+        return mapErrorToUserMessage(normalizeError(error), { fallbackTitle }).title;
     }, []);
 
     const handleFileSelect = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
@@ -83,11 +105,11 @@ export const useEntrypointBinaryActions = (
                 return;
             }
 
-            setUploadError(error instanceof Error ? error.message : 'Failed to upload binary');
+            setUploadError(getInlineErrorTitle(error, 'Failed to upload binary'));
         } finally {
             setIsUploading(false);
         }
-    }, [currentPluginId, selectedTeamId, uploadBinaryMutation, form, updateEntrypointData, setAccessDeniedError]);
+    }, [currentPluginId, selectedTeamId, uploadBinaryMutation, form, updateEntrypointData, setAccessDeniedError, getInlineErrorTitle]);
 
     const handleRemoveBinary = useCallback(async () => {
         const currentValues = form.getValues();
@@ -110,14 +132,9 @@ export const useEntrypointBinaryActions = (
                 binaryFileName: undefined
             });
         } catch (error) {
-            if (isAccessDeniedError(error)) {
-                setAccessDeniedError(error, DELETE_ACCESS_DENIED_MESSAGE);
-                return;
-            }
-
-            setUploadError(error instanceof Error ? error.message : 'Failed to delete binary');
+            setUploadError(getInlineErrorTitle(error, 'Failed to delete binary'));
         }
-    }, [currentPluginId, form, deleteBinaryMutation, updateEntrypointData, setAccessDeniedError]);
+    }, [currentPluginId, form, deleteBinaryMutation, updateEntrypointData, getInlineErrorTitle]);
 
     const triggerFileSelect = useCallback(() => {
         fileInputRef.current?.click();

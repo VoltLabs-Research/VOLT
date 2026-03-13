@@ -1,5 +1,5 @@
 import { trajectoryQuery } from './queries';
-import { handleActionError } from '@/shared/errors/handled-action';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { useCallback } from 'react';
 import type { Trajectory } from '../../api/entities/trajectory';
 
@@ -16,13 +16,11 @@ export default function useCreateTrajectory() {
                 onProgress
             });
             return result;
-        } catch (error) {
-            handleActionError(error, {
-                accessDeniedTitle: 'You do not have permission to create trajectories',
-                errorToast: {
-                    title: 'Failed to create trajectory',
-                    description: 'Please check your files and try again.'
-                }
+        } catch (error: unknown) {
+            reportError(error, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'Failed to create trajectory',
+                fallbackDescription: 'Please check your files and try again.'
             });
             return null;
         }

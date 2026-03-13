@@ -2,10 +2,10 @@ import { UseModifierBaseOptions } from './use-modifier-base';
 import useModifierBase from './use-modifier-base';
 
 import { useApplyFilterMutation, uniqueValuesQuery, usePreviewFilterMutation } from '@/modules/trajectory/hooks/particle-filter/queries';
+import { ErrorSurface, isAccessDeniedError, normalizeError, reportError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback, useMemo, useState } from 'react';
 import { sileo } from 'sileo';
-import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 import type { ParticleFilterScene } from '@/modules/fractal/api/entities/scene';
 
@@ -131,11 +131,12 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 throw result.error;
             }
         } catch (fetchError: unknown) {
-            if (isAccessDeniedError(fetchError)) {
-                notifyApiError(fetchError, { fallbackTitle: 'You do not have permission to perform this action.' });
-            } else {
-                sileo.error({ title: 'Failed to load suggestions' });
-            }
+            reportError(fetchError, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: isAccessDeniedError(fetchError)
+                    ? 'You do not have permission to perform this action.'
+                    : 'Failed to load suggestions'
+            });
         }
     }, [uniqueValuesParams, uniqueValuesResult]);
 
@@ -179,11 +180,10 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
             });
             sileo.success({ title: 'Preview generated' });
         } catch (previewError: unknown) {
-            let errorMessage = 'Preview failed';
-            if (previewError instanceof Error) {
-                errorMessage = previewError.message;
-            }
-            setError(errorMessage);
+            setError(reportError(previewError, {
+                surface: ErrorSurface.Silent,
+                fallbackTitle: 'Preview failed'
+            }).title);
         }
     }, [trajectoryId, analysisId, currentTimestep, property, operator, value, exposureId, propertyOptions, previewMutation]);
 
@@ -236,11 +236,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
 
             setPreviewResult(null);
         } catch (applyError: unknown) {
-            let errorMessage = 'Apply failed';
-            if (applyError instanceof Error) {
-                errorMessage = applyError.message;
-            }
-            setError(errorMessage);
+            setError(normalizeError(applyError).friendlyMessage);
         }
     }, [trajectoryId, analysisId, currentTimestep, action, previewResult, setActiveScene, applyFilterMutation]);
 

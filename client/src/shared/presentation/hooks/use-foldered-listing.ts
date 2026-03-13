@@ -1,9 +1,9 @@
+import { isAccessDeniedError } from '@/shared/errors/core';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { FolderBreadcrumbEntity } from '@/shared/presentation/hooks/use-folder-breadcrumbs';
 import useFolderBreadcrumbs from '@/shared/presentation/hooks/use-folder-breadcrumbs';
 import useFolderSearchParam from '@/shared/presentation/hooks/use-folder-search-param';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';

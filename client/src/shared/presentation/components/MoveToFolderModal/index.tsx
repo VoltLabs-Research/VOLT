@@ -1,3 +1,4 @@
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Modal, { closeModal } from '@/shared/presentation/components/Modal';
@@ -6,7 +7,6 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import FolderBreadcrumbs from '@/shared/presentation/components/FolderBreadcrumbs';
 import useFolderBreadcrumbs from '@/shared/presentation/hooks/use-folder-breadcrumbs';
-import { getApiErrorMessage } from '@/shared/errors/notify-api-error';
 import { Folder, FolderOpen, Home } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FolderBreadcrumbEntity } from '@/shared/presentation/hooks/use-folder-breadcrumbs';
@@ -96,7 +96,10 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
                     return;
                 }
 
-                setError(getApiErrorMessage(nextError, 'Failed to load folders'));
+                setError(reportError(nextError, {
+                    surface: ErrorSurface.Silent,
+                    fallbackTitle: 'Failed to load folders'
+                }).title);
                 setFolders([]);
             } finally {
                 if (!isCancelled) {

@@ -1,7 +1,7 @@
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useLeaveTeamMutation } from '@/modules/team/hooks/team/queries';
 import { resetTeamScopedApplicationState, useTeamStore } from '@/modules/team/stores/team/use-team-store';
-import { runHandledAction } from '@/shared/errors/handled-action';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Select from '@/shared/presentation/components/Select';
@@ -38,7 +38,7 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
         event.preventDefault();
         event.stopPropagation();
 
-        await runHandledAction({
+        await runAction({
             action: () => leaveTeamMutation.mutateAsync({ teamId }),
             toast: LEAVE_TEAM_TOAST_OPTIONS,
             afterSuccess: () => {
@@ -57,8 +57,7 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
                         state.setSelectedTeamId(null);
                     }
                 }
-            },
-            rethrow: false
+            }
         });
     }, [leaveTeamMutation, teams]);
 

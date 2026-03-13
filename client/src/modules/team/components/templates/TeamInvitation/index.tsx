@@ -1,7 +1,7 @@
 import { useAcceptInvitationMutation, useInvitationDetailsQuery, useRejectInvitationMutation } from '@/modules/team/hooks/invitation/queries';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
-import { runHandledAction } from '@/shared/errors/handled-action';
-import { getAccessDeniedMessage, getApiErrorMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, isAccessDeniedError, normalizeError, reportError } from '@/shared/errors/core';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
@@ -53,49 +53,49 @@ export default function TeamInvitationTemplate() {
 
     const displayError = error ?? (queryError
         ? (isAccessDeniedError(queryError)
-            ? getAccessDeniedMessage(queryError, 'You do not have permission to perform this action.')
-            : getApiErrorMessage(queryError, 'An error occurred'))
+            ? reportError(queryError, {
+                surface: ErrorSurface.Silent,
+                fallbackTitle: 'You do not have permission to perform this action.'
+            }).title
+            : reportError(queryError, {
+                surface: ErrorSurface.Silent,
+                fallbackTitle: 'An error occurred'
+            }).title)
         : (!invitationId ? 'Invalid invitation link' : null));
 
     const handleAccept = async () => {
         if(!invitationId || !invitation) return;
 
-        await runHandledAction({
-            action: () => acceptMutation.mutateAsync({ invitationId, teamId: invitation.team._id }),
-            toast: ACCEPT_INVITATION_TOAST_OPTIONS,
-            afterSuccess: () => {
-                setSelectedTeamId(invitation.team._id);
-                setError(null);
-                navigate('/onboarding');
-            },
-            accessDeniedTitle: 'You do not have permission to perform this action.',
-            onAccessDenied: setError,
-            onError: (message) => {
-                setError(getApiErrorMessage(message, 'An error occurred'));
-            },
-            errorToast: false,
-            rethrow: false
-        });
+        try {
+            await runAction({
+                action: () => acceptMutation.mutateAsync({ invitationId, teamId: invitation.team._id }),
+                toast: ACCEPT_INVITATION_TOAST_OPTIONS,
+                afterSuccess: () => {
+                    setSelectedTeamId(invitation.team._id);
+                    setError(null);
+                    navigate('/onboarding');
+                }
+            });
+        } catch (actionError: unknown) {
+            setError(normalizeError(actionError).friendlyMessage);
+        }
     };
 
     const handleReject = async () => {
         if(!invitationId || !invitation) return;
 
-        await runHandledAction({
-            action: () => rejectMutation.mutateAsync({ invitationId, teamId: invitation.team._id }),
-            toast: REJECT_INVITATION_TOAST_OPTIONS,
-            afterSuccess: () => {
-                setError(null);
-                navigate('/onboarding');
-            },
-            accessDeniedTitle: 'You do not have permission to perform this action.',
-            onAccessDenied: setError,
-            onError: (message) => {
-                setError(getApiErrorMessage(message, 'An error occurred'));
-            },
-            errorToast: false,
-            rethrow: false
-        });
+        try {
+            await runAction({
+                action: () => rejectMutation.mutateAsync({ invitationId, teamId: invitation.team._id }),
+                toast: REJECT_INVITATION_TOAST_OPTIONS,
+                afterSuccess: () => {
+                    setError(null);
+                    navigate('/onboarding');
+                }
+            });
+        } catch (actionError: unknown) {
+            setError(normalizeError(actionError).friendlyMessage);
+        }
     };
 
     if(loading){

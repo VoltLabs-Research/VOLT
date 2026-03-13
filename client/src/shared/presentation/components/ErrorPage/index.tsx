@@ -29,6 +29,9 @@ const ErrorPage = () => {
                     <span className='font-size-2 color-secondary line-height-5'>
                         {message || 'An unexpected error occurred. Please try again.'}
                     </span>
+                    <span className='font-size-2 color-muted'>
+                        You can reload this page or head back to the dashboard.
+                    </span>
                 </Container>
 
                 {source && (
@@ -66,15 +69,16 @@ const ErrorPage = () => {
                     </Container>
                 )}
 
-                <Button
-                    variant='solid'
-                    intent='brand'
-                    size='sm'
-                    to='/dashboard'
-                    className='mt-05'
-                >
-                    Back to dashboard
-                </Button>
+                <Container className='d-flex gap-075 items-center mt-05'>
+                    <Button
+                        variant='solid'
+                        intent='brand'
+                        size='sm'
+                        to='/dashboard'
+                    >
+                        Back to dashboard
+                    </Button>
+                </Container>
             </Container>
         </Container>
     );

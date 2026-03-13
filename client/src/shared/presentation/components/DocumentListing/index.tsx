@@ -1,8 +1,8 @@
 import { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import { isAccessDeniedCode } from '@/shared/errors/core';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import type { ExportType } from '@/shared/domain/export/types';
 import { getValueByPath } from '@/shared/utils/format';
-import { isAccessDeniedCode } from '@/shared/errors/notify-api-error';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { SortConfig } from '@/shared/domain/sorting/types';

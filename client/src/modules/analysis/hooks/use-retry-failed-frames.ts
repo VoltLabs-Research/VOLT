@@ -1,7 +1,7 @@
 import { useRetryFailedFramesMutation } from './queries';
+import { isAccessDeniedError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback } from 'react';
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 const getRetryFailedFramesSuccessTitle = (retriedFrames: number): string => {
     if (retriedFrames === 0) {

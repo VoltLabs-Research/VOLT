@@ -3,7 +3,8 @@ import ContainerSidebar from '../../molecules/ContainerSidebar';
 import { ContainerAction } from '../../../api/dtos/update-container';
 import useContainerStats from '../../../hooks/use-container-stats';
 import { containerQuery, useContainerByIdQuery } from '../../../hooks/queries';
-import { handleActionError, runHandledAction } from '@/shared/errors/handled-action';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import { useEffect, useRef } from 'react';
 import { useParams, useNavigate, Outlet } from 'react-router-dom';
 import Container from '@/shared/presentation/components/Container';
@@ -53,20 +54,25 @@ const ContainerDetailsLayout = () => {
         isRunning: !!isRunning
     });
 
-    if(isError){
-        if(!checkAccessDeniedError(error)){
-            handleActionError(error, {
-                errorToast: { title: error instanceof Error ? error.message : 'Failed to load container' }
+    useEffect(() => {
+        if (!isError) {
+            return;
+        }
+
+        if (!checkAccessDeniedError(error)) {
+            reportError(error, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'Failed to load container'
             });
         }
-    }
+    }, [checkAccessDeniedError, error, isError]);
 
     const handleAction = async (action: ContainerAction | 'delete') => {
         if(!container || !id) return;
 
         try{
             if(action === 'delete'){
-                await runHandledAction({
+                await runAction({
                     action: () => deleteContainerMutation.mutateAsync(id),
                     confirm: {
                         title: 'Delete this container?',
@@ -80,20 +86,18 @@ const ContainerDetailsLayout = () => {
                     }),
                     afterSuccess: () => {
                         navigate('/dashboard/containers');
-                    },
-                    rethrow: false
+                    }
                 });
                 return;
             }
 
-            await runHandledAction({
+            await runAction({
                 action: () => updateContainerMutation.mutateAsync({ id, params: { action } }),
                 toast: createPromiseToastOptions({
                     loading: `${action.charAt(0).toUpperCase() + action.slice(1)}ing container...`,
                     success: `Container ${action}ed successfully`,
                     error: `Failed to ${action} container`
-                }),
-                rethrow: false
+                })
             });
         }catch{
             // Error handled by showPromise
@@ -102,27 +106,25 @@ const ContainerDetailsLayout = () => {
 
     const handleUpdateEnv = async (env: EnvVariable[]) => {
         if(!id) return;
-        await runHandledAction({
+        await runAction({
             action: () => updateContainerMutation.mutateAsync({ id, params: { env } }),
             toast: createPromiseToastOptions({
                 loading: 'Updating environment variables...',
                 success: 'Environment variables updated',
                 error: 'Failed to update environment variables'
-            }),
-            rethrow: false
+            })
         });
     };
 
     const handleUpdatePorts = async (ports: PortMapping[]) => {
         if(!id) return;
-        await runHandledAction({
+        await runAction({
             action: () => updateContainerMutation.mutateAsync({ id, params: { ports } }),
             toast: createPromiseToastOptions({
                 loading: 'Updating port bindings...',
                 success: 'Port bindings updated - container will be recreated',
                 error: 'Failed to update ports'
-            }),
-            rethrow: false
+            })
         });
     };
 

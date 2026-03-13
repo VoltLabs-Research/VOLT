@@ -1,6 +1,6 @@
 import { buildErrorPath, shouldIgnoreError, isErrorPage } from '@/shared/utils';
+import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
-import { notifyApiError } from '@/shared/errors/notify-api-error';
 import { useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -16,7 +16,10 @@ const GlobalErrorListener = () => {
     const navigatingRef = useRef(false);
 
     const navigateToError = useCallback((message: string, source: 'window' | 'promise', stack?: string, error?: unknown) => {
-        if(notifyApiError(error)) return;
+        if (isApiError(error)) {
+            reportError(error, { surface: ErrorSurface.Toast });
+            return;
+        }
         if(shouldIgnoreError(message)) return;
         if(isErrorPage(location.pathname)) return;
         if(navigatingRef.current) return;

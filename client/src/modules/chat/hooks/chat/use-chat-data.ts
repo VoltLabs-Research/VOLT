@@ -11,10 +11,10 @@ import {
     resetChatQueries,
     chatsQuery
 } from './queries';
+import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { sileo } from 'sileo';
-import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import type { ChatMessage } from '../../api/entities/message';
 
@@ -106,7 +106,10 @@ const useChatData = () => {
 
         markAsReadMutationResult.mutateAsync({ chatId }).catch((error: unknown) => {
             if (isAccessDeniedError(error)) {
-                notifyApiError(error, { fallbackTitle: 'You do not have permission to perform this action.' });
+                reportError(error, {
+                    surface: ErrorSurface.Toast,
+                    fallbackTitle: 'You do not have permission to perform this action.'
+                });
             }
         });
 

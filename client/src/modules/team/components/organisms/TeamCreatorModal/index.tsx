@@ -1,7 +1,8 @@
 import Container from '@/shared/presentation/components/Container';
 import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
-import { runHandledAction } from '@/shared/errors/handled-action';
+import { normalizeError } from '@/shared/errors/core';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
@@ -59,22 +60,22 @@ export const TeamCreatorModal = ({
 
     const onSubmit = async (data: TeamCreatorForm) => {
         setApiError(null);
-        await runHandledAction({
-            action: () => createTeamMutation.mutateAsync({
-                name: data.name.trim(),
-                description: data.description?.trim() || ''
-            }),
-            toast: TEAM_CREATOR_TOAST_OPTIONS,
-            afterSuccess: (team) => {
-                setSelectedTeamId(team._id);
-                modalForm.close();
-                onSuccess?.();
-            },
-            accessDeniedTitle: 'You do not have permission to perform this action.',
-            onAccessDenied: setApiError,
-            onError: setApiError,
-            rethrow: false
-        });
+        try {
+            await runAction({
+                action: () => createTeamMutation.mutateAsync({
+                    name: data.name.trim(),
+                    description: data.description?.trim() || ''
+                }),
+                toast: TEAM_CREATOR_TOAST_OPTIONS,
+                afterSuccess: (team) => {
+                    setSelectedTeamId(team._id);
+                    modalForm.close();
+                    onSuccess?.();
+                }
+            });
+        } catch (error: unknown) {
+            setApiError(normalizeError(error).friendlyMessage);
+        }
     };
 
     const handleClose = () => {

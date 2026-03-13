@@ -1,7 +1,6 @@
-import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import { useState } from 'react';
-import { sileo } from 'sileo';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 
 interface AsyncMenuItemWrapperProps {
@@ -21,13 +20,19 @@ const AsyncMenuItemWrapper: React.FC<AsyncMenuItemWrapperProps> = ({ option, onS
     const handleClick = async () => {
         try{
             setIsLoading(true);
-            await option.onClick();
+            await option.onClick?.();
             onSuccess?.();
         }catch(error: unknown){
             if(isAccessDeniedError(error)){
-                notifyApiError(error, { fallbackTitle: 'You do not have permission to perform this action.' });
+                reportError(error, {
+                    surface: ErrorSurface.Toast,
+                    fallbackTitle: 'You do not have permission to perform this action.'
+                });
             } else {
-                sileo.error({ title: `${option.label} failed` });
+                reportError(error, {
+                    surface: ErrorSurface.Toast,
+                    fallbackTitle: `${option.label} failed`
+                });
             }
         }finally{
             setIsLoading(false);

@@ -1,5 +1,5 @@
 .context-menu-popover {
-    overflow: hidden;
+    overflow: visible;
 }
 
 .context-menu-popover--sm {
@@ -8,4 +8,50 @@
 
 .context-menu-popover--sm .popover-menu {
     min-width: 124px;
+}
+
+.context-menu-submenu-wrapper {
+    position: relative;
+}
+
+.context-menu-submenu-panel {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    min-width: 180px;
+    padding: 8px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    box-shadow: var(--popover-shadow, 0 4px 12px rgba(0, 0, 0, 0.15));
+    z-index: 1;
+}
+
+/* Hover bridge -- invisible gap filler between trigger and submenu */
+.context-menu-submenu-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 100%;
+    width: 8px;
+    height: 100%;
+    pointer-events: auto;
+    display: none;
+}
+
+.context-menu-submenu-wrapper:hover::after {
+    display: block;
+}
+
+.context-menu-transparency {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 140px;
+}
+
+.context-menu-transparency__label {
+    font-size: 0.7rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
 }

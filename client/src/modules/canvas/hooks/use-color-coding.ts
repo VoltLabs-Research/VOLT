@@ -1,6 +1,6 @@
 import { UseModifierBaseOptions } from './use-modifier-base';
 import useModifierBase from './use-modifier-base';
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import { isAccessDeniedError } from '@/shared/errors/core';
 
 import { useApplyColorCodingMutation, colorCodingStatsQuery } from '@/modules/trajectory/hooks/color-coding/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';

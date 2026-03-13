@@ -6,7 +6,7 @@ import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selecto
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useAnalysisAtomPropertiesAvailability from '@/modules/trajectory/hooks/trajectory/use-analysis-atom-properties-availability';
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import { isAccessDeniedError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback, useMemo, useState } from 'react';

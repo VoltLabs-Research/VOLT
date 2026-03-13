@@ -1,6 +1,8 @@
-import { getApiErrorMessage, isApiError, markApiErrorHandled } from '@/shared/errors/notify-api-error';
-import type { PromiseToastOptions } from '@/shared/presentation/toast-options';
+import { normalizeError } from '@/shared/errors/core/normalize-error';
+import { mapErrorToUserMessage } from '@/shared/errors/core/map-error-to-user-message';
+import { isApiError, markApiErrorHandled } from '@/shared/errors/core';
 import { sileo } from 'sileo';
+import type { PromiseToastOptions } from '@/shared/presentation/toast-options';
 import type { SileoOptions, SileoPosition } from 'sileo';
 
 /**
@@ -19,18 +21,15 @@ const DEFAULT_ERROR_DESCRIPTION = 'Please try again later.';
 
 const buildErrorHandler = (base: SileoOptions) =>
     (err: unknown): SileoOptions => {
-        if(isApiError(err)){
-            markApiErrorHandled(err);
-            return {
-                ...base,
-                title: getApiErrorMessage(err, base.title),
-                description: base.description ?? base.title ?? DEFAULT_ERROR_DESCRIPTION
-            };
-        }
+        if (isApiError(err)) markApiErrorHandled(err);
+
+        const appError = normalizeError(err);
+        const userMessage = mapErrorToUserMessage(appError, { fallbackTitle: base.title });
 
         return {
             ...base,
-            description: base.description ?? DEFAULT_ERROR_DESCRIPTION
+            title: userMessage.title,
+            description: base.description ?? userMessage.description ?? base.title ?? DEFAULT_ERROR_DESCRIPTION
         };
     };
 

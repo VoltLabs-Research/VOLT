@@ -1,6 +1,7 @@
-import { isApiError } from '@/shared/errors/notify-api-error';
+import { isApiError } from '@/shared/errors/core/api-error-guards';
+import { ErrorKind } from '@/shared/errors/core/types';
 import type { ApiError } from '@voltstack/voltclient';
-import type { AppError, ErrorKind } from '@/shared/errors/core/types';
+import type { AppError } from '@/shared/errors/core/types';
 
 const NETWORK_PATTERNS = [
     'timeout',
@@ -20,23 +21,23 @@ const classifyApiError = (error: ApiError): ErrorKind => {
     const code = error.code ?? '';
     const status = error.status;
 
-    if (error.isPermissionDenied()) return 'permission';
-    if (code.startsWith('Validation::')) return 'validation';
-    if (code.startsWith('Auth::') || code.startsWith('Authentication::') || code.startsWith('OAuth::')) return 'auth';
-    if (code.includes('NotFound') || status === 404) return 'not-found';
-    if (code.includes('Duplicate') || code.includes('AlreadyExists') || code.includes('Conflict') || status === 409) return 'conflict';
-    if (status === 429 || code.includes('RateLimit') || code.includes('TooMany')) return 'rate-limit';
-    if (code.startsWith('Network::')) return 'network';
-    if (status !== undefined && status >= 500) return 'server';
+    if (error.isPermissionDenied()) return ErrorKind.Permission;
+    if (code.startsWith('Validation::')) return ErrorKind.Validation;
+    if (code.startsWith('Auth::') || code.startsWith('Authentication::') || code.startsWith('OAuth::')) return ErrorKind.Auth;
+    if (code.includes('NotFound') || status === 404) return ErrorKind.NotFound;
+    if (code.includes('Duplicate') || code.includes('AlreadyExists') || code.includes('Conflict') || status === 409) return ErrorKind.Conflict;
+    if (status === 429 || code.includes('RateLimit') || code.includes('TooMany')) return ErrorKind.RateLimit;
+    if (code.startsWith('Network::')) return ErrorKind.Network;
+    if (status !== undefined && status >= 500) return ErrorKind.Server;
 
-    return 'api';
+    return ErrorKind.Api;
 };
 
 const RETRYABLE_KINDS: ReadonlySet<ErrorKind> = new Set([
-    'network',
-    'server',
-    'rate-limit',
-    'unknown'
+    ErrorKind.Network,
+    ErrorKind.Server,
+    ErrorKind.RateLimit,
+    ErrorKind.Unknown
 ]);
 
 /**
@@ -72,15 +73,14 @@ const isNetworkMessage = (message: string): boolean => {
  */
 export const normalizeError = (error: unknown): AppError => {
     if (isApiError(error)) {
-        const apiError = error as ApiError;
-        const kind = classifyApiError(apiError);
+        const kind = classifyApiError(error);
 
         return {
             kind,
-            code: apiError.code,
-            httpStatus: apiError.status ?? null,
-            message: apiError.message,
-            friendlyMessage: apiError.getFriendlyMessage(),
+            code: error.code,
+            httpStatus: error.status ?? null,
+            message: error.message,
+            friendlyMessage: error.getFriendlyMessage(),
             retryable: isRetryable(kind),
             original: error
         };
@@ -89,7 +89,7 @@ export const normalizeError = (error: unknown): AppError => {
     if (error instanceof Error) {
         if (isNetworkMessage(error.message)) {
             return {
-                kind: 'network',
+                kind: ErrorKind.Network,
                 code: null,
                 httpStatus: null,
                 message: error.message,
@@ -104,7 +104,7 @@ export const normalizeError = (error: unknown): AppError => {
             : DEFAULT_FRIENDLY_MESSAGE;
 
         return {
-            kind: 'unknown',
+            kind: ErrorKind.Unknown,
             code: null,
             httpStatus: null,
             message: error.message,
@@ -116,7 +116,7 @@ export const normalizeError = (error: unknown): AppError => {
 
     if (typeof error === 'string' && error.length > 0) {
         return {
-            kind: 'unknown',
+            kind: ErrorKind.Unknown,
             code: null,
             httpStatus: null,
             message: error,
@@ -127,7 +127,7 @@ export const normalizeError = (error: unknown): AppError => {
     }
 
     return {
-        kind: 'unknown',
+        kind: ErrorKind.Unknown,
         code: null,
         httpStatus: null,
         message: 'Unknown error',
