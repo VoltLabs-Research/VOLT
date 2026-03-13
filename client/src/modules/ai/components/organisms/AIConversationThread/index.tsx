@@ -72,7 +72,30 @@ interface MarkdownTableProps extends ComponentPropsWithoutRef<'table'> {
     children?: ReactNode;
 };
 
+interface TextSegment {
+    type: 'text';
+    content: string;
+};
+
+interface ReasoningSegment {
+    type: 'reasoning';
+    content: string;
+};
+
+interface ToolSegment {
+    type: 'tool';
+    invocation: NormalizedToolInvocation;
+};
+
+interface ArtifactSegment {
+    type: 'artifact';
+    artifact: AIMessageArtifact;
+};
+
+type MessageSegment = TextSegment | ReasoningSegment | ToolSegment | ArtifactSegment;
+
 interface NormalizedConversationMessage extends UIMessage {
+    segments: MessageSegment[];
     preview: string;
     reasoning: string;
     artifacts: AIMessageArtifact[];
@@ -267,39 +290,87 @@ const AIConversationThread = ({
 
     const normalizedMessages = useMemo<NormalizedConversationMessage[]>(() => {
         const normalizeMessage = (message: UIMessage) => {
-            let toolInvocations: NormalizedToolInvocation[] = [];
+            const segments: MessageSegment[] = [];
+            const toolInvocations: NormalizedToolInvocation[] = [];
+            const artifacts: AIMessageArtifact[] = [];
 
-            if (Array.isArray(message.parts)) {
-                toolInvocations = message.parts.flatMap((part, index) => {
-                    const normalized = normalizeToolPart(part, index);
+            for (let i = 0; i < message.parts.length; i++) {
+                const part = message.parts[i];
 
-                    if (normalized) {
-                        return [normalized];
+                if (isTextPart(part)) {
+                    if (!part.text.trim()) continue;
+
+                    const last = segments[segments.length - 1];
+                    if (last && last.type === 'text') {
+                        last.content += '\n' + part.text;
+                    } else {
+                        segments.push({ type: 'text', content: part.text });
                     }
+                    continue;
+                }
 
-                    return [];
-                });
+                if (isReasoningPart(part)) {
+                    const last = segments[segments.length - 1];
+                    if (last && last.type === 'reasoning') {
+                        last.content += part.text;
+                    } else {
+                        segments.push({ type: 'reasoning', content: part.text });
+                    }
+                    continue;
+                }
+
+                const normalized = normalizeToolPart(part, i);
+                if (normalized) {
+                    toolInvocations.push(normalized);
+                    segments.push({ type: 'tool', invocation: normalized });
+                }
             }
 
-            const artifacts: AIMessageArtifact[] = [];
+            const preview = segments
+                .filter((s): s is TextSegment => s.type === 'text')
+                .map((s) => s.content)
+                .join('\n');
+
+            const reasoning = segments
+                .filter((s): s is ReasoningSegment => s.type === 'reasoning')
+                .map((s) => s.content)
+                .join('');
 
             return {
                 ...message,
-                preview: message.parts
-                    .filter(isTextPart)
-                    .map((part) => part.text)
-                    .filter((text) => Boolean(text.trim()))
-                    .join('\n'),
-                reasoning: message.parts
-                    .filter(isReasoningPart)
-                    .map((part) => part.text)
-                    .join(''),
+                segments,
+                preview,
+                reasoning,
                 artifacts,
                 toolInvocations
             };
         };
 
-        return messages.map(normalizeMessage);
+        const mapped = messages.map(normalizeMessage);
+
+        return mapped.reduce<NormalizedConversationMessage[]>((acc, msg) => {
+            const prev = acc[acc.length - 1];
+            if (!prev || prev.role !== AIMessageRole.Assistant || msg.role !== AIMessageRole.Assistant) {
+                acc.push(msg);
+                return acc;
+            }
+
+            prev.segments = [...prev.segments, ...msg.segments];
+            prev.toolInvocations = [...prev.toolInvocations, ...msg.toolInvocations];
+            prev.artifacts = [...prev.artifacts, ...msg.artifacts];
+
+            if (prev.preview && msg.preview) {
+                prev.preview += '\n' + msg.preview;
+            } else if (msg.preview) {
+                prev.preview = msg.preview;
+            }
+
+            if (msg.reasoning) {
+                prev.reasoning += msg.reasoning;
+            }
+
+            return acc;
+        }, []);
     }, [messages]);
 
     const streamCursor = useMemo(() => {
@@ -505,7 +576,7 @@ const AIConversationThread = ({
         );
     };
 
-    const renderToolInvocation = (toolInvocation: NormalizedToolInvocation) => {
+    const renderToolInvocation = (toolInvocation: NormalizedToolInvocation, index: number) => {
         const toolCallId = toolInvocation.toolCallId;
         const actionState = toolInvocation.state;
         const approvalResponseId = toolInvocation.approvalId || toolCallId;
@@ -531,7 +602,7 @@ const AIConversationThread = ({
         }
 
         return (
-            <Container key={toolCallId} className={`ai-action-request-card ${statusClass}`}>
+            <Container key={`${toolCallId}-${index}`} className={`ai-action-request-card ${statusClass}`}>
                 <Container className='d-flex items-center gap-05 ai-action-request-header'>
                     <span className='ai-action-request-dot' />
                     <Paragraph className='font-size-1 color-muted'>
@@ -582,46 +653,88 @@ const AIConversationThread = ({
             mdComponents = createMarkdownComponents(message.id);
         }
 
-        return (
-            <Container className={`d-flex column gap-025 ai-message-row ${bubbleVariant}`}>
-                {!isUser && Boolean(message.reasoning) && (
-                    <Container className='ai-message-reasoning'>
+        const segmentElements: ReactNode[] = [];
+        let segIdx = 0;
+
+        while (segIdx < message.segments.length) {
+            const segment = message.segments[segIdx];
+
+            if (segment.type === 'reasoning') {
+                segmentElements.push(
+                    <Container key={`seg-${segIdx}`} className='ai-message-reasoning'>
                         <Paragraph className='font-size-1 text-uppercase color-muted ai-message-reasoning-label'>
                             Thinking
                         </Paragraph>
                         <Container className='font-size-1 ai-message-text ai-message-markdown'>
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {message.reasoning}
+                                {segment.content}
                             </ReactMarkdown>
                         </Container>
                     </Container>
-                )}
+                );
+                segIdx++;
+                continue;
+            }
 
-                {Boolean(message.preview) && (
-                    <Container className={`ai-message-bubble ${bubbleVariant}`}>
+            if (segment.type === 'text') {
+                segmentElements.push(
+                    <Container key={`seg-${segIdx}`} className={`ai-message-bubble ${bubbleVariant}`}>
                         <Container className='font-size-2-5 ai-message-text ai-message-markdown'>
                             <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
-                                {message.preview}
+                                {segment.content}
                             </ReactMarkdown>
                         </Container>
                     </Container>
-                )}
+                );
+                segIdx++;
+                continue;
+            }
 
-                {!isUser && !message.preview && !message.reasoning && message.artifacts.length === 0 && (
-                    renderThinkingBubble()
-                )}
-
-                {message.artifacts.length > 0 && (
-                    <Container className='d-flex column gap-05 ai-message-artifact-list'>
-                        {message.artifacts.map(renderTableArtifact)}
+            if (segment.type === 'tool') {
+                const groupStart = segIdx;
+                const tools: NormalizedToolInvocation[] = [segment.invocation];
+                segIdx++;
+                while (segIdx < message.segments.length) {
+                    const next = message.segments[segIdx];
+                    if (next.type !== 'tool') break;
+                    tools.push(next.invocation);
+                    segIdx++;
+                }
+                segmentElements.push(
+                    <Container key={`seg-${groupStart}`} className='d-flex column gap-05 ai-action-request-list'>
+                        {tools.map(renderToolInvocation)}
                     </Container>
-                )}
+                );
+                continue;
+            }
 
-                {message.toolInvocations.length > 0 && (
-                    <Container className='d-flex column gap-05 ai-action-request-list'>
-                        {message.toolInvocations.map(renderToolInvocation)}
+            if (segment.type === 'artifact') {
+                const groupStart = segIdx;
+                const artifacts: AIMessageArtifact[] = [segment.artifact];
+                segIdx++;
+                while (segIdx < message.segments.length) {
+                    const next = message.segments[segIdx];
+                    if (next.type !== 'artifact') break;
+                    artifacts.push(next.artifact);
+                    segIdx++;
+                }
+                segmentElements.push(
+                    <Container key={`seg-${groupStart}`} className='d-flex column gap-05 ai-message-artifact-list'>
+                        {artifacts.map(renderTableArtifact)}
                     </Container>
-                )}
+                );
+                continue;
+            }
+
+            segIdx++;
+        }
+
+        const showThinkingBubble = !isUser && message.segments.length === 0;
+
+        return (
+            <Container className={`d-flex column gap-025 ai-message-row ${bubbleVariant}`}>
+                {segmentElements}
+                {showThinkingBubble && renderThinkingBubble()}
             </Container>
         );
     };

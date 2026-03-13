@@ -74,7 +74,7 @@ const ClustersListing = () => {
             render: (_, row) => (
                 <Container className='d-flex column gap-025'>
                     <Container className='d-flex items-center gap-05'>
-                        <Paragraph className='font-size-2 color-primary'>{row.name}</Paragraph>
+                        <Paragraph className='font-size-2 color-secondary'>{row.name}</Paragraph>
                     </Container>
                     <Paragraph className='font-size-1 color-muted font-family-mono'>{row.id}</Paragraph>
                 </Container>

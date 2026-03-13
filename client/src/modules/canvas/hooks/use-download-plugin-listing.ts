@@ -80,7 +80,7 @@ const useDownloadPluginListing = () => {
                         format
                     });
                     const extension = getExtensionFromBlob(blob, format);
-                    triggerBrowserDownload(blob, `${analysisId}_analysis_listings.${extension}`);
+                    triggerBrowserDownload(blob, `AnalysisID-${analysisId}.${extension}`);
                     return blob;
                 })(),
                 {

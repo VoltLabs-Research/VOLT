@@ -1,8 +1,10 @@
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 import { AITool } from '@shared/application/ai/AITool';
 import { CreateLatexFileUseCase } from '@modules/latex/application/use-cases/CreateLatexFileUseCase';
 import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
+import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 
 @injectable()
 export class CreateLatexFileAITool extends AITool {
@@ -17,7 +19,10 @@ export class CreateLatexFileAITool extends AITool {
 
     constructor(
         @inject(CreateLatexFileUseCase)
-        protected readonly useCase: CreateLatexFileUseCase
+        protected readonly useCase: CreateLatexFileUseCase,
+
+        @inject(SOCKET_TOKENS.SocketEmitter)
+        private readonly socketEmitter: ISocketEmitter
     ) {
         super();
     }
@@ -31,6 +36,18 @@ export class CreateLatexFileAITool extends AITool {
             content: params.content
         });
         if (!result.success) throw result.error;
+
+        this.socketEmitter.emitToRoom(
+            `latex-doc-${params.documentId}`,
+            'latex_content_updated',
+            {
+                documentId: params.documentId,
+                fileId: result.value._id,
+                content: params.content,
+                timestamp: Date.now(),
+                senderId: 'ai-assistant'
+            }
+        );
 
         return {
             summary: `Created file "${result.value.name}".`,

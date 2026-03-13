@@ -131,6 +131,17 @@ const useAIChatStream = ({
     useEffect(() => {
         if (messagesResult.isSuccess && !skipNextMessageLoadRef.current) {
             setMessages((currentMessages) => {
+                const lastMessage = currentMessages[currentMessages.length - 1];
+                if (lastMessage?.role === 'assistant') {
+                    const hasPendingApproval = lastMessage.parts.some((part) => (
+                        isToolUIPart(part) && part.state === 'approval-requested'
+                    ));
+
+                    if (hasPendingApproval) {
+                        return currentMessages;
+                    }
+                }
+
                 if (currentMessages.length === 0) {
                     return conversationMessages;
                 }

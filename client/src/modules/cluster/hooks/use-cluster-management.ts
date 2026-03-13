@@ -124,6 +124,12 @@ export interface ClusterManagementResult {
         target: TeamClusterRemoteAccessTarget,
         path: string
     ) => Promise<TeamClusterRemoteExplorerNode>;
+    downloadRemoteExplorerObject: (
+        teamClusterId: string,
+        sessionId: string,
+        target: TeamClusterRemoteAccessTarget,
+        path: string
+    ) => Promise<Blob>;
 };
 
 const useClusterManagement = (): ClusterManagementResult => {
@@ -297,6 +303,25 @@ const useClusterManagement = (): ClusterManagementResult => {
         return result.node;
     };
 
+    const downloadRemoteExplorerObject = async (
+        teamClusterId: string,
+        sessionId: string,
+        target: TeamClusterRemoteAccessTarget,
+        path: string
+    ) => {
+        if (!selectedTeamId) {
+            throw new Error('Missing selected team');
+        }
+
+        return teamClusterService.downloadRemoteExplorerObject({
+            teamId: selectedTeamId,
+            teamClusterId,
+            sessionId,
+            target,
+            path
+        });
+    };
+
     return {
         clusters,
         selectedTeamId,
@@ -311,7 +336,8 @@ const useClusterManagement = (): ClusterManagementResult => {
         requestUpdate,
         createRemoteAccessSession,
         listRemoteExplorerEntries,
-        getRemoteExplorerNode
+        getRemoteExplorerNode,
+        downloadRemoteExplorerObject
     };
 };
 
