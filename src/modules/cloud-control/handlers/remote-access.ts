@@ -1,6 +1,7 @@
+import { Readable } from 'node:stream';
 import mongoose from 'mongoose';
 import { MinioService, RedisConnectionService } from '@/modules/platform/services';
-import type { ReverseChannelCommandHandler } from '../services';
+import type { ReverseChannelCommandHandler, ReverseChannelCommandResult } from '../services';
 import { readRecord, readString } from './payloadValidation';
 
 interface RemoteAccessHandlersDependencies {
@@ -338,6 +339,146 @@ const buildRedisNode = async (
     };
 };
 
+interface MinioLikeError {
+    code?: string;
+};
+
+const isMinioNotFoundError = (error: unknown): error is MinioLikeError => {
+    return typeof error === 'object'
+        && error !== null
+        && 'code' in error
+        && (error.code === 'NotFound' || error.code === 'NoSuchKey');
+};
+
+/**
+ * Reads a MinIO object as a stream and returns it with appropriate headers for download.
+ *
+ * @param minioService - The MinIO service instance.
+ * @param path - The object path in `{bucket}/{objectKey}` format.
+ * @returns A stream response with content-type from metadata and content-disposition for download.
+ * @throws When the object is not found or the path is missing bucket/key segments.
+ */
+const buildMinioDownloadResponse = async (
+    minioService: MinioService,
+    path: string
+): Promise<ReverseChannelCommandResult> => {
+    const normalizedPath = normalizePath(path);
+    const segments = splitPathSegments(normalizedPath);
+    const [bucket, ...objectKeySegments] = segments;
+    const objectKey = objectKeySegments.join('/');
+
+    if (!bucket || !objectKey) {
+        throw new Error('MinIO download requires a bucket and object key');
+    }
+
+    let stat;
+    let nodeStream;
+
+    try {
+        stat = await minioService.statObject(bucket, objectKey);
+        nodeStream = await minioService.getObjectStream(bucket, objectKey);
+    } catch (error) {
+        if (isMinioNotFoundError(error)) {
+            throw Object.assign(new Error(`Object not found: ${bucket}/${objectKey}`), {
+                statusCode: 404
+            });
+        }
+
+        throw error;
+    }
+
+    const stream = Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>;
+    const filename = objectKey.split('/').pop() ?? objectKey;
+    const contentType = typeof stat.metaData['content-type'] === 'string'
+        ? stat.metaData['content-type']
+        : 'application/octet-stream';
+
+    const headers: Record<string, string> = {
+        'content-type': contentType,
+        'content-length': String(stat.size),
+        'content-disposition': `attachment; filename="${filename}"`
+    };
+
+    return { status: 200, headers, stream };
+};
+
+/**
+ * Exports documents from a Mongo collection as a pretty-printed JSON array.
+ *
+ * @param path - The collection name.
+ * @returns A stream response containing up to MAX_MONGO_DOCUMENTS documents as JSON.
+ * @throws When the MongoDB connection is not ready or the collection name is empty.
+ */
+const buildMongoDownloadResponse = async (path: string): Promise<ReverseChannelCommandResult> => {
+    const collectionName = normalizePath(path);
+    const database = mongoose.connection.db;
+
+    if (!database) {
+        throw new Error('MongoDB connection is not ready');
+    }
+
+    if (!collectionName) {
+        throw new Error('Mongo download requires a collection name');
+    }
+
+    const documents = await database.collection(collectionName)
+        .find({})
+        .limit(MAX_MONGO_DOCUMENTS)
+        .toArray();
+
+    const jsonContent = JSON.stringify(documents.map(toMongoDocument), null, 2);
+    const buffer = Buffer.from(jsonContent, 'utf-8');
+    const nodeStream = Readable.from([buffer]);
+    const stream = Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>;
+
+    const headers: Record<string, string> = {
+        'content-type': 'application/json',
+        'content-length': String(buffer.byteLength),
+        'content-disposition': `attachment; filename="${collectionName}.json"`
+    };
+
+    return { status: 200, headers, stream };
+};
+
+/**
+ * Exports a Redis key's type and value as pretty-printed JSON.
+ *
+ * @param redisConnectionService - The Redis connection service instance.
+ * @param path - The key path in `db/{id}/key/{encodedKey}` format.
+ * @returns A stream response with the key's type and value serialized as JSON.
+ * @throws When the key path cannot be parsed.
+ */
+const buildRedisDownloadResponse = async (
+    redisConnectionService: RedisConnectionService,
+    path: string
+): Promise<ReverseChannelCommandResult> => {
+    const keyPath = parseRedisKeyPath(path);
+
+    if (!keyPath) {
+        throw new Error('Redis download requires a valid key path (db/{id}/key/{key})');
+    }
+
+    const value = await redisConnectionService.getExplorerValue(keyPath.databaseId, keyPath.key);
+    const jsonContent = JSON.stringify({
+        type: value.type,
+        key: keyPath.key,
+        value: value.value
+    }, null, 2);
+
+    const buffer = Buffer.from(jsonContent, 'utf-8');
+    const nodeStream = Readable.from([buffer]);
+    const stream = Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>;
+    const safeFilename = keyPath.key.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+    const headers: Record<string, string> = {
+        'content-type': 'application/json',
+        'content-length': String(buffer.byteLength),
+        'content-disposition': `attachment; filename="${safeFilename}.json"`
+    };
+
+    return { status: 200, headers, stream };
+};
+
 export const createRemoteAccessHandlers = (deps: RemoteAccessHandlersDependencies): ReverseChannelCommandHandler[] => [
     {
         command: 'remote.explorer.list',
@@ -385,6 +526,30 @@ export const createRemoteAccessHandlers = (deps: RemoteAccessHandlersDependencie
             }
 
             throw new Error(`Unsupported remote explorer target: ${target}`);
+        }
+    },
+    {
+        command: 'remote.explorer.download',
+        execute: async (payload) => {
+            const body = readRecord(payload, 'payload');
+            const target = readString(body.target, 'target');
+            const path = typeof body.path === 'string'
+                ? body.path
+                : '';
+
+            if (target === 'minio') {
+                return buildMinioDownloadResponse(deps.minioService, path);
+            }
+
+            if (target === 'mongo-documents') {
+                return buildMongoDownloadResponse(path);
+            }
+
+            if (target === 'redis-data') {
+                return buildRedisDownloadResponse(deps.redisConnectionService, path);
+            }
+
+            throw new Error(`Unsupported remote explorer download target: ${target}`);
         }
     }
 ];
