@@ -59,6 +59,22 @@ export default class AIResponseMessagePartsMapper {
                 }
             }
 
+            if (
+                newRecord
+                && newRecord.type === 'text'
+                && typeof newRecord.text === 'string'
+            ) {
+                const isDuplicateText = merged.some((existing) => {
+                    const existingRecord = asRecord(existing);
+                    return (
+                        existingRecord
+                        && existingRecord.type === 'text'
+                        && existingRecord.text === newRecord.text
+                    );
+                });
+                if (isDuplicateText) continue;
+            }
+
             merged.push(newPart);
         }
 

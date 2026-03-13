@@ -1,6 +1,6 @@
 import SimulationCard from '../SimulationCard';
 import SimulationSkeletonCard from '../../atoms/SimulationSkeletonCard';
-import { fetchTrajectories } from '@/modules/trajectory/hooks/trajectory/queries';
+import trajectoryService from '@/modules/trajectory/api/services/trajectory';
 import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
 import useDeleteSelectedTrajectories from '@/modules/trajectory/hooks/trajectory/use-delete-selected-trajectories';
 import useDownloadSamples from '@/modules/trajectory/hooks/trajectory/use-download-samples';
@@ -26,9 +26,9 @@ export type SimulationGridItem =
     | { kind: 'trajectory'; _id: string; trajectory: Trajectory };
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: 'trajectory.created', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid()] },
-    { event: 'trajectory.deleted', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid()] },
-    { event: 'trajectory.updated', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid()] }
+    { event: 'trajectory.created', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid(), TRAJECTORY_QUERY_KEYS.trajectories()] },
+    { event: 'trajectory.deleted', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid(), TRAJECTORY_QUERY_KEYS.trajectories()] },
+    { event: 'trajectory.updated', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid(), TRAJECTORY_QUERY_KEYS.trajectories()] }
 ];
 
 export default function SimulationGrid() {
@@ -73,7 +73,7 @@ export default function SimulationGrid() {
     }, [handleKeyDown]);
 
     const fetchData = useCallback(async (params: PaginationParams & SimulationGridContext): Promise<PaginatedResponse<SimulationGridItem>> => {
-        const result = await fetchTrajectories({ page: params.page, limit: params.limit });
+        const result = await trajectoryService.getAll({ page: params.page, limit: params.limit });
 
         const items: SimulationGridItem[] = result.data
             .map((trajectory) => ({ kind: 'trajectory' as const, _id: trajectory._id, trajectory }));

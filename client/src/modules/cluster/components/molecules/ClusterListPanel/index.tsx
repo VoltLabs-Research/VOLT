@@ -1,29 +1,49 @@
 import './ClusterListPanel.css';
+import ClusterInstallCommandModal, { CLUSTER_INSTALL_COMMAND_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterInstallCommandModal';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Tooltip from '@/shared/presentation/components/Tooltip';
+import { useRegenerateTeamClusterEnrollmentTokenMutation } from '@/modules/cluster/hooks/team-cluster/queries';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
-import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
+import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
+import { openModal } from '@/shared/presentation/components/Modal';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 
 interface ClusterListPanelProps {
     clusters: TeamCluster[];
-    enrollmentTokens: Map<string, string>;
-    onConnect: (cluster: TeamCluster) => void;
     onDelete: (cluster: TeamCluster) => void;
 };
 
-const ClusterListPanel = ({ clusters, enrollmentTokens, onConnect, onDelete }: ClusterListPanelProps) => {
+const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
+    const selectedTeamId = useSelectedTeamId();
+    const regenerateToken = useRegenerateTeamClusterEnrollmentTokenMutation();
+    const [installClusterId, setInstallClusterId] = useState<string | null>(null);
+    const [installToken, setInstallToken] = useState<string | null>(null);
+
     if (clusters.length === 0) return null;
+
+    const handleConnect = async (cluster: TeamCluster) => {
+        if (!selectedTeamId) return;
+
+        const result = await regenerateToken.mutateAsync({
+            teamId: selectedTeamId,
+            teamClusterId: cluster._id
+        });
+
+        setInstallClusterId(cluster._id);
+        setInstallToken(result.enrollmentToken);
+        openModal(CLUSTER_INSTALL_COMMAND_MODAL_ID);
+    };
 
     const renderRow = (cluster: TeamCluster) => {
         const variant = getTeamClusterStatusVariant(cluster.status);
         const label = getTeamClusterStatusLabel(cluster.status);
-        const canConnect = cluster.status !== TeamClusterStatus.Connected
-            && enrollmentTokens.has(cluster._id);
+        const canConnect = isTeamClusterWaiting(cluster.status);
 
         return (
             <Container key={cluster._id} className='cluster-list-panel-row d-flex items-center gap-05'>
@@ -43,7 +63,7 @@ const ClusterListPanel = ({ clusters, enrollmentTokens, onConnect, onDelete }: C
                             variant='ghost'
                             intent='brand'
                             size='sm'
-                            onClick={() => onConnect(cluster)}
+                            onClick={() => handleConnect(cluster)}
                         >
                             Connect
                         </Button>
@@ -70,6 +90,11 @@ const ClusterListPanel = ({ clusters, enrollmentTokens, onConnect, onDelete }: C
             <Container className='cluster-list-panel-list'>
                 {clusters.map(renderRow)}
             </Container>
+
+            <ClusterInstallCommandModal
+                clusterId={installClusterId}
+                enrollmentToken={installToken}
+            />
         </Container>
     );
 };

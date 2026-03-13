@@ -160,6 +160,14 @@
     }
 }
 
+/* Floating invite code button */
+.cluster-onboarding-invite-btn {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 50;
+}
+
 /* Floating notifications */
 .cluster-onboarding-notifications {
     position: fixed;

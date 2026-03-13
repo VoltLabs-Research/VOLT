@@ -483,7 +483,8 @@ const AIMessageItem = memo(({
         const isComplete = actionState === 'result'
             || actionState === 'approved'
             || actionState === 'rejected'
-            || actionState === 'output-denied';
+            || actionState === 'output-denied'
+            || actionState === 'approval-responded';
         const isApprovalRequested = actionState === 'approval-required'
             || actionState === 'approval-requested';
         const isApprovalFlow = isApprovalRequested
