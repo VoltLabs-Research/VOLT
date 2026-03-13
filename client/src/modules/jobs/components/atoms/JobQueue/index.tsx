@@ -35,11 +35,9 @@ const statusConfig: Partial<Record<JobStatus, StatusConfigEntry>> = {
 };
 
 const queueTypeNames: Record<string, string> = {
-    'trajectory_processing': 'Processing',
-    'cloud-upload': 'Cloud Upload',
-    'rasterizer': 'Rasterizer',
-    'analysis': 'Analysis',
-    'analysis_processing': 'Analysis'
+    'trajectory_native_preprocess': 'Processing Frame',
+    'analysis_processing': 'Analysis',
+    'ssh_import': 'SSH Import'
 };
 
 const getJobDisplayName = (job: Job): string => {
@@ -60,7 +58,7 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
 
     const containerClass = `job-container ${job.status}${isChild ? ' is-child' : ''}`;
     const isFailed = job.status === JobStatus.Failed;
-    const isAnalysisJob = job.queueType === 'analysis' || job.queueType === 'analysis_processing';
+    const isAnalysisJob = job.queueType === 'analysis_processing';
     const retryJobAnalysis = useRetryJobAnalysis();
 
     const analysisId = job.jobId?.split('-').slice(0, -1).join('-');

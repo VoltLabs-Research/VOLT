@@ -250,7 +250,8 @@
 
 
 .form-field-canvas-input--compact {
-    width: 48px;
+    width: auto;
+    min-width: 48px;
     text-align: center;
 }
 

@@ -60,6 +60,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
             );
 
             const totalAtoms = atomsPage.totalAtoms;
+            const nativeProperties = atomsPage.nativeProperties ?? [];
 
             let perAtomData: Map<number, PerAtomRecord> | null = null;
             let displayProperties: string[] = [];
@@ -141,6 +142,12 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
                     z: atom.z
                 };
 
+                for (const prop of nativeProperties) {
+                    if (atom[prop] !== undefined) {
+                        record[prop] = atom[prop];
+                    }
+                }
+
                 if (perAtomData?.has(atom.id)) {
                     const pluginData = perAtomData.get(atom.id)!;
                     for (const prop of displayProperties) {
@@ -162,7 +169,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
                 limit: limitNum,
                 total: totalAtoms,
                 totalPages,
-                _meta: { properties: displayProperties }
+                _meta: { properties: [...nativeProperties, ...displayProperties] }
             });
         } catch (error: unknown) {
             if (error instanceof ApplicationError) {

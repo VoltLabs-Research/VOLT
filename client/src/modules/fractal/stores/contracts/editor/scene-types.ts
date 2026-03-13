@@ -49,6 +49,7 @@ export interface ModelState {
     pointCloudSettings: PointCloudSettingsState;
     sceneOpacities: Record<string, number>;
     modelWorldBounds: ModelWorldBounds | null;
+    showSimulationCell: boolean;
 };
 
 export interface ModelActions {
@@ -70,6 +71,7 @@ export interface ModelActions {
     resetPointCloudSettings: () => void;
     setSceneOpacity: (sceneKey: string, opacity: number) => void;
     getSceneOpacity: (sceneKey: string) => number;
+    setShowSimulationCell: (show: boolean) => void;
 };
 
 export type ModelStore = ModelActions & ModelState;

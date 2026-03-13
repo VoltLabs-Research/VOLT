@@ -44,6 +44,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     { id: 'speed-down', description: 'Decrease speed', keys: ['-'], scope: 'canvas', category: 'playback' },
     { id: 'toggle-grid', description: 'Toggle grid', keys: ['g'], scope: 'canvas', category: 'view' },
     { id: 'toggle-widgets', description: 'Toggle widgets', keys: ['w'], scope: 'canvas', category: 'view' },
+    { id: 'toggle-gizmo', description: 'Toggle gizmo', keys: ['shift', 'g'], scope: 'canvas', category: 'view' },
     { id: 'reset-camera', description: 'Reset camera', keys: ['r'], scope: 'canvas', category: 'view' },
     { id: 'increase-point-size', description: 'Increase point size', keys: ['ctrl', '='], scope: 'canvas', category: 'view' },
     { id: 'decrease-point-size', description: 'Decrease point size', keys: ['ctrl', '-'], scope: 'canvas', category: 'view' },

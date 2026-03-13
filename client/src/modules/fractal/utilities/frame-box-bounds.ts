@@ -20,9 +20,9 @@ const getSimulationCellBoxBounds = (simulationCell?: SimulationCell): BoxBounds 
         xlo,
         xhi: xlo + boundingBox.width,
         ylo,
-        yhi: ylo + boundingBox.height,
+        yhi: ylo + boundingBox.length,
         zlo,
-        zhi: zlo + boundingBox.length
+        zhi: zlo + boundingBox.height
     };
 };
 

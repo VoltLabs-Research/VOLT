@@ -28,9 +28,9 @@ export const getTrajectoryBoxBounds = (trajectory: Pick<Trajectory, 'frames'> | 
                 xlo,
                 xhi: xlo + boundingBox.width,
                 ylo,
-                yhi: ylo + boundingBox.height,
+                yhi: ylo + boundingBox.length,
                 zlo,
-                zhi: zlo + boundingBox.length
+                zhi: zlo + boundingBox.height
             };
         }
     }

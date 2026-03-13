@@ -25,6 +25,7 @@ const useKeyboardShortcuts = () => {
     const {
         showWidgets,
         showGrid,
+        showGizmo,
         updateSearchParams,
         setResultsPluginId,
     } = useCanvasUrlState();
@@ -104,6 +105,10 @@ const useKeyboardShortcuts = () => {
                 updateSearchParams({ widgets: showWidgets ? 'false' : null }, { replace: true });
             },
 
+            'toggle-gizmo': () => {
+                updateSearchParams({ gizmo: showGizmo ? 'false' : null }, { replace: true });
+            },
+
             'reset-camera': () => {
                 window.dispatchEvent(new CustomEvent('Volt:camera-command', {
                     detail: { command: 'reset-camera' }
@@ -138,6 +143,7 @@ const useKeyboardShortcuts = () => {
         setShowPanel,
         showWidgets,
         showGrid,
+        showGizmo,
         updateSearchParams,
         setResultsPluginId
     ]);
