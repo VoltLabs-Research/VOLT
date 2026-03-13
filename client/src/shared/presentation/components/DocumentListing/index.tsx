@@ -30,7 +30,7 @@ import './DocumentListing.css';
 import { Skeleton } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { RxDotsHorizontal } from 'react-icons/rx';
 import { sileo } from 'sileo';
@@ -203,6 +203,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     const [lastContentTabId, setLastContentTabId] = useState(initialTabId);
     const [selectedExportType, setSelectedExportType] = useState<ExportType>('json');
     const [isExporting, setIsExporting] = useState(false);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setActiveTabId(initialTabId);
@@ -447,7 +448,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         }
 
         return (
-            <Container className='document-listing-body-container overflow-auto flex-1'>
+            <Container ref={scrollContainerRef} className='document-listing-body-container overflow-auto flex-1'>
                 <motion.div
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -473,6 +474,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                         isAccessDenied={isAccessDenied}
                         onRetry={refresh}
                         retryButtonText='Try again'
+                        scrollContainerRef={scrollContainerRef}
                         compact={compact}
                     />
                 </motion.div>
