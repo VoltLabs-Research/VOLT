@@ -26,6 +26,7 @@
     white-space: normal;
     line-height: 1.55;
     min-width: 0;
+    max-width: 100%;
     overflow: hidden;
 }
 
@@ -52,6 +53,7 @@
 }
 
 .ai-message-markdown {
+    width: 100%;
     margin: 0;
     line-height: 1.55;
     overflow-x: auto;
