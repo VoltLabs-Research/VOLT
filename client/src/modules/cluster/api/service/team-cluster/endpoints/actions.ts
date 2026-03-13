@@ -18,6 +18,10 @@ import type {
     ListTeamClusterRemoteExplorerEntriesOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/list-team-cluster-remote-explorer-entries';
 import type {
+    RegenerateTeamClusterEnrollmentTokenInputDTO,
+    RegenerateTeamClusterEnrollmentTokenOutputDTO
+} from '@/modules/cluster/api/dtos/team-cluster/regenerate-team-cluster-enrollment-token';
+import type {
     RequestClusterUpdateInputDTO,
     RequestClusterUpdateOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/request-cluster-update';
@@ -46,5 +50,8 @@ export default {
     ),
     downloadRemoteExplorerObject: download<DownloadTeamClusterRemoteExplorerObjectInputDTO>(
         'POST', '/:teamId/clusters/:teamClusterId/remote-access/explorer/download'
+    ),
+    regenerateEnrollmentToken: post<RegenerateTeamClusterEnrollmentTokenInputDTO, RegenerateTeamClusterEnrollmentTokenOutputDTO>(
+        '/:teamId/clusters/:teamClusterId/enrollment-token/regenerate'
     )
 };

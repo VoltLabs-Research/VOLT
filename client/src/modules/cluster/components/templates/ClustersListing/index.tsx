@@ -1,13 +1,15 @@
 import ClusterCredentialsModal, { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterCredentialsModal';
+import ClusterInstallCommandModal, { CLUSTER_INSTALL_COMMAND_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterInstallCommandModal';
 import ClustersEmptyState from '@/modules/cluster/components/organisms/ClustersEmptyState';
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/DeleteClusterModal';
 import UpdateClusterModal, { UPDATE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/UpdateClusterModal';
 import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
 import useClustersListingPage from '@/modules/cluster/hooks/use-clusters-listing-page';
-import { invalidateAvailableVersionsQuery, TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
+import { invalidateAvailableVersionsQuery, useRegenerateTeamClusterEnrollmentTokenMutation, TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
 import { formatClusterTimestamp } from '@/modules/cluster/utilities/format-cluster-timestamp';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
+import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
 import { TEAM_CLUSTER_SOCKET_EVENTS } from '@/modules/cluster/api/service/endpoints/team-cluster-socket-events';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import MetricBars from '@/modules/cluster/components/organisms/MetricBars';
@@ -15,8 +17,8 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
 import { openModal } from '@/shared/presentation/components/Modal';
-import { Database, FolderOpen, KeyRound, Monitor, RefreshCw, Terminal, Trash2 } from 'lucide-react';
-import { useCallback, useMemo } from 'react';
+import { Database, FolderOpen, KeyRound, Monitor, RefreshCw, Terminal, TerminalSquare, Trash2 } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { ColumnConfig, MenuOption, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
@@ -27,6 +29,9 @@ const ClustersListing = () => {
     const navigate = useNavigate();
     const state = useClusterPageState();
     const vm = useClustersListingPage();
+    const [installCommandClusterId, setInstallCommandClusterId] = useState<string | null>(null);
+    const [installCommandToken, setInstallCommandToken] = useState<string | null>(null);
+    const regenerateTokenMutation = useRegenerateTeamClusterEnrollmentTokenMutation();
     const createNew = useMemo(() => {
         return {
             buttonTitle: 'Add new Cluster',
@@ -51,6 +56,21 @@ const ClustersListing = () => {
         }
         openModal(UPDATE_CLUSTER_MODAL_ID);
     }, [state, vm.selectedTeamId]);
+
+    const handleShowInstallCommand = useCallback((cluster: TeamCluster) => {
+        if (!vm.selectedTeamId) return;
+
+        regenerateTokenMutation.mutate({
+            teamId: vm.selectedTeamId,
+            teamClusterId: cluster._id
+        }, {
+            onSuccess: (data) => {
+                setInstallCommandClusterId(cluster._id);
+                setInstallCommandToken(data.enrollmentToken);
+                openModal(CLUSTER_INSTALL_COMMAND_MODAL_ID);
+            }
+        });
+    }, [vm.selectedTeamId, regenerateTokenMutation]);
 
     const socketInvalidation = useMemo<SocketInvalidationConfig[] | undefined>(() => {
         if (!vm.selectedTeamId) {
@@ -187,6 +207,12 @@ const ClustersListing = () => {
             onClick: () => navigate(`/dashboard/clusters/${row.id}`)
         },
         {
+            label: 'Show install command',
+            icon: TerminalSquare,
+            disabled: !isTeamClusterWaiting(row.teamCluster.status),
+            onClick: () => handleShowInstallCommand(row.teamCluster)
+        },
+        {
             label: 'Reveal credentials',
             icon: KeyRound,
             onClick: () => handleRevealCredentials(row.teamCluster)
@@ -223,7 +249,7 @@ const ClustersListing = () => {
             destructive: true,
             onClick: () => handleDeleteCluster(row.teamCluster)
         }
-    ], [handleDeleteCluster, handleRevealCredentials, handleUpdateCluster, navigate]);
+    ], [handleDeleteCluster, handleRevealCredentials, handleShowInstallCommand, handleUpdateCluster, navigate]);
 
     return (
         <>
@@ -242,6 +268,10 @@ const ClustersListing = () => {
                 teamId={state.selectedTeamId}
                 onUpdate={state.requestUpdate}
                 onClose={() => state.setUpdateTarget(null)}
+            />
+            <ClusterInstallCommandModal
+                clusterId={installCommandClusterId}
+                enrollmentToken={installCommandToken}
             />
             <DocumentListing<ServerRow>
                 title='Clusters'

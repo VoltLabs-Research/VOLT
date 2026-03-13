@@ -9,7 +9,7 @@ import type { AvailableModels } from './available-models';
 import type { TimestepInfo } from './timestep-info';
 
 export type TrajectoryStatus =
-    | 'waiting_for_process'
+    | 'waiting-for-process'
     | 'queued'
     | 'processing'
     | 'rendering'

@@ -1,4 +1,4 @@
-import { latexDocumentQuery, useCompileLatexDocumentMutation, useExportLatexDocumentTexMutation, useExportLatexDocumentZipMutation, useUpdateLatexDocumentMutation } from '@/modules/latex/hooks/queries';
+import { invalidateLatexFilesQuery, latexDocumentQuery, useCompileLatexDocumentMutation, useExportLatexDocumentTexMutation, useExportLatexDocumentZipMutation, useUpdateLatexDocumentMutation } from '@/modules/latex/hooks/queries';
 import useLatexAssets from '@/modules/latex/hooks/use-latex-assets';
 import useLatexDocumentSocket from '@/modules/latex/hooks/use-latex-document-socket';
 import useLatexFiles from '@/modules/latex/hooks/use-latex-files';
@@ -141,6 +141,12 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const isBatchUploadingRef = useRef(false);
     const pendingCompileAfterBatchRef = useRef(false);
 
+    /** Stable set of known file IDs — used by handleRemoteContentUpdate without causing re-subscriptions. */
+    const latexFileIdsRef = useRef<Set<string>>(new Set());
+
+    /** Tracks the previous set of file IDs to detect newly appeared files. */
+    const prevFileIdsRef = useRef<Set<string>>(new Set());
+
     const isTexFile = useCallback((name: string): boolean => name.toLowerCase().endsWith(TEX_EXTENSION), []);
 
     useEffect(() => {
@@ -214,6 +220,10 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         documentId,
         onFileSelected: handleFileSelected
     });
+
+    useEffect(() => {
+        latexFileIdsRef.current = new Set(latexFiles.map((file) => file._id));
+    }, [latexFiles]);
 
     const activeFile = useMemo(
         () => selection?.type === 'file'
@@ -404,6 +414,11 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
             return;
         }
 
+        if (!latexFileIdsRef.current.has(fileId)) {
+            invalidateLatexFilesQuery({ documentId });
+            return;
+        }
+
         const existingTimer = autosaveTimersRef.current[fileId];
         if (existingTimer) {
             window.clearTimeout(existingTimer);
@@ -420,7 +435,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
                 isDirty: false
             }
         }));
-    }, []);
+    }, [documentId]);
 
     const { collaborators, sendContentUpdate } = useLatexDocumentSocket({
         documentId,
@@ -527,6 +542,23 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
             return hasChanged ? nextStates : currentStates;
         });
     }, [latexFiles]);
+
+    /** Auto-open files created externally (e.g. by AI tools). */
+    useEffect(() => {
+        const currentIds = new Set(latexFiles.map((file) => file._id));
+        const prevIds = prevFileIdsRef.current;
+
+        if (prevIds.size > 0) {
+            for (const file of latexFiles) {
+                if (!prevIds.has(file._id)) {
+                    handleFileSelected(file);
+                    break;
+                }
+            }
+        }
+
+        prevFileIdsRef.current = currentIds;
+    }, [latexFiles, handleFileSelected]);
 
     useEffect(() => {
         if (validOpenTabs.length === openTabs.length) {

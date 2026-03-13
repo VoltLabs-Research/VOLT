@@ -11,6 +11,7 @@ import ListTeamClusterRemoteExplorerEntriesController from '@modules/team-cluste
 import ListTeamClustersByTeamIdController from '@modules/team-cluster/infrastructure/http/controllers/ListTeamClustersByTeamIdController';
 import ProcessTeamClusterHealthcheckController from '@modules/team-cluster/infrastructure/http/controllers/ProcessTeamClusterHealthcheckController';
 import RecordTeamClusterHeartbeatController from '@modules/team-cluster/infrastructure/http/controllers/RecordTeamClusterHeartbeatController';
+import RegenerateTeamClusterEnrollmentTokenController from '@modules/team-cluster/infrastructure/http/controllers/RegenerateTeamClusterEnrollmentTokenController';
 import RequestTeamClusterUpdateController from '@modules/team-cluster/infrastructure/http/controllers/RequestTeamClusterUpdateController';
 import RevealTeamClusterCredentialsController from '@modules/team-cluster/infrastructure/http/controllers/RevealTeamClusterCredentialsController';
 import UpdateTeamClusterLifecycleController from '@modules/team-cluster/infrastructure/http/controllers/UpdateTeamClusterLifecycleController';
@@ -30,6 +31,7 @@ export default createControllerRegistry({
     listRemoteExplorerEntries: ListTeamClusterRemoteExplorerEntriesController,
     processHealthcheck: ProcessTeamClusterHealthcheckController,
     recordHeartbeat: RecordTeamClusterHeartbeatController,
+    regenerateEnrollmentToken: RegenerateTeamClusterEnrollmentTokenController,
     requestUpdate: RequestTeamClusterUpdateController,
     revealCredentials: RevealTeamClusterCredentialsController,
     updateLifecycle: UpdateTeamClusterLifecycleController
