@@ -25,10 +25,17 @@ export default class JobStatusChangedEventHandler implements IEventHandler<JobSt
 
         if (!trajectoryId) return;
 
-        // When any job starts running, ensure trajectory is in 'processing' state
+        // When any job starts running, ensure trajectory is in 'processing' state.
+        // Only transition from pre-processing states to avoid overwriting terminal
+        // states (Completed, Failed) when Redis events arrive out of order.
         if (status === JobStatus.Running) {
             const trajectory = await this.trajectoryRepo.findById(trajectoryId);
-            if (trajectory && trajectory.props.status !== TrajectoryStatus.Processing) {
+            const currentStatus = trajectory?.props.status;
+            const canTransition =
+                currentStatus === TrajectoryStatus.WaitingForProcess ||
+                currentStatus === TrajectoryStatus.Queued;
+
+            if (trajectory && canTransition) {
                 await this.trajectoryRepo.updateById(trajectoryId, { status: TrajectoryStatus.Processing });
 
                 await this.eventBus.publish(new TrajectoryUpdatedEvent({

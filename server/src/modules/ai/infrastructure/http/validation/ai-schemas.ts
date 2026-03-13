@@ -14,14 +14,14 @@ const sendMessageSchema = z.object({
     messages: aiConversationMessagesSchema.optional(),
     provider: z.enum(AIProvider).optional(),
     model: z.string().trim().min(1).optional()
-}).strict();
+});
 
 const streamMessageSchema = z.object({
     messages: aiConversationMessagesSchema,
     provider: z.enum(AIProvider).optional(),
     model: z.string().trim().min(1).optional(),
     title: z.string().trim().min(1).max(200).optional()
-}).strict().superRefine((value, context) => {
+}).superRefine((value, context) => {
     const lastUserMessage = [...value.messages]
         .reverse()
         .find((message) => message.role === AIConversationMessageRole.User);

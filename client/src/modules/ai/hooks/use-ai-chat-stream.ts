@@ -109,6 +109,7 @@ const useAIChatStream = ({
     } = useChat({
         id: chatId,
         transport: chatTransport,
+        experimental_throttle: 50,
         sendAutomaticallyWhen: ({ messages }) => (
             lastAssistantMessageIsCompleteWithToolCalls({ messages })
             || lastAssistantMessageIsCompleteWithApprovalResponses({ messages })
