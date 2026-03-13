@@ -492,7 +492,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                                 {isLoading && !data.length ? (
                                     <Skeleton variant='text' width={220} height={32} />
                                 ) : typeof title === 'string' ? (
-                                    <Title className='font-size-6 font-weight-5 sm:font-size-4'>{title}</Title>
+                                    <Title className='font-size-6 font-weight-5 sm:font-size-4 color-primary'>{title}</Title>
                                 ) : (
                                     title
                                 )}

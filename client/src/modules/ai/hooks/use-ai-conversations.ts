@@ -102,16 +102,8 @@ const useAIConversations = (
 
     const handleCreateConversation = useCallback(async (initialTitle?: string) => {
         try {
-            const message = initialTitle?.trim();
-            const title = getConversationTitle(message);
-            let params: CreateAIConversationParams = { title };
-
-            if (message) {
-                params = {
-                    title,
-                    message
-                };
-            }
+            const title = getConversationTitle(initialTitle?.trim());
+            const params: CreateAIConversationParams = { title };
 
             const result = await createConversationMutationResult.mutateAsync(params);
 

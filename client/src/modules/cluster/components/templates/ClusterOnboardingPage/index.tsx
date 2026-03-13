@@ -1,7 +1,9 @@
 import './ClusterOnboardingPage.css';
 import Button from '@/shared/presentation/components/Button';
+import ClusterListPanel from '@/modules/cluster/components/molecules/ClusterListPanel';
 import Container from '@/shared/presentation/components/Container';
 import CopyableField from '@/shared/presentation/components/CopyableField';
+import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/DeleteClusterModal';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import NotificationsPopover from '@/modules/notification/components/organisms/NotificationsPopover';
@@ -19,6 +21,7 @@ import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 
 interface ClusterOnboardingLocationState {
@@ -35,7 +38,7 @@ const ClusterOnboardingPage = () => {
     const location = useLocation();
     const locationState = location.state as ClusterOnboardingLocationState | null;
     const nextDestination = locationState?.next ?? '/dashboard';
-    const { clusters, createCluster } = useClusterManagement();
+    const { clusters, createCluster, deleteCluster } = useClusterManagement();
     const hasConnectedCluster = clusters.some((c) => c.status === TeamClusterStatus.Connected);
     const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -46,6 +49,8 @@ const ClusterOnboardingPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [createdCluster, setCreatedCluster] = useState<TeamCluster | null>(null);
     const [enrollmentToken, setEnrollmentToken] = useState<string | null>(null);
+    const [enrollmentTokens, setEnrollmentTokens] = useState<Map<string, string>>(new Map());
+    const [deleteTarget, setDeleteTarget] = useState<TeamCluster | null>(null);
     const [connectedClusterName, setConnectedClusterName] = useState<string | null>(null);
     const hasRedirected = useRef(false);
 
@@ -110,6 +115,7 @@ const ClusterOnboardingPage = () => {
             const result = await createCluster(name.trim());
             setCreatedCluster(result.teamCluster);
             setEnrollmentToken(result.enrollmentToken);
+            setEnrollmentTokens((prev) => new Map(prev).set(result.teamCluster._id, result.enrollmentToken));
             openModal(INSTALL_MODAL_ID);
         } catch {
             // Error toast is already shown by showPromise in useClusterManagement
@@ -117,6 +123,35 @@ const ClusterOnboardingPage = () => {
             setIsSubmitting(false);
         }
     };
+
+    const handlePanelConnect = (cluster: TeamCluster) => {
+        const token = enrollmentTokens.get(cluster._id);
+        if (!token) return;
+        setCreatedCluster(cluster);
+        setEnrollmentToken(token);
+        openModal(INSTALL_MODAL_ID);
+    };
+
+    const handlePanelDelete = (cluster: TeamCluster) => {
+        setDeleteTarget(cluster);
+        openModal(DELETE_CLUSTER_MODAL_ID);
+    };
+
+    const handleDeleteCluster = async (password: string): Promise<DeleteTeamClusterOutputDTO> => {
+        if (!deleteTarget) {
+            throw new Error('No delete target');
+        }
+        return deleteCluster(deleteTarget._id, password);
+    };
+
+    // Close install modal if the displayed cluster was deleted
+    useEffect(() => {
+        if (createdCluster && !clusters.find((c) => c._id === createdCluster._id)) {
+            closeModal(INSTALL_MODAL_ID);
+            setCreatedCluster(null);
+            setEnrollmentToken(null);
+        }
+    }, [clusters, createdCluster]);
 
     // Success screen
     if (step === 'success') {
@@ -264,6 +299,21 @@ const ClusterOnboardingPage = () => {
                     </Container>
                 </Container>
             </Modal>
+
+            {clusters.length > 0 && (
+                <ClusterListPanel
+                    clusters={clusters}
+                    enrollmentTokens={enrollmentTokens}
+                    onConnect={handlePanelConnect}
+                    onDelete={handlePanelDelete}
+                />
+            )}
+
+            <DeleteClusterModal
+                teamCluster={deleteTarget}
+                onDelete={handleDeleteCluster}
+                onClose={() => setDeleteTarget(null)}
+            />
 
             {/* Floating user menu */}
             <Container className='cluster-onboarding-user-info'>

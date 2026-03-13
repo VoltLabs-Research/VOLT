@@ -265,6 +265,20 @@ export default class DaemonAnalysisCompletionService {
                 status: 'failed',
                 finishedAt: new Date()
             }).catch(() => {});
+
+            const analysis = await this.analysisRepo.findById(analysisId);
+            if (analysis?.props.trajectory) {
+                await this.trajectoryRepo.updateById(analysis.props.trajectory, {
+                    status: TrajectoryStatus.Failed
+                });
+
+                await this.eventBus.publish(new TrajectoryUpdatedEvent({
+                    trajectoryId: analysis.props.trajectory,
+                    teamId,
+                    updates: { status: TrajectoryStatus.Failed },
+                    updatedAt: new Date()
+                }));
+            }
             return;
         }
 
