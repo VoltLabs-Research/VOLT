@@ -12,6 +12,7 @@ import {
     readOptionalBoolean,
     readOptionalNumber,
     readOptionalNumberArray,
+    readOptionalString,
     readPayloadRecord,
     readRecord,
     readString
@@ -183,6 +184,7 @@ const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
         : readOptionalBoolean(record.selectedFrameOnly, false);
     const selectedTimesteps = readOptionalNumberArray(record.selectedTimesteps, 'selectedTimesteps');
     const timestep = readOptionalNumber(record.timestep);
+    const pluginDisplayName = readOptionalString(record.pluginDisplayName);
 
     if (typeof selectedFrameOnly !== 'undefined') {
         request.selectedFrameOnly = selectedFrameOnly;
@@ -194,6 +196,10 @@ const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
 
     if (typeof timestep !== 'undefined') {
         request.timestep = timestep;
+    }
+
+    if (pluginDisplayName) {
+        request.pluginDisplayName = pluginDisplayName;
     }
 
     return request;

@@ -103,6 +103,7 @@ export class AnalysisDispatchService {
                 teamId: input.teamId,
                 status: 'queued',
                 queueType: ANALYSIS_QUEUE_NAME,
+                ...(input.pluginDisplayName ? { name: input.pluginDisplayName } : {}),
                 metadata: {
                     trajectoryId: input.trajectoryId,
                     analysisId: input.analysisId,

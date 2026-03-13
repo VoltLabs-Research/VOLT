@@ -117,6 +117,7 @@ export interface NativeParticleFilterModelRequest extends NativeTrajectoryReques
 export interface NativeAtomsPageResponse {
     atoms: NativeAtomPageEntry[];
     totalAtoms: number;
+    nativeProperties: string[];
 };
 
 export interface NativeAtomPageEntry {
@@ -125,6 +126,7 @@ export interface NativeAtomPageEntry {
     x: number;
     y: number;
     z: number;
+    [property: string]: number;
 };
 
 export interface NativeFilterPreviewResponse {

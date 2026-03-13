@@ -11,6 +11,7 @@ import zlib from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
 import type { MinioService } from '@/modules/platform/services';
 import type {
+    NativeAtomPageEntry,
     NativeAtomsPageRequest,
     NativeAtomsPageResponse,
     NativeDataResult,
@@ -39,8 +40,8 @@ const extractAxisValues = (positions: Float32Array, axis: number): Float32Array 
 
 const toParsedDumpResult = (result: NativeDumpResult): ParsedTrajectory => {
     const width = result.max[0] - result.min[0];
-    const height = result.max[1] - result.min[1];
-    const length = result.max[2] - result.min[2];
+    const length = result.max[1] - result.min[1];
+    const height = result.max[2] - result.min[2];
 
     return {
         metadata: {
@@ -52,7 +53,7 @@ const toParsedDumpResult = (result: NativeDumpResult): ParsedTrajectory => {
                     length
                 },
                 geometry: {
-                    cell_vectors: [[width, 0, 0], [0, height, 0], [0, 0, length]],
+                    cell_vectors: [[width, 0, 0], [0, length, 0], [0, 0, height]],
                     cell_origin: result.min,
                     periodic_boundary_conditions: {
                         x: true,
@@ -73,8 +74,8 @@ const toParsedDumpResult = (result: NativeDumpResult): ParsedTrajectory => {
 
 const toParsedDataResult = (result: NativeDataResult): ParsedTrajectory => {
     const width = result.max[0] - result.min[0];
-    const height = result.max[1] - result.min[1];
-    const length = result.max[2] - result.min[2];
+    const length = result.max[1] - result.min[1];
+    const height = result.max[2] - result.min[2];
 
     return {
         metadata: {
@@ -86,7 +87,7 @@ const toParsedDataResult = (result: NativeDataResult): ParsedTrajectory => {
                     length
                 },
                 geometry: {
-                    cell_vectors: [[width, 0, 0], [0, height, 0], [0, 0, length]],
+                    cell_vectors: [[width, 0, 0], [0, length, 0], [0, 0, height]],
                     cell_origin: result.min,
                     periodic_boundary_conditions: {
                         x: true,
@@ -173,27 +174,36 @@ export const createTrajectoryParserService = (
         return this.withDumpFile(input, async (dumpPath) => {
             const parsed = this.parseTrajectory(dumpPath, {
                 includeIds: true,
-                properties: []
+                properties: ['*']
             });
             const totalAtoms = parsed.ids?.length || parsed.positions.length / 3;
             const pagination = normalizePagination(input.page, input.limit);
             const startIndex = calculatePaginationOffset(pagination.page, pagination.limit);
             const endIndex = Math.min(totalAtoms, startIndex + pagination.limit);
             const atoms = [];
+            const nativeProperties = parsed.properties ? Object.keys(parsed.properties) : [];
 
             for (let index = startIndex; index < endIndex; index++) {
-                atoms.push({
+                const atom: NativeAtomPageEntry = {
                     id: Number(parsed.ids ? parsed.ids[index] : index + 1),
                     type: Number(parsed.types[index]),
                     x: Number(parsed.positions[index * 3]),
                     y: Number(parsed.positions[index * 3 + 1]),
                     z: Number(parsed.positions[index * 3 + 2])
-                });
+                };
+
+                for (const propName of nativeProperties) {
+                    const values = parsed.properties![propName];
+                    atom[propName] = Number(values[index]);
+                }
+
+                atoms.push(atom);
             }
 
             return {
                 atoms,
-                totalAtoms
+                totalAtoms,
+                nativeProperties
             };
         });
     },

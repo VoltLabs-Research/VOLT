@@ -91,6 +91,7 @@ export interface AnalysisQueueJobPayload {
     sessionId?: string;
     status: string;
     queueType: string;
+    name?: string;
     maxRetries?: number;
     metadata?: Record<string, unknown>;
     completedAt?: string;
@@ -171,6 +172,7 @@ export interface AnalysisStartRequest {
     analysis: DaemonAnalysisDocument;
     analysisId: string;
     pluginId: string;
+    pluginDisplayName?: string;
     teamId: string;
     teamClusterId: string;
     trajectoryId: string;
