@@ -481,7 +481,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     };
 
     return (
-        <Container className={`d-flex column h-max document-listing-container color-primary ${compact ? 'is-compact' : ''}`}>
+        <Container className={`d-flex column h-max document-listing-container color-secondary ${compact ? 'is-compact' : ''}`}>
             {!hideHeader && (
                 <Container className={`d-flex column ${gap}`}>
                     <Container className='d-flex column gap-1-5 document-listing-header-top-container p-2'>

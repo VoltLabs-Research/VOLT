@@ -41,6 +41,11 @@ export default createHttpModule({
             controllers.getRemoteExplorerNode.handle
         );
         router.post(
+            '/:teamClusterId/remote-access/explorer/download',
+            teamClusterValidation.downloadRemoteExplorerObject,
+            controllers.downloadRemoteExplorerObject.handle
+        );
+        router.post(
             '/:teamClusterId/delete-requests',
             RATE_LIMIT_POLICIES.teamClusterDelete,
             teamClusterValidation.deleteById,

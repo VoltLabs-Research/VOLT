@@ -9,6 +9,62 @@ interface AIResponseMessagePartsMappingResult {
 
 @injectable()
 export default class AIResponseMessagePartsMapper {
+    /**
+     * Merges new assistant response parts into an existing set of parts.
+     *
+     * Tool-result parts that match an existing tool-call (by type and toolCallId)
+     * update the original in place. All other new parts are appended.
+     *
+     * @param existingParts - Parts already persisted on the assistant message.
+     * @param newParts - Parts produced by the continuation response.
+     * @returns A merged parts array (new reference — does not mutate the inputs).
+     */
+    mergeAssistantParts(
+        existingParts: AIConversationMessageParts,
+        newParts: AIConversationMessageParts
+    ): AIConversationMessageParts {
+        const merged: AIConversationMessageParts = existingParts.map((part) => ({ ...part }));
+
+        for (const newPart of newParts) {
+            const newRecord = asRecord(newPart);
+
+            if (
+                newRecord
+                && typeof newRecord.toolCallId === 'string'
+                && newRecord.state === 'output-available'
+            ) {
+                const matchIndex = merged.findIndex((existing) => {
+                    const existingRecord = asRecord(existing);
+                    return (
+                        existingRecord
+                        && existingRecord.type === newRecord.type
+                        && existingRecord.toolCallId === newRecord.toolCallId
+                    );
+                });
+
+                if (matchIndex !== -1) {
+                    const target = asRecord(merged[matchIndex]);
+                    if (target) {
+                        target.output = newRecord.output;
+                        target.state = 'output-available';
+
+                        if (isRecord(target.approval) && typeof target.approval.id === 'string') {
+                            target.approval = {
+                                id: target.approval.id,
+                                approved: true
+                            };
+                        }
+                    }
+                    continue;
+                }
+            }
+
+            merged.push(newPart);
+        }
+
+        return merged;
+    }
+
     mapAssistantResponseParts(responseMessages: unknown[]): AIResponseMessagePartsMappingResult {
         const parts: AIConversationMessageParts = [];
         let textContent = '';

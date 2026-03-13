@@ -1,4 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import type { AIConversationMessage } from '@modules/ai/domain/contracts/AIConversationMessage';
 import type { AIMessageProps } from '@modules/ai/domain/entities/AIMessage';
 import type { TeamMemberProps } from '@modules/team/domain/entities/team-member/TeamMember';
 import { AIConversationMessageRole } from '@modules/ai/domain/contracts/AIConversationMessage';
@@ -36,6 +37,11 @@ interface AIConversationLookup {
     _id: string;
     teamId: string;
     userId: string;
+};
+
+interface LastAssistantMessageFilter extends Partial<AIMessageProps> {
+    conversationId: string;
+    role: AIMessageRole;
 };
 
 @injectable()
@@ -98,26 +104,39 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
             ));
         }
 
-        const userText = input.message?.trim() || this.uiMessageUtils.extractLastUserMessageText(uiMessages);
+        const isContinuation = this.isContinuationRequest(uiMessages);
 
         let userMessage: AIMessage | null = null;
-        if (userText) {
-            const now = new Date();
-            userMessage = await this.messageRepository.create({
-                conversationId: conversation._id,
-                role: AIMessageRole.User,
-                parts: [
-                    {
-                        type: 'text',
-                        text: userText
-                    }
-                ],
-                content: userText,
-                modelInfo: null,
-                tokenUsage: null,
-                createdAt: now,
-                updatedAt: now
-            } satisfies Partial<AIMessageProps>);
+        let existingAssistantMessage: AIMessage | null = null;
+
+        if (isContinuation) {
+            existingAssistantMessage = await this.findLastAssistantMessage(conversation._id);
+            logger.debug(
+                'AI conversation %s: continuation detected, existing assistant message %s',
+                conversation._id,
+                existingAssistantMessage?._id ?? 'not found'
+            );
+        } else {
+            const userText = input.message?.trim() || this.uiMessageUtils.extractLastUserMessageText(uiMessages);
+
+            if (userText) {
+                const now = new Date();
+                userMessage = await this.messageRepository.create({
+                    conversationId: conversation._id,
+                    role: AIMessageRole.User,
+                    parts: [
+                        {
+                            type: 'text',
+                            text: userText
+                        }
+                    ],
+                    content: userText,
+                    modelInfo: null,
+                    tokenUsage: null,
+                    createdAt: now,
+                    updatedAt: now
+                } satisfies Partial<AIMessageProps>);
+            }
         }
 
         logger.debug(
@@ -142,7 +161,11 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
                 messages: uiMessages,
                 onFinish: async (event) => {
                     try {
-                        const persistedAssistantMessage = await this.persistAssistantResponse(conversation._id, event);
+                        const persistedAssistantMessage = await this.persistAssistantResponse(
+                            conversation._id,
+                            event,
+                            existingAssistantMessage
+                        );
                         const conversationUpdate: ConversationUpdatePayload = {
                             lastMessageAt: new Date(),
                             lastProvider: event.provider,
@@ -174,21 +197,112 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
         }
     }
 
+    /**
+     * Determines whether a request is a continuation after tool approval
+     * rather than a fresh user turn.
+     *
+     * When `sendAutomaticallyWhen` triggers on the client, it re-sends the
+     * full message history whose last entry is the existing assistant message
+     * (with tool-call / approval-responded parts). A normal user turn always
+     * ends with a user message.
+     */
+    private isContinuationRequest(uiMessages: AIConversationMessage[]): boolean {
+        const lastMessage = uiMessages[uiMessages.length - 1];
+        return lastMessage?.role === AIConversationMessageRole.Assistant;
+    }
+
+    /**
+     * Retrieves the most recently created assistant message in a conversation.
+     */
+    private async findLastAssistantMessage(conversationId: string): Promise<AIMessage | null> {
+        const result = await this.messageRepository.findAll({
+            filter: {
+                conversationId,
+                role: AIMessageRole.Assistant
+            } satisfies LastAssistantMessageFilter,
+            sort: { createdAt: -1 },
+            limit: 1
+        });
+
+        if (result.data.length === 0) return null;
+        return result.data[0];
+    }
+
+    /**
+     * Persists the assistant response — either by creating a new message
+     * or by merging into an existing one when this is a continuation.
+     */
     private async persistAssistantResponse(
         conversationId: string,
-        event: AIChatFinishEvent
+        event: AIChatFinishEvent,
+        existingMessage?: AIMessage | null
     ): Promise<AIMessageDTO | undefined> {
-        const { parts: allParts, textContent } = this.responseMessagePartsMapper.mapAssistantResponseParts(event.responseMessages);
+        const { parts: newParts, textContent: newTextContent } = this.responseMessagePartsMapper.mapAssistantResponseParts(event.responseMessages);
 
-        if (allParts.length === 0) {
-            return undefined;
+        if (newParts.length === 0) {
+            return existingMessage ? this.toDTO(existingMessage) : undefined;
         }
 
+        if (existingMessage) {
+            return this.mergeAssistantResponse(existingMessage, event, newParts, newTextContent);
+        }
+
+        return this.createAssistantResponse(conversationId, event, newParts, newTextContent);
+    }
+
+    private async mergeAssistantResponse(
+        existingMessage: AIMessage,
+        event: AIChatFinishEvent,
+        newParts: AIMessageProps['parts'],
+        newTextContent: string
+    ): Promise<AIMessageDTO | undefined> {
+        const mergedParts = this.responseMessagePartsMapper.mergeAssistantParts(
+            existingMessage.props.parts,
+            newParts
+        );
+
+        const mergedContent = [existingMessage.props.content, newTextContent]
+            .filter(Boolean)
+            .join('\n');
+
+        const existingUsage = existingMessage.props.tokenUsage;
+        const newUsage = event.totalUsage;
+
+        const updatedMessage = await this.messageRepository.updateById(existingMessage._id, {
+            parts: mergedParts,
+            content: mergedContent,
+            modelInfo: {
+                provider: event.provider,
+                model: event.model,
+                finishReason: event.finishReason,
+                steps: [
+                    ...(existingMessage.props.modelInfo?.steps ?? []),
+                    ...event.steps
+                ]
+            },
+            tokenUsage: {
+                inputTokens: (existingUsage?.inputTokens ?? 0) + (newUsage?.inputTokens ?? 0),
+                outputTokens: (existingUsage?.outputTokens ?? 0) + (newUsage?.outputTokens ?? 0),
+                totalTokens: (existingUsage?.totalTokens ?? 0) + (newUsage?.totalTokens ?? 0)
+            },
+            updatedAt: new Date()
+        });
+
+        if (!updatedMessage) return undefined;
+        return this.toDTO(updatedMessage);
+    }
+
+    private async createAssistantResponse(
+        conversationId: string,
+        event: AIChatFinishEvent,
+        parts: AIMessageProps['parts'],
+        textContent: string
+    ): Promise<AIMessageDTO> {
         const now = new Date();
         const assistantMessage = await this.messageRepository.create({
             conversationId,
             role: AIMessageRole.Assistant,
-            parts: allParts,
+            parts,
             content: textContent,
             modelInfo: {
                 provider: event.provider,

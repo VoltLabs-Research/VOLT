@@ -24,7 +24,8 @@ import { createXai } from '@ai-sdk/xai';
 import type { Response } from 'express';
 import { createOllama } from 'ollama-ai-provider-v2';
 import type { AIChatFinishEvent, AIChatReplyStream, GenerateAIChatReplyInput, IAIChatTransport } from '@modules/ai/domain/port/IAIChatTransport';
-import type { AIConversationMessage } from '@modules/ai/domain/contracts/AIConversationMessage';
+import type { AIConversationMessage, AIConversationMessagePart } from '@modules/ai/domain/contracts/AIConversationMessage';
+import { AIConversationMessageRole } from '@modules/ai/domain/contracts/AIConversationMessage';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { AIProvider, AI_PROVIDERS } from '@modules/ai/domain/contracts/AIProviders';
 import AIToolService from '@modules/ai/infrastructure/services/AIToolService';
@@ -34,6 +35,7 @@ import type { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import { z } from 'zod';
@@ -74,6 +76,9 @@ const SYSTEM_PROMPT = `You are Volt AI, an intelligent assistant for the Volt mo
 When users ask about their data, use available tools to query it. For destructive actions that require confirmation, the tool will request approval automatically through the streaming protocol.
 Be concise and factual. Format responses in markdown when helpful.`;
 const MAX_TOOL_STEPS = 8;
+
+const ORPHANED_TOOL_STATES = new Set(['approval-requested', 'approval-responded']);
+const SYNTHETIC_TOOL_OUTPUT = 'Tool execution was handled in a previous turn.';
 
 const PROVIDER_FACTORIES: Record<ProviderFactoryProvider, ProviderFactory> = {
     [AIProvider.OpenAI]: createOpenAI,
@@ -178,8 +183,81 @@ export default class AISDKChatTransport implements IAIChatTransport {
     }
 
     private async toModelMessages(messages: GenerateAIChatReplyInput['messages']): Promise<ModelMessage[]> {
-        const modelInputMessages: ModelInputMessage[] = messages.map(({ id: _id, ...message }) => message);
+        const sanitized = this.sanitizeMessagesForModel(messages);
+        const modelInputMessages: ModelInputMessage[] = sanitized.map(({ id: _id, ...message }) => message);
         return convertToModelMessages(modelInputMessages as Parameters<typeof convertToModelMessages>[0]);
+    }
+
+    /**
+     * Ensures every tool-call part in assistant messages has a terminal state
+     * so that the AI SDK's `convertToModelMessages` can produce a matching
+     * `tool-result` for each `tool-call`.
+     *
+     * Parts stuck in `approval-requested` or `approval-responded` (i.e. the
+     * approval flow was interrupted or the continuation hasn't executed yet)
+     * are promoted to `output-available` with a synthetic output.
+     *
+     * Operates on shallow copies — the original messages are never mutated.
+     */
+    private sanitizeMessagesForModel(messages: AIConversationMessage[]): AIConversationMessage[] {
+        return messages.map((message) => {
+            if (message.role !== AIConversationMessageRole.Assistant) {
+                return message;
+            }
+
+            let hasOrphanedParts = false;
+            for (const part of message.parts) {
+                if (this.isOrphanedToolPart(part)) {
+                    hasOrphanedParts = true;
+                    break;
+                }
+            }
+
+            if (!hasOrphanedParts) {
+                return message;
+            }
+
+            const sanitizedParts = message.parts.map((part) => {
+                if (!this.isOrphanedToolPart(part)) {
+                    return part;
+                }
+
+                const approvalId = typeof part.toolCallId === 'string'
+                    ? part.toolCallId
+                    : '';
+
+                if (isRecord(part.approval) && typeof part.approval.id === 'string') {
+                    return {
+                        ...part,
+                        state: 'output-available',
+                        output: SYNTHETIC_TOOL_OUTPUT,
+                        approval: { id: part.approval.id, approved: true }
+                    };
+                }
+
+                return {
+                    ...part,
+                    state: 'output-available',
+                    output: SYNTHETIC_TOOL_OUTPUT,
+                    approval: { id: approvalId, approved: true }
+                };
+            });
+
+            return { ...message, parts: sanitizedParts };
+        });
+    }
+
+    /**
+     * A tool part is considered orphaned when it carries a tool invocation
+     * (type starts with `tool-`) but is still in a non-terminal approval state.
+     */
+    private isOrphanedToolPart(part: AIConversationMessagePart): boolean {
+        return (
+            typeof part.type === 'string'
+            && part.type.startsWith('tool-')
+            && typeof part.state === 'string'
+            && ORPHANED_TOOL_STATES.has(part.state)
+        );
     }
 
     private validateMessages(messages: ModelMessage[]): void {
