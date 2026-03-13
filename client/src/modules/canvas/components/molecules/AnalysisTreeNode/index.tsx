@@ -1,7 +1,9 @@
-import { ChevronDown, ChevronRight, FlaskConical, Atom } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, Eye, FlaskConical, Atom, Minus, MousePointerClick, Plus, Trash2 } from 'lucide-react';
+import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import Slider from '@/shared/presentation/components/Slider';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../../utilities/analysis-status';
 
@@ -29,6 +31,8 @@ interface AnalysisTreeNodeProps {
         trajectoryId?: string;
         exposureName?: string;
     }) => void;
+    sceneOpacities: Record<string, number>;
+    setSceneOpacity: (sceneKey: string, opacity: number) => void;
 };
 
 const AnalysisTreeNode = ({
@@ -42,7 +46,9 @@ const AnalysisTreeNode = ({
     onRemoveScene,
     onDeleteAnalysis,
     onDownloadAnalysis,
-    onDownloadExposureListing
+    onDownloadExposureListing,
+    sceneOpacities,
+    setSceneOpacity
 }: AnalysisTreeNodeProps) => {
     const { analysis, pluginDisplayName, entry, isCurrentAnalysis } = section;
     const hasExposures = entry.state === 'loaded' && entry.exposures.length > 0;
@@ -64,16 +70,19 @@ const AnalysisTreeNode = ({
     const analysisMenuOptions: MenuOption[] = [
         {
             label: 'Select',
+            icon: MousePointerClick,
             onClick: handleSelectAnalysis,
             disabled: isAnalysisInProgress
         },
         {
             label: 'Download',
+            icon: Download,
             onClick: () => onDownloadAnalysis(analysis._id),
             disabled: !canDownloadAnalysis
         },
         {
             label: 'Delete',
+            icon: Trash2,
             onClick: () => onDeleteAnalysis(analysis._id),
             destructive: true
         }
@@ -145,6 +154,54 @@ const AnalysisTreeNode = ({
                     exposureId: exposure.exposureId
                 };
                 const isActive = isSceneActive(scene);
+                const sceneKey = getSceneKey(scene);
+                const currentOpacity = sceneOpacities[sceneKey] ?? 1;
+
+                const transparencySubmenu = (
+                    <div className="context-menu-transparency">
+                        <span className="context-menu-transparency__label">Transparency</span>
+                        <Slider
+                            min={0}
+                            max={1}
+                            step={0.01}
+                            value={currentOpacity}
+                            onChange={(value: number) => setSceneOpacity(sceneKey, value)}
+                        />
+                    </div>
+                );
+
+                const exposureMenuOptions: MenuOption[] = [
+                    ...(isActive
+                        ? [{
+                            label: 'Remove from scene',
+                            icon: Minus,
+                            destructive: true,
+                            onClick: () => onRemoveScene(scene)
+                        }]
+                        : [{
+                            label: 'Add to scene',
+                            icon: Plus,
+                            onClick: () => onAddScene(scene)
+                        }]
+                    ),
+                    {
+                        label: 'Download',
+                        icon: Download,
+                        onClick: () => {
+                            onDownloadExposureListing?.({
+                                pluginId: section.pluginId,
+                                exposureId: exposure.exposureId,
+                                analysisId: analysis._id,
+                                exposureName: exposure.name
+                            });
+                        }
+                    },
+                    {
+                        label: 'Transparency',
+                        icon: Eye,
+                        submenuContent: transparencySubmenu
+                    }
+                ];
 
                 return (
                     <ContextMenuPopover
@@ -167,29 +224,7 @@ const AnalysisTreeNode = ({
                                 </span>
                             </Container>
                         )}
-                        options={[
-                            {
-                                label: 'Add to scene',
-                                onClick: () => onAddScene(scene),
-                                disabled: isActive
-                            },
-                            {
-                                label: 'Remove from scene',
-                                onClick: () => onRemoveScene(scene),
-                                disabled: !isActive
-                            },
-                            {
-                                label: 'Download',
-                                onClick: () => {
-                                    onDownloadExposureListing?.({
-                                        pluginId: section.pluginId,
-                                        exposureId: exposure.exposureId,
-                                        analysisId: analysis._id,
-                                        exposureName: exposure.name
-                                    });
-                                }
-                            }
-                        ]}
+                        options={exposureMenuOptions}
                         size='sm'
                     />
                 );

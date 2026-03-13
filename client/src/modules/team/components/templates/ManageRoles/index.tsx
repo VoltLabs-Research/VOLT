@@ -2,7 +2,8 @@ import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useCreateTeamRoleMutation, useDeleteTeamRoleMutation, useUpdateTeamRoleMutation } from '@/modules/team/hooks/role/queries';
 import { rbacConfigQuery } from '@/modules/system/hooks/queries';
 import { RoleEditorModal, openRoleEditorModal } from '../../organisms/RoleEditorModal';
-import { runHandledAction } from '@/shared/errors/handled-action';
+import { ErrorSurface, executeTask } from '@/shared/errors/core';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
@@ -114,15 +115,18 @@ export default function ManageRolesTemplate() {
     }, []);
 
     const handleSaveRole = useCallback(async (data: RoleEditorPayload) => {
-        await runHandledAction({
-            action: () => editingRole
-                ? updateRoleMutation.mutateAsync({ teamId: selectedTeam._id, roleId: editingRole._id, ...data })
-                : createRoleMutation.mutateAsync({ teamId: selectedTeam._id, ...data }),
-            toast: editingRole ? updateRoleToastOptions : createRoleToastOptions,
-            afterSuccess: () => {
-                setEditingRole(null);
-            },
-            accessDeniedTitle: 'You do not have permission to manage roles'
+        await executeTask({
+            action: () => runAction({
+                action: () => editingRole
+                    ? updateRoleMutation.mutateAsync({ teamId: selectedTeam._id, roleId: editingRole._id, ...data })
+                    : createRoleMutation.mutateAsync({ teamId: selectedTeam._id, ...data }),
+                toast: editingRole ? updateRoleToastOptions : createRoleToastOptions,
+                afterSuccess: () => {
+                    setEditingRole(null);
+                }
+            }),
+            surface: ErrorSurface.Silent,
+            rethrow: false
         });
     }, [selectedTeam._id, editingRole, createRoleMutation, updateRoleMutation]);
 
@@ -143,9 +147,12 @@ export default function ManageRolesTemplate() {
         if(!isConfirmed) return;
 
         for (const role of eligibleRoles) {
-            await runHandledAction({
-                action: () => deleteRoleMutation.mutateAsync({ teamId: selectedTeam._id, roleId: role._id }),
-                toast: getDeleteRoleToastOptions(role.name),
+            await executeTask({
+                action: () => runAction({
+                    action: () => deleteRoleMutation.mutateAsync({ teamId: selectedTeam._id, roleId: role._id }),
+                    toast: getDeleteRoleToastOptions(role.name)
+                }),
+                surface: ErrorSurface.Silent,
                 rethrow: false
             });
         }

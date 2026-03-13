@@ -1,5 +1,5 @@
 import { trajectoryQuery } from './queries';
-import { handleActionError } from '@/shared/errors/handled-action';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { sileo } from 'sileo';
 import { useCallback } from 'react';
 
@@ -15,10 +15,10 @@ export default function useUpdateTrajectory() {
         try {
             await mutation.mutateAsync({ id: _id, params: data });
             sileo.success({ title: 'Trajectory updated' });
-        } catch (error) {
-            handleActionError(error, {
-                accessDeniedTitle: 'You do not have permission to update this trajectory',
-                errorToast: { title: 'Failed to update trajectory' }
+        } catch (error: unknown) {
+            reportError(error, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'Failed to update trajectory'
             });
             throw error;
         }

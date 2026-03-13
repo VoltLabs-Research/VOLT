@@ -1,15 +1,16 @@
-import { isApiError, markApiErrorHandled, isHandledApiError } from '@/shared/errors/notify-api-error';
+import { isApiError, isHandledApiError, markApiErrorHandled } from '@/shared/errors/core/api-error-guards';
 import { normalizeError } from '@/shared/errors/core/normalize-error';
 import { mapErrorToUserMessage } from '@/shared/errors/core/map-error-to-user-message';
+import { ErrorSurface } from '@/shared/errors/core/types';
 import { sileo } from 'sileo';
 import type { ReportErrorOptions, UserFacingError } from '@/shared/errors/core/types';
 
 /** Minimal no-op result returned when the error was already handled. */
-const HANDLED_NOOP: UserFacingError = {
+const HANDLED_NOOP: UserFacingError = Object.freeze({
     title: '',
     retryable: false,
-    surface: 'silent'
-};
+    surface: ErrorSurface.Silent
+});
 
 /**
  * Central error reporting entry point.
@@ -33,7 +34,7 @@ export const reportError = (
     const appError = normalizeError(error);
     const userError = mapErrorToUserMessage(appError, options);
 
-    if (userError.surface === 'toast') {
+    if (userError.surface === ErrorSurface.Toast) {
         sileo.error({
             title: userError.title,
             description: userError.description
@@ -44,11 +45,8 @@ export const reportError = (
         }
     }
 
-    if (userError.surface === 'silent') {
-        // No visual feedback — caller may still inspect the returned value.
-    }
-
-    // 'inline' and 'page' surfaces: the caller is responsible for rendering.
+    // 'silent', 'inline', and 'page' surfaces: no toast shown.
+    // The caller is responsible for rendering inline/page feedback.
 
     options?.onError?.(userError);
 

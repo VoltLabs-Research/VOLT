@@ -6,9 +6,9 @@ import {
     useDeleteScriptingNotebookMutation,
     useUpdateScriptingNotebookMutation
 } from '@/modules/scripting/hooks/queries';
+import { isAccessDeniedError } from '@/shared/errors/core';
 import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripting-notebook-scope';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';

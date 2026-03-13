@@ -25,7 +25,7 @@ export const RATE_LIMIT_POLICIES = {
     pluginClone: createStandardRateLimiter(10),
     pluginCreate: createStandardRateLimiter(15),
     pluginExecute: createStandardRateLimiter(10),
-    pluginExport: createExportRateLimiter(10),
+    pluginExport: createExportRateLimiter(100),
     pluginImport: createStandardRateLimiter(3),
     rasterTrigger: createStandardRateLimiter(3),
     scriptingSessionCreate: createStandardRateLimiter(5),

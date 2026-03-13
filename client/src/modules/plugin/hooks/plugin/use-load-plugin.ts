@@ -1,6 +1,6 @@
 import { usePluginByIdQuery } from './queries';
 import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import { getApiErrorMessage } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { useEffect } from 'react';
 
@@ -27,7 +27,10 @@ const useLoadPlugin = (id: string | undefined) => {
 
     let loadError: string | null = null;
     if (error) {
-        loadError = getApiErrorMessage(error, 'Failed to load plugin');
+        loadError = reportError(error, {
+            surface: ErrorSurface.Silent,
+            fallbackTitle: 'Failed to load plugin'
+        }).title;
     }
 
     return {

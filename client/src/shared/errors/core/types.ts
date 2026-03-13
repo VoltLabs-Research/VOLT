@@ -1,16 +1,22 @@
-export type ErrorKind =
-    | 'api'
-    | 'permission'
-    | 'validation'
-    | 'network'
-    | 'auth'
-    | 'not-found'
-    | 'conflict'
-    | 'rate-limit'
-    | 'server'
-    | 'unknown';
+export enum ErrorKind {
+    Api = 'api',
+    Permission = 'permission',
+    Validation = 'validation',
+    Network = 'network',
+    Auth = 'auth',
+    NotFound = 'not-found',
+    Conflict = 'conflict',
+    RateLimit = 'rate-limit',
+    Server = 'server',
+    Unknown = 'unknown'
+};
 
-export type ErrorSurface = 'toast' | 'inline' | 'page' | 'silent';
+export enum ErrorSurface {
+    Toast = 'toast',
+    Inline = 'inline',
+    Page = 'page',
+    Silent = 'silent'
+};
 
 export interface AppError {
     kind: ErrorKind;

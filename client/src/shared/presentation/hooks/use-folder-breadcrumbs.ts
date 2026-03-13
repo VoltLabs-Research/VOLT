@@ -1,4 +1,4 @@
-import { getApiErrorMessage, isApiError, markApiErrorHandled } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, isApiError, markApiErrorHandled, reportError } from '@/shared/errors/core';
 import { useEffect, useMemo, useState } from 'react';
 import { sileo } from 'sileo';
 
@@ -105,7 +105,10 @@ const useFolderBreadcrumbs = <TFolder extends FolderBreadcrumbEntity>({
                 }
 
                 sileo.error({
-                    title: getApiErrorMessage(error, 'Failed to load folder path')
+                    title: reportError(error, {
+                        surface: ErrorSurface.Silent,
+                        fallbackTitle: 'Failed to load folder path'
+                    }).title
                 });
                 setBreadcrumbs(rootBreadcrumb);
                 setCurrentFolder(null);

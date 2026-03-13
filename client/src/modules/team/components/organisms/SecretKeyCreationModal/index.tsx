@@ -1,9 +1,9 @@
 import Container from '@/shared/presentation/components/Container';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
-import { runHandledAction } from '@/shared/errors/handled-action';
 import useCreateSecretKey from '@/modules/team/hooks/secret-key/use-create-secret-key';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
@@ -66,7 +66,7 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
             return;
         }
 
-        await runHandledAction({
+        await runAction({
             action: () => createSecretKey(name, roleId),
             toast: SECRET_KEY_CREATION_TOAST_OPTIONS,
             afterSuccess: (result) => {
@@ -74,8 +74,7 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                     setGeneratedKey(result.secretKey);
                     onCreated?.(result.secretKey);
                 }
-            },
-            rethrow: false
+            }
         });
     };
 

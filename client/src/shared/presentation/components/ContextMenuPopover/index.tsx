@@ -1,6 +1,7 @@
 import AsyncMenuItemWrapper from '@/shared/presentation/components/AsyncMenuItemWrapper';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
+import SubmenuItemWrapper from './SubmenuItemWrapper';
 import './ContextMenuPopover.css';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { ReactNode } from 'react';
@@ -24,6 +25,29 @@ const ContextMenuPopover = ({
         return <>{trigger}</>;
     }
 
+    const renderOption = (option: MenuOption, index: number, close: () => void) => {
+        const key = `${id}-${option.label}-${index}`;
+
+        if (option.submenuContent) {
+            return (
+                <SubmenuItemWrapper
+                    key={key}
+                    option={option}
+                    size={size}
+                />
+            );
+        }
+
+        return (
+            <AsyncMenuItemWrapper
+                key={key}
+                option={option}
+                size={size}
+                onSuccess={close}
+            />
+        );
+    };
+
     return (
         <Popover
             id={id}
@@ -34,14 +58,7 @@ const ContextMenuPopover = ({
         >
             {(close) => (
                 <PopoverMenu>
-                    {options.map((option, index) => (
-                        <AsyncMenuItemWrapper
-                            key={`${id}-${option.label}-${index}`}
-                            option={option}
-                            size={size}
-                            onSuccess={close}
-                        />
-                    ))}
+                    {options.map((option, index) => renderOption(option, index, close))}
                 </PopoverMenu>
             )}
         </Popover>

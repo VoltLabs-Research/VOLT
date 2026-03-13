@@ -1,9 +1,9 @@
 import { useExportListingMutation, useExportListingByAnalysisMutation } from '@/modules/plugin/hooks/listing/queries';
+import { isAccessDeniedError } from '@/shared/errors/core';
 import { ExportType } from '@/shared/domain/export/types';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback } from 'react';
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
 
 export interface DownloadPluginListingParams {
     pluginId: string;

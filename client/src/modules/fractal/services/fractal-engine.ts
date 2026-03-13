@@ -366,6 +366,22 @@ export class FractalEngine {
                 if (mat.uniforms?.opacity) {
                     mat.uniforms.opacity.value = pointOpacity;
                 }
+
+                if (pointOpacity < 1) {
+                    mat.depthWrite = false;
+                    mat.alphaTest = Math.max(0.01, 0.5 * pointOpacity);
+                } else {
+                    mat.depthWrite = true;
+                    mat.alphaTest = 0.5;
+                }
+                mat.needsUpdate = true;
+
+                const positions = child.geometry.getAttribute('position');
+                const pointCount = positions?.count ?? 0;
+                const detailRatio = pointCloudSettings?.overridesEnabled
+                    ? getPointCloudDetailRatio(pointCloudSettings.detailLevel, pointCount)
+                    : 1;
+                child.geometry.setDrawRange(0, Math.max(1, Math.floor(pointCount * detailRatio)));
             } else if (child instanceof THREE.Mesh && child.material) {
                 const mat = child.material;
                 if (Array.isArray(mat)) {

@@ -1,5 +1,5 @@
 import { useAvailableClusterVersionsQuery } from '@/modules/cluster/hooks/team-cluster/queries';
-import { getApiErrorMessage, isApiError } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Loader from '@/shared/presentation/components/Loader';
@@ -100,9 +100,10 @@ const UpdateClusterModal = ({ teamCluster, teamId, onUpdate, onClose }: UpdateCl
             await onUpdate(selectedVersion.tag, selectedVersion.isEdge, password);
             handleClose();
         } catch (err: unknown) {
-            setError(isApiError(err)
-                ? getApiErrorMessage(err, 'Update request failed')
-                : 'Update request failed. Please try again.');
+            setError(reportError(err, {
+                surface: ErrorSurface.Silent,
+                fallbackTitle: 'Update request failed'
+            }).title);
         } finally {
             setIsSubmitting(false);
         }

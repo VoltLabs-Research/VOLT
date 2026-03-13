@@ -1,6 +1,6 @@
 import { useTestSSHConnectionMutation } from '@/modules/ssh/hooks/queries';
+import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { getAccessDeniedMessage, notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import { useState } from 'react';
@@ -52,10 +52,13 @@ const SSHConnectionTestButton = ({ connectionId, disabled }: SSHConnectionTestBu
             setTestResult(result);
         } catch (err: unknown) {
             if (isAccessDeniedError(err)) {
-                notifyApiError(err, { fallbackTitle: 'You do not have permission to test this connection' });
+                const userError = reportError(err, {
+                    surface: ErrorSurface.Toast,
+                    fallbackTitle: 'You do not have permission to test this connection'
+                });
                 setTestResult({
                     valid: false,
-                    error: getAccessDeniedMessage(err, 'You do not have permission to test this connection')
+                    error: userError.title
                 });
                 return;
             }

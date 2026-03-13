@@ -252,6 +252,9 @@
 .form-field-canvas-input--compact {
     width: auto;
     min-width: 48px;
+    max-width: 88px;
+    overflow: hidden;
+    text-overflow: ellipsis;
     text-align: center;
 }
 

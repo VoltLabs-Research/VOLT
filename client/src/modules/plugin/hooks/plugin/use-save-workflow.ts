@@ -1,6 +1,6 @@
 import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { useSavePluginMutation } from './queries';
-import { getAccessDeniedMessage, notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import { mapErrorToUserMessage, normalizeError } from '@/shared/errors/core';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback } from 'react';
@@ -41,15 +41,11 @@ const useSaveWorkflow = () => {
 
             return plugin;
         } catch (error) {
-            if (isAccessDeniedError(error)) {
-                const message = getAccessDeniedMessage(error, 'You do not have permission to save this workflow')
-                    ?? 'You do not have permission to save this workflow';
-                setSaveError(message);
-                notifyApiError(error, { fallbackTitle: 'You do not have permission to save this workflow' });
-                return null;
-            }
-            const message = error instanceof Error ? error.message : 'Failed to save workflow';
-            setSaveError(message);
+            const userError = mapErrorToUserMessage(normalizeError(error), {
+                fallbackTitle: 'Failed to save workflow'
+            });
+
+            setSaveError(userError.title);
             return null;
         } finally {
             setSaving(false);

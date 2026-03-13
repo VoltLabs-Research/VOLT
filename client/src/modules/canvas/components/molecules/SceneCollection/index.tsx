@@ -1,13 +1,16 @@
 import AnalysisTreeNode from '../../molecules/AnalysisTreeNode';
+import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 
-import { Atom, Box } from 'lucide-react';
+import { Atom, Box, Eye, Minus, Plus } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import Slider from '@/shared/presentation/components/Slider';
 
 import type { AnalysisSectionData } from '../../../hooks/use-canvas-sidebar-scene';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { CanvasAnalysisStatusEntry } from '../../../utilities/analysis-status';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 
 interface SceneCollectionProps {
@@ -34,6 +37,8 @@ interface SceneCollectionProps {
     showDefaultScene?: boolean;
     showSimulationCell?: boolean;
     onToggleSimulationCell?: () => void;
+    sceneOpacities?: Record<string, number>;
+    setSceneOpacity?: (sceneKey: string, opacity: number) => void;
 };
 
 const SceneCollection = ({
@@ -53,10 +58,86 @@ const SceneCollection = ({
     onDownloadExposureListing,
     showDefaultScene = true,
     showSimulationCell = true,
-    onToggleSimulationCell
+    onToggleSimulationCell,
+    sceneOpacities = {},
+    setSceneOpacity
 }: SceneCollectionProps) => {
     const defaultScene = { sceneType: 'trajectory', source: 'default' as const };
     const isDefaultActive = activeScene?.source === 'default';
+
+    const defaultSceneKey = getSceneKey(defaultScene);
+    const defaultOpacity = sceneOpacities[defaultSceneKey] ?? 1;
+
+    const defaultTransparencySubmenu = (
+        <div className="context-menu-transparency">
+            <span className="context-menu-transparency__label">Transparency</span>
+            <Slider
+                min={0}
+                max={1}
+                step={0.01}
+                value={defaultOpacity}
+                onChange={(value: number) => setSceneOpacity?.(defaultSceneKey, value)}
+            />
+        </div>
+    );
+
+    const defaultSceneOptions: MenuOption[] = [
+        ...(isDefaultActive
+            ? [{
+                label: 'Remove from scene',
+                icon: Minus,
+                destructive: true,
+                onClick: () => removeScene(defaultScene)
+            }]
+            : [{
+                label: 'Add to scene',
+                icon: Plus,
+                onClick: () => addScene(defaultScene)
+            }]
+        ),
+        {
+            label: 'Transparency',
+            icon: Eye,
+            submenuContent: defaultTransparencySubmenu
+        }
+    ];
+
+    const simulationCellKey = 'simulation-cell';
+    const simulationCellOpacity = sceneOpacities[simulationCellKey] ?? 1;
+
+    const simulationCellTransparencySubmenu = (
+        <div className="context-menu-transparency">
+            <span className="context-menu-transparency__label">Transparency</span>
+            <Slider
+                min={0}
+                max={1}
+                step={0.01}
+                value={simulationCellOpacity}
+                onChange={(value: number) => setSceneOpacity?.(simulationCellKey, value)}
+            />
+        </div>
+    );
+
+    const simulationCellOptions: MenuOption[] = [
+        ...(showSimulationCell
+            ? [{
+                label: 'Remove from scene',
+                icon: Minus,
+                destructive: true,
+                onClick: onToggleSimulationCell
+            }]
+            : [{
+                label: 'Add to scene',
+                icon: Plus,
+                onClick: onToggleSimulationCell
+            }]
+        ),
+        {
+            label: 'Transparency',
+            icon: Eye,
+            submenuContent: simulationCellTransparencySubmenu
+        }
+    ];
 
     return (
         <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Scene hierarchy">
@@ -81,18 +162,7 @@ const SceneCollection = ({
                             </span>
                         </Container>
                     )}
-                    options={[
-                        {
-                            label: 'Add to scene',
-                            onClick: () => addScene(defaultScene),
-                            disabled: isDefaultActive
-                        },
-                        {
-                            label: 'Remove from scene',
-                            onClick: () => removeScene(defaultScene),
-                            disabled: !isDefaultActive
-                        }
-                    ]}
+                    options={defaultSceneOptions}
                     size='sm'
                 />
             )}
@@ -116,18 +186,7 @@ const SceneCollection = ({
                             </span>
                         </Container>
                     )}
-                    options={[
-                        {
-                            label: 'Add to scene',
-                            onClick: onToggleSimulationCell,
-                            disabled: showSimulationCell
-                        },
-                        {
-                            label: 'Remove from scene',
-                            onClick: onToggleSimulationCell,
-                            disabled: !showSimulationCell
-                        }
-                    ]}
+                    options={simulationCellOptions}
                     size='sm'
                 />
             )}
@@ -155,6 +214,8 @@ const SceneCollection = ({
                     onDeleteAnalysis={onDeleteAnalysis}
                     onDownloadAnalysis={onDownloadAnalysis}
                     onDownloadExposureListing={onDownloadExposureListing}
+                    sceneOpacities={sceneOpacities}
+                    setSceneOpacity={setSceneOpacity ?? (() => undefined)}
                 />
             ))}
 

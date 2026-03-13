@@ -10,20 +10,20 @@ import './TransportControls.css';
 
 const TransportControls = () => {
     const {
-        timestepData,
         currentTimestep,
         isPlaying,
         togglePlay,
-        setCurrentTimestep
+        setCurrentTimestep,
+        getRangedTimesteps
     } = useEditorStore(useShallow((state) => ({
-        timestepData: state.timestepData,
         currentTimestep: state.currentTimestep,
         isPlaying: state.isPlaying,
         togglePlay: state.togglePlay,
-        setCurrentTimestep: state.setCurrentTimestep
+        setCurrentTimestep: state.setCurrentTimestep,
+        getRangedTimesteps: state.getRangedTimesteps
     })));
 
-    const timesteps = timestepData.timesteps;
+    const timesteps = getRangedTimesteps();
     const currentIndex = currentTimestep !== undefined ? timesteps.indexOf(currentTimestep) : -1;
 
     const jumpToStart = () => {

@@ -5,7 +5,7 @@ import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/
 import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import useAnalysisAtomPropertiesAvailability from '@/modules/trajectory/hooks/trajectory/use-analysis-atom-properties-availability';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { isAccessDeniedError, notifyApiError } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { useEffect, useMemo } from 'react';
 
 import type { RenderableExposurePayload } from '@/modules/trajectory/api/dtos/scene-artifacts';
@@ -58,7 +58,10 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
     useEffect(() => {
         if (!sceneArtifactsQueryResult.error) return;
         if (isAccessDeniedError(sceneArtifactsQueryResult.error)) {
-            notifyApiError(sceneArtifactsQueryResult.error, { fallbackTitle: 'You do not have permission to perform this action.' });
+            reportError(sceneArtifactsQueryResult.error, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'You do not have permission to perform this action.'
+            });
         }
     }, [sceneArtifactsQueryResult.error]);
 
@@ -72,7 +75,10 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
         if (!pluginId || plugin) return;
         ensurePluginById(pluginId).catch((error: unknown) => {
             if (isAccessDeniedError(error)) {
-                notifyApiError(error, { fallbackTitle: 'You do not have permission to perform this action.' });
+                reportError(error, {
+                    surface: ErrorSurface.Toast,
+                    fallbackTitle: 'You do not have permission to perform this action.'
+                });
             }
         });
     }, [pluginId, plugin, ensurePluginById]);
@@ -112,7 +118,10 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
     useEffect(() => {
         if (!atomPropertiesAvailability.error) return;
         if (isAccessDeniedError(atomPropertiesAvailability.error)) {
-            notifyApiError(atomPropertiesAvailability.error, { fallbackTitle: 'You do not have permission to perform this action.' });
+            reportError(atomPropertiesAvailability.error, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'You do not have permission to perform this action.'
+            });
         }
     }, [atomPropertiesAvailability.error]);
 

@@ -1,6 +1,6 @@
 import { ChatMessageType } from '../../api/entities/message';
+import { ErrorSurface, isAccessDeniedError, isApiError, reportError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { notifyApiError, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import { sileo } from 'sileo';
 import type { ChatMessage } from '../../api/entities/message';
 
@@ -23,7 +23,10 @@ export const sendTextMessageAction = async (
         });
     } catch (error: unknown) {
         if (isAccessDeniedError(error)) {
-            notifyApiError(error, { fallbackTitle: 'You do not have permission to send messages' });
+            reportError(error, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'You do not have permission to send messages'
+            });
             return;
         }
 
@@ -41,7 +44,8 @@ export const sendFileMessageAction = async (
     try {
         return await sendFileMutation({ chatId, file });
     } catch (error: unknown) {
-        if (notifyApiError(error) || isAccessDeniedError(error)) {
+        if (isApiError(error) || isAccessDeniedError(error)) {
+            reportError(error, { surface: ErrorSurface.Toast });
             throw error;
         }
 

@@ -1,6 +1,6 @@
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { openModal } from '@/shared/presentation/components/Modal';
-import { runHandledAction } from '@/shared/errors/handled-action';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import { dateColumn, statusColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { SecretKeyCreationModal, SECRET_KEY_CREATION_MODAL_ID } from '../../organisms/SecretKeyCreationModal';
@@ -129,10 +129,9 @@ export default function SecretKeysListing() {
             delete: {
                 label: 'Delete',
                 handler: async ({ item: key }) => {
-                    await runHandledAction({
+                    await runAction({
                         action: () => deleteSecretKey(key._id),
-                        toast: getDeleteSecretKeyToastOptions(key),
-                        rethrow: false
+                        toast: getDeleteSecretKeyToastOptions(key)
                     });
                 },
                 confirm: ({ selectedItems }) => (

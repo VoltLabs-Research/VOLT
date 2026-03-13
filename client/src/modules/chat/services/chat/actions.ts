@@ -1,5 +1,5 @@
 import { addChatToCache } from '../../hooks/chat/queries';
-import { runHandledAction } from '@/shared/errors/handled-action';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import type { QueryClient } from '@tanstack/react-query';
 import type { NavigateFunction } from 'react-router-dom';
@@ -24,7 +24,7 @@ export const getOrCreateChatAction = async (
 ) => {
     const { queryClient, navigate } = dependencies;
 
-    return await runHandledAction({
+    return await runAction({
         action: () => getOrCreateChatMutation({ teamId, participantId }),
         toast: createPromiseToastOptions({
             loading: 'Opening chat...',
@@ -34,7 +34,6 @@ export const getOrCreateChatAction = async (
         afterSuccess: (chat) => {
             addChatToCache(queryClient, chat);
             navigate(`/dashboard/messages/${chat._id}`);
-        },
-        rethrow: false
+        }
     });
 };
