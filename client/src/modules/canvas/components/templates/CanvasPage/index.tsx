@@ -66,6 +66,7 @@ const CanvasPage = () => {
     const {
         analysisId,
         showGrid,
+        showGizmo,
         resultsPluginId,
         showWidgets,
         searchParams,
@@ -230,6 +231,7 @@ const CanvasPage = () => {
                             sceneConfig={sceneConfig}
                             analysisId={analysisId}
                             showGrid={showGrid}
+                            showGizmo={showGizmo}
                             isLoading={showLoading}
                             sceneRef={sceneRef}
                             bodyContent={isScriptingWorkspace

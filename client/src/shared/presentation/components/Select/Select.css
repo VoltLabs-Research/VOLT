@@ -101,3 +101,16 @@
     padding: .5rem .6rem;
     min-height: 36px;
 }
+
+.select-dropdown-search {
+    margin-bottom: 0.25rem;
+}
+
+.select-trigger--editable {
+    cursor: text;
+}
+
+.select-trigger--editable:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}

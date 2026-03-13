@@ -1,19 +1,21 @@
-import { invalidateLatexFilesQuery, latexDocumentQuery, useCompileLatexDocumentMutation, useExportLatexDocumentTexMutation, useExportLatexDocumentZipMutation, useUpdateLatexDocumentMutation } from '@/modules/latex/hooks/queries';
 import useLatexAssets from '@/modules/latex/hooks/use-latex-assets';
 import useLatexDocumentSocket from '@/modules/latex/hooks/use-latex-document-socket';
 import useLatexFiles from '@/modules/latex/hooks/use-latex-files';
+import { invalidateLatexFilesQuery, latexDocumentQuery, useCompileLatexDocumentMutation, useExportLatexDocumentTexMutation, useExportLatexDocumentZipMutation, useUpdateLatexDocumentMutation } from '@/modules/latex/hooks/queries';
+import { isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { getApiErrorMessage } from '@/shared/errors/notify-api-error';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { sileo } from 'sileo';
 import type { ChangeEvent } from 'react';
 import type { LatexFile } from '@/modules/latex/api/entities/latex-file';
-import { isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
-import { sileo } from 'sileo';
 
 interface UseLatexWorkspaceInput {
     documentId: string;
-}
+};
 
 export interface LatexFileEntry {
     _id: string;
@@ -22,21 +24,36 @@ export interface LatexFileEntry {
     content: string;
     isEntrypoint: boolean;
     isSelected: boolean;
-}
+};
+
+interface LatexWorkspaceFileSelection {
+    type: 'file';
+    id: string;
+};
+
+interface LatexWorkspaceAssetSelection {
+    type: 'asset';
+    id: string;
+};
+
+interface WorkspaceUploadEntry {
+    file: File;
+    path: string;
+};
 
 export type LatexWorkspaceSelection =
-    | { type: 'file'; id: string }
-    | { type: 'asset'; id: string }
+    | LatexWorkspaceFileSelection
+    | LatexWorkspaceAssetSelection
     | null;
 
-export type LatexWorkspaceTab = Exclude<LatexWorkspaceSelection, null>;
+export type LatexWorkspaceTab = LatexWorkspaceFileSelection | LatexWorkspaceAssetSelection;
 
 interface FileEditorState {
     content: string;
     lastSavedContent: string;
     remoteContent: string;
     isDirty: boolean;
-}
+};
 
 const AUTOSAVE_DELAY = 500;
 const TEX_EXTENSION = '.tex';
@@ -47,64 +64,6 @@ const createFileEditorState = (content: string): FileEditorState => ({
     remoteContent: content,
     isDirty: false
 });
-
-const isSameWorkspaceTab = (left: LatexWorkspaceSelection, right: LatexWorkspaceSelection): boolean => {
-    if (!left || !right) return false;
-    return left.type === right.type && left.id === right.id;
-};
-
-const getLastWorkspaceTab = (tabs: LatexWorkspaceTab[]): LatexWorkspaceTab | null => {
-    return tabs.length > 0 ? tabs[tabs.length - 1] ?? null : null;
-};
-
-const asRecord = (value: unknown): Record<string, unknown> | null => {
-    return typeof value === 'object' && value !== null ? value as Record<string, unknown> : null;
-};
-
-const extractErrorMessage = async (error: unknown): Promise<string> => {
-    if (typeof error === 'string') return error;
-
-    const errorRecord = asRecord(error);
-    const response = asRecord(errorRecord?.response);
-    const data = response?.data;
-
-    // 1. Try to extract from Blob (often used for PDF responses that might contain error JSON)
-    if (data instanceof Blob) {
-        try {
-            const text = await data.text();
-            try {
-                const parsed = JSON.parse(text) as Record<string, unknown>;
-                if (typeof parsed.logs === 'string' && parsed.logs.trim()) return parsed.logs;
-                if (typeof parsed.message === 'string' && parsed.message.trim()) return parsed.message;
-                if (typeof parsed.error === 'string' && parsed.error.trim()) return parsed.error;
-            } catch {
-                if (text.trim()) return text.trim();
-            }
-        } catch {
-            // Fall through
-        }
-    }
-
-    // 2. Try to extract from data record directly
-    const dataRecord = asRecord(data);
-    if (dataRecord) {
-        if (typeof dataRecord.logs === 'string' && dataRecord.logs.trim()) return dataRecord.logs;
-        if (typeof dataRecord.message === 'string' && dataRecord.message.trim()) return dataRecord.message;
-        if (typeof dataRecord.error === 'string' && dataRecord.error.trim()) return dataRecord.error;
-    }
-
-    // 3. Fallback to generic Error message
-    if (error instanceof Error && error.message) {
-        return error.message;
-    }
-
-    // 4. Fallback to record message
-    if (typeof errorRecord?.message === 'string' && errorRecord.message.trim()) {
-        return errorRecord.message;
-    }
-
-    return 'Compilation failed: An unknown error occurred while processing the LaTeX document.';
-};
 
 const EXPORT_TEX_TOAST = {
     loading: { title: 'Exporting .tex file...' },
@@ -172,7 +131,9 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
     const handleOpenTab = useCallback((tab: LatexWorkspaceTab): void => {
         hasBootstrappedSelectionRef.current = true;
-        setOpenTabs((currentTabs) => currentTabs.some((currentTab) => isSameWorkspaceTab(currentTab, tab))
+        setOpenTabs((currentTabs) => currentTabs.some(
+            (currentTab) => currentTab.type === tab.type && currentTab.id === tab.id
+        )
             ? currentTabs
             : [...currentTabs, tab]);
         setSelection(tab);
@@ -184,14 +145,20 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
     const handleCloseTab = useCallback((tabToClose: LatexWorkspaceTab): void => {
         setOpenTabs((currentTabs) => {
-            const tabIndex = currentTabs.findIndex((currentTab) => isSameWorkspaceTab(currentTab, tabToClose));
+            const tabIndex = currentTabs.findIndex(
+                (currentTab) => currentTab.type === tabToClose.type && currentTab.id === tabToClose.id
+            );
             if (tabIndex < 0) {
                 return currentTabs;
             }
 
             const nextTabs = currentTabs.filter((_, index) => index !== tabIndex);
             setSelection((currentSelection) => {
-                if (!currentSelection || !isSameWorkspaceTab(currentSelection, tabToClose)) {
+                if (
+                    !currentSelection
+                    || currentSelection.type !== tabToClose.type
+                    || currentSelection.id !== tabToClose.id
+                ) {
                     return currentSelection;
                 }
 
@@ -252,19 +219,23 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         [isTexFile, latexFiles]
     );
 
+    const revokePdfUrl = (): void => {
+        if (compiledPdfUrlRef.current) {
+            URL.revokeObjectURL(compiledPdfUrlRef.current);
+            compiledPdfUrlRef.current = null;
+        }
+    };
+
     const compileSilently = useCallback(async (): Promise<Blob | null> => {
         const requestId = ++compileRequestIdRef.current;
+        const isStale = () => requestId !== compileRequestIdRef.current;
+
         if (!documentId) return null;
 
         if (!hasCompilableTexFile) {
-            if (requestId !== compileRequestIdRef.current) {
-                return null;
-            }
+            if (isStale()) return null;
 
-            if (compiledPdfUrlRef.current) {
-                URL.revokeObjectURL(compiledPdfUrlRef.current);
-                compiledPdfUrlRef.current = null;
-            }
+            revokePdfUrl();
             setCompiledPdfBlob(null);
             setCompiledPdfUrl(null);
             setCompileError('Add a .tex file to generate the PDF preview.');
@@ -276,13 +247,9 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         try {
             const blob = await compileDocument({ documentId });
 
-            if (requestId !== compileRequestIdRef.current) {
-                return null;
-            }
+            if (isStale()) return null;
 
-            if (compiledPdfUrlRef.current) {
-                URL.revokeObjectURL(compiledPdfUrlRef.current);
-            }
+            revokePdfUrl();
 
             const pdfUrl = URL.createObjectURL(blob);
             compiledPdfUrlRef.current = pdfUrl;
@@ -290,18 +257,50 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
             setCompiledPdfUrl(pdfUrl);
             return blob;
         } catch (error) {
-            if (requestId !== compileRequestIdRef.current) {
-                return null;
-            }
+            if (isStale()) return null;
 
-            if (compiledPdfUrlRef.current) {
-                URL.revokeObjectURL(compiledPdfUrlRef.current);
-                compiledPdfUrlRef.current = null;
-            }
+            revokePdfUrl();
 
             setCompiledPdfBlob(null);
             setCompiledPdfUrl(null);
-            const message = await extractErrorMessage(error);
+            let message = getApiErrorMessage(error, 'Compilation failed');
+            const response = typeof error === 'object'
+                && error !== null
+                && 'response' in error
+                && typeof error.response === 'object'
+                && error.response !== null
+                ? error.response
+                : null;
+            const data = response && 'data' in response ? response.data : null;
+
+            if (data instanceof Blob) {
+                try {
+                    const text = await data.text();
+                    let blobMessage = text.trim();
+
+                    try {
+                        const parsed = JSON.parse(text);
+                        if (typeof parsed === 'object' && parsed !== null) {
+                            if ('logs' in parsed && typeof parsed.logs === 'string' && parsed.logs.trim()) {
+                                blobMessage = parsed.logs;
+                            } else if ('message' in parsed && typeof parsed.message === 'string' && parsed.message.trim()) {
+                                blobMessage = parsed.message;
+                            } else if ('error' in parsed && typeof parsed.error === 'string' && parsed.error.trim()) {
+                                blobMessage = parsed.error;
+                            }
+                        }
+                    } catch {
+                        // Keep the raw blob text when it is not JSON.
+                    }
+
+                    if (blobMessage) {
+                        message = blobMessage;
+                    }
+                } catch {
+                    // Keep the shared fallback error message when the blob cannot be read.
+                }
+            }
+
             setCompileError(message);
             return null;
         }
@@ -319,7 +318,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         }
 
         autosaveTimersRef.current[fileId] = window.setTimeout(() => {
-            void (async () => {
+            const saveFile = async (): Promise<void> => {
                 try {
                     const latestState = fileEditorStatesRef.current[fileId];
                     if (!latestState || latestState.content !== content || latestState.lastSavedContent === content) {
@@ -355,40 +354,38 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
                 } finally {
                     delete autosaveTimersRef.current[fileId];
                 }
-            })();
+            };
+
+            saveFile();
         }, AUTOSAVE_DELAY);
     }, [checkAccessDeniedError, compileSilently, documentId, updateFile]);
 
-    const handleInsertAssetRef = useCallback((ref: string): void => {
-        if (!selection || selection.type !== 'file') {
-            return;
-        }
-
+    const applyFileContentUpdate = useCallback((content: string): void => {
+        if (!selection || selection.type !== 'file') return;
         const file = latexFiles.find((currentFile) => currentFile._id === selection.id);
-        if (!file) {
-            return;
-        }
-
+        if (!file) return;
         const currentState = fileEditorStatesRef.current[file._id] ?? createFileEditorState(file.content);
-        const nextContent = `${currentState.content}\n${ref}`;
-        const isRemoteEcho = nextContent === currentState.remoteContent;
-
+        const isRemoteEcho = content === currentState.remoteContent;
         setFileEditorStates((currentStates) => ({
             ...currentStates,
             [file._id]: {
                 ...currentState,
-                content: nextContent,
-                isDirty: nextContent !== currentState.lastSavedContent,
+                content,
+                isDirty: content !== currentState.lastSavedContent,
                 remoteContent: isRemoteEcho ? '' : currentState.remoteContent
             }
         }));
-
-        if (!isRemoteEcho) {
-            sendContentUpdateRef.current?.(nextContent, file._id);
-        }
-
-        scheduleFileAutosave(file._id, nextContent);
+        if (!isRemoteEcho) sendContentUpdateRef.current?.(content, file._id);
+        scheduleFileAutosave(file._id, content);
     }, [latexFiles, scheduleFileAutosave, selection]);
+
+    const handleInsertAssetRef = useCallback((ref: string): void => {
+        if (!selection || selection.type !== 'file') return;
+        const file = latexFiles.find((currentFile) => currentFile._id === selection.id);
+        if (!file) return;
+        const currentState = fileEditorStatesRef.current[file._id] ?? createFileEditorState(file.content);
+        applyFileContentUpdate(`${currentState.content}\n${ref}`);
+    }, [applyFileContentUpdate, latexFiles, selection]);
 
     const {
         assets,
@@ -486,10 +483,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
     useEffect(() => {
         return () => {
-            const currentUrl = compiledPdfUrlRef.current;
-            if (currentUrl) {
-                URL.revokeObjectURL(currentUrl);
-            }
+            revokePdfUrl();
 
             Object.values(autosaveTimersRef.current).forEach((timerId) => {
                 window.clearTimeout(timerId);
@@ -573,12 +567,12 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
     useEffect(() => {
         if (selection && !isSelectionAvailable(selection)) {
-            setSelection(getLastWorkspaceTab(validOpenTabs));
+            setSelection(validOpenTabs[validOpenTabs.length - 1] ?? null);
             return;
         }
 
         if (!selection && validOpenTabs.length > 0) {
-            setSelection(getLastWorkspaceTab(validOpenTabs));
+            setSelection(validOpenTabs[validOpenTabs.length - 1] ?? null);
             return;
         }
 
@@ -622,39 +616,12 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
             return;
         }
 
-        void compileSilently();
+        compileSilently();
     }, [compileSilently, isLoading, isLoadingFiles, latexDocument, texWorkspaceFingerprint]);
 
     const handleEditorChange = useCallback((value: string | undefined): void => {
-        if (!selection || selection.type !== 'file') {
-            return;
-        }
-
-        const file = latexFiles.find((currentFile) => currentFile._id === selection.id);
-        if (!file) {
-            return;
-        }
-
-        const content = value ?? '';
-        const currentState = fileEditorStatesRef.current[file._id] ?? createFileEditorState(file.content);
-        const isRemoteEcho = content === currentState.remoteContent;
-
-        setFileEditorStates((currentStates) => ({
-            ...currentStates,
-            [file._id]: {
-                ...currentState,
-                content,
-                isDirty: content !== currentState.lastSavedContent,
-                remoteContent: isRemoteEcho ? '' : currentState.remoteContent
-            }
-        }));
-
-        if (!isRemoteEcho) {
-            sendContentUpdate(content, selection.id);
-        }
-
-        scheduleFileAutosave(file._id, content);
-    }, [latexFiles, scheduleFileAutosave, selection, sendContentUpdate]);
+        applyFileContentUpdate(value ?? '');
+    }, [applyFileContentUpdate]);
 
     const handleRenameDocument = useCallback(async (title: string): Promise<void> => {
         try {
@@ -668,41 +635,37 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
     const handleExportTex = useCallback(async (): Promise<void> => {
         if (!documentId) return;
-        const safeName = (latexDocument?.title ?? 'document').replace(/[^a-zA-Z0-9._-]+/g, '-');
 
         try {
-            sileo.info(EXPORT_TEX_TOAST.loading);
-            const blob = await exportTex({ documentId });
-            triggerBrowserDownload(blob, `${safeName}.tex`);
-            sileo.success(EXPORT_TEX_TOAST.success);
+            const blob = await showPromise(exportTex({ documentId }), EXPORT_TEX_TOAST);
+            const downloadName = `${(latexDocument?.title ?? 'document').replace(/[^a-zA-Z0-9._-]+/g, '-')}.tex`;
+            triggerBrowserDownload(blob, downloadName);
         } catch {
-            sileo.error(EXPORT_TEX_TOAST.error);
+            return;
         }
     }, [documentId, exportTex, latexDocument?.title]);
 
     const handleExportZip = useCallback(async (): Promise<void> => {
         if (!documentId) return;
-        const safeName = (latexDocument?.title ?? 'document').replace(/[^a-zA-Z0-9._-]+/g, '-');
 
         try {
-            sileo.info(EXPORT_ZIP_TOAST.loading);
-            const blob = await exportZip({ documentId });
-            triggerBrowserDownload(blob, `${safeName}.zip`);
-            sileo.success(EXPORT_ZIP_TOAST.success);
+            const blob = await showPromise(exportZip({ documentId }), EXPORT_ZIP_TOAST);
+            const downloadName = `${(latexDocument?.title ?? 'document').replace(/[^a-zA-Z0-9._-]+/g, '-')}.zip`;
+            triggerBrowserDownload(blob, downloadName);
         } catch {
-            sileo.error(EXPORT_ZIP_TOAST.error);
+            return;
         }
     }, [documentId, exportZip, latexDocument?.title]);
 
     const handleExportPdf = useCallback(async (): Promise<void> => {
-        const safeName = (latexDocument?.title ?? 'document').replace(/[^a-zA-Z0-9._-]+/g, '-');
         const blob = compiledPdfBlob ?? await compileSilently();
         if (!blob) {
             sileo.error({ title: 'Failed to export PDF' });
             return;
         }
 
-        triggerBrowserDownload(blob, `${safeName}.pdf`);
+        const downloadName = `${(latexDocument?.title ?? 'document').replace(/[^a-zA-Z0-9._-]+/g, '-')}.pdf`;
+        triggerBrowserDownload(blob, downloadName);
     }, [compileSilently, compiledPdfBlob, latexDocument?.title]);
 
     const handleSelectFileById = useCallback((fileId: string): void => {
@@ -710,7 +673,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         if (file) {
             handleFileSelected(file);
             if (isTexFile(file.name) && !file.isEntrypoint) {
-                void handleSetEntrypoint(file._id);
+                handleSetEntrypoint(file._id).catch(() => undefined);
             }
         }
     }, [handleFileSelected, handleSetEntrypoint, isTexFile, latexFiles]);
@@ -722,7 +685,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         }
     }, [assets, handleOpenTab]);
 
-    const handleUploadWorkspaceEntries = useCallback(async (entries: Array<{ file: File; path: string }>) => {
+    const handleUploadWorkspaceEntries = useCallback(async (entries: WorkspaceUploadEntry[]) => {
         const textEntries = entries.filter((entry) => isWorkspaceTextLikeFile(entry.path, entry.file.type));
         const binaryEntries = entries.filter((entry) => !isWorkspaceTextLikeFile(entry.path, entry.file.type));
 
@@ -751,38 +714,41 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
             if (pendingCompileAfterBatchRef.current) {
                 pendingCompileAfterBatchRef.current = false;
-                void compileSilently();
+                compileSilently();
             }
         }
     }, [compileSilently, handleCreateFile, handleUploadEntries]);
 
-    const handleWorkspaceFilesSelected = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
+    const handleWorkspaceFilesSelected = useCallback(async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
         const fileList = event.target.files;
-        if (!fileList || fileList.length === 0) {
-            return;
-        }
+        if (!fileList || fileList.length === 0) return;
 
-        const entries = Array.from(fileList).map((file) => ({
+        const entries: WorkspaceUploadEntry[] = Array.from(fileList).map((file) => ({
             file,
             path: file.name
         }));
-        event.target.value = '';
 
+        event.target.value = '';
         await handleUploadWorkspaceEntries(entries);
     }, [handleUploadWorkspaceEntries]);
 
-    const handleWorkspaceFoldersSelected = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
+    const handleWorkspaceFoldersSelected = useCallback(async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
         const fileList = event.target.files;
-        if (!fileList || fileList.length === 0) {
-            return;
-        }
+        if (!fileList || fileList.length === 0) return;
 
-        const entries = Array.from(fileList).map((file) => ({
-            file,
-            path: (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name
-        }));
+        const entries: WorkspaceUploadEntry[] = Array.from(fileList).map((file) => {
+            let path = file.name;
+            if ('webkitRelativePath' in file && typeof file.webkitRelativePath === 'string' && file.webkitRelativePath) {
+                path = file.webkitRelativePath;
+            }
+
+            return {
+                file,
+                path
+            };
+        });
+
         event.target.value = '';
-
         await handleUploadWorkspaceEntries(entries);
     }, [handleUploadWorkspaceEntries]);
 

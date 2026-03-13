@@ -26,6 +26,7 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
     const selectedNotebookId = searchParams.get('notebook') || undefined;
     const showWidgets = searchParams.get('widgets') !== 'false';
     const showGrid = searchParams.get('grid') !== 'false';
+    const showGizmo = searchParams.get('gizmo') !== 'false';
     const renderConfigOpen = searchParams.get('renderConfig') === 'true';
     const activeWorkspace = searchParams.get('workspace') || 'modeling';
 
@@ -100,6 +101,7 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
         selectedNotebookId,
         showWidgets,
         showGrid,
+        showGizmo,
         renderConfigOpen,
         activeModifiers,
         activeWorkspace,

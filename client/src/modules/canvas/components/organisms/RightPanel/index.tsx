@@ -263,8 +263,6 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
             if(args.length > 0){
                 content = (
                     <Container className="d-flex column gap-05">
-                        {clusterField}
-                        {selectedTimestepsField}
                         {args.map((arg, i) => {
                             const rawValue = pluginConfigs[option.pluginModifierId!]?.[arg.argument];
                             const val = typeof rawValue === 'string' || typeof rawValue === 'number' || typeof rawValue === 'boolean'
@@ -280,6 +278,8 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
                                 />
                             );
                         })}
+                        {clusterField}
+                        {selectedTimestepsField}
                     </Container>
                 );
             } else {

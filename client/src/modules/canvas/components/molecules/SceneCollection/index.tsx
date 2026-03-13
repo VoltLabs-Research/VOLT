@@ -1,6 +1,6 @@
 import AnalysisTreeNode from '../../molecules/AnalysisTreeNode';
 
-import { Atom } from 'lucide-react';
+import { Atom, Box } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import Paragraph from '@/shared/presentation/components/Paragraph';
@@ -32,6 +32,8 @@ interface SceneCollectionProps {
         exposureName?: string;
     }) => void;
     showDefaultScene?: boolean;
+    showSimulationCell?: boolean;
+    onToggleSimulationCell?: () => void;
 };
 
 const SceneCollection = ({
@@ -49,7 +51,9 @@ const SceneCollection = ({
     onDeleteAnalysis,
     onDownloadAnalysis,
     onDownloadExposureListing,
-    showDefaultScene = true
+    showDefaultScene = true,
+    showSimulationCell = true,
+    onToggleSimulationCell
 }: SceneCollectionProps) => {
     const defaultScene = { sceneType: 'trajectory', source: 'default' as const };
     const isDefaultActive = activeScene?.source === 'default';
@@ -87,6 +91,41 @@ const SceneCollection = ({
                             label: 'Remove from scene',
                             onClick: () => removeScene(defaultScene),
                             disabled: !isDefaultActive
+                        }
+                    ]}
+                    size='sm'
+                />
+            )}
+
+            {showDefaultScene && (
+                <ContextMenuPopover
+                    id="canvas-ctx-simulation-cell"
+                    trigger={(
+                        <Container
+                            className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none ${showSimulationCell ? 'selected' : ''}`}
+                            style={{ paddingLeft: 16 }}
+                            onClick={onToggleSimulationCell}
+                            role="treeitem"
+                            aria-selected={showSimulationCell}
+                            tabIndex={0}
+                        >
+                            <span className="canvas-tree-spacer" />
+                            <Box style={{ width: 13, height: 13, color: '#60a5fa' }} />
+                            <span className={`${showSimulationCell ? 'color-primary' : 'color-secondary'}`}>
+                                Simulation Cell
+                            </span>
+                        </Container>
+                    )}
+                    options={[
+                        {
+                            label: 'Add to scene',
+                            onClick: onToggleSimulationCell,
+                            disabled: showSimulationCell
+                        },
+                        {
+                            label: 'Remove from scene',
+                            onClick: onToggleSimulationCell,
+                            disabled: !showSimulationCell
                         }
                     ]}
                     size='sm'

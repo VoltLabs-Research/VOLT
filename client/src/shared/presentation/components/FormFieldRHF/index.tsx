@@ -721,7 +721,7 @@ const InlineCanvasRenderer = ({
     return (
         <Container className={`${containerClass} ${loadingClass}`}>
             {hasLabel && <span className={labelClass}>{label}</span>}
-            <Container ref={autocompleteRefs.setReference} className='d-flex items-center render-input-container p-relative'>
+            <Container ref={autocompleteRefs.setReference} className='d-flex items-center render-input-container w-max content-end p-relative'>
                 {renderInlineField()}
             </Container>
 
