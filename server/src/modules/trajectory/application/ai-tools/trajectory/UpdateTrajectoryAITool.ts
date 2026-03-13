@@ -14,7 +14,6 @@ export class UpdateTrajectoryAITool extends AITool {
         isPublic: z.boolean().optional(),
         reason: z.string().optional()
     });
-    protected needsApproval = true;
 
     constructor(
         @inject(UpdateTrajectoryByIdUseCase)

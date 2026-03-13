@@ -17,7 +17,6 @@ export class RevokeSecretKeyAITool extends TeamUseCaseAITool<
     readonly name = 'revoke_secret_key';
     readonly description = 'Revoke an API secret key.';
     readonly parameters = revokeSecretKeyParametersSchema;
-    protected needsApproval = true;
 
     constructor(
         @inject(RevokeSecretKeyByIdUseCase)

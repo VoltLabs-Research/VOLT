@@ -62,9 +62,11 @@ export default class AnalysisRepository
         if (result) {
             await this.eventBus.publish(new AnalysisDeletedEvent({
                 analysisId: id,
-                trajectoryId: result.trajectory?.toString(),
-                pluginId: result.plugin?.toString(),
-                teamId: result.team?.toString()
+                trajectoryId: result.trajectory?.toString() || '',
+                pluginId: result.plugin?.toString() || '',
+                teamId: result.team?.toString() || '',
+                userId: 'system',
+                pluginDisplayName: 'Unknown Plugin'
             }));
         }
 

@@ -17,7 +17,6 @@ export class RemoveTeamMemberAITool extends TeamUseCaseAITool<
     readonly name = 'remove_team_member';
     readonly description = 'Remove a team member.';
     readonly parameters = removeTeamMemberParametersSchema;
-    protected needsApproval = true;
 
     constructor(
         @inject(DeleteTeamMemberByIdUseCase)

@@ -15,7 +15,6 @@ export class EditLatexFileAITool extends AITool {
         fileId: z.string(),
         content: z.string()
     });
-    protected needsApproval = true;
 
     constructor(
         @inject(UpdateLatexFileUseCase)

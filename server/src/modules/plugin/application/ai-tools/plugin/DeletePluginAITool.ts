@@ -9,7 +9,6 @@ export class DeletePluginAITool extends AITool {
     readonly name = 'delete_plugin';
     readonly description = 'Delete a plugin.';
     readonly parameters = z.object({ pluginId: z.string(), reason: z.string().optional() });
-    protected needsApproval = true;
 
     constructor(
         @inject(DeletePluginByIdUseCase)

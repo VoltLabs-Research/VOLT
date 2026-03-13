@@ -11,7 +11,6 @@ export class UpdateSSHConnectionAITool extends AITool {
         connectionId: z.string(), name: z.string().optional(), host: z.string().optional(),
         port: z.number().optional(), username: z.string().optional(), reason: z.string().optional()
     });
-    protected needsApproval = true;
 
     constructor(
         @inject(UpdateSSHConnectionByIdUseCase)

@@ -18,7 +18,6 @@ export class UpdateTeamMemberAITool extends TeamUseCaseAITool<
     readonly name = 'update_team_member';
     readonly description = 'Update a team member role.';
     readonly parameters = updateTeamMemberParametersSchema;
-    protected needsApproval = true;
 
     constructor(
         @inject(UpdateTeamMemberByIdUseCase)

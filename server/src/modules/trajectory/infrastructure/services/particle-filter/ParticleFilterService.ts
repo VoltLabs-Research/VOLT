@@ -10,7 +10,7 @@ import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/t
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { buildParticleFilterObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
-import { normalizeAnalysisId, extractModifierAtomData } from '@modules/trajectory/utilities/trajectory/modifier-data';
+import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import { resolveSceneArtifactTeamCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-team-cluster';
 import { IStorageService } from '@shared/domain/port/IStorageService';
@@ -103,22 +103,14 @@ export default class ParticleFilterService implements IParticleFilterService {
         const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
 
         if (exposureId && resolvedAnalysisId) {
-            const modifierData = await this.atomProps.getModifierAnalysis(
+            return this.atomProps.getModifierUniqueValues(
                 String(trajectoryId),
                 String(resolvedAnalysisId),
                 String(exposureId),
-                String(timestep)
+                String(timestep),
+                property,
+                maxValues
             );
-            const atomsData = extractModifierAtomData(modifierData);
-            if (!atomsData) return [];
-
-            const uniqueSet = new Set<number>();
-            for (const atom of atomsData) {
-                if (atom[property] !== undefined && uniqueSet.size < maxValues) {
-                    uniqueSet.add(Number(atom[property]));
-                }
-            }
-            return Array.from(uniqueSet).sort((a, b) => a - b);
         }
 
         if (!trajectory?.props.teamCluster) {
@@ -350,13 +342,12 @@ export default class ParticleFilterService implements IParticleFilterService {
             return undefined;
         }
 
-        const modifierData = await this.atomProps.getModifierAnalysis(
+        return this.atomProps.getModifierValues(
             trajectoryId,
             analysisId,
             exposureId,
-            timestep
+            timestep,
+            property
         );
-
-        return this.atomProps.toFloat32ByAtomId(modifierData, property);
     }
 };

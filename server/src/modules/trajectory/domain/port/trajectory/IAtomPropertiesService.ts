@@ -32,7 +32,28 @@ export interface IAtomPropertiesService {
         targetIds: Set<number>
     ): Promise<Map<number, any> | null>;
 
-    toFloat32ByAtomId(data: any, property: string): Float32Array | undefined;
+    getModifierValues(
+        trajectoryId: string,
+        analysisId: string,
+        exposureId: string,
+        timestep: string,
+        property: string
+    ): Promise<Float32Array | undefined>;
 
-    getMinMaxFromData(data: any, property: string): { min: number; max: number } | undefined;
+    getModifierStats(
+        trajectoryId: string,
+        analysisId: string,
+        exposureId: string,
+        timestep: string,
+        property: string
+    ): Promise<{ min: number; max: number } | undefined>;
+
+    getModifierUniqueValues(
+        trajectoryId: string,
+        analysisId: string,
+        exposureId: string,
+        timestep: string,
+        property: string,
+        maxValues?: number
+    ): Promise<number[]>;
 };

@@ -1,33 +1,33 @@
-import { getActiveDialog, subscribeToActiveDialog } from '@/shared/presentation/utilities/active-dialog-store';
 import { Toaster } from 'sileo';
-import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef } from 'react';
 
 /**
- * Renders Sileo's <Toaster /> through a React portal targeting:
- * - The currently active native <dialog> when a modal is open, so toasts
- *   are promoted into the browser's top layer and remain visible above the
- *   modal backdrop.
- * - document.body when no modal is active.
+ * Renders Sileo's <Toaster /> at the application root.
+ * We avoid portaling into modals because it causes the toast to visually
+ * jump. Instead, we wrap the Toaster in a native popover element and
+ * show it manually, which pushes it to the browser's top layer natively.
  */
 const AppToaster = () => {
-    const [container, setContainer] = useState<Element>(
-        () => getActiveDialog() ?? document.body
-    );
+    const popoverRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        return subscribeToActiveDialog((dialog) => {
-            setContainer(dialog ?? document.body);
-        });
+        if (popoverRef.current) {
+            try {
+                popoverRef.current.showPopover();
+            } catch (e) {
+                // Ignore if browser doesn't support or already shown
+            }
+        }
     }, []);
 
-    return createPortal(
-        <Toaster
-            position='bottom-right'
-            theme='light'
-            options={{ fill: '#171717' }}
-        />,
-        container
+    return (
+        <div ref={popoverRef} popover='manual' style={{ padding: 0, margin: 0, border: 'none', background: 'transparent', overflow: 'visible' }}>
+            <Toaster
+                position='bottom-right'
+                theme='light'
+                options={{ fill: '#171717' }}
+            />
+        </div>
     );
 };
 
