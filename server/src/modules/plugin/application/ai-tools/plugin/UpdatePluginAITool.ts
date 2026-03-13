@@ -47,7 +47,6 @@ export class UpdatePluginAITool extends AITool {
         name: z.string().optional(),
         reason: z.string().optional()
     });
-    protected needsApproval = true;
 
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository)

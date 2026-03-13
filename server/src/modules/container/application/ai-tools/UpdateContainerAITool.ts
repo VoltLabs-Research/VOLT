@@ -12,7 +12,6 @@ export class UpdateContainerAITool extends AITool {
         name: z.string().optional(),
         reason: z.string().optional()
     });
-    protected needsApproval = true;
 
     constructor(
         @inject(UpdateContainerUseCase)

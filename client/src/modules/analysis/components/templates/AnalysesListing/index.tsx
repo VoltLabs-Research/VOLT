@@ -147,6 +147,11 @@ const AnalysesListing = () => {
             defaultLimit={20}
             getMenuOptions={getMenuOptions}
             emptyMessage='No analyses found'
+            socketInvalidation={[
+                { event: 'analysis.created', queryKeys: [analysisQuery.QUERY_KEYS.all()] },
+                { event: 'analysis.updated', queryKeys: [analysisQuery.QUERY_KEYS.all()] },
+                { event: 'analysis.deleted', queryKeys: [analysisQuery.QUERY_KEYS.all()] }
+            ]}
         />
     );
 };

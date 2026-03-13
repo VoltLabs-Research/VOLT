@@ -8,7 +8,6 @@ export class DeleteSSHConnectionAITool extends AITool {
     readonly name = 'delete_ssh_connection';
     readonly description = 'Delete an SSH connection.';
     readonly parameters = z.object({ connectionId: z.string(), reason: z.string().optional() });
-    protected needsApproval = true;
 
     constructor(
         @inject(DeleteSSHConnectionByIdUseCase)

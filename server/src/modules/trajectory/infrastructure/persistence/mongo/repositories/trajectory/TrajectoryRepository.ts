@@ -37,7 +37,9 @@ export default class TrajectoryRepository
         if (result) {
             await this.eventBus.publish(new TrajectoryDeletedEvent({
                 trajectoryId: id,
-                teamId: result.team?.toString()
+                teamId: result.team?.toString() || '',
+                userId: 'system',
+                trajectoryName: result.name || 'Unknown Trajectory'
             }));
         }
 

@@ -17,7 +17,6 @@ export class DeleteTeamInvitationAITool extends TeamUseCaseAITool<
     readonly name = 'delete_team_invitation';
     readonly description = 'Cancel a pending invitation.';
     readonly parameters = deleteTeamInvitationParametersSchema;
-    protected needsApproval = true;
 
     constructor(
         @inject(DeleteTeamInvitationByIdUseCase)

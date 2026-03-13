@@ -646,6 +646,16 @@ const AIConversationThread = ({
     onRetry
 }: AIConversationThreadProps) => {
     const normalizedMessages = useMemo<NormalizedConversationMessage[]>(() => {
+        const respondedToolCallIds = new Set<string>();
+        for (const msg of messages) {
+            if (msg.role !== 'user') continue;
+            for (const part of msg.parts) {
+                if (part.type === 'tool-result' && part.toolCallId) {
+                    respondedToolCallIds.add(part.toolCallId);
+                }
+            }
+        }
+
         const normalizeMessage = (message: UIMessage) => {
             const segments: MessageSegment[] = [];
             const toolInvocations: NormalizedToolInvocation[] = [];
@@ -678,6 +688,9 @@ const AIConversationThread = ({
 
                 const normalized = normalizeToolPart(part, i);
                 if (normalized) {
+                    if (respondedToolCallIds.has(normalized.toolCallId) && !['result', 'approved', 'rejected', 'output-denied'].includes(normalized.state)) {
+                        normalized.state = 'approval-responded';
+                    }
                     toolInvocations.push(normalized);
                     segments.push({ type: 'tool', invocation: normalized });
                 }

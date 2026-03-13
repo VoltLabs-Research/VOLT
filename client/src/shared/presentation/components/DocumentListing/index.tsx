@@ -25,7 +25,7 @@ import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import Title from '@/shared/presentation/components/Title';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
-import useOptimisticAction from '@/shared/presentation/hooks/use-optimistic-action';
+
 import './DocumentListing.css';
 import { Skeleton } from '@mui/material';
 import { motion } from 'framer-motion';
@@ -108,7 +108,6 @@ interface DocumentListingProps<T extends { _id: string }, TContext = Record<stri
     defaultTabId?: string;
     onTabChange?: (tabId: string) => void;
     exportConfig?: DocumentListingExportConfig<TContext>;
-    onHideItemRef?: React.MutableRefObject<((id: string) => void) | null>;
     socketInvalidation?: SocketInvalidationConfig[];
     compact?: boolean;
 };
@@ -187,7 +186,6 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     defaultTabId,
     onTabChange,
     exportConfig,
-    onHideItemRef,
     socketInvalidation,
     compact = false
 }: DocumentListingProps<T, TContext>) => {
@@ -255,37 +253,17 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
 
     const exportModalId = useMemo(() => `document-listing-export-${Math.random().toString(36).slice(2)}`, []);
 
-    const { addToHidden, wrapMenuOptions, filterVisibleData } = useOptimisticAction<T>({
-        shouldTrack: (opt) => opt.destructive === true
-    });
-
-    useEffect(() => {
-        if (onHideItemRef) {
-            onHideItemRef.current = addToHidden;
-        }
-
-        return () => {
-            if (onHideItemRef) {
-                onHideItemRef.current = null;
-            }
-        };
-    }, [onHideItemRef, addToHidden]);
-
     const wrappedGetMenuOptions = useCallback((item: T, selectedItems: T[]) => {
         if (!getMenuOptions) {
             return [];
         }
 
-        const selectedIds = new Set(selectedItems.map((selectedItem) => selectedItem._id));
-        const targetItems = selectedIds.has(item._id) ? selectedItems : [item];
-        return wrapMenuOptions(item, targetItems, getMenuOptions(item, selectedItems));
-    }, [getMenuOptions, wrapMenuOptions]);
-
-    const visibleData = filterVisibleData(data);
+        return getMenuOptions(item, selectedItems);
+    }, [getMenuOptions]);
 
     const sortedData = useMemo(() => {
-        return sortData(visibleData, sortConfig, getValueByPath);
-    }, [visibleData, sortConfig]);
+        return sortData(data, sortConfig, getValueByPath);
+    }, [data, sortConfig]);
 
     const handleSort = useCallback((col: ColumnConfig<T>) => {
         if (!col.sortable) {

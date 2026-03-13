@@ -31,6 +31,7 @@ export const ErrorCodes = createErrorCodes({
     TEAM_NOT_FOUND: 'Team::NotFound',
     TEAM_ID_REQUIRED: 'Team::IdRequired',
     TEAM_ACCESS_DENIED: 'Team::AccessDenied',
+    TEAM_CLUSTER_NOT_FOUND: 'TeamCluster::NotFound',
     RBAC_INSUFFICIENT_PERMISSIONS: 'RBAC::InsufficientPermissions',
     TEAM_MEMBERSHIP_FORBIDDEN: 'Team::Membership::Forbidden',
     TEAM_USER_NOT_MEMBER: 'Team::UserNotAMember',
