@@ -173,7 +173,7 @@ export const createFilterEvaluatorService = (
     },
 
     async exportColoredModel(input) {
-        await trajectoryParserService.withDumpFile(input, async (dumpPath) => {
+        await trajectoryParserService.withDumpFile({ trajectoryId: input.trajectoryId, timestep: input.timestep }, async (dumpPath) => {
             const externalValues = input.externalValuesBase64
                 ? trajectoryParserService.decodeFloat32Array(input.externalValuesBase64)
                 : undefined;
@@ -222,7 +222,7 @@ export const createFilterEvaluatorService = (
     },
 
     async exportParticleFilterModel(input) {
-        return trajectoryParserService.withDumpFile(input, async (dumpPath) => {
+        return trajectoryParserService.withDumpFile({ trajectoryId: input.trajectoryId, timestep: input.timestep }, async (dumpPath) => {
             const parsed = trajectoryParserService.parseTrajectory(dumpPath);
             const mask = trajectoryParserService.decodeUint8Array(input.maskBase64);
             let buffer: Buffer;
