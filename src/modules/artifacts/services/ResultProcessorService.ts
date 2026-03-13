@@ -204,6 +204,8 @@ async function precomputeListingRows(
         for (const [name, value] of entries) {
             if (Array.isArray(value) && value.length > 0) {
                 subListings[name] = value.filter(isRecord);
+            } else if (isRecord(value) && Object.keys(value).length > 0) {
+                subListings[name] = [value];
             }
         }
     }
