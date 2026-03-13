@@ -52,7 +52,7 @@ const FractalScenePipeline = ({
             <Preload all />
             {config.dpr.mode === DprMode.Adaptive && <AdaptiveDpr pixelated={config.dpr.pixelated} />}
             {showGizmo && (
-                <GizmoHelper alignment='top-left' renderPriority={2} margin={[450, 70]}>
+                <GizmoHelper alignment='top-left' renderPriority={1} margin={[80, 70]}>
                     <directionalLight position={[5, 5, 5]} intensity={1} />
                     <ambientLight intensity={0.7} />
                     <GizmoViewport scale={30} hideNegativeAxes axisColors={['#2c2c2e', '#2c2c2e', '#2c2c2e']} labelColor='#8e8e93' />

@@ -54,8 +54,10 @@ interface TrajectoryNativeAtomsPageResponse {
         x: number;
         y: number;
         z: number;
+        [property: string]: number;
     }>;
     totalAtoms: number;
+    nativeProperties: string[];
 };
 
 interface TrajectoryNativeFilterPreviewResponse {

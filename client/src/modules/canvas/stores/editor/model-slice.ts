@@ -35,7 +35,8 @@ const createInitialState = (): ModelState => ({
     pointSizeMultiplier: 1.0,
     pointCloudSettings: POINT_CLOUD_SETTINGS_INITIAL,
     sceneOpacities: {},
-    modelWorldBounds: null
+    modelWorldBounds: null,
+    showSimulationCell: true
 });
 
 export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (set, get) => ({
@@ -156,5 +157,9 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
 
     getSceneOpacity(sceneKey: string): number {
         return get().sceneOpacities[sceneKey] ?? 1.0;
+    },
+
+    setShowSimulationCell(show: boolean) {
+        set({ showSimulationCell: show });
     }
 });

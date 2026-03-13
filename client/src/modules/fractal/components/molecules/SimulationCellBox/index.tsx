@@ -5,6 +5,7 @@ import { getBoxDimensions } from '@/modules/fractal/utilities/box-utils';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useMemo, useRef, useEffect, useState, forwardRef } from 'react';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
 import type { ReactNode, RefObject } from 'react';
 
 interface SimulationCellTransforms {
@@ -39,6 +40,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     const contentRef = useRef<THREE.Group>(null!);
     const isDraggingRef = useRef(false);
     const [dragMatrix, setDragMatrix] = useState(() => new THREE.Matrix4());
+    const showSimulationCell = useEditorStore((state) => state.showSimulationCell);
 
     useEffect(() => {
         const target = contentRef.current;
@@ -155,7 +157,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                     onSelect?.(contentRef.current);
                 }}
             >
-                {boxGeometry && (
+                {showSimulationCell && boxGeometry && (
                     <mesh
                         ref={ref}
                         geometry={boxGeometry}
@@ -170,9 +172,11 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                     </mesh>
                 )}
 
-                <lineSegments geometry={geometry}>
-                    <lineBasicMaterial color='white' opacity={0.1} transparent />
-                </lineSegments>
+                {showSimulationCell && (
+                    <lineSegments geometry={geometry}>
+                        <lineBasicMaterial color='white' opacity={0.1} transparent />
+                    </lineSegments>
+                )}
 
                 {children}
             </group>

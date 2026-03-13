@@ -159,18 +159,17 @@ const useWhiteboardsListing = () => {
 
         await showPromise(
             (async () => {
-                const whiteboard = await createWhiteboard({
+                await createWhiteboard({
                     teamId,
                     title: 'Untitled Whiteboard',
                     folderId: currentFolderId
                 });
 
                 await invalidateWhiteboardsQuery();
-                navigate(`/dashboard/whiteboard/${whiteboard._id}`);
             })(),
             CREATE_WHITEBOARD_TOAST
         );
-    }, [currentFolderId, createWhiteboard, navigate, teamId]);
+    }, [currentFolderId, createWhiteboard, teamId]);
 
     const handleRenameWhiteboardOpen = useCallback((whiteboard: Whiteboard) => {
         setRenamingWhiteboard(whiteboard);

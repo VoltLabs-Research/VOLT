@@ -41,9 +41,11 @@ export interface AtomPageEntry {
     x: number;
     y: number;
     z: number;
+    [property: string]: number;
 };
 
 export interface AtomPageResult {
     atoms: AtomPageEntry[];
     totalAtoms: number;
+    nativeProperties: string[];
 };

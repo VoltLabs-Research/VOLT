@@ -10,6 +10,8 @@ import { useState } from 'react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useShallow } from 'zustand/react/shallow';
 
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
@@ -59,6 +61,13 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
         particleFilterArtifacts
     } = useSceneArtifacts({ trajectoryId: trajectory?._id });
 
+    const { showSimulationCell, setShowSimulationCell } = useEditorStore(useShallow((s) => ({
+        showSimulationCell: s.showSimulationCell,
+        setShowSimulationCell: s.setShowSimulationCell
+    })));
+
+    const handleToggleSimulationCell = () => setShowSimulationCell(!showSimulationCell);
+
     const isArtifactActive = (artifact: SceneArtifact): boolean => isArtifactSceneActive(activeScene, artifact);
 
     return (
@@ -104,6 +113,8 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
                     onDeleteAnalysis={onDeleteAnalysis}
                     onDownloadAnalysis={onDownloadAnalysis ?? (() => undefined)}
                     onDownloadExposureListing={onDownloadExposureListing}
+                    showSimulationCell={showSimulationCell}
+                    onToggleSimulationCell={handleToggleSimulationCell}
                 />
             </CollapsibleSection>
 

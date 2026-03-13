@@ -37,6 +37,7 @@ interface ViewportProps {
     sceneConfig: FractalSceneConfig;
     analysisId: string | undefined;
     showGrid: boolean;
+    showGizmo: boolean;
     isLoading: boolean;
     sceneRef: RefObject<FractalSceneRef | null>;
     bodyContent?: ReactNode;
@@ -56,6 +57,7 @@ const Viewport = ({
     sceneConfig,
     analysisId,
     showGrid,
+    showGizmo,
     isLoading,
     sceneRef,
     bodyContent,
@@ -215,7 +217,7 @@ const Viewport = ({
                             ref={sceneRef}
                             config={sceneConfig}
                             showGrid={showGrid}
-                            showGizmo={false}
+                            showGizmo={showGizmo}
                             onInteractionChange={setSceneInteracting}
                             modelWorldBounds={modelWorldBounds}
                             screenshotCaptureRequested={captureRequested}

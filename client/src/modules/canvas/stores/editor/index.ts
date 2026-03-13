@@ -141,7 +141,8 @@ export const useEditorStore = create<EditorStore>()(
                 },
                 pointSizeMultiplier: state.pointSizeMultiplier,
                 pointCloudSettings: state.pointCloudSettings,
-                sceneOpacities: state.sceneOpacities
+                sceneOpacities: state.sceneOpacities,
+                showSimulationCell: state.showSimulationCell
             }),
             limit: UNDO_HISTORY_LIMIT,
             handleSet: (handleSet) => {
