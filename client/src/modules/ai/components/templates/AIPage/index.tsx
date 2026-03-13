@@ -26,7 +26,6 @@ const AIPage = () => {
     const { conversationId } = useParams<AIPageRouteParams>();
     const [messageDraft, setMessageDraft] = useState('');
     const [openArtifact, setOpenArtifact] = useState<AIMessageArtifact | null>(null);
-    const pendingMessageRef = useRef<string | null>(null);
     const didCollapseSidebar = useRef(false);
 
     const spreadsheetPanel = useResizable({
@@ -122,7 +121,7 @@ const AIPage = () => {
         setMessageDraft('');
         try {
             if (!conversationId) {
-                pendingMessageRef.current = normalizedText;
+                sessionStorage.setItem('volt:ai:pending-message', normalizedText);
                 await handleCreateConversation(normalizedText);
                 return;
             }
@@ -147,15 +146,15 @@ const AIPage = () => {
             return;
         }
 
-        const text = pendingMessageRef.current;
+        const text = sessionStorage.getItem('volt:ai:pending-message');
 
         if (!text) {
             return;
         }
 
-        pendingMessageRef.current = null;
+        sessionStorage.removeItem('volt:ai:pending-message');
         handleSendMessage(text).catch(() => {
-            pendingMessageRef.current = text;
+            sessionStorage.setItem('volt:ai:pending-message', text);
             setMessageDraft(text);
         });
     }, [canSendMessage, conversationId, handleSendMessage]);

@@ -43,6 +43,10 @@
     height: 100%;
 }
 
+.latex-workspace__main-content {
+    min-height: 0;
+}
+
 .latex-editor-tabs__header {
     gap: 0.5rem;
     overflow: hidden;
@@ -162,6 +166,35 @@
 
 .latex-drag-handle:hover::after {
     width: 2px;
+    background: var(--color-border);
+}
+
+.latex-drag-handle-horizontal {
+    height: 5px;
+    flex-shrink: 0;
+    cursor: row-resize;
+    background: transparent;
+    position: relative;
+    z-index: 1;
+    user-select: none;
+    touch-action: none;
+    transition: background 150ms;
+}
+
+.latex-drag-handle-horizontal::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 1px;
+    background: var(--color-border-soft);
+    transition: background 150ms, height 150ms;
+}
+
+.latex-drag-handle-horizontal:hover::after {
+    height: 2px;
     background: var(--color-border);
 }
 
@@ -411,14 +444,15 @@
     opacity: 0.4;
 }
 
-/** ---- Embedded AI panel (replaces preview) ---- */
+/** ---- Embedded AI panel (bottom) ---- */
 
 .latex-ai-panel {
     flex-shrink: 0;
-    min-width: 260px;
-    max-width: 600px;
+    min-height: 100px;
+    max-height: 600px;
     overflow: hidden;
     background: var(--color-content-bg);
+    border-top: none;
 }
 
 .latex-ai-panel__header {
