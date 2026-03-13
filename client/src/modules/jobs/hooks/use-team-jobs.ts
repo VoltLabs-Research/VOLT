@@ -1,5 +1,6 @@
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
+import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import teamSocketRoomService from '@/modules/socket/team/services/team-socket-room-service';
 import useTeamJobsStore from '../stores/use-team-jobs-store';
@@ -22,6 +23,7 @@ const useTeamJobs = () => {
     const currentTeamId = useSelectedTeamId();
     const socketService = useSocket();
     const previousTeamIdRef = useRef<string | null>(null);
+    const trajectoryInvalidationTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
     const isConnected = useTeamJobsStore((state) => state.isConnected);
     const isLoading = useTeamJobsStore((state) => state.isLoading);
@@ -62,6 +64,12 @@ const useTeamJobs = () => {
         if (!event.trajectoryId) return;
 
         updateTeamJobsGroupsQueryData((currentGroups) => applyJobUpdate(currentGroups, event), queryClient);
+
+        clearTimeout(trajectoryInvalidationTimer.current);
+        trajectoryInvalidationTimer.current = setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.simulationGrid() });
+            queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.trajectories() });
+        }, 500);
     }, [queryClient, setExpiredSessions]);
 
     const handleInitialJobsEvent = useCallback((payload: TeamJobsEventPayload) => {
@@ -112,6 +120,7 @@ const useTeamJobs = () => {
             unsubscribeFromConnectionChanges();
             unsubscribeFromInitialJobs();
             unsubscribeFromJobUpdates();
+            clearTimeout(trajectoryInvalidationTimer.current);
             clearTeamJobs();
         };
     }, [clearTeamJobs, handleConnect, handleInitialJobsEvent, handleJobUpdateEvent, setLoading, socketService]);

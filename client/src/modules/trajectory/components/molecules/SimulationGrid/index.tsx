@@ -4,7 +4,6 @@ import trajectoryService from '@/modules/trajectory/api/services/trajectory';
 import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
 import useDeleteSelectedTrajectories from '@/modules/trajectory/hooks/trajectory/use-delete-selected-trajectories';
 import useDownloadSamples from '@/modules/trajectory/hooks/trajectory/use-download-samples';
-import useTrajectoryStore from '@/modules/trajectory/stores/trajectory/use-trajectory-store';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
@@ -14,25 +13,14 @@ import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
-import type { TrajectoryUploadStatus } from '@/modules/trajectory/stores/trajectory/use-trajectory-store';
 
 interface SimulationGridContext {
     teamId?: string;
 };
 
-export type SimulationGridItem =
-    | { kind: 'upload'; _id: string; progress: number; status: TrajectoryUploadStatus }
-    | { kind: 'trajectory'; _id: string; trajectory: Trajectory };
-
-const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: 'trajectory.created', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid(), TRAJECTORY_QUERY_KEYS.trajectories()] },
-    { event: 'trajectory.deleted', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid(), TRAJECTORY_QUERY_KEYS.trajectories()] },
-    { event: 'trajectory.updated', queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid(), TRAJECTORY_QUERY_KEYS.trajectories()] }
-];
+export type SimulationGridItem = Trajectory;
 
 export default function SimulationGrid() {
-    const activeUploads = useTrajectoryStore((state) => state.activeUploads);
 
     const selectedTeam = useSelectedTeam();
     const selectedTeamId = selectedTeam?._id;
@@ -75,45 +63,23 @@ export default function SimulationGrid() {
     const fetchData = useCallback(async (params: PaginationParams & SimulationGridContext): Promise<PaginatedResponse<SimulationGridItem>> => {
         const result = await trajectoryService.getAll({ page: params.page, limit: params.limit });
 
-        const items: SimulationGridItem[] = result.data
-            .map((trajectory) => ({ kind: 'trajectory' as const, _id: trajectory._id, trajectory }));
-
         return {
             status: 'success',
-            data: items,
+            data: result.data,
             pagination: result.pagination
         };
     }, []);
-
-    const transformData = useCallback((data: SimulationGridItem[]): SimulationGridItem[] => {
-        const uploadItems: SimulationGridItem[] = Object.entries(activeUploads).map(([id, upload]) => ({
-            kind: 'upload',
-            _id: `upload-${id}`,
-            progress: upload.progress,
-            status: upload.status
-        }));
-        return [...uploadItems, ...data];
-    }, [activeUploads]);
 
     const handleHideItem = useCallback((id: string) => {
         hideItemRef.current?.(id);
     }, []);
 
     const renderGridItem = useCallback((item: SimulationGridItem) => {
-        if(item.kind === 'upload'){
-            return (
-                <SimulationSkeletonCard
-                    key={item._id}
-                    progress={item.progress}
-                    status={item.status}
-                />
-            );
-        }
         return (
             <SimulationCard
                 key={item._id}
-                trajectory={item.trajectory}
-                isSelected={isSelected(item.trajectory._id)}
+                trajectory={item}
+                isSelected={isSelected(item._id)}
                 onSelect={toggleSelection}
                 onDelete={handleHideItem}
             />
@@ -150,7 +116,6 @@ export default function SimulationGrid() {
             queryKey={TRAJECTORY_QUERY_KEYS.simulationGrid()}
             view='grid'
             fetchData={fetchData}
-            transformData={transformData}
             context={selectedTeamId ? { teamId: selectedTeamId } : undefined}
             enabled={!!selectedTeamId}
             renderGridItem={renderGridItem}
@@ -164,7 +129,20 @@ export default function SimulationGrid() {
             emptyButtonIsLoading={isDownloading}
             onEmptyButtonClick={emptyStateConfig.onButtonClick}
             onHideItemRef={hideItemRef}
-            socketInvalidation={SOCKET_INVALIDATION}
+            socketInvalidation={[
+                {
+                    event: 'trajectory.created',
+                    queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid()]
+                },
+                {
+                    event: 'trajectory.updated',
+                    queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid()]
+                },
+                {
+                    event: 'trajectory.deleted',
+                    queryKeys: [TRAJECTORY_QUERY_KEYS.simulationGrid()]
+                }
+            ]}
         />
     );
 }
