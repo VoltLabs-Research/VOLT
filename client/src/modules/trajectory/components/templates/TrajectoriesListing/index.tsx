@@ -105,8 +105,7 @@ export default function TrajectoriesListing() {
         movingTrajectory,
         navigateToFolder,
         queryKey,
-        renamingFolder,
-        socketInvalidation
+        renamingFolder
     } = useTrajectoriesListing();
 
     const globalSearchBreadcrumb = useMemo(() => ({
@@ -150,7 +149,6 @@ export default function TrajectoriesListing() {
                 onItemClick={handleItemClick}
                 dragAndDrop={dragAndDrop}
                 emptyMessage='No trajectories found in this location.'
-                socketInvalidation={socketInvalidation}
                 headerActions={(
                     <>
                         <input
@@ -179,6 +177,20 @@ export default function TrajectoriesListing() {
                     onCreate: handleCreate
                 } : undefined}
                 emptyButtonIsLoading={isUploading}
+                socketInvalidation={[
+                    {
+                        event: 'trajectory.created',
+                        queryKeys: [queryKey]
+                    },
+                    {
+                        event: 'trajectory.updated',
+                        queryKeys: [queryKey]
+                    },
+                    {
+                        event: 'trajectory.deleted',
+                        queryKeys: [queryKey]
+                    }
+                ]}
             />
 
             <NewFolderModal
