@@ -6,9 +6,11 @@ import EmptyState from '@/shared/presentation/components/EmptyState';
 import IconButton from '@/shared/presentation/components/IconButton';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Tooltip from '@/shared/presentation/components/Tooltip';
+import Select from '@/shared/presentation/components/Select';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IoAddOutline, IoCloseOutline, IoExpandOutline } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
+import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 import type { ReactNode } from 'react';
@@ -16,15 +18,28 @@ import type { ReactNode } from 'react';
 interface LatexAIPanelProps {
     documentId: string;
     documentTitle: string;
+    files: LatexFileEntry[];
     width?: number;
     height?: number;
     onClose: () => void;
 };
 
-const buildDocumentContext = (documentId: string, documentTitle: string): string =>
-    `[Context: LaTeX document "${documentTitle}", documentId: ${documentId}]\n\n`;
+const buildDocumentContext = (documentId: string, documentTitle: string, files: LatexFileEntry[]): string => {
+    const fileList = files.map((f) => `- ${f.name} (ID: ${f._id})`).join('\n');
+    return `[Context: LaTeX document "${documentTitle}", documentId: ${documentId}]
+[Current Files in Workspace:
+${fileList}]
 
-const LatexAIPanel = ({ documentId, documentTitle, width, height, onClose }: LatexAIPanelProps) => {
+IMPORTANT INSTRUCTIONS:
+1. DO NOT create new .tex files if one already exists (e.g., "main.tex").
+2. ALWAYS prefer editing existing files instead of creating "Untitled" or "template" files.
+3. If the user asks to "write" or "edit", find the most relevant existing file (like "main.tex") and use the appropriate tool to update it.
+4. Your goal is to keep the workspace clean and maintain existing file structures.
+
+`;
+};
+
+const LatexAIPanel = ({ documentId, documentTitle, files, width, height, onClose }: LatexAIPanelProps) => {
     const navigate = useNavigate();
     const [conversationId, setConversationId] = useState<string | undefined>();
     const [messageDraft, setMessageDraft] = useState('');
@@ -33,6 +48,7 @@ const LatexAIPanel = ({ documentId, documentTitle, width, height, onClose }: Lat
     const {
         selectedTeam,
         messages,
+        conversations,
         availableModelsForProvider,
         selectedModel,
         isMessagesLoading,
@@ -49,10 +65,12 @@ const LatexAIPanel = ({ documentId, documentTitle, width, height, onClose }: Lat
         loadConversations,
         loadProviderCatalog,
         setSelectedModel,
+        handleSelectConversation,
         handleCreateConversation,
         addToolApprovalResponse,
         handleSendMessage,
-        loadConversationMessages
+        loadConversationMessages,
+        isConversationsLoading
     } = useAIPage(conversationId, {
         navigateOnConversationChange: false,
         onConversationChange: setConversationId
@@ -77,6 +95,14 @@ const LatexAIPanel = ({ documentId, documentTitle, width, height, onClose }: Lat
         });
     }, [conversationId, handleSendMessage]);
 
+    const conversationOptions: SelectOption[] = useMemo(() => {
+        return conversations.map((conversation) => ({
+            value: conversation._id,
+            title: conversation.title || 'Untitled Conversation',
+            description: conversation.lastMessageAt ? new Date(conversation.lastMessageAt).toLocaleString() : undefined
+        }));
+    }, [conversations]);
+
     const modelOptions: SelectOption[] = useMemo(() => {
         return availableModelsForProvider.map((model) => ({
             value: `${model.provider}::${model.id}`,
@@ -88,8 +114,8 @@ const LatexAIPanel = ({ documentId, documentTitle, width, height, onClose }: Lat
     const prependContext = useCallback((text: string): string => {
         if (contextInjectedRef.current) return text;
         contextInjectedRef.current = true;
-        return `${buildDocumentContext(documentId, documentTitle)}${text}`;
-    }, [documentId, documentTitle]);
+        return `${buildDocumentContext(documentId, documentTitle, files)}${text}`;
+    }, [documentId, documentTitle, files]);
 
     const handleSend = useCallback(async () => {
         const rawDraft = messageDraft.trim();
@@ -221,7 +247,7 @@ const LatexAIPanel = ({ documentId, documentTitle, width, height, onClose }: Lat
     return (
         <Container className='latex-ai-panel d-flex column' style={{ width, height }}>
             <Container className='latex-ai-panel__header d-flex items-center content-between'>
-                <Container className='d-flex items-center gap-025'>
+                <Container className='d-flex items-center gap-025 flex-1 min-w-0'>
                     <Tooltip content='New conversation' placement='top'>
                         <IconButton
                             variant='ghost'
@@ -232,6 +258,16 @@ const LatexAIPanel = ({ documentId, documentTitle, width, height, onClose }: Lat
                             <IoAddOutline size={16} />
                         </IconButton>
                     </Tooltip>
+
+                    <Select
+                        className='latex-ai-panel__header-select'
+                        options={conversationOptions}
+                        value={conversationId ?? null}
+                        onChange={handleSelectConversation}
+                        placeholder='Select conversation'
+                        disabled={isConversationsLoading}
+                        showSelectionIcon={false}
+                    />
 
                     <Tooltip content='Open full AI page' placement='top'>
                         <IconButton variant='ghost' size='sm' onClick={openAIPage}>

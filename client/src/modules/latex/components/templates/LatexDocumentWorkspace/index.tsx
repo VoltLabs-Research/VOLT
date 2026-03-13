@@ -81,7 +81,7 @@ const LatexDocumentWorkspace = () => {
     const [hasEnteredWorkspace, setHasEnteredWorkspace] = useState(false);
     const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
     const [isImportingProject, setIsImportingProject] = useState(false);
-    const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
+    const [isAIPanelOpen, setIsAIPanelOpen] = useState(true);
     const initialWorkspaceVisibilityResolvedRef = useRef(false);
 
     const {
@@ -233,14 +233,8 @@ const LatexDocumentWorkspace = () => {
     const handleStartFromTemplate = useCallback(async (): Promise<void> => {
         setIsCreatingTemplate(true);
 
-        const safeBaseName = (latexDocument?.title ?? 'document')
-            .toLowerCase()
-            .trim()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '') || 'document';
-
         try {
-            await handleCreateFile(`${safeBaseName}.tex`, undefined, LATEX_TEMPLATE_CONTENT);
+            await handleCreateFile('main.tex', undefined, LATEX_TEMPLATE_CONTENT);
             setHasEnteredWorkspace(true);
         } catch {
             setHasEnteredWorkspace(false);
@@ -520,6 +514,7 @@ const LatexDocumentWorkspace = () => {
                                         <LatexAIPanel
                                             documentId={documentId}
                                             documentTitle={latexDocument?.title ?? 'LaTeX Document'}
+                                            files={files}
                                             height={panelWidths.ai}
                                             onClose={toggleAIPanel}
                                         />
