@@ -1,5 +1,6 @@
 import { TeamClusterRemoteAccessTarget, TeamClusterRemoteExplorerContentType, TeamClusterRemoteExplorerEntryType } from '@/modules/cluster/api/entities/team-cluster-remote-access';
 import ClusterMongoDocumentViewer from '@/modules/cluster/components/molecules/ClusterMongoDocumentViewer';
+import JsonTree from '@/modules/plugin/components/plugin/atoms/JsonTree';
 import { useRemoteExplorer } from '@/shared/api/remote-explorer';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { showPromise } from '@/shared/presentation/hooks/toast';
@@ -10,7 +11,8 @@ import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileE
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
 import Title from '@/shared/presentation/components/Title';
-import { Database, Download, FolderOpen, HardDrive, Package } from 'lucide-react';
+import { decode } from '@msgpack/msgpack';
+import { Database, Download, FileJson, FolderOpen, HardDrive, Package } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import './ClusterRemoteExplorerContent.css';
 import type {
@@ -69,6 +71,15 @@ const isDownloadableEntry = (entry: TeamClusterRemoteExplorerEntry): boolean => 
         || entry.type === TeamClusterRemoteExplorerEntryType.RedisKey;
 };
 
+/** Returns true when the entry is a MinIO object eligible for MsgPack decoding. */
+const isMsgpackDecodable = (
+    entry: TeamClusterRemoteExplorerEntry,
+    currentTarget: TeamClusterRemoteAccessTarget
+): boolean => {
+    return currentTarget === TeamClusterRemoteAccessTarget.Minio
+        && entry.type === TeamClusterRemoteExplorerEntryType.Object;
+};
+
 const getEntryIcon = (entry: TeamClusterRemoteExplorerEntry): LucideIconComponent => {
     if (entry.type === TeamClusterRemoteExplorerEntryType.Bucket || entry.type === TeamClusterRemoteExplorerEntryType.Directory) {
         return FolderOpen;
@@ -112,6 +123,9 @@ const ClusterRemoteExplorerContent = ({
     const [nodeError, setNodeError] = useState<string | null>(null);
     const [isNodeLoading, setIsNodeLoading] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [msgpackDecoded, setMsgpackDecoded] = useState<Record<string, unknown> | unknown[] | null>(null);
+    const [isMsgpackDecoding, setIsMsgpackDecoding] = useState(false);
+    const [msgpackError, setMsgpackError] = useState<string | null>(null);
 
     useEffect(() => {
         remoteExplorer.navigateTo('/');
@@ -162,9 +176,13 @@ const ClusterRemoteExplorerContent = ({
         if (!selectedEntry || isNavigableEntry(selectedEntry)) {
             setNode(null);
             setNodeError(null);
+            setMsgpackDecoded(null);
+            setMsgpackError(null);
             return;
         }
 
+        setMsgpackDecoded(null);
+        setMsgpackError(null);
         setIsNodeLoading(true);
 
         getNode(teamCluster._id, session.sessionId, target, selectedEntry.path)
@@ -213,6 +231,38 @@ const ClusterRemoteExplorerContent = ({
             triggerBrowserDownload(blob, filename);
         } finally {
             setIsDownloading(false);
+        }
+    };
+
+    const handleDecodeMsgpack = async () => {
+        if (!selectedEntry || !isDownloadableEntry(selectedEntry)) return;
+
+        setIsMsgpackDecoding(true);
+        setMsgpackError(null);
+        setMsgpackDecoded(null);
+
+        try {
+            const blob = await showPromise(
+                downloadObject(teamCluster._id, session.sessionId, target, selectedEntry.path),
+                {
+                    loading: { title: 'Fetching object...' },
+                    success: { title: 'Object fetched' },
+                    error: { title: 'Failed to fetch object' }
+                }
+            );
+
+            const buffer = await blob.arrayBuffer();
+            const decoded = decode(new Uint8Array(buffer));
+
+            if (typeof decoded === 'object' && decoded !== null) {
+                setMsgpackDecoded(decoded as Record<string, unknown> | unknown[]);
+            } else {
+                setMsgpackDecoded({ value: decoded });
+            }
+        } catch {
+            setMsgpackError('Failed to decode as MsgPack. The file may not be in MsgPack format.');
+        } finally {
+            setIsMsgpackDecoding(false);
         }
     };
 
@@ -297,6 +347,22 @@ const ClusterRemoteExplorerContent = ({
             );
         }
 
+        if (msgpackError) {
+            return (
+                <Container className='cluster-remote-explorer-empty d-flex items-center content-center'>
+                    <Paragraph className='font-size-2 color-secondary'>{msgpackError}</Paragraph>
+                </Container>
+            );
+        }
+
+        if (msgpackDecoded) {
+            return (
+                <Container className='cluster-remote-explorer-detail-body p-1 radius-md overflow-auto flex-1'>
+                    <JsonTree data={msgpackDecoded} />
+                </Container>
+            );
+        }
+
         if (node.contentType === TeamClusterRemoteExplorerContentType.MongoDocuments) {
             return <ClusterMongoDocumentViewer documents={node.mongoDocuments} />;
         }
@@ -314,7 +380,7 @@ const ClusterRemoteExplorerContent = ({
                 <Paragraph className='font-size-2 color-secondary'>This entry does not expose a preview.</Paragraph>
             </Container>
         );
-    }, [isNodeLoading, nodeError, node, selectedEntry]);
+    }, [isNodeLoading, nodeError, node, selectedEntry, msgpackDecoded, msgpackError]);
 
     return (
         <Container className='cluster-remote-explorer-layout'>
@@ -356,6 +422,18 @@ const ClusterRemoteExplorerContent = ({
                             onClick={handleDownload}
                         >
                             Download
+                        </Button>
+                    )}
+                    {selectedEntry && isMsgpackDecodable(selectedEntry, target) && (
+                        <Button
+                            variant='outline'
+                            intent='white'
+                            size='sm'
+                            leftIcon={<FileJson size={14} />}
+                            isLoading={isMsgpackDecoding}
+                            onClick={handleDecodeMsgpack}
+                        >
+                            {msgpackDecoded ? 'Re-decode MsgPack' : 'Decode MsgPack'}
                         </Button>
                     )}
                 </Container>
