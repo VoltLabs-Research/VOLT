@@ -18,7 +18,7 @@ interface PluginResultsViewerProps {
 const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps) => {
     const {
         title, tabs, activeTab, setActiveTab,
-        activeExposureName, isAtomsTab,
+        activeExposureName, activeExposureId, isAtomsTab,
         trajectoryId, teamId,
         isDownloading, isEmpty, close, download
     } = usePluginResults({ pluginId, analysisId });
@@ -79,6 +79,7 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                             <PluginExposureTable
                                 key={`${activeExposureName}-${analysisId}`}
                                 pluginId={pluginId}
+                                exposureId={activeExposureId ?? undefined}
                                 exposureName={activeExposureName}
                                 trajectoryId={trajectoryId}
                                 analysisId={analysisId}
