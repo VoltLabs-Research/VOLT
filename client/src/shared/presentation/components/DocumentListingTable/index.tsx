@@ -66,7 +66,7 @@ interface DocumentListingTableProps<T extends Identifiable> {
     isFetchingMore?: boolean;
     onLoadMore?: () => void;
     skeletonRowsCount?: number;
-    scrollContainerRef?: React.RefObject<HTMLElement> | null;
+    scrollContainerRef?: React.RefObject<HTMLElement | null> | null;
     emptyButtonText?: string;
     onEmptyButtonClick?: () => void;
     errorMessage?: string | null;
