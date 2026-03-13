@@ -108,7 +108,7 @@ const WhiteboardsListing = () => {
         globalSearchBreadcrumb
     });
 
-    const title = <Title className='font-size-6 font-weight-5 sm:font-size-4'>Whiteboards</Title>;
+    const title = <Title className='font-size-6 font-weight-5 sm:font-size-4 color-primary'>Whiteboards</Title>;
 
     const createNew = {
         buttonTitle: 'New Whiteboard',

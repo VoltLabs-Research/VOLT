@@ -2,7 +2,7 @@ import type { TrajectoryStatus } from './trajectory';
 
 export const PROCESSING_STAGE_LABELS: Record<string, string> = {
     idle: '',
-    waiting_for_proccess: 'Waiting...',
+    'waiting-for-process': 'Waiting...',
     queued: 'Queued...',
     analyzing: 'Analyzing...',
     processing: 'Processing frames...',
@@ -17,5 +17,5 @@ export const getStageMessage = (stage: TrajectoryStatus | string | undefined): s
 };
 
 export const isProcessingStatus = (status: TrajectoryStatus | string | undefined): boolean => {
-    return !!status && status !== 'completed' && status !== 'idle';
+    return !!status && status !== 'completed' && status !== 'idle' && status !== 'failed';
 };

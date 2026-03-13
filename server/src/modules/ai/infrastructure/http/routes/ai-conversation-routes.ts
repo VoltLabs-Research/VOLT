@@ -4,6 +4,7 @@ import controllers from '@modules/ai/infrastructure/http/controllers';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
+import express from 'express';
 
 export default createHttpModule({
     basePath: '/api/ai/conversations',
@@ -27,6 +28,7 @@ export default createHttpModule({
         );
         router.post(
             '/:teamId/:conversationId/messages/stream',
+            express.json({ limit: '5mb' }),
             RATE_LIMIT_POLICIES.aiConversationMessage,
             aiConversationValidation.sendStreamMessage,
             controllers.streamMessage.handle

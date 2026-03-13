@@ -97,7 +97,7 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
                 />
             )}
         >
-            <Container className='d-flex column gap-1'>
+            <Container className='d-flex column gap-1 p-1-5'>
                 {!credentials && (
                     <>
                         <Paragraph className='font-size-2 color-secondary'>

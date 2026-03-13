@@ -112,7 +112,7 @@ const LatexDocumentsListing = () => {
         globalSearchBreadcrumb
     });
 
-    const title = <Title className='font-size-6 font-weight-5 sm:font-size-4'>LaTeX Documents</Title>;
+    const title = <Title className='font-size-6 font-weight-5 sm:font-size-4 color-primary'>LaTeX Documents</Title>;
 
     const createNew = {
         buttonTitle: 'New Document',

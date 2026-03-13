@@ -140,7 +140,7 @@ export default function TrajectoriesListing() {
     return (
         <>
             <DocumentListing<TrajectoryListingRow, { folderId: string | null }>
-                title={<Title className='font-size-6 font-weight-5 sm:font-size-4'>Trajectories</Title>}
+                title={<Title className='font-size-6 font-weight-5 sm:font-size-4 color-primary'>Trajectories</Title>}
                 queryKey={queryKey}
                 columns={COLUMNS}
                 context={context}

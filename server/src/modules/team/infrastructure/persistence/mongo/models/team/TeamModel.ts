@@ -28,8 +28,7 @@ const TeamSchema: Schema<TeamDocument> = new Schema({
     inviteCode: {
         type: String,
         sparse: true,
-        unique: true,
-        default: null
+        unique: true
     }
 }, {
     timestamps: true

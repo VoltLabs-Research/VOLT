@@ -9,6 +9,6 @@ export const aiConversationMessageSchema = z.object({
     id: z.string().min(1),
     role: z.enum(AIConversationMessageRole),
     parts: z.array(aiMessagePartSchema).min(1)
-}).strict();
+});
 
 export const aiConversationMessagesSchema = z.array(aiConversationMessageSchema).min(1);

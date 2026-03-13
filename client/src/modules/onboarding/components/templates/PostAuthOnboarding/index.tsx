@@ -1,21 +1,26 @@
+import './PostAuthOnboarding.css';
 import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import { OnboardingStep, resolveOnboardingStep } from '@/modules/onboarding/utilities/resolve-onboarding-step';
 import { notifyApiError } from '@/shared/errors/notify-api-error';
+import { JoinTeamModal } from '@/modules/team/components/organisms/JoinTeamModal';
+import { openModal } from '@/shared/presentation/components/Modal';
+import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Loader from '@/shared/presentation/components/Loader';
+import NotificationsPopover from '@/modules/notification/components/organisms/NotificationsPopover';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
+import UserMenuPopover from '@/modules/auth/components/molecules/UserMenuPopover';
 import { sileo } from 'sileo';
 import { useState } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
-import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
+import useTeamData from '@/modules/team/hooks/team/use-team-data';
 
 const useNextDestination = (): string => {
     const location = useLocation();
@@ -33,14 +38,12 @@ const PostAuthOnboarding = () => {
     const [teamDescription, _setTeamDescription] = useState('');
     const [nameError, setNameError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSigningOut, setIsSigningOut] = useState(false);
 
     const createTeam = useCreateTeamMutation();
     const setSelectedTeamId = useTeamStore((state) => state.setSelectedTeamId);
-    const selectedTeamId = useSelectedTeamId();
 
-    const teamsQuery = useTeamsQuery(undefined, { retry: false });
-    const teams = teamsQuery.data ?? [];
-    const isTeamsLoading = teamsQuery.isLoading;
+    const { teams, isTeamsLoading, selectedTeamId } = useTeamData();
 
     const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
         enabled: Boolean(selectedTeamId)
@@ -98,8 +101,35 @@ const PostAuthOnboarding = () => {
         }
     };
 
+    const handleSignOut = () => {
+        try {
+            setIsSigningOut(true);
+            useAuthStore.getState().signOut();
+        } catch {
+            sileo.error({ title: 'Sign out failed', description: 'Please try again.' });
+        } finally {
+            setIsSigningOut(false);
+        }
+    };
+
+    const handleSettingsClick = () => {
+        navigate('/dashboard/settings/general');
+    };
+
+    const handleOpenJoinModal = () => openModal('join-team-modal');
+
     return (
         <Container className='d-flex items-center content-center w-max vh-max'>
+            <Button
+                className='post-auth-onboarding-invite-btn'
+                variant='ghost'
+                intent='neutral'
+                size='sm'
+                onClick={handleOpenJoinModal}
+            >
+                Have an invite code?
+            </Button>
+
             <Container className='d-flex column gap-2' style={{ width: '30rem', maxWidth: '120vw' }}>
                 <Container className='d-flex column gap-1 text-center'>
                     <Title className='font-size-6 font-weight-6'>Let's create a team for you!</Title>
@@ -135,6 +165,24 @@ const PostAuthOnboarding = () => {
                 >
                     Create Team & Continue
                 </Button>
+            </Container>
+
+            <JoinTeamModal />
+
+            {/* Floating user menu */}
+            {user && (
+                <Container className='post-auth-onboarding-user-info'>
+                    <UserMenuPopover
+                        onSettingsClick={handleSettingsClick}
+                        onSignOut={handleSignOut}
+                        isSigningOut={isSigningOut}
+                    />
+                </Container>
+            )}
+
+            {/* Floating notifications */}
+            <Container className='post-auth-onboarding-notifications'>
+                <NotificationsPopover />
             </Container>
         </Container>
     );

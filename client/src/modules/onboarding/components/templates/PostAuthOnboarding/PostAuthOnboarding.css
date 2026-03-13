@@ -1,0 +1,20 @@
+.post-auth-onboarding-invite-btn {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 50;
+}
+
+.post-auth-onboarding-user-info {
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    z-index: 50;
+}
+
+.post-auth-onboarding-notifications {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 50;
+}

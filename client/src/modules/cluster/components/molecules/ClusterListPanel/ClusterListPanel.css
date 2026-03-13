@@ -1,0 +1,73 @@
+.cluster-list-panel {
+    position: fixed;
+    top: 4.5rem;
+    left: 1.5rem;
+    z-index: 50;
+    width: 280px;
+    max-height: 320px;
+    overflow: hidden;
+}
+
+.cluster-list-panel-header {
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.cluster-list-panel-list {
+    overflow-y: auto;
+    max-height: 264px;
+}
+
+.cluster-list-panel-row {
+    padding: 0.5rem 0.75rem;
+    transition: background 0.15s ease;
+}
+
+.cluster-list-panel-row:not(:last-child) {
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.cluster-list-panel-row:hover {
+    background: var(--color-surface-2);
+}
+
+.cluster-list-panel-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cluster-list-panel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: cluster-list-panel-pulse 1.5s ease-in-out infinite;
+}
+
+.cluster-list-panel-dot.variant-success {
+    background: var(--status-success);
+    box-shadow: 0 0 6px var(--status-success);
+}
+
+.cluster-list-panel-dot.variant-warning {
+    background: var(--status-warning);
+    box-shadow: 0 0 6px var(--status-warning);
+}
+
+.cluster-list-panel-dot.variant-danger {
+    background: var(--status-error);
+    box-shadow: 0 0 6px var(--status-error);
+}
+
+.cluster-list-panel-dot.variant-inactive {
+    background: var(--color-text-muted);
+    box-shadow: none;
+    animation: none;
+}
+
+@keyframes cluster-list-panel-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}

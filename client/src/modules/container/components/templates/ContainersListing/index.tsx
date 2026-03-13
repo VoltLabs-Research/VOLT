@@ -178,7 +178,7 @@ const ContainersListing = () => {
     return (
         <>
             <DocumentListing<ContainerListingRow, { folderId: string | null }>
-                title={<Title className='font-size-6 font-weight-5 sm:font-size-4'>Containers</Title>}
+                title={<Title className='font-size-6 font-weight-5 sm:font-size-4 color-primary'>Containers</Title>}
                 queryKey={queryKey}
                 columns={COLUMNS}
                 context={context}
