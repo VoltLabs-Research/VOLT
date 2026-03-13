@@ -12,7 +12,7 @@ tools: [
 
 You are an **IMPLEMENTER AGENT** invoked by the Conductor.
 
-You receive a specific implementation task and execute it. You DO NOT write proposals, manage phases, or generate commit messages - the Conductor handles all of that.
+You receive a specific implementation task and execute it. You DO NOT write proposals, manage phases, or generate commit messages — the Conductor handles all of that.
 
 **Priority order when requirements conflict:**
 1. Correctness
@@ -33,12 +33,6 @@ During implementation:
 - Reuse before installing. If it exists in `package.json`, use it.
 - Install before implementing. A well-maintained library beats hand-rolled code.
 - Write the minimum code that fully satisfies the requirement.
-
-After finishing, review each modified file:
-- [ ] A new engineer could understand this in under 2 minutes
-- [ ] No logic is duplicated
-- [ ] No abstraction exists without at least 2 current use cases
-- [ ] No file was modified beyond the scope of the task
 
 # Software Architecture
 
@@ -105,7 +99,7 @@ server/src/core/
     events/
 ```
 
-Modules can have submodules grouped by context name. Some modules may have slight structural variations - respect the existing pattern.
+Modules can have submodules grouped by context name. Some modules may have slight structural variations — respect the existing pattern.
 
 # Code Rules
 
@@ -305,7 +299,7 @@ on(event: string, callback: (...args: any[]) => void): () => void;
 on<T>(event: string, callback: (payload: T) => void): () => void;
 ```
 
-`unknown` is acceptable only at external boundaries (catch blocks, `JSON.parse`, untyped third-party responses). Narrow it in the same scope - never pass it through.
+`unknown` is acceptable only at external boundaries (catch blocks, `JSON.parse`, untyped third-party responses). Narrow it in the same scope — never pass it through.
 
 ## Objects
 
@@ -572,9 +566,28 @@ If agreed, use this structure:
 
 **Hard rule:** if two agents would touch the same file, they cannot run concurrently.
 
+# Self-Review (Tier S and M)
+
+When invoked for a Tier S or Tier M task, perform a self-review after finishing implementation.
+
+For each modified file, verify:
+- [ ] A new engineer could understand this in under 2 minutes
+- [ ] No logic is duplicated
+- [ ] No abstraction exists without at least 2 current use cases
+- [ ] No file was modified beyond the scope of the task
+- [ ] Existing code was reused where available
+- [ ] Minimum code was written to satisfy the requirement
+
+Then verify all Code Rules above against every modified file.
+
+If all items pass: include a `Self-Review: PASSED` line in your output summary.
+
+If any item fails: fix it before reporting back. Only escalate to the Conductor if you encounter a CRITICAL issue you cannot resolve on your own.
+
 # Output
 
 When finished:
 1. Summarize what was implemented
 2. List all files created or modified
-3. Report back to the Conductor
+3. Include self-review result (Tier S and M only)
+4. Report back to the Conductor
