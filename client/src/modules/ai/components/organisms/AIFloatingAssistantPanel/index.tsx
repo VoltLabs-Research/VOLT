@@ -6,7 +6,7 @@ import EmptyState from '@/shared/presentation/components/EmptyState';
 import IconButton from '@/shared/presentation/components/IconButton';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { IoAddOutline, IoCloseOutline, IoExpandOutline, IoSparklesOutline } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
@@ -22,7 +22,6 @@ const AIFloatingAssistantPanelContent = ({ onClose }: AIFloatingAssistantPanelCo
     const navigate = useNavigate();
     const [conversationId, setConversationId] = useState<string | undefined>();
     const [messageDraft, setMessageDraft] = useState('');
-    const pendingMessageRef = useRef<string | null>(null);
 
     const {
         selectedTeam,
@@ -53,13 +52,15 @@ const AIFloatingAssistantPanelContent = ({ onClose }: AIFloatingAssistantPanelCo
     });
 
     useEffect(() => {
-        if (!conversationId || !pendingMessageRef.current) return;
+        if (!conversationId) return;
 
-        const pendingMessage = pendingMessageRef.current;
-        pendingMessageRef.current = null;
+        const pendingMessage = sessionStorage.getItem('volt:ai:pending-message');
+        if (!pendingMessage) return;
+
+        sessionStorage.removeItem('volt:ai:pending-message');
 
         handleSendMessage(pendingMessage).catch(() => {
-            pendingMessageRef.current = pendingMessage;
+            sessionStorage.setItem('volt:ai:pending-message', pendingMessage);
             setMessageDraft(pendingMessage);
         });
     }, [conversationId, handleSendMessage]);
@@ -82,7 +83,7 @@ const AIFloatingAssistantPanelContent = ({ onClose }: AIFloatingAssistantPanelCo
         setMessageDraft('');
         try {
             if (!conversationId) {
-                pendingMessageRef.current = draftToSend;
+                sessionStorage.setItem('volt:ai:pending-message', draftToSend);
                 await handleCreateConversation(draftToSend);
                 return;
             }
