@@ -6,7 +6,7 @@ import WireframeBackground from '../../atoms/WireframeBackground';
 import EmailStep from '../../molecules/EmailStep';
 import PasswordStep from '../../molecules/PasswordStep';
 import RegisterStep from '../../molecules/RegisterStep';
-import { notifyApiError } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Stepper from '@/shared/presentation/components/Stepper';
@@ -124,12 +124,12 @@ const SignInTemplate = () => {
             });
             markAuthenticated(result.token);
             finalizeAuth();
-        } catch (err) {
-            if (notifyApiError(err, { fallbackDescription: 'Please check your credentials and try again.' })) {
-                return;
-            }
-
-            sileo.error({ title: 'Sign in failed', description: 'Please check your credentials and try again.' });
+        } catch (err: unknown) {
+            reportError(err, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'Sign in failed',
+                fallbackDescription: 'Please check your credentials and try again.'
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -157,12 +157,12 @@ const SignInTemplate = () => {
             });
             markAuthenticated(result.token);
             finalizeAuth();
-        } catch (err) {
-            if (notifyApiError(err, { fallbackDescription: 'Please check your details and try again.' })) {
-                return;
-            }
-
-            sileo.error({ title: 'Registration failed', description: 'Please check your details and try again.' });
+        } catch (err: unknown) {
+            reportError(err, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'Registration failed',
+                fallbackDescription: 'Please check your details and try again.'
+            });
         } finally {
             setIsSubmitting(false);
         }

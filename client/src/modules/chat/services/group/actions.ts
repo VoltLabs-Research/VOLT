@@ -1,5 +1,5 @@
 import { addChatToCache, removeChatFromCache, replaceChatInCache } from '../../hooks/chat/queries';
-import { runHandledAction } from '@/shared/errors/handled-action';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import type { QueryClient } from '@tanstack/react-query';
 import type { NavigateFunction } from 'react-router-dom';
@@ -23,7 +23,7 @@ export const createGroupAction = async (
 ) => {
     const { queryClient, navigate } = dependencies;
 
-    return await runHandledAction({
+    return await runAction({
         action: () => createGroupMutation(dto),
         toast: createPromiseToastOptions({
             loading: 'Creating group...',
@@ -33,8 +33,7 @@ export const createGroupAction = async (
         afterSuccess: (chat) => {
             addChatToCache(queryClient, chat);
             navigate(`/dashboard/messages/${chat._id}`);
-        },
-        rethrow: false
+        }
     });
 };
 
@@ -46,7 +45,7 @@ export const addUsersToGroupAction = async (
 ) => {
     const { queryClient } = dependencies;
 
-    return await runHandledAction({
+    return await runAction({
         action: () => addUsersToGroupMutation({ chatId, userIds }),
         toast: createPromiseToastOptions({
             loading: 'Adding members...',
@@ -55,8 +54,7 @@ export const addUsersToGroupAction = async (
         }),
         afterSuccess: (chat) => {
             replaceChatInCache(queryClient, chat);
-        },
-        rethrow: false
+        }
     });
 };
 
@@ -68,7 +66,7 @@ export const removeUsersFromGroupAction = async (
 ) => {
     const { queryClient } = dependencies;
 
-    return await runHandledAction({
+    return await runAction({
         action: () => removeUsersFromGroupMutation({ chatId, userIds }),
         toast: createPromiseToastOptions({
             loading: 'Removing members...',
@@ -77,8 +75,7 @@ export const removeUsersFromGroupAction = async (
         }),
         afterSuccess: (chat) => {
             replaceChatInCache(queryClient, chat);
-        },
-        rethrow: false
+        }
     });
 };
 
@@ -90,7 +87,7 @@ export const updateGroupInfoAction = async (
 ) => {
     const { queryClient } = dependencies;
 
-    return await runHandledAction({
+    return await runAction({
         action: () => updateGroupInfoMutation({ chatId, ...dto }),
         toast: createPromiseToastOptions({
             loading: 'Updating group...',
@@ -99,8 +96,7 @@ export const updateGroupInfoAction = async (
         }),
         afterSuccess: (chat) => {
             replaceChatInCache(queryClient, chat);
-        },
-        rethrow: false
+        }
     });
 };
 
@@ -112,7 +108,7 @@ export const updateGroupAdminsAction = async (
 ) => {
     const { queryClient } = dependencies;
 
-    return await runHandledAction({
+    return await runAction({
         action: () => updateGroupAdminsMutation({ chatId, ...dto }),
         toast: createPromiseToastOptions({
             loading: 'Updating admins...',
@@ -121,8 +117,7 @@ export const updateGroupAdminsAction = async (
         }),
         afterSuccess: (chat) => {
             replaceChatInCache(queryClient, chat);
-        },
-        rethrow: false
+        }
     });
 };
 
@@ -133,7 +128,7 @@ export const leaveGroupAction = async (
 ) => {
     const { queryClient, navigate } = dependencies;
 
-    await runHandledAction({
+    await runAction({
         action: () => leaveGroupMutation({ chatId }),
         toast: createPromiseToastOptions({
             loading: 'Leaving group...',
@@ -143,7 +138,6 @@ export const leaveGroupAction = async (
         afterSuccess: () => {
             removeChatFromCache(queryClient, chatId);
             navigate('/dashboard/messages');
-        },
-        rethrow: false
+        }
     });
 };

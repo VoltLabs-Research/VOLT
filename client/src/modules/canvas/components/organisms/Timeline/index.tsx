@@ -8,6 +8,7 @@ import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
 
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
+
 import { useShallow } from 'zustand/react/shallow';
 import PluginAtomsTable from '@/modules/plugin/components/listing/organisms/PluginAtomsTable';
 import PluginExposureListingPanel from '@/modules/plugin/components/listing/organisms/PluginExposureListingPanel';
@@ -108,28 +109,22 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
     }, [activeTab]);
 
     const {
-        timestepData, currentTimestep, setCurrentTimestep, playSpeed, setPlaySpeed
+        timestepData, currentTimestep, setCurrentTimestep, playSpeed, setPlaySpeed,
+        rangeStart, rangeEnd, setRangeStart, setRangeEnd, getRangedTimesteps
     } = useEditorStore(useShallow((state) => ({
         timestepData: state.timestepData,
         currentTimestep: state.currentTimestep,
         setCurrentTimestep: state.setCurrentTimestep,
         playSpeed: state.playSpeed,
-        setPlaySpeed: state.setPlaySpeed
+        setPlaySpeed: state.setPlaySpeed,
+        rangeStart: state.rangeStart,
+        rangeEnd: state.rangeEnd,
+        setRangeStart: state.setRangeStart,
+        setRangeEnd: state.setRangeEnd,
+        getRangedTimesteps: state.getRangedTimesteps
     })));
 
     const availableTimesteps = timestepData.timesteps;
-    const safeCurrentIndex = availableTimesteps.indexOf(currentTimestep!);
-
-    const ticks = useMemo(() => {
-        if (availableTimesteps.length === 0) {
-            const tickCount = 50;
-            return Array.from({ length: tickCount }, (_, i) => ({ frame: i, major: i % 10 === 0 }));
-        }
-        return availableTimesteps.map((frame) => ({ frame, major: true }));
-    }, [availableTimesteps]);
-
-    const [rangeStart, setRangeStart] = useState<number | undefined>(undefined);
-    const [rangeEnd, setRangeEnd] = useState<number | undefined>(undefined);
 
     useEffect(() => {
         if (!availableTimesteps.length) {
@@ -137,25 +132,26 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
             setRangeEnd(undefined);
             return;
         }
-
-        const firstTimestep = availableTimesteps[0];
-        const lastTimestep = availableTimesteps[availableTimesteps.length - 1];
-
-        setRangeStart((prev) => {
-            if (prev === undefined || !availableTimesteps.includes(prev)) {
-                return firstTimestep;
-            }
-
-            return prev;
-        });
-        setRangeEnd((prev) => {
-            if (prev === undefined || !availableTimesteps.includes(prev)) {
-                return lastTimestep;
-            }
-
-            return prev;
-        });
+        const first = availableTimesteps[0];
+        const last = availableTimesteps[availableTimesteps.length - 1];
+        if (rangeStart === undefined || !availableTimesteps.includes(rangeStart)) {
+            setRangeStart(first);
+        }
+        if (rangeEnd === undefined || !availableTimesteps.includes(rangeEnd)) {
+            setRangeEnd(last);
+        }
     }, [availableTimesteps]);
+
+    const rangedTimesteps = getRangedTimesteps();
+    const safeCurrentIndex = rangedTimesteps.indexOf(currentTimestep!);
+
+    const ticks = useMemo(() => {
+        if (rangedTimesteps.length === 0) {
+            const tickCount = 50;
+            return Array.from({ length: tickCount }, (_, i) => ({ frame: i, major: i % 10 === 0 }));
+        }
+        return rangedTimesteps.map((frame) => ({ frame, major: true }));
+    }, [rangedTimesteps]);
 
     const startFrame = rangeStart ?? availableTimesteps[0];
     const endFrame = rangeEnd ?? availableTimesteps[availableTimesteps.length - 1];
@@ -204,7 +200,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
 
     const updatePlayheadPosition = useCallback(() => {
         const ruler = rulerRef.current;
-        if (!ruler || availableTimesteps.length === 0) return;
+        if (!ruler || rangedTimesteps.length === 0) return;
         const tickElements = ruler.querySelectorAll<HTMLDivElement>('.canvas-ruler-tick');
         const tickEl = tickElements[safeCurrentIndex];
         if (!tickEl) return;
@@ -220,7 +216,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
         if (tickCenter < visibleLeft + margin || tickCenter > visibleRight - margin) {
             scrollToTick(tickEl, !isDraggingRef.current);
         }
-    }, [safeCurrentIndex, availableTimesteps.length, scrollToTick]);
+    }, [safeCurrentIndex, rangedTimesteps.length, scrollToTick]);
 
     useEffect(() => {
         updatePlayheadPosition();
@@ -238,7 +234,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
 
     const pickNearestTimestep = useCallback((clientX: number) => {
         const ruler = rulerRef.current;
-        if (!ruler || availableTimesteps.length === 0) return;
+        if (!ruler || rangedTimesteps.length === 0) return;
         const tickElements = ruler.querySelectorAll<HTMLDivElement>('.canvas-ruler-tick');
         if (tickElements.length === 0) return;
 
@@ -255,10 +251,10 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
             }
         }
 
-        if (nearestIndex < availableTimesteps.length) {
-            setCurrentTimestep(availableTimesteps[nearestIndex]);
+        if (nearestIndex < rangedTimesteps.length) {
+            setCurrentTimestep(rangedTimesteps[nearestIndex]);
         }
-    }, [availableTimesteps, setCurrentTimestep]);
+    }, [rangedTimesteps, setCurrentTimestep]);
 
     const handleRulerClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
         pickNearestTimestep(event.clientX);

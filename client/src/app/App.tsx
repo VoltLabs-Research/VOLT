@@ -3,11 +3,11 @@ import { useGlobalShortcuts } from '@/shared/presentation/hooks/use-global-short
 import { usePageScale } from '@/shared/presentation/hooks/use-page-scale';
 import { usePageTracker } from '@/modules/start/hooks/use-page-tracker';
 import { useRouteCleanup } from '@/shared/presentation/hooks/use-route-cleanup';
+import { ErrorSurface, isApiError, normalizeError, reportError } from '@/shared/errors/core';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
 import { ensureApplicationStoreCleanupsRegistered } from '@/shared/utils/application-store-cleanups';
 import { buildErrorPath } from '@/shared/utils';
 import { isElectronEnvironment } from '@/shared/utils/electron-environment';
-import { notifyApiError } from '@/shared/errors/notify-api-error';
 import AppToaster from '@/shared/presentation/components/AppToaster';
 import DesktopShell from '@/shared/presentation/components/DesktopShell';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
@@ -55,11 +55,15 @@ const AppRoutes = () => {
     });
 
     const handleRenderError = useCallback((error: Error, info: ErrorInfo) => {
-        if (notifyApiError(error)) {
+        const stack = info.componentStack ?? error.stack;
+
+        if (isApiError(error)) {
+            reportError(error, { surface: ErrorSurface.Toast });
+            runErrorRecoveryCleanup(location.pathname, '/error');
+            navigate(buildErrorPath(normalizeError(error).friendlyMessage, 'render', stack ?? undefined), { replace: true });
             return;
         }
 
-        const stack = info.componentStack ?? error.stack;
         runErrorRecoveryCleanup(location.pathname, '/error');
         navigate(buildErrorPath(error.message, 'render', stack ?? undefined), { replace: true });
     }, [location.pathname, navigate]);

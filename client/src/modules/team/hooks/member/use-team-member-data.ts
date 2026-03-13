@@ -1,5 +1,5 @@
 import { useTeamMembersQuery } from '@/modules/team/hooks/member/queries';
-import { getApiErrorMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { useEffect, useMemo } from 'react';
 
@@ -35,7 +35,10 @@ export default function useTeamMemberData({ teamId, page = 1, limit = 100 }: Use
 
     let error: string | null = null;
     if (membersQuery.error && !isAccessDeniedError(membersQuery.error)) {
-        error = getApiErrorMessage(membersQuery.error, 'Failed to load team members');
+        error = reportError(membersQuery.error, {
+            surface: ErrorSurface.Silent,
+            fallbackTitle: 'Failed to load team members'
+        }).title;
     }
 
     return {

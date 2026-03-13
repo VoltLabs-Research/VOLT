@@ -6,11 +6,10 @@ import {
     useDeleteConversationMutation,
     useRenameConversationMutation
 } from '@/modules/ai/hooks/queries';
-import { notifyApiError } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { sileo } from 'sileo';
 import type { AIConversation } from '@/modules/ai/api/entities/ai-conversation';
 import type { CreateAIConversationParams } from '@/modules/ai/api/dtos/create-ai-conversation';
 
@@ -112,8 +111,10 @@ const useAIConversations = (
             return result.conversation;
         } catch (error) {
             if (options.checkAccessDeniedError(error)) throw error;
-            if (notifyApiError(error, { fallbackTitle: 'Failed to create conversation' })) throw error;
-            sileo.error({ title: 'Failed to create conversation' });
+            reportError(error, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'Failed to create conversation'
+            });
             throw error;
         }
     }, [getConversationTitle, handleConversationChange, createConversationMutationResult, options.checkAccessDeniedError, options.onConversationCreated]);
@@ -143,8 +144,10 @@ const useAIConversations = (
             });
         } catch (error) {
             if (options.checkAccessDeniedError(error)) throw error;
-            if (notifyApiError(error, { fallbackTitle: 'Failed to rename conversation' })) throw error;
-            sileo.error({ title: 'Failed to rename conversation' });
+            reportError(error, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'Failed to rename conversation'
+            });
             throw error;
         }
     }, [renameConversationMutationResult, options.checkAccessDeniedError]);

@@ -1,6 +1,6 @@
 import { simulationCellByTrajectoryQuery } from './queries';
 import type { SimulationCell } from '../api/entities/simulation-cell';
-import { getAccessDeniedMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, isAccessDeniedError, mapErrorToUserMessage, normalizeError, reportError } from '@/shared/errors/core';
 
 interface UseSimulationCellParams {
     trajectoryId?: string;
@@ -48,12 +48,14 @@ const useSimulationCell = (params: UseSimulationCellParams = {}): UseSimulationC
     const simulationCell = data ?? null;
     const accessDenied = isAccessDeniedError(queryError);
     const accessDeniedMessage = accessDenied
-        ? getAccessDeniedMessage(queryError)
+        ? reportError(queryError, { surface: ErrorSurface.Silent }).title
         : undefined;
 
     let errorMessage: string | null = null;
     if (queryError && !accessDenied) {
-        errorMessage = queryError.message || 'Failed to fetch simulation cell';
+        errorMessage = mapErrorToUserMessage(normalizeError(queryError), {
+            fallbackTitle: 'Failed to fetch simulation cell'
+        }).title;
     }
 
     const handleRefetch = async (): Promise<void> => {

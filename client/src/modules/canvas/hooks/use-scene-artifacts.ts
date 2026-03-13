@@ -2,8 +2,8 @@ import {
     sceneArtifactsQuery,
     SCENE_ARTIFACTS_QUERY_KEYS
 } from '@/modules/trajectory/hooks/scene-artifacts/queries';
+import { ErrorSurface, isAccessDeniedError, mapErrorToUserMessage, normalizeError, reportError } from '@/shared/errors/core';
 import { useEffect, useMemo } from 'react';
-import { getAccessDeniedMessage, isAccessDeniedError } from '@/shared/errors/notify-api-error';
 import queryClient from '@/shared/infrastructure/query/query-client';
 
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
@@ -54,8 +54,9 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
     const error = useMemo(() => {
         const queryError = colorCodingQuery.error || particleFilterQuery.error;
         if (!queryError) return null;
-        if (queryError instanceof Error) return queryError.message;
-        return 'Failed to load scene artifacts';
+        return mapErrorToUserMessage(normalizeError(queryError), {
+            fallbackTitle: 'Failed to load scene artifacts'
+        }).title;
     }, [colorCodingQuery.error, particleFilterQuery.error]);
 
     const accessDenied = useMemo(() => {
@@ -64,7 +65,11 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
 
     const accessDeniedMessage = useMemo(() => {
         const firstAccessDeniedError = [colorCodingQuery.error, particleFilterQuery.error].find((queryError) => isAccessDeniedError(queryError));
-        return getAccessDeniedMessage(firstAccessDeniedError);
+        if (!firstAccessDeniedError) {
+            return undefined;
+        }
+
+        return reportError(firstAccessDeniedError, { surface: ErrorSurface.Silent }).title;
     }, [colorCodingQuery.error, particleFilterQuery.error]);
 
     useEffect(() => {

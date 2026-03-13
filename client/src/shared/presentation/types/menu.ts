@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 
 export interface MenuIconProps {
     size?: number | string;
@@ -8,7 +8,8 @@ export interface MenuIconProps {
 export interface MenuOption {
     label: string;
     icon?: ComponentType<MenuIconProps>;
-    onClick: () => void | Promise<void>;
+    onClick?: () => void | Promise<void>;
     destructive?: boolean;
     disabled?: boolean;
+    submenuContent?: ReactNode;
 };

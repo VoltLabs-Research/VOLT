@@ -2,7 +2,7 @@ import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useRemoveTeamMemberMutation, useUpdateTeamMemberMutation } from '@/modules/team/hooks/member/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useUpdateTeamMutation } from '@/modules/team/hooks/team/queries';
-import { runHandledAction } from '@/shared/errors/handled-action';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import ActivityHeatmap from '@/modules/daily-activity/components/molecules/ActivityHeatmap';
 import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
@@ -87,18 +87,16 @@ export default function MyTeamTemplate() {
     const { activityData } = useDailyActivityData();
 
     const handleSaveTeamName = useCallback(async (newName: string) => {
-        await runHandledAction({
+        await runAction({
             action: () => updateTeamMutation.mutateAsync({ teamId: selectedTeam._id, name: newName }),
-            toast: updateTeamNameToastOptions,
-            rethrow: false
+            toast: updateTeamNameToastOptions
         });
     }, [selectedTeam._id, updateTeamMutation]);
 
     const handleRoleChange = useCallback(async (memberId: string, roleId: string) => {
-        await runHandledAction({
+        await runAction({
             action: () => updateTeamMemberMutation.mutateAsync({ teamId: selectedTeam._id, memberId, role: roleId }),
-            toast: updateRoleToastOptions,
-            rethrow: false
+            toast: updateRoleToastOptions
         });
     }, [selectedTeam._id, updateTeamMemberMutation]);
 
@@ -118,10 +116,9 @@ export default function MyTeamTemplate() {
         if (!isConfirmed) return;
 
         for (const member of members) {
-            await runHandledAction({
+            await runAction({
                 action: () => removeTeamMemberMutation.mutateAsync({ teamId: selectedTeam._id, userId: member.user._id }),
-                toast: getRemoveMemberToastOptions(member),
-                rethrow: false
+                toast: getRemoveMemberToastOptions(member)
             });
         }
     }, [selectedTeam._id, removeTeamMemberMutation, confirm]);

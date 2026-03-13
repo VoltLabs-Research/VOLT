@@ -1,6 +1,6 @@
 import { invalidateTeamAIIntegrationsQuery, useTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { handleActionError, runHandledAction } from '@/shared/errors/handled-action';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import useCreateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-create-team-ai-integration';
 import useDeleteTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-delete-team-ai-integration';
 import useTeamAIIntegrationsSocketSync from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-socket-sync';
@@ -108,9 +108,9 @@ export default function IntegrationsSettings() {
 
     useEffect(() => {
         if (!integrationsError) return;
-        handleActionError(integrationsError, {
-            accessDeniedTitle: 'You do not have permission to perform this action.',
-            errorToast: { title: 'Failed to load integrations' }
+        reportError(integrationsError, {
+            surface: ErrorSurface.Toast,
+            fallbackTitle: 'Failed to load integrations'
         });
     }, [integrationsError]);
 
@@ -342,15 +342,14 @@ export default function IntegrationsSettings() {
 
         setBusyProvider(provider);
         try {
-            await runHandledAction({
+            await runAction({
                 action: () => deleteTeamAIIntegration(provider),
                 toast: getRemoveIntegrationToastOptions(integration),
                 afterSuccess: async () => {
                     if (teamId) {
                         await invalidateTeamAIIntegrationsQuery(teamId);
                     }
-                },
-                rethrow: false
+                }
             });
         } finally {
             setBusyProvider(null);

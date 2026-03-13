@@ -4,6 +4,7 @@ import type { IPluginExecutionRouter, RoutePluginExecutionInput } from '@modules
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
+import PluginDisplayNameResolver from '@modules/plugin/utilities/plugin/PluginDisplayNameResolver';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -88,10 +89,12 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
     async route(input: RoutePluginExecutionInput): Promise<void> {
         await this.syncPluginBinaryIfNeeded(input.teamClusterId, input.plugin);
 
+        const pluginDisplayName = PluginDisplayNameResolver.resolve(input.plugin.props.workflow);
         const response = await this.teamClusterDaemonClient.command<DaemonAnalysisStartResponse>(input.teamClusterId, 'analysis.start', {
             analysis: serializeAnalysis(input.analysis, input.trajectoryName),
             analysisId: input.analysisId,
             pluginId: input.plugin.id,
+            pluginDisplayName: pluginDisplayName || undefined,
             teamId: input.teamId,
             teamClusterId: input.teamClusterId,
             trajectoryId: input.trajectoryId,

@@ -1,6 +1,6 @@
 import { sshConnectionByIdQuery, sshFilesQuery } from '@/modules/ssh/hooks/queries';
 import { useRemoteExplorer } from '@/shared/api/remote-explorer';
-import { isAccessDeniedError } from '@/shared/errors/notify-api-error';
+import { isAccessDeniedError, mapErrorToUserMessage, normalizeError } from '@/shared/errors/core';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { FileEntryType } from '@/modules/ssh/api/entities/ssh-connection';
 import { formatSize } from '@/shared/utils/format';
@@ -82,11 +82,18 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
         }
     }, [filesQuery.error, checkAccessDeniedError]);
 
+    let explorerError: string | null = null;
+    if (filesQuery.error) {
+        explorerError = mapErrorToUserMessage(normalizeError(filesQuery.error), {
+            fallbackTitle: 'Failed to load files'
+        }).title;
+    }
+
     const explorer = remoteExplorer.bindState<SSHFileEntry>({
         entries: filesQuery.data?.entries || [],
         cwd: filesQuery.data?.cwd || remoteExplorer.path,
         isLoading: connectionQuery.isLoading || filesQuery.isLoading,
-        error: filesQuery.error instanceof Error ? filesQuery.error.message : null,
+        error: explorerError,
         refresh: filesQuery.refetch
     });
 
@@ -125,7 +132,7 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
             }
             breadcrumb={<SSHBreadcrumbs cwd={explorer.cwd} onNavigate={explorer.navigateTo} />}
             headerRight={<SSHExplorerHeaderRight onRefresh={() => {
-                void explorer.refresh();
+                explorer.refresh();
             }} />}
             columns={columns}
             isLoading={explorer.isLoading}
@@ -134,7 +141,7 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
             accessDenied={accessDenied}
             accessDeniedMessage={accessDeniedMessage}
             onRetry={() => {
-                void explorer.refresh();
+                explorer.refresh();
             }}
             emptyMessage='No files found in this directory'
         >

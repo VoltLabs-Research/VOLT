@@ -1,5 +1,6 @@
 import { useContainerFilesQuery, useContainerFileContentQuery } from '../../../hooks/queries';
 import { useRemoteExplorer } from '@/shared/api/remote-explorer';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { IoFolderOutline, IoDocumentOutline, IoArrowBack } from 'react-icons/io5';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
@@ -8,7 +9,6 @@ import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileE
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
-import { getApiErrorMessage } from '@/shared/errors/notify-api-error';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { ContainerFile } from '@/modules/container/api/entities/container-file';
@@ -33,7 +33,12 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
         { enabled: !!containerId }
     );
     const files = filesResponse?.files ?? [];
-    const filesErrorMessage = filesError ? getApiErrorMessage(filesError, 'Failed to load files') : null;
+    const filesErrorMessage = filesError
+        ? reportError(filesError, {
+            surface: ErrorSurface.Silent,
+            fallbackTitle: 'Failed to load files'
+        }).title
+        : null;
 
     const explorer = remoteExplorer.bindState<ContainerFile>({
         entries: files,
@@ -103,7 +108,10 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     }
 
     if (viewingFile && fileContentError) {
-        const message = getApiErrorMessage(fileContentError, 'Failed to open file');
+        const message = reportError(fileContentError, {
+            surface: ErrorSurface.Silent,
+            fallbackTitle: 'Failed to open file'
+        }).title;
 
         return (
             <Container className='d-flex column h-max gap-1'>
@@ -166,7 +174,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
             emptyMessage='Empty folder'
             error={explorer.error}
             onRetry={() => {
-                void explorer.refresh();
+                explorer.refresh();
             }}
             isRetrying={explorer.isRefreshing}
         >

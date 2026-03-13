@@ -1,4 +1,5 @@
-import type { AppError, ErrorKind, ErrorSurface, ReportErrorOptions, UserFacingError } from '@/shared/errors/core/types';
+import { ErrorKind, ErrorSurface } from '@/shared/errors/core/types';
+import type { AppError, ReportErrorOptions, UserFacingError } from '@/shared/errors/core/types';
 
 const GENERIC_MESSAGES: ReadonlySet<string> = new Set([
     'Unknown error',
@@ -6,16 +7,16 @@ const GENERIC_MESSAGES: ReadonlySet<string> = new Set([
 ]);
 
 const DEFAULT_SURFACE_BY_KIND: Record<ErrorKind, ErrorSurface> = {
-    api: 'toast',
-    permission: 'toast',
-    validation: 'inline',
-    network: 'toast',
-    auth: 'toast',
-    'not-found': 'toast',
-    conflict: 'toast',
-    'rate-limit': 'toast',
-    server: 'toast',
-    unknown: 'toast'
+    [ErrorKind.Api]: ErrorSurface.Toast,
+    [ErrorKind.Permission]: ErrorSurface.Toast,
+    [ErrorKind.Validation]: ErrorSurface.Inline,
+    [ErrorKind.Network]: ErrorSurface.Toast,
+    [ErrorKind.Auth]: ErrorSurface.Toast,
+    [ErrorKind.NotFound]: ErrorSurface.Toast,
+    [ErrorKind.Conflict]: ErrorSurface.Toast,
+    [ErrorKind.RateLimit]: ErrorSurface.Toast,
+    [ErrorKind.Server]: ErrorSurface.Toast,
+    [ErrorKind.Unknown]: ErrorSurface.Toast
 };
 
 /**
@@ -27,22 +28,22 @@ const resolveDescription = (
     fallbackDescription?: string
 ): string | undefined => {
     switch (kind) {
-        case 'network':
+        case ErrorKind.Network:
             return 'Check your internet connection and try again.';
-        case 'auth':
+        case ErrorKind.Auth:
             return 'Please sign in again to continue.';
-        case 'rate-limit':
+        case ErrorKind.RateLimit:
             return 'You\'ve made too many requests. Please wait a moment.';
-        case 'server':
+        case ErrorKind.Server:
             return 'Our servers are experiencing issues. Please try again later.';
-        case 'validation':
+        case ErrorKind.Validation:
             return fallbackDescription ?? 'Please check the form fields and try again.';
-        case 'unknown':
+        case ErrorKind.Unknown:
             return 'An unexpected error occurred. Please try again.';
-        case 'permission':
-        case 'api':
-        case 'not-found':
-        case 'conflict':
+        case ErrorKind.Permission:
+        case ErrorKind.Api:
+        case ErrorKind.NotFound:
+        case ErrorKind.Conflict:
             return fallbackDescription;
     }
 };
@@ -52,7 +53,7 @@ const resolveDescription = (
  */
 const resolveActionLabel = (kind: ErrorKind, retryable: boolean): string | undefined => {
     if (retryable) return 'Try again';
-    if (kind === 'auth') return 'Sign in';
+    if (kind === ErrorKind.Auth) return 'Sign in';
     return undefined;
 };
 

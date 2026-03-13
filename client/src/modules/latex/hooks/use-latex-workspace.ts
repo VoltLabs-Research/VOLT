@@ -4,7 +4,7 @@ import useLatexFiles from '@/modules/latex/hooks/use-latex-files';
 import { invalidateLatexFilesQuery, latexDocumentQuery, useCompileLatexDocumentMutation, useExportLatexDocumentTexMutation, useExportLatexDocumentZipMutation, useUpdateLatexDocumentMutation } from '@/modules/latex/hooks/queries';
 import { isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { getApiErrorMessage } from '@/shared/errors/notify-api-error';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
@@ -263,7 +263,10 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
             setCompiledPdfBlob(null);
             setCompiledPdfUrl(null);
-            let message = getApiErrorMessage(error, 'Compilation failed');
+            let message = reportError(error, {
+                surface: ErrorSurface.Silent,
+                fallbackTitle: 'Compilation failed'
+            }).title;
             const response = typeof error === 'object'
                 && error !== null
                 && 'response' in error

@@ -13,7 +13,9 @@ const createInitialState = (): PlaybackState => ({
     isPreloading: false,
     didPreload: false,
     preloadProgress: 0,
-    downlinkMbps: null
+    downlinkMbps: null,
+    rangeStart: undefined,
+    rangeEnd: undefined
 });
 
 let _rafId: number | null = null;
@@ -66,9 +68,10 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         if (isPlaying || isPreloading) {
             get().stopPlayback();
         } else {
-            const { timesteps } = get().timestepData;
-            if (!timesteps.length) return;
+            const rangedTimesteps = get().getRangedTimesteps();
+            if (!rangedTimesteps.length) return;
 
+            const { timesteps: allTimesteps } = get().timestepData;
             const playbackGeneration = advancePlaybackGeneration();
 
             (async () => {
@@ -80,10 +83,10 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
                     set({ isPreloading: true, preloadProgress: 0 });
 
                     try {
-                        const frameCount = timesteps.length;
+                        const frameCount = allTimesteps.length;
                         const maxFramesToPreload = frameCount > 100 ? 100 : undefined;
                         const currentFrameIndex = get().currentTimestep !== undefined
-                            ? timesteps.indexOf(get().currentTimestep!)
+                            ? allTimesteps.indexOf(get().currentTimestep!)
                             : 0;
 
                         await get().loadModels(
@@ -128,7 +131,10 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
                 set({ isPlaying: true });
 
                 if (get().currentTimestep === undefined) {
-                    set({ currentTimestep: timesteps[0] });
+                    const rangedTs = get().getRangedTimesteps();
+                    if (rangedTs.length) {
+                        set({ currentTimestep: rangedTs[0] });
+                    }
                 }
 
                 _lastFrameTime = 0;
@@ -163,18 +169,23 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
                         _lastFrameTime = timestamp;
 
                         const { currentTimestep } = get();
-                        const { timesteps: ts } = get().timestepData;
+                        const ts = get().getRangedTimesteps();
+
+                        if (!ts.length) {
+                            get().stopPlayback();
+                            return;
+                        }
 
                         if (currentTimestep === undefined) {
                             set({ currentTimestep: ts[0] });
                         } else {
                             const index = ts.indexOf(currentTimestep);
                             if (index === -1) {
-                                get().stopPlayback();
-                                return;
+                                set({ currentTimestep: ts[0] });
+                            } else {
+                                const nextIndex = (index + 1) % ts.length;
+                                set({ currentTimestep: ts[nextIndex] });
                             }
-                            const nextIndex = (index + 1) % ts.length;
-                            set({ currentTimestep: ts[nextIndex] });
                         }
                     }
 
@@ -197,7 +208,7 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
 
     playNextFrame() {
         const { currentTimestep } = get();
-        const { timesteps } = get().timestepData;
+        const timesteps = get().getRangedTimesteps();
 
         if (!timesteps.length || currentTimestep === undefined) {
             get().stopPlayback();
@@ -206,14 +217,77 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
 
         const currentIndex = timesteps.indexOf(currentTimestep);
         if (currentIndex === -1) {
-            get().stopPlayback();
+            set({ currentTimestep: timesteps[0] });
             return;
         }
 
         const nextIndex = (currentIndex + 1) % timesteps.length;
-        const nextTimestep = timesteps[nextIndex];
+        set({ currentTimestep: timesteps[nextIndex] });
+    },
 
-        set({ currentTimestep: nextTimestep });
+    /**
+     * Sets the start boundary of the playback range.
+     * Clamps to not exceed `rangeEnd` and adjusts `currentTimestep` if it falls outside.
+     *
+     * @param value - The new range start value, or `undefined` to clear.
+     */
+    setRangeStart(value: number | undefined) {
+        const { rangeEnd, currentTimestep } = get();
+        let clamped = value;
+        if (clamped !== undefined && rangeEnd !== undefined) {
+            clamped = Math.min(clamped, rangeEnd);
+        }
+
+        const updates: Partial<PlaybackState> = { rangeStart: clamped };
+        if (clamped !== undefined && currentTimestep !== undefined) {
+            const effectiveEnd = rangeEnd ?? Infinity;
+            if (currentTimestep < clamped) {
+                updates.currentTimestep = clamped;
+            } else if (currentTimestep > effectiveEnd) {
+                updates.currentTimestep = effectiveEnd;
+            }
+        }
+
+        set(updates);
+    },
+
+    /**
+     * Sets the end boundary of the playback range.
+     * Clamps to not be below `rangeStart` and adjusts `currentTimestep` if it falls outside.
+     *
+     * @param value - The new range end value, or `undefined` to clear.
+     */
+    setRangeEnd(value: number | undefined) {
+        const { rangeStart, currentTimestep } = get();
+        let clamped = value;
+        if (clamped !== undefined && rangeStart !== undefined) {
+            clamped = Math.max(clamped, rangeStart);
+        }
+
+        const updates: Partial<PlaybackState> = { rangeEnd: clamped };
+        if (clamped !== undefined && currentTimestep !== undefined) {
+            const effectiveStart = rangeStart ?? -Infinity;
+            if (currentTimestep > clamped) {
+                updates.currentTimestep = clamped;
+            } else if (currentTimestep < effectiveStart) {
+                updates.currentTimestep = effectiveStart;
+            }
+        }
+
+        set(updates);
+    },
+
+    /**
+     * Returns the subset of timesteps within the current range boundaries.
+     * If no range is set, returns all timesteps.
+     */
+    getRangedTimesteps() {
+        const { timestepData, rangeStart, rangeEnd } = get();
+        const ts = timestepData.timesteps;
+        if (!ts.length) return ts;
+        const start = rangeStart ?? ts[0];
+        const end = rangeEnd ?? ts[ts.length - 1];
+        return ts.filter((t) => t >= start && t <= end);
     },
 
     resetPlayback() {
