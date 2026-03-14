@@ -33,11 +33,15 @@ export default {
         query: ({ filename }) => filename ? { name: filename } : {}
     }),
     getAtoms: get<GetAtomsInputDTO, GetAtomsOutputDTO, AtomsApiResponse>(
-        ({ trajectoryId, analysisId }) => analysisId
-            ? `/${trajectoryId}/atoms/${analysisId}`
-            : `/${trajectoryId}/atoms`,
+        '/:trajectoryId/atoms',
         {
             omit: ['trajectoryId', 'analysisId'],
+            query: ({ timestep, page, limit, analysisId }) => ({
+                timestep,
+                ...(page !== undefined ? { page } : {}),
+                ...(limit !== undefined ? { limit } : {}),
+                ...(analysisId ? { analysisId } : {})
+            }),
             unwrap: 'raw',
             map: (response) => {
                 return {

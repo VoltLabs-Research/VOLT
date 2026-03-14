@@ -1,16 +1,17 @@
-import { useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri';
 import {
     fetchPluginListing,
     useExportListingMutation,
     usePluginListingQuery
 } from './queries';
-import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { ExportType } from '@/shared/domain/export/types';
-import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
+import { buildAtomsViewerPath } from '@/modules/trajectory/utilities/build-atoms-viewer-path';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
+import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri';
+import { useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
+import type { ExportType } from '@/shared/domain/export/types';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
 import type { PluginSubListingParams } from './use-plugin-sub-listing';
 
 export const SUB_LISTING_MODAL_ID = 'sub-listing-modal';
@@ -175,12 +176,13 @@ const usePluginListing = ({
         const targetRows = selectedItems.includes(item) ? selectedItems : [item];
         const isMultipleSelection = targetRows.length > 1;
         const options: MenuOption[] = [];
-        const inspectAtomsExposureId = item.exposureId ?? exposureId;
 
         if (!isMultipleSelection && item.trajectoryId && item.analysisId && item.timestep !== undefined) {
-            const inspectAtomsPath = inspectAtomsExposureId
-                ? `/dashboard/trajectory/${item.trajectoryId}/analysis/${item.analysisId}/atoms/${inspectAtomsExposureId}?timestep=${item.timestep}`
-                : `/dashboard/trajectory/${item.trajectoryId}/analysis/${item.analysisId}/atoms?timestep=${item.timestep}`;
+            const inspectAtomsPath = buildAtomsViewerPath({
+                trajectoryId: item.trajectoryId,
+                timestep: item.timestep,
+                analysisId: item.analysisId
+            });
 
             options.push({
                 label: 'Inspect Atoms',
@@ -207,7 +209,7 @@ const usePluginListing = ({
         }
 
         return options;
-    }, [exposureId, handleDelete, handleViewSubListing, navigate, onDeleteRows, subListingNames]);
+    }, [handleDelete, handleViewSubListing, navigate, onDeleteRows, subListingNames]);
 
     return {
         columns,

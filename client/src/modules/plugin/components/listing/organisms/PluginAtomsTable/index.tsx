@@ -5,15 +5,14 @@ import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import formatAtomValue from '@/modules/trajectory/shared/format-atom-value';
 import { useCallback, useMemo } from 'react';
 
+import type { AtomData } from '@/modules/trajectory/api/dtos/trajectory';
+import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { AtomData } from '@/modules/trajectory/api/dtos/trajectory';
 
 interface PluginAtomsTableProps {
     trajectoryId: string;
     analysisId?: string;
-    exposureId?: string;
     timestep?: number;
 };
 
@@ -21,8 +20,7 @@ type AtomDataRow = AtomData & { _id: string };
 
 interface AtomsListingContext {
     trajectoryId: string;
-    analysisId: string;
-    exposureId?: string;
+    analysisId?: string;
     timestep: number;
 };
 
@@ -75,22 +73,19 @@ const BASE_COLUMNS: ColumnConfig<AtomDataRow>[] = [
 const PluginAtomsTable = ({
     trajectoryId,
     analysisId,
-    exposureId,
     timestep
 }: PluginAtomsTableProps) => {
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
     const resolvedTimestep = timestep ?? currentTimestep;
-    const resolvedAnalysisId = analysisId || 'default';
     const enabled = Boolean(trajectoryId && resolvedTimestep !== undefined);
 
     const metaParams = useMemo(() => ({
         trajectoryId,
-        analysisId: resolvedAnalysisId,
-        exposureId,
+        analysisId,
         timestep: resolvedTimestep ?? 0,
         page: 1,
         limit: 1
-    }), [trajectoryId, resolvedAnalysisId, exposureId, resolvedTimestep]);
+    }), [trajectoryId, analysisId, resolvedTimestep]);
 
     const { data: metaResponse } = trajectoryAtomsQuery(metaParams, { enabled });
 
@@ -109,10 +104,9 @@ const PluginAtomsTable = ({
 
     const context: AtomsListingContext = useMemo(() => ({
         trajectoryId,
-        analysisId: resolvedAnalysisId,
-        exposureId,
+        analysisId,
         timestep: resolvedTimestep ?? 0
-    }), [trajectoryId, resolvedAnalysisId, exposureId, resolvedTimestep]);
+    }), [trajectoryId, analysisId, resolvedTimestep]);
 
     const queryKey = useMemo(
         () => ['trajectory', 'atoms-listing', context],
@@ -125,7 +119,6 @@ const PluginAtomsTable = ({
         const response = await trajectoryService.getAtoms({
             trajectoryId: params.trajectoryId,
             analysisId: params.analysisId,
-            exposureId: params.exposureId,
             timestep: params.timestep,
             page: params.page,
             limit: params.limit
