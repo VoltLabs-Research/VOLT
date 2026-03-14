@@ -1,5 +1,6 @@
 import { type TeamClusterDaemonExposureSnapshotPayload, TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus, type TeamClusterServiceExposure } from '@/shared/contracts';
 import type { DaemonConfig } from '@/core/config';
+import { isIP } from 'node:net';
 import type { ContainerInfo } from 'dockerode';
 import type { DockerRuntimeService } from '@/modules/platform/services';
 import type { VoltCloudConnection } from './VoltCloudConnection';
@@ -28,6 +29,39 @@ const readPortSet = (value: string | undefined): Set<number> => {
 const readInspectionContainerName = (container: ContainerInfo, inspection: ContainerInspection): string => {
     const candidate = inspection.Name || container.Names?.[0] || container.Image || container.Id;
     return candidate.replace(/^\/+/, '');
+};
+
+const readInspectionInternalIp = (inspection: ContainerInspection): string | null => {
+    const networks = Object.values(inspection.NetworkSettings.Networks || {});
+    let ipv6Address: string | null = null;
+
+    for (const network of networks) {
+        const ipv4Address = network?.IPAddress?.trim();
+        if (ipv4Address && isIP(ipv4Address) !== 0) {
+            return ipv4Address;
+        }
+
+        const candidateIpv6Address = network?.GlobalIPv6Address?.trim();
+        if (!ipv6Address && candidateIpv6Address && isIP(candidateIpv6Address) !== 0) {
+            ipv6Address = candidateIpv6Address;
+        }
+    }
+
+    const fallbackIpv4Address = inspection.NetworkSettings.IPAddress?.trim();
+    if (fallbackIpv4Address && isIP(fallbackIpv4Address) !== 0) {
+        return fallbackIpv4Address;
+    }
+
+    if (ipv6Address) {
+        return ipv6Address;
+    }
+
+    const fallbackIpv6Address = inspection.NetworkSettings.GlobalIPv6Address?.trim();
+    if (fallbackIpv6Address && isIP(fallbackIpv6Address) !== 0) {
+        return fallbackIpv6Address;
+    }
+
+    return null;
 };
 
 const readPublishedTcpPorts = (inspection: ContainerInspection): number[] => {
@@ -110,6 +144,7 @@ export class DaemonExposureRegistryService {
                 const httpPorts = readPortSet(labels[HTTP_PORT_LABEL]);
                 const websocketPorts = readPortSet(labels[WEBSOCKET_PORT_LABEL]);
                 const containerName = readInspectionContainerName(container, inspection);
+                const targetHost = readInspectionInternalIp(inspection) || containerName;
                 const publishedPorts = readPublishedTcpPorts(inspection);
                 const status = inspection.State.Running
                     ? TeamClusterServiceExposureStatus.Active
@@ -132,7 +167,7 @@ export class DaemonExposureRegistryService {
                         containerName,
                         exposureName: `${containerName}:${containerPort}`,
                         accessModes,
-                        targetHost: containerName,
+                        targetHost,
                         targetPort: containerPort,
                         containerPort,
                         status,

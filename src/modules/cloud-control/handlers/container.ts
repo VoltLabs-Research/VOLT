@@ -81,6 +81,15 @@ const readContainerPortMappings = (value: unknown): ContainerPortMapping[] | und
     return ports;
 };
 
+const resolveComposeNetworkName = (): string | undefined => {
+    const composeProjectName = process.env.COMPOSE_PROJECT_NAME?.trim();
+    if (!composeProjectName) {
+        return undefined;
+    }
+
+    return `${composeProjectName}_default`;
+};
+
 const readCreateContainerRequest = (payload: unknown): CreateContainerRequest => {
     const record = readPayloadRecord(payload);
     const request: CreateContainerRequest = {
@@ -94,6 +103,7 @@ const readCreateContainerRequest = (payload: unknown): CreateContainerRequest =>
     const binds = readOptionalStringArray(record.binds, 'binds');
     const labels = readOptionalStringRecord(record.labels, 'labels');
     const cmd = readOptionalStringArray(record.cmd, 'cmd');
+    const networkMode = readOptionalString(record.networkMode).trim();
 
     if (env) {
         request.env = env;
@@ -113,6 +123,15 @@ const readCreateContainerRequest = (payload: unknown): CreateContainerRequest =>
 
     if (cmd) {
         request.cmd = cmd;
+    }
+
+    if (networkMode) {
+        request.networkMode = networkMode;
+    } else {
+        const composeNetworkName = resolveComposeNetworkName();
+        if (composeNetworkName) {
+            request.networkMode = composeNetworkName;
+        }
     }
 
     return request;
