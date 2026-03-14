@@ -2,6 +2,13 @@ import './WireframeBackground.css';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { useEffect, useRef } from 'react';
 
+interface StrokeSettings {
+    color: string;
+    maxAlpha: number;
+    minAlpha: number;
+    lineWidth: number;
+};
+
 const toRgba = (color: string, alpha: number): string => {
     if (color.startsWith('#')) {
         const hex = color.slice(1);
@@ -38,6 +45,12 @@ const WireframeBackground = () => {
 
         let animationFrameId: number;
         let time = 0;
+        const lineCount = 40;
+        const lineGap = 40;
+        const amplitudeBase = 30;
+        const amplitudeStep = 2;
+        const waveSpeed = 0.015;
+        const secondaryWave = 20;
 
         const resize = () => {
             canvas.width = window.innerWidth / 2;
@@ -48,40 +61,50 @@ const WireframeBackground = () => {
             }
         };
 
-        const lines = 40;
-        const gap = 40;
-
-        const getStrokeBase = () => {
+        const getStrokeSettings = (): StrokeSettings => {
             const styles = window.getComputedStyle(document.documentElement);
             const theme = document.documentElement.getAttribute('data-theme');
 
             if (theme === 'light') {
-                return styles.getPropertyValue('--accent-blue').trim()
+                const color = styles.getPropertyValue('--accent-blue').trim()
                     || styles.getPropertyValue('--focus-ring').trim()
                     || styles.getPropertyValue('--color-text-primary').trim();
+
+                return {
+                    color,
+                    maxAlpha: 0.52,
+                    minAlpha: 0.12,
+                    lineWidth: 1.25
+                };
             }
 
-            return styles.getPropertyValue('--color-contrast-high').trim()
+            const color = styles.getPropertyValue('--color-contrast-high').trim()
                 || styles.getPropertyValue('--color-text-primary').trim();
+
+            return {
+                color,
+                maxAlpha: 0.3,
+                minAlpha: 0,
+                lineWidth: 1
+            };
         };
 
         const draw = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.lineWidth = 1;
-            const strokeBase = getStrokeBase();
+            const strokeSettings = getStrokeSettings();
+            ctx.lineWidth = strokeSettings.lineWidth;
 
-            for(let i = 0; i < lines; i++){
+            for(let i = 0; i < lineCount; i++){
                 ctx.beginPath();
-                const alpha = (i / lines) * 0.3;
-                ctx.strokeStyle = toRgba(strokeBase, alpha);
+                const alpha = strokeSettings.minAlpha + ((i / lineCount) * (strokeSettings.maxAlpha - strokeSettings.minAlpha));
+                ctx.strokeStyle = toRgba(strokeSettings.color, alpha);
 
                 for(let x = 0; x <= canvas.width; x += 10){
-                    const yBase = (i * gap) - 100;
-                    const amplitude = 30 + (i * 2);
+                    const yBase = (i * lineGap) - 100;
+                    const amplitude = amplitudeBase + (i * amplitudeStep);
                     const frequency = 0.003;
-                    const speed = 0.015;
-                    const noise = Math.sin(x * frequency + time * speed + (i * 0.5));
-                    const y = yBase + (noise * amplitude) + (Math.sin(x * 0.01) * 20);
+                    const noise = Math.sin(x * frequency + time * waveSpeed + (i * 0.5));
+                    const y = yBase + (noise * amplitude) + (Math.sin(x * 0.01) * secondaryWave);
 
                     if(x === 0){
                         ctx.moveTo(x, y);

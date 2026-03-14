@@ -18,9 +18,23 @@ import { sileo } from 'sileo';
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { FormEvent } from 'react';
-import type { StepIndicator, StepTitles } from '@/shared/presentation/components/Stepper';
 import type { StepTitles } from '@/shared/presentation/components/Stepper';
 import type { SignInForm } from './validation-schema';
+
+interface SignInLocationState {
+    from?: {
+        pathname?: string;
+        search?: string;
+    };
+};
+
+const isSignInLocationState = (value: unknown): value is SignInLocationState => {
+    if (typeof value !== 'object' || value === null) {
+        return false;
+    }
+
+    return 'from' in value;
+};
 
 enum SignInStep {
     Email = 'email',
@@ -42,22 +56,6 @@ const stepTitles: StepTitles<SignInStep> = {
         subtitle: 'Enter your details to get started.'
     }
 };
-
-const emailAndPasswordIndicators: StepIndicator<SignInStep>[] = [{
-    key: SignInStep.Email,
-    label: 'Email'
-}, {
-    key: SignInStep.Password,
-    label: 'Password'
-}];
-
-const emailAndRegisterIndicators: StepIndicator<SignInStep>[] = [{
-    key: SignInStep.Email,
-    label: 'Email'
-}, {
-    key: SignInStep.Register,
-    label: 'Create account'
-}];
 
 const SignInTemplate = () => {
     const navigate = useNavigate();
@@ -84,10 +82,16 @@ const SignInTemplate = () => {
         const params = new URLSearchParams(location.search);
         const queryNext = params.get('next');
         if (queryNext) return queryNext;
-        const stateFrom = (location.state as { from?: { pathname?: string; search?: string } } | null)?.from;
+
+        let stateFrom: SignInLocationState['from'];
+        if (isSignInLocationState(location.state)) {
+            stateFrom = location.state.from;
+        }
+
         if (stateFrom?.pathname) {
             return stateFrom.pathname + (stateFrom.search ?? '');
         }
+
         return '/dashboard';
     };
 
@@ -242,42 +246,34 @@ const SignInTemplate = () => {
         ? [steps[0], steps[2]]
         : [steps[0], steps[1]];
 
-    const signInIndicators = step === SignInStep.Register
-        ? emailAndRegisterIndicators
-        : emailAndPasswordIndicators;
-
     return (
         <main className='sign-in-page'>
             <section className='sign-in-layout'>
                 <section className='sign-in-hero-section p-relative overflow-hidden content-between column p-4' aria-labelledby='sign-in-hero-title'>
                     <WireframeBackground />
                     <Container className='sign-in-hero-overlay p-absolute inset-0' />
-                    <Container className='d-flex column content-between h-max p-relative'>
-                        <Container />
-                        <Container className='d-flex column gap-1-5 sign-in-hero-text-container mb-3 z-10'>
-                            <Title as='h2' id='sign-in-hero-title' className='sign-in-hero-headline'>
-                                Connect with<br />your VoltID
-                            </Title>
-                            <Paragraph className='sign-in-hero-description'>
-                                Everything your research needs, in one place. Collaborate seamlessly and connect your scientific stack.
-                            </Paragraph>
-                        </Container>
+                    <Container className='d-flex column gap-1-5 sign-in-hero-text-container p-relative z-10'>
+                        <Title as='h2' id='sign-in-hero-title' className='sign-in-hero-headline'>
+                            Connect with<br />your VoltID
+                        </Title>
+                        <Paragraph className='sign-in-hero-description'>
+                            Everything your research needs, in one place. Collaborate seamlessly and connect your scientific stack.
+                        </Paragraph>
                     </Container>
                 </section>
 
                 <section className='sign-in-form-shell d-flex column content-center p-1-5' aria-labelledby='sign-in-form-title'>
                     <Container className='d-flex column gap-2 sign-in-form-section w-max'>
-                        <header>
+                        <header className='d-flex column gap-05'>
                             <Title as='h1' id='sign-in-form-title' className='sign-in-form-title'>{title}</Title>
-                            <Paragraph className='color-muted font-size-3 mt-05'>{subtitle}</Paragraph>
+                            <Paragraph>{subtitle}</Paragraph>
                         </header>
 
                         <Stepper
                             steps={signInSteps}
-                            activeStep={step}
-                            indicators={signInIndicators} />
+                            activeStep={step} />
 
-                        <Paragraph className='sign-in-consent text-center mt-2'>
+                        <Paragraph className='sign-in-consent text-center'>
                             By continuing with email or a social provider, you agree to our{' '}
                             <span className='sign-in-legal-text'>Terms</span> and{' '}
                             <span className='sign-in-legal-text'>Privacy Policy</span>.

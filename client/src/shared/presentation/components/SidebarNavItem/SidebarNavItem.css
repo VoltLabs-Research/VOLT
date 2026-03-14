@@ -1,5 +1,6 @@
 .sidebar-nav-item {
     display: flex;
+    position: relative;
     align-items: center;
     min-height: 2.75rem;
     padding: 0.625rem 0.875rem;
@@ -19,10 +20,13 @@
 
 .sidebar-nav-item.is-selected {
     background: var(--active-bg);
-    border-color: var(--color-border-soft);
-    color: var(--color-text-primary);
+    color: var(--selected-indicator);
     font-weight: 500;
-    box-shadow: inset 3px 0 0 var(--selected-indicator);
+}
+
+.sidebar-nav-item.is-selected:hover {
+    background: var(--active-bg);
+    color: var(--selected-indicator);
 }
 
 .sidebar-nav-item:focus-visible {
@@ -30,6 +34,11 @@
     background: var(--hover-bg);
     color: var(--color-text-primary);
     box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
+}
+
+.sidebar-nav-item.is-selected:focus-visible {
+    background: var(--active-bg);
+    color: var(--selected-indicator);
 }
 
 .sidebar-nav-icon {

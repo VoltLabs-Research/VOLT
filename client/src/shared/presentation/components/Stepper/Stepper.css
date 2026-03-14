@@ -1,5 +1,10 @@
 .stepper-step{
     will-change: opacity, transform;
+    width: 100%;
+}
+
+.stepper-standalone{
+    width: 100%;
 }
 
 .stepper-with-sidebar{

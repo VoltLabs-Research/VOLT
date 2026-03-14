@@ -53,7 +53,7 @@ const AxisConfig = ({
                             onChange={s.onChange}
                             ariaValueText={s.format}
                         />
-                        <span className="font-size-075 color-muted">{s.format}</span>
+                        <span className="font-size-1 color-muted">{s.format}</span>
                     </Container>
                 </Container>
             ))}

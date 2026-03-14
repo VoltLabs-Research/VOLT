@@ -47,7 +47,7 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
             {saveStatus === PluginBuilderSaveStatus.Saving && (
                 <Container className='d-flex items-center gap-05 canvas-toolbar-status'>
                     <Container className='f-shrink-0 radius-full canvas-toolbar-status-dot' />
-                    <Paragraph className='font-size-2 color-secondary'>Saving...</Paragraph>
+                    <Paragraph className='font-size-2 color-secondary'>Saving…</Paragraph>
                 </Container>
             )}
             {saveStatus === PluginBuilderSaveStatus.Saved && (
@@ -101,17 +101,17 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
 
             <Tooltip content='Save (Ctrl+S)' placement='top'>
                 <Button
-                    variant='ghost'
-                    intent='neutral'
-                    iconOnly
+                    variant='solid'
+                    intent='brand'
                     size='sm'
-                    className='canvas-toolbar-action'
-                    aria-label='Save workflow'
+                    className='canvas-toolbar-action canvas-toolbar-save-action'
+                    aria-keyshortcuts='Control+S'
                     onClick={onSave}
                     disabled={saveStatus === PluginBuilderSaveStatus.Saving}
-                    title='Save workflow'
+                    title='Save workflow (Ctrl+S)'
+                    leftIcon={<Save size={16} />}
                 >
-                    <Save size={16} />
+                    Save
                 </Button>
             </Tooltip>
         </Container>

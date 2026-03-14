@@ -139,7 +139,10 @@ const readScriptingSessionStatus = async (
 ): Promise<ScriptingSessionStatusResponse> => {
     const notebook = input.notebookId
         ? await scriptingNotebookRepository.findByTeamAndNotebookId(input.teamId, input.notebookId)
-        : await scriptingNotebookRepository.findByTeamAndTrajectory(input.teamId, input.trajectoryId || '');
+        : await scriptingNotebookRepository.findByTeamAndTrajectory(
+            input.teamId,
+            requireRouteParam(input.trajectoryId, 'trajectoryId')
+        );
 
     if (!notebook) {
         throw ApplicationError.notFound(

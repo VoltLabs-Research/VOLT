@@ -31,10 +31,14 @@
 
 .sidebar-sub-item.is-selected {
     background: var(--active-bg);
-    border-color: var(--color-border-soft);
-    color: var(--color-text-primary);
+    color: var(--selected-indicator);
     font-weight: 500;
-    box-shadow: inset 2px 0 0 var(--selected-indicator);
+}
+
+.sidebar-sub-item.is-selected:hover,
+.sidebar-sub-item.is-selected:focus-visible {
+    background: var(--active-bg);
+    color: var(--selected-indicator);
 }
 
 .sidebar-sub-item:focus-visible,
@@ -94,10 +98,14 @@
 
 .sidebar-nested-item.is-selected {
     background: var(--active-bg);
-    border-color: var(--color-border-soft);
-    color: var(--color-text-primary);
+    color: var(--selected-indicator);
     font-weight: 500;
-    box-shadow: inset 2px 0 0 var(--selected-indicator);
+}
+
+.sidebar-nested-item.is-selected:hover,
+.sidebar-nested-item.is-selected:focus-visible {
+    background: var(--active-bg);
+    color: var(--selected-indicator);
 }
 
 @media (prefers-reduced-motion: reduce) {

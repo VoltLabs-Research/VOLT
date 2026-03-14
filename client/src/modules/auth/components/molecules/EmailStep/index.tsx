@@ -43,7 +43,6 @@ const EmailStep = ({ control, isLoading, onSubmit, onOAuth }: EmailStepProps) =>
                     key={key}
                     variant='outline'
                     intent='neutral'
-                    size='lg'
                     block
                     leftIcon={icon}
                     onClick={() => onOAuth(key)}>
