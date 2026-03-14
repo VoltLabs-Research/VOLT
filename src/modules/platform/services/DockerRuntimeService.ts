@@ -1,8 +1,6 @@
-import { DAEMON_PATHS } from '@/core/paths';
 import { logger } from '@/core/logger';
 import { ContainerAction } from '@/shared/contracts';
 import Docker from 'dockerode';
-import { readdir } from 'node:fs/promises';
 import net from 'node:net';
 import path from 'node:path';
 import { Writable } from 'node:stream';
@@ -42,10 +40,6 @@ export interface RuntimeTerminalExec {
 };
 
 const MAX_EXEC_BUFFER_SIZE = 10 * 1024 * 1024;
-
-const LOCAL_IMAGE_BUILD_CONTEXTS: Record<string, string> = {
-    'volt-scripting-env:latest': DAEMON_PATHS.scriptingImageContext
-};
 
 const toEnvPairs = (environmentVariables: ContainerEnvironmentVariable[] = []): string[] => {
     return environmentVariables.map((entry) => `${entry.key}=${entry.value}`);
@@ -287,13 +281,9 @@ done`, '--', normalizedDirectoryPath]);
 
     async ensureImage(imageName: string): Promise<void> {
         const startedAt = Date.now();
-        const localBuildContext = this.resolveLocalImageBuildContext(imageName);
-        const hasLocalBuildContext = typeof localBuildContext === 'string';
 
         logger.info({
             imageName,
-            hasLocalBuildContext,
-            buildContext: localBuildContext,
             provisioningAction: 'inspect'
         }, 'Checking Docker image availability');
 
@@ -301,8 +291,6 @@ done`, '--', normalizedDirectoryPath]);
             await this.docker.getImage(imageName).inspect();
             logger.info({
                 imageName,
-                hasLocalBuildContext,
-                buildContext: localBuildContext,
                 provisioningAction: 'inspect',
                 success: true,
                 durationMs: Date.now() - startedAt
@@ -312,57 +300,15 @@ done`, '--', normalizedDirectoryPath]);
             logger.info({
                 err: error,
                 imageName,
-                hasLocalBuildContext,
-                buildContext: localBuildContext,
-                provisioningAction: hasLocalBuildContext ? 'build' : 'pull',
+                provisioningAction: 'pull',
                 success: false,
                 durationMs: Date.now() - startedAt
             }, 'Docker image not available locally; provisioning required');
         }
 
-        if (localBuildContext) {
-            const buildStartedAt = Date.now();
-
-            logger.info({
-                imageName,
-                hasLocalBuildContext: true,
-                buildContext: localBuildContext,
-                provisioningAction: 'build'
-            }, 'Provisioning Docker image from local build context');
-
-            try {
-                await this.buildImage(imageName, localBuildContext);
-                logger.info({
-                    imageName,
-                    hasLocalBuildContext: true,
-                    buildContext: localBuildContext,
-                    provisioningAction: 'build',
-                    success: true,
-                    durationMs: Date.now() - buildStartedAt,
-                    pullSkipped: true,
-                    pullSkippedReason: 'image mapped to LOCAL_IMAGE_BUILD_CONTEXTS'
-                }, 'Docker image build completed; registry pull skipped');
-                return;
-            } catch (error: unknown) {
-                logger.error({
-                    err: error,
-                    imageName,
-                    hasLocalBuildContext: true,
-                    buildContext: localBuildContext,
-                    provisioningAction: 'build',
-                    success: false,
-                    durationMs: Date.now() - buildStartedAt,
-                    pullSkipped: true,
-                    pullSkippedReason: 'image mapped to LOCAL_IMAGE_BUILD_CONTEXTS'
-                }, 'Docker image build failed; registry pull skipped for local-build image');
-                throw error;
-            }
-        }
-
         const pullStartedAt = Date.now();
         logger.info({
             imageName,
-            hasLocalBuildContext: false,
             provisioningAction: 'pull'
         }, 'Provisioning Docker image from registry');
 
@@ -370,7 +316,6 @@ done`, '--', normalizedDirectoryPath]);
             await this.pullImage(imageName);
             logger.info({
                 imageName,
-                hasLocalBuildContext: false,
                 provisioningAction: 'pull',
                 success: true,
                 durationMs: Date.now() - pullStartedAt
@@ -379,50 +324,12 @@ done`, '--', normalizedDirectoryPath]);
             logger.error({
                 err: error,
                 imageName,
-                hasLocalBuildContext: false,
                 provisioningAction: 'pull',
                 success: false,
                 durationMs: Date.now() - pullStartedAt
             }, 'Docker image pull failed');
             throw error;
         }
-    }
-
-    async buildImage(imageName: string, contextPath: string): Promise<void> {
-        const contextSources = await this.collectBuildContextSources(contextPath);
-        const stream = await this.docker.buildImage({
-            context: contextPath,
-            src: contextSources
-        }, {
-            t: imageName
-        });
-
-        await new Promise<void>((resolve, reject) => {
-            this.docker.modem.followProgress(stream, (error, output) => {
-                if (!error) {
-                    resolve();
-                    return;
-                }
-
-                const message = Array.isArray(output)
-                    ? output
-                        .map((entry) => {
-                            if (typeof entry?.error === 'string') {
-                                return entry.error;
-                            }
-
-                            if (typeof entry?.stream === 'string') {
-                                return entry.stream.trim();
-                            }
-
-                            return '';
-                        })
-                        .filter(Boolean)
-                        .join('\n')
-                    : '';
-                reject(new Error(message || error.message || 'Docker build failed'));
-            });
-        });
     }
 
     async exec(containerId: string, command: string[], stdin?: string): Promise<string> {
@@ -497,27 +404,6 @@ done`, '--', normalizedDirectoryPath]);
                 server.close(() => resolve(true));
             });
         });
-    }
-
-    private resolveLocalImageBuildContext(imageName: string): string | undefined {
-        return LOCAL_IMAGE_BUILD_CONTEXTS[imageName];
-    }
-
-    private async collectBuildContextSources(contextPath: string): Promise<string[]> {
-        const entries = await readdir(contextPath, {
-            recursive: true,
-            withFileTypes: true
-        });
-
-        return ['Dockerfile', ...entries
-            .filter((entry) => entry.isFile())
-            .map((entry) => {
-                const parentPath = typeof entry.parentPath === 'string'
-                    ? entry.parentPath
-                    : contextPath;
-                return path.relative(contextPath, path.join(parentPath, entry.name));
-            })
-            .filter((relativePath) => relativePath.length > 0 && relativePath !== 'Dockerfile')];
     }
 
     private normalizeContainerPath(targetPath: string): string {

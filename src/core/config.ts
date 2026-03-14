@@ -183,7 +183,7 @@ export const loadConfig = (): DaemonConfig => {
             password: readOptionalString('REDIS_PASSWORD')
         },
         jupyter: {
-            image: process.env.JUPYTER_IMAGE?.trim() || 'volt-scripting-env:latest',
+            image: process.env.JUPYTER_IMAGE?.trim() || 'quay.io/jupyter/scipy-notebook:latest',
             memoryInMegabytes: readNumber('JUPYTER_CONTAINER_MEMORY_MB', 2048),
             cpus: readNumber('JUPYTER_CONTAINER_CPUS', 2),
             execTimeoutMs: readNumber('JUPYTER_EXEC_TIMEOUT_MS', 45_000),
