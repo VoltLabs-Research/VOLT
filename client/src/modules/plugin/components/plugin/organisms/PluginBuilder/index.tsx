@@ -1,5 +1,6 @@
 import PaletteItem from '@/modules/plugin/components/plugin/atoms/PaletteItem';
 import PluginBuilderCanvas from '@/modules/plugin/components/plugin/organisms/PluginBuilderCanvas';
+import { PluginBuilderSaveStatus } from '@/modules/plugin/components/plugin/organisms/PluginBuilder/save-status';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import type { IModifierData } from '@/modules/plugin/api/entities/plugin/workflow';
 import useSaveWorkflow from '@/modules/plugin/hooks/plugin/use-save-workflow';
@@ -27,7 +28,7 @@ interface PluginBuilderProps {
 };
 
 const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => {
-    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const [saveStatus, setSaveStatus] = useState<PluginBuilderSaveStatus>(PluginBuilderSaveStatus.Idle);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { confirm } = useConfirm();
@@ -67,27 +68,27 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
         if (isSaving) return;
 
         clearSaveStatusTimeout();
-        setSaveStatus('saving');
+        setSaveStatus(PluginBuilderSaveStatus.Saving);
         try {
             const result = await saveWorkflow();
             if (result) {
-                setSaveStatus('saved');
+                setSaveStatus(PluginBuilderSaveStatus.Saved);
                 setHasUnsavedChanges(false);
                 saveStatusTimeoutRef.current = setTimeout(() => {
-                    setSaveStatus('idle');
+                    setSaveStatus(PluginBuilderSaveStatus.Idle);
                     saveStatusTimeoutRef.current = null;
                 }, 2000);
             } else {
-                setSaveStatus('error');
+                setSaveStatus(PluginBuilderSaveStatus.Error);
                 saveStatusTimeoutRef.current = setTimeout(() => {
-                    setSaveStatus('idle');
+                    setSaveStatus(PluginBuilderSaveStatus.Idle);
                     saveStatusTimeoutRef.current = null;
                 }, 3000);
             }
         } catch {
-            setSaveStatus('error');
+            setSaveStatus(PluginBuilderSaveStatus.Error);
             saveStatusTimeoutRef.current = setTimeout(() => {
-                setSaveStatus('idle');
+                setSaveStatus(PluginBuilderSaveStatus.Idle);
                 saveStatusTimeoutRef.current = null;
             }, 3000);
         }
@@ -136,7 +137,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
     }, [addNode, nodes.length]);
 
     const modifierNode = useMemo(() => {
-        return nodes.find(n => n.type === NodeType.MODIFIER);
+        return nodes.find((node) => node.type === NodeType.MODIFIER);
     }, [nodes]);
 
     const pluginName = useMemo(() => {

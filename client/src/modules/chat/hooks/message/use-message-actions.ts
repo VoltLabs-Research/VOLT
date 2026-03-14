@@ -50,7 +50,9 @@ const useMessageActions = ({ chatId }: UseMessageActionsOptions) => {
         sendFileMessage,
         editMessage,
         deleteMessage,
-        toggleReaction
+        toggleReaction,
+        isSendingMessage: sendMessageMutationResult.isPending,
+        isSendingFile: sendFileMutationResult.isPending
     };
 };
 

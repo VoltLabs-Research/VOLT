@@ -7,6 +7,10 @@ interface SessionUserAgentInfo {
     os: string;
 };
 
+interface SessionTokenInfo {
+    shortValue: string;
+};
+
 const MOBILE_USER_AGENT_PATTERN = /Android|iPhone|iPad|iPod|Mobile/i;
 
 export const parseSessionUserAgent = (userAgent: string): SessionUserAgentInfo => {
@@ -45,6 +49,18 @@ export const formatSessionRelativeTime = (dateValue: string): string => {
     if (diffHr < 24) return `${diffHr}h ago`;
     if (diffDay < 30) return `${diffDay}d ago`;
     return new Date(dateValue).toLocaleDateString();
+};
+
+export const getSessionTokenInfo = (token: string): SessionTokenInfo => {
+    const normalizedToken = token.trim();
+
+    if (normalizedToken.length <= 8) {
+        return { shortValue: normalizedToken || 'Unavailable' };
+    }
+
+    return {
+        shortValue: `${normalizedToken.slice(0, 4)}…${normalizedToken.slice(-4)}`
+    };
 };
 
 export const SESSION_ACTION_LABELS: Record<SessionActivityType, string> = {

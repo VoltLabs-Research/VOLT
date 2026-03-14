@@ -1,7 +1,8 @@
 import FractalScenePipeline from '@/modules/fractal/components/organisms/FractalScenePipeline';
 import { resolveCanvasRuntimeProps } from '@/shared/domain/rendering/performance';
+import './FractalScene.css';
 import { Canvas } from '@react-three/fiber';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
@@ -41,6 +42,9 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     const orbitControlsRef = useRef<OrbitControlsHandle | null>(null);
     const initialDistanceRef = useRef<number | null>(null);
     const [isInteracting, setIsInteracting] = useState(false);
+    const [screenshotAnnouncement, setScreenshotAnnouncement] = useState('');
+    const titleId = useId();
+    const descriptionId = useId();
 
     const canvasRuntimeProps = useMemo(() => {
         return resolveCanvasRuntimeProps({
@@ -137,13 +141,20 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     }, [config.orbitControls]);
 
     return (
-        <div style={{ width: '100%', height: '100%' }}>
+        <section className='fractal-scene' role='region' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={0}>
+            <h2 id={titleId} className='fractal-scene__visually-hidden'>3D model viewer</h2>
+            <p id={descriptionId} className='fractal-scene__visually-hidden'>
+                Interactive 3D viewport. Use mouse controls to orbit, pan, and zoom. When a model is selected, extra rotation controls appear in the viewer.
+            </p>
+            <div className='fractal-scene__visually-hidden' aria-live='polite' aria-atomic='true'>
+                {screenshotAnnouncement}
+            </div>
             <Canvas
                 gl={glProps}
                 dpr={canvasRuntimeProps.dpr}
                 frameloop='demand'
                 performance={canvasRuntimeProps.performance}
-                style={{ width: '100%', height: '100%' }}
+                className='fractal-scene__canvas'
                 onCreated={(state) => {
                     state.invalidate();
                 }}
@@ -157,13 +168,14 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
                     modelWorldBounds={modelWorldBounds}
                     screenshotCaptureRequested={screenshotCaptureRequested}
                     onScreenshotCaptureHandled={onScreenshotCaptureHandled}
+                    onScreenshotStatusChange={setScreenshotAnnouncement}
                     onControlsRef={onControlsRef}
                     markInteracting={markInteracting}
                 >
                     {children}
                 </FractalScenePipeline>
             </Canvas>
-        </div>
+        </section>
     );
 });
 

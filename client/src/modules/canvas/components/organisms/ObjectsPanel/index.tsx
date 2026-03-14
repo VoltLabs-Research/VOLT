@@ -1,4 +1,5 @@
 import { isArtifactSceneActive, toSceneObjectFromArtifact } from '@/modules/canvas/utilities/scene-identity';
+import CanvasSlider from '../../atoms/CanvasSlider';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import useAnalysisStatus from '../../../hooks/use-analysis-status';
 import useCanvasSidebarState from '../../../hooks/use-canvas-sidebar-state';
@@ -12,7 +13,6 @@ import CollapsibleSection from '@/shared/presentation/components/CollapsibleSect
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import IconButton from '@/shared/presentation/components/IconButton';
-import Slider from '@/shared/presentation/components/Slider';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -33,6 +33,8 @@ interface ObjectsPanelProps {
         exposureName?: string;
     }) => void;
 };
+
+const PANEL_ICON_COLOR = 'var(--color-text-secondary)';
 
 const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListing }: ObjectsPanelProps) => {
     const [sceneCollectionOpen, setSceneCollectionOpen] = useState(true);
@@ -109,12 +111,14 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
         const transparencySubmenu = (
             <div className="context-menu-transparency">
                 <span className="context-menu-transparency__label">Transparency</span>
-                <Slider
+                <CanvasSlider
+                    ariaLabel={`Adjust ${artifact.displayName} transparency`}
                     min={0}
                     max={1}
                     step={0.01}
                     value={currentOpacity}
                     onChange={(value: number) => setSceneOpacity(sceneKey, value)}
+                    ariaValueText={`${Math.round(currentOpacity * 100)}% opacity`}
                 />
             </div>
         );
@@ -131,10 +135,10 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
     return (
         <Container className="canvas-objects-panel d-flex column min-h-0 overflow-auto">
             <PanelHeader
-                icon={<Layers style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.35)' }} />}
+                icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                 title="Objects"
                 actions={
-                    <IconButton variant="ghost" size="sm" aria-label="Filter">
+                    <IconButton variant="ghost" size="sm" aria-label="Filter objects">
                         <SlidersHorizontal style={{ width: 13, height: 13 }} />
                     </IconButton>
                 }
@@ -142,7 +146,7 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
 
             <CollapsibleSection
                 title="Scene Collection"
-                icon={<Layers style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.25)' }} />}
+                icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                 expanded={sceneCollectionOpen}
                 onExpandedChange={setSceneCollectionOpen}
                 className="canvas-right-dropdown"
@@ -181,7 +185,7 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
             {hasSelectedTimestepAnalyses && (
                 <CollapsibleSection
                     title="Timestep-scoped analyses"
-                    icon={<Layers style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.25)' }} />}
+                    icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                     expanded={selectedTimestepAnalysisOpen}
                     onExpandedChange={setSelectedTimestepAnalysisOpen}
                     className="canvas-right-dropdown"
@@ -219,7 +223,7 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
 
             <CollapsibleSection
                 title="Color Coding"
-                icon={<Palette style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.25)' }} />}
+                icon={<Palette style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                 expanded={colorCodingOpen}
                 onExpandedChange={setColorCodingOpen}
                 className="canvas-right-dropdown"
@@ -249,18 +253,19 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
                             key={artifact._id}
                             id={`canvas-ctx-color-coding-${artifact._id}`}
                             trigger={(
-                                <Container
+                                <button
                                     className={`canvas-tree-item canvas-tree-item--indent font-size-1 color-secondary cursor-pointer u-select-none ${isArtifactActive(artifact) ? 'selected' : ''}`}
                                     onClick={() => {
                                         const scene = toSceneObjectFromArtifact(artifact);
                                         if (!scene) return;
                                         onSelectScene(scene);
                                     }}
+                                    type="button"
                                 >
                                     <span className={`${isArtifactActive(artifact) ? 'color-primary' : 'color-secondary'}`}>
                                         {artifact.displayName}
                                     </span>
-                                </Container>
+                                </button>
                             )}
                             options={getArtifactMenuOptions(artifact)}
                             size='sm'
@@ -271,7 +276,7 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
 
             <CollapsibleSection
                 title="Particle Filter"
-                icon={<Filter style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.25)' }} />}
+                icon={<Filter style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                 expanded={particleFilterOpen}
                 onExpandedChange={setParticleFilterOpen}
                 className="canvas-right-dropdown"
@@ -301,18 +306,19 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
                             key={artifact._id}
                             id={`canvas-ctx-particle-filter-${artifact._id}`}
                             trigger={(
-                                <Container
+                                <button
                                     className={`canvas-tree-item canvas-tree-item--indent font-size-1 color-secondary cursor-pointer u-select-none ${isArtifactActive(artifact) ? 'selected' : ''}`}
                                     onClick={() => {
                                         const scene = toSceneObjectFromArtifact(artifact);
                                         if (!scene) return;
                                         onSelectScene(scene);
                                     }}
+                                    type="button"
                                 >
                                     <span className={`${isArtifactActive(artifact) ? 'color-primary' : 'color-secondary'}`}>
                                         {artifact.displayName}
                                     </span>
-                                </Container>
+                                </button>
                             )}
                             options={getArtifactMenuOptions(artifact)}
                             size='sm'

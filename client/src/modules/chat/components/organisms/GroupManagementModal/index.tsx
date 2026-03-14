@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { useState, useEffect, useMemo } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { IoSettingsOutline, IoPeopleOutline, IoShieldOutline } from 'react-icons/io5';
 import AdminsTab from './tabs/AdminsTab';
 import GeneralTab from './tabs/GeneralTab';
@@ -69,6 +69,7 @@ const GroupManagementModal = ({
     const [groupName, setGroupName] = useState('');
     const [groupDescription, setGroupDescription] = useState('');
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+    const tabButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
     const { isLoading, execute } = useAsyncAction();
     const { confirm } = useConfirm();
 
@@ -126,19 +127,57 @@ const GroupManagementModal = ({
         setSelectedMembers((prev) => toggleSelection(prev, id));
     };
 
+    const getTabButtonId = (tab: Tab) => `group-management-tab-${tab}`;
+    const getTabPanelId = (tab: Tab) => `group-management-panel-${tab}`;
+
+    const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+        const lastIndex = TABS.length - 1;
+        let nextIndex = index;
+
+        if (event.key === 'ArrowRight') {
+            nextIndex = index === lastIndex ? 0 : index + 1;
+        } else if (event.key === 'ArrowLeft') {
+            nextIndex = index === 0 ? lastIndex : index - 1;
+        } else if (event.key === 'Home') {
+            nextIndex = 0;
+        } else if (event.key === 'End') {
+            nextIndex = lastIndex;
+        } else {
+            return;
+        }
+
+        event.preventDefault();
+        const nextTab = TABS[nextIndex];
+        if (!nextTab) {
+            return;
+        }
+
+        setActiveTab(nextTab.id);
+        tabButtonRefs.current[nextIndex]?.focus();
+    };
+
     return (
         <Modal id='group-management-modal' title='Group Settings' width='600px'>
-            <Container className='d-flex gap-05 group-management-tabs'>
-                {TABS.map((tab) => (
+            <Container className='d-flex gap-05 group-management-tabs' role='tablist' aria-label='Group settings sections'>
+                {TABS.map((tab, index) => (
                     <Button
                         key={tab.id}
+                        ref={(node) => {
+                            tabButtonRefs.current[index] = node;
+                        }}
                         variant='ghost'
                         intent='neutral'
+                        id={getTabButtonId(tab.id)}
+                        role='tab'
+                        aria-selected={activeTab === tab.id}
+                        aria-controls={getTabPanelId(tab.id)}
+                        tabIndex={activeTab === tab.id ? 0 : -1}
                         className={cn(
                             'd-flex items-center gap-05 group-management-tab transition-normal cursor-pointer color-secondary',
                             activeTab === tab.id && 'active'
                         )}
                         onClick={() => setActiveTab(tab.id)}
+                        onKeyDown={(event) => handleTabKeyDown(event, index)}
                     >
                         {tab.icon}
                         <Paragraph className='font-size-2'>{tab.label}</Paragraph>
@@ -146,7 +185,13 @@ const GroupManagementModal = ({
                 ))}
             </Container>
 
-            <Container className='group-management-content'>
+            <Container
+                id={getTabPanelId(activeTab)}
+                role='tabpanel'
+                aria-labelledby={getTabButtonId(activeTab)}
+                tabIndex={0}
+                className='group-management-content'
+            >
                 {activeTab === Tab.General && (
                     <GeneralTab
                         chat={chat}

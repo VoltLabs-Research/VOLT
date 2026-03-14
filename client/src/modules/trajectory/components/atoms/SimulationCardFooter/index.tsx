@@ -5,6 +5,8 @@ import IconButton from '@/shared/presentation/components/IconButton';
 import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Container from '@/shared/presentation/components/Container';
+import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
+import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';
 import { HiOutlineViewfinderCircle } from 'react-icons/hi2';
@@ -14,14 +16,20 @@ import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import type { User } from '@/modules/auth/api/entities/user';
 import './SimulationCardFooter.css';
 
 interface SimulationCardFooterProps {
     trajectoryId: string;
     name: string;
+    createdBy: User | null;
+    createdAt: string;
     updatedAt: string;
     isProcessing: boolean;
     processingMessage?: string;
+    atomCount: string;
+    frameCount: string;
+    totalSize: string;
     onDelete?: (_id: string) => void;
 };
 
@@ -44,9 +52,14 @@ const DELETE_TRAJECTORY_TOAST: DeleteTrajectoryToastConfig = {
 export default function SimulationCardFooter({
     trajectoryId,
     name,
+    createdBy,
+    createdAt,
     updatedAt,
     isProcessing,
     processingMessage,
+    atomCount,
+    frameCount,
+    totalSize,
     onDelete
 }: SimulationCardFooterProps) {
     const navigate = useNavigate();
@@ -61,8 +74,10 @@ export default function SimulationCardFooter({
     const handleDelete = useCallback(async () => {
         const isConfirmed = await confirm({
             title: `Delete trajectory "${name}"?`,
-            description: 'This action cannot be undone.',
-            confirmText: 'Delete'
+            description: 'This permanently deletes the trajectory and cannot be undone.',
+            confirmText: 'Delete trajectory',
+            cancelText: 'Cancel',
+            tone: ConfirmActionTone.Danger
         });
 
         if (!isConfirmed) return;
@@ -98,6 +113,20 @@ export default function SimulationCardFooter({
                     name={name}
                     className='font-size-3 color-primary font-weight-5'
                 />
+                <Container className='simulation-card-metadata d-flex items-center gap-075 flex-wrap'>
+                    <Paragraph className='simulation-card-status-text color-muted'>
+                        {createdBy?.firstName ? `By ${createdBy.firstName} ${createdBy.lastName}` : 'Uploaded by team member'}
+                    </Paragraph>
+                    <Paragraph className='simulation-card-status-text color-muted'>
+                        {frameCount} frames
+                    </Paragraph>
+                    <Paragraph className='simulation-card-status-text color-muted'>
+                        {atomCount} atoms
+                    </Paragraph>
+                    <Paragraph className='simulation-card-status-text color-muted'>
+                        {totalSize}
+                    </Paragraph>
+                </Container>
                 <Container className='simulation-card-status d-flex items-center gap-075 color-secondary font-size-2'>
                     {isProcessing ? (
                         <>
@@ -105,7 +134,9 @@ export default function SimulationCardFooter({
                             <Paragraph className='simulation-card-status-text color-muted'>{processingMessage}</Paragraph>
                         </>
                     ) : (
-                        <Paragraph className='simulation-card-status-text'>Edited {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}</Paragraph>
+                        <Paragraph className='simulation-card-status-text'>
+                            Uploaded {formatDistanceToNow(new Date(createdAt), { addSuffix: true })} · Edited {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}
+                        </Paragraph>
                     )}
                 </Container>
             </Container>
@@ -115,20 +146,24 @@ export default function SimulationCardFooter({
                 trigger={
                     <IconButton
                         className='footer-options-btn'
+                        title={`Open actions for ${name}`}
+                        aria-label={`Open actions for ${name}`}
                     >
                         <PiDotsThreeVerticalBold />
                     </IconButton>
                 }
             >
-                {popoverItems.map(({ Icon, onClick, label, ...props }, index) => (
-                    <PopoverMenuItem
-                        icon={<Icon />}
-                        label={label}
-                        onClick={onClick}
-                        key={index}
-                        {...props}
-                    />
-                ))}
+                <PopoverMenu>
+                    {popoverItems.map(({ Icon, onClick, label, ...props }, index) => (
+                        <PopoverMenuItem
+                            icon={<Icon />}
+                            label={label}
+                            onClick={onClick}
+                            key={index}
+                            {...props}
+                        />
+                    ))}
+                </PopoverMenu>
             </Popover>
         </Container>
     );

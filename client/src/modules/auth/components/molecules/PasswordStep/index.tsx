@@ -26,17 +26,26 @@ const PasswordStep = ({ email, control, isLoading, onSubmit, onBack }: PasswordS
             <FormFieldRHF
                 name='password'
                 control={control}
+                label='Password'
                 type='password'
                 placeholder='Password'
                 autoFocus
                 icon={<Lock size={18} />}
+                inputProps={{
+                    autoComplete: 'current-password',
+                    inputMode: 'text',
+                    spellCheck: false,
+                    name: 'password',
+                    autoCapitalize: 'none',
+                    autoCorrect: 'off'
+                }}
             />
 
             <Button
                 type='submit'
                 isLoading={isLoading}
                 variant='solid'
-                intent='white'
+                intent='brand'
                 block
             >
                 Sign In
@@ -44,7 +53,7 @@ const PasswordStep = ({ email, control, isLoading, onSubmit, onBack }: PasswordS
 
             <Button
                 variant='ghost'
-                intent='white'
+                intent='neutral'
                 block
                 leftIcon={<ArrowLeft size={16} />}
                 onClick={onBack}

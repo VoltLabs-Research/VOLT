@@ -5,13 +5,16 @@ import { areModelWorldBoundsEqual } from '@/modules/fractal/utilities/model-worl
 import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/utilities/box-utils';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import { computeGlbUrl } from '@/modules/fractal/api/service/compute-glb-url';
+import Button from '@/shared/presentation/components/Button';
+import './SingleModelViewer.css';
+import { Html } from '@react-three/drei';
 import { useMemo, useEffect, useCallback, createElement, useRef } from 'react';
 import type { BoxBounds, ModelLoadingState, OrbitControlsHandle } from '@/modules/fractal/types';
 import type { SlicePlaneConfig, ModelWorldBounds } from '@/modules/fractal/types/configuration';
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 import type { PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
-import type { FC, RefObject } from 'react';
+import type { FC, ReactNode, RefObject } from 'react';
 
 interface OptionalVec3 {
     x?: number;
@@ -46,6 +49,12 @@ interface SingleModelViewerProps {
     onModelLoaded?: (bounds: BoundsInfo) => void;
     onSelect?: () => void;
     isSelected?: boolean;
+};
+
+interface ViewerControl {
+    label: string;
+    onClick: () => void;
+    icon: ReactNode;
 };
 
 const SingleModelViewer: FC<SingleModelViewerProps> = ({
@@ -141,7 +150,21 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
 
     const sceneKey = useMemo(() => getSceneKey(sceneConfig), [sceneConfig]);
 
-    const { modelBounds, deselect, model, setSelectedObject, onHoverChange } = useGlbScene({
+    const {
+        modelBounds,
+        deselect,
+        model,
+        resetModel,
+        rotateXNegative,
+        rotateXPositive,
+        rotateYNegative,
+        rotateYPositive,
+        rotateZNegative,
+        rotateZPositive,
+        setSelectedObject,
+        onHoverChange,
+        isSelected: hasSelectedObject
+    } = useGlbScene({
         url,
         sliceClippingPlanes,
         position: {
@@ -170,6 +193,24 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         onLoadingStateChanged
     });
 
+    const controls = useMemo<ViewerControl[]>(() => {
+        return [
+            { label: 'Rotate X−', onClick: rotateXNegative, icon: '↕' },
+            { label: 'Rotate X+', onClick: rotateXPositive, icon: '↕' },
+            { label: 'Rotate Y−', onClick: rotateYNegative, icon: '↔' },
+            { label: 'Rotate Y+', onClick: rotateYPositive, icon: '↔' },
+            { label: 'Rotate Z−', onClick: rotateZNegative, icon: '⟲' },
+            { label: 'Rotate Z+', onClick: rotateZPositive, icon: '⟳' }
+        ];
+    }, [
+        rotateXNegative,
+        rotateXPositive,
+        rotateYNegative,
+        rotateYPositive,
+        rotateZNegative,
+        rotateZPositive
+    ]);
+
     useEffect(() => {
         if (!isSelected) {
             deselect();
@@ -182,6 +223,21 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         }
     }, [modelBounds, onModelLoaded]);
 
+    const renderControl = useCallback((control: ViewerControl) => {
+        return (
+            <Button
+                key={control.label}
+                variant='outline'
+                intent='neutral'
+                size='sm'
+                onClick={control.onClick}
+                leftIcon={control.icon}
+            >
+                {control.label}
+            </Button>
+        );
+    }, []);
+
     return (
         <SimulationCellBox
             boxBounds={boxBounds}
@@ -191,6 +247,31 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             onHoverChange={onHoverChange}
         >
             {model && createElement('primitive', { object: model })}
+            {hasSelectedObject && (
+                <Html fullscreen className='single-model-viewer__controls-layer'>
+                    <div className='single-model-viewer__controls d-flex column gap-075' role='group' aria-label='Selected model controls'>
+                        <div className='d-flex column gap-025'>
+                            <span className='single-model-viewer__controls-title font-size-1 font-weight-6 color-primary'>
+                                Selected model controls
+                            </span>
+                            <p className='font-size-1 color-secondary'>
+                                Use the buttons below or press Ctrl/Cmd + arrow keys. Hold Shift with left or right arrows to rotate Z.
+                            </p>
+                        </div>
+                        <div className='single-model-viewer__controls-grid'>
+                            {controls.map(renderControl)}
+                        </div>
+                        <div className='single-model-viewer__controls-footer'>
+                            <Button variant='outline' intent='neutral' size='sm' onClick={resetModel}>
+                                Reset orientation
+                            </Button>
+                            <Button variant='ghost' intent='neutral' size='sm' onClick={deselect}>
+                                Deselect
+                            </Button>
+                        </div>
+                    </div>
+                </Html>
+            )}
         </SimulationCellBox>
     );
 };

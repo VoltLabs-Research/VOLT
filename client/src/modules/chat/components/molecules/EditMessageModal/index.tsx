@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
+import type { KeyboardEvent } from 'react';
 import './EditMessageModal.css';
 
 interface EditMessageModalProps {
@@ -13,6 +14,7 @@ interface EditMessageModalProps {
 };
 
 export const EDIT_MESSAGE_MODAL_ID = 'edit-message-modal';
+const EDIT_MESSAGE_TEXTAREA_ID = 'edit-message-modal-textarea';
 
 const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMessageModalProps) => {
     const [content, setContent] = useState(initialContent);
@@ -56,7 +58,7 @@ const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMe
         onClose();
     }, [onClose]);
 
-    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const handleKeyDown = useCallback((e: KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSave();
@@ -86,8 +88,12 @@ const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMe
             }
         >
             <Container className='edit-message-modal-content'>
+                <label htmlFor={EDIT_MESSAGE_TEXTAREA_ID} className='edit-message-visually-hidden'>
+                    Edit message
+                </label>
                 <textarea
                     ref={textareaRef}
+                    id={EDIT_MESSAGE_TEXTAREA_ID}
                     className='edit-message-textarea w-max radius-sm'
                     value={content}
                     onChange={(e) => setContent(e.target.value)}

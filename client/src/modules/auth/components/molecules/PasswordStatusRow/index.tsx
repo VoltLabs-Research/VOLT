@@ -37,7 +37,6 @@ const PasswordStatusRow = ({
             rightContent={
                 <Button
                     variant="soft"
-                    size="sm"
                     rightIcon={rightIcon}
                     onClick={onToggleForm}
                 >

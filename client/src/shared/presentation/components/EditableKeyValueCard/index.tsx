@@ -5,7 +5,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
 import './EditableKeyValueCard.css';
 import { Plus, Trash2, Settings } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useEffect, useId, useState } from 'react';
 
 export interface FieldConfig {
     key: string;
@@ -14,7 +14,7 @@ export interface FieldConfig {
     label?: string;
 };
 
-export interface EditableKeyValueCardProps<T extends Record<string, any>> {
+export interface EditableKeyValueCardProps<T extends Record<string, unknown>> {
     title?: string;
     items: T[];
     fields: FieldConfig[];
@@ -29,7 +29,7 @@ export interface EditableKeyValueCardProps<T extends Record<string, any>> {
     className?: string;
 };
 
-const EditableKeyValueCard = <T extends Record<string, any>>({
+const EditableKeyValueCard = <T extends Record<string, unknown>>({
     title,
     items,
     fields,
@@ -45,6 +45,8 @@ const EditableKeyValueCard = <T extends Record<string, any>>({
 }: EditableKeyValueCardProps<T>) => {
     const [editing, setEditing] = useState(alwaysEditing);
     const [localItems, setLocalItems] = useState<T[]>(items);
+    const headingId = useId();
+    const statusId = useId();
 
     useEffect(() => {
         if (alwaysEditing) {
@@ -107,12 +109,18 @@ const EditableKeyValueCard = <T extends Record<string, any>>({
     const isEditing = alwaysEditing || editing;
     const showHeader = title || (!alwaysEditing && onSave) || (alwaysEditing && addButtonPosition === 'top');
     const showLabels = fields.some(f => f.label);
+    const stateLabel = isEditing
+        ? `Editing ${localItems.length} item${localItems.length === 1 ? '' : 's'}.`
+        : `${items.length} item${items.length === 1 ? '' : 's'} available.`;
 
     const content = (
         <>
+            <span id={statusId} className='editable-kv-live-region' aria-live='polite' aria-atomic='true'>
+                {stateLabel}
+            </span>
             {showHeader && (
                 <Container className='d-flex content-between items-center mb-1'>
-                    {title && <Title className='font-size-3 font-weight-6'>{title}</Title>}
+                    {title && <Title id={headingId} className='font-size-3 font-weight-6'>{title}</Title>}
                     <Container className='d-flex gap-05'>
                         {alwaysEditing && addButtonPosition === 'top' && (
                             <Button variant='ghost' intent='neutral' size='sm' leftIcon={<Plus size={14} />} onClick={handleAdd}>
@@ -143,12 +151,14 @@ const EditableKeyValueCard = <T extends Record<string, any>>({
                                 {fields.map((field) => (
                                     <Container key={field.key} className='editable-kv-field'>
                                         {showLabels && field.label && (
-                                            <label className='font-size-1 color-muted'>{field.label}</label>
+                                            <label className='font-size-1 color-muted' htmlFor={`editable-kv-${field.key}-${i}`}>{field.label}</label>
                                         )}
                                         <input
+                                            id={`editable-kv-${field.key}-${i}`}
                                             type={field.type || 'text'}
                                             placeholder={field.placeholder}
-                                            value={item[field.key] ?? ''}
+                                            aria-label={field.label ?? field.placeholder}
+                                            value={String(item[field.key] ?? '')}
                                             className='editable-kv-input font-size-2'
                                             onChange={(e) => handleChange(
                                                 i,
@@ -204,11 +214,11 @@ const EditableKeyValueCard = <T extends Record<string, any>>({
     );
 
     if (!showCard) {
-        return <Container className={className}>{content}</Container>;
+        return <Container className={className} aria-labelledby={title ? headingId : undefined}>{content}</Container>;
     }
 
     return (
-        <Container className={`editable-kv-card p-1-5 ${className}`}>
+        <Container className={`editable-kv-card p-1-5 ${className}`} aria-labelledby={title ? headingId : undefined}>
             {content}
         </Container>
     );

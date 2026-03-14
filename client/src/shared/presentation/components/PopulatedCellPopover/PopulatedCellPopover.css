@@ -1,7 +1,16 @@
 .populated-cell-trigger {
+    color: inherit;
+    font: inherit;
+    background: none;
+    border: none;
     text-decoration: none;
     border-radius: 4px;
     transition: background-color 0.15s ease, text-decoration 0.15s ease;
+}
+
+.populated-cell-trigger:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }
 
 .populated-cell-trigger:hover {
@@ -11,18 +20,21 @@
 }
 
 .populated-cell-popover-header {
-    border-bottom: 1px solid var(--color-surface-3);
+    border-bottom: 1px solid var(--color-border-soft);
 }
 
 .populated-cell-popover-link {
     color: var(--accent-blue);
     font-size: 0.75rem;
     text-decoration: none;
-    background: none;
-    border: none;
-    padding: 0;
     transition: opacity 0.15s ease;
     white-space: nowrap;
+}
+
+.populated-cell-popover-link:focus-visible {
+    outline: none;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }
 
 .populated-cell-popover-link:hover {
@@ -37,6 +49,19 @@
 .populated-cell-popover-body {
     max-height: 240px;
     overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.populated-cell-popover-fields {
+    margin: 0;
+}
+
+.populated-cell-popover-field {
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.populated-cell-popover-field:last-child {
+    border-bottom: none;
 }
 
 .populated-cell-popover-field-label {
@@ -47,9 +72,10 @@
 }
 
 .populated-cell-popover-field-value {
+    margin: 0;
+    flex: 1;
     color: var(--color-text-primary);
     font-size: 0.75rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    white-space: normal;
 }

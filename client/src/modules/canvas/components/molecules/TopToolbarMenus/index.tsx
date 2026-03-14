@@ -10,13 +10,19 @@ interface BuildMenusParams {
     onImport: () => void;
 };
 
+export enum MenuItemType {
+    Item = 'item',
+    Separator = 'separator'
+};
+
 export interface MenuItem {
-    type: 'item' | 'separator';
+    type: MenuItemType;
     label?: string;
     icon?: ReactNode;
     shortcut?: string;
     checked?: boolean;
     action?: () => void;
+    disabled?: boolean;
 };
 
 export interface MenuConfig {
@@ -43,23 +49,25 @@ export const buildMenus = ({
         label: 'File',
         items: [
             {
-                type: 'item',
+                type: MenuItemType.Item,
                 label: 'Import',
                 icon: <Upload size={ICON_SIZE} />,
                 shortcut: 'Ctrl+I',
                 action: onImport
             },
             {
-                type: 'item',
+                type: MenuItemType.Item,
                 label: 'Export',
                 icon: <Download size={ICON_SIZE} />,
-                shortcut: 'Ctrl+E'
+                shortcut: 'Ctrl+E',
+                disabled: true
             },
-            { type: 'separator' },
+            { type: MenuItemType.Separator },
             {
-                type: 'item',
+                type: MenuItemType.Item,
                 label: 'Quit',
-                icon: <LogOut size={ICON_SIZE} />
+                icon: <LogOut size={ICON_SIZE} />,
+                disabled: true
             }
         ]
     },
@@ -67,22 +75,25 @@ export const buildMenus = ({
         label: 'Edit',
         items: [
             {
-                type: 'item',
+                type: MenuItemType.Item,
                 label: 'Undo',
                 icon: <Undo2 size={ICON_SIZE} />,
-                shortcut: 'Ctrl+Z'
+                shortcut: 'Ctrl+Z',
+                disabled: true
             },
             {
-                type: 'item',
+                type: MenuItemType.Item,
                 label: 'Redo',
                 icon: <Redo2 size={ICON_SIZE} />,
-                shortcut: 'Ctrl+Shift+Z'
+                shortcut: 'Ctrl+Shift+Z',
+                disabled: true
             },
-            { type: 'separator' },
+            { type: MenuItemType.Separator },
             {
-                type: 'item',
+                type: MenuItemType.Item,
                 label: 'Preferences',
-                icon: <Settings size={ICON_SIZE} />
+                icon: <Settings size={ICON_SIZE} />,
+                disabled: true
             }
         ]
     },
@@ -90,21 +101,21 @@ export const buildMenus = ({
         label: 'Window',
         items: [
             {
-                type: 'item',
+                type: MenuItemType.Item,
                 label: 'Toggle Fullscreen',
                 icon: <Maximize size={ICON_SIZE} />,
                 shortcut: 'F11',
                 action: onToggleFullscreen
             },
             {
-                type: 'item',
+                type: MenuItemType.Item,
                 label: 'Show Status Bar',
                 icon: statusBarIcon,
                 checked: showStatusBar,
                 action: onToggleStatusBar
             },
             {
-                type: 'item',
+                type: MenuItemType.Item,
                 label: 'Screenshot',
                 icon: <Camera size={ICON_SIZE} />,
                 shortcut: 'Ctrl+S',
@@ -116,20 +127,23 @@ export const buildMenus = ({
         label: 'Help',
         items: [
             {
-                type: 'item',
+                type: MenuItemType.Item,
                 label: 'Manual',
-                icon: <BookOpen size={ICON_SIZE} />
+                icon: <BookOpen size={ICON_SIZE} />,
+                disabled: true
             },
             {
-                type: 'item',
+                type: MenuItemType.Item,
                 label: 'Release Notes',
-                icon: <FileText size={ICON_SIZE} />
+                icon: <FileText size={ICON_SIZE} />,
+                disabled: true
             },
-            { type: 'separator' },
+            { type: MenuItemType.Separator },
             {
-                type: 'item',
+                type: MenuItemType.Item,
                 label: 'Report a Bug',
-                icon: <Bug size={ICON_SIZE} />
+                icon: <Bug size={ICON_SIZE} />,
+                disabled: true
             }
         ]
     }

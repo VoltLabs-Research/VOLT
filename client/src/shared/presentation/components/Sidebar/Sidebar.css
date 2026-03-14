@@ -39,7 +39,7 @@
 }
 
 .editor-sidebar-wrapper[data-collapsed='true'][data-collapsible='true'] {
-    display: none !important;
+    display: flex;
 }
 
 .editor-sidebar-wrapper[data-collapsible='false'] .editor-sidebar-scene-option-title,
@@ -112,6 +112,12 @@
     color: var(--color-text-primary);
 }
 
+.editor-sidebar-toggle-btn:focus-visible {
+    background: var(--hover-bg);
+    color: var(--color-text-primary);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
+}
+
 .editor-sidebar-toggle-icon {
     font-size: 1.2rem;
     transition: transform 200ms ease;
@@ -153,11 +159,32 @@
     background: linear-gradient(to left, var(--color-surface-1), transparent);
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .editor-sidebar-toggle-btn,
+    .editor-sidebar-toggle-icon {
+        transition: none;
+    }
+}
+
 @media screen and (max-width: 768px) {
+    .editor-sidebar-wrapper {
+        top: 0.5rem;
+        bottom: 0.5rem;
+        left: 0.5rem;
+        transform: none;
+        height: auto;
+        max-height: calc(100% - 1rem);
+    }
+
+    .editor-sidebar-wrapper--right {
+        left: auto;
+        right: 0.5rem;
+    }
+
     .editor-sidebar-container {
-        top: -.5rem;
-        left: -1.5rem;
         z-index: 100;
+        width: 100%;
+        max-width: 100%;
     }
 
     .editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-scene-option-icon-container {
@@ -184,6 +211,18 @@
     }
 
     .editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-container {
-        width: 45px;
+        width: 100%;
+    }
+
+    .editor-sidebar-wrapper[data-collapsed='true'][data-mobile='true'] .editor-sidebar-body,
+    .editor-sidebar-wrapper[data-collapsed='true'][data-mobile='true'] .editor-sidebar-tabs-region,
+    .editor-sidebar-wrapper[data-collapsed='true'][data-mobile='true'] .editor-sidebar-bottom-container,
+    .editor-sidebar-wrapper[data-collapsed='true'][data-mobile='true'] .editor-sidebar-header-content {
+        display: none;
+    }
+
+    .editor-sidebar-wrapper[data-collapsed='true'][data-mobile='true'] .editor-sidebar-header-container {
+        padding: 0.75rem;
+        justify-content: center;
     }
 }

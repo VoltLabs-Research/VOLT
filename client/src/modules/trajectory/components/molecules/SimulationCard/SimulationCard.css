@@ -6,20 +6,20 @@
 .simulation-card{
     overflow: hidden;
     background: transparent;
-    transition: border-color 0.3s ease;
+    transition: border-color 0.3s ease, transform 0.2s ease;
 }
 
 .simulation-card:hover{
     border-color: var(--accent-blue);
 }
 
-.simulation-card .simulation-card-header {
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease, visibility 0.2s ease;
+.simulation-card:focus-visible {
+    outline: none;
+    border-color: var(--accent-blue);
+    transform: translateY(-1px);
 }
 
-.simulation-card:hover .simulation-card-header {
+.simulation-card .simulation-card-header {
     opacity: 1;
     visibility: visible;
 }

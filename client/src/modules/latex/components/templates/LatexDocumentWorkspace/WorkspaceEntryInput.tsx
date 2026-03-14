@@ -1,9 +1,10 @@
 import Container from '@/shared/presentation/components/Container';
+import { useCallback, useId, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useCallback, useState } from 'react';
 
 interface WorkspaceEntryInputProps {
     icon: ReactNode;
+    label: string;
     placeholder: string;
     defaultValue?: string;
     onConfirm: (value: string) => Promise<unknown>;
@@ -12,11 +13,13 @@ interface WorkspaceEntryInputProps {
 
 const WorkspaceEntryInput = ({
     icon,
+    label,
     placeholder,
     defaultValue = '',
     onConfirm,
     onCancel
 }: WorkspaceEntryInputProps) => {
+    const inputId = useId();
     const [value, setValue] = useState(defaultValue);
 
     const handleKeyDown = useCallback(async (e: React.KeyboardEvent<HTMLInputElement>): Promise<void> => {
@@ -38,9 +41,14 @@ const WorkspaceEntryInput = ({
     return (
         <Container className='latex-workspace__new-file-input d-flex items-center gap-05 p-025'>
             <span className='color-muted d-flex items-center f-shrink-0'>{icon}</span>
+            <label htmlFor={inputId} className='latex-workspace__sr-only'>
+                {label}
+            </label>
             <input
+                id={inputId}
                 autoFocus
                 className='latex-workspace__new-file-field flex-1'
+                aria-label={label}
                 placeholder={placeholder}
                 value={value}
                 onChange={(e) => setValue(e.target.value)}

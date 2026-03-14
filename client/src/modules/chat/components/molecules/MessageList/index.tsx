@@ -21,7 +21,7 @@ const MessageList = ({ messages, isLoading, hasMore, onLoadMore, renderMessage }
     if (hasMore) {
         loadMoreIndicator = (
             <Container className='d-flex flex-center p-1'>
-                <Paragraph className='font-size-1 color-muted'>Loading more...</Paragraph>
+                <Paragraph className='font-size-2 color-muted'>Loading more...</Paragraph>
             </Container>
         );
     }

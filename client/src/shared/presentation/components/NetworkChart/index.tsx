@@ -1,10 +1,7 @@
-import { Theme } from '@/shared/presentation/hooks/use-theme';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
-import { formatSize } from '@/shared/utils/format';
 import { Activity } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { AreaChart, Area, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { TooltipContentProps } from 'recharts';
 import type { ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent';
@@ -16,22 +13,6 @@ interface ChartColors {
     grid: string;
     axis: string;
     legend: string;
-};
-
-const DEFAULT_CHART_COLORS: ChartColors = {
-    rx: '#0062FF',
-    tx: '#2dcc70',
-    grid: '#1D1D20',
-    axis: '#7e808b',
-    legend: '#f0f0f0'
-};
-
-const LIGHT_CHART_COLORS: ChartColors = {
-    rx: '#007aff',
-    tx: '#34c759',
-    grid: 'rgb(0 0 0 / 8%)',
-    axis: '#8e8e93',
-    legend: '#1d1d1f'
 };
 
 export interface NetworkData {
@@ -58,13 +39,65 @@ interface DataPointPayloadRecord {
     time: string;
 };
 
+interface ChartStats {
+    totalRx: number;
+    totalTx: number;
+};
+
 const MAX_HISTORY_POINTS = 60;
+const RECENT_SAMPLE_COUNT = 5;
+const CHART_COLORS: ChartColors = {
+    rx: 'var(--accent-blue)',
+    tx: 'var(--accent-green)',
+    grid: 'var(--color-border-soft)',
+    axis: 'var(--color-text-muted)',
+    legend: 'var(--color-text-primary)'
+};
+const EMPTY_DATA: DataPoint[] = [{ time: '', rx: 0, tx: 0 }];
+const CHART_MARGIN = {
+    top: 10,
+    right: 10,
+    left: 0,
+    bottom: 0
+};
+const RECENT_SAMPLES_LIST_STYLE = {
+    listStyle: 'none'
+};
+const LEGEND_WRAPPER_STYLE = {
+    fontSize: '12px',
+    paddingTop: '20px',
+    color: CHART_COLORS.legend
+};
+
+const byteNumberFormatter = new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 2
+});
+
+const timeFormatter = new Intl.DateTimeFormat(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit'
+});
 
 const formatTime = (date: Date): string => {
-    const h = date.getHours();
-    const m = date.getMinutes().toString().padStart(2, '0');
-    const s = date.getSeconds().toString().padStart(2, '0');
-    return `${h}:${m}:${s}`;
+    return timeFormatter.format(date);
+};
+
+const formatByteSize = (value: number): string => {
+    if (value === 0) {
+        return '0 B';
+    }
+
+    const absoluteValue = Math.abs(value);
+    const unitBase = 1024;
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const unitIndex = Math.min(
+        Math.max(0, Math.floor(Math.log(absoluteValue) / Math.log(unitBase))),
+        units.length - 1
+    );
+    const scaledValue = value / (unitBase ** unitIndex);
+
+    return `${byteNumberFormatter.format(scaledValue)} ${units[unitIndex]}`;
 };
 
 const isDataPointPayloadRecord = (value: unknown): value is DataPointPayloadRecord => {
@@ -81,39 +114,22 @@ const isDataPointPayloadRecord = (value: unknown): value is DataPointPayloadReco
 
 const formatTooltipValue = (value: ValueType): string => {
     if(typeof value === 'number'){
-        return formatSize(value);
+        return formatByteSize(value);
     }
 
     return String(value);
 };
 
-const NetworkChart = ({ 
-    data, 
-    isLoading = false, 
+const NetworkChart = ({
+    data,
+    isLoading = false,
     calculateDelta = true,
     title = 'Network I/O',
     height = 250
 }: NetworkChartProps) => {
     const [history, setHistory] = useState<DataPoint[]>([]);
     const [prevData, setPrevData] = useState<NetworkData | null>(null);
-    const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
-
-    useEffect(() => {
-        return subscribeToAppTheme(setTheme);
-    }, []);
-
-    const chartColors = useMemo<ChartColors>(() => {
-        const styles = getComputedStyle(document.documentElement);
-        const fallbackColors = theme === Theme.Light ? LIGHT_CHART_COLORS : DEFAULT_CHART_COLORS;
-
-        return {
-            rx: styles.getPropertyValue('--accent-blue').trim() || fallbackColors.rx,
-            tx: styles.getPropertyValue('--accent-green').trim() || fallbackColors.tx,
-            grid: styles.getPropertyValue('--color-border-soft').trim() || fallbackColors.grid,
-            axis: styles.getPropertyValue('--color-text-muted').trim() || fallbackColors.axis,
-            legend: styles.getPropertyValue('--color-text-primary').trim() || fallbackColors.legend
-        };
-    }, [theme]);
+    const gradientId = useId();
 
     useEffect(() => {
         if(!data) return;
@@ -145,19 +161,42 @@ const NetworkChart = ({
         });
     }, [data, calculateDelta]);
 
-    const stats = useMemo(() => {
-        if(!history.length) return { totalRx: 0, totalTx: 0, peakRx: 0, peakTx: 0 };
+    const stats = useMemo<ChartStats>(() => {
+        if(!history.length) {
+            return {
+                totalRx: 0,
+                totalTx: 0
+            };
+        }
 
         const rxValues = history.map((d) => d.rx);
         const txValues = history.map((d) => d.tx);
 
         return {
             totalRx: calculateDelta ? (data?.rx || 0) : rxValues.reduce((sum, v) => sum + v, 0),
-            totalTx: calculateDelta ? (data?.tx || 0) : txValues.reduce((sum, v) => sum + v, 0),
-            peakRx: Math.max(...rxValues),
-            peakTx: Math.max(...txValues)
+            totalTx: calculateDelta ? (data?.tx || 0) : txValues.reduce((sum, v) => sum + v, 0)
         };
     }, [history, data, calculateDelta]);
+
+    const latestPoint = history[history.length - 1] ?? null;
+    const recentSamples = useMemo<DataPoint[]>(() => {
+        return history.slice(-RECENT_SAMPLE_COUNT).reverse();
+    }, [history]);
+
+    const chartDescription = useMemo(() => {
+        if (!latestPoint) {
+            return 'Waiting for network samples.';
+        }
+
+        return `Latest sample at ${latestPoint.time}. Received ${formatByteSize(latestPoint.rx)}. Transmitted ${formatByteSize(latestPoint.tx)}.`;
+    }, [latestPoint]);
+
+    const statItems = useMemo(() => {
+        return [
+            { label: 'RX Total', value: formatByteSize(stats.totalRx) },
+            { label: 'TX Total', value: formatByteSize(stats.totalTx) }
+        ];
+    }, [stats.totalRx, stats.totalTx]);
 
     const renderTooltip: ContentType<ValueType, NameType> = ({ active, payload }: TooltipContentProps<ValueType, NameType>) => {
         if(!active || !payload?.length) return null;
@@ -179,67 +218,89 @@ const NetworkChart = ({
         );
     };
 
-    const emptyData: DataPoint[] = [{ time: '', rx: 0, tx: 0 }];
+    const rxGradientId = `${gradientId}-network-rx`;
+    const txGradientId = `${gradientId}-network-tx`;
 
     return (
         <ChartContainer
             icon={Activity}
             title={title}
             isLoading={isLoading}
-            stats={[
-                { label: 'RX Total', value: formatSize(stats.totalRx) },
-                { label: 'TX Total', value: formatSize(stats.totalTx) }
-            ]}
+            stats={statItems}
             statsLoading={isLoading}
         >
-            <ResponsiveContainer width='100%' height={height}>
-                <AreaChart
-                    data={history.length ? history : emptyData}
-                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                >
-                    <defs>
-                        <linearGradient id='colorNetRx' x1='0' y1='0' x2='0' y2='1'>
-                            <stop offset='5%' stopColor={chartColors.rx} stopOpacity={0.3} />
-                            <stop offset='95%' stopColor={chartColors.rx} stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id='colorNetTx' x1='0' y1='0' x2='0' y2='1'>
-                            <stop offset='5%' stopColor={chartColors.tx} stopOpacity={0.3} />
-                            <stop offset='95%' stopColor={chartColors.tx} stopOpacity={0} />
-                        </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray='3 3' stroke={chartColors.grid} />
-                    <YAxis
-                        stroke={chartColors.axis}
-                        style={{ fontSize: '12px' }}
-                        tickFormatter={(v) => formatSize(v)}
-                    />
-                    <Tooltip content={renderTooltip} />
-                    <Legend
-                        wrapperStyle={{ fontSize: '12px', paddingTop: '20px', color: chartColors.legend }}
-                        iconType='circle'
-                    />
-                    <Area
-                        type='monotone'
-                        dataKey='rx'
-                        stroke={chartColors.rx}
-                        strokeWidth={2}
-                        fillOpacity={1}
-                        fill='url(#colorNetRx)'
-                        name='Received'
-                        isAnimationActive={false}
-                    />
-                    <Area
-                        type='monotone'
-                        dataKey='tx'
-                        stroke={chartColors.tx}
-                        strokeWidth={2}
-                        fillOpacity={1}
-                        fill='url(#colorNetTx)'
-                        name='Transmitted'
-                        isAnimationActive={false}
-                    />
-                </AreaChart>
-            </ResponsiveContainer>
+            <div className='d-flex column gap-1'>
+                <div aria-hidden='true'>
+                    <ResponsiveContainer width='100%' height={height}>
+                        <AreaChart
+                            data={history.length ? history : EMPTY_DATA}
+                            margin={CHART_MARGIN}
+                        >
+                            <defs>
+                                <linearGradient id={rxGradientId} x1='0' y1='0' x2='0' y2='1'>
+                                    <stop offset='5%' stopColor={CHART_COLORS.rx} stopOpacity={0.3} />
+                                    <stop offset='95%' stopColor={CHART_COLORS.rx} stopOpacity={0} />
+                                </linearGradient>
+                                <linearGradient id={txGradientId} x1='0' y1='0' x2='0' y2='1'>
+                                    <stop offset='5%' stopColor={CHART_COLORS.tx} stopOpacity={0.3} />
+                                    <stop offset='95%' stopColor={CHART_COLORS.tx} stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray='3 3' stroke={CHART_COLORS.grid} />
+                            <YAxis
+                                stroke={CHART_COLORS.axis}
+                                style={{ fontSize: '12px' }}
+                                tickFormatter={formatByteSize}
+                            />
+                            <Tooltip content={renderTooltip} />
+                            <Legend
+                                wrapperStyle={LEGEND_WRAPPER_STYLE}
+                                iconType='circle'
+                            />
+                            <Area
+                                type='monotone'
+                                dataKey='rx'
+                                stroke={CHART_COLORS.rx}
+                                strokeWidth={2}
+                                fillOpacity={1}
+                                fill={`url(#${rxGradientId})`}
+                                name='Received'
+                                isAnimationActive={false}
+                            />
+                            <Area
+                                type='monotone'
+                                dataKey='tx'
+                                stroke={CHART_COLORS.tx}
+                                strokeWidth={2}
+                                fillOpacity={1}
+                                fill={`url(#${txGradientId})`}
+                                name='Transmitted'
+                                isAnimationActive={false}
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+
+                <div className='d-flex column gap-05'>
+                    <span className='font-size-1 color-muted'>
+                        {chartDescription}
+                    </span>
+
+                    {recentSamples.length > 0 ? (
+                        <ul className='d-flex column gap-025 m-0 p-0' style={RECENT_SAMPLES_LIST_STYLE}>
+                            {recentSamples.map((point) => (
+                                <li key={`${point.time}-${point.rx}-${point.tx}`} className='font-size-1 color-secondary'>
+                                    <strong className='color-primary'>{point.time}</strong>
+                                    {' · '}
+                                    Received {formatByteSize(point.rx)}
+                                    {' · '}
+                                    Transmitted {formatByteSize(point.tx)}
+                                </li>
+                            ))}
+                        </ul>
+                    ) : null}
+                </div>
+            </div>
         </ChartContainer>
     );
 };

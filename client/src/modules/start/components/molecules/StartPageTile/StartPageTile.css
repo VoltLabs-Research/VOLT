@@ -117,8 +117,8 @@
     position: absolute;
     top: 14px;
     right: 14px;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     background: var(--material-regular);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -129,7 +129,7 @@
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transform: scale(0.7) translateY(-4px);
+    transform: scale(0.88) translateY(-4px);
     transition:
         opacity 0.35s cubic-bezier(0.23, 1, 0.32, 1),
         transform 0.35s cubic-bezier(0.23, 1, 0.32, 1),
@@ -158,7 +158,7 @@
     background: var(--accent-red);
     border-color: var(--accent-red);
     color: var(--color-contrast-high);
-    transform: scale(1.15) translateY(0);
+    transform: scale(1.08) translateY(0);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -183,6 +183,13 @@
 
     .metro-tile:hover .metro-tile-close,
     .metro-tile-close:hover {
+        transform: none;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .metro-tile-close {
+        opacity: 1;
         transform: none;
     }
 }

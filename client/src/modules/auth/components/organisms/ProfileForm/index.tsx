@@ -3,9 +3,16 @@ import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Loader from '@/shared/presentation/components/Loader';
 import useZodForm from '@/shared/presentation/hooks/use-zod-form';
-import { sileo } from 'sileo';
-import { useCallback, useEffect, useRef } from 'react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ProfileForm as ProfileFormType } from './validation-schema';
+
+enum ProfileSaveState {
+    Idle = 'idle',
+    Saving = 'saving',
+    Saved = 'saved',
+    Error = 'error'
+};
 
 interface ProfileFormProps {
     initialValues: ProfileFormType;
@@ -26,9 +33,22 @@ const ProfileForm = ({
     });
 
     const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const performAutoSaveRef = useRef<() => Promise<void>>(async () => {});
     const isSavingRef = useRef(false);
     const initialValuesRef = useRef(initialValues);
     const onUpdateRef = useRef(onUpdate);
+    const [saveState, setSaveState] = useState(ProfileSaveState.Idle);
+
+    const clearPendingAutoSave = useCallback(() => {
+        if (autoSaveTimerRef.current) {
+            clearTimeout(autoSaveTimerRef.current);
+            autoSaveTimerRef.current = null;
+        }
+    }, []);
+
+    const hasProfileChanges = useCallback((values: ProfileFormType) => {
+        return PROFILE_FORM_FIELDS.some((key) => values[key] !== initialValuesRef.current[key]);
+    }, []);
 
     useEffect(() => {
         onUpdateRef.current = onUpdate;
@@ -36,54 +56,115 @@ const ProfileForm = ({
 
     useEffect(() => {
         initialValuesRef.current = initialValues;
+        clearPendingAutoSave();
         reset(initialValues);
-    }, [initialValues, reset]);
-
-    const performAutoSave = useCallback(async () => {
-        if (isSavingRef.current) return;
-        if (!formState.isValid) return;
-
-        const currentValues = getValues();
-        const hasChanged = PROFILE_FORM_FIELDS.some(
-            (key) => currentValues[key] !== initialValuesRef.current[key]
-        );
-
-        if (!hasChanged) return;
-
-        try {
-            isSavingRef.current = true;
-            await onUpdateRef.current(currentValues);
-            initialValuesRef.current = currentValues;
-        } catch {
-            sileo.error({ title: 'Auto-save failed' });
-        } finally {
-            isSavingRef.current = false;
-        }
-    }, [formState.isValid, getValues]);
+        setSaveState(ProfileSaveState.Idle);
+    }, [clearPendingAutoSave, initialValues, reset]);
 
     useEffect(() => {
-        const subscription = watch(() => {
-            if (autoSaveTimerRef.current) {
-                clearTimeout(autoSaveTimerRef.current);
+        performAutoSaveRef.current = async () => {
+            if (isSavingRef.current) return;
+            if (!formState.isValid) return;
+
+            const currentValues = getValues();
+            const hasChanged = hasProfileChanges(currentValues);
+
+            if (!hasChanged) return;
+
+            try {
+                isSavingRef.current = true;
+                setSaveState(ProfileSaveState.Saving);
+                await onUpdateRef.current(currentValues);
+                initialValuesRef.current = currentValues;
+                setSaveState(ProfileSaveState.Saved);
+            } catch {
+                setSaveState(ProfileSaveState.Error);
+            } finally {
+                isSavingRef.current = false;
+
+                const latestValues = getValues();
+                if (hasProfileChanges(latestValues)) {
+                    clearPendingAutoSave();
+                    autoSaveTimerRef.current = setTimeout(() => {
+                        autoSaveTimerRef.current = null;
+                        performAutoSaveRef.current();
+                    }, AUTO_SAVE_DELAY);
+                }
             }
-            autoSaveTimerRef.current = setTimeout(performAutoSave, AUTO_SAVE_DELAY);
+        };
+    }, [clearPendingAutoSave, formState.isValid, getValues, hasProfileChanges]);
+
+    useEffect(() => {
+        const subscription = watch((values) => {
+            const currentValues: ProfileFormType = {
+                fullName: values.fullName ?? '',
+                email: values.email ?? ''
+            };
+
+            if (!hasProfileChanges(currentValues)) {
+                clearPendingAutoSave();
+                setSaveState((currentState) => currentState === ProfileSaveState.Saving ? currentState : ProfileSaveState.Idle);
+
+                return;
+            }
+
+            setSaveState((currentState) => currentState === ProfileSaveState.Saving ? currentState : ProfileSaveState.Idle);
+
+            clearPendingAutoSave();
+            autoSaveTimerRef.current = setTimeout(() => {
+                autoSaveTimerRef.current = null;
+                performAutoSaveRef.current();
+            }, AUTO_SAVE_DELAY);
         });
 
         return () => {
             subscription.unsubscribe();
-            if (autoSaveTimerRef.current) {
-                clearTimeout(autoSaveTimerRef.current);
-            }
+            clearPendingAutoSave();
         };
-    }, [watch, performAutoSave]);
+    }, [watch, clearPendingAutoSave, hasProfileChanges]);
+
+    let saveFeedback = null;
+
+    if (saveState === ProfileSaveState.Saving) {
+        saveFeedback = (
+            <Container className='d-flex items-center gap-05 color-muted font-size-1' role='status' aria-live='polite' aria-atomic='true'>
+                <Loader scale={0.6} isFixed={false} />
+                Saving changes...
+            </Container>
+        );
+    }
+
+    if (saveState === ProfileSaveState.Saved) {
+        saveFeedback = (
+            <Container className='d-flex items-center gap-05 font-size-1' role='status' aria-live='polite' aria-atomic='true'>
+                <CheckCircle2 size={14} className='color-success' />
+                <span>Changes saved</span>
+            </Container>
+        );
+    }
+
+    if (saveState === ProfileSaveState.Error) {
+        saveFeedback = (
+            <Container className='d-flex items-center gap-05 font-size-1 color-danger' role='alert' aria-live='assertive' aria-atomic='true'>
+                <AlertCircle size={14} />
+                <span>Could not save changes. We will retry after your next edit.</span>
+            </Container>
+        );
+    }
 
     return (
-        <Container className='d-flex column gap-1'>
+        <form className='d-flex column gap-1' onSubmit={(event) => event.preventDefault()} noValidate>
             <FormFieldRHF
                 name='fullName'
                 control={control}
                 label='Full Name'
                 placeholder='Enter your full name'
+                inputProps={{
+                    autoComplete: 'name',
+                    inputMode: 'text',
+                    spellCheck: false,
+                    name: 'fullName'
+                }}
             />
 
             <FormFieldRHF
@@ -92,15 +173,18 @@ const ProfileForm = ({
                 label='Email'
                 type='email'
                 placeholder='Enter your email'
+                inputProps={{
+                    autoComplete: 'email',
+                    inputMode: 'email',
+                    spellCheck: false,
+                    name: 'email',
+                    autoCapitalize: 'none',
+                    autoCorrect: 'off'
+                }}
             />
 
-            {isSavingRef.current && (
-                <Container className='d-flex items-center gap-05 color-muted font-size-1'>
-                    <Loader scale={0.6} isFixed={false} />
-                    Saving changes...
-                </Container>
-            )}
-        </Container>
+            {saveFeedback}
+        </form>
     );
 };
 

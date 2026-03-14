@@ -74,7 +74,7 @@ const DashboardRecentAnalyses = () => {
                 key='empty'
                 icon={<FlaskConical size={20} strokeWidth={1.5} />}
                 title='No analyses yet'
-                description=''
+                description='Completed or in-progress analysis runs will appear here once your team starts processing trajectories.'
                 className='dashboard-recent-analyses-empty flex-1'
             />
         ];

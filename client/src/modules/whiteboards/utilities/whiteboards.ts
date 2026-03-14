@@ -70,3 +70,13 @@ export const getDeleteConfirmationMessage = (selectedItems: Whiteboard[]): strin
 
     return `Delete ${selectedItems.length} whiteboards? This action cannot be undone.`;
 };
+
+export const getSafeWhiteboardTitle = (title: string | null | undefined): string => {
+    const trimmedTitle = title?.trim();
+    return trimmedTitle || 'Untitled Whiteboard';
+};
+
+export const getSafeFolderTitle = (title: string | null | undefined): string => {
+    const trimmedTitle = title?.trim();
+    return trimmedTitle || 'Untitled Folder';
+};

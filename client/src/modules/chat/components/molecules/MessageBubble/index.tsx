@@ -35,7 +35,7 @@ const MessageBubble = ({
 
     if (isDeleted) {
         messageContent = (
-            <Paragraph className='message-bubble-text font-size-2-5 color-muted' style={{ fontStyle: 'italic' }}>
+            <Paragraph className='message-bubble-text font-size-2 color-muted' style={{ fontStyle: 'italic' }}>
                 This message was deleted
             </Paragraph>
         );
@@ -53,7 +53,7 @@ const MessageBubble = ({
         );
     } else {
         messageContent = (
-            <Paragraph className='message-bubble-text font-size-2-5'>
+            <Paragraph className='message-bubble-text font-size-2'>
                 {message.content}
             </Paragraph>
         );
@@ -70,9 +70,9 @@ const MessageBubble = ({
                 <Avatar user={message.sender} size='xs' className='message-bubble-avatar radius-full' />
             )}
 
-            <Container className='d-flex column w-max'>
-                {showAvatar && (
-                    <Paragraph className='message-bubble-sender font-weight-6 color-secondary font-size-1 mb-025'>
+                <Container className='d-flex column w-max'>
+                    {showAvatar && (
+                    <Paragraph className='message-bubble-sender font-weight-6 color-secondary font-size-2 mb-025'>
                         {message.sender.firstName} {message.sender.lastName}
                     </Paragraph>
                 )}
@@ -83,7 +83,7 @@ const MessageBubble = ({
                     {!isDeleted && children}
                 </Container>
 
-                <Container className='d-flex items-center gap-05 message-bubble-time color-muted mt-05 font-size-1'>
+                <Container className='d-flex items-center gap-05 message-bubble-time color-muted mt-05 font-size-2'>
                     <Paragraph>{formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}</Paragraph>
                     {message.editedAt && (
                         <Paragraph className='message-bubble-edited'>(edited)</Paragraph>

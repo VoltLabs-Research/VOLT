@@ -130,10 +130,26 @@ const resolveScope = (tab: NotebooksListingTabId): ScriptingNotebookScope => {
 
 const getEmptyMessage = (scope: ScriptingNotebookScope): string => {
     if (scope === ScriptingNotebookScope.Trajectory) {
-        return 'No trajectory notebooks found for this team.';
+        return 'Open a notebook from a trajectory workspace to keep it tied to a run.';
     }
 
-    return 'No general notebooks found for this team.';
+    return 'Create a general notebook to start drafting scripts and experiments.';
+};
+
+const getEmptyTitle = (scope: ScriptingNotebookScope): string => {
+    if (scope === ScriptingNotebookScope.Trajectory) {
+        return 'No trajectory notebooks yet';
+    }
+
+    return 'No notebooks yet';
+};
+
+const getEmptyButtonText = (scope: ScriptingNotebookScope): string => {
+    if (scope === ScriptingNotebookScope.Trajectory) {
+        return 'View general notebooks';
+    }
+
+    return 'Create notebook';
 };
 
 const NotebooksListing = () => {
@@ -163,6 +179,15 @@ const NotebooksListing = () => {
         }
     }, []);
 
+    const handleEmptyStateAction = useCallback(() => {
+        if (scope === ScriptingNotebookScope.Trajectory) {
+            setActiveTab(NotebooksListingTabId.List);
+            return;
+        }
+
+        handleCreate();
+    }, [handleCreate, scope]);
+
     return (
         <>
             <DocumentListing<NotebookDocument, NotebooksListingContext>
@@ -175,7 +200,10 @@ const NotebooksListing = () => {
                 fetchData={fetchData}
                 getMenuOptions={getMenuOptions}
                 createNew={createNew}
+                emptyTitle={getEmptyTitle(scope)}
                 emptyMessage={getEmptyMessage(scope)}
+                emptyButtonText={getEmptyButtonText(scope)}
+                onEmptyButtonClick={handleEmptyStateAction}
                 exportConfig={{
                     onExport: exportNotebooks,
                     getFilename: (format) => `notebooks-${scope}.${format}`

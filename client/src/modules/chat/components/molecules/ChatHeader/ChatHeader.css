@@ -11,10 +11,25 @@
     color: var(--color-text-secondary);
 }
 
-.chat-header-status {
-    font-size: 0.8rem;
+.chat-header .volt-icon-button {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+}
+
+.chat-header-mobile-button {
+    display: none;
 }
 
 :root[data-theme='light'] .chat-header {
     border-bottom-color: var(--material-regular-border);
+}
+
+@media (max-width: 768px) {
+    .chat-header {
+        padding: 0.875rem 1rem;
+    }
+
+    .chat-header-mobile-button {
+        display: inline-flex;
+    }
 }

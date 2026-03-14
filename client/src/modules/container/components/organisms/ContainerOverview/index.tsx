@@ -9,6 +9,16 @@ import type { EnvVariable } from '@/modules/container/api/entities/env-variable'
 import type { PortMapping } from '@/modules/container/api/entities/port-mapping';
 import type { ContainerStatsViewData } from '@/modules/container/services/container-stats-view';
 
+interface EnvVariableFormItem extends Record<string, unknown> {
+    key: string;
+    value: string;
+};
+
+interface PortMappingFormItem extends Record<string, unknown> {
+    private: number;
+    public?: number;
+};
+
 interface ContainerOverviewProps {
     container: ContainerEntity;
     stats: ContainerStatsViewData;
@@ -18,6 +28,14 @@ interface ContainerOverviewProps {
 
 const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: ContainerOverviewProps) => {
     const isRunning = container.status === 'running';
+    const envItems: EnvVariableFormItem[] = (container.env || []).map((item) => ({
+        key: item.key,
+        value: item.value
+    }));
+    const portItems: PortMappingFormItem[] = (container.ports || []).map((item) => ({
+        private: item.private,
+        public: item.public
+    }));
 
     return (
         <Container className='container-details-pane p-1 d-flex column gap-2 h-max'>
@@ -46,9 +64,9 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
             </Container>
 
             <Container className='container-details-config-grid gap-2'>
-                <EditableKeyValueCard<EnvVariable>
+                <EditableKeyValueCard<EnvVariableFormItem>
                     title='Environment Variables'
-                    items={container.env || []}
+                    items={envItems}
                     fields={[
                         { key: 'key', placeholder: 'Key' },
                         { key: 'value', placeholder: 'Value' }
@@ -64,9 +82,9 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                     )}
                 />
 
-                <EditableKeyValueCard<PortMapping>
+                <EditableKeyValueCard<PortMappingFormItem>
                     title='Port Bindings'
-                    items={container.ports || []}
+                    items={portItems}
                     fields={[
                         {
                             key: 'private',
@@ -84,7 +102,7 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                     createEmpty={() => ({ private: 0, public: 0 })}
                     renderItem={(item, i) => (
                         <Container key={i} className='editable-kv-display-row d-flex content-between'>
-                            <span className='color-brand font-weight-6 font-family-mono'>{item.private}/tcp</span>
+                            <span className='color-secondary font-weight-6 font-family-mono'>{item.private}/tcp</span>
                             <span className='color-muted'>→</span>
                             <span className='font-family-mono'>localhost:{item.public}</span>
                         </Container>

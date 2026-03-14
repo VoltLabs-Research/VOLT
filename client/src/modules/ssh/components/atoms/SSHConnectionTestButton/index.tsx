@@ -3,7 +3,7 @@ import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { TbCheck, TbX } from 'react-icons/tb';
 import type { ReactNode } from 'react';
 
@@ -17,53 +17,101 @@ interface SSHConnectionTestButtonProps {
     disabled?: boolean;
 };
 
+enum ConnectionTestStateStatus {
+    Idle = 'idle',
+    Loading = 'loading',
+    Success = 'success',
+    Error = 'error'
+};
+
+interface ConnectionTestState {
+    status: ConnectionTestStateStatus;
+    message: string;
+};
+
 const SSHConnectionTestButton = ({ connectionId, disabled }: SSHConnectionTestButtonProps) => {
     const testConnection = useTestSSHConnectionMutation();
-    const [testResult, setTestResult] = useState<TestResult | null>(null);
+    const statusId = useId();
+    const [testState, setTestState] = useState<ConnectionTestState>({
+        status: ConnectionTestStateStatus.Idle,
+        message: ''
+    });
     let testResultContent: ReactNode = null;
 
-    if (testResult) {
+    if (testState.status !== ConnectionTestStateStatus.Idle) {
         let testResultClassName = 'color-red';
-        let testResultMessage = testResult.error || 'Connection failed';
-        let testResultIcon = <TbX size={16} />;
+        let testResultMessage = testState.message;
+        let testResultIcon: ReactNode = <TbX size={16} />;
 
-        if (testResult.valid) {
+        if (testState.status === ConnectionTestStateStatus.Loading) {
+            testResultClassName = 'color-muted';
+            testResultIcon = null;
+        }
+
+        if (testState.status === ConnectionTestStateStatus.Success) {
             testResultClassName = 'color-green';
-            testResultMessage = 'Connection successful';
             testResultIcon = <TbCheck size={16} />;
         }
 
         testResultContent = (
-            <Container className={`d-flex items-center gap-05 font-size-2 ${testResultClassName}`}>
-                {testResultIcon}
+            <Container
+                id={statusId}
+                className={`d-flex items-center gap-05 font-size-2 ${testResultClassName}`}
+                role='status'
+                aria-live='polite'
+                aria-atomic='true'
+            >
+                {testResultIcon && <span aria-hidden='true'>{testResultIcon}</span>}
                 <span>{testResultMessage}</span>
             </Container>
         );
     }
 
+    const resolveTestState = (result: TestResult): ConnectionTestState => {
+        if (result.valid) {
+            return {
+                status: ConnectionTestStateStatus.Success,
+                message: 'Connection successful'
+            };
+        }
+
+        return {
+            status: ConnectionTestStateStatus.Error,
+            message: result.error || 'Connection failed'
+        };
+    };
+
     const handleTest = async () => {
-        setTestResult(null);
+        setTestState({
+            status: ConnectionTestStateStatus.Loading,
+            message: 'Testing connection…'
+        });
+
         try {
             const result = await showPromise(testConnection.mutateAsync({ sshConnectionId: connectionId }), {
                 loading: { title: 'Testing connection...' },
                 success: { title: 'Connection successful!' },
                 error: { title: 'Connection failed' }
             });
-            setTestResult(result);
+            setTestState(resolveTestState(result));
         } catch (err: unknown) {
             if (isAccessDeniedError(err)) {
                 const userError = reportError(err, {
                     surface: ErrorSurface.Toast,
                     fallbackTitle: 'You do not have permission to test this connection'
                 });
-                setTestResult({
-                    valid: false,
-                    error: userError.title
+                setTestState({
+                    status: ConnectionTestStateStatus.Error,
+                    message: userError.title
                 });
                 return;
             }
+
             const message = err instanceof Error ? err.message : 'Connection failed';
-            setTestResult({ valid: false, error: message });
+            setTestState({
+                status: ConnectionTestStateStatus.Error,
+                message
+            });
         }
     };
 
@@ -77,6 +125,7 @@ const SSHConnectionTestButton = ({ connectionId, disabled }: SSHConnectionTestBu
                 onClick={handleTest}
                 disabled={disabled || testConnection.isPending}
                 isLoading={testConnection.isPending}
+                aria-describedby={testState.status === ConnectionTestStateStatus.Idle ? undefined : statusId}
             >
                 Test Connection
             </Button>

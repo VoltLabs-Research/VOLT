@@ -5,6 +5,7 @@ import DebugToolbar from '@/modules/plugin/components/plugin/molecules/DebugTool
 import CanvasToolbar from '@/modules/plugin/components/plugin/molecules/CanvasToolbar';
 import { nodeTypes } from '@/modules/plugin/components/plugin/molecules/nodes';
 import FloatingNodePanel from '@/modules/plugin/components/plugin/organisms/FloatingNodePanel';
+import { PluginBuilderSaveStatus } from '@/modules/plugin/components/plugin/organisms/PluginBuilder/save-status';
 import useCanvasHandlers from '@/modules/plugin/hooks/plugin/use-canvas-handlers';
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
@@ -14,22 +15,32 @@ import { useCallback, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { ReactFlowInstance } from '@xyflow/react';
 
-const NODE_MINIMAP_COLORS: Record<string, string> = {
-    [NodeType.MODIFIER]: '#0062FF',
-    [NodeType.ARGUMENTS]: '#5e5ce6',
-    [NodeType.CONTEXT]: '#64d2ff',
-    [NodeType.FOREACH]: '#bf5af2',
-    [NodeType.ENTRYPOINT]: '#2dcc70',
-    [NodeType.EXPOSURE]: '#ff9f0a',
-    [NodeType.EXPORT]: '#ff453a',
-    [NodeType.IF_STATEMENT]: '#bf5af2'
+interface NodeColorInput {
+    type?: string;
 };
 
-const nodeColor = (node: { type?: string }) =>
-    NODE_MINIMAP_COLORS[node.type ?? ''] ?? '#64748b';
+interface ViewportPosition {
+    x: number;
+    y: number;
+    zoom: number;
+};
+
+const NODE_MINIMAP_COLORS: Record<string, string> = {
+    [NodeType.MODIFIER]: 'var(--accent-blue)',
+    [NodeType.ARGUMENTS]: 'var(--accent-indigo)',
+    [NodeType.CONTEXT]: 'var(--accent-blue)',
+    [NodeType.FOREACH]: 'var(--accent-purple)',
+    [NodeType.ENTRYPOINT]: 'var(--accent-green)',
+    [NodeType.EXPOSURE]: 'var(--accent-orange)',
+    [NodeType.EXPORT]: 'var(--accent-red)',
+    [NodeType.IF_STATEMENT]: 'var(--accent-purple)'
+};
+
+const nodeColor = (node: NodeColorInput) =>
+    NODE_MINIMAP_COLORS[node.type ?? ''] ?? 'var(--color-border-strong)';
 
 interface PluginBuilderCanvasProps {
-    saveStatus: 'idle' | 'saving' | 'saved' | 'error';
+    saveStatus: PluginBuilderSaveStatus;
     onSave: () => void;
 };
 
@@ -68,7 +79,7 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
         setCurrentZoom(instance.getZoom());
     }, []);
 
-    const handleMoveEnd = useCallback((_event: unknown, viewport: { x: number; y: number; zoom: number }) => {
+    const handleMoveEnd = useCallback((_event: unknown, viewport: ViewportPosition) => {
         setCurrentZoom(viewport.zoom);
     }, []);
 
@@ -95,15 +106,15 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
                 snapGrid={[16, 16]}
                 defaultEdgeOptions={{
                     animated: true,
-                    style: { stroke: '#64748b', strokeWidth: 2 }
+                    style: { stroke: 'var(--color-border-strong)', strokeWidth: 2 }
                 }}
             >
-                <Background bgColor='#080808ff' color='rgb(116, 116, 116)' gap={16} size={0.8} />
+                <Background bgColor='var(--color-bg)' color='var(--color-border-strong)' gap={16} size={0.8} />
                 {!isEmpty && (
                     <MiniMap
                         nodeColor={nodeColor}
-                        maskColor='rgba(0, 0, 0, 0.7)'
-                        bgColor='#171719'
+                        maskColor='color-mix(in srgb, var(--color-bg) 72%, transparent)'
+                        bgColor='var(--color-surface-2)'
                     />
                 )}
             </ReactFlow>

@@ -1,6 +1,7 @@
 .chat-list-item {
     width: 100%;
-    padding: 0.625rem;
+    min-height: 3rem;
+    padding: 0.75rem;
     border: 1px solid transparent;
     border-radius: var(--radius-md);
     background: transparent;
@@ -31,6 +32,5 @@
 }
 
 .chat-list-item-time {
-    font-size: 0.7rem;
     white-space: nowrap;
 }

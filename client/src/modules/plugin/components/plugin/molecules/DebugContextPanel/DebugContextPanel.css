@@ -1,6 +1,6 @@
 .debug-context-panel {
-    width: 280px;
-    max-height: 320px;
+    width: min(280px, calc(100vw - 1.5rem));
+    max-height: min(320px, calc(100vh - 6rem));
 }
 
 .debug-context-panel-header {
@@ -18,12 +18,22 @@
 
 /* Shared clickable row - used for panel header, entry headers, iteration headers */
 .debug-context-row {
+    width: 100%;
     padding: 0.35rem 0.625rem;
+    border: none;
+    background: transparent;
+    color: inherit;
+    text-align: left;
     transition: background 0.1s;
 }
 
 .debug-context-row:hover {
     background: color-mix(in srgb, var(--color-surface-2) 50%, transparent);
+}
+
+.debug-context-row:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--focus-ring), inset 0 0 0 3px color-mix(in srgb, var(--focus-ring) 24%, transparent);
 }
 
 /* Individual output entry */

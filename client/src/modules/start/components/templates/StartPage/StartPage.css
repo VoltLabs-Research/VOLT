@@ -66,6 +66,17 @@
     padding-left: 3rem;
 }
 
+.metro-empty-state-card {
+    align-self: flex-start;
+    width: min(100%, 42rem);
+    padding-left: 3rem;
+}
+
+.metro-empty-state-card .empty-state-content {
+    align-items: flex-start;
+    text-align: left;
+}
+
 .metro-grid-wrapper {
     flex: 1;
     min-height: 0;
@@ -93,4 +104,31 @@
     align-items: center;
     padding: 2rem 5rem;
     width: max-content;
+}
+
+@media screen and (max-width: 768px) {
+    .metro-header {
+        padding: 1rem 1rem 0;
+        gap: 0.75rem;
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .metro-title {
+        padding-left: 1rem;
+        font-size: 2.75rem;
+    }
+
+    .metro-empty-state-card {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .metro-grid {
+        padding: 1rem;
+    }
+
+    .metro-grid-wrapper::before {
+        display: none;
+    }
 }

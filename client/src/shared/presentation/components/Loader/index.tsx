@@ -8,6 +8,7 @@ interface LoaderProps {
     className?: string;
     label?: string;
     announce?: boolean;
+    reducedMotionLabel?: string;
 };
 
 const Loader = ({
@@ -15,7 +16,8 @@ const Loader = ({
     isFixed = true,
     className = '',
     label,
-    announce = false
+    announce = false,
+    reducedMotionLabel = 'Loading'
 }: LoaderProps) => {
     const loaderItems = Array.from({ length: 12 }, (_, index) => index + 1);
     const statusId = useId();
@@ -48,6 +50,9 @@ const Loader = ({
                         {label}
                     </span>
                 )}
+                <span className='loader-reduced-motion-label'>
+                    {reducedMotionLabel}
+                </span>
             </Container>
         </Container>
     );

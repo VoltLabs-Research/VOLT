@@ -10,20 +10,22 @@ export interface SettingsSectionHeaderProps {
     description?: string;
     action?: ReactNode;
     className?: string;
+    headingAs?: 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 };
 
 const SettingsSectionHeader = ({
     title,
     description,
     action,
-    className = ''
+    className = '',
+    headingAs = 'h2'
 }: SettingsSectionHeaderProps) => {
     const classes = cn('settings-section-header', 'd-flex', 'items-start', 'content-between', 'gap-1', className);
 
     return (
-        <Container className={classes}>
+        <header className={classes}>
             <Container className='flex-1 d-flex column gap-025'>
-                <Title className='font-size-3 font-weight-6'>
+                <Title as={headingAs} className='font-size-3 font-weight-6'>
                     {title}
                 </Title>
                 {description && (
@@ -37,7 +39,7 @@ const SettingsSectionHeader = ({
                     {action}
                 </Container>
             )}
-        </Container>
+        </header>
     );
 };
 

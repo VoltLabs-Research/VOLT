@@ -74,7 +74,7 @@ const JobsHistory = ({
     }
 
     return (
-        <Container className='d-flex column gap-05 h-max'>
+        <Container className='d-flex column gap-05 h-max' role='list'>
             {content}
         </Container>
     );

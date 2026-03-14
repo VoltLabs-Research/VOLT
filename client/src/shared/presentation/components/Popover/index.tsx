@@ -8,6 +8,8 @@ import React from 'react';
 import type { Placement, VirtualElement } from '@floating-ui/react';
 import type { HTMLAttributes, ReactNode, ReactElement, Ref } from 'react';
 
+type PopoverRole = 'dialog' | 'menu' | 'listbox' | 'tooltip';
+
 type PopoverTriggerProps = HTMLAttributes<HTMLElement> & {
     ref?: Ref<HTMLElement>;
     'data-popover-trigger'?: string;
@@ -29,6 +31,11 @@ interface PopoverProps {
     triggerAction?: 'click' | 'contextmenu';
     onOpenChange?: (isOpen: boolean) => void;
     placement?: Placement;
+    role?: PopoverRole;
+    triggerAriaHaspopup?: 'menu' | 'dialog';
+    ariaLabel?: string;
+    ariaLabelledBy?: string;
+    ariaDescribedBy?: string;
 };
 
 const Popover: React.FC<PopoverProps> = ({
@@ -39,7 +46,12 @@ const Popover: React.FC<PopoverProps> = ({
     noPadding = false,
     triggerAction = 'click',
     onOpenChange,
-    placement = 'bottom-start'
+    placement = 'bottom-start',
+    role: popoverRole = 'dialog',
+    triggerAriaHaspopup,
+    ariaLabel,
+    ariaLabelledBy,
+    ariaDescribedBy
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [contextMenuPosition, setContextMenuPosition] = useState<ContextMenuPosition | null>(null);
@@ -108,7 +120,7 @@ const Popover: React.FC<PopoverProps> = ({
         enabled: triggerAction === 'click'
     });
     const dismiss = useDismiss(context);
-    const role = useRole(context);
+    const role = useRole(context, { role: popoverRole });
 
     const { getReferenceProps, getFloatingProps } = useInteractions([
         click,
@@ -149,6 +161,9 @@ const Popover: React.FC<PopoverProps> = ({
                     )
                 }),
             'data-popover-trigger': id,
+            'aria-controls': isOpen ? id : undefined,
+            'aria-expanded': triggerAction === 'click' ? isOpen : undefined,
+            'aria-haspopup': triggerAriaHaspopup ?? (popoverRole === 'menu' ? 'menu' : 'dialog'),
             ...getReferenceProps({
                 onContextMenu: handleContextMenu
             })
@@ -168,6 +183,10 @@ const Popover: React.FC<PopoverProps> = ({
                             className={`popover radius-lg d-flex column glass-bg ${noPadding ? '' : 'p-05'} ${className} color-primary`}
                             style={floatingStyles}
                             onClick={(event) => event.stopPropagation()}
+                            aria-label={ariaLabel}
+                            aria-labelledby={ariaLabelledBy}
+                            aria-describedby={ariaDescribedBy}
+                            tabIndex={-1}
                             {...getFloatingProps()}
                         >
                             {renderChildren()}

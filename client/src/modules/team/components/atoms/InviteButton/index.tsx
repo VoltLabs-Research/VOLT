@@ -6,15 +6,17 @@ export type InviteButtonState = 'idle' | 'success' | 'error';
 interface InviteButtonProps {
     state: InviteButtonState;
     isLoading: boolean;
-    onClick: () => void;
+    onClick?: () => void;
     disabled?: boolean;
+    type?: 'button' | 'submit';
 };
 
 export const InviteButton = ({
     state,
     isLoading,
     onClick,
-    disabled = false
+    disabled = false,
+    type = 'button'
 }: InviteButtonProps) => {
     const getButtonContent = () => {
         switch (state) {
@@ -46,6 +48,7 @@ export const InviteButton = ({
             disabled={disabled}
             isLoading={isLoading}
             leftIcon={icon}
+            type={type}
         >
             {text}
         </Button>

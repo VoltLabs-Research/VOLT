@@ -494,22 +494,50 @@
 .list-item-hoverable {
     padding: 0.75rem;
     border-radius: var(--radius-sm);
-    transition: background 0.2s ease;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.list-item-hoverable:hover {
+@media (hover: hover) and (pointer: fine) {
+    .list-item-hoverable:hover {
+        background: var(--color-surface-2);
+    }
+}
+
+.list-item-hoverable:focus-visible {
     background: var(--color-surface-2);
+    box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.list-item-hoverable:active {
+    background: var(--active-bg);
 }
 
 /** Panel Headers **/
 .panel-header-bordered {
-    padding: 0.75rem 8px;
+    padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--color-border-soft);
 }
 
 .panel-footer-bordered {
     padding: 0.75rem 1rem;
     border-top: 1px solid var(--color-border-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .transition-fast,
+    .transition-normal,
+    .list-item-hoverable {
+        transition: none !important;
+    }
 }
 
 /** Mobile **/

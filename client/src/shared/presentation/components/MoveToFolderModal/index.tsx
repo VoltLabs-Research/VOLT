@@ -1,16 +1,16 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import FolderBreadcrumbs from '@/shared/presentation/components/FolderBreadcrumbs';
 import Modal, { closeModal } from '@/shared/presentation/components/Modal';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import FolderBreadcrumbs from '@/shared/presentation/components/FolderBreadcrumbs';
 import useFolderBreadcrumbs from '@/shared/presentation/hooks/use-folder-breadcrumbs';
 import { Folder, FolderOpen, Home } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { FolderBreadcrumbEntity } from '@/shared/presentation/hooks/use-folder-breadcrumbs';
 import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';
+import type { FolderBreadcrumbEntity } from '@/shared/presentation/hooks/use-folder-breadcrumbs';
 
 interface MoveToFolderModalProps<TFolder extends FolderBreadcrumbEntity> {
     id: string;
@@ -38,6 +38,7 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
     const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
     const [folders, setFolders] = useState<TFolder[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [submitError, setSubmitError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [reloadKey, setReloadKey] = useState(0);
@@ -47,6 +48,7 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
             setActiveFolderId(null);
             setFolders([]);
             setError(null);
+            setSubmitError(null);
             setIsLoading(false);
             setIsSubmitting(false);
             setReloadKey(0);
@@ -55,6 +57,7 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
 
         setActiveFolderId(null);
         setError(null);
+        setSubmitError(null);
         setFolders([]);
         setIsSubmitting(false);
         setReloadKey(0);
@@ -121,21 +124,33 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
 
     const isCurrentDestination = sourceFolderId === activeFolderId;
 
-    const handleClose = useCallback(() => {
+    const handleRequestClose = useCallback(() => {
         closeModal(id);
+    }, [id]);
+
+    const handleModalClose = useCallback(() => {
+        setSubmitError(null);
         onClose();
-    }, [id, onClose]);
+    }, [onClose]);
 
     const handleMove = useCallback(async () => {
         setIsSubmitting(true);
+        setSubmitError(null);
 
         try {
             await onSubmit(activeFolderId);
-            handleClose();
+            handleRequestClose();
+        } catch (nextError) {
+            const userError = reportError(nextError, {
+                surface: ErrorSurface.Silent,
+                fallbackTitle: `Failed to move ${itemLabel.toLowerCase()}`
+            });
+
+            setSubmitError(userError.description ?? userError.title);
         } finally {
             setIsSubmitting(false);
         }
-    }, [activeFolderId, handleClose, onSubmit]);
+    }, [activeFolderId, handleRequestClose, itemLabel, onSubmit]);
 
     const handleRetry = useCallback(() => {
         setReloadKey((previousValue) => previousValue + 1);
@@ -143,7 +158,7 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
 
     const secondaryAction: ModalFooterAction = {
         label: 'Cancel',
-        onClick: handleClose,
+        onClick: handleRequestClose,
         disabled: isSubmitting
     };
 
@@ -159,7 +174,7 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
             id={id}
             title={`Move ${itemLabel}`}
             description={itemName ? `Choose a destination folder for "${itemName}".` : 'Choose a destination folder.'}
-            onClose={handleClose}
+            onClose={handleModalClose}
             footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
         >
             <Container className='d-flex column gap-1 p-1-5'>
@@ -172,6 +187,12 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
 
                 {isCurrentDestination && (
                     <Paragraph className='font-size-2 color-muted'>This {itemLabel.toLowerCase()} is already in this location.</Paragraph>
+                )}
+
+                {submitError && (
+                    <Paragraph className='font-size-2 color-danger' role='status' aria-live='polite' aria-atomic='true'>
+                        {submitError}
+                    </Paragraph>
                 )}
 
                 <Container className='d-flex column gap-075'>

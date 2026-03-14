@@ -4,6 +4,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import Title from '@/shared/presentation/components/Title';
 import './ScriptingWorkspace.css';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
@@ -14,16 +15,41 @@ interface ScriptingWorkspaceProps {
     onJupyterUrlChange?: (url: string | null) => void;
 };
 
-const renderLoadingState = (message: string) => (
-    <Container className="scripting-workspace__empty d-flex column items-center content-center gap-1 flex-1 p-2">
+interface WorkspaceStateProps {
+    title: string;
+    description: string;
+    liveMode: 'alert' | 'status';
+    children?: ReactNode;
+};
+
+const renderWorkspaceState = ({
+    title,
+    description,
+    liveMode,
+    children
+}: WorkspaceStateProps) => (
+    <Container
+        className='scripting-workspace__empty d-flex column items-center content-center gap-1 flex-1 p-2 text-center'
+        role={liveMode === 'alert' ? 'alert' : 'status'}
+        aria-live={liveMode === 'alert' ? 'assertive' : 'polite'}
+        aria-atomic='true'
+    >
         <Loader scale={0.6} isFixed={false} />
-        <Paragraph className="color-muted mt-1">{message}</Paragraph>
+        <Container className='d-flex column items-center gap-05 scripting-workspace__content'>
+            <Title as='h2' className='font-size-3 font-weight-6 color-primary'>
+                {title}
+            </Title>
+            <Paragraph className='color-secondary scripting-workspace__description'>
+                {description}
+            </Paragraph>
+        </Container>
+        {children}
     </Container>
 );
 
-const renderWorkspaceShell = (content: ReactNode) => (
-    <Container className="scripting-workspace d-flex column flex-1 min-h-0">
-        <Container className="scripting-workspace__panel d-flex flex-1 min-h-0 p-relative">
+const renderWorkspaceShell = (content: ReactNode, isBusy = false) => (
+    <Container className='scripting-workspace d-flex column flex-1 min-h-0' aria-busy={isBusy}>
+        <Container className='scripting-workspace__panel d-flex flex-1 min-h-0 p-relative'>
             {content}
         </Container>
     </Container>
@@ -50,7 +76,11 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange }: Sc
     }, [jupyterUrl, onJupyterUrlChange]);
 
     if (isLoading) {
-        return renderLoadingState('Loading scripting workspace...');
+        return renderWorkspaceShell(renderWorkspaceState({
+            title: 'Loading scripting workspace',
+            description: 'Fetching notebooks and preparing your workspace.',
+            liveMode: 'status'
+        }), true);
     }
 
     if (accessDenied) {
@@ -61,41 +91,43 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange }: Sc
 
     if (jupyterUrl) {
         return renderWorkspaceShell(
-            <Container className="scripting-workspace__notebook-view p-relative d-flex flex-1">
-                <iframe src={jupyterUrl} title="Volt Scripting Jupyter" className="scripting-workspace__iframe" />
+            <Container className='scripting-workspace__notebook-view p-relative d-flex flex-1'>
+                <iframe src={jupyterUrl} title='Volt scripting notebook workspace' className='scripting-workspace__iframe' />
             </Container>
         );
     }
 
-    return renderWorkspaceShell(
-        <Container className="scripting-workspace__empty d-flex column items-center content-center gap-1 flex-1 p-2">
-            {!error && (
-                <>
-                    <Loader scale={0.6} isFixed={false} />
-                    <Paragraph className="color-muted mt-1">
-                        {isStartingJupyter ? 'Starting Jupyter session...' : 'Jupyter session pending...'}
-                    </Paragraph>
-                    {!activeNotebook && (
-                        <Paragraph className="color-muted">
-                            No notebook selected. Opening Jupyter workspace...
-                        </Paragraph>
-                    )}
-                </>
-            )}
-            {error && <Paragraph className="scripting-workspace__error">{error}</Paragraph>}
-            {error && !isStartingJupyter && (
+    if (error) {
+        return renderWorkspaceShell(renderWorkspaceState({
+            title: 'Unable to start the notebook workspace',
+            description: error,
+            liveMode: 'alert',
+            children: !isStartingJupyter ? (
                 <Button
-                    variant="outline"
-                    intent="neutral"
-                    size="sm"
-                    shape="rounded"
+                    variant='outline'
+                    intent='neutral'
+                    size='sm'
+                    shape='rounded'
                     onClick={retryStartJupyter}
                 >
-                    Retry Start Jupyter
+                    Retry starting Jupyter
                 </Button>
-            )}
-        </Container>
-    );
+            ) : undefined
+        }));
+    }
+
+    const pendingTitle = isStartingJupyter
+        ? 'Starting Jupyter session'
+        : 'Preparing scripting workspace';
+    const pendingDescription = activeNotebook
+        ? 'Opening the selected notebook in Jupyter. This can take a moment.'
+        : 'No notebook is selected yet. Opening the shared Jupyter workspace for this trajectory.';
+
+    return renderWorkspaceShell(renderWorkspaceState({
+        title: pendingTitle,
+        description: pendingDescription,
+        liveMode: 'status'
+    }), true);
 };
 
 export default ScriptingWorkspace;

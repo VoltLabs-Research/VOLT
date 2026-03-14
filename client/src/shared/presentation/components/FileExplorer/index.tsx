@@ -4,6 +4,7 @@ import Container from '@/shared/presentation/components/Container';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import './FileExplorer.css';
 import type { ReactNode } from 'react';
+import { useMemo } from 'react';
 
 export interface FileExplorerProps {
     headerLeft?: ReactNode;
@@ -38,6 +39,26 @@ const FileExplorer = ({
     onRetry,
     isRetrying = false
 }: FileExplorerProps) => {
+    const stateMessage = useMemo(() => {
+        if (accessDenied) {
+            return accessDeniedMessage ?? 'Access denied.';
+        }
+
+        if (error) {
+            return error;
+        }
+
+        if (isLoading) {
+            return 'Loading files.';
+        }
+
+        if (isEmpty) {
+            return emptyMessage;
+        }
+
+        return '';
+    }, [accessDenied, accessDeniedMessage, emptyMessage, error, isEmpty, isLoading]);
+
     const renderContent = () => {
         if (accessDenied) {
             return (
@@ -84,6 +105,9 @@ const FileExplorer = ({
 
     return (
         <Container className='file-explorer d-flex column h-max overflow-hidden'>
+            <span className='file-explorer-live-region' aria-live='polite' aria-atomic='true'>
+                {stateMessage}
+            </span>
             <Container className='file-explorer-header d-flex content-between items-center gap-1 p-075'>
                 <Container className='file-explorer-header-left d-flex items-center gap-05'>
                     {headerLeft}
@@ -104,7 +128,7 @@ const FileExplorer = ({
                 </Container>
             )}
 
-            <Container className='file-explorer-list flex-1 y-auto'>
+            <Container className='file-explorer-list flex-1 y-auto' role='list' aria-busy={isLoading || isRetrying}>
                 {renderContent()}
             </Container>
         </Container>

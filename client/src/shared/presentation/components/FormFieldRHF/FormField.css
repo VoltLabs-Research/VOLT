@@ -8,11 +8,12 @@
 }
 
 .form-field-input{
-    height: 2.75rem;
-    background-color: transparent;
+    min-height: 2.5rem;
+    height: 2.5rem;
+    background-color: var(--input-bg);
     border: 1px solid var(--color-border);
     color: var(--color-text-primary);
-    padding: 0 0.875rem;
+    padding: 0 0.75rem;
     font-size: 0.875rem;
     border-radius: var(--radius-sm);
     transition: border-color 0.15s ease;
@@ -27,15 +28,16 @@
 }
 
 .form-field-input:focus{
-    border-color: var(--accent-blue);
-    background-color: transparent;
+    outline: none;
+    border-color: var(--focus-ring);
+    background-color: var(--input-bg);
 }
 
 .form-field-input:focus-visible,
 .labeled-input-color:focus-visible {
     outline: none;
     border-color: var(--focus-ring);
-    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }
 
 .form-field-input.has-error{
@@ -47,11 +49,11 @@
 }
 
 .form-field-input.has-icon{
-    padding-left: 2.75rem;
+    padding-left: 2.5rem;
 }
 
 .form-field-icon{
-    left: 1rem;
+    left: 0.875rem;
     top: 50%;
     transform: translateY(-50%);
     color: var(--color-text-muted);
@@ -73,7 +75,7 @@
     grid-template-columns: 140px 1fr;
     align-items: center;
     gap: 0.75rem;
-    min-height: 2.5rem;
+    min-height: 2.375rem;
 }
 
 .form-field-inline.form-field-inline-no-label {
@@ -109,7 +111,8 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.125rem;
-    padding: 0.4rem 0.5rem;
+    min-height: 2.5rem;
+    padding: 0.4375rem 0.5rem;
     border: none;
     background: transparent;
     color: var(--color-text-primary);
@@ -137,7 +140,7 @@
 .form-field-inline-select {
     flex: 1;
     min-width: 0;
-    padding: 0.5rem 0.75rem;
+    padding: 0.4375rem 0.75rem;
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-sm);
     background: transparent;
@@ -156,7 +159,7 @@
 .form-field-inline-textarea:focus-visible {
     outline: none;
     border-color: var(--focus-ring);
-    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }
 
 .form-field-inline-input::placeholder {
@@ -222,7 +225,7 @@
 .form-field-canvas-textarea:focus-visible {
     outline: none;
     border-color: var(--focus-ring);
-    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }
 
 .form-field-canvas-input::placeholder {
@@ -261,7 +264,21 @@
 
 .form-field-canvas .select-trigger:focus-visible {
     border-color: var(--focus-ring);
-    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .form-field-container,
+    .form-field-input,
+    .form-field-icon,
+    .form-field-inline-input,
+    .form-field-inline-select,
+    .form-field-canvas-input,
+    .form-field-canvas-select,
+    .form-field-canvas .select-trigger,
+    .form-field-autocomplete-option {
+        transition: none;
+    }
 }
 
 /* Canvas LiquidToggle sizing */

@@ -5,6 +5,7 @@ import { sileo } from 'sileo';
 interface ScreenshotCaptureProps {
     captureRequested: boolean;
     onCaptureHandled: () => void;
+    onStatusChange?: (message: string) => void;
 };
 
 const downloadDataUrl = (dataUrl: string, filename: string) => {
@@ -17,7 +18,11 @@ const downloadDataUrl = (dataUrl: string, filename: string) => {
     setTimeout(() => document.body.removeChild(link), 100);
 };
 
-const ScreenshotCapture = ({ captureRequested, onCaptureHandled }: ScreenshotCaptureProps) => {
+const ScreenshotCapture = ({
+    captureRequested,
+    onCaptureHandled,
+    onStatusChange
+}: ScreenshotCaptureProps) => {
     const { gl, scene, camera } = useThree();
     const pendingRef = useRef(false);
     const frameSkipRef = useRef(0);
@@ -29,12 +34,13 @@ const ScreenshotCapture = ({ captureRequested, onCaptureHandled }: ScreenshotCap
         onCaptureHandled();
         pendingRef.current = true;
         frameSkipRef.current = 2;
+        onStatusChange?.('Capturing screenshot.');
         toastIdRef.current = sileo.show({
             type: 'loading',
             title: 'Capturing...',
             duration: null
         });
-    }, [captureRequested, onCaptureHandled]);
+    }, [captureRequested, onCaptureHandled, onStatusChange]);
 
     useFrame(() => {
         if (!pendingRef.current) return;
@@ -52,9 +58,11 @@ const ScreenshotCapture = ({ captureRequested, onCaptureHandled }: ScreenshotCap
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
             downloadDataUrl(dataUrl, `volt-screenshot-${timestamp}.png`);
             if (toastIdRef.current) sileo.dismiss(toastIdRef.current);
+            onStatusChange?.('Screenshot captured and downloaded.');
             sileo.success({ title: 'Screenshot captured' });
         } catch {
             if (toastIdRef.current) sileo.dismiss(toastIdRef.current);
+            onStatusChange?.('Screenshot failed. Could not capture the viewport.');
             sileo.error({ title: 'Screenshot failed', description: 'Could not capture the viewport.' });
         }
     });

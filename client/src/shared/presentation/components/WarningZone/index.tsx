@@ -13,7 +13,7 @@ const WarningZone: React.FC<WarningZoneProps> = ({
     className = ''
 }) => {
     return (
-        <Container className={`zone-warning d-flex items-center gap-05 font-size-2 ${className}`}>
+        <Container className={`zone-warning d-flex items-center gap-05 font-size-2 ${className}`} role='status' aria-live='polite'>
             {icon && <Container className='d-flex items-center content-center f-shrink-0'>{icon}</Container>}
             <Container className='flex-1'>{message}</Container>
         </Container>

@@ -7,6 +7,11 @@
     max-width: 560px;
 }
 
+.error-page-title,
+.error-page-description {
+    margin: 0;
+}
+
 .error-page-icon{
     width: 56px;
     height: 56px;
@@ -52,5 +57,12 @@
 
     .error-page-stack{
         max-height: 180px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .error-page,
+    .error-page-content {
+        scroll-behavior: auto;
     }
 }

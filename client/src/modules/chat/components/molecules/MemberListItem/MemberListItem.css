@@ -1,16 +1,30 @@
 .member-list-item-role {
-    font-size: 0.7rem;
     padding: 0.125rem 0.5rem;
     border-radius: var(--radius-xs);
     background: var(--color-surface-3);
 }
 
+.member-list-item-button {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.75rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: transparent;
+    text-align: left;
+}
+
+.member-list-item-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+}
+
 .member-list-item-role.admin {
     background: var(--accent-blue);
-    color: white;
+    color: var(--color-contrast-high);
 }
 
 .member-list-item-role.owner {
     background: var(--accent-purple);
-    color: white;
+    color: var(--color-contrast-high);
 }

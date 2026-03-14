@@ -87,6 +87,8 @@ const FileUploaderContainer: React.FC<FileUploaderContainerProps> = ({
         return classes.join(' ');
     }, [isDraggingOver]);
 
+    const dragMessage = isDraggingOver ? 'Drop files to upload them.' : '';
+
     const dropZone = (
         <Container
             ref={dropRef}
@@ -95,8 +97,12 @@ const FileUploaderContainer: React.FC<FileUploaderContainerProps> = ({
             onDragLeave={handleDropZoneDragLeave}
             className={containerClasses}
             aria-label='File upload drop zone'
-            role='button'
-        />
+            role='region'
+            aria-live='polite'
+            aria-atomic='true'
+        >
+            <span className='file-uploader-live-region'>{dragMessage}</span>
+        </Container>
     );
 
     return (

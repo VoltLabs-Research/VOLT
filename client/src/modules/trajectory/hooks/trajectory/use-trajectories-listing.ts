@@ -17,6 +17,8 @@ import { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import usePermission from '@/shared/presentation/hooks/use-permission';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
@@ -91,11 +93,27 @@ const fetchFolderById = (folderId: string): Promise<TrajectoryFolder> => {
     return trajectoryFolderQuery.fetch({ folderId });
 };
 
+const buildDeleteTrajectoryMenuOption = (
+    targets: Trajectory[],
+    confirmDeletion: (targets: Trajectory[]) => Promise<void>
+): MenuOption => {
+    const label = targets.length === 1 ? 'Delete trajectory' : 'Delete trajectories';
+
+    return {
+        label,
+        icon: Trash2,
+        destructive: true,
+        onClick: () => confirmDeletion(targets)
+    };
+};
+
 const useTrajectoriesListing = () => {
     const navigate = useNavigate();
     const teamId = useSelectedTeamId();
     const canCreate = usePermission(['trajectory:create']);
+    const canDeleteTrajectories = usePermission(['trajectory:delete']);
     const canMoveTrajectories = usePermission(['trajectory:update']);
+    const { confirm } = useConfirm();
     const deleteTrajectoryMutation = trajectoryQuery.useDeleteMutation();
     const { mutateAsync: createFolder } = useCreateTrajectoryFolderMutation();
     const { mutateAsync: updateFolder } = useUpdateTrajectoryFolderMutation();
@@ -227,6 +245,30 @@ const useTrajectoriesListing = () => {
         });
     }, [moveTrajectory]);
 
+    const handleDeleteTrajectories = useCallback(async (targets: Trajectory[]) => {
+        const deleteLabel = targets.length === 1 ? 'Delete trajectory' : 'Delete trajectories';
+        const isConfirmed = await confirm({
+            title: targets.length === 1
+                ? `Delete trajectory "${targets[0].name}"?`
+                : `Delete ${targets.length} trajectories?`,
+            description: 'This permanently deletes the selected trajectory data and cannot be undone.',
+            confirmText: deleteLabel,
+            cancelText: 'Cancel',
+            tone: ConfirmActionTone.Danger
+        });
+
+        if (!isConfirmed) {
+            return;
+        }
+
+        for (const trajectory of targets) {
+            await runAction({
+                action: () => deleteTrajectoryMutation.mutateAsync(trajectory._id),
+                toast: DELETE_TRAJECTORY_TOAST
+            });
+        }
+    }, [confirm, deleteTrajectoryMutation]);
+
     const { getMenuOptions: getTrajectoryMenuOptions } = useListingActions<Trajectory>({
         actions: {
             view: {
@@ -254,20 +296,6 @@ const useTrajectoriesListing = () => {
                 icon: FolderInput,
                 handler: ({ item: trajectory }) => handleMoveTrajectoryOpen(trajectory),
                 requiredPermission: 'trajectory:update'
-            },
-            delete: {
-                handler: async ({ item: trajectory }) => {
-                    await runAction({
-                        action: () => deleteTrajectoryMutation.mutateAsync(trajectory._id),
-                        toast: DELETE_TRAJECTORY_TOAST
-                    });
-                },
-                confirm: ({ selectedItems }) => (
-                    selectedItems.length === 1
-                        ? `Delete trajectory "${selectedItems[0].name}"? This action cannot be undone.`
-                        : `Delete ${selectedItems.length} trajectories? This action cannot be undone.`
-                ),
-                requiredPermission: 'trajectory:delete'
             }
         }
     });
@@ -301,8 +329,19 @@ const useTrajectoriesListing = () => {
         }
 
         const selectedTrajectories = selectedItems.filter(isTrajectoryItemRow);
-        return getTrajectoryMenuOptions(item, selectedTrajectories);
-    }, [getFolderMenuOptions, getTrajectoryMenuOptions]);
+        const options = getTrajectoryMenuOptions(item, selectedTrajectories);
+
+        if (!canDeleteTrajectories) {
+            return options;
+        }
+
+        const deleteTargets = selectedTrajectories.length > 0 ? selectedTrajectories : [item];
+
+        return [
+            ...options,
+            buildDeleteTrajectoryMenuOption(deleteTargets, handleDeleteTrajectories)
+        ];
+    }, [canDeleteTrajectories, getFolderMenuOptions, getTrajectoryMenuOptions, handleDeleteTrajectories]);
 
     const handleItemClick = useCallback((item: TrajectoryListingRow): boolean => {
         if (!isTrajectoryFolderRow(item)) {

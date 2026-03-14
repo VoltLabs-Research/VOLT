@@ -14,28 +14,29 @@ const ErrorPage = () => {
     const source = params.get('source');
     const stack = params.get('stack');
     const timestamp = params.get('t');
+    const description = message || 'An unexpected error occurred. Please try again.';
 
     return (
-        <Container className='error-page d-flex items-center content-center w-max'>
-            <Container className='error-page-content d-flex column gap-1-5 items-center text-center'>
+        <main className='error-page d-flex items-center content-center w-max'>
+            <Container className='error-page-content d-flex column gap-1-5 items-center text-center' role='alert' aria-live='assertive'>
                 <Container className='error-page-icon d-flex items-center content-center'>
-                    <AlertTriangle size={24} />
+                    <AlertTriangle size={24} aria-hidden='true' />
                 </Container>
 
                 <Container className='d-flex column gap-05 text-center'>
-                    <span className='font-size-3 font-weight-5 color-primary'>
+                    <h1 className='font-size-3 font-weight-5 color-primary error-page-title'>
                         Something went wrong
-                    </span>
-                    <span className='font-size-2 color-secondary line-height-5'>
-                        {message || 'An unexpected error occurred. Please try again.'}
-                    </span>
-                    <span className='font-size-2 color-muted'>
+                    </h1>
+                    <p className='font-size-2 color-secondary line-height-5 error-page-description'>
+                        {description}
+                    </p>
+                    <p className='font-size-2 color-muted error-page-description'>
                         You can reload this page or head back to the dashboard.
-                    </span>
+                    </p>
                 </Container>
 
                 {source && (
-                    <Container className='d-flex column gap-1 items-center w-max'>
+                    <section className='d-flex column gap-1 items-center w-max' aria-label='Error details'>
                         <Container className='d-flex gap-1 items-center'>
                             <span className='error-page-source'>
                                 {SOURCE_LABELS[source] ?? source}
@@ -55,21 +56,30 @@ const ErrorPage = () => {
                                     size='sm'
                                     onClick={() => setShowStack((v) => !v)}
                                     rightIcon={showStack ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                    aria-expanded={showStack}
                                 >
                                     {showStack ? 'Hide' : 'Show'} details
                                 </Button>
 
                                 {showStack && (
-                                    <Container className='error-page-stack'>
+                                    <pre className='error-page-stack'>
                                         {stack}
-                                    </Container>
+                                    </pre>
                                 )}
                             </Container>
                         )}
-                    </Container>
+                    </section>
                 )}
 
                 <Container className='d-flex gap-075 items-center mt-05'>
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
+                        size='sm'
+                        onClick={() => window.location.reload()}
+                    >
+                        Reload page
+                    </Button>
                     <Button
                         variant='solid'
                         intent='brand'
@@ -80,7 +90,7 @@ const ErrorPage = () => {
                     </Button>
                 </Container>
             </Container>
-        </Container>
+        </main>
     );
 };
 

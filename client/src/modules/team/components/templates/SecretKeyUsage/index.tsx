@@ -3,6 +3,7 @@ import { CHART_COLORS } from '@/modules/team/utilities/secret-key/chart-helpers'
 import useSecretKeyUsage from '@/modules/team/hooks/secret-key/use-secret-key-usage';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
+import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
@@ -48,15 +49,34 @@ const STATUS_COLORS: Record<string, string> = {
     '5xx': 'var(--status-error)'
 };
 
-const PIE_COLORS = ['#2dcc70', '#0062FF', '#ff9f0a', '#ff453a', '#af52de'];
+const PIE_COLORS = [
+    'var(--status-success)',
+    'var(--accent-blue)',
+    'var(--status-warning)',
+    'var(--status-error)',
+    'var(--accent-purple)'
+];
 
 const METHOD_COLORS: Record<string, string> = {
     GET: 'var(--status-success)',
     POST: 'var(--accent-blue)',
     PUT: 'var(--accent-orange)',
     DELETE: 'var(--status-error)',
-    PATCH: '#af52de'
+    PATCH: 'var(--accent-purple)'
 };
+
+const backButton = (onClick: () => void) => (
+    <Button
+        variant='ghost'
+        intent='neutral'
+        size='sm'
+        className='secret-key-usage-back'
+        onClick={onClick}
+        leftIcon={<ArrowLeft size={18} />}
+    >
+        Back
+    </Button>
+);
 
 const getStatusColorGroup = (code: number): string => {
     if (code >= 200 && code < 300) return '2xx';
@@ -162,11 +182,7 @@ export default function SecretKeyUsage() {
             <Container className='secret-key-page vh-max color-primary'>
                 <Container className='secret-key-page-main d-flex column gap-2 w-max'>
                     <Container className='d-flex items-center gap-1'>
-                        <ArrowLeft
-                            className='secret-key-usage-back color-muted'
-                            style={{ width: 20, height: 20 }}
-                            onClick={handleBack}
-                        />
+                        {backButton(handleBack)}
                         <Title className='font-size-5 font-weight-6'>Key Usage</Title>
                     </Container>
                     <RecoveryState
@@ -186,11 +202,7 @@ export default function SecretKeyUsage() {
             <Container className='secret-key-page vh-max color-primary'>
                 <Container className='secret-key-page-main d-flex column gap-2 w-max'>
                     <Container className='d-flex items-center gap-1'>
-                        <ArrowLeft
-                            className='secret-key-usage-back color-muted'
-                            style={{ width: 20, height: 20 }}
-                            onClick={handleBack}
-                        />
+                        {backButton(handleBack)}
                         <Title className='font-size-5 font-weight-6'>Key Usage</Title>
                     </Container>
                     <Container className='d-flex flex-center p-3'>
@@ -232,11 +244,7 @@ export default function SecretKeyUsage() {
             <Container className='secret-key-page-main d-flex column gap-2 w-max'>
                 <Container className='d-flex column gap-05'>
                     <Container className='d-flex items-center gap-1'>
-                        <ArrowLeft
-                            className='secret-key-usage-back color-muted'
-                            style={{ width: 20, height: 20 }}
-                            onClick={handleBack}
-                        />
+                        {backButton(handleBack)}
                         <Title className='font-size-5 font-weight-6'>{maskedName}</Title>
                     </Container>
                     <Paragraph className='color-muted font-size-2' style={{ marginLeft: '2rem' }}>
@@ -404,7 +412,7 @@ export default function SecretKeyUsage() {
                                                     {req.method}
                                                 </span>
                                             </td>
-                                            <td className='font-family-mono font-size-1 color-secondary text-truncate' style={{ maxWidth: 200 }}>
+                                            <td className='font-family-mono font-size-1 color-secondary text-truncate' style={{ maxWidth: 200 }} title={req.path}>
                                                 {req.path}
                                             </td>
                                             <td>

@@ -11,6 +11,7 @@ import Loader from '@/shared/presentation/components/Loader';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { DEFAULT_SCENE } from '@/modules/fractal/utilities/scene-utils';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { formatNumber } from '@/shared/utils/format';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMemo } from 'react';
@@ -21,6 +22,7 @@ import type { CSSProperties } from 'react';
 
 const DashboardPreviewCard = () => {
     const teamId = useSelectedTeamId();
+    const prefersReducedMotion = usePrefersReducedMotion();
     const {
         atomCount,
         completedTrajectory,
@@ -74,7 +76,7 @@ const DashboardPreviewCard = () => {
                 <EmptyState
                     icon={<PiAtomThin size={32} />}
                     title='Simulation Preview'
-                    description='Upload and process a trajectory file to see a real-time 3D visualization of your atomic structures here.'
+                    description='Upload and process a trajectory to preview atom counts, structure, and quick Canvas access directly from the dashboard.'
                 />
             </DashboardCard>
         );
@@ -86,7 +88,7 @@ const DashboardPreviewCard = () => {
                 <EmptyState
                     icon={<PiAtomThin size={32} />}
                     title='Preview unavailable'
-                    description='We could not load the latest simulation preview right now. Please try opening the trajectory in Canvas.'
+                    description='We could not load the latest scene preview right now. Open the trajectory in Canvas to inspect it with full controls.'
                 />
             </DashboardCard>
         );
@@ -103,9 +105,9 @@ const DashboardPreviewCard = () => {
             <AnimatePresence>
                 {readyTrajectory && (
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        initial={prefersReducedMotion ? false : { opacity: 0 }}
+                        animate={prefersReducedMotion ? undefined : { opacity: 1 }}
+                        exit={prefersReducedMotion ? undefined : { opacity: 0 }}
                         style={overlayStyle}
                     >
                         <Container className='dashboard-preview-overlay' />

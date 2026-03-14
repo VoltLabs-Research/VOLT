@@ -4,6 +4,7 @@ import useTeamJobs from '@/modules/jobs/hooks/use-team-jobs';
 import useJobsHistoryFilters from '@/modules/jobs/hooks/use-jobs-history-filters';
 import useJobsAutoSelectAnalysis from '@/modules/jobs/hooks/use-jobs-auto-select-analysis';
 import useJobsCompletionToast from '@/modules/jobs/hooks/use-jobs-completion-toast';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import '@/modules/jobs/components/organisms/JobsHistoryViewer/JobsHistoryViewer.css';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect } from 'react';
@@ -36,6 +37,7 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
         displayMode,
         emptyState
     } = props;
+    const prefersReducedMotion = usePrefersReducedMotion();
     const { groups, isConnected, isLoading } = useTeamJobs();
     const setCurrentTimestep = useEditorStore((state) => state.setCurrentTimestep);
     const {
@@ -126,6 +128,29 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
         return <>{emptyState}</>;
     }
 
+    if (prefersReducedMotion) {
+        if (!shouldShowPanel) {
+            return null;
+        }
+
+        return (
+            <div className='jobs-history-viewer-enhanced expanded overflow-hidden left-1 bottom-1 radius-2xl p-0'>
+                <div className='jobs-history-expanded-content'>
+                    <div className='jobs-history-viewer-body-enhanced y-auto flex-1'>
+                        <JobsHistory
+                            trajectoryId={trajectoryId}
+                            queueFilter={queueFilter}
+                            groups={groups}
+                            isConnected={isConnected}
+                            isLoading={isLoading}
+                            displayMode={resolvedDisplayMode}
+                        />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <AnimatePresence mode='wait'>
             {shouldShowPanel && (
@@ -135,7 +160,7 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
                     initial='hidden'
                     animate='visible'
                     exit='exit'
-                    className='jobs-history-viewer-enhanced expanded overflow-hidden cursor-pointer left-1 bottom-1 radius-2xl p-0'
+                    className='jobs-history-viewer-enhanced expanded overflow-hidden left-1 bottom-1 radius-2xl p-0'
                 >
                     <div className='jobs-history-expanded-content'>
                         <div className='jobs-history-viewer-body-enhanced y-auto flex-1'>

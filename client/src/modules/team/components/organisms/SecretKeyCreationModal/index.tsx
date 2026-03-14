@@ -10,9 +10,11 @@ import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
 import useModalForm from '@/shared/presentation/hooks/use-modal-form';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { useState } from 'react';
+import type { FormEvent } from 'react';
 import './SecretKeyCreationModal.css';
 
 export const SECRET_KEY_CREATION_MODAL_ID = 'secret-key-creation-modal';
+const SECRET_KEY_CREATION_FORM_ID = 'secret-key-creation-form';
 
 interface SecretKeyCreationModalProps {
     onCreated?: (secretKey: string) => void;
@@ -78,6 +80,11 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
         });
     };
 
+    const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        await handleSubmit();
+    };
+
     const roleOptions = roles
         .filter((role) => selectedTeam?._id && String(role.team) === String(selectedTeam._id))
         .map((role) => ({
@@ -106,14 +113,15 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                         onClick: handleClose
                     } : {
                         label: 'Create Key',
-                        onClick: handleSubmit,
+                        type: 'submit',
+                        form: SECRET_KEY_CREATION_FORM_ID,
                         isLoading: isCreating
                     }}
                 />
             }
         >
             <Container className='p-1-5'>
-                <form className='d-flex column gap-1-5' onSubmit={(e) => e.preventDefault()}>
+                <form id={SECRET_KEY_CREATION_FORM_ID} className='d-flex column gap-1-5' onSubmit={handleFormSubmit}>
                     {generatedKey ? (
                         <CopyableField
                             value={generatedKey}

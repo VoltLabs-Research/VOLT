@@ -2,3 +2,7 @@
     max-width: 800px;
     margin: 0 auto;
 }
+
+.settings-page-content {
+    min-width: 0;
+}

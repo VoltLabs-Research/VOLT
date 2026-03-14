@@ -8,6 +8,7 @@ import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import { RiRefreshLine } from 'react-icons/ri';
+import { FlaskConical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './AnalysesListing.css';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
@@ -146,7 +147,11 @@ const AnalysesListing = () => {
             fetchData={fetchAnalysesData}
             defaultLimit={20}
             getMenuOptions={getMenuOptions}
-            emptyMessage='No analyses found'
+            emptyMessage='Run an analysis on a processed trajectory to review configuration, progress, and results here.'
+            emptyTitle='No analyses yet'
+            emptyIcon={<FlaskConical size={28} strokeWidth={1.6} />}
+            emptyButtonText='Open trajectories'
+            onEmptyButtonClick={() => navigate('/dashboard/trajectories/list')}
             socketInvalidation={[
                 { event: 'analysis.created', queryKeys: [analysisQuery.QUERY_KEYS.all()] },
                 { event: 'analysis.updated', queryKeys: [analysisQuery.QUERY_KEYS.all()] },

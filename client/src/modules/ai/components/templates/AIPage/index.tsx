@@ -223,13 +223,17 @@ const AIPage = () => {
                         <ResizeHandle
                             direction='horizontal'
                             isDragging={spreadsheetPanel.isDragging}
-                            onPointerDown={spreadsheetPanel.handleProps.onPointerDown}
+                            label='Resize spreadsheet panel'
+                            controls='ai-artifact-spreadsheet-panel'
+                            {...spreadsheetPanel.handleProps}
                         />
-                        <AIArtifactSpreadsheetPanel
-                            artifact={openArtifact}
-                            onClose={handleCloseArtifactPanel}
-                            width={spreadsheetPanel.size}
-                        />
+                        <Container id='ai-artifact-spreadsheet-panel' className='d-flex'>
+                            <AIArtifactSpreadsheetPanel
+                                artifact={openArtifact}
+                                onClose={handleCloseArtifactPanel}
+                                width={spreadsheetPanel.size}
+                            />
+                        </Container>
                     </>
                 )}
             </Container>

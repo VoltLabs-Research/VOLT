@@ -2,6 +2,10 @@
     overflow: visible;
 }
 
+.context-menu-popover-error {
+    padding: 0.25rem 0.5rem 0.5rem;
+}
+
 .context-menu-popover--sm {
     min-width: 124px;
 }
@@ -19,21 +23,23 @@
     left: 100%;
     top: 0;
     min-width: 180px;
-    padding: 8px;
+    max-height: min(22rem, calc(100dvh - 2rem));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0.25rem;
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius);
-    box-shadow: var(--popover-shadow, 0 4px 12px rgba(0, 0, 0, 0.15));
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-elevated);
     z-index: 1;
 }
 
-/* Hover bridge -- invisible gap filler between trigger and submenu */
 .context-menu-submenu-wrapper::after {
     content: '';
     position: absolute;
     top: 0;
     left: 100%;
-    width: 8px;
+    width: 0.5rem;
     height: 100%;
     pointer-events: auto;
     display: none;
@@ -46,12 +52,12 @@
 .context-menu-transparency {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0.5rem;
     min-width: 140px;
 }
 
 .context-menu-transparency__label {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: var(--color-text-secondary);
     font-weight: 500;
 }

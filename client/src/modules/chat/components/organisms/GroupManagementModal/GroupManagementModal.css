@@ -7,6 +7,11 @@
     border-bottom: 2px solid transparent;
 }
 
+.group-management-tab:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--focus-ring);
+}
+
 .group-management-tab:hover {
     color: var(--color-text-primary);
 }
@@ -20,21 +25,8 @@
     padding: 1.5rem;
 }
 
-
-
-.group-management-member-role {
-    font-size: 0.7rem;
-    padding: 0.125rem 0.5rem;
-    border-radius: var(--radius-xs);
-    background: var(--color-surface-3);
-}
-
-.group-management-member-role.admin {
-    background: var(--accent-blue);
-    color: white;
-}
-
-.group-management-member-role.owner {
-    background: var(--accent-purple);
-    color: white;
+@media (prefers-reduced-motion: reduce) {
+    .group-management-tab {
+        transition: none;
+    }
 }

@@ -7,6 +7,7 @@ import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence'
 import Avatar from '@/shared/presentation/components/Avatar';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
 import { useMemo } from 'react';
@@ -133,10 +134,12 @@ const DashboardTeamPresence = () => {
 
     if (totalCount === 0) {
         membersContent = (
-            <Container className='dashboard-presence-empty d-flex flex-center flex-1'>
-                <Users size={20} strokeWidth={1.5} className='color-muted' />
-                <span className='color-muted font-size-2'>No members yet</span>
-            </Container>
+            <EmptyState
+                className='dashboard-presence-empty flex-1'
+                icon={<Users size={20} strokeWidth={1.5} className='color-muted' />}
+                title='No members yet'
+                description='Invite teammates to start seeing who is active and available across your workspace.'
+            />
         );
     }
 

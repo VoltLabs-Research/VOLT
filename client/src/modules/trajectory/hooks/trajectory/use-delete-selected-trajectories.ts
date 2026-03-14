@@ -1,4 +1,6 @@
 import { trajectoryQuery } from './queries';
+import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import { useCallback } from 'react';
@@ -10,8 +12,21 @@ interface ToastState {
 export default function useDeleteSelectedTrajectories() {
     const { selectedIds, clearSelection } = useSelectionParams();
     const deleteTrajectoryMutation = trajectoryQuery.useDeleteMutation();
+    const { confirm } = useConfirm();
 
     const deleteSelectedTrajectories = useCallback(async () => {
+        const isConfirmed = await confirm({
+            title: selectedIds.length === 1 ? 'Delete selected trajectory?' : `Delete ${selectedIds.length} selected trajectories?`,
+            description: 'This permanently deletes the selected trajectory data and cannot be undone.',
+            confirmText: selectedIds.length === 1 ? 'Delete trajectory' : 'Delete trajectories',
+            cancelText: 'Cancel',
+            tone: ConfirmActionTone.Danger
+        });
+
+        if (!isConfirmed) {
+            return;
+        }
+
         const toastConfig = {
             loading: { title: `Deleting ${selectedIds.length} trajectories...` },
             success: { title: `${selectedIds.length} trajectories deleted` },
@@ -26,7 +41,7 @@ export default function useDeleteSelectedTrajectories() {
             Promise.all(selectedIds.map((id) => deleteTrajectoryMutation.mutateAsync(id))).then(clearSelection),
             toastConfig
         );
-    }, [selectedIds, deleteTrajectoryMutation, clearSelection]);
+    }, [clearSelection, confirm, deleteTrajectoryMutation, selectedIds]);
 
     return deleteSelectedTrajectories;
 }

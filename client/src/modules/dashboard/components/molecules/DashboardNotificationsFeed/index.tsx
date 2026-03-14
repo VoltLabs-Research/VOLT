@@ -2,6 +2,7 @@ import './DashboardNotificationsFeed.css';
 import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
 import useNotificationData from '@/modules/notification/hooks/use-notification-data';
 import Container from '@/shared/presentation/components/Container';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 import Title from '@/shared/presentation/components/Title';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@mui/material';
@@ -81,10 +82,13 @@ const DashboardNotificationsFeed = () => {
         ));
     } else if (displayed.length === 0) {
         content = [
-            <Container key='empty' className='dashboard-notifications-empty d-flex flex-center flex-1'>
-                <Bell size={20} strokeWidth={1.5} className='color-muted' />
-                <span className='color-muted font-size-2'>All caught up</span>
-            </Container>
+            <EmptyState
+                key='empty'
+                className='dashboard-notifications-empty flex-1'
+                icon={<Bell size={20} strokeWidth={1.5} className='color-muted' />}
+                title='All caught up'
+                description='New mentions, system updates, and workflow alerts will land here as they happen.'
+            />
         ];
     }
 

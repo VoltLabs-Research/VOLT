@@ -9,7 +9,17 @@ import SettingsSectionHeader from '@/shared/presentation/components/SettingsSect
 import Title from '@/shared/presentation/components/Title';
 import type { Team } from '@/modules/team/api/entities/team/team';
 import type { TeamClusterOption } from '@/modules/container/api/entities/team-cluster-option';
-import type { ContainerConfig, EnvVariable, PortMapping } from '../../../hooks/use-create-container-form';
+import type { ContainerConfig } from '../../../hooks/use-create-container-form';
+
+interface PortMappingFormItem extends Record<string, unknown> {
+    private: number;
+    public?: number;
+};
+
+interface EnvVariableFormItem extends Record<string, unknown> {
+    key: string;
+    value: string;
+};
 
 const MAX_CPU = 8;
 const MAX_MEMORY = 8192;
@@ -47,6 +57,15 @@ const ConfigurationStep = ({
     onBack,
     onNext
 }: ConfigurationStepProps) => {
+    const portItems: PortMappingFormItem[] = config.ports.map((item) => ({
+        private: item.private,
+        public: item.public
+    }));
+    const envItems: EnvVariableFormItem[] = config.env.map((item) => ({
+        key: item.key,
+        value: item.value
+    }));
+
     return (
         <Container className='create-container-step d-flex column gap-2'>
             <Title className='font-size-5 font-weight-6'>Configure Container</Title>
@@ -140,9 +159,9 @@ const ConfigurationStep = ({
                 </Container>
 
                 <Container className='create-container-config-section'>
-                    <EditableKeyValueCard<PortMapping>
+                    <EditableKeyValueCard<PortMappingFormItem>
                         title='Port Mapping'
-                        items={config.ports}
+                        items={portItems}
                         fields={[
                             {
                                 key: 'private',
@@ -166,9 +185,9 @@ const ConfigurationStep = ({
                 </Container>
 
                 <Container className='create-container-config-section'>
-                    <EditableKeyValueCard<EnvVariable>
+                    <EditableKeyValueCard<EnvVariableFormItem>
                         title='Environment Variables'
-                        items={config.env}
+                        items={envItems}
                         fields={[
                             {
                                 key: 'key',

@@ -5,6 +5,7 @@ import DraggableRow from './DraggableRow';
 import DroppableFolder from './DroppableFolder';
 import WorkspaceEntryInput from './WorkspaceEntryInput';
 import WorkspaceTreeRow from './WorkspaceTreeRow';
+import { isWorkspaceImageFile, isWorkspacePdfFile, isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
 import {
     File,
     FileCode,
@@ -21,11 +22,11 @@ import {
     FileText
 } from 'lucide-react';
 import { useCallback } from 'react';
-import type { FileTreeNode as FileTreeNodeType } from '@/modules/latex/utilities/file-tree';
 import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
+import type { FileTreeNode as FileTreeNodeType } from '@/modules/latex/utilities/file-tree';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import { isWorkspaceImageFile, isWorkspacePdfFile, isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
+import type { KeyboardEvent } from 'react';
 
 interface RenameTarget {
     id: string;
@@ -37,6 +38,7 @@ interface FileTreeNodeProps {
     node: FileTreeNodeType;
     depth: number;
     expandedFolders: Set<string>;
+    selectedAssetId: string | null;
     newFileTargetFolder: string | null;
     newFolderTargetFolder: string | null;
     renamingTarget: RenameTarget | null;
@@ -82,6 +84,7 @@ const FileTreeNode = ({
     node,
     depth,
     expandedFolders,
+    selectedAssetId,
     newFileTargetFolder,
     newFolderTargetFolder,
     renamingTarget,
@@ -110,6 +113,7 @@ const FileTreeNode = ({
             node={child}
             depth={depth + 1}
             expandedFolders={expandedFolders}
+            selectedAssetId={selectedAssetId}
             newFileTargetFolder={newFileTargetFolder}
             newFolderTargetFolder={newFolderTargetFolder}
             renamingTarget={renamingTarget}
@@ -137,6 +141,7 @@ const FileTreeNode = ({
         expandedFolders,
         newFileTargetFolder,
         newFolderTargetFolder,
+        selectedAssetId,
         onAssetDelete,
         onAssetInsertRef,
         onAssetSelect,
@@ -157,6 +162,32 @@ const FileTreeNode = ({
         onToggleFolder,
         renamingTarget
     ]);
+
+    const handleFolderKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>, folderPath: string, isExpanded: boolean): void => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onToggleFolder(folderPath);
+            return;
+        }
+
+        if (event.key === 'ArrowRight' && !isExpanded) {
+            event.preventDefault();
+            onToggleFolder(folderPath);
+            return;
+        }
+
+        if (event.key === 'ArrowLeft' && isExpanded) {
+            event.preventDefault();
+            onToggleFolder(folderPath);
+        }
+    }, [onToggleFolder]);
+
+    const handleSelectableRowKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>, onSelect: () => void): void => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onSelect();
+        }
+    }, []);
 
     if (node.type === 'folder') {
         const isExpanded = expandedFolders.has(node.folderPath);
@@ -188,6 +219,7 @@ const FileTreeNode = ({
         const folderRow = isRenaming ? (
             <WorkspaceEntryInput
                 icon={<Folder size={13} />}
+                label={`Rename folder ${renamingTarget?.initialName ?? node.name}`}
                 placeholder='Folder name'
                 defaultValue={renamingTarget?.initialName}
                 onConfirm={onConfirmRename}
@@ -203,13 +235,18 @@ const FileTreeNode = ({
                     </span>
                 }
                 label={node.name}
+                treeItemLevel={depth + 1}
+                expanded={isExpanded}
+                ariaLabel={`Folder ${node.name}`}
                 onClick={() => onToggleFolder(node.folderPath)}
+                onKeyDown={(event) => handleFolderKeyDown(event, node.folderPath, isExpanded)}
                 trailing={
                     <Container className='d-flex items-center gap-025'>
                         <IconButton
                             variant='ghost'
                             size='sm'
                             title='New subfolder'
+                            aria-label={`Create a folder inside ${node.name}`}
                             onClick={(event) => {
                                 event.stopPropagation();
                                 onOpenNewFolderIn(node.folderPath);
@@ -221,6 +258,7 @@ const FileTreeNode = ({
                             variant='ghost'
                             size='sm'
                             title='New file'
+                            aria-label={`Create a file inside ${node.name}`}
                             onClick={(event) => {
                                 event.stopPropagation();
                                 onOpenNewFileIn(node.folderPath);
@@ -242,11 +280,12 @@ const FileTreeNode = ({
                     size='sm'
                 />
                 {isExpanded && (
-                    <Container className='d-flex column'>
+                    <Container className='d-flex column' role='group'>
                         {node.children.map(renderChild)}
                         {newFolderTargetFolder === node.folderPath && (
                             <WorkspaceEntryInput
                                 icon={<FolderPlus size={13} />}
+                                label={`Create a folder inside ${node.name}`}
                                 placeholder='Folder name'
                                 onConfirm={onConfirmNewFolder}
                                 onCancel={onCancelNewFolder}
@@ -255,6 +294,7 @@ const FileTreeNode = ({
                         {newFileTargetFolder === node.folderPath && (
                             <WorkspaceEntryInput
                                 icon={<FileCode size={13} />}
+                                label={`Create a file inside ${node.name}`}
                                 placeholder='File name'
                                 onConfirm={onConfirmNewFile}
                                 onCancel={onCancelNewFile}
@@ -291,6 +331,7 @@ const FileTreeNode = ({
                         trigger={isRenaming ? (
                             <WorkspaceEntryInput
                                 icon={<FileCode size={13} />}
+                                label={`Rename file ${renamingTarget?.initialName ?? file.name}`}
                                 placeholder='File name'
                                 defaultValue={renamingTarget?.initialName}
                                 onConfirm={onConfirmRename}
@@ -303,7 +344,10 @@ const FileTreeNode = ({
                                 label={file.name}
                                 selected={file.isSelected}
                                 dragging={isDragging}
+                                treeItemLevel={depth + 1}
+                                ariaLabel={`File ${file.name}`}
                                 onClick={() => onFileSelect(file._id)}
+                                onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onFileSelect(file._id))}
                                 title={file.path}
                             />
                         )}
@@ -318,6 +362,7 @@ const FileTreeNode = ({
     const asset = node.data as LatexAsset;
     const isRenaming = renamingTarget?.id === `asset:${asset._id}`;
     const assetPath = asset.path ?? asset.originalName;
+    const isSelected = selectedAssetId === asset._id;
     const assetMenuOptions: MenuOption[] = [
         {
             label: 'Insert reference',
@@ -345,6 +390,7 @@ const FileTreeNode = ({
                     trigger={isRenaming ? (
                         <WorkspaceEntryInput
                             icon={getAssetIcon(asset)}
+                            label={`Rename asset ${renamingTarget?.initialName ?? node.name}`}
                             placeholder='File name'
                             defaultValue={renamingTarget?.initialName}
                             onConfirm={onConfirmRename}
@@ -355,8 +401,12 @@ const FileTreeNode = ({
                             depth={depth}
                             icon={getAssetIcon(asset)}
                             label={node.name}
+                            selected={isSelected}
                             dragging={isDragging}
+                            treeItemLevel={depth + 1}
+                            ariaLabel={`Asset ${node.name}`}
                             onClick={() => onAssetSelect(asset._id)}
+                            onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onAssetSelect(asset._id))}
                             title={assetPath}
                         />
                     )}

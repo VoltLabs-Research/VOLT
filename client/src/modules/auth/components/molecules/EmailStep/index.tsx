@@ -42,7 +42,7 @@ const EmailStep = ({ control, isLoading, onSubmit, onOAuth }: EmailStepProps) =>
                 <Button
                     key={key}
                     variant='outline'
-                    intent='white'
+                    intent='neutral'
                     size='lg'
                     block
                     leftIcon={icon}
@@ -60,20 +60,29 @@ const EmailStep = ({ control, isLoading, onSubmit, onOAuth }: EmailStepProps) =>
             <FormFieldRHF
                 name='email'
                 control={control}
+                label='Email address'
                 type='email'
                 placeholder='name@example.com'
                 autoFocus
                 icon={<Mail size={18} />}
+                inputProps={{
+                    autoComplete: 'email',
+                    inputMode: 'email',
+                    spellCheck: false,
+                    name: 'email',
+                    autoCapitalize: 'none',
+                    autoCorrect: 'off'
+                }}
             />
 
             <Button
                 type='submit'
                 isLoading={isLoading}
                 variant='solid'
-                intent='white'
+                intent='brand'
                 block
             >
-                Continue
+                Continue with Email
             </Button>
         </form>
     </Container>

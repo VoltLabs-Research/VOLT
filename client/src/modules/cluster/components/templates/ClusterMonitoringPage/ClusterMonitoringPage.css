@@ -1,18 +1,12 @@
-@keyframes fillBar {
-    from { transform: scaleX(0); }
-    to { transform: scaleX(1); }
-}
-
-
-
 .clusters-page {
-    overflow: scroll;
+    overflow: auto;
     height: 100% !important;
 }
 
 .clusters-main {
     max-width: 1600px;
     margin: 0 auto;
+    padding: 1rem;
 }
 
 .clusters-empty-state {
@@ -51,5 +45,11 @@
     .clusters-grid,
     .clusters-grid-equal {
         gap: 2rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .clusters-page {
+        scroll-behavior: auto;
     }
 }

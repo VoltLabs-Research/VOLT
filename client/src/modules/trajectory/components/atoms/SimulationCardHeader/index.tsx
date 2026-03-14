@@ -2,16 +2,18 @@ import type { User } from '@/modules/auth/api/entities/user';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { motion } from 'framer-motion';
 import Avatar from '@/shared/presentation/components/Avatar';
+import { formatDistanceToNow } from 'date-fns';
 import './SimulationCardHeader.css';
 import type { Variants } from 'framer-motion';
 
 interface SimulationCardHeaderProps {
     user?: User | null;
+    createdAt: string;
 };
 
 const HEADER_VARIANTS: Variants = {
-    normal: { background: 'rgba(18, 18, 18, 0)' },
-    hover: { background: 'rgba(18, 18, 18, 0.45)' }
+    normal: { background: 'color-mix(in srgb, var(--color-bg) 18%, transparent)' },
+    hover: { background: 'color-mix(in srgb, var(--color-bg) 70%, transparent)' }
 };
 
 const HEADER_PADDING_VARIANTS: Variants = {
@@ -29,8 +31,25 @@ const HEADER_CONTENT_VARIANTS: Variants = {
     hover: { width: 'auto', opacity: 1, marginLeft: '0.75rem', scale: 1 }
 };
 
-export default function SimulationCardHeader({ user }: SimulationCardHeaderProps) {
-    if (!user?.firstName) return null;
+export default function SimulationCardHeader({ user, createdAt }: SimulationCardHeaderProps) {
+    const uploadedAtLabel = `Uploaded ${formatDistanceToNow(new Date(createdAt), { addSuffix: true })}`;
+
+    if (!user?.firstName) {
+        return (
+            <motion.div
+                className='simulation-card-header d-flex column gap-075 p-absolute top-0 left-0 right-0 z-5'
+                initial={false}
+                whileHover='hover'
+                animate='normal'
+                variants={HEADER_VARIANTS}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            >
+                <Paragraph className='font-size-1 color-secondary simulation-card-upload-meta'>
+                    {uploadedAtLabel}
+                </Paragraph>
+            </motion.div>
+        );
+    }
 
     return (
         <motion.div
@@ -61,6 +80,9 @@ export default function SimulationCardHeader({ user }: SimulationCardHeaderProps
                     <Paragraph className='font-size-1 font-weight-5 color-secondary'>Uploaded by</Paragraph>
                     <Paragraph className='font-size-1 font-weight-5 color-secondary header-user-name text-truncate'>
                         {`${user.firstName} ${user.lastName}`}
+                    </Paragraph>
+                    <Paragraph className='font-size-1 color-muted simulation-card-upload-meta'>
+                        {uploadedAtLabel}
                     </Paragraph>
                 </motion.div>
             </motion.div>

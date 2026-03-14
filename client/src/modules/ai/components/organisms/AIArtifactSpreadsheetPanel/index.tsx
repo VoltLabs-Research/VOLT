@@ -4,7 +4,7 @@ import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { IoCheckmarkOutline, IoClipboardOutline, IoCloseOutline } from 'react-icons/io5';
 import { PiFileCsv, PiFileXls } from 'react-icons/pi';
 import { sileo } from 'sileo';
@@ -22,6 +22,18 @@ interface AIArtifactSpreadsheetPanelProps {
 interface CellAddress {
     row: number;
     col: number;
+};
+
+const VISUALLY_HIDDEN_STYLES: CSSProperties = {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    padding: 0,
+    margin: '-1px',
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    border: 0
 };
 
 const stringifyValue = (value: unknown): string => {
@@ -49,11 +61,18 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
     const table = resolveTabularPayload(artifact);
 
     const [edits, setEdits] = useState<Record<string, string>>({});
+    const [activeCell, setActiveCell] = useState<CellAddress>({ row: 0, col: 0 });
     const [editingCell, setEditingCell] = useState<CellAddress | null>(null);
     const [editBuffer, setEditBuffer] = useState('');
     const [copyFeedback, setCopyFeedback] = useState(false);
+    const [statusMessage, setStatusMessage] = useState('Spreadsheet ready.');
 
     const inputRef = useRef<HTMLInputElement>(null);
+    const cellRefs = useRef<Record<string, HTMLTableCellElement | null>>({});
+    const feedbackTimeoutRef = useRef<number | null>(null);
+    const instructionsId = useId();
+    const statusId = useId();
+    const titleId = useId();
 
     const columns = useMemo(() => table?.columns ?? [], [table]);
     const rows = useMemo(() => table?.rows ?? [], [table]);
@@ -61,6 +80,10 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
     const hasEdits = Object.keys(edits).length > 0;
 
     const cellKey = (row: number, col: number) => `${row}:${col}`;
+
+    const updateStatusMessage = useCallback((message: string) => {
+        setStatusMessage(message);
+    }, []);
 
     const getCellValue = useCallback((rowIndex: number, colIndex: number): string => {
         const key = cellKey(rowIndex, colIndex);
@@ -89,31 +112,59 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
         if (!editingCell) return;
         const original = stringifyValue(rows[editingCell.row]?.[columns[editingCell.col]]);
         const key = cellKey(editingCell.row, editingCell.col);
+        const columnName = columns[editingCell.col] ?? `Column ${editingCell.col + 1}`;
 
         if (editBuffer !== original) {
             setEdits((prev) => ({ ...prev, [key]: editBuffer }));
+            updateStatusMessage(`Updated row ${editingCell.row + 1}, ${columnName}.`);
         } else {
             setEdits((prev) => {
                 const next = { ...prev };
                 delete next[key];
                 return next;
             });
+            updateStatusMessage(`No changes saved for row ${editingCell.row + 1}, ${columnName}.`);
         }
+
+        setActiveCell(editingCell);
         setEditingCell(null);
-    }, [editingCell, editBuffer, rows, columns]);
+    }, [editingCell, editBuffer, rows, columns, updateStatusMessage]);
 
     const startEditing = useCallback((row: number, col: number) => {
         if (editingCell) {
             commitEdit();
         }
+
         const value = getCellValue(row, col);
+        const columnName = columns[col] ?? `Column ${col + 1}`;
+
+        setActiveCell({ row, col });
         setEditingCell({ row, col });
         setEditBuffer(value);
-    }, [editingCell, commitEdit, getCellValue]);
+        updateStatusMessage(`Editing row ${row + 1}, ${columnName}.`);
+    }, [columns, editingCell, commitEdit, getCellValue, updateStatusMessage]);
 
-    const cancelEdit = () => {
+    const cancelEdit = useCallback(() => {
+        if (editingCell) {
+            const columnName = columns[editingCell.col] ?? `Column ${editingCell.col + 1}`;
+            updateStatusMessage(`Canceled edit for row ${editingCell.row + 1}, ${columnName}.`);
+            setActiveCell(editingCell);
+        }
+
         setEditingCell(null);
-    };
+    }, [columns, editingCell, updateStatusMessage]);
+
+    const focusCell = useCallback((row: number, col: number) => {
+        const targetCell = cellRefs.current[cellKey(row, col)];
+        targetCell?.focus();
+    }, []);
+
+    const moveSelection = useCallback((rowDelta: number, colDelta: number) => {
+        const nextRow = Math.max(0, Math.min(rows.length - 1, activeCell.row + rowDelta));
+        const nextCol = Math.max(0, Math.min(columns.length - 1, activeCell.col + colDelta));
+
+        setActiveCell({ row: nextRow, col: nextCol });
+    }, [activeCell.col, activeCell.row, columns.length, rows.length]);
 
     const moveToCell = useCallback((rowDelta: number, colDelta: number) => {
         if (!editingCell) return;
@@ -156,12 +207,27 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
         }
     }, [editingCell]);
 
+    useEffect(() => {
+        if (!editingCell) {
+            focusCell(activeCell.row, activeCell.col);
+        }
+    }, [activeCell.col, activeCell.row, editingCell, focusCell]);
+
+    useEffect(() => {
+        return () => {
+            if (feedbackTimeoutRef.current !== null) {
+                window.clearTimeout(feedbackTimeoutRef.current);
+            }
+        };
+    }, []);
+
     const handleDownloadCSV = () => {
         const data = getExportData();
         const worksheet = XLSX.utils.json_to_sheet(data, { header: columns });
         const csvContent = XLSX.utils.sheet_to_csv(worksheet);
         const blob = base64ToBlob(csvContent, 'text/csv');
         triggerBrowserDownload(blob, `${artifact.title || 'table'}.csv`);
+        updateStatusMessage('Downloaded CSV file.');
     };
 
     const handleDownloadXLSX = () => {
@@ -172,6 +238,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
         const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
         const blob = base64ToBlob(buffer, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         triggerBrowserDownload(blob, `${artifact.title || 'table'}.xlsx`);
+        updateStatusMessage('Downloaded Excel file.');
     };
 
     const handleCopyToClipboard = async () => {
@@ -181,9 +248,18 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
             const tsvContent = XLSX.utils.sheet_to_csv(worksheet, { FS: '\t' });
             await navigator.clipboard.writeText(tsvContent);
             setCopyFeedback(true);
+            updateStatusMessage('Copied table to clipboard.');
             sileo.success({ title: 'Copied to clipboard' });
-            setTimeout(() => setCopyFeedback(false), 2000);
+
+            if (feedbackTimeoutRef.current !== null) {
+                window.clearTimeout(feedbackTimeoutRef.current);
+            }
+
+            feedbackTimeoutRef.current = window.setTimeout(() => {
+                setCopyFeedback(false);
+            }, 2000);
         } catch {
+            updateStatusMessage('Failed to copy table to clipboard.');
             sileo.error({ title: 'Failed to copy to clipboard' });
         }
     };
@@ -225,6 +301,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                     onChange={(event) => setEditBuffer(event.target.value)}
                     onBlur={commitEdit}
                     onKeyDown={handleKeyDown}
+                    aria-label={`Edit row ${rowIndex + 1}, ${columns[colIndex]}`}
                 />
             );
         }
@@ -232,9 +309,47 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
         return content;
     };
 
+    const handleCellClick = (rowIndex: number, colIndex: number) => {
+        setActiveCell({ row: rowIndex, col: colIndex });
+    };
+
+    const handleCellKeyDown = (event: KeyboardEvent<HTMLTableCellElement>, rowIndex: number, colIndex: number) => {
+        if (event.key === 'Enter' || event.key === 'F2') {
+            event.preventDefault();
+            startEditing(rowIndex, colIndex);
+            return;
+        }
+
+        if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            moveSelection(-1, 0);
+            return;
+        }
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            moveSelection(1, 0);
+            return;
+        }
+
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            moveSelection(0, -1);
+            return;
+        }
+
+        if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            moveSelection(0, 1);
+            return;
+        }
+    };
+
     const renderRowCell = (rowIndex: number, col: string, colIndex: number) => {
         const isEditing = editingCell?.row === rowIndex
             && editingCell?.col === colIndex;
+        const isActive = activeCell.row === rowIndex
+            && activeCell.col === colIndex;
         const key = cellKey(rowIndex, colIndex);
         const isEdited = key in edits;
         let cellClassName = 'ai-sheet-cell';
@@ -243,11 +358,26 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
             cellClassName = 'ai-sheet-cell is-edited';
         }
 
+        if (isActive) {
+            cellClassName += ' is-active';
+        }
+
         return (
             <td
                 key={col}
+                ref={(node) => {
+                    cellRefs.current[key] = node;
+                }}
                 className={cellClassName}
+                role='gridcell'
+                tabIndex={isActive ? 0 : -1}
+                aria-selected={isActive}
+                aria-colindex={colIndex + 2}
+                aria-rowindex={rowIndex + 2}
                 onDoubleClick={() => startEditing(rowIndex, colIndex)}
+                onClick={() => handleCellClick(rowIndex, colIndex)}
+                onFocus={() => handleCellClick(rowIndex, colIndex)}
+                onKeyDown={(event) => handleCellKeyDown(event, rowIndex, colIndex)}
             >
                 {renderCellContent(rowIndex, colIndex, isEditing)}
             </td>
@@ -258,15 +388,19 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
         <Container
             className='d-flex column ai-artifact-spreadsheet-panel'
             style={panelStyle}
+            aria-labelledby={titleId}
         >
             <Container className='d-flex items-center content-between gap-05 ai-artifact-spreadsheet-header'>
                 <Container className='d-flex column gap-025' style={{ minWidth: 0 }}>
-                    <Paragraph className='font-size-2 font-weight-6 color-primary text-ellipsis'>
+                    <Paragraph id={titleId} className='font-size-2 font-weight-6 color-primary text-ellipsis'>
                         {artifact.title}
                     </Paragraph>
                     <Paragraph className='font-size-1 color-muted'>
                         {rows.length} rows · {columns.length} columns
                         {hasEdits && ' · edited'}
+                    </Paragraph>
+                    <Paragraph id={instructionsId} className='font-size-1 color-muted'>
+                        Enter or F2 edits the selected cell. Arrow keys move between cells. Tab and Shift+Tab move while editing.
                     </Paragraph>
                     {artifact.summary && (
                         <Paragraph className='font-size-1 color-muted text-ellipsis'>
@@ -277,19 +411,31 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
 
                 <Container className='d-flex items-center gap-025 ai-artifact-spreadsheet-toolbar'>
                     <Tooltip content={copyTooltip}>
-                        <IconButton onClick={handleCopyToClipboard} className='ai-sheet-toolbar-btn'>
+                        <IconButton
+                            aria-label='Copy table to clipboard'
+                            onClick={handleCopyToClipboard}
+                            className='ai-sheet-toolbar-btn'
+                        >
                             {copyIcon}
                         </IconButton>
                     </Tooltip>
 
                     <Tooltip content='Download CSV'>
-                        <IconButton onClick={handleDownloadCSV} className='ai-sheet-toolbar-btn'>
+                        <IconButton
+                            aria-label='Download CSV'
+                            onClick={handleDownloadCSV}
+                            className='ai-sheet-toolbar-btn'
+                        >
                             <PiFileCsv size={15} />
                         </IconButton>
                     </Tooltip>
 
                     <Tooltip content='Download Excel'>
-                        <IconButton onClick={handleDownloadXLSX} className='ai-sheet-toolbar-btn'>
+                        <IconButton
+                            aria-label='Download Excel'
+                            onClick={handleDownloadXLSX}
+                            className='ai-sheet-toolbar-btn'
+                        >
                             <PiFileXls size={15} />
                         </IconButton>
                     </Tooltip>
@@ -297,27 +443,42 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                     <Container className='ai-sheet-toolbar-divider' />
 
                     <Tooltip content='Close panel'>
-                        <IconButton onClick={onClose} className='ai-sheet-toolbar-btn'>
+                        <IconButton aria-label='Close spreadsheet panel' onClick={onClose} className='ai-sheet-toolbar-btn'>
                             <IoCloseOutline size={18} />
                         </IconButton>
                     </Tooltip>
                 </Container>
             </Container>
 
+            <span id={statusId} style={VISUALLY_HIDDEN_STYLES} aria-live='polite' aria-atomic='true'>
+                {statusMessage}
+            </span>
+
             <Container className='ai-artifact-spreadsheet-body x-auto y-auto'>
-                <table className='ai-artifact-spreadsheet-table'>
+                <table
+                    className='ai-artifact-spreadsheet-table'
+                    role='grid'
+                    aria-label={`${artifact.title} spreadsheet`}
+                    aria-describedby={`${instructionsId} ${statusId}`}
+                    aria-rowcount={rows.length + 1}
+                    aria-colcount={columns.length + 1}
+                >
                     <thead>
-                        <tr>
-                            <th className='ai-sheet-row-index-header'>#</th>
+                        <tr role='row'>
+                            <th scope='col' className='ai-sheet-row-index-header'>#</th>
                             {columns.map((col) => (
-                                <th key={col}>{col}</th>
+                                <th key={col} scope='col'>
+                                    {col}
+                                </th>
                             ))}
                         </tr>
                     </thead>
                     <tbody>
                         {rows.map((_, rowIndex) => (
-                            <tr key={rowIndex}>
-                                <td className='ai-sheet-row-index-cell'>{rowIndex + 1}</td>
+                            <tr key={rowIndex} role='row'>
+                                <th scope='row' className='ai-sheet-row-index-cell'>
+                                    {rowIndex + 1}
+                                </th>
                                 {columns.map((col, colIndex) => renderRowCell(rowIndex, col, colIndex))}
                             </tr>
                         ))}

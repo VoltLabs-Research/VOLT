@@ -1,6 +1,9 @@
 import { cn } from '@/shared/utils';
 import Container from '@/shared/presentation/components/Container';
-import type { ReactNode, MouseEvent } from 'react';
+import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Copy } from 'lucide-react';
+import { sileo } from 'sileo';
+import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 
 export interface FileExplorerRowProps {
     icon: ReactNode;
@@ -35,38 +38,72 @@ const FileExplorerRow = ({
         onDoubleClick?.();
     };
 
+    const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+        if (e.key !== 'Enter' && e.key !== ' ') {
+            return;
+        }
+
+        e.preventDefault();
+        onClick?.();
+    };
+
+    const handleCopyName = async (e: MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
+
+        try {
+            await navigator.clipboard.writeText(name);
+            sileo.success({ title: 'File name copied to clipboard' });
+        } catch {
+            sileo.error({ title: 'Failed to copy file name' });
+        }
+    };
+
     const rowClassName = cn('file-explorer-row', isInteractive && 'is-interactive', isSelected && 'is-selected');
+    const rowLabel = `${name}${type ? `, ${type}` : ''}${size ? `, ${size}` : ''}${date ? `, ${date}` : ''}`;
 
     const content = (
         <>
             <Container className='file-explorer-row-name'>
-                <span className='file-explorer-row-icon'>{icon}</span>
-                <span className='file-explorer-row-text'>{name}</span>
+                <span className='file-explorer-row-icon' aria-hidden='true'>{icon}</span>
+                <span className='file-explorer-row-text' title={name}>{name}</span>
+                <Tooltip content='Copy full file name'>
+                    <button
+                        type='button'
+                        className='file-explorer-row-copy'
+                        aria-label={`Copy full name for ${name}`}
+                        onClick={handleCopyName}
+                    >
+                        <Copy size={14} aria-hidden='true' />
+                    </button>
+                </Tooltip>
             </Container>
-            <span className='file-explorer-row-meta'>{type ?? '-'}</span>
-            <span className='file-explorer-row-meta'>{size ?? '-'}</span>
-            <span className='file-explorer-row-meta'>{date ?? '-'}</span>
+            <span className='file-explorer-row-meta' title={type} aria-label={`Type: ${type ?? 'Not available'}`}>{type ?? '-'}</span>
+            <span className='file-explorer-row-meta' title={size} aria-label={`Size: ${size ?? 'Not available'}`}>{size ?? '-'}</span>
+            <span className='file-explorer-row-meta' title={date} aria-label={`Date: ${date ?? 'Not available'}`}>{date ?? '-'}</span>
         </>
     );
 
     if (!isInteractive) {
         return (
-            <Container className={rowClassName}>
+            <Container className={rowClassName} role='listitem' aria-label={rowLabel}>
                 {content}
             </Container>
         );
     }
 
     return (
-        <button
-            type='button'
+        <Container
             className={rowClassName}
             onClick={handleClick}
             onDoubleClick={handleDoubleClick}
-            aria-pressed={isSelected}
+            onKeyDown={handleKeyDown}
+            aria-label={rowLabel}
+            role='listitem'
+            tabIndex={0}
+            aria-selected={isSelected}
         >
             {content}
-        </button>
+        </Container>
     );
 };
 

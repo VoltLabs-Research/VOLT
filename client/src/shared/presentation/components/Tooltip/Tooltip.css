@@ -1,18 +1,15 @@
 .volt-tooltip {
-    padding: 6px 12px;
+    padding: 0.375rem 0.75rem;
     border-radius: var(--radius-sm);
     font-size: 0.8125rem;
     line-height: 1.4;
     white-space: nowrap;
     max-width: 280px;
     text-overflow: ellipsis;
-
-    /* Solid flat styling - no glassmorphism */
+    overscroll-behavior: contain;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
     color: var(--color-text-primary);
-
-    /* Animation */
     animation: tooltipIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: none;
     z-index: var(--z-floating);
@@ -34,7 +31,6 @@
     }
 }
 
-/* Placement-specific transforms for arrow effect feel */
 .volt-tooltip-top {
     transform-origin: bottom center;
 }

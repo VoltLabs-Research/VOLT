@@ -1,4 +1,5 @@
 import Container from '@/shared/presentation/components/Container';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import type { ReactNode } from 'react';
 
 interface DashboardClusterHealthGaugeProps {
@@ -19,6 +20,7 @@ const getGaugeColor = (percent: number): string => {
 };
 
 const DashboardClusterHealthGauge = ({ label, percent, icon, detail }: DashboardClusterHealthGaugeProps) => {
+    const prefersReducedMotion = usePrefersReducedMotion();
     const clamped = Math.min(100, Math.max(0, percent));
     const offset = GAUGE_CIRCUMFERENCE - (clamped / 100) * GAUGE_CIRCUMFERENCE;
     const color = getGaugeColor(clamped);
@@ -46,7 +48,7 @@ const DashboardClusterHealthGauge = ({ label, percent, icon, detail }: Dashboard
                         strokeDasharray={GAUGE_CIRCUMFERENCE}
                         strokeDashoffset={offset}
                         transform='rotate(-90 34 34)'
-                        className='cluster-gauge-progress'
+                        className={prefersReducedMotion ? '' : 'cluster-gauge-progress'}
                     />
                 </svg>
                 <Container className='cluster-gauge-center p-absolute d-flex flex-center'>

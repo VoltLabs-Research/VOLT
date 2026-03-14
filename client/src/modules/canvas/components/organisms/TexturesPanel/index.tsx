@@ -14,13 +14,15 @@ interface TexturesPanelProps {
     trajectory: Trajectory | null | undefined;
 };
 
+const EVENTS_ICON_COLOR = 'var(--color-text-secondary)';
+
 const TexturesPanel = ({ trajectory }: TexturesPanelProps) => {
     const statusCounts = useJobStatusCounts(trajectory?._id);
 
     return (
         <Container className="canvas-textures-panel d-flex column min-h-0 overflow-hidden">
             <PanelHeader
-                icon={<Activity style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.35)' }} />}
+                icon={<Activity style={{ width: 13, height: 13, color: EVENTS_ICON_COLOR }} />}
                 title="Events"
                 actions={
                     <StatusCounts

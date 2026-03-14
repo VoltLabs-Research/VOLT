@@ -69,6 +69,7 @@ const RecoveryState = ({
             buttonOnClick={onRetry}
             buttonIsLoading={isRetrying}
             className={className}
+            announce
         />
     );
 };

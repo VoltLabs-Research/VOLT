@@ -18,7 +18,7 @@ type BuilderHistoryState = {
     edges: Edge[];
 };
 
-const DEFAULT_EDGE_STYLE = { animated: true, style: { stroke: '#64748b', strokeWidth: 2 } };
+const DEFAULT_EDGE_STYLE = { animated: true, style: { stroke: 'var(--color-border-strong)', strokeWidth: 2 } };
 
 const serializeHistoryState = (state: Pick<PluginBuilderState, 'nodes' | 'edges'>): BuilderHistoryState => {
     return {

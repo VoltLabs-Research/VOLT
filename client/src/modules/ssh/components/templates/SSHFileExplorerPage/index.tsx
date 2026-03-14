@@ -98,13 +98,12 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
     });
 
     const handleEntryClick = (entry: SSHFileEntry) => {
-        explorer.setSelectedPath(entry.relPath);
-    };
-
-    const handleEntryDoubleClick = (entry: SSHFileEntry) => {
         if (entry.type === FileEntryType.Dir) {
             explorer.navigateTo(entry.relPath);
+            return;
         }
+
+        explorer.setSelectedPath(entry.relPath);
     };
 
     const goBack = () => {
@@ -120,29 +119,30 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
         </>
     );
 
+    const headerLeft = (
+        <SSHExplorerHeaderLeft
+            connectionName={connection?.name}
+            cwd={explorer.cwd}
+            onBack={goBack}
+            onGoUp={explorer.goUp}
+        />
+    );
+
+    const breadcrumb = <SSHBreadcrumbs cwd={explorer.cwd} onNavigate={explorer.navigateTo} />;
+    const headerRight = <SSHExplorerHeaderRight onRefresh={explorer.refresh} />;
+
     return (
         <FileExplorer
-            headerLeft={
-                <SSHExplorerHeaderLeft
-                    connectionName={connection?.name}
-                    cwd={explorer.cwd}
-                    onBack={goBack}
-                    onGoUp={explorer.goUp}
-                />
-            }
-            breadcrumb={<SSHBreadcrumbs cwd={explorer.cwd} onNavigate={explorer.navigateTo} />}
-            headerRight={<SSHExplorerHeaderRight onRefresh={() => {
-                explorer.refresh();
-            }} />}
+            headerLeft={headerLeft}
+            breadcrumb={breadcrumb}
+            headerRight={headerRight}
             columns={columns}
             isLoading={explorer.isLoading}
             isEmpty={explorer.entries.length === 0}
             error={explorer.error}
             accessDenied={accessDenied}
             accessDeniedMessage={accessDeniedMessage}
-            onRetry={() => {
-                explorer.refresh();
-            }}
+            onRetry={explorer.refresh}
             emptyMessage='No files found in this directory'
         >
             {explorer.entries.map((entry) => (
@@ -155,7 +155,6 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
                     date={entry.mtime ? formatDistanceToNow(new Date(entry.mtime), { addSuffix: true }) : undefined}
                     isSelected={explorer.selectedPath === entry.relPath}
                     onClick={() => handleEntryClick(entry)}
-                    onDoubleClick={() => handleEntryDoubleClick(entry)}
                 />
             ))}
         </FileExplorer>

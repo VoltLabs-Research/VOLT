@@ -16,15 +16,16 @@ import Select from '@/shared/presentation/components/Select';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
+import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { Skeleton } from '@mui/material';
 import { Settings2, Trash2, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { IoAddOutline } from 'react-icons/io5';
 import { sileo } from 'sileo';
-import type { AIProvider } from '@/modules/ai/api/entities/ai-provider';
+import { AIProvider } from '@/modules/ai/api/entities/ai-provider';
 import type { CreateTeamAIIntegrationParams } from '@/modules/team/api/dtos/ai-integration/create-team-ai-integration';
 import type { UpdateTeamAIIntegrationParams } from '@/modules/team/api/dtos/ai-integration/update-team-ai-integration';
 import type {
@@ -33,7 +34,7 @@ import type {
     TeamAIModelMetadata
 } from '@/modules/team/api/entities/ai-integration/team-ai-integration';
 import type { SelectOption } from '@/shared/presentation/components/Select';
-import type { KeyboardEvent } from 'react';
+import type { FormEvent, KeyboardEvent } from 'react';
 import './IntegrationsSettings.css';
 
 interface IntegrationModalStatePreset {
@@ -47,7 +48,22 @@ interface IntegrationModalStatePreset {
 };
 
 const TEAM_AI_INTEGRATION_MODAL_ID = 'team-ai-integration-modal';
+const TEAM_AI_INTEGRATION_FORM_ID = 'team-ai-integration-form';
 const OLLAMA_DEFAULT_BASE_URL = 'http://localhost:11434/v1';
+const AI_PROVIDER_VALUES = Object.values(AIProvider);
+
+const toOptionalString = (value: string | null | undefined): string | undefined => {
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+
+    const normalizedValue = value.trim();
+    return normalizedValue.length > 0 ? normalizedValue : undefined;
+};
+
+const isAIProvider = (value: string): value is AIProvider => {
+    return AI_PROVIDER_VALUES.some((provider) => provider === value);
+};
 
 const resolveOllamaBaseUrl = (metadata?: Record<string, unknown>): string => {
     if (typeof metadata?.baseUrl === 'string') {
@@ -103,6 +119,9 @@ export default function IntegrationsSettings() {
     const [newModelId, setNewModelId] = useState('');
     const [newModelName, setNewModelName] = useState('');
 
+    const providerLabelId = useId();
+    const defaultModelLabelId = useId();
+
     const integrations: TeamAIIntegration[] = integrationsData?.integrations ?? [];
     const providerCatalog: AIProviderCatalogItem[] = integrationsData?.providers ?? [];
 
@@ -124,7 +143,11 @@ export default function IntegrationsSettings() {
 
     const availableProviders = useMemo(() => {
         return providerCatalog.filter((provider) => {
-            const integration = integrationsByProvider.get(provider.id as AIProvider);
+            if (!isAIProvider(provider.id)) {
+                return false;
+            }
+
+            const integration = integrationsByProvider.get(provider.id);
             return !integration?.hasApiKey;
         });
     }, [integrationsByProvider, providerCatalog]);
@@ -167,13 +190,13 @@ export default function IntegrationsSettings() {
             return;
         }
 
-        const firstProvider = availableProviders[0]?.id as AIProvider | undefined;
-        if (!firstProvider) {
+        const firstProviderId = availableProviders[0]?.id;
+        if (!firstProviderId || !isAIProvider(firstProviderId)) {
             sileo.info({ title: 'All providers are already configured' });
             return;
         }
 
-        applyModalState({ provider: firstProvider });
+        applyModalState({ provider: firstProviderId });
         openModal(TEAM_AI_INTEGRATION_MODAL_ID);
     };
 
@@ -194,19 +217,18 @@ export default function IntegrationsSettings() {
     };
 
     const handleModalProviderChange = (provider: string) => {
-        if (!providerCatalog.some((p) => p.id === provider)) {
+        if (!providerCatalog.some((p) => p.id === provider) || !isAIProvider(provider)) {
             return;
         }
 
-        const nextProvider = provider as AIProvider;
-        const nextIntegration = integrationsByProvider.get(nextProvider);
-        const ollamaBaseUrl = nextProvider === 'ollama'
+        const nextIntegration = integrationsByProvider.get(provider);
+        const ollamaBaseUrl = provider === 'ollama'
             ? resolveOllamaBaseUrl(nextIntegration?.metadata)
             : OLLAMA_DEFAULT_BASE_URL;
 
         applyModalState({
             editingProvider,
-            provider: nextProvider,
+            provider,
             endpoint: ollamaBaseUrl,
             enabled: modalEnabled,
             enabledModels: modalEnabledModels,
@@ -245,6 +267,7 @@ export default function IntegrationsSettings() {
 
     const renderModelItem = useCallback((model: TeamAIModelMetadata) => {
         const isDefault = modalDefaultModel === model.id;
+        const modelSummary = isDefault ? `${model.id} · default` : model.id;
 
         return (
             <Container
@@ -252,12 +275,11 @@ export default function IntegrationsSettings() {
                 className='integrations-model-item d-flex items-center content-between gap-05'
             >
                 <Container className='d-flex column' style={{ minWidth: 0 }}>
-                    <Paragraph className='font-size-2 color-primary text-truncate'>
+                    <Paragraph className='font-size-2 color-primary text-truncate' title={model.name}>
                         {model.name}
                     </Paragraph>
-                    <Paragraph className='font-size-1 color-muted text-truncate'>
-                        {model.id}
-                        {isDefault && ' · default'}
+                    <Paragraph className='font-size-1 color-muted text-truncate' title={modelSummary}>
+                        {modelSummary}
                     </Paragraph>
                 </Container>
                 <Button
@@ -266,6 +288,8 @@ export default function IntegrationsSettings() {
                     intent='neutral'
                     leftIcon={<X size={14} />}
                     onClick={() => handleRemoveModel(model.id)}
+                    title={`Remove ${model.name}`}
+                    aria-label={`Remove ${model.name}`}
                 />
             </Container>
         );
@@ -290,7 +314,7 @@ export default function IntegrationsSettings() {
 
         const payload: CreateTeamAIIntegrationParams | UpdateTeamAIIntegrationParams = {
             isEnabled: modalEnabled,
-            defaultModel: modalDefaultModel || undefined,
+            defaultModel: toOptionalString(modalDefaultModel),
             enabledModels: modalEnabledModels
         };
 
@@ -325,6 +349,11 @@ export default function IntegrationsSettings() {
         }
     };
 
+    const handleIntegrationFormSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        handleSaveIntegration();
+    }, [handleSaveIntegration]);
+
     const handleRemoveProvider = async (provider: AIProvider) => {
         const integration = integrationsByProvider.get(provider);
         if (!integration) {
@@ -333,7 +362,10 @@ export default function IntegrationsSettings() {
 
         const isConfirmed = await confirm({
             title: `Remove ${integration.providerName} from this team?`,
-            confirmText: 'Remove'
+            description: 'This removes the shared provider configuration for every team member.',
+            confirmText: 'Remove provider',
+            cancelText: 'Keep provider',
+            tone: ConfirmActionTone.Danger
         });
 
         if (!isConfirmed) {
@@ -416,9 +448,16 @@ export default function IntegrationsSettings() {
                                 key={integration.provider}
                                 className='integrations-provider-row d-flex items-center content-between gap-1'
                             >
-                                <Paragraph className='font-size-2 font-weight-5 color-primary'>
-                                    {integration.providerName}
-                                </Paragraph>
+                                <Container className='d-flex column gap-025' style={{ minWidth: 0 }}>
+                                    <Paragraph className='font-size-2 font-weight-5 color-primary'>
+                                        {integration.providerName}
+                                    </Paragraph>
+                                    <Paragraph className='font-size-1 color-muted text-truncate' title={integration.defaultModel ?? 'No default model selected'}>
+                                        {integration.defaultModel
+                                            ? `Default model: ${integration.defaultModel}`
+                                            : 'No default model selected'}
+                                    </Paragraph>
+                                </Container>
 
                                 <Container className='integrations-provider-row-actions d-flex items-center gap-025'>
                                     <Button
@@ -428,15 +467,19 @@ export default function IntegrationsSettings() {
                                         leftIcon={<Settings2 size={14} />}
                                         onClick={() => openEditProviderModal(integration)}
                                         disabled={isLoading}
+                                        title={`Configure ${integration.providerName}`}
+                                        aria-label={`Configure ${integration.providerName}`}
                                     />
                                     <Button
                                         size='sm'
                                         variant='ghost'
                                         intent='danger'
                                         leftIcon={<Trash2 size={14} />}
-                                        onClick={() => { handleRemoveProvider(integration.provider); }}
+                                        onClick={() => handleRemoveProvider(integration.provider)}
                                         isLoading={busyProvider === integration.provider}
                                         disabled={isLoading}
+                                        title={`Remove ${integration.providerName}`}
+                                        aria-label={`Remove ${integration.providerName}`}
                                     />
                                 </Container>
                             </Container>
@@ -464,7 +507,8 @@ export default function IntegrationsSettings() {
                         <Button
                             variant='solid'
                             intent='brand'
-                            onClick={() => { handleSaveIntegration(); }}
+                            form={TEAM_AI_INTEGRATION_FORM_ID}
+                            type='submit'
                             isLoading={isSaving}
                             disabled={isSaving || !modalProvider}
                         >
@@ -473,17 +517,18 @@ export default function IntegrationsSettings() {
                     </>
                 )}
             >
-                <Container className='p-1-5'>
+                <form id={TEAM_AI_INTEGRATION_FORM_ID} className='p-1-5' onSubmit={handleIntegrationFormSubmit}>
                     <Container className='d-flex column gap-1'>
                         {!editingProvider ? (
                             <Container className='d-flex column gap-05'>
-                                <Paragraph className='font-size-2 font-weight-5 color-secondary'>Provider</Paragraph>
+                                <label id={providerLabelId} className='font-size-2 font-weight-5 color-secondary'>Provider</label>
                                 <Select
                                     options={providerSelectOptions}
                                     value={modalProvider}
                                     onChange={handleModalProviderChange}
                                     disabled={providerSelectOptions.length === 0}
                                     placeholder='Select provider'
+                                    aria-labelledby={providerLabelId}
                                 />
                             </Container>
                         ) : (
@@ -523,12 +568,14 @@ export default function IntegrationsSettings() {
                             </Paragraph>
                             <Container className='d-flex gap-05 integrations-add-model-row'>
                                 <FormFieldRHF
+                                    label='Model ID'
                                     placeholder='Model ID (e.g. gpt-4o)'
                                     value={newModelId}
                                     onChange={(event) => setNewModelId(event.target.value)}
                                     inputProps={{ onKeyDown: handleAddModelKeyDown }}
                                 />
                                 <FormFieldRHF
+                                    label='Display name'
                                     placeholder='Display name'
                                     value={newModelName}
                                     onChange={(event) => setNewModelName(event.target.value)}
@@ -550,15 +597,16 @@ export default function IntegrationsSettings() {
                                 </Container>
                             )}
                         </Container>
-
+                        
                         <Container className='d-flex column gap-05'>
-                            <Paragraph className='font-size-2 font-weight-5 color-secondary'>Default model</Paragraph>
+                            <label id={defaultModelLabelId} className='font-size-2 font-weight-5 color-secondary'>Default model</label>
                             <Select
                                 options={modalModelOptions}
                                 value={modalDefaultModel}
                                 onChange={setModalDefaultModel}
                                 disabled={modalModelOptions.length === 0}
                                 placeholder={getDefaultModelPlaceholder(modalModelOptions)}
+                                aria-labelledby={defaultModelLabelId}
                             />
                         </Container>
 
@@ -567,7 +615,7 @@ export default function IntegrationsSettings() {
                             <LiquidToggle pressed={modalEnabled} onChange={setModalEnabled} />
                         </Container>
                     </Container>
-                </Container>
+                </form>
             </Modal>
         </SettingsPage>
     );

@@ -6,26 +6,14 @@ interface AtomTypeBadgeProps {
 };
 
 const TYPE_PALETTE = [
-    '#1f77b4', 
-    '#ff7f0e', 
-    '#2ca02c', 
-    '#d62728', 
-    '#9467bd', 
-    '#8c564b', 
-    '#e377c2',
-    '#7f7f7f', 
-    '#bcbd22', 
-    '#17becf', 
-    '#aec7e8', 
-    '#ffbb78', 
-    '#98df8a', 
-    '#ff9896',
-    '#c5b0d5', 
-    '#c49c94', 
-    '#f7b6d2', 
-    '#c7c7c7', 
-    '#dbdb8d', 
-    '#9edae5'
+    'var(--accent-blue)',
+    'var(--accent-orange)',
+    'var(--status-success)',
+    'var(--status-error)',
+    'var(--accent-purple)',
+    'var(--accent-indigo)',
+    'var(--color-text-secondary)',
+    'var(--status-warning)'
 ];
 
 const typeToColor = (t: number): string => {
@@ -37,10 +25,10 @@ const typeToColor = (t: number): string => {
 
 export default function AtomTypeBadge({ type }: AtomTypeBadgeProps) {
     const typeNumber = typeof type === 'number' ? type : Number(type);
-    
+
     return (
         <StatusBadge variant='neutral'>
-            <span 
+            <span
                 className='atom-type-badge-color-indicator radius-full'
                 style={{ backgroundColor: typeToColor(typeNumber) }}
             />

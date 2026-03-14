@@ -2,7 +2,7 @@ import './Slider.css';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { gsap } from 'gsap';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import React from 'react';
+import type { CSSProperties, FC } from 'react';
 
 export interface SliderProps {
     min: number;
@@ -12,7 +12,7 @@ export interface SliderProps {
     step?: number;
     disabled?: boolean;
     className?: string;
-    style?: React.CSSProperties;
+    style?: CSSProperties;
 };
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
@@ -27,7 +27,7 @@ const getStepDecimals = (step: number) => {
 const snapToStep = (raw: number, min: number, step: number, decimals: number) =>
     Number((Math.round((raw - min) / step) * step + min).toFixed(decimals));
 
-const Slider: React.FC<SliderProps> = ({
+const Slider: FC<SliderProps> = ({
     min,
     max,
     value,

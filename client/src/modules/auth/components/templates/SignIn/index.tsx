@@ -18,6 +18,7 @@ import { sileo } from 'sileo';
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { FormEvent } from 'react';
+import type { StepIndicator, StepTitles } from '@/shared/presentation/components/Stepper';
 import type { StepTitles } from '@/shared/presentation/components/Stepper';
 import type { SignInForm } from './validation-schema';
 
@@ -41,6 +42,22 @@ const stepTitles: StepTitles<SignInStep> = {
         subtitle: 'Enter your details to get started.'
     }
 };
+
+const emailAndPasswordIndicators: StepIndicator<SignInStep>[] = [{
+    key: SignInStep.Email,
+    label: 'Email'
+}, {
+    key: SignInStep.Password,
+    label: 'Password'
+}];
+
+const emailAndRegisterIndicators: StepIndicator<SignInStep>[] = [{
+    key: SignInStep.Email,
+    label: 'Email'
+}, {
+    key: SignInStep.Register,
+    label: 'Create account'
+}];
 
 const SignInTemplate = () => {
     const navigate = useNavigate();
@@ -198,16 +215,6 @@ const SignInTemplate = () => {
                 isLoading={isSubmitting || formState.isSubmitting}
                 onSubmit={handleSubmit}
                 onOAuth={handleOAuthRedirect} />
-        )
-    }, {
-        key: SignInStep.Register,
-        content: (
-            <RegisterStep
-                email={getValues('email')}
-                control={control}
-                isLoading={isSubmitting || formState.isSubmitting}
-                onSubmit={handleSubmit}
-                onBack={goBack} />
             )
     }, {
         key: SignInStep.Password,
@@ -219,18 +226,36 @@ const SignInTemplate = () => {
                 onSubmit={handleSubmit}
                 onBack={goBack} />
         )
+    }, {
+        key: SignInStep.Register,
+        content: (
+            <RegisterStep
+                email={getValues('email')}
+                control={control}
+                isLoading={isSubmitting || formState.isSubmitting}
+                onSubmit={handleSubmit}
+                onBack={goBack} />
+            )
     }];
 
+    const signInSteps = step === SignInStep.Register
+        ? [steps[0], steps[2]]
+        : [steps[0], steps[1]];
+
+    const signInIndicators = step === SignInStep.Register
+        ? emailAndRegisterIndicators
+        : emailAndPasswordIndicators;
+
     return (
-        <Container className='w-max vh-max overflow-hidden'>
-            <Container className='w-max vh-max sign-in-layout'>
-                <Container className='sign-in-hero-section p-relative overflow-hidden content-between column p-4'>
+        <main className='sign-in-page'>
+            <section className='sign-in-layout'>
+                <section className='sign-in-hero-section p-relative overflow-hidden content-between column p-4' aria-labelledby='sign-in-hero-title'>
                     <WireframeBackground />
                     <Container className='sign-in-hero-overlay p-absolute inset-0' />
                     <Container className='d-flex column content-between h-max p-relative'>
                         <Container />
                         <Container className='d-flex column gap-1-5 sign-in-hero-text-container mb-3 z-10'>
-                            <Title className='sign-in-hero-headline'>
+                            <Title as='h2' id='sign-in-hero-title' className='sign-in-hero-headline'>
                                 Connect with<br />your VoltID
                             </Title>
                             <Paragraph className='sign-in-hero-description'>
@@ -238,28 +263,29 @@ const SignInTemplate = () => {
                             </Paragraph>
                         </Container>
                     </Container>
-                </Container>
+                </section>
 
-                <Container className='d-flex column content-center vh-max p-1-5'>
+                <section className='sign-in-form-shell d-flex column content-center p-1-5' aria-labelledby='sign-in-form-title'>
                     <Container className='d-flex column gap-2 sign-in-form-section w-max'>
-                        <Container>
-                            <Title className='sign-in-form-title'>{title}</Title>
+                        <header>
+                            <Title as='h1' id='sign-in-form-title' className='sign-in-form-title'>{title}</Title>
                             <Paragraph className='color-muted font-size-3 mt-05'>{subtitle}</Paragraph>
-                        </Container>
+                        </header>
 
                         <Stepper
-                            steps={steps}
-                            activeStep={step} />
+                            steps={signInSteps}
+                            activeStep={step}
+                            indicators={signInIndicators} />
 
-                        <Paragraph className='color-muted text-center mt-2 font-size-1'>
-                            By clicking continue, you agree to our{' '}
-                            <a href='#' className='sign-in-footer-link'>Terms</a> and{' '}
-                            <a href='#' className='sign-in-footer-link'>Privacy Policy</a>.
+                        <Paragraph className='sign-in-consent text-center mt-2'>
+                            By continuing with email or a social provider, you agree to our{' '}
+                            <span className='sign-in-legal-text'>Terms</span> and{' '}
+                            <span className='sign-in-legal-text'>Privacy Policy</span>.
                         </Paragraph>
                     </Container>
-                </Container>
-            </Container>
-        </Container>
+                </section>
+            </section>
+        </main>
     );
 };
 

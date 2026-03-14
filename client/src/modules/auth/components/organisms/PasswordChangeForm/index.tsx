@@ -3,9 +3,10 @@ import { passwordChangeSchema } from './validation-schema';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import WarningZone from '@/shared/presentation/components/WarningZone';
 import useZodForm from '@/shared/presentation/hooks/use-zod-form';
-import { Lock, Key } from 'lucide-react';
-import { useState } from 'react';
+import { AlertCircle, Lock, Key } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type { ChangePasswordInputDTO } from '@/modules/auth/api/dtos/change-password';
 import type { PasswordChangeForm as PasswordChangeFormType, PasswordInfo } from './validation-schema';
 
@@ -23,8 +24,9 @@ const PasswordChangeForm = ({
     onCancel
 }: PasswordChangeFormProps) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
-    const { control, handleSubmit, reset, setError } = useZodForm<PasswordChangeFormType>({
+    const { control, handleSubmit, reset, watch } = useZodForm<PasswordChangeFormType>({
         schema: passwordChangeSchema,
         defaultValues: {
             currentPassword: '',
@@ -34,11 +36,24 @@ const PasswordChangeForm = ({
         mode: 'onBlur'
     });
 
+    useEffect(() => {
+        const subscription = watch(() => {
+            if (submitError) {
+                setSubmitError(null);
+            }
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [submitError, watch]);
+
     if (!isOpen) return null;
 
     const onFormSubmit = handleSubmit(async (data) => {
         try {
             setIsSubmitting(true);
+            setSubmitError(null);
             await onSubmit({
                 passwordCurrent: passwordInfo?.hasPassword ? data.currentPassword : undefined,
                 password: data.newPassword
@@ -51,7 +66,7 @@ const PasswordChangeForm = ({
                 errorMessage = error.message;
             }
 
-            setError('confirmPassword', { message: errorMessage });
+            setSubmitError(errorMessage);
         } finally {
             setIsSubmitting(false);
         }
@@ -59,11 +74,12 @@ const PasswordChangeForm = ({
 
     const handleCancel = () => {
         reset();
+        setSubmitError(null);
         onCancel();
     };
 
     return (
-        <Container className='password-form d-flex column gap-3 p-4 b-soft radius-md'>
+        <form className='password-form d-flex column gap-3 p-4 b-soft radius-md' onSubmit={onFormSubmit} noValidate>
             {passwordInfo?.hasPassword && (
                 <FormFieldRHF
                     name='currentPassword'
@@ -72,6 +88,14 @@ const PasswordChangeForm = ({
                     type='password'
                     placeholder='Enter your current password'
                     icon={<Key size={18} />}
+                    inputProps={{
+                        autoComplete: 'current-password',
+                        inputMode: 'text',
+                        spellCheck: false,
+                        name: 'currentPassword',
+                        autoCapitalize: 'none',
+                        autoCorrect: 'off'
+                    }}
                 />
             )}
 
@@ -82,6 +106,14 @@ const PasswordChangeForm = ({
                 type='password'
                 placeholder='Enter new password (min. 8 characters)'
                 icon={<Lock size={18} />}
+                inputProps={{
+                    autoComplete: 'new-password',
+                    inputMode: 'text',
+                    spellCheck: false,
+                    name: 'newPassword',
+                    autoCapitalize: 'none',
+                    autoCorrect: 'off'
+                }}
             />
 
             <FormFieldRHF
@@ -91,25 +123,41 @@ const PasswordChangeForm = ({
                 type='password'
                 placeholder='Confirm your new password'
                 icon={<Lock size={18} />}
+                inputProps={{
+                    autoComplete: 'new-password',
+                    inputMode: 'text',
+                    spellCheck: false,
+                    name: 'confirmPassword',
+                    autoCapitalize: 'none',
+                    autoCorrect: 'off'
+                }}
             />
 
-            <Container className='d-flex gap-05'>
+            {submitError && (
+                <WarningZone
+                    icon={<AlertCircle size={16} />}
+                    message={submitError}
+                    className='password-form-error' />
+            )}
+
+            <Container className='d-flex gap-075 flex-wrap'>
                 <Button
+                    type='submit'
                     intent='brand'
-                    onClick={onFormSubmit}
                     isLoading={isSubmitting}
                     disabled={isSubmitting}
                 >
                     {passwordInfo?.hasPassword ? 'Change Password' : 'Set Password'}
                 </Button>
                 <Button
+                    type='button'
                     variant='ghost'
                     onClick={handleCancel}
                 >
                     Cancel
                 </Button>
             </Container>
-        </Container>
+        </form>
     );
 };
 

@@ -6,12 +6,14 @@ interface StatusDotProps{
     isOnline: boolean;
     size?: 'sm' | 'md';
     className?: string;
+    label?: string;
 };
 
 const StatusDot: React.FC<StatusDotProps> = ({
     isOnline,
     size = 'sm',
-    className = ''
+    className = '',
+    label
 }) => {
     const classes = cn(
         'status-dot',
@@ -22,7 +24,7 @@ const StatusDot: React.FC<StatusDotProps> = ({
         className
     );
 
-    return <span className={classes} />;
+    return <span className={classes} role='status' aria-label={label ?? (isOnline ? 'Online' : 'Offline')} />;
 };
 
 export default StatusDot;

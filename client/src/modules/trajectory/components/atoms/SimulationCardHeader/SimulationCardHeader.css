@@ -5,3 +5,7 @@
 .header-user-name{
     max-width: 150px;
 }
+
+.simulation-card-upload-meta {
+    line-height: 1.2;
+}
