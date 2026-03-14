@@ -206,10 +206,15 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                     return { data: nativeResult };
                 }
 
+                const pageAtomIds = new Set<number>(
+                    nativeResult.atoms.map((a: Record<string, unknown>) => Number(a.id))
+                );
+
                 const analysisResult = await deps.trajectoryPluginParserService.getAnalysisAllPerAtomData({
                     trajectoryId: request.trajectoryId,
                     analysisId: request.analysisId,
-                    timestep: request.timestep
+                    timestep: request.timestep,
+                    atomIds: pageAtomIds
                 });
 
                 return {

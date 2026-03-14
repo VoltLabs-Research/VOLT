@@ -43,6 +43,7 @@ export interface PluginAnalysisAllAtomsRequest {
     trajectoryId: string;
     analysisId: string;
     timestep: number;
+    atomIds?: Set<number>;
 }
 
 export interface PluginAnalysisAllAtomsResponse {
@@ -299,12 +300,14 @@ export class TrajectoryPluginParserService {
 
         // Merge all per-atom rows by atom id
         const mergedAtoms = new Map<number, Record<string, unknown>>();
+        const { atomIds } = request;
 
         for (const result of exposureResults) {
             const mapping = exposureMappings.get(result.exposureId)!;
             for (const row of result.rows) {
                 if (row.id === undefined) continue;
                 const atomId = Number(row.id);
+                if (atomIds && !atomIds.has(atomId)) continue;
                 const existing = mergedAtoms.get(atomId) ?? { id: atomId };
 
                 for (const [source, display] of mapping.entries()) {
