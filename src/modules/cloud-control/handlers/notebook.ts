@@ -61,6 +61,23 @@ const readNotebookSessionRequestPayload = (payload: unknown): CreateNotebookSess
     };
 };
 
+const getReadinessGatedRuntimeTarget = async (
+    jupyterRuntimeService: JupyterRuntimeService,
+    notebookId: string
+): Promise<NotebookRuntimeTarget | null> => {
+    const tunnelTargetPort = await jupyterRuntimeService.getRuntimeHostPort(notebookId);
+    if (tunnelTargetPort === null) {
+        return null;
+    }
+
+    const tunnelTarget = new URL(jupyterRuntimeService.getRuntimeInternalOrigin(notebookId));
+
+    return {
+        tunnelTargetHost: tunnelTarget.hostname,
+        tunnelTargetPort
+    };
+};
+
 export const createNotebookHandlers = (deps: NotebookHandlersDependencies): ReverseChannelCommandHandler[] => [
     {
         command: 'notebook.delete',
@@ -77,13 +94,10 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
         command: 'notebook.runtime.get',
         execute: async (payload) => {
             const request = readNotebookIdentifierPayload(payload);
-            const tunnelTargetPort = await deps.jupyterRuntimeService.getRuntimeHostPort(request.notebookId);
-            const runtime: NotebookRuntimeTarget | null = typeof tunnelTargetPort === 'number'
-                ? {
-                    tunnelTargetHost: '127.0.0.1',
-                    tunnelTargetPort
-                }
-                : null;
+            const runtime = await getReadinessGatedRuntimeTarget(
+                deps.jupyterRuntimeService,
+                request.notebookId
+            );
 
             return {
                 data: {
