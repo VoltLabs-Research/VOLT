@@ -4,7 +4,9 @@ import Title from '@/shared/presentation/components/Title';
 import './CollapsibleSection.css';
 import { ChevronDown, Trash2, Plus } from 'lucide-react';
 import { useState, useEffect, memo, useId } from 'react';
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
+
+type CollapsibleSectionHeadingTag = 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
 interface CollapsibleSectionProps {
     title: string;
@@ -27,6 +29,7 @@ interface CollapsibleSectionProps {
     icon?: ReactNode;
     headerAction?: ReactNode;
     collapsible?: boolean;
+    titleAs?: CollapsibleSectionHeadingTag;
 };
 
 const CollapsibleSection = ({
@@ -49,7 +52,8 @@ const CollapsibleSection = ({
     onAdd,
     icon,
     headerAction,
-    collapsible = true
+    collapsible = true,
+    titleAs = 'h3'
 }: CollapsibleSectionProps) => {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [hasBeenExpanded, setHasBeenExpanded] = useState(defaultExpanded);
@@ -60,6 +64,8 @@ const CollapsibleSection = ({
     const headerBaseClass = useDefaultHeaderStyles ? 'collapsible-section-header' : '';
     const titleBaseClass = useDefaultTitleStyles ? 'collapsible-section-title font-size-3 font-weight-6 color-primary' : 'collapsible-section-title';
     const bodyId = `collapsible-section-body-${reactId}`;
+    const headingId = `collapsible-section-heading-${reactId}`;
+    const triggerId = `collapsible-section-trigger-${reactId}`;
 
     useEffect(() => {
         if (actualExpanded && !hasBeenExpanded) {
@@ -81,12 +87,12 @@ const CollapsibleSection = ({
         setIsExpanded(next);
     };
 
-    const handleDelete = (e: React.MouseEvent) => {
+    const handleDelete = (e: MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
         onDelete?.();
     };
 
-    const handleAdd = (e: React.MouseEvent) => {
+    const handleAdd = (e: MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
         onAdd?.();
     };
@@ -94,26 +100,34 @@ const CollapsibleSection = ({
     return (
         <Container className={`d-flex column ${noSpacing ? '' : 'mb-1-5'} ${className}`}>
             <Container className={`${headerBaseClass} d-flex content-between items-center gap-05 ${headerClassName}`}>
-                <button
-                    type='button'
-                    className='collapsible-section-trigger d-flex items-center content-between gap-05 u-select-none'
-                    onClick={handleToggle}
-                    aria-expanded={collapsible ? actualExpanded : undefined}
-                    aria-controls={collapsible ? bodyId : undefined}
-                    disabled={!collapsible}
-                >
-                    <Container className='d-flex items-center gap-05'>
-                        {icon && <span className={`d-flex items-center ${iconClassName}`}>{icon}</span>}
-                        <Title className={`${titleBaseClass} ${titleClassName}`}>{title}</Title>
-                    </Container>
-                    {collapsible && (
-                        <Container
-                            className={`collapsible-section-arrow d-flex flex-center color-muted ${!actualExpanded ? 'collapsible-section-arrow--collapsed' : ''}`}
+                <Title as={titleAs} id={headingId} className='collapsible-section-heading'>
+                    {collapsible ? (
+                        <button
+                            id={triggerId}
+                            type='button'
+                            className='collapsible-section-trigger d-flex items-center content-between gap-05 u-select-none'
+                            onClick={handleToggle}
+                            aria-expanded={actualExpanded}
+                            aria-controls={bodyId}
                         >
-                            <ChevronDown size={arrowSize} />
+                            <Container className='d-flex items-center gap-05'>
+                                {icon && <span className={`d-flex items-center ${iconClassName}`}>{icon}</span>}
+                                <span className={`${titleBaseClass} ${titleClassName}`}>{title}</span>
+                            </Container>
+                            <Container
+                                className={`collapsible-section-arrow d-flex flex-center color-muted ${!actualExpanded ? 'collapsible-section-arrow--collapsed' : ''}`}
+                                aria-hidden='true'
+                            >
+                                <ChevronDown size={arrowSize} />
+                            </Container>
+                        </button>
+                    ) : (
+                        <Container className='d-flex items-center gap-05 collapsible-section-title-row'>
+                            {icon && <span className={`d-flex items-center ${iconClassName}`}>{icon}</span>}
+                            <span className={`${titleBaseClass} ${titleClassName}`}>{title}</span>
                         </Container>
                     )}
-                </button>
+                </Title>
 
                 <Container className='d-flex items-center gap-025 collapsible-section-actions'>
                     {headerAction}
@@ -147,6 +161,7 @@ const CollapsibleSection = ({
                     className={`collapsible-section-body ${bodyClassName}`}
                     style={{ height }}
                     role='region'
+                    aria-labelledby={triggerId}
                 >
                     <Container className={`collapsible-section-content d-flex column ${contentClassName}`}>
                         {hasBeenExpanded ? children : null}
@@ -155,7 +170,7 @@ const CollapsibleSection = ({
             )}
 
             {!collapsible && (
-                <Container id={bodyId} className={`collapsible-section-body collapsible-section-body--static ${bodyClassName}`} role='region'>
+                <Container id={bodyId} className={`collapsible-section-body collapsible-section-body--static ${bodyClassName}`} role='region' aria-labelledby={headingId}>
                     <Container className={`collapsible-section-content d-flex column ${contentClassName}`}>
                         {children}
                     </Container>

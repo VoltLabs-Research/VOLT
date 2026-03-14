@@ -15,27 +15,36 @@ export interface WhiteboardFolderRow extends WhiteboardFolder {
     rowType: WhiteboardListingRowType.Folder;
     lastEditedBy: null;
     payloadKey: string;
+    hierarchyTitle: string;
 };
 
 export interface WhiteboardItemRow extends Whiteboard {
     rowType: WhiteboardListingRowType.Whiteboard;
+    hierarchyTitle: string;
 };
 
 export type WhiteboardListingRow = WhiteboardFolderRow | WhiteboardItemRow;
+
+const getSafeListingTitle = (title: string | undefined | null, fallback: string): string => {
+    const trimmedTitle = title?.trim();
+    return trimmedTitle || fallback;
+};
 
 export const createWhiteboardFolderRow = (folder: WhiteboardFolder): WhiteboardFolderRow => {
     return {
         ...folder,
         rowType: WhiteboardListingRowType.Folder,
         lastEditedBy: null,
-        payloadKey: ''
+        payloadKey: '',
+        hierarchyTitle: getSafeListingTitle(folder.title, 'Untitled Folder')
     };
 };
 
 export const createWhiteboardItemRow = (whiteboard: Whiteboard): WhiteboardItemRow => {
     return {
         ...whiteboard,
-        rowType: WhiteboardListingRowType.Whiteboard
+        rowType: WhiteboardListingRowType.Whiteboard,
+        hierarchyTitle: getSafeListingTitle(whiteboard.title, 'Untitled Whiteboard')
     };
 };
 

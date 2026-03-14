@@ -9,10 +9,10 @@ import usePointCloudGroup from './groups/point-clouds';
 import useRendererGroup from './groups/renderer';
 
 import { memo, useMemo, useState } from 'react';
+import CanvasSlider from '../../atoms/CanvasSlider';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Slider from '@/shared/presentation/components/Slider';
 
 import type { RenderGroup } from './types';
 
@@ -99,7 +99,7 @@ const CanvasRenderSections = () => {
                                         {sub.sections.map((section) => (
                                             <Container key={section.key} className="canvas-form-section d-flex column gap-05">
                                                 {section.onToggle && (
-                                                    <Container className="canvas-form-section-header d-flex items-center content-between">
+                                                    <Container className="canvas-form-section-header d-flex items-center content-between" role="group" aria-label={`${section.key} toggle`}>
                                                         <span className="canvas-form-section-title font-weight-5 font-size-1">Enabled</span>
                                                         <FormFieldRHF
                                                             fieldValue={section.enabled}
@@ -118,17 +118,21 @@ const CanvasRenderSections = () => {
                                                             <Container
                                                                 key={`${section.key}-${r.label}`}
                                                                 className={`canvas-form-row d-flex items-center content-between gap-05 ${r.className ?? ''}`}
+                                                                role="group"
+                                                                aria-label={r.label}
                                                             >
-                                                                <label className="canvas-form-label font-size-05">{r.label}</label>
+                                                                <span className="canvas-form-label font-size-075">{r.label}</span>
                                                                 <Container className="canvas-form-control d-flex items-center gap-02">
-                                                                    <Slider
+                                                                    <CanvasSlider
+                                                                        ariaLabel={r.label}
                                                                         min={r.min}
                                                                         max={r.max}
                                                                         step={r.step}
                                                                         value={value}
                                                                         onChange={onChange}
+                                                                        ariaValueText={String(r.format?.(value) ?? value)}
                                                                     />
-                                                                    <span className="canvas-form-value font-size-05">
+                                                                    <span className="canvas-form-value font-size-075">
                                                                         {r.format?.(value) ?? value}
                                                                     </span>
                                                                 </Container>

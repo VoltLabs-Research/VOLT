@@ -3,6 +3,7 @@ import { useRemoveTeamMemberMutation, useUpdateTeamMemberMutation } from '@/modu
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useUpdateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { runAction } from '@/shared/presentation/actions/run-action';
+import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import ActivityHeatmap from '@/modules/daily-activity/components/molecules/ActivityHeatmap';
 import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
@@ -110,8 +111,10 @@ export default function MyTeamTemplate() {
 
         const isConfirmed = await confirm({
             title: confirmationTitle,
-            description: 'This action cannot be undone.',
-            confirmText: 'Remove'
+            description: 'This immediately removes access to the team and cannot be undone.',
+            confirmText: 'Remove member',
+            cancelText: 'Cancel',
+            tone: ConfirmActionTone.Danger
         });
         if (!isConfirmed) return;
 

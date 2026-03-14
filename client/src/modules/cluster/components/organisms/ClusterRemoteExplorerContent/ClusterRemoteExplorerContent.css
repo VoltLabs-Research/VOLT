@@ -41,3 +41,36 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+.cluster-remote-explorer-detail-header {
+    flex-wrap: wrap;
+}
+
+.cluster-remote-explorer-detail-path {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 1024px) {
+    .cluster-remote-explorer-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .cluster-remote-explorer-detail {
+        min-height: 20rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .cluster-remote-explorer-layout {
+        gap: 0.75rem;
+    }
+
+    .cluster-remote-explorer-detail-header {
+        align-items: stretch;
+    }
+
+    .cluster-remote-explorer-detail-header > button {
+        width: 100%;
+    }
+}

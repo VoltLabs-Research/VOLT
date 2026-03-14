@@ -21,6 +21,8 @@ export default function StartPageTile({ page }: StartPageTileProps) {
     const timeAgo = Math.floor((Date.now() - page.lastAccessed) / 60000);
     const timeString = timeAgo < 1 ? 'Just now' : `${timeAgo}m ago`;
 
+    const previewLabel = page.snapshot ? 'Preview available' : 'Preview unavailable';
+
     return (
         <div
             ref={tileRef}
@@ -33,7 +35,7 @@ export default function StartPageTile({ page }: StartPageTileProps) {
                 type='button'
                 className='metro-tile'
                 onClick={handleClick}
-                aria-label={`Open ${page.title}`}
+                aria-label={`Open ${page.title}. ${previewLabel}. Last opened ${timeString}.`}
             >
                 {page.snapshot && (
                     <div
@@ -59,13 +61,7 @@ export default function StartPageTile({ page }: StartPageTileProps) {
                 </div>
             </button>
 
-            <button
-                onClick={handleRemove}
-                type='button'
-                title='Remove from history'
-                aria-label={`Remove ${page.title} from history`}
-                className='metro-tile-close'
-            >
+            <button onClick={handleRemove} type='button' title='Remove from history' aria-label={`Remove ${page.title} from history`} className='metro-tile-close'>
                 <X size={16} />
             </button>
         </div>

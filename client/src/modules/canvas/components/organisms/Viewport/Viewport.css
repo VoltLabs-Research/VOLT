@@ -5,7 +5,7 @@
 }
 
 .canvas-viewport-trajectory-name {
-    font-size: 0.7rem;
+    font-size: 0.78rem;
     color: var(--color-text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -32,9 +32,15 @@
 }
 
 :root[data-theme='dark'] .canvas-viewport-gradient {
-    background: radial-gradient(60% 60% at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.25) 100%);
+    background: radial-gradient(60% 60% at 50% 50%, transparent 0%, color-mix(in srgb, var(--color-bg) 25%, transparent) 100%);
 }
 
 :root[data-theme='light'] .canvas-viewport-gradient {
     background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .canvas-viewport-gradient {
+        background: transparent;
+    }
 }

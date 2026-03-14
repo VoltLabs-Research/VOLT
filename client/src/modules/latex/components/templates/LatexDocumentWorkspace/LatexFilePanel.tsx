@@ -22,6 +22,7 @@ interface LatexFilePanelProps {
     documentId: string;
     files: LatexFileEntry[];
     assets: LatexAsset[];
+    selectedAssetId: string | null;
     width: number;
     fileInputRef: RefObject<HTMLInputElement | null>;
     folderInputRef: RefObject<HTMLInputElement | null>;
@@ -51,6 +52,7 @@ const LatexFilePanel = ({
     documentId,
     files,
     assets,
+    selectedAssetId,
     width,
     fileInputRef,
     folderInputRef,
@@ -120,6 +122,7 @@ const LatexFilePanel = ({
             variant='ghost'
             size='sm'
             title='New file at root'
+            aria-label='Create a new file at the project root'
             onClick={() => openNewFileIn('')}
         >
             <FilePlus size={14} />
@@ -131,6 +134,7 @@ const LatexFilePanel = ({
             variant='ghost'
             size='sm'
             title='New folder at root'
+            aria-label='Create a new folder at the project root'
             onClick={() => openNewFolderIn('')}
         >
             <FolderPlus size={14} />
@@ -143,6 +147,7 @@ const LatexFilePanel = ({
             node={node}
             depth={0}
             expandedFolders={expandedFolders}
+            selectedAssetId={selectedAssetId}
             newFileTargetFolder={newFileTargetFolder}
             newFolderTargetFolder={newFolderTargetFolder}
             renamingTarget={renamingTarget}
@@ -176,6 +181,7 @@ const LatexFilePanel = ({
                         variant='ghost'
                         size='sm'
                         title='Upload'
+                        aria-label='Upload files or a folder'
                         disabled={isUploading}
                     >
                         <Upload size={14} />
@@ -218,7 +224,7 @@ const LatexFilePanel = ({
         && newFolderTargetFolder === null;
 
     return (
-        <Container className='latex-workspace__files d-flex column' style={{ width }}>
+        <Container id='latex-file-panel' className='latex-workspace__files d-flex column' style={{ width }}>
             <PanelHeader
                 variant='compact'
                 icon={<span className='d-flex items-center color-muted'>{FOLDER_ICON}</span>}
@@ -231,6 +237,7 @@ const LatexFilePanel = ({
                 type='file'
                 className='d-none'
                 multiple
+                aria-label='Upload files to the LaTeX workspace'
                 onChange={onUploadFiles}
             />
 
@@ -238,6 +245,7 @@ const LatexFilePanel = ({
                 ref={folderInputRef}
                 type='file'
                 className='d-none'
+                aria-label='Upload a folder to the LaTeX workspace'
                 onChange={onUploadFolders}
                 {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
             />
@@ -249,6 +257,7 @@ const LatexFilePanel = ({
                         {newFolderTargetFolder === '' && (
                             <WorkspaceEntryInput
                                 icon={<FolderPlus size={13} />}
+                                label='Create a folder at the project root'
                                 placeholder='Folder name'
                                 onConfirm={handleConfirmNewFolder}
                                 onCancel={closeNewFolder}
@@ -257,6 +266,7 @@ const LatexFilePanel = ({
                         {newFileTargetFolder === '' && (
                             <WorkspaceEntryInput
                                 icon={<FilePlus size={13} />}
+                                label='Create a file at the project root'
                                 placeholder='File name'
                                 onConfirm={handleConfirmNewFile}
                                 onCancel={closeNewFile}

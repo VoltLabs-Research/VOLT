@@ -1,3 +1,46 @@
+.notification-row {
+    list-style: none;
+}
+
+.notification-item {
+    width: 100%;
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-surface-2);
+    text-align: left;
+}
+
+.notification-item.is-unread {
+    border-color: var(--color-brand-primary);
+    background: var(--color-surface-3);
+}
+
 .notification-item.is-read {
-    opacity: 0.7;
+    background: var(--color-surface-1);
+}
+
+.notification-item-title,
+.notification-item-content {
+    display: block;
+}
+
+.notification-item-title {
+    min-width: 0;
+}
+
+.notification-item-state {
+    flex-shrink: 0;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.notification-item-state.is-unread {
+    background: var(--color-brand-primary);
+    color: var(--color-contrast-high);
+}
+
+.notification-item-state.is-read {
+    background: var(--color-surface-3);
+    color: var(--color-text-secondary);
 }

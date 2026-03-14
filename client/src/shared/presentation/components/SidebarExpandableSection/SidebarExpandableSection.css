@@ -1,4 +1,3 @@
-/* Collapsible Section Header */
 .sidebar-section-header {
     justify-content: flex-start;
 }
@@ -10,4 +9,10 @@
 
 .sidebar-section-chevron.is-expanded {
     transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar-section-chevron {
+        transition: none;
+    }
 }

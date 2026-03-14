@@ -1,7 +1,7 @@
 .debug-arguments-panel {
     top: 3.5rem;
-    width: 320px;
-    max-height: 400px;
+    width: min(320px, calc(100vw - 1.5rem));
+    max-height: min(400px, calc(100vh - 6rem));
 }
 
 .debug-arguments-panel-header {

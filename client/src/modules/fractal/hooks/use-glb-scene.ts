@@ -154,6 +154,12 @@ export default function useGlbScene(params: UseGlbSceneParams) {
         isHovered: interaction.isHovered,
         resetModel: interaction.resetTransform,
         deselect: interaction.deselect,
+        rotateXNegative: interaction.rotateXNegative,
+        rotateXPositive: interaction.rotateXPositive,
+        rotateYNegative: interaction.rotateYNegative,
+        rotateYPositive: interaction.rotateYPositive,
+        rotateZNegative: interaction.rotateZNegative,
+        rotateZPositive: interaction.rotateZPositive,
         setSelectedObject: interaction.setSelectedObject,
         onHoverChange: interaction.onHoverChange
     };

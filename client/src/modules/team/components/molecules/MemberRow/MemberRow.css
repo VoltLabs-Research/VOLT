@@ -1,10 +1,18 @@
 .member-row {
     background: var(--color-surface-2);
     transition: background 0.2s ease;
+    border: 1px solid transparent;
+    width: 100%;
+    text-align: left;
 }
 
 .member-row:hover {
     background: var(--color-surface-3);
+}
+
+.member-row:focus-visible {
+    outline: none;
+    border-color: var(--accent-blue);
 }
 
 .member-role-badge {

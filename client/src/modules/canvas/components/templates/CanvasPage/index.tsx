@@ -24,6 +24,7 @@ import Timeline from '../../organisms/Timeline';
 import TopToolbar from '../../organisms/TopToolbar';
 import Viewport from '../../organisms/Viewport';
 import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-config';
+import { ResizeDirection } from '@/modules/canvas/hooks/use-resizable';
 
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { Download, ExternalLink } from 'lucide-react';
@@ -86,14 +87,14 @@ const CanvasPage = () => {
     );
 
     const leftPanel = useResizable({
-        direction: 'horizontal',
+        direction: ResizeDirection.Horizontal,
         initialSize: 250,
         minSize: 180,
         maxSize: 420
     });
 
     const rightPanel = useResizable({
-        direction: 'horizontal',
+        direction: ResizeDirection.Horizontal,
         initialSize: 268,
         minSize: 200,
         maxSize: 420,
@@ -101,7 +102,7 @@ const CanvasPage = () => {
     });
 
     const timeline = useResizable({
-        direction: 'vertical',
+        direction: ResizeDirection.Vertical,
         initialSize: 65,
         minSize: 60,
         maxSize: 360,
@@ -144,7 +145,7 @@ const CanvasPage = () => {
     }, [analysisId, downloadAnalysisListings]);
 
     const leftSplit = useResizable({
-        direction: 'vertical',
+        direction: ResizeDirection.Vertical,
         initialSize: 56,
         minSize: 20,
         maxSize: 80
@@ -199,8 +200,8 @@ const CanvasPage = () => {
             <CanvasPresence users={canvasUsers} />
 
             <Container className="canvas-editor-main d-flex flex-1 overflow-hidden p-relative min-h-0">
-                <Container className="canvas-left-panel d-flex column f-shrink-0" style={{ width: leftPanel.size }}>
-                    <Container className="canvas-left-panel-top d-flex column min-h-0 overflow-hidden" style={{ flex: `1 1 ${100 - leftSplit.size}%` }}>
+                    <Container id="canvas-left-panel" className="canvas-left-panel d-flex column f-shrink-0" style={{ width: leftPanel.size }}>
+                        <Container id="canvas-left-panel-top" className="canvas-left-panel-top d-flex column min-h-0 overflow-hidden" style={{ flex: `1 1 ${100 - leftSplit.size}%` }}>
                         <ObjectsPanel
                             trajectory={trajectory}
                             onDownloadAnalysis={handleDownloadAnalysisListing}
@@ -208,18 +209,22 @@ const CanvasPage = () => {
                         />
                     </Container>
                     <ResizeHandle
-                        direction="vertical"
+                        direction={ResizeDirection.Vertical}
                         isDragging={leftSplit.isDragging}
+                        label="Resize objects and events panels"
+                        controls="canvas-left-panel-bottom"
                         {...leftSplit.handleProps}
                     />
-                    <Container className="canvas-left-panel-bottom d-flex column min-h-0 overflow-hidden" style={{ flex: `0 0 ${leftSplit.size}%` }}>
+                    <Container id="canvas-left-panel-bottom" className="canvas-left-panel-bottom d-flex column min-h-0 overflow-hidden" style={{ flex: `0 0 ${leftSplit.size}%` }}>
                         <TexturesPanel trajectory={trajectory} />
                     </Container>
                 </Container>
 
                 <ResizeHandle
-                    direction="horizontal"
+                    direction={ResizeDirection.Horizontal}
                     isDragging={leftPanel.isDragging}
+                    label="Resize left sidebar"
+                    controls="canvas-left-panel"
                     {...leftPanel.handleProps}
                 />
 
@@ -250,11 +255,13 @@ const CanvasPage = () => {
                     {!isScriptingWorkspace && (
                         <>
                             <ResizeHandle
-                                direction="vertical"
+                                direction={ResizeDirection.Vertical}
                                 isDragging={timeline.isDragging}
+                                label="Resize timeline"
+                                controls="canvas-center-timeline"
                                 {...timeline.handleProps}
                             />
-                            <Container className="canvas-center-timeline d-flex column f-shrink-0 min-h-0" style={{ height: timeline.size }}>
+                            <Container id="canvas-center-timeline" className="canvas-center-timeline d-flex column f-shrink-0 min-h-0" style={{ height: timeline.size }}>
                                 <Timeline
                                     sceneRef={sceneRef}
                                     trajectory={trajectory}
@@ -268,12 +275,14 @@ const CanvasPage = () => {
                 </Container>
 
                 <ResizeHandle
-                    direction="horizontal"
+                    direction={ResizeDirection.Horizontal}
                     isDragging={rightPanel.isDragging}
+                    label="Resize right sidebar"
+                    controls="canvas-right-panel"
                     {...rightPanel.handleProps}
                 />
 
-                <Container className="canvas-right-panel-container d-flex column f-shrink-0" style={{ width: rightPanel.size }}>
+                <Container id="canvas-right-panel" className="canvas-right-panel-container d-flex column f-shrink-0" style={{ width: rightPanel.size }}>
                     <RightPanel trajectory={trajectory} trajectoryId={trajectoryId} analysisId={analysisId} currentTimestep={currentTimestep} />
                 </Container>
             </Container>

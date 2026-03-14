@@ -1,5 +1,8 @@
 .session-card {
     transition: background-color 0.15s ease;
+    list-style: none;
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-lg);
 }
 
 .session-card:hover {
@@ -15,6 +18,29 @@
     font-size: 0.75rem;
 }
 
+.session-token {
+    font-family: var(--font-mono, monospace);
+}
+
+.session-list {
+    margin: 0;
+    padding: 0;
+}
+
+.session-activity-row {
+    list-style: none;
+    border: 1px solid var(--color-border-soft);
+}
+
+.session-card-main {
+    min-width: 0;
+}
+
+.session-card-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .activity-dot {
     width: 6px;
     height: 6px;
@@ -28,4 +54,17 @@
 
 .activity-dot.failed {
     background-color: var(--color-danger, #ef4444);
+}
+
+@media screen and (max-width: 768px) {
+    .session-card,
+    .session-activity-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .session-card-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
 }

@@ -24,7 +24,7 @@
 }
 
 .binary-upload-hint {
-    color: var(--color-text-muted, #6b7280);
+    color: var(--color-text-muted);
     margin: 0;
     font-style: italic;
 }
@@ -36,12 +36,18 @@
 
 .binary-upload-progress {
     height: 4px;
-    background: rgba(94, 92, 230, 0.1);
+    background: color-mix(in srgb, var(--accent-indigo) 10%, transparent);
     border-radius: 2px;
 }
 
 .binary-upload-progress-bar {
-    background: linear-gradient(90deg, var(--accent-indigo), #8e8ce6);
+    background: linear-gradient(90deg, var(--accent-indigo), color-mix(in srgb, var(--accent-indigo) 70%, white));
     border-radius: 2px;
     transition: width 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .binary-upload-progress-bar {
+        transition: none;
+    }
 }

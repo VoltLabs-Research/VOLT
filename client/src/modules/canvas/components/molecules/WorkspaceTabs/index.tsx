@@ -16,31 +16,37 @@ const WorkspaceTabs = () => {
                 intent="canvas"
                 size="sm"
                 shape="rounded"
-                className="font-size-05 canvas-btn-compact"
+                className="font-size-075 canvas-btn-compact"
                 onClick={() => navigate('/dashboard')}
             >
                 Dashboard
             </Button>
-            <Button
-                variant={isScripting ? 'ghost' : 'solid'}
-                intent="canvas"
-                size="sm"
-                shape="rounded"
-                className="font-size-05 canvas-btn-compact"
-                onClick={() => setActiveWorkspace('modeling')}
-            >
-                Scene
-            </Button>
-            <Button
-                variant={isScripting ? 'solid' : 'ghost'}
-                intent="canvas"
-                size="sm"
-                shape="rounded"
-                className="font-size-05 canvas-btn-compact"
-                onClick={() => setActiveWorkspace('scripting')}
-            >
-                Scripting
-            </Button>
+            <Container className="d-flex items-center gap-025" role="tablist" aria-label="Canvas workspaces">
+                <Button
+                    variant={isScripting ? 'ghost' : 'solid'}
+                    intent="canvas"
+                    size="sm"
+                    shape="rounded"
+                    className="font-size-075 canvas-btn-compact"
+                    role="tab"
+                    aria-selected={!isScripting}
+                    onClick={() => setActiveWorkspace('modeling')}
+                >
+                    Scene
+                </Button>
+                <Button
+                    variant={isScripting ? 'solid' : 'ghost'}
+                    intent="canvas"
+                    size="sm"
+                    shape="rounded"
+                    className="font-size-075 canvas-btn-compact"
+                    role="tab"
+                    aria-selected={isScripting}
+                    onClick={() => setActiveWorkspace('scripting')}
+                >
+                    Scripting
+                </Button>
+            </Container>
         </Container>
     );
 };

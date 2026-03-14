@@ -4,6 +4,7 @@ import { rbacConfigQuery } from '@/modules/system/hooks/queries';
 import { RoleEditorModal, openRoleEditorModal } from '../../organisms/RoleEditorModal';
 import { ErrorSurface, executeTask } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
+import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
@@ -141,10 +142,12 @@ export default function ManageRolesTemplate() {
 
         const isConfirmed = await confirm({
             title: confirmationTitle,
-            description: 'This action cannot be undone.',
-            confirmText: 'Delete'
+            description: 'Deleting a role permanently removes its configuration and cannot be undone.',
+            confirmText: 'Delete role',
+            cancelText: 'Cancel',
+            tone: ConfirmActionTone.Danger
         });
-        if(!isConfirmed) return;
+        if (!isConfirmed) return;
 
         for (const role of eligibleRoles) {
             await executeTask({

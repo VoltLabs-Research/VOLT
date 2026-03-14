@@ -47,7 +47,7 @@ const ContainerRemoteDesktop = ({ container }: ContainerRemoteDesktopProps) => {
                 </Container>
 
                 <Container className='d-flex items-center gap-075 flex-wrap'>
-                    <span className={`container-remote-desktop-status ${remoteDesktop.connectionState}`}>
+                    <span className={`container-remote-desktop-status ${remoteDesktop.connectionState}`} role='status' aria-live='polite' aria-atomic='true'>
                         {CONNECTION_STATUS_LABELS[remoteDesktop.connectionState]}
                     </span>
 
@@ -95,7 +95,7 @@ const ContainerRemoteDesktop = ({ container }: ContainerRemoteDesktopProps) => {
             </Container>
 
             <Container className='container-remote-desktop-stage'>
-                <div ref={remoteDesktop.displayElementRef} className='container-remote-desktop-display' />
+                <div ref={remoteDesktop.displayElementRef} className='container-remote-desktop-display' aria-live='polite' aria-label={`Remote desktop display for ${container.name}`} />
             </Container>
         </Container>
     );

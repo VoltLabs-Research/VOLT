@@ -1,5 +1,6 @@
 import './Terminal.css';
 import 'xterm/css/xterm.css';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
 import { FitAddon } from 'xterm-addon-fit';
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
@@ -24,6 +25,7 @@ interface TerminalProps {
     fontSize?: number;
     fontFamily?: string;
     className?: string;
+    ariaLabel?: string;
 };
 
 const getTerminalTheme = (): TerminalTheme => {
@@ -47,11 +49,18 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
     onData,
     fontSize = 14,
     fontFamily = 'Menlo, Monaco, "Courier New", monospace',
-    className = ''
+    className = '',
+    ariaLabel = 'Terminal'
 }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const xtermRef = useRef<XTerm | null>(null);
     const fitAddonRef = useRef<FitAddon | null>(null);
+    const onDataRef = useRef(onData);
+    const prefersReducedMotion = usePrefersReducedMotion();
+
+    useEffect(() => {
+        onDataRef.current = onData;
+    }, [onData]);
 
     useImperativeHandle(ref, () => ({
         write: (data: string) => xtermRef.current?.write(data),
@@ -73,7 +82,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
             const theme = getTerminalTheme();
 
             term = new XTerm({
-                cursorBlink: true,
+                cursorBlink: !prefersReducedMotion,
                 fontSize,
                 fontFamily,
                 theme,
@@ -99,8 +108,8 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
                 fitAddonRef.current?.fit();
             });
 
-            if (onData) {
-                term.onData(onData);
+            if (onDataRef.current) {
+                term.onData(onDataRef.current);
             }
 
             fitTimer = window.setTimeout(() => {
@@ -132,12 +141,22 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
             xtermRef.current = null;
             fitAddonRef.current = null;
         };
-    }, []);
+    }, [fontFamily, fontSize]);
+
+    useEffect(() => {
+        if (!xtermRef.current) {
+            return;
+        }
+
+        xtermRef.current.options.cursorBlink = !prefersReducedMotion;
+    }, [prefersReducedMotion]);
 
     return (
         <div
             ref={containerRef}
             className={`terminal-container ${className}`}
+            role='region'
+            aria-label={ariaLabel}
         />
     );
 });

@@ -16,3 +16,8 @@
     margin: 0.25rem 0;
     color: var(--color-text-secondary);
 }
+
+.chart-tooltip-list {
+    margin: 0;
+    padding-left: 1rem;
+}

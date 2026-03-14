@@ -9,12 +9,18 @@ interface RootDropZoneProps {
 /** Droppable root area — items dropped here move to the project root (path = ""). */
 const RootDropZone = ({ children }: RootDropZoneProps) => {
     const { setNodeRef, isOver } = useDroppable({ id: 'folder:' });
+
     return (
         <div
             ref={setNodeRef}
-            className={cn('latex-tree__root-drop', isOver && 'is-over')}
+            className={cn('latex-tree__root-drop-shell', isOver && 'is-over')}
         >
-            {children}
+            <div className='latex-tree__root-drop-affordance' aria-hidden='true'>
+                Drop here to move items to the project root
+            </div>
+            <div className='latex-tree__root-drop' role='tree' aria-label='Project files and assets'>
+                {children}
+            </div>
         </div>
     );
 };

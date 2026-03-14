@@ -1,4 +1,5 @@
 .messages-page {
+    position: relative;
     border-top: 1px solid var(--color-border-soft);
 }
 
@@ -16,24 +17,43 @@
     .messages-page > .chat-details {
         display: none;
     }
+
+    .messages-page.messages-page--details-open > .chat-sidebar,
+    .messages-page.messages-page--details-open > .chat-area,
+    .messages-page.messages-page--details-open > .chat-details {
+        display: flex;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .messages-page.messages-page--details-open > .chat-sidebar,
+    .messages-page.messages-page--details-open > .chat-area {
+        display: none;
+    }
 }
 
 @media (max-width: 768px) {
     .messages-page > .chat-sidebar {
         width: 100%;
-        min-width: unset;
-        position: absolute;
-        left: 0;
-        top: 0;
-        z-index: 10;
-        background-color: var(--color-bg);
+        min-width: 0;
     }
 
-    .messages-page.chat-open > .chat-sidebar {
+    .messages-page > .chat-area,
+    .messages-page > .chat-details {
+        display: none;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .messages-page.messages-page--chat-open > .chat-sidebar {
         display: none;
     }
 
-    .messages-page > .chat-area {
-        width: 100%;
+    .messages-page.messages-page--chat-open > .chat-area {
+        display: flex;
+    }
+
+    .messages-page.messages-page--details-open > .chat-details {
+        display: flex;
     }
 }

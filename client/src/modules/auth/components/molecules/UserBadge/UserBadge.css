@@ -11,3 +11,7 @@
 .user-badge-email{
     display: block;
 }
+
+.user-badge-status-icon {
+    color: var(--status-success);
+}

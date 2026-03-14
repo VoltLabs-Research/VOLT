@@ -1,12 +1,13 @@
 import { frameGroupStatusClassNames } from '@/modules/jobs/utilities/frame-group-status';
 import useJobGroupActions from '@/modules/jobs/hooks/use-job-group-actions';
 import FrameGroup from '@/modules/jobs/components/molecules/FrameGroup';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import Container from '@/shared/presentation/components/Container';
 import JobGroupHeader from './JobGroupHeader';
 import JobGroupMenu from './JobGroupMenu';
 import '@/modules/jobs/components/molecules/JobGroup/JobGroup.css';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { FrameJobGroup, TrajectoryJobGroup as TrajectoryJobGroupType } from '@/modules/jobs/api/entities/job';
 
 interface JobGroupProps {
@@ -16,6 +17,8 @@ interface JobGroupProps {
 
 const JobGroup = ({ group, defaultExpanded = false }: JobGroupProps) => {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+    const prefersReducedMotion = usePrefersReducedMotion();
+    const contentId = useId();
     const statusClassName = frameGroupStatusClassNames[group.overallStatus];
     const {
         loadingAction,
@@ -24,41 +27,51 @@ const JobGroup = ({ group, defaultExpanded = false }: JobGroupProps) => {
         handleRetryFailedJobs
     } = useJobGroupActions();
 
-    const headerContent = (
-        <JobGroupHeader
-            group={group}
-            statusClassName={statusClassName}
-            isExpanded={isExpanded}
-            onToggle={() => setIsExpanded(!isExpanded)}
-        />
-    );
+    const handleToggle = () => {
+        setIsExpanded((value) => !value);
+    };
+
+    const content = group.frameGroups.map((frame: FrameJobGroup) => (
+        <FrameGroup key={frame.timestep} frame={frame} />
+    ));
 
     return (
-        <Container className='job-group'>
-            <JobGroupMenu
-                trajectoryId={group.trajectoryId}
-                trigger={headerContent}
-                loadingAction={loadingAction}
-                onClearHistory={handleClearHistory}
-                onRemoveRunningJobs={handleRemoveRunningJobs}
-                onRetryFailedJobs={handleRetryFailedJobs}
-            />
+        <Container className='job-group' role='listitem'>
+            <Container className='job-group__row d-flex items-center gap-05'>
+                <JobGroupHeader
+                    group={group}
+                    statusClassName={statusClassName}
+                    isExpanded={isExpanded}
+                    contentId={contentId}
+                    onToggle={handleToggle}
+                />
+                <JobGroupMenu
+                    trajectoryId={group.trajectoryId}
+                    loadingAction={loadingAction}
+                    onClearHistory={handleClearHistory}
+                    onRemoveRunningJobs={handleRemoveRunningJobs}
+                    onRetryFailedJobs={handleRetryFailedJobs}
+                />
+            </Container>
 
-            <AnimatePresence>
-                {isExpanded && (
-                    <motion.div
-                        className='job-group-children'
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.25, ease: 'easeInOut' }}
-                    >
-                        {group.frameGroups.map((frame: FrameJobGroup) => (
-                            <FrameGroup key={frame.timestep} frame={frame} />
-                        ))}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {prefersReducedMotion ? (
+                isExpanded ? <div id={contentId} className='job-group-children'>{content}</div> : null
+            ) : (
+                <AnimatePresence>
+                    {isExpanded && (
+                        <motion.div
+                            id={contentId}
+                            className='job-group-children'
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.25, ease: 'easeInOut' }}
+                        >
+                            {content}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            )}
         </Container>
     );
 };

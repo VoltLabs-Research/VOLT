@@ -24,7 +24,8 @@ const TeamMemberList = ({ members, selectedIds, currentUserId, onToggle }: TeamM
                 type='button'
                 key={member._id}
                 className={cn('d-flex items-center gap-075 list-item-hoverable team-member-item', isSelected && 'selected')}
-                aria-pressed={isSelected}
+                role='checkbox'
+                aria-checked={isSelected}
                 onClick={() => onToggle(member._id)}
             >
                 <Container className='d-flex flex-center team-member-item-checkbox transition-normal f-shrink-0'>
@@ -34,10 +35,10 @@ const TeamMemberList = ({ members, selectedIds, currentUserId, onToggle }: TeamM
                 <Avatar user={member} size='sm' />
 
                 <Container className='d-flex column flex-1 team-member-item-info'>
-                    <Paragraph className='font-size-2-5 font-weight-5 color-primary team-member-item-name text-truncate'>
+                    <Paragraph className='font-size-3 font-weight-5 color-primary team-member-item-name text-truncate'>
                         {member.firstName} {member.lastName}
                     </Paragraph>
-                    <Paragraph className='font-size-1 color-muted team-member-item-email text-truncate'>
+                    <Paragraph className='font-size-2 color-muted team-member-item-email text-truncate'>
                         {member.email}
                     </Paragraph>
                 </Container>

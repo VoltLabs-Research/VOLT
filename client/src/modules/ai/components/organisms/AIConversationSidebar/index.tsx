@@ -163,6 +163,7 @@ const AIConversationSidebar = ({
                     <Container className='d-flex items-center gap-025 ai-conversation-item-actions'>
                         <Tooltip content={renameTooltip}>
                             <IconButton
+                                aria-label={`Rename conversation ${conversation.title}`}
                                 size='sm'
                                 variant='ghost'
                                 disabled={!canUpdate}
@@ -174,6 +175,7 @@ const AIConversationSidebar = ({
 
                         <Tooltip content={deleteTooltip}>
                             <IconButton
+                                aria-label={`Delete conversation ${conversation.title}`}
                                 size='sm'
                                 variant='ghost'
                                 disabled={!canDelete}

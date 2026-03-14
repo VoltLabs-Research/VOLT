@@ -5,6 +5,10 @@
     background: var(--color-surface-1);
 }
 
+.container-remote-desktop {
+    min-width: 0;
+}
+
 .container-remote-desktop-form {
     align-items: flex-end;
 }
@@ -82,4 +86,24 @@
     border-radius: 0.85rem;
     background: color-mix(in srgb, var(--color-danger) 14%, transparent);
     color: var(--color-danger);
+}
+
+@media (max-width: 768px) {
+    .container-remote-desktop {
+        padding: 1rem;
+    }
+
+    .container-remote-desktop-stage,
+    .container-remote-desktop-display {
+        min-height: 22rem;
+    }
+
+    .container-remote-desktop-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .container-remote-desktop-form > * {
+        width: 100%;
+    }
 }

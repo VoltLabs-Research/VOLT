@@ -18,6 +18,8 @@ const TableSkeletonRow = <TRow,>({
     return (
         <Container
             className='document-listing-table-row-container skeleton-row d-flex f-shrink-0'
+            role='row'
+            aria-hidden='true'
             style={{
                 gap: useFlexDistribution ? undefined : `${columnGap}px`,
                 justifyContent: useFlexDistribution ? 'space-between' : 'flex-start'
@@ -27,7 +29,8 @@ const TableSkeletonRow = <TRow,>({
                 <Container
                     className='document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary'
                     data-label={col.title}
-                    key={col.key}
+                    key={`${String(col.key ?? col.path ?? col.title ?? colIdx)}-skeleton`}
+                    role='gridcell'
                     style={
                         useFlexDistribution
                             ? { flex: 1, minWidth: 0 }

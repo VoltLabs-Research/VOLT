@@ -1,9 +1,21 @@
 import './IconButton.css';
-import { forwardRef } from 'react';
-import React from 'react';
+import { Children, forwardRef, useRef } from 'react';
+import type { ButtonHTMLAttributes, MouseEventHandler, ReactNode } from 'react';
 
-interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    children: React.ReactNode;
+const MISSING_ICON_BUTTON_LABEL_ERROR = 'IconButton requires an accessible name via aria-label, aria-labelledby, or title.';
+const FALLBACK_ICON_BUTTON_LABEL = 'Icon button';
+
+const resolveAccessibleText = (value?: string): string | undefined => {
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+
+    const trimmedValue = value.trim();
+    return trimmedValue || undefined;
+};
+
+interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+    children: ReactNode;
     variant?: 'default' | 'ghost';
     size?: 'sm' | 'md' | 'lg';
 };
@@ -16,9 +28,37 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(({
     disabled,
     title,
     'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
+    onClick,
     ...props
 }, ref) => {
-    const resolvedAriaLabel = !ariaLabel && title ? title : ariaLabel;
+    const hasWarnedForMissingLabelRef = useRef(false);
+    const textContent = Children.toArray(children)
+        .filter((child): child is string | number => typeof child === 'string' || typeof child === 'number')
+        .join(' ')
+        .trim();
+    const resolvedTitle = resolveAccessibleText(title);
+    const labelledBy = resolveAccessibleText(ariaLabelledBy);
+
+    let resolvedAriaLabel = resolveAccessibleText(ariaLabel) ?? resolvedTitle ?? (textContent || undefined);
+    if (!labelledBy && !resolvedAriaLabel) {
+        if (!hasWarnedForMissingLabelRef.current) {
+            console.warn(MISSING_ICON_BUTTON_LABEL_ERROR);
+            hasWarnedForMissingLabelRef.current = true;
+        }
+
+        resolvedAriaLabel = FALLBACK_ICON_BUTTON_LABEL;
+    }
+
+    const handleClick: MouseEventHandler<HTMLButtonElement> = (event) => {
+        if (disabled) {
+            event.preventDefault();
+            return;
+        }
+
+        onClick?.(event);
+    };
+
     const classes = [
         'volt-icon-button',
         'flex-center',
@@ -35,8 +75,10 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(({
             className={classes}
             disabled={disabled}
             type='button'
-            title={title}
+            title={resolvedTitle ?? resolvedAriaLabel}
             aria-label={resolvedAriaLabel}
+            aria-labelledby={labelledBy}
+            onClick={handleClick}
             {...props}
         >
             {children}

@@ -1,5 +1,6 @@
 import { formatChartTime } from '../../../utilities/format-chart-time';
 import { useEffect, useMemo } from 'react';
+import { CHART_COLORS } from '@/modules/cluster/utilities/chart-colors';
 import {
     AreaChart,
     Area,
@@ -17,9 +18,9 @@ import type { MemoryData } from '../../../services/container-stats-view';
 
 const MAX_HISTORY_POINTS = 60;
 
-const CHART_COLORS = {
-    used: '#0A84FF',
-    free: '#30D158'
+const MEMORY_CHART_COLORS = {
+    used: CHART_COLORS.blue,
+    free: CHART_COLORS.green
 };
 
 interface MemoryChartProps {
@@ -142,12 +143,12 @@ const MemoryChart = ({ data, isLoading = false, unit = 'GB' }: MemoryChartProps)
                 >
                     <defs>
                         <linearGradient id='colorMemUsed' x1='0' y1='0' x2='0' y2='1'>
-                            <stop offset='5%' stopColor={CHART_COLORS.used} stopOpacity={0.3} />
-                            <stop offset='95%' stopColor={CHART_COLORS.used} stopOpacity={0} />
+                            <stop offset='5%' stopColor={MEMORY_CHART_COLORS.used} stopOpacity={0.3} />
+                            <stop offset='95%' stopColor={MEMORY_CHART_COLORS.used} stopOpacity={0} />
                         </linearGradient>
                         <linearGradient id='colorMemFree' x1='0' y1='0' x2='0' y2='1'>
-                            <stop offset='5%' stopColor={CHART_COLORS.free} stopOpacity={0.3} />
-                            <stop offset='95%' stopColor={CHART_COLORS.free} stopOpacity={0} />
+                            <stop offset='5%' stopColor={MEMORY_CHART_COLORS.free} stopOpacity={0.3} />
+                            <stop offset='95%' stopColor={MEMORY_CHART_COLORS.free} stopOpacity={0} />
                         </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />
@@ -167,7 +168,7 @@ const MemoryChart = ({ data, isLoading = false, unit = 'GB' }: MemoryChartProps)
                     <Area
                         type='monotone'
                         dataKey='used'
-                        stroke={CHART_COLORS.used}
+                        stroke={MEMORY_CHART_COLORS.used}
                         strokeWidth={2}
                         fillOpacity={1}
                         fill='url(#colorMemUsed)'
@@ -177,7 +178,7 @@ const MemoryChart = ({ data, isLoading = false, unit = 'GB' }: MemoryChartProps)
                     <Area
                         type='monotone'
                         dataKey='free'
-                        stroke={CHART_COLORS.free}
+                        stroke={MEMORY_CHART_COLORS.free}
                         strokeWidth={2}
                         fillOpacity={1}
                         fill='url(#colorMemFree)'

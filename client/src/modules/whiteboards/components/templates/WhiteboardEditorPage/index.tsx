@@ -38,7 +38,7 @@ const WhiteboardEditorPage = () => {
         generateIdForFile
     } = useWhiteboardEditor({ whiteboardId: whiteboardId! });
 
-    const { users } = useWhiteboardPresence({
+    const { announcement, users } = useWhiteboardPresence({
         whiteboardId,
         enabled: Boolean(whiteboardId)
     });
@@ -83,11 +83,13 @@ const WhiteboardEditorPage = () => {
     }, []);
 
     const renderTopRightUI = useCallback<RenderTopRightUI>(() => {
+        const collaboratorsLabel = users.length === 1 ? '1 collaborator online' : `${users.length} collaborators online`;
+
         return (
             <div className='whiteboard-presence-indicator d-flex items-center gap-05'>
                 {users.length > 0 && (
-                    <div className='whiteboard-presence-count'>
-                        {users.length} online
+                    <div className='whiteboard-presence-count' aria-label={collaboratorsLabel}>
+                        {collaboratorsLabel}
                     </div>
                 )}
                 <AIFloatingAssistantPanel />
@@ -108,6 +110,9 @@ const WhiteboardEditorPage = () => {
 
     return (
         <Container className='whiteboard-editor-root'>
+            <span className='whiteboard-presence-live-region' aria-live='polite' aria-atomic='true'>
+                {announcement?.message ?? ''}
+            </span>
             {isLoading ? (
                 <Container className='whiteboard-editor-loading'>
                     <Loader scale={0.8} />

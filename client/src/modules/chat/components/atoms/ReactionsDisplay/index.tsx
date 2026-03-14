@@ -34,7 +34,7 @@ const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: Reactions
                     key={reaction.emoji}
                     type='button'
                     className={cn(
-                        'd-flex items-center gap-025 font-size-1 cursor-pointer chat-reaction transition-normal',
+                        'd-flex items-center gap-025 font-size-2 cursor-pointer chat-reaction transition-normal',
                         hasUserReacted(reaction) && 'user-reacted'
                     )}
                     onClick={() => onToggle(reaction.emoji)}

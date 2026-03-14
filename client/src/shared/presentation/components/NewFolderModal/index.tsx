@@ -1,8 +1,10 @@
-import Modal, { closeModal } from '@/shared/presentation/components/Modal';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import Container from '@/shared/presentation/components/Container';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import Modal, { closeModal } from '@/shared/presentation/components/Modal';
+import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import { useCallback, useState } from 'react';
+import type { InputHTMLAttributes } from 'react';
 import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';
 
 interface NewFolderModalProps {
@@ -14,6 +16,16 @@ interface NewFolderModalProps {
     submitLabel?: string;
     onSubmit: (title: string) => Promise<void>;
     onClose?: () => void;
+};
+
+const COARSE_POINTER_MEDIA_QUERY = '(pointer: coarse)';
+
+const shouldEnableModalAutofocus = () => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+        return true;
+    }
+
+    return !window.matchMedia(COARSE_POINTER_MEDIA_QUERY).matches;
 };
 
 const NewFolderModal = ({
@@ -29,6 +41,7 @@ const NewFolderModal = ({
     const [folderName, setFolderName] = useState('');
     const [error, setError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const shouldAutoFocus = shouldEnableModalAutofocus();
 
     const resetState = useCallback(() => {
         setFolderName('');
@@ -36,11 +49,14 @@ const NewFolderModal = ({
         setIsSubmitting(false);
     }, []);
 
-    const handleClose = useCallback(() => {
+    const handleRequestClose = useCallback(() => {
         closeModal(id);
+    }, [id]);
+
+    const handleModalClose = useCallback(() => {
         resetState();
         onClose?.();
-    }, [id, onClose, resetState]);
+    }, [onClose, resetState]);
 
     const handleSubmit = useCallback(async () => {
         const trimmedFolderName = folderName.trim();
@@ -51,21 +67,29 @@ const NewFolderModal = ({
         }
 
         setIsSubmitting(true);
+        setError(undefined);
 
         try {
             await onSubmit(trimmedFolderName);
-            handleClose();
+            handleRequestClose();
+        } catch (nextError) {
+            const userError = reportError(nextError, {
+                surface: ErrorSurface.Silent,
+                fallbackTitle: 'Failed to create folder'
+            });
+
+            setError(userError.description ?? userError.title);
         } finally {
             setIsSubmitting(false);
         }
-    }, [folderName, handleClose, onSubmit]);
+    }, [folderName, handleRequestClose, onSubmit]);
 
     const handleFolderNameChange = useCallback((event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFolderName(event.target.value);
         setError(undefined);
     }, []);
 
-    const inputProps: React.InputHTMLAttributes<HTMLInputElement> = {
+    const inputProps: InputHTMLAttributes<HTMLInputElement> = {
         onKeyDown: (event) => {
             if (event.key === 'Enter') {
                 handleSubmit();
@@ -75,7 +99,7 @@ const NewFolderModal = ({
 
     const secondaryAction: ModalFooterAction = {
         label: 'Cancel',
-        onClick: handleClose,
+        onClick: handleRequestClose,
         disabled: isSubmitting
     };
 
@@ -91,14 +115,14 @@ const NewFolderModal = ({
             id={id}
             title={title}
             description={description}
-            onClose={handleClose}
+            onClose={handleModalClose}
             footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
         >
             <Container className='p-1-5'>
                 <FormFieldRHF
                     label={fieldLabel}
                     placeholder={placeholder}
-                    autoFocus
+                    autoFocus={shouldAutoFocus}
                     value={folderName}
                     onChange={handleFolderNameChange}
                     inputProps={inputProps}

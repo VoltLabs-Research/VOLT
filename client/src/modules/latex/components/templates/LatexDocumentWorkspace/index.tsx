@@ -34,6 +34,11 @@ interface DragState {
     startDimension: number;
 };
 
+interface KeyboardResizeConfig {
+    panel: DragState['panel'];
+    key: string;
+};
+
 const STORAGE_KEY = 'volt:latex-panel-widths';
 const FILES_MIN = 160;
 const FILES_MAX = 400;
@@ -103,6 +108,7 @@ const LatexDocumentWorkspace = () => {
         accessDeniedMessage,
         files,
         rawAssets,
+        selectedAssetId,
         collaborators,
         fileInputRef,
         folderInputRef,
@@ -272,6 +278,65 @@ const LatexDocumentWorkspace = () => {
         setIsAIPanelOpen((current) => !current);
     }, []);
 
+    const saveStatusMessage = isSaving
+        ? 'Saving document changes.'
+        : isDirty
+            ? 'Unsaved document changes.'
+            : 'All document changes saved.';
+
+    let compileStatusMessage = 'Preview is ready.';
+    if (isCompiling) {
+        compileStatusMessage = 'Compiling PDF preview.';
+    } else if (compileError) {
+        compileStatusMessage = 'PDF compilation failed.';
+    } else if (!compiledPdfUrl) {
+        compileStatusMessage = 'Waiting for the first successful compile.';
+    }
+
+    const handleKeyboardResize = useCallback(({ panel, key }: KeyboardResizeConfig): void => {
+        const isDecrease = key === 'ArrowLeft' || key === 'ArrowUp';
+        const isIncrease = key === 'ArrowRight' || key === 'ArrowDown';
+
+        if (!isDecrease && !isIncrease) {
+            return;
+        }
+
+        const step = 24;
+
+        setPanelWidths((prev) => {
+            const next = { ...prev };
+
+            if (panel === 'files') {
+                const delta = isDecrease ? -step : step;
+                next.files = Math.min(FILES_MAX, Math.max(FILES_MIN, prev.files + delta));
+            }
+
+            if (panel === 'preview') {
+                const delta = isDecrease ? step : -step;
+                next.preview = Math.min(PREVIEW_MAX, Math.max(PREVIEW_MIN, prev.preview + delta));
+            }
+
+            if (panel === 'ai') {
+                const delta = isDecrease ? step : -step;
+                next.ai = Math.min(AI_MAX, Math.max(AI_MIN, prev.ai + delta));
+            }
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+            return next;
+        });
+    }, []);
+
+    const handleSeparatorKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>, panel: DragState['panel']): void => {
+        const supportedKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+
+        if (!supportedKeys.includes(event.key)) {
+            return;
+        }
+
+        event.preventDefault();
+        handleKeyboardResize({ panel, key: event.key });
+    }, [handleKeyboardResize]);
+
     if (isLoading) {
         return (
             <Container className='d-flex column flex-center items-center gap-1 h-max'>
@@ -379,13 +444,22 @@ const LatexDocumentWorkspace = () => {
                         </Container>
                     )}
                     {isDirty && <span className='latex-workspace__dirty-dot' title='Unsaved changes' />}
-                    {isSaving && <span className='font-size-05 color-muted'>Saving…</span>}
+                    <span className='latex-workspace__status-text color-muted' aria-live='polite'>
+                        {isSaving ? 'Saving…' : isDirty ? 'Unsaved changes' : 'Saved'}
+                    </span>
                     {writeWithAIButton}
                     {exportTexButton}
                     {exportPdfButton}
                     {exportZipButton}
                 </Container>
             </Container>
+
+            <div className='latex-workspace__sr-only' aria-live='polite'>
+                {saveStatusMessage}
+            </div>
+            <div className='latex-workspace__sr-only' aria-live='polite'>
+                {compileStatusMessage}
+            </div>
 
             <Container className='latex-workspace__layout d-flex flex-1 min-h-0'>
                 {shouldShowWorkspaceOnboarding ? (
@@ -395,6 +469,7 @@ const LatexDocumentWorkspace = () => {
                             type='file'
                             className='d-none'
                             multiple
+                            aria-label='Upload files to the LaTeX workspace'
                             onChange={handleWorkspaceFilesSelected}
                         />
 
@@ -402,8 +477,9 @@ const LatexDocumentWorkspace = () => {
                             ref={folderInputRef}
                             type='file'
                             className='d-none'
+                            aria-label='Upload a folder to the LaTeX workspace'
                             onChange={(event) => {
-                                void handleOnboardingFolderSelection(event);
+                                handleOnboardingFolderSelection(event);
                             }}
                             {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
                         />
@@ -447,6 +523,7 @@ const LatexDocumentWorkspace = () => {
                             documentId={documentId}
                             files={files}
                             assets={rawAssets}
+                            selectedAssetId={selectedAssetId}
                             fileInputRef={fileInputRef}
                             folderInputRef={folderInputRef}
                             isUploading={isUploading}
@@ -475,10 +552,16 @@ const LatexDocumentWorkspace = () => {
                             role='separator'
                             aria-label='Resize file panel'
                             aria-orientation='vertical'
+                            aria-controls='latex-file-panel'
+                            aria-valuemin={FILES_MIN}
+                            aria-valuemax={FILES_MAX}
+                            aria-valuenow={panelWidths.files}
+                            tabIndex={0}
                             onPointerDown={handleFilesPointerDown}
                             onPointerMove={handleDragPointerMove}
                             onPointerUp={handleDragPointerUp}
                             onPointerCancel={handleDragPointerCancel}
+                            onKeyDown={(event) => handleSeparatorKeyDown(event, 'files')}
                         />
 
                         <Container className='latex-workspace__main-content d-flex column flex-1 min-w-0'>
@@ -501,13 +584,19 @@ const LatexDocumentWorkspace = () => {
                                         role='separator'
                                         aria-label='Resize AI panel'
                                         aria-orientation='horizontal'
+                                        aria-controls='latex-ai-panel'
+                                        aria-valuemin={AI_MIN}
+                                        aria-valuemax={AI_MAX}
+                                        aria-valuenow={panelWidths.ai}
+                                        tabIndex={0}
                                         onPointerDown={handleAiPointerDown}
                                         onPointerMove={handleDragPointerMove}
                                         onPointerUp={handleDragPointerUp}
                                         onPointerCancel={handleDragPointerCancel}
+                                        onKeyDown={(event) => handleSeparatorKeyDown(event, 'ai')}
                                     />
                                     <Suspense fallback={
-                                        <Container className='latex-ai-panel d-flex column flex-center items-center' style={{ height: panelWidths.ai }}>
+                                        <Container id='latex-ai-panel' className='latex-ai-panel d-flex column flex-center items-center' style={{ height: panelWidths.ai }}>
                                             <Loader scale={0.5} isFixed={false} />
                                         </Container>
                                     }>
@@ -528,13 +617,20 @@ const LatexDocumentWorkspace = () => {
                             role='separator'
                             aria-label='Resize preview panel'
                             aria-orientation='vertical'
+                            aria-controls='latex-preview-panel'
+                            aria-valuemin={PREVIEW_MIN}
+                            aria-valuemax={PREVIEW_MAX}
+                            aria-valuenow={panelWidths.preview}
+                            tabIndex={0}
                             onPointerDown={handlePreviewPointerDown}
                             onPointerMove={handleDragPointerMove}
                             onPointerUp={handleDragPointerUp}
                             onPointerCancel={handleDragPointerCancel}
+                            onKeyDown={(event) => handleSeparatorKeyDown(event, 'preview')}
                         />
 
                         <LatexPreviewPanel
+                            panelId='latex-preview-panel'
                             isCompiling={isCompiling}
                             compiledPdfUrl={compiledPdfUrl}
                             compileError={compileError}

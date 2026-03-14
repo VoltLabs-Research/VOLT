@@ -3,6 +3,17 @@
     border-collapse: collapse;
 }
 
+.table-caption {
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .table th {
     text-align: left;
     padding: 0.625rem 1rem;
@@ -34,4 +45,21 @@
 
 .table tbody tr.clickable {
     cursor: pointer;
+}
+
+.table-sort-button {
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: pointer;
+}
+
+.table-sort-button:focus-visible {
+    outline: none;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
 }

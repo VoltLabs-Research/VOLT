@@ -11,7 +11,7 @@ export const TeamInvitePanelPopover = () => {
         <Popover
             id='invite-members-popover'
             trigger={
-                <IconButton title='Invite members'>
+                <IconButton title='Invite members' aria-label='Invite team members'>
                     <GoPersonAdd size={18} />
                 </IconButton>
             }

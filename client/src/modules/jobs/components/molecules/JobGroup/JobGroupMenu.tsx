@@ -1,12 +1,11 @@
+import IconButton from '@/shared/presentation/components/IconButton';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import { CiRedo, CiStop1 } from 'react-icons/ci';
-import { RxTrash } from 'react-icons/rx';
-import type { ReactNode } from 'react';
+import { RxDotsHorizontal, RxTrash } from 'react-icons/rx';
 
 interface JobGroupMenuProps {
     trajectoryId: string;
-    trigger: ReactNode;
     loadingAction: string | null;
     onClearHistory: () => void;
     onRemoveRunningJobs: () => void;
@@ -15,7 +14,6 @@ interface JobGroupMenuProps {
 
 const JobGroupMenu = ({
     trajectoryId,
-    trigger,
     loadingAction,
     onClearHistory,
     onRemoveRunningJobs,
@@ -24,8 +22,20 @@ const JobGroupMenu = ({
     return (
         <Popover
             id={`job-group-menu-${trajectoryId}`}
-            trigger={trigger}
-            triggerAction='contextmenu'
+            trigger={(
+                <IconButton
+                    aria-label='Open job group actions'
+                    className='job-group-actions-button'
+                    variant='ghost'
+                    size='md'
+                >
+                    <RxDotsHorizontal />
+                </IconButton>
+            )}
+            triggerAction='click'
+            role='menu'
+            triggerAriaHaspopup='menu'
+            ariaLabel='Job group actions'
         >
             {(close) => (
                 <>

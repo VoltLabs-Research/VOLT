@@ -38,6 +38,7 @@ const SidebarNavItem = forwardRef<HTMLButtonElement, SidebarNavItemProps>(({
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
             disabled={disabled}
+            aria-current={isSelected ? 'page' : undefined}
             {...(commandFor ? { commandfor: commandFor } : {})}
             {...(command ? { command } : {})}
         >

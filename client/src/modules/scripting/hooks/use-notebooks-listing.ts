@@ -120,8 +120,8 @@ const renderNotebookStartupTab = (notebookTab: Window, state: NotebookStartupWin
     document.body.style.display = 'flex';
     document.body.style.alignItems = 'center';
     document.body.style.justifyContent = 'center';
-    document.body.style.background = '#0f1115';
-    document.body.style.color = '#f7f8fa';
+    document.body.style.background = 'Canvas';
+    document.body.style.color = 'CanvasText';
     document.body.style.fontFamily = 'Inter, system-ui, sans-serif';
 
     const container = document.createElement('main');
@@ -139,7 +139,7 @@ const renderNotebookStartupTab = (notebookTab: Window, state: NotebookStartupWin
     description.style.margin = '0';
     description.style.fontSize = '14px';
     description.style.lineHeight = '1.5';
-    description.style.color = '#c2c6cf';
+    description.style.color = 'GrayText';
 
     container.append(title, description);
     document.body.append(container);

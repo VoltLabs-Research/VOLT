@@ -22,6 +22,13 @@ import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 
+interface OnboardingStepState {
+    title: string;
+    description: string;
+    progressLabel: string;
+    progressValue: number;
+};
+
 const useNextDestination = (): string => {
     const location = useLocation();
     const params = new URLSearchParams(location.search);
@@ -67,6 +74,13 @@ const PostAuthOnboarding = () => {
     if (step === OnboardingStep.Cluster) {
         return <Navigate to='/onboarding/cluster/setup' state={{ next }} replace />;
     }
+
+    const stepState: OnboardingStepState = {
+        title: "Let's create a team for you!",
+        description: "Invite other users to collaborate or join existing teams. You'll have the option to create new teams later.",
+        progressLabel: 'Step 1 of 2 · Team setup',
+        progressValue: 50
+    };
 
     const handleCreateTeam = async () => {
         if (!teamName.trim()) {
@@ -118,70 +132,73 @@ const PostAuthOnboarding = () => {
     const handleOpenJoinModal = () => openModal('join-team-modal');
 
     return (
-        <Container className='d-flex items-center content-center w-max vh-max'>
-            <Button
-                className='post-auth-onboarding-invite-btn'
-                variant='ghost'
-                intent='neutral'
-                size='sm'
-                onClick={handleOpenJoinModal}
-            >
-                Have an invite code?
-            </Button>
-
-            <Container className='d-flex column gap-2' style={{ width: '30rem', maxWidth: '120vw' }}>
-                <Container className='d-flex column gap-1 text-center'>
-                    <Title className='font-size-6 font-weight-6'>Let's create a team for you!</Title>
-                    <Paragraph className='color-secondary font-size-3-5'>
-                        Invite other users to collaborate or join existing teams. You'll have the option to create new teams later.
-                    </Paragraph>
+        <Container className='post-auth-onboarding-page d-flex column items-center content-center w-max vh-max'>
+            <Container className='post-auth-onboarding-shell d-flex column gap-2'>
+                <Container className='post-auth-onboarding-topbar d-flex items-center content-between gap-1 flex-wrap'>
+                    <Container className='d-flex column gap-025'>
+                        <span className='font-size-1 font-weight-6 color-secondary'>{stepState.progressLabel}</span>
+                        <Container className='post-auth-onboarding-progress' aria-hidden='true'>
+                            <span className='post-auth-onboarding-progress-fill' style={{ width: `${stepState.progressValue}%` }} />
+                        </Container>
+                    </Container>
+                    <Button className='post-auth-onboarding-invite-btn' variant='ghost' intent='neutral' size='sm' onClick={handleOpenJoinModal}>
+                        Have an invite code?
+                    </Button>
                 </Container>
 
-                <Container className='d-flex column gap-1'>
-                    <FormFieldRHF
-                        label='Team name'
-                        placeholder='e.g., Research Lab'
-                        value={teamName}
-                        error={nameError}
-                        onChange={(e) => {  
-                            setTeamName(e.target.value);
-                            if (nameError) setNameError(undefined);
-                        }}
-                        inputProps={{
-                            onKeyDown: (e) => { if (e.key === 'Enter') handleCreateTeam(); }
-                        }}
-                    />
-                </Container>
+                <Container className='d-flex column gap-2' style={{ width: '30rem', maxWidth: '100%' }}>
+                    <Container className='d-flex column gap-1 text-center'>
+                        <Title className='font-size-6 font-weight-6'>{stepState.title}</Title>
+                        <Paragraph className='color-secondary font-size-3-5'>
+                            {stepState.description}
+                        </Paragraph>
+                    </Container>
 
-                <Button
-                    variant='solid'
-                    intent='brand'
-                    size='lg'
-                    shape='pill'
-                    block
-                    onClick={handleCreateTeam}
-                    isLoading={isSubmitting}
-                >
-                    Create Team & Continue
-                </Button>
+                    <Container className='d-flex column gap-1'>
+                        <FormFieldRHF
+                            label='Team name'
+                            placeholder='e.g., Research Lab'
+                            value={teamName}
+                            error={nameError}
+                            onChange={(e) => {
+                                setTeamName(e.target.value);
+                                if (nameError) setNameError(undefined);
+                            }}
+                            inputProps={{
+                                onKeyDown: (e) => { if (e.key === 'Enter') handleCreateTeam(); }
+                            }}
+                        />
+                    </Container>
+
+                    <Button
+                        variant='solid'
+                        intent='brand'
+                        size='lg'
+                        shape='pill'
+                        block
+                        onClick={handleCreateTeam}
+                        isLoading={isSubmitting}
+                    >
+                        Create Team & Continue
+                    </Button>
+                </Container>
             </Container>
 
             <JoinTeamModal />
 
-            {/* Floating user menu */}
-            {user && (
-                <Container className='post-auth-onboarding-user-info'>
-                    <UserMenuPopover
-                        onSettingsClick={handleSettingsClick}
-                        onSignOut={handleSignOut}
-                        isSigningOut={isSigningOut}
-                    />
+            <Container className='post-auth-onboarding-floating-tools d-flex items-center gap-075'>
+                {user && (
+                    <Container className='post-auth-onboarding-user-info'>
+                        <UserMenuPopover
+                            onSettingsClick={handleSettingsClick}
+                            onSignOut={handleSignOut}
+                            isSigningOut={isSigningOut}
+                        />
+                    </Container>
+                )}
+                <Container className='post-auth-onboarding-notifications'>
+                    <NotificationsPopover />
                 </Container>
-            )}
-
-            {/* Floating notifications */}
-            <Container className='post-auth-onboarding-notifications'>
-                <NotificationsPopover />
             </Container>
         </Container>
     );

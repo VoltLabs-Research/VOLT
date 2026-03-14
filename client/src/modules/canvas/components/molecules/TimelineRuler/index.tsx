@@ -6,24 +6,30 @@ interface TimelineRulerProps {
     rulerRef: RefObject<HTMLDivElement | null>;
     ticks: { frame: number; major: boolean }[];
     playheadLeft: number;
+    startFrame: number;
+    endFrame: number;
     currentFrame: number;
     onClick: (event: React.MouseEvent<HTMLDivElement>) => void;
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
     onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
     onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void;
     onWheel: (event: React.WheelEvent<HTMLDivElement>) => void;
+    onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void;
 };
 
 const TimelineRuler = ({
     rulerRef,
     ticks,
     playheadLeft,
+    startFrame,
+    endFrame,
     currentFrame,
     onClick,
     onPointerDown,
     onPointerMove,
     onPointerUp,
-    onWheel
+    onWheel,
+    onKeyDown
 }: TimelineRulerProps) => (
     <Container className="canvas-timeline-body flex-1 p-relative min-h-0">
         <Container
@@ -35,13 +41,19 @@ const TimelineRuler = ({
             onPointerUp={onPointerUp}
             onPointerLeave={onPointerUp}
             onWheel={onWheel}
+            onKeyDown={onKeyDown}
             role="slider"
+            tabIndex={0}
+            aria-label="Timeline playhead"
+            aria-valuemin={startFrame}
+            aria-valuemax={endFrame}
             aria-valuenow={currentFrame}
+            aria-valuetext={`Frame ${currentFrame}`}
         >
             {ticks.map((tick, i) => (
                 <Container key={i} className="canvas-ruler-tick d-flex column items-center">
                     {tick.major && (
-                        <span className="canvas-ruler-tick-label font-size-05">{tick.frame}</span>
+                        <span className="canvas-ruler-tick-label font-size-075">{tick.frame}</span>
                     )}
                     <Container className={`canvas-ruler-tick-mark ${tick.major ? 'major' : 'minor'}`} />
                 </Container>

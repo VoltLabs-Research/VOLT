@@ -54,6 +54,7 @@ export const InviteCodeSection = ({
                                 size='sm'
                                 className='invite-code-actions-trigger'
                                 title='Invite code actions'
+                                aria-label='Open invite code actions'
                                 disabled={isLoading}
                             >
                                 <EllipsisVertical size={16} />
@@ -76,7 +77,7 @@ export const InviteCodeSection = ({
                                         <PopoverMenuItem
                                             icon={<RefreshCw size={14} />}
                                             onClick={() => {
-                                                void onGenerate();
+                                                onGenerate();
                                                 close();
                                             }}
                                             disabled={isLoading}
@@ -87,7 +88,7 @@ export const InviteCodeSection = ({
                                         <PopoverMenuItem
                                             icon={<Trash2 size={14} />}
                                             onClick={() => {
-                                                void onDelete();
+                                                onDelete();
                                                 close();
                                             }}
                                             variant='danger'

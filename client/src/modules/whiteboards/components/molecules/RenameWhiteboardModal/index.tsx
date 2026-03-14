@@ -3,6 +3,7 @@ import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Container from '@/shared/presentation/components/Container';
 import { RENAME_WHITEBOARD_MODAL_ID } from '@/modules/whiteboards/hooks/use-whiteboards-listing';
+import { getSafeWhiteboardTitle } from '@/modules/whiteboards/utilities/whiteboards';
 import { useCallback, useEffect, useState } from 'react';
 import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';
 import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
@@ -24,7 +25,7 @@ const RenameWhiteboardModal = ({
 
     useEffect(() => {
         if (whiteboard) {
-            setTitle(whiteboard.title);
+            setTitle(getSafeWhiteboardTitle(whiteboard.title));
             setError(undefined);
         }
     }, [whiteboard]);
@@ -38,6 +39,11 @@ const RenameWhiteboardModal = ({
         const trimmed = title.trim();
         if (!trimmed) {
             setError('Title is required');
+            return;
+        }
+
+        if (trimmed.length > 120) {
+            setError('Title must be 120 characters or less');
             return;
         }
 

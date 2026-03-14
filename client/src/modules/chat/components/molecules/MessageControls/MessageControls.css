@@ -7,6 +7,7 @@
 }
 
 .message-bubble:hover .message-controls,
+.message-bubble:focus-within .message-controls,
 .message-controls:focus-within {
     opacity: 1;
 }
@@ -14,4 +15,21 @@
 .message-bubble.sent .message-controls {
     right: auto;
     left: 0.5rem;
+}
+
+.message-controls .volt-icon-button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .message-controls {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .message-controls {
+        transition: none;
+    }
 }

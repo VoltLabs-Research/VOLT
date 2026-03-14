@@ -1,11 +1,10 @@
 import Container from '@/shared/presentation/components/Container';
 import SidebarBottom from '@/shared/presentation/components/SidebarBottom';
 import SidebarHeader from '@/shared/presentation/components/SidebarHeader';
-import Title from '@/shared/presentation/components/Title';
 import './Sidebar.css';
 import '@/shared/presentation/components/SidebarTab/SidebarTab.css';
-import { motion } from 'framer-motion';
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { useEffect, useState, useRef, useCallback, useMemo, useId } from 'react';
 import React from 'react';
 import type { ReactNode, ComponentType } from 'react';
 
@@ -42,9 +41,12 @@ const Sidebar = ({
     keepMounted = false
 }: SidebarProps) => {
     const [collapsed, setCollapsed] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
     const tabsContainerRef = useRef<HTMLDivElement>(null);
+    const prefersReducedMotion = useReducedMotion();
+    const sidebarId = useId();
 
     const checkOverflow = useCallback(() => {
         const container = tabsContainerRef.current;
@@ -56,10 +58,33 @@ const Sidebar = ({
     }, []);
 
     useEffect(() => {
-        if (window.innerWidth <= MOBILE_BREAKPOINT && collapsible) {
+        const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
+
+        const handleMediaChange = (event: MediaQueryListEvent | MediaQueryList) => {
+            const nextIsMobile = event.matches;
+            setIsMobile(nextIsMobile);
+
+            if (!collapsible) {
+                setCollapsed(false);
+                return;
+            }
+
+            setCollapsed(nextIsMobile);
+        };
+
+        handleMediaChange(mediaQuery);
+        mediaQuery.addEventListener('change', handleMediaChange);
+
+        return () => {
+            mediaQuery.removeEventListener('change', handleMediaChange);
+        };
+    }, [collapsible]);
+
+    useEffect(() => {
+        if (isMobile && collapsible) {
             setCollapsed(true);
         }
-    }, [collapsible]);
+    }, [activeTagId, collapsible, isMobile]);
 
     useEffect(() => {
         const container = tabsContainerRef.current;
@@ -92,25 +117,29 @@ const Sidebar = ({
     const headerElement = header
         ? React.cloneElement(header as React.ReactElement<React.ComponentProps<typeof SidebarHeader>>, {
             collapsed,
-            onToggle: toggleCollapsed
+            onToggle: toggleCollapsed,
+            controlsId: `${sidebarId}-content`
         })
         : null;
 
     const positionClass = position === 'right' ? 'editor-sidebar-wrapper--right' : '';
     const activeTagConfig = useMemo(() => tags.find((tag) => tag.id === activeTagId), [tags, activeTagId]);
+    const expandedWidth = isMobile ? 'min(460px, calc(100vw - 1rem))' : (overrideContent ? 460 : 380);
+    const collapsedWidth = isMobile ? 56 : 64;
 
     return (
         <motion.aside
             className={`editor-sidebar-wrapper d-flex ${positionClass} ${className} p-absolute`}
             data-collapsed={collapsed}
             data-collapsible={collapsible}
+            data-mobile={isMobile}
             data-position={position}
             initial={false}
-            animate={{ width: collapsed ? 64 : (overrideContent ? 460 : 380) }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            animate={{ width: collapsed ? collapsedWidth : expandedWidth }}
+            transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 30 }}
         >
             <Container className='editor-sidebar-container glass-bg b-none d-flex column content-between overflow-hidden w-max h-max'>
-                <Container className='editor-sidebar-top-container'>
+                <Container id={`${sidebarId}-content`} className='editor-sidebar-top-container'>
                     {headerElement}
 
                     {overrideContent ? (
@@ -118,29 +147,41 @@ const Sidebar = ({
                     ) : (
                         <>
                             {tags.length > 1 && (
-                                <Container className='p-1-5'>
+                                <Container className='p-1-5 editor-sidebar-tabs-region'>
                                     <Container className='editor-sidebar-tabs-wrapper p-relative'>
                                         {canScrollLeft && (
-                                            <div className='editor-sidebar-tabs-fade editor-sidebar-tabs-fade--left' />
+                                            <div className='editor-sidebar-tabs-fade editor-sidebar-tabs-fade--left' aria-hidden='true' />
                                         )}
-                                            <Container 
+                                            <Container
                                                 ref={tabsContainerRef}
                                                 className='d-flex p-05 content-between editor-sidebar-options-container scrollbar-none'
+                                                role='tablist'
+                                                aria-label='Sidebar sections'
                                             >
-                                                {tags.map((tag) => (
-                                                    <Container
-                                                        key={tag.id}
-                                                        className={`d-flex content-center items-center editor-sidebar-option-container ${tag.id === activeTagId ? 'selected' : ''}`}
-                                                        onClick={() => onTagChange?.(tag.id)}
-                                                    >
-                                                        <Title className='font-size-3 editor-sidebar-option-title font-weight-5'>
-                                                            {tag.name}
-                                                        </Title>
-                                                    </Container>
-                                                ))}
+                                                {tags.map((tag) => {
+                                                    const isSelected = tag.id === activeTagId;
+
+                                                    return (
+                                                        <button
+                                                            key={tag.id}
+                                                            id={`${sidebarId}-tab-${tag.id}`}
+                                                            type='button'
+                                                            role='tab'
+                                                            aria-selected={isSelected}
+                                                            aria-controls={`${sidebarId}-panel-${tag.id}`}
+                                                            tabIndex={isSelected ? 0 : -1}
+                                                            className={`d-flex content-center items-center editor-sidebar-option-container ${isSelected ? 'selected' : ''}`}
+                                                            onClick={() => onTagChange?.(tag.id)}
+                                                        >
+                                                            <span className='font-size-3 editor-sidebar-option-title font-weight-5'>
+                                                                {tag.name}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
                                             </Container>
                                         {canScrollRight && (
-                                            <div className='editor-sidebar-tabs-fade editor-sidebar-tabs-fade--right' />
+                                            <div className='editor-sidebar-tabs-fade editor-sidebar-tabs-fade--right' aria-hidden='true' />
                                         )}
                                     </Container>
                                 </Container>
@@ -152,7 +193,10 @@ const Sidebar = ({
                                     <div
                                         key={tag.id}
                                         className='editor-sidebar-body'
-                                        style={{ display: tag.id === activeTagId ? 'block' : 'none' }}
+                                        id={`${sidebarId}-panel-${tag.id}`}
+                                        role='tabpanel'
+                                        aria-labelledby={`${sidebarId}-tab-${tag.id}`}
+                                        hidden={tag.id !== activeTagId}
                                     >
                                         <tag.Component />
                                     </div>
@@ -160,7 +204,12 @@ const Sidebar = ({
                             ) : (
                                 // Default: only render active tab
                                 activeTagConfig && (
-                                    <div className='editor-sidebar-body'>
+                                    <div
+                                        className='editor-sidebar-body'
+                                        id={tags.length > 1 ? `${sidebarId}-panel-${activeTagConfig.id}` : undefined}
+                                        role={tags.length > 1 ? 'tabpanel' : undefined}
+                                        aria-labelledby={tags.length > 1 ? `${sidebarId}-tab-${activeTagConfig.id}` : undefined}
+                                    >
                                         <activeTagConfig.Component />
                                     </div>
                                 )

@@ -1,11 +1,11 @@
 import AnalysisTreeNode from '../../molecules/AnalysisTreeNode';
+import CanvasSlider from '../../atoms/CanvasSlider';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 
 import { Atom, Box, Eye, Minus, Plus } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import Slider from '@/shared/presentation/components/Slider';
 
 import type { AnalysisSectionData } from '../../../hooks/use-canvas-sidebar-scene';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
@@ -41,6 +41,8 @@ interface SceneCollectionProps {
     setSceneOpacity?: (sceneKey: string, opacity: number) => void;
 };
 
+const TREE_SCENE_ICON_COLOR = 'var(--accent-blue)';
+
 const SceneCollection = ({
     filteredSections,
     expandedSections,
@@ -71,12 +73,14 @@ const SceneCollection = ({
     const defaultTransparencySubmenu = (
         <div className="context-menu-transparency">
             <span className="context-menu-transparency__label">Transparency</span>
-            <Slider
+            <CanvasSlider
+                ariaLabel="Adjust trajectory transparency"
                 min={0}
                 max={1}
                 step={0.01}
                 value={defaultOpacity}
                 onChange={(value: number) => setSceneOpacity?.(defaultSceneKey, value)}
+                ariaValueText={`${Math.round(defaultOpacity * 100)}% opacity`}
             />
         </div>
     );
@@ -108,12 +112,14 @@ const SceneCollection = ({
     const simulationCellTransparencySubmenu = (
         <div className="context-menu-transparency">
             <span className="context-menu-transparency__label">Transparency</span>
-            <Slider
+            <CanvasSlider
+                ariaLabel="Adjust simulation cell transparency"
                 min={0}
                 max={1}
                 step={0.01}
                 value={simulationCellOpacity}
                 onChange={(value: number) => setSceneOpacity?.(simulationCellKey, value)}
+                ariaValueText={`${Math.round(simulationCellOpacity * 100)}% opacity`}
             />
         </div>
     );
@@ -145,7 +151,7 @@ const SceneCollection = ({
                 <ContextMenuPopover
                     id="canvas-ctx-default-scene"
                     trigger={(
-                        <Container
+                        <button
                             className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none ${isDefaultActive ? 'selected' : ''}`}
                             style={{ paddingLeft: 16 }}
                             onClick={() => {
@@ -153,14 +159,14 @@ const SceneCollection = ({
                             }}
                             role="treeitem"
                             aria-selected={isDefaultActive}
-                            tabIndex={0}
+                            type="button"
                         >
                             <span className="canvas-tree-spacer" />
-                            <Atom style={{ width: 13, height: 13, color: '#60a5fa' }} />
+                            <Atom style={{ width: 13, height: 13, color: TREE_SCENE_ICON_COLOR }} />
                             <span className={`${isDefaultActive ? 'color-primary' : 'color-secondary'}`}>
                                 Trajectory
                             </span>
-                        </Container>
+                        </button>
                     )}
                     options={defaultSceneOptions}
                     size='sm'
@@ -171,20 +177,20 @@ const SceneCollection = ({
                 <ContextMenuPopover
                     id="canvas-ctx-simulation-cell"
                     trigger={(
-                        <Container
+                        <button
                             className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none ${showSimulationCell ? 'selected' : ''}`}
                             style={{ paddingLeft: 16 }}
                             onClick={onToggleSimulationCell}
                             role="treeitem"
                             aria-selected={showSimulationCell}
-                            tabIndex={0}
+                            type="button"
                         >
                             <span className="canvas-tree-spacer" />
-                            <Box style={{ width: 13, height: 13, color: '#60a5fa' }} />
+                            <Box style={{ width: 13, height: 13, color: TREE_SCENE_ICON_COLOR }} />
                             <span className={`${showSimulationCell ? 'color-primary' : 'color-secondary'}`}>
                                 Simulation Cell
                             </span>
-                        </Container>
+                        </button>
                     )}
                     options={simulationCellOptions}
                     size='sm'

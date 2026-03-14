@@ -19,7 +19,7 @@ const NotFoundState = () => {
                 </Container>
 
                 <Container className='d-flex column gap-05 text-center'>
-                    <Title as='h2' id={headingId} className='font-size-3 font-weight-5 color-primary'>
+                    <Title as='h1' id={headingId} className='font-size-3 font-weight-5 color-primary'>
                         Page not found
                     </Title>
                     <Paragraph className='font-size-2 color-secondary line-height-5'>

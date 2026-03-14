@@ -2,8 +2,9 @@ import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Select from '@/shared/presentation/components/Select';
 import Tooltip from '@/shared/presentation/components/Tooltip';
+import { useId } from 'react';
 import { IoAddOutline, IoArrowUpOutline } from 'react-icons/io5';
-import type { KeyboardEvent } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 import './AIComposer.css';
 
@@ -19,6 +20,18 @@ interface AIComposerProps {
     onSend: () => void;
 };
 
+const VISUALLY_HIDDEN_STYLES: CSSProperties = {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    padding: 0,
+    margin: '-1px',
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    border: 0
+};
+
 const AIComposer = ({
     value,
     modelOptions,
@@ -30,6 +43,10 @@ const AIComposer = ({
     onModelChange,
     onSend
 }: AIComposerProps) => {
+    const inputId = useId();
+    const inputLabelId = useId();
+    const statusId = useId();
+
     const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -42,29 +59,59 @@ const AIComposer = ({
         modelPlaceholder = 'Select model';
     }
 
+    let statusMessage = 'Composer ready.';
+    if (disabled) {
+        statusMessage = 'Composer unavailable.';
+    }
+
+    if (isSending) {
+        statusMessage = 'Sending message.';
+    }
+
+    if (error) {
+        statusMessage = error;
+    }
+
     return (
         <Container className='d-flex column gap-05 ai-composer'>
             {error && (
-                <Paragraph className='font-size-1 color-danger'>{error}</Paragraph>
+                <Paragraph className='font-size-1 color-danger' role='alert' aria-live='assertive'>
+                    {error}
+                </Paragraph>
             )}
+
+            <label id={inputLabelId} htmlFor={inputId} style={VISUALLY_HIDDEN_STYLES}>
+                Message to Volt AI
+            </label>
+
+            <span id={statusId} style={VISUALLY_HIDDEN_STYLES} aria-live='polite' aria-atomic='true'>
+                {statusMessage}
+            </span>
 
             <Container className='d-flex items-center gap-05 ai-composer-input-wrapper'>
                 <button
                     type='button'
                     className='ai-composer-side-icon d-flex flex-center'
-                    aria-label='Attach'
+                    aria-label='Attachments unavailable'
+                    title='Attachments unavailable'
                     disabled={disabled}
                 >
                     <IoAddOutline size={18} />
                 </button>
 
                 <input
+                    id={inputId}
                     value={value}
                     onChange={(event) => onChange(event.target.value)}
                     onKeyDown={handleInputKeyDown}
                     placeholder='Ask anything'
                     className='ai-composer-input flex-1'
                     disabled={disabled}
+                    autoComplete='off'
+                    enterKeyHint='send'
+                    aria-labelledby={inputLabelId}
+                    aria-describedby={statusId}
+                    aria-invalid={Boolean(error)}
                 />
 
                 <Select
@@ -74,6 +121,7 @@ const AIComposer = ({
                     disabled={disabled || modelOptions.length === 0}
                     placeholder={modelPlaceholder}
                     className='ai-composer-model-select'
+                    aria-label='Select AI model'
                 />
 
                 <Tooltip content='Send message'>
@@ -82,6 +130,8 @@ const AIComposer = ({
                         className='ai-composer-send d-flex flex-center'
                         disabled={disabled || isSending || !value.trim()}
                         onClick={onSend}
+                        aria-label='Send message'
+                        title='Send message'
                     >
                         <IoArrowUpOutline size={18} />
                     </button>

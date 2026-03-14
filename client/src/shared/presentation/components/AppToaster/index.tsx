@@ -18,7 +18,7 @@ const AppToaster = () => {
 
         return styles.getPropertyValue('--color-surface-1').trim()
             || styles.getPropertyValue('--color-content-bg').trim()
-            || '#171719';
+            || styles.getPropertyValue('--color-bg').trim();
     }, [theme]);
 
     const popoverStyle = useMemo(() => {
@@ -55,6 +55,8 @@ const AppToaster = () => {
             popover='manual'
             style={popoverStyle}
             data-theme={theme}
+            aria-live='polite'
+            aria-relevant='additions text'
         >
             <Toaster
                 position='bottom-right'

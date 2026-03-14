@@ -49,7 +49,7 @@ const COLUMNS: Column<ProcessInfo>[] = [
     {
         key: 'Program',
         header: 'Program',
-        cellClassName: 'font-weight-5 color-success'
+        cellClassName: 'font-weight-5 color-secondary'
     },
     {
         key: 'Command',

@@ -1,4 +1,5 @@
 import { useStartAccessedPagesStore } from '../stores/use-start-accessed-pages-store';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fadeToBlack } from '@/shared/presentation/utilities/page-transition';
@@ -12,6 +13,7 @@ const SCALE_HOVER = 1.03;
 export const useStartPageTile = (path: string) => {
     const removePage = useStartAccessedPagesStore((state) => state.removePage);
     const navigate = useNavigate();
+    const prefersReducedMotion = usePrefersReducedMotion();
     const tileRef = useRef<HTMLDivElement>(null);
     const rafRef = useRef<number | null>(null);
     const isAnimatingRef = useRef(false);
@@ -70,7 +72,7 @@ export const useStartPageTile = (path: string) => {
     const handleMouseMove = useCallback((event: MouseEvent<HTMLDivElement>) => {
         const tile = tileRef.current;
 
-        if (!tile) {
+        if (!tile || prefersReducedMotion) {
             return;
         }
 
@@ -95,12 +97,18 @@ export const useStartPageTile = (path: string) => {
             tile.style.setProperty('--mouse-x', `${(x / rect.width) * 100}%`);
             tile.style.setProperty('--mouse-y', `${(y / rect.height) * 100}%`);
         });
-    }, []);
+    }, [prefersReducedMotion]);
 
     const handleMouseLeave = useCallback(() => {
         const tile = tileRef.current;
 
         if (!tile) {
+            return;
+        }
+
+        if (prefersReducedMotion) {
+            tile.style.transition = '';
+            tile.style.transform = '';
             return;
         }
 
@@ -119,12 +127,12 @@ export const useStartPageTile = (path: string) => {
             tile.style.transition = '';
             transitionTimeoutRef.current = null;
         }, 600);
-    }, []);
+    }, [prefersReducedMotion]);
 
     const handleMouseEnter = useCallback(() => {
         const tile = tileRef.current;
 
-        if (!tile) {
+        if (!tile || prefersReducedMotion) {
             return;
         }
 
@@ -134,7 +142,7 @@ export const useStartPageTile = (path: string) => {
         }
 
         tile.style.transition = '';
-    }, []);
+    }, [prefersReducedMotion]);
 
     return {
         tileRef,

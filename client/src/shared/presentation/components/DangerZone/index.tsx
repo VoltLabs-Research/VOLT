@@ -20,10 +20,10 @@ const DangerZone: React.FC<DangerZoneProps> = ({
     onAction
 }) => {
     return (
-        <Container className='zone-danger p-1'>
+        <Container className='zone-danger p-1' role='region' aria-label={title}>
             <Container className='d-flex items-center content-between gap-1'>
                 <Container className='d-flex column gap-025'>
-                    <Title className='font-size-2 font-weight-6'>
+                    <Title as='h2' className='font-size-2 font-weight-6'>
                         {title}
                     </Title>
                     <Paragraph className='color-muted font-size-1'>

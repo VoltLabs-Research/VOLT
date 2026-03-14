@@ -1,6 +1,7 @@
 import Container from '@/shared/presentation/components/Container';
 import Popover from '@/shared/presentation/components/Popover';
 import { applyMonacoTheme, getActiveAppTheme, getMonacoThemeName, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
+import Button from '@/shared/presentation/components/Button';
 import Editor from '@monaco-editor/react';
 import { RiCodeSSlashLine } from 'react-icons/ri';
 import { useEffect, useMemo, useState } from 'react';
@@ -27,14 +28,18 @@ const AnalysisConfigPreview = ({ analysis }: AnalysisConfigPreviewProps) => {
     }, [analysis.config]);
 
     const trigger = (
-        <span
-            className='d-flex items-center gap-05 color-secondary cursor-pointer'
+        <Button
+            variant='ghost'
+            intent='neutral'
+            size='sm'
+            className='analysis-config-preview-trigger'
             onClick={(event) => event.stopPropagation()}
             onMouseDown={(event) => event.stopPropagation()}
+            aria-label={`View configuration for analysis ${analysis._id}`}
         >
             <RiCodeSSlashLine size={16} />
             View config
-        </span>
+        </Button>
     );
 
     return (

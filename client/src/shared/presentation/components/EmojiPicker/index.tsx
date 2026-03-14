@@ -11,24 +11,28 @@ interface EmojiPickerProps {
 };
 
 const EmojiPicker = ({ onSelect, emojis = DEFAULT_EMOJIS, columns = 6 }: EmojiPickerProps) => (
-    <Container className='emoji-picker'>
+    <Container className='emoji-picker' role='group' aria-label='Emoji picker'>
         <Container
             className='emoji-picker-grid'
+            role='list'
+            aria-label='Available emojis'
             style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
         >
             {emojis.map((emoji) => (
-                <Button
-                    key={emoji}
-                    variant='ghost'
-                    intent='neutral'
-                    iconOnly
-                    size='sm'
-                    aria-label={`Select ${emoji} emoji`}
-                    title={`Select ${emoji}`}
-                    onClick={() => onSelect(emoji)}
-                >
-                    {emoji}
-                </Button>
+                <Container key={emoji} role='listitem'>
+                    <Button
+                        className='emoji-picker-option'
+                        variant='ghost'
+                        intent='neutral'
+                        iconOnly
+                        size='sm'
+                        aria-label={`Select ${emoji} emoji`}
+                        title={`Select ${emoji}`}
+                        onClick={() => onSelect(emoji)}
+                    >
+                        {emoji}
+                    </Button>
+                </Container>
             ))}
         </Container>
     </Container>

@@ -1,0 +1,7 @@
+.auto-scroll-list {
+    overscroll-behavior: contain;
+}
+
+.auto-scroll-list-anchor {
+    min-height: 1px;
+}

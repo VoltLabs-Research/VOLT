@@ -4,6 +4,7 @@ dialog.volt-modal{
     padding: 0;
     width: 100%;
     max-width: 500px;
+    max-height: calc(100dvh - 2rem);
     /*
      * background and backdrop-filter are intentionally absent from this rule
      * and delegated to ::before instead.
@@ -20,6 +21,8 @@ dialog.volt-modal{
     color: var(--color-text-primary);
     margin: auto;
     opacity: 0;
+    overflow: hidden;
+    overscroll-behavior: contain;
     position: relative;
     transition: 
         opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
@@ -52,7 +55,7 @@ dialog.volt-modal[open]{
 }
 
 dialog.volt-modal::backdrop{
-    background: rgba(0, 0, 0, 0.4);
+    background: color-mix(in srgb, var(--color-overlay) 72%, transparent);
     backdrop-filter: blur(4px);
     opacity: 0;
     transition: 
@@ -77,6 +80,9 @@ dialog.volt-modal[open]::backdrop{
 }
 
 .volt-modal-body{
+    max-height: calc(100dvh - 10rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 0;
 }
 

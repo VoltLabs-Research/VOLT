@@ -1,15 +1,19 @@
 import { addDays, format, subDays } from 'date-fns';
 import { useMemo, useState } from 'react';
-import type { DailyActivity } from '../api/entities/daily-activity';
-import type { ActivityItem } from '../api/entities/daily-activity';
-import type { MouseEvent } from 'react';
+import type { FocusEvent, MouseEvent } from 'react';
 import type { HeatmapValue } from 'react-calendar-heatmap';
+import type { ActivityItem, DailyActivity } from '../api/entities/daily-activity';
 
 export interface ActivityHeatmapChartDataItem extends HeatmapValue {
     date: string;
     count: number;
     level: number;
     data?: DailyActivity;
+};
+
+interface ActivityHeatmapLegendItem {
+    label: string;
+    className: string;
 };
 
 interface UseActivityHeatmapParams {
@@ -20,6 +24,69 @@ interface UseActivityHeatmapParams {
 interface TooltipPosition {
     x: number;
     y: number;
+};
+
+interface TooltipState {
+    activity: ActivityItem[];
+    dateLabel: string;
+    minutesOnline: number;
+    score: number;
+};
+
+const ACTIVITY_HEATMAP_LEGEND: ActivityHeatmapLegendItem[] = [
+    {
+        label: 'No activity',
+        className: 'color-empty'
+    },
+    {
+        label: 'Low',
+        className: 'color-scale-1'
+    },
+    {
+        label: 'Moderate',
+        className: 'color-scale-2'
+    },
+    {
+        label: 'High',
+        className: 'color-scale-3'
+    },
+    {
+        label: 'Peak',
+        className: 'color-scale-4'
+    }
+];
+
+const getDateLabel = (date: string): string => {
+    return new Intl.DateTimeFormat(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    }).format(new Date(date));
+};
+
+const getDayAriaLabel = (value: ActivityHeatmapChartDataItem | null): string => {
+    if (!value) {
+        return 'No activity data available for this day.';
+    }
+
+    const dateLabel = getDateLabel(value.date);
+    const actionsCount = value.data?.activity.length ?? 0;
+    const minutesOnline = value.data?.minutesOnline ?? 0;
+
+    if (!actionsCount && !minutesOnline) {
+        return `${dateLabel}: no recorded activity.`;
+    }
+
+    return `${dateLabel}: ${actionsCount} activities and ${minutesOnline.toLocaleString()} minutes online.`;
+};
+
+const createTooltipState = (value: ActivityHeatmapChartDataItem | null): TooltipState => {
+    return {
+        activity: value?.data?.activity ?? [],
+        dateLabel: value ? getDateLabel(value.date) : 'No date selected',
+        minutesOnline: value?.data?.minutesOnline ?? 0,
+        score: value?.count ?? 0
+    };
 };
 
 const buildChartData = (
@@ -77,17 +144,26 @@ const useActivityHeatmap = ({ data, range }: UseActivityHeatmapParams) => {
 
     const [tooltipOpen, setTooltipOpen] = useState(false);
     const [tooltipPos, setTooltipPos] = useState<TooltipPosition>({ x: 0, y: 0 });
-    const [tooltipActivity, setTooltipActivity] = useState<ActivityItem[]>([]);
+    const [tooltipState, setTooltipState] = useState<TooltipState>(() => createTooltipState(null));
 
     const chartData = useMemo(
         () => buildChartData(data, range, startDate),
         [data, range, startDate]
     );
 
+    const legendItems = useMemo(() => ACTIVITY_HEATMAP_LEGEND, []);
+
     const handleMouseEnter = (event: MouseEvent<SVGRectElement>, value: ActivityHeatmapChartDataItem | null) => {
         const rect = event.currentTarget.getBoundingClientRect();
         setTooltipPos({ x: rect.left + (rect.width / 2), y: rect.top });
-        setTooltipActivity(value?.data?.activity ?? []);
+        setTooltipState(createTooltipState(value));
+        setTooltipOpen(true);
+    };
+
+    const handleDayFocus = (event: FocusEvent<SVGRectElement>, value: ActivityHeatmapChartDataItem | null) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        setTooltipPos({ x: rect.left + (rect.width / 2), y: rect.top });
+        setTooltipState(createTooltipState(value));
         setTooltipOpen(true);
     };
 
@@ -101,12 +177,15 @@ const useActivityHeatmap = ({ data, range }: UseActivityHeatmapParams) => {
 
     return {
         chartData,
+        legendItems,
         today,
         startDate,
         tooltipOpen,
         tooltipPos,
-        tooltipActivity,
+        tooltipState,
+        getDayAriaLabel,
         handleMouseEnter,
+        handleDayFocus,
         handleMouseLeave,
         handleMouseMove
     };

@@ -30,8 +30,11 @@ interface ChatAreaProps {
     currentUserId?: string;
     presence?: PresenceStatus;
     isLoading?: boolean;
+    isSending?: boolean;
+    isDetailsOpen?: boolean;
     hasMore?: boolean;
     onLoadMore?: () => void;
+    onBackClick?: () => void;
     onTyping: () => void;
     onSendText: (text: string) => Promise<unknown>;
     onSendFiles: (files: File[]) => Promise<unknown>;
@@ -48,8 +51,11 @@ const ChatArea = ({
     currentUserId,
     presence = PresenceStatus.Unknown,
     isLoading = false,
+    isSending = false,
+    isDetailsOpen = false,
     hasMore,
     onLoadMore,
+    onBackClick,
     onTyping,
     onSendText,
     onSendFiles,
@@ -124,7 +130,9 @@ const ChatArea = ({
                 chat={chat}
                 currentUserId={currentUserId}
                 presence={presence}
+                onBackClick={onBackClick}
                 onInfoClick={onInfoClick}
+                isDetailsOpen={isDetailsOpen}
             />
 
             <MessageList
@@ -139,6 +147,7 @@ const ChatArea = ({
 
             <ChatInput
                 disabled={false}
+                isSending={isSending}
                 onTyping={onTyping}
                 onSendText={onSendText}
                 onSendFiles={onSendFiles}

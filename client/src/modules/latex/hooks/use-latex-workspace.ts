@@ -412,6 +412,8 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         [assets, selection]
     );
 
+    const selectedAssetId = selection?.type === 'asset' ? selection.id : null;
+
     const handleRemoteContentUpdate = useCallback((content: string, _timestamp: number, fileId?: string): void => {
         if (!fileId) {
             return;
@@ -790,6 +792,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         files,
         assets,
         rawAssets,
+        selectedAssetId,
         collaborators,
         fileInputRef,
         folderInputRef,

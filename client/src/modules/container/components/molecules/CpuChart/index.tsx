@@ -9,13 +9,14 @@ import {
     ResponsiveContainer
 } from 'recharts';
 import { Cpu } from 'lucide-react';
+import { CHART_COLORS } from '@/modules/cluster/utilities/chart-colors';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
 import useTimeSeriesBuffer from '@/shared/presentation/hooks/use-time-series-buffer';
 import type { CpuData } from '../../../services/container-stats-view';
 
 const MAX_HISTORY_POINTS = 60;
-const CHART_COLOR = '#0A84FF';
+const CHART_COLOR = CHART_COLORS.blue;
 
 interface CpuChartProps {
     data: CpuData | null;

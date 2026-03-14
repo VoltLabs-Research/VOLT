@@ -3,6 +3,7 @@ import { ErrorSurface, executeTask } from '@/shared/errors/core';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { runAction } from '@/shared/presentation/actions/run-action';
+import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { useCallback, useMemo } from 'react';
 
@@ -59,6 +60,13 @@ export default function useInviteCode(): UseInviteCodeReturn {
         await executeTask({
             action: () => runAction({
                 action: () => deleteMutation.mutateAsync({ teamId }),
+                confirm: {
+                    title: 'Delete this invite code?',
+                    description: 'Anyone using this code will no longer be able to join the team with it.',
+                    confirmText: 'Delete code',
+                    cancelText: 'Keep code',
+                    tone: ConfirmActionTone.Danger
+                },
                 toast: DELETE_INVITE_CODE_TOAST_OPTIONS
             }),
             surface: ErrorSurface.Silent,

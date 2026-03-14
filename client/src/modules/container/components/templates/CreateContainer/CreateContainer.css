@@ -5,15 +5,21 @@
 
 .create-container-template-card {
     border: 1px solid var(--color-border-soft);
+    background: var(--color-surface-1);
 }
 
 .create-container-template-card:hover {
-    border-color: var(--accent-blue);
+    border-color: var(--color-brand-primary);
 }
 
 .create-container-template-card.selected {
-    border-color: var(--accent-blue);
-    box-shadow: 0 0 0 2px var(--accent-blue);
+    border-color: var(--color-brand-primary);
+    box-shadow: 0 0 0 2px var(--color-brand-primary);
+}
+
+.create-container-template-card:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px var(--focus-ring);
 }
 
 .create-container-template-icon {
@@ -33,7 +39,7 @@
     right: 8px;
     width: 22px;
     height: 22px;
-    background: var(--accent-blue);
+    background: var(--color-brand-primary);
     color: white;
 }
 
@@ -63,7 +69,7 @@
 }
 
 .create-container-resource-value {
-    background: var(--accent-blue);
+    background: var(--color-brand-primary);
     color: white;
     padding: 0.2rem 0.6rem;
     font-size: 0.8rem;
@@ -90,7 +96,7 @@
 
 .create-container-field-input:focus {
     outline: none;
-    border-color: var(--accent-blue);
+    border-color: var(--color-brand-primary);
 }
 
 .create-container-empty-state {
@@ -108,7 +114,7 @@
 .create-container-checkbox {
     width: 18px;
     height: 18px;
-    accent-color: var(--accent-blue);
+    accent-color: var(--color-brand-primary);
     cursor: pointer;
 }
 
@@ -137,4 +143,27 @@
 .create-container-value {
     font-size: 0.9rem;
     color: var(--color-text-primary);
+}
+
+@media (max-width: 768px) {
+    .create-container-templates-grid,
+    .create-container-config-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .create-container-step-actions {
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 0.75rem;
+    }
+
+    .create-container-step-actions > * {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .create-container-template-card {
+        transition: none;
+    }
 }

@@ -73,15 +73,21 @@ const TopToolbar = () => {
                 hidden
                 onChange={handlePickerChange}
             />
-            <Container
-                className="canvas-toolbar-logo d-flex items-center cursor-pointer"
-                onClick={() => navigate('/dashboard')}
+            <a
+                className="canvas-toolbar-logo d-flex items-center"
+                href="/dashboard"
+                aria-label="Go to Volt dashboard"
                 title="Back to Dashboard"
+                onClick={(event) => {
+                    event.preventDefault();
+                    navigate('/dashboard');
+                }}
             >
-                <h1 className="canvas-volt font-size-05 color-secondary">VOLT</h1>
-            </Container>
+                <span className="canvas-toolbar-logo-mark font-size-1 color-primary font-weight-6" aria-hidden="true">V</span>
+                <h1 className="canvas-volt font-size-075 color-secondary">Volt</h1>
+            </a>
 
-            <nav className="canvas-toolbar-menus px-1 d-flex gap-025 items-center" aria-label="Main menu">
+            <nav className="canvas-toolbar-menus px-1 d-flex gap-025 items-center" aria-label="Canvas primary navigation">
                 {menus.map((menu) => (
                     <MenuPopover
                         key={menu.label}
@@ -99,8 +105,8 @@ const TopToolbar = () => {
                     onSettingsClick={handleSettingsClick}
                     onSignOut={handleSignOut}
                     isSigningOut={isSigningOut}
-                    trigger={
-                        <Button variant='ghost' intent='neutral' iconOnly aria-label='Open user menu' title='Open user menu' className="cursor-pointer" style={{ background: 'none', border: 'none', padding: 0 }}>
+                        trigger={
+                        <Button variant='ghost' intent='neutral' iconOnly aria-label='Open user menu' title='Open user menu' className="canvas-toolbar-user-trigger cursor-pointer">
                             <Avatar user={user} size="xs" />
                         </Button>
                     }

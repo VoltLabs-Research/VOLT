@@ -15,6 +15,9 @@ const IfStatementNode = (props: NodeProps) => {
             nodeType={NodeType.IF_STATEMENT}
             description={conditionCount > 0 ? `${conditionCount} condition(s)` : 'No conditions'}
         >
+            <span className='if-statement-branch-label if-statement-branch-label--true' aria-hidden='true'>
+                True
+            </span>
             <Handle
                 type='source'
                 position={Position.Right}
@@ -22,6 +25,9 @@ const IfStatementNode = (props: NodeProps) => {
                 className='if-statement-handle if-statement-handle--true'
                 style={{ top: '35%' }}
             />
+            <span className='if-statement-branch-label if-statement-branch-label--false' aria-hidden='true'>
+                False
+            </span>
             <Handle
                 type='source'
                 position={Position.Right}

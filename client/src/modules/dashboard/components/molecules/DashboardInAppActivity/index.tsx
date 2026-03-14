@@ -2,6 +2,7 @@ import './DashboardInAppActivity.css';
 import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import Container from '@/shared/presentation/components/Container';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
 import { useMemo } from 'react';
@@ -10,9 +11,12 @@ import {
     PolarGrid,
     Radar,
     RadarChart,
+    Legend,
     ResponsiveContainer,
     Tooltip
 } from 'recharts';
+import { Activity } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 interface DashboardInAppActivityBucket {
     minutes: number;
@@ -204,11 +208,7 @@ const DashboardInAppActivity = () => {
     }
 
     const hasData = activityData.length > 0;
-    let chartContent = (
-        <Container className='d-flex flex-center h-max'>
-            <span className='color-muted font-size-2'>No activity yet</span>
-        </Container>
-    );
+    let chartContent: ReactNode;
 
     if (hasData) {
         chartContent = (
@@ -228,6 +228,7 @@ const DashboardInAppActivity = () => {
                         tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
                     />
                     <Tooltip content={renderTooltip} />
+                    <Legend verticalAlign='bottom' height={32} wrapperStyle={{ fontSize: '12px' }} />
                     <Radar
                         name='Avg. time'
                         dataKey='minutes'
@@ -246,6 +247,16 @@ const DashboardInAppActivity = () => {
                     />
                 </RadarChart>
             </ResponsiveContainer>
+        );
+    }
+    else {
+        chartContent = (
+            <EmptyState
+                className='dashboard-inapp-activity-empty h-max'
+                icon={<Activity size={20} strokeWidth={1.6} />}
+                title='No activity yet'
+                description='Once your team starts navigating the app, this chart will compare time spent and actions taken across the week.'
+            />
         );
     }
 

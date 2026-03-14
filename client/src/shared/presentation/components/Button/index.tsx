@@ -3,12 +3,14 @@ import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import './Button.css';
 import { Children, forwardRef, useRef } from 'react';
-import type { ButtonHTMLAttributes, CSSProperties, MouseEvent, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import type { ButtonHTMLAttributes, CSSProperties, MouseEventHandler, ReactNode } from 'react';
 
 interface ButtonStyles extends CSSProperties {
     '--button-icon-size'?: string;
 };
+
+type NativeButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'>;
 
 const MISSING_ICON_ONLY_LABEL_ERROR = 'Button with iconOnly requires an accessible name via aria-label, title, or text children.';
 const FALLBACK_ICON_ONLY_LABEL = 'Icon button';
@@ -22,7 +24,7 @@ const resolveAccessibleText = (value?: string): string | undefined => {
     return trimmedValue || undefined;
 };
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>{
+export interface ButtonProps extends NativeButtonProps {
     /**
      * Visual style of the button
      * @default 'solid'
@@ -68,7 +70,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>{
     isLoading?: boolean;
 
     /**
-     * Navigation target(uses useNavigate)
+     * Navigation target rendered as a link
      */
     to?: string;
 
@@ -99,6 +101,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>{
      * @default false
      */
     premium?: boolean;
+
+    onClick?: MouseEventHandler<HTMLElement>;
 };
 
 
@@ -124,10 +128,17 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     title,
     type = 'button',
     'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
+    'aria-describedby': ariaDescribedBy,
+    'aria-controls': ariaControls,
+    'aria-expanded': ariaExpanded,
+    id,
+    role,
+    tabIndex,
     ...props
 }, ref) => {
-    const navigate = useNavigate();
     const hasWarnedForMissingLabelRef = useRef(false);
+    const isDisabled = disabled || isLoading;
 
     const textContent = Children.toArray(children)
         .filter((child): child is string | number => typeof child === 'string' || typeof child === 'number')
@@ -160,21 +171,6 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
 
     const resolvedTitle = normalizedTitle ?? (iconOnly ? resolvedAriaLabel : undefined);
 
-    const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
-        if (isLoading || disabled) {
-            e.preventDefault();
-            return;
-        }
-
-        if (onClick) {
-            onClick(e);
-        }
-
-        if (to) {
-            navigate(to);
-        }
-    };
-
     const classes = cn(
         'button',
         `variant-${variant}`,
@@ -196,19 +192,26 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
         className
     );
 
-    return (
-        <button
-            ref={ref}
-            type={type}
-            className={classes}
-            disabled={disabled || isLoading}
-            onClick={handleClick}
-            title={resolvedTitle}
-            aria-label={resolvedAriaLabel}
-            aria-busy={isLoading || undefined}
-            style={resolvedStyle}
-            {...props}
-        >
+    const handleButtonClick: MouseEventHandler<HTMLButtonElement> = (event) => {
+        if (isDisabled) {
+            event.preventDefault();
+            return;
+        }
+
+        onClick?.(event);
+    };
+
+    const handleLinkClick: MouseEventHandler<HTMLAnchorElement> = (event) => {
+        if (isDisabled) {
+            event.preventDefault();
+            return;
+        }
+
+        onClick?.(event);
+    };
+
+    const content = (
+        <>
             {isLoading && (
                 <Container className="button-loader p-absolute d-flex items-center content-center">
                     <Loader scale={0.6} isFixed={false} />
@@ -222,8 +225,57 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
                 </span>
             ) : children}
             {rightIcon && <span className="button-icon-right" aria-hidden='true'>{rightIcon}</span>}
+        </>
+    );
+
+    if (to) {
+        return (
+            <Link
+                to={to}
+                id={id}
+                className={classes}
+                role={role}
+                onClick={handleLinkClick}
+                title={resolvedTitle}
+                aria-label={resolvedAriaLabel}
+                aria-labelledby={ariaLabelledBy}
+                aria-describedby={ariaDescribedBy}
+                aria-controls={ariaControls}
+                aria-expanded={ariaExpanded}
+                aria-busy={isLoading || undefined}
+                aria-disabled={isDisabled || undefined}
+                tabIndex={isDisabled ? -1 : tabIndex}
+                style={resolvedStyle}
+            >
+                {content}
+            </Link>
+        );
+    }
+
+    return (
+        <button
+            ref={ref}
+            type={type}
+            className={classes}
+            disabled={isDisabled}
+            onClick={handleButtonClick}
+            title={resolvedTitle}
+            aria-label={resolvedAriaLabel}
+            aria-labelledby={ariaLabelledBy}
+            aria-describedby={ariaDescribedBy}
+            aria-controls={ariaControls}
+            aria-expanded={ariaExpanded}
+            aria-busy={isLoading || undefined}
+            id={id}
+            role={role}
+            tabIndex={tabIndex}
+            style={resolvedStyle}
+            {...props}
+        >
+            {content}
         </button>
     );
+
 });
 
 Button.displayName = 'Button';

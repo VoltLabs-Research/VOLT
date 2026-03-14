@@ -14,19 +14,25 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import Title from '@/shared/presentation/components/Title';
+import './WhiteboardsListing.css';
 import { Folder, Pencil, SquarePen, Trash2 } from 'lucide-react';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import type { MenuOption } from '@/shared/presentation/components/DocumentListing';
 import type { WhiteboardListingRow } from '@/modules/whiteboards/utilities/listing';
 import { WhiteboardListingRowType } from '@/modules/whiteboards/utilities/listing';
 import { useMemo } from 'react';
+import { getSafeFolderTitle, getSafeWhiteboardTitle } from '@/modules/whiteboards/utilities/whiteboards';
+
+const EMPTY_WHITEBOARDS_ICON = <SquarePen size={28} strokeWidth={1.6} />;
 
 const isWhiteboardFolder = (row: WhiteboardListingRow): boolean => {
     return row.rowType === WhiteboardListingRowType.Folder;
 };
 
 const renderWhiteboardTitle: NonNullable<ColumnConfig<WhiteboardListingRow>['render']> = (value, row) => {
-    let title = row.title || 'Untitled Whiteboard';
+    let title = isWhiteboardFolder(row)
+        ? getSafeFolderTitle(row.title)
+        : getSafeWhiteboardTitle(row.title);
 
     if (typeof value === 'string' && value.trim().length > 0) {
         title = value;
@@ -37,14 +43,15 @@ const renderWhiteboardTitle: NonNullable<ColumnConfig<WhiteboardListingRow>['ren
         ? <Folder size={16} />
         : <SquarePen size={16} />;
     const subtitle = isWhiteboardFolder(row) ? 'Folder' : shortId;
+    const hierarchyLabel = row.hierarchyTitle;
 
     return (
-        <Container className='d-flex items-center gap-075'>
+        <Container className='whiteboards-listing-title-cell d-flex items-center gap-075' aria-label={hierarchyLabel}>
             <Container className='d-flex flex-center color-secondary'>
                 {icon}
             </Container>
             <Container className='d-flex column gap-025 overflow-hidden'>
-                <span className='font-weight-6 color-secondary'>{title}</span>
+                <span className='whiteboards-listing-title font-weight-6 color-secondary' title={title}>{title}</span>
                 <span className='font-size-1 color-muted'>{subtitle}</span>
             </Container>
         </Container>
@@ -166,7 +173,13 @@ const WhiteboardsListing = () => {
                 createNew={createNew}
                 headerActions={headerActions}
                 headerMenuOptions={headerMenuOptions}
-                emptyMessage='No whiteboards found in this location.'
+                emptyTitle={currentFolder ? `No items in ${getSafeFolderTitle(currentFolder.title)}` : 'No whiteboards yet'}
+                emptyMessage={currentFolder
+                    ? 'Create a whiteboard or folder here to organize sketches, notes, and live collaboration.'
+                    : 'Create your first whiteboard to start sketching ideas, collecting notes, and collaborating live with your team.'}
+                emptyIcon={EMPTY_WHITEBOARDS_ICON}
+                emptyButtonText='New Whiteboard'
+                onEmptyButtonClick={handleCreate}
                 socketInvalidation={socketInvalidation}
             />
             <NewFolderModal

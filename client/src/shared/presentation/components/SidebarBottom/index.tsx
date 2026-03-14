@@ -1,14 +1,14 @@
-import Container from '@/shared/presentation/components/Container';
+import type { ReactNode } from 'react';
 
 interface SidebarBottomProps {
-    children: React.ReactNode;
+    children: ReactNode;
 };
 
 const SidebarBottom = ({ children }: SidebarBottomProps) => {
     return (
-        <Container className='editor-sidebar-bottom-container'>
+        <footer className='editor-sidebar-bottom-container'>
             {children}
-        </Container>
+        </footer>
     );
 };
 

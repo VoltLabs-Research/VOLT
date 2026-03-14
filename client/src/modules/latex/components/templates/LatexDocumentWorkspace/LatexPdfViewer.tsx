@@ -69,6 +69,7 @@ const LatexPdfViewer = ({
                     size='sm'
                     shape='circle'
                     iconOnly
+                    aria-label='Go to the previous PDF page'
                     disabled={!canGoPrevious}
                     onClick={() => setPageNumber((currentPage) => Math.max(1, currentPage - 1))}
                     title='Previous page'
@@ -84,6 +85,7 @@ const LatexPdfViewer = ({
                     size='sm'
                     shape='circle'
                     iconOnly
+                    aria-label='Go to the next PDF page'
                     disabled={!canGoNext}
                     onClick={() => setPageNumber((currentPage) => Math.min(numPages ?? currentPage, currentPage + 1))}
                     title='Next page'
@@ -99,6 +101,7 @@ const LatexPdfViewer = ({
                     size='sm'
                     shape='circle'
                     iconOnly
+                    aria-label='Zoom out of the PDF preview'
                     disabled={scale <= MIN_SCALE}
                     onClick={() => setScale((currentScale) => Math.max(MIN_SCALE, Number((currentScale - SCALE_STEP).toFixed(2))))}
                     title='Zoom out'
@@ -114,6 +117,7 @@ const LatexPdfViewer = ({
                     size='sm'
                     shape='circle'
                     iconOnly
+                    aria-label='Zoom in to the PDF preview'
                     disabled={scale >= MAX_SCALE}
                     onClick={() => setScale((currentScale) => Math.min(MAX_SCALE, Number((currentScale + SCALE_STEP).toFixed(2))))}
                     title='Zoom in'
@@ -182,10 +186,10 @@ const LatexPdfViewer = ({
         return (
             <Container className='latex-preview__empty d-flex column flex-center items-center gap-05 p-2'>
                 <FileText size={28} className='color-muted' />
-                <Paragraph className='color-muted font-size-1 text-center'>
+                <Paragraph className='latex-preview__empty-text color-muted text-center'>
                     Waiting for the first successful compile.
                 </Paragraph>
-                <Paragraph className='color-muted font-size-1 text-center'>
+                <Paragraph className='latex-preview__empty-text color-muted text-center'>
                     Changes compile automatically in the background.
                 </Paragraph>
             </Container>
@@ -197,7 +201,7 @@ const LatexPdfViewer = ({
             {isLoading && pdfUrl && (
                 <Container className='latex-pdf-compiling-indicator d-flex items-center gap-05'>
                     <Loader scale={0.3} isFixed={false} />
-                    <span className='font-size-075 color-muted'>Compiling…</span>
+                    <span className='latex-pdf-status-text color-muted'>Compiling…</span>
                 </Container>
             )}
             {toolbar}

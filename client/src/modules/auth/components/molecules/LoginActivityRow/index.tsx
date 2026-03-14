@@ -15,7 +15,6 @@ const LoginActivityRow = ({ onViewActivity }: LoginActivityRowProps) => {
             rightContent={
                 <Button
                     variant="soft"
-                    size="sm"
                     onClick={onViewActivity}
                 >
                     View Activity

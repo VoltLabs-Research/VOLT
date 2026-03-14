@@ -20,3 +20,11 @@
     background-color: var(--accent-blue);
     transition: width 0.3s ease;
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .processing-loader-container,
+    .processing-loader-progress-fill {
+        animation: none;
+        transition: none;
+    }
+}

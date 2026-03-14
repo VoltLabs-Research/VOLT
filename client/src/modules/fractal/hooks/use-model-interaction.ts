@@ -22,6 +22,12 @@ interface UseModelInteractionReturn {
     isHovered: boolean;
     deselect: () => void;
     resetTransform: () => void;
+    rotateXNegative: () => void;
+    rotateXPositive: () => void;
+    rotateYNegative: () => void;
+    rotateYPositive: () => void;
+    rotateZNegative: () => void;
+    rotateZPositive: () => void;
     setSelectedObject: (target: RotatableObject | null) => void;
     onHoverChange: (hovered: boolean) => void;
 };
@@ -149,14 +155,38 @@ export default function useModelInteraction({
         setIsHovered(hovered);
     }, []);
 
+    const rotateXNegative = useCallback(() => {
+        rotate(-ROTATION_STEP, 0, 0);
+    }, [rotate]);
+
+    const rotateXPositive = useCallback(() => {
+        rotate(ROTATION_STEP, 0, 0);
+    }, [rotate]);
+
+    const rotateYNegative = useCallback(() => {
+        rotate(0, -ROTATION_STEP, 0);
+    }, [rotate]);
+
+    const rotateYPositive = useCallback(() => {
+        rotate(0, ROTATION_STEP, 0);
+    }, [rotate]);
+
+    const rotateZNegative = useCallback(() => {
+        rotate(0, 0, -ROTATION_STEP);
+    }, [rotate]);
+
+    const rotateZPositive = useCallback(() => {
+        rotate(0, 0, ROTATION_STEP);
+    }, [rotate]);
+
     useModelKeyboardInteraction({
         enabled: isSelected,
-        onRotateXNegative: () => rotate(-ROTATION_STEP, 0, 0),
-        onRotateXPositive: () => rotate(ROTATION_STEP, 0, 0),
-        onRotateYNegative: () => rotate(0, -ROTATION_STEP, 0),
-        onRotateYPositive: () => rotate(0, ROTATION_STEP, 0),
-        onRotateZNegative: () => rotate(0, 0, -ROTATION_STEP),
-        onRotateZPositive: () => rotate(0, 0, ROTATION_STEP),
+        onRotateXNegative: rotateXNegative,
+        onRotateXPositive: rotateXPositive,
+        onRotateYNegative: rotateYNegative,
+        onRotateYPositive: rotateYPositive,
+        onRotateZNegative: rotateZNegative,
+        onRotateZPositive: rotateZPositive,
         onDeselect: deselect
     });
 
@@ -171,6 +201,12 @@ export default function useModelInteraction({
         isHovered,
         deselect,
         resetTransform,
+        rotateXNegative,
+        rotateXPositive,
+        rotateYNegative,
+        rotateYPositive,
+        rotateZNegative,
+        rotateZPositive,
         setSelectedObject,
         onHoverChange
     };

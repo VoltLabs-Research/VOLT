@@ -1,6 +1,18 @@
 import Container from '@/shared/presentation/components/Container';
-import Slider from '@/shared/presentation/components/Slider';
+import CanvasSlider from '../../atoms/CanvasSlider';
 import { SliceAxis } from '@/modules/fractal/types/configuration';
+
+interface AxisSliderConfig {
+    key: string;
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+    value: number;
+    onChange: (value: number) => void;
+    format: string;
+    visible?: boolean;
+};
 
 interface AxisConfigProps {
     axis: SliceAxis;
@@ -17,7 +29,7 @@ const AxisConfig = ({
     onPositionChange,
     onAngleChange
 }: AxisConfigProps) => {
-    const sliders: { key: string; label: string; min: number; max: number; step: number; value: number; onChange: (value: number) => void; format: string; visible?: boolean }[] = [
+    const sliders: AxisSliderConfig[] = [
         { key: 'position', label: 'Position', min: 0, max: 1, step: 0.01, value: position, onChange: (v) => onPositionChange(axis, v), format: `${(position * 100).toFixed(0)}%` },
         { key: 'angle', label: 'Angle', min: -90, max: 90, step: 1, value: angle, onChange: (v) => onAngleChange(axis, v), format: `${angle.toFixed(0)} deg`, visible: axis !== SliceAxis.X }
     ];
@@ -32,14 +44,16 @@ const AxisConfig = ({
                 <Container key={s.key} className="d-flex content-between items-center">
                     <span className="font-size-05 color-muted">{s.label}</span>
                     <Container className="d-flex items-center gap-05">
-                        <Slider
+                        <CanvasSlider
+                            ariaLabel={`${axis.toUpperCase()} axis ${s.label.toLowerCase()}`}
                             min={s.min}
                             max={s.max}
                             step={s.step}
                             value={s.value}
                             onChange={s.onChange}
+                            ariaValueText={s.format}
                         />
-                        <span className="font-size-05 color-muted">{s.format}</span>
+                        <span className="font-size-075 color-muted">{s.format}</span>
                     </Container>
                 </Container>
             ))}

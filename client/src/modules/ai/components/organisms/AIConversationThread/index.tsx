@@ -21,7 +21,7 @@ import ReactMarkdown from 'react-markdown';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
 import type { ParsedMarkdownTable } from '@/modules/ai/utilities/message-content';
 import type { UIMessage } from 'ai';
-import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from 'react';
 import './AIConversationThread.css';
 
 interface ToolApprovalResponseParams {
@@ -70,6 +70,12 @@ interface ReasoningPart {
 
 interface MarkdownTableProps extends ComponentPropsWithoutRef<'table'> {
     children?: ReactNode;
+};
+
+interface AIArtifactImagePayload {
+    url?: string;
+    width?: number;
+    height?: number;
 };
 
 interface TextSegment {
@@ -188,10 +194,20 @@ const renderInlineArtifact = (artifact: AIMessageArtifact) => {
 
     if (artifact.kind === AIMessageArtifactKind.Image) {
         let imageUrl: string | null = null;
+        let imageWidth: number | undefined;
+        let imageHeight: number | undefined;
+
         if (typeof artifact.payload === 'string') {
             imageUrl = artifact.payload;
-        } else if (isRecord(artifact.payload) && typeof artifact.payload.url === 'string') {
-            imageUrl = artifact.payload.url;
+        } else {
+            const imagePayload = resolveImagePayload(artifact);
+
+            if (imagePayload?.url) {
+                imageUrl = imagePayload.url;
+            }
+
+            imageWidth = imagePayload?.width;
+            imageHeight = imagePayload?.height;
         }
 
         let imageContent: ReactNode = (
@@ -199,7 +215,17 @@ const renderInlineArtifact = (artifact: AIMessageArtifact) => {
         );
 
         if (imageUrl) {
-            imageContent = <img src={imageUrl} alt={artifact.title} className='ai-inline-artifact-image' />;
+            imageContent = (
+                <img
+                    src={imageUrl}
+                    alt={artifact.title}
+                    className='ai-inline-artifact-image'
+                    loading='lazy'
+                    decoding='async'
+                    width={imageWidth}
+                    height={imageHeight}
+                />
+            );
         }
 
         return (
@@ -279,9 +305,23 @@ const OpenSpreadsheetButton = ({
 
 interface AIMessageItemProps {
     message: NormalizedConversationMessage;
+    messageIndex: number;
+    totalMessages: number;
     onOpenTableArtifact?: (artifact: AIMessageArtifact) => void;
     activeTableArtifactId?: string | null;
     addToolApprovalResponse?: (params: ToolApprovalResponseParams) => void;
+};
+
+const VISUALLY_HIDDEN_STYLES: CSSProperties = {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    padding: 0,
+    margin: '-1px',
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    border: 0
 };
 
 /**
@@ -291,6 +331,8 @@ interface AIMessageItemProps {
  */
 const areMessagePropsEqual = (prev: AIMessageItemProps, next: AIMessageItemProps): boolean => {
     if (prev.message.id !== next.message.id) return false;
+    if (prev.messageIndex !== next.messageIndex) return false;
+    if (prev.totalMessages !== next.totalMessages) return false;
     if (prev.message.preview.length !== next.message.preview.length) return false;
     if (prev.message.reasoning.length !== next.message.reasoning.length) return false;
     if (prev.message.segments.length !== next.message.segments.length) return false;
@@ -309,8 +351,32 @@ const areMessagePropsEqual = (prev: AIMessageItemProps, next: AIMessageItemProps
     return true;
 };
 
+const resolveImagePayload = (artifact: AIMessageArtifact): AIArtifactImagePayload | null => {
+    if (!isRecord(artifact.payload)) {
+        return null;
+    }
+
+    const imagePayload: AIArtifactImagePayload = {};
+
+    if (typeof artifact.payload.url === 'string') {
+        imagePayload.url = artifact.payload.url;
+    }
+
+    if (typeof artifact.payload.width === 'number' && artifact.payload.width > 0) {
+        imagePayload.width = artifact.payload.width;
+    }
+
+    if (typeof artifact.payload.height === 'number' && artifact.payload.height > 0) {
+        imagePayload.height = artifact.payload.height;
+    }
+
+    return imagePayload;
+};
+
 const AIMessageItem = memo(({
     message,
+    messageIndex,
+    totalMessages,
     onOpenTableArtifact,
     activeTableArtifactId,
     addToolApprovalResponse
@@ -318,6 +384,7 @@ const AIMessageItem = memo(({
     const tableCounterRef = useRef(0);
 
     const isUser = message.role === AIMessageRole.User;
+    const messageLabel = isUser ? 'You' : 'Assistant';
     let bubbleVariant = 'is-assistant';
     if (isUser) {
         bubbleVariant = 'is-user';
@@ -626,10 +693,16 @@ const AIMessageItem = memo(({
     const showThinkingBubble = !isUser && message.segments.length === 0;
 
     return (
-        <Container className={`d-flex column gap-025 ai-message-row ${bubbleVariant}`}>
+        <article
+            className={`d-flex column gap-025 ai-message-row ${bubbleVariant}`}
+            aria-label={`${messageLabel} message ${messageIndex + 1} of ${totalMessages}`}
+        >
+            <span style={VISUALLY_HIDDEN_STYLES}>
+                {messageLabel}
+            </span>
             {segmentElements}
             {showThinkingBubble && renderThinkingBubble()}
-        </Container>
+        </article>
     );
 }, areMessagePropsEqual);
 
@@ -779,9 +852,11 @@ const AIConversationThread = ({
         );
     };
 
-    const renderMessageItem = (message: NormalizedConversationMessage) => (
+    const renderMessageItem = (message: NormalizedConversationMessage, index: number) => (
         <AIMessageItem
             message={message}
+            messageIndex={index}
+            totalMessages={normalizedMessages.length}
             onOpenTableArtifact={onOpenTableArtifact}
             activeTableArtifactId={activeTableArtifactId}
             addToolApprovalResponse={addToolApprovalResponse}
@@ -825,20 +900,32 @@ const AIConversationThread = ({
     }
 
     return (
-        <AutoScrollList
-            items={normalizedMessages}
-            isLoading={isLoading}
-            className='ai-thread-list'
-            getItemKey={(message) => message.id}
-            autoScrollDependency={autoScrollDependency}
-            autoScrollDependencyEnabled={isResponding || showStandaloneTyping}
-            renderLoading={Array.from({ length: 4 }).map((_, index) => (
-                <Container key={index} className='ai-message-skeleton' />
-            ))}
-            renderEmpty={renderPromptStarter()}
-            renderAfter={renderAfter}
-            renderItem={renderMessageItem}
-        />
+        <section className='d-flex column flex-1 ai-thread-region' aria-label='Conversation messages'>
+            <AutoScrollList
+                items={normalizedMessages}
+                isLoading={isLoading}
+                className='ai-thread-list'
+                getItemKey={(message) => message.id}
+                autoScrollDependency={autoScrollDependency}
+                autoScrollDependencyEnabled={isResponding || showStandaloneTyping}
+                renderLoading={Array.from({ length: 4 }).map((_, index) => (
+                    <Container key={index} className='ai-message-skeleton' />
+                ))}
+                renderEmpty={renderPromptStarter()}
+                renderAfter={renderAfter}
+                renderItem={renderMessageItem}
+            />
+
+            <span
+                style={VISUALLY_HIDDEN_STYLES}
+                role='log'
+                aria-live='polite'
+                aria-relevant='additions text'
+                aria-atomic='false'
+            >
+                {isResponding ? 'Assistant is responding.' : `Loaded ${normalizedMessages.length} messages.`}
+            </span>
+        </section>
     );
 };
 

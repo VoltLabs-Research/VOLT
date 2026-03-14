@@ -11,13 +11,15 @@ interface AccessDeniedProps {
     description?: string;
     showBack?: boolean;
     className?: string;
+    headingLevel?: 'h1' | 'h2' | 'h3';
 };
 
 const AccessDenied = ({
     title = 'Access Denied',
     description = 'You do not have permission to perform this action. Contact your team administrator to request access.',
     showBack = true,
-    className
+    className,
+    headingLevel = 'h2'
 }: AccessDeniedProps) => {
     const navigate = useNavigate();
     const headingId = useId();
@@ -30,7 +32,7 @@ const AccessDenied = ({
                 </Container>
 
                 <Container className='d-flex column gap-05 text-center'>
-                    <Title as='h2' id={headingId} className='font-size-3 font-weight-5 color-primary'>
+                    <Title as={headingLevel} id={headingId} className='font-size-3 font-weight-5 color-primary'>
                         {title}
                     </Title>
                     <span className='font-size-2 color-secondary line-height-5'>{description}</span>

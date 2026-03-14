@@ -1,5 +1,12 @@
 import './Table.css';
 import { Skeleton } from '@mui/material';
+import { useCallback } from 'react';
+
+export enum TableSortDirection {
+    Ascending = 'ascending',
+    Descending = 'descending',
+    None = 'none'
+};
 
 export interface Column<T> {
     key: string;
@@ -7,6 +14,7 @@ export interface Column<T> {
     render?: (row: T) => React.ReactNode;
     headerClassName?: string;
     cellClassName?: string;
+    sortable?: boolean;
 };
 
 interface TableProps<T> {
@@ -18,6 +26,9 @@ interface TableProps<T> {
     onRowClick?: (row: T) => void;
     rowClassName?: string | ((row: T) => string);
     className?: string;
+    getAriaSort?: (column: Column<T>) => TableSortDirection;
+    onSort?: (column: Column<T>) => void;
+    caption?: string;
 };
 
 const Table = <T,>({
@@ -28,18 +39,21 @@ const Table = <T,>({
     skeletonRows = 5,
     onRowClick,
     rowClassName,
-    className = ''
+    className = '',
+    getAriaSort = () => TableSortDirection.None,
+    onSort,
+    caption
 }: TableProps<T>) => {
-    const getRowClass = (row: T): string => {
+    const getRowClass = useCallback((row: T): string => {
         const base = onRowClick ? 'clickable' : '';
-        if(!rowClassName) return base;
-        if(typeof rowClassName === 'string') return `${base} ${rowClassName}`;
+        if (!rowClassName) return base;
+        if (typeof rowClassName === 'string') return `${base} ${rowClassName}`;
         return `${base} ${rowClassName(row)}`;
-    };
+    }, [onRowClick, rowClassName]);
 
     const renderSkeletonRows = () => (
         Array.from({ length: skeletonRows }).map((_, i) => (
-            <tr key={`skeleton-${i}`}>
+            <tr key={`skeleton-${i}`} aria-hidden='true'>
                 {columns.map((col) => (
                     <td key={col.key}>
                         <Skeleton variant='text' width='70%' height={20} animation='wave' />
@@ -50,17 +64,35 @@ const Table = <T,>({
     );
 
     const renderCell = (row: T, col: Column<T>) => {
-        if(col.render) return col.render(row);
+        if (col.render) return col.render(row);
         return (row as Record<string, unknown>)[col.key] as React.ReactNode;
+    };
+
+    const renderHeaderCell = (col: Column<T>) => {
+        if (!col.sortable || !onSort) {
+            return col.header;
+        }
+
+        return (
+            <button
+                type='button'
+                className='table-sort-button'
+                onClick={() => onSort(col)}
+                aria-label={`Sort by ${col.header}`}
+            >
+                {col.header}
+            </button>
+        );
     };
 
     return (
         <table className={`table ${className}`}>
+            {caption && <caption className='table-caption'>{caption}</caption>}
             <thead>
                 <tr>
                     {columns.map((col) => (
-                        <th key={col.key} className={col.headerClassName}>
-                            {col.header}
+                        <th key={col.key} scope='col' className={col.headerClassName} aria-sort={getAriaSort(col)}>
+                            {renderHeaderCell(col)}
                         </th>
                     ))}
                 </tr>

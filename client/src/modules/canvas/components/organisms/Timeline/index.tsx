@@ -288,6 +288,38 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
         ruler.scrollLeft += delta;
     }, []);
 
+    const handleRulerKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (!rangedTimesteps.length) {
+            return;
+        }
+
+        const currentIndex = Math.max(0, rangedTimesteps.indexOf(currentFrame));
+        let nextIndex = currentIndex;
+
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+            nextIndex = Math.max(0, currentIndex - 1);
+        }
+
+        if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+            nextIndex = Math.min(rangedTimesteps.length - 1, currentIndex + 1);
+        }
+
+        if (event.key === 'Home') {
+            nextIndex = 0;
+        }
+
+        if (event.key === 'End') {
+            nextIndex = rangedTimesteps.length - 1;
+        }
+
+        if (nextIndex === currentIndex) {
+            return;
+        }
+
+        event.preventDefault();
+        setCurrentTimestep(rangedTimesteps[nextIndex]);
+    }, [currentFrame, rangedTimesteps, setCurrentTimestep]);
+
     return (
         <Container className="canvas-timeline d-flex column overflow-hidden min-h-0">
             <TimelineHeader
@@ -316,12 +348,15 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
                     rulerRef={rulerRef}
                     ticks={ticks}
                     playheadLeft={playheadLeft}
+                    startFrame={startFrame}
+                    endFrame={endFrame}
                     currentFrame={currentFrame}
                     onClick={handleRulerClick}
                     onPointerDown={handleRulerPointerDown}
                     onPointerMove={handleRulerPointerMove}
                     onPointerUp={handleRulerPointerUp}
                     onWheel={handleRulerWheel}
+                    onKeyDown={handleRulerKeyDown}
                 />
             )}
 

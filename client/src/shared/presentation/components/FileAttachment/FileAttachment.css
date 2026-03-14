@@ -36,6 +36,16 @@
     background-color: var(--hover-bg);
 }
 
+.file-attachment-copy {
+    opacity: 0;
+}
+
+.file-attachment:hover .file-attachment-copy,
+.file-attachment:focus-within .file-attachment-copy,
+.file-attachment-copy:focus-visible {
+    opacity: 1;
+}
+
 /* Variants */
 .file-attachment--detailed .file-attachment-icon {
     width: 3rem;
@@ -45,4 +55,12 @@
 .file-attachment--detailed .file-attachment-preview {
     width: 3.5rem;
     height: 3.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .file-attachment,
+    .file-attachment-download,
+    .file-attachment-copy {
+        transition: none;
+    }
 }

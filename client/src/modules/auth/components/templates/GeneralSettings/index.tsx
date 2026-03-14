@@ -20,12 +20,6 @@ const AVATAR_TOAST_OPTIONS = createPromiseToastOptions({
     error: 'Failed to upload avatar'
 });
 
-const PROFILE_TOAST_OPTIONS = createPromiseToastOptions({
-    loading: 'Updating profile...',
-    success: 'Profile updated',
-    error: 'Failed to update profile'
-});
-
 const DELETE_ACCOUNT_TOAST_OPTIONS = createPromiseToastOptions({
     loading: 'Deleting account...',
     success: 'Account deleted',
@@ -53,12 +47,9 @@ const GeneralSettings = () => {
     }, [updateMe]);
 
     const handleProfileUpdate = useCallback(async (data: ProfileFormType) => {
-        await runAction({
-            action: () => updateMe.mutateAsync({
-                fullName: data.fullName,
-                email: data.email
-            }),
-            toast: PROFILE_TOAST_OPTIONS
+        await updateMe.mutateAsync({
+            fullName: data.fullName,
+            email: data.email
         });
     }, [updateMe]);
 
