@@ -1,6 +1,6 @@
-## Why Volt?
-![Dashboard](screenshots/introducing-volt.png)
+![Introducing VOLT](screenshots/introducing-volt.png)
 
+# Why VOLT?
 Because it saves you time by bringing your entire daily workflow into one place-together with your team. Volt provides an enterprise-grade platform with instant messaging, real-time collaboration for simulation visualization, and scalable algorithm execution. No matter the size of your workloads, Volt simply scales with you.
 
 Visualize simulations with up to 100 million atoms directly from your browser. Analyze them using servers you already have access to instead of relying on your local hardware. Everything runs in the cloud-fast, accessible, and ready whenever you need it.

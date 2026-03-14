@@ -6,6 +6,9 @@ import type { Container } from '../api/entities/container';
 import type { ContainerXrdpSession } from '../api/entities/container-xrdp-session';
 import type { RefObject } from 'react';
 
+type GuacamoleClient = InstanceType<typeof Guacamole.Client>;
+type GuacamoleKeyboard = InstanceType<typeof Guacamole.Keyboard>;
+
 interface RemoteDesktopCredentials {
     username: string;
     password: string;
@@ -30,6 +33,8 @@ interface UseContainerRemoteDesktopReturn {
     displayElementRef: RefObject<HTMLDivElement | null>;
     errorMessage: string | null;
     expiresAt: string | null;
+    focusDisplay: () => void;
+    refreshViewport: () => void;
     setUsername: (username: string) => void;
     setPassword: (password: string) => void;
     connect: () => Promise<void>;
@@ -69,8 +74,12 @@ const measureViewport = (element: HTMLDivElement | null): RemoteDesktopViewport 
 
 const useContainerRemoteDesktop = (container: Container): UseContainerRemoteDesktopReturn => {
     const displayElementRef = useRef<HTMLDivElement>(null);
-    const clientRef = useRef<InstanceType<typeof Guacamole.Client> | null>(null);
+    const clientRef = useRef<GuacamoleClient | null>(null);
+    const keyboardRef = useRef<GuacamoleKeyboard | null>(null);
     const resizeObserverRef = useRef<ResizeObserver | null>(null);
+    const connectedRef = useRef(false);
+    const viewportFrameRef = useRef<number | null>(null);
+    const viewportSyncRef = useRef<() => void>(() => undefined);
     const [credentials, setCredentials] = useState<RemoteDesktopCredentials>({
         username: 'ubuntu',
         password: 'ubuntu'
@@ -80,21 +89,56 @@ const useContainerRemoteDesktop = (container: Container): UseContainerRemoteDesk
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
+    const cancelScheduledViewportSync = useCallback(() => {
+        if (viewportFrameRef.current === null) {
+            return;
+        }
+
+        window.cancelAnimationFrame(viewportFrameRef.current);
+        viewportFrameRef.current = null;
+    }, []);
+
+    const focusDisplay = useCallback(() => {
+        displayElementRef.current?.focus({
+            preventScroll: true
+        });
+    }, []);
+
+    const refreshViewport = useCallback(() => {
+        cancelScheduledViewportSync();
+
+        viewportFrameRef.current = window.requestAnimationFrame(() => {
+            viewportFrameRef.current = window.requestAnimationFrame(() => {
+                viewportFrameRef.current = null;
+                viewportSyncRef.current();
+            });
+        });
+    }, [cancelScheduledViewportSync]);
+
     const disconnect = useCallback(() => {
+        connectedRef.current = false;
         resizeObserverRef.current?.disconnect();
         resizeObserverRef.current = null;
+        cancelScheduledViewportSync();
+
+        if (keyboardRef.current) {
+            keyboardRef.current.onkeydown = null;
+            keyboardRef.current.onkeyup = null;
+        }
 
         if (clientRef.current) {
             clientRef.current.disconnect();
             clientRef.current = null;
         }
 
+        viewportSyncRef.current = () => undefined;
+
         clearElement(displayElementRef.current);
         setSession(null);
         setExpiresAt(null);
         setErrorMessage(null);
         setConnectionState(RemoteDesktopConnectionState.Idle);
-    }, []);
+    }, [cancelScheduledViewportSync]);
 
     useEffect(() => {
         return () => {
@@ -110,38 +154,57 @@ const useContainerRemoteDesktop = (container: Container): UseContainerRemoteDesk
         const displayElement = displayElementRef.current;
         const tunnel = new Guacamole.WebSocketTunnel(buildWebSocketUrl(session.websocketPath));
         const client = new Guacamole.Client(tunnel);
-        const keyboard = new Guacamole.Keyboard(document);
+        let keyboard = keyboardRef.current;
+
+        if (displayElement && !keyboard) {
+            keyboard = new Guacamole.Keyboard(displayElement);
+            keyboardRef.current = keyboard;
+        }
 
         clientRef.current = client;
 
         clearElement(displayElement);
         displayElement?.appendChild(client.getDisplay().getElement());
 
-        let connected = false;
+        connectedRef.current = false;
 
-        const sendViewportSize = () => {
-            if (!connected) return;
+        viewportSyncRef.current = () => {
+            if (!connectedRef.current) {
+                return;
+            }
+
             const viewport = measureViewport(displayElementRef.current);
             client.sendSize(viewport.width, viewport.height);
         };
 
         const resizeObserver = new ResizeObserver(() => {
-            sendViewportSize();
+            refreshViewport();
         });
         resizeObserverRef.current = resizeObserver;
 
+        const handleViewportChange = (): void => {
+            refreshViewport();
+        };
+
+        const handleMouseDown = (state: Parameters<GuacamoleClient['sendMouseState']>[0]): void => {
+            focusDisplay();
+            client.sendMouseState(state);
+        };
+
         const mouse = new Guacamole.Mouse(client.getDisplay().getElement());
-        mouse.onmousedown = client.sendMouseState.bind(client);
+        mouse.onmousedown = handleMouseDown;
         mouse.onmouseup = client.sendMouseState.bind(client);
         mouse.onmousemove = client.sendMouseState.bind(client);
 
-        keyboard.onkeydown = (keysym: number) => {
-            client.sendKeyEvent(1, keysym);
-            return true;
-        };
-        keyboard.onkeyup = (keysym: number) => {
-            client.sendKeyEvent(0, keysym);
-        };
+        if (keyboard) {
+            keyboard.onkeydown = (keysym: number) => {
+                client.sendKeyEvent(1, keysym);
+                return true;
+            };
+            keyboard.onkeyup = (keysym: number) => {
+                client.sendKeyEvent(0, keysym);
+            };
+        }
 
         client.onerror = (status) => {
             setErrorMessage(status.message || 'Remote desktop connection failed');
@@ -153,13 +216,18 @@ const useContainerRemoteDesktop = (container: Container): UseContainerRemoteDesk
         };
         client.onstatechange = (state) => {
             if (state === CONNECTED_GUACAMOLE_STATE) {
-                connected = true;
+                connectedRef.current = true;
                 resizeObserver.observe(displayElementRef.current || document.body);
-                sendViewportSize();
+                window.addEventListener('resize', handleViewportChange);
+                window.visualViewport?.addEventListener('resize', handleViewportChange);
+                document.addEventListener('fullscreenchange', handleViewportChange);
+                refreshViewport();
+                focusDisplay();
                 setConnectionState(RemoteDesktopConnectionState.Connected);
             }
 
             if (state === DISCONNECTED_GUACAMOLE_STATE) {
+                connectedRef.current = false;
                 setSession(null);
                 setConnectionState((currentState) => {
                     if (currentState === RemoteDesktopConnectionState.Error) {
@@ -174,12 +242,24 @@ const useContainerRemoteDesktop = (container: Container): UseContainerRemoteDesk
         client.connect(`token=${encodeURIComponent(session.token)}`);
 
         return () => {
+            connectedRef.current = false;
             resizeObserver.disconnect();
+            window.removeEventListener('resize', handleViewportChange);
+            window.visualViewport?.removeEventListener('resize', handleViewportChange);
+            document.removeEventListener('fullscreenchange', handleViewportChange);
+            cancelScheduledViewportSync();
+
+            if (keyboardRef.current) {
+                keyboardRef.current.onkeydown = null;
+                keyboardRef.current.onkeyup = null;
+            }
+
+            viewportSyncRef.current = () => undefined;
             client.disconnect();
             clearElement(displayElement);
             clientRef.current = null;
         };
-    }, [session]);
+    }, [cancelScheduledViewportSync, focusDisplay, refreshViewport, session]);
 
     const connect = useCallback(async () => {
         if (!credentials.username.trim() || !credentials.password.trim()) {
@@ -233,6 +313,8 @@ const useContainerRemoteDesktop = (container: Container): UseContainerRemoteDesk
         displayElementRef,
         errorMessage,
         expiresAt,
+        focusDisplay,
+        refreshViewport,
         setUsername,
         setPassword,
         connect,
