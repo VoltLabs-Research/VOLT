@@ -1,4 +1,4 @@
-![Introducing VOLT](screenshots/introducing-volt.png)
+![Introducing VOLT](https://github.com/VoltLabs-Research/docs.voltcloud.dev/blob/main/public/assets/getting-started/introducing-volt.png?raw=true)
 
 # Why VOLT?
 Because it saves you time by bringing your entire daily workflow into one place-together with your team. Volt provides an enterprise-grade platform with instant messaging, real-time collaboration for simulation visualization, and scalable algorithm execution. No matter the size of your workloads, Volt simply scales with you.
