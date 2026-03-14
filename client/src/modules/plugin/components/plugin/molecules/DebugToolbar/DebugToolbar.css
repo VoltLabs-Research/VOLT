@@ -9,6 +9,7 @@
     flex-wrap: wrap;
     justify-content: center;
     max-width: min(860px, calc(100vw - 1.5rem));
+    row-gap: 0.5rem;
 }
 
 .debug-toolbar-divider {
@@ -26,7 +27,7 @@
     max-width: 160px;
     font-size: var(--font-size-1);
     border-radius: var(--radius-sm);
-    min-height: 2.5rem;
+    min-height: 2.75rem;
 }
 
 .debug-toolbar-select.select-trigger:disabled {
@@ -73,8 +74,12 @@
 }
 
 .debug-toolbar-action {
-    min-width: 2.5rem;
-    min-height: 2.5rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+}
+
+.debug-toolbar-action--primary {
+    font-weight: 600;
 }
 
 .debug-toolbar-state-badge {
@@ -103,6 +108,20 @@
 .debug-toolbar-below-status {
     white-space: nowrap;
     max-width: min(32rem, calc(100vw - 2rem));
+}
+
+@media screen and (max-width: 768px) {
+    .debug-toolbar {
+        padding: 0.5rem;
+    }
+
+    .debug-toolbar-divider {
+        display: none;
+    }
+
+    .debug-toolbar-select.select-trigger {
+        max-width: 100%;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

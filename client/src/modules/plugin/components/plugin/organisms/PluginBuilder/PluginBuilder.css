@@ -14,6 +14,18 @@
     border: 0;
 }
 
+.plugin-builder-canvas {
+    --plugin-canvas-surface: var(--color-surface-1);
+    --plugin-canvas-surface-elevated: var(--color-surface-2);
+    --plugin-canvas-grid: color-mix(in srgb, var(--color-border-strong) 45%, transparent);
+    --plugin-canvas-minimap-mask: color-mix(in srgb, var(--color-surface-1) 72%, transparent);
+}
+
+.plugin-builder-canvas .react-flow {
+    background: var(--plugin-canvas-surface);
+    color: var(--color-text-primary);
+}
+
 .plugin-palette-item {
     width: 100%;
     min-height: 4.5rem;
@@ -131,8 +143,13 @@
 }
 
 .canvas-toolbar-action {
-    min-width: 2.5rem;
-    min-height: 2.5rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+}
+
+.canvas-toolbar-save-action {
+    min-width: auto;
+    padding-inline: 0.875rem;
 }
 
 .canvas-toolbar-status-dot {
@@ -154,10 +171,15 @@
 
 /** MiniMap overrides **/
 .react-flow__minimap {
+    background: var(--plugin-canvas-surface-elevated) !important;
     border-radius: var(--radius-sm) !important;
     border: 1px solid var(--color-border-soft) !important;
     box-shadow: var(--shadow-card) !important;
     overflow: hidden;
+}
+
+.react-flow__minimap-mask {
+    fill: var(--plugin-canvas-minimap-mask) !important;
 }
 
 /** Floating Node Panel **/

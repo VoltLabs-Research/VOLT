@@ -1,5 +1,31 @@
+.editable-tag {
+    outline: none;
+}
+
+.editable-tag--interactive {
+    cursor: text;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.editable-tag--interactive:hover {
+    background: color-mix(in srgb, var(--hover-bg) 92%, transparent);
+}
+
+.editable-tag--interactive:focus-visible {
+    background: color-mix(in srgb, var(--hover-bg) 92%, transparent);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px color-mix(in srgb, var(--focus-ring) 30%, transparent);
+}
+
 .is-editing {
     cursor: text;
     width: fit-content;
-    outline: 1px solid var(--accent-blue);
+    min-width: 2ch;
+    background: var(--color-surface-1);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px color-mix(in srgb, var(--focus-ring) 30%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .editable-tag--interactive {
+        transition: none;
+    }
 }

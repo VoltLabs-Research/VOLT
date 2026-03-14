@@ -593,6 +593,10 @@ export default class TeamClusterReverseChannelService {
         }
 
         if (entry.type !== 'stream') {
+            if (entry.type === 'terminal' || entry.type === 'websocket') {
+                this.handleSessionAttachResponse(payload, entry);
+            }
+
             return;
         }
 
@@ -615,6 +619,35 @@ export default class TeamClusterReverseChannelService {
             headers: payload.headers || {},
             stream: entry.stream
         });
+    }
+
+    private handleSessionAttachResponse(
+        payload: TeamClusterDaemonSocketResponsePayload,
+        entry: PendingTerminalEntry | PendingWebSocketEntry
+    ): void {
+        if (!entry.timeout) {
+            return;
+        }
+
+        if (!payload.ok) {
+            this.rejectPendingEntry(
+                payload.requestId,
+                entry,
+                new Error(payload.message || 'Daemon session attach failed')
+            );
+
+            return;
+        }
+
+        this.clearTimeout(entry.timeout);
+        entry.timeout = null;
+
+        if (entry.type === 'terminal') {
+            entry.resolve(this.createTerminalAttachment(entry, payload.requestId));
+            return;
+        }
+
+        entry.resolve(entry.stream);
     }
 
     private handleStreamChunkPayload(payload: TeamClusterDaemonSocketStreamPayload): void {
@@ -666,7 +699,6 @@ export default class TeamClusterReverseChannelService {
             });
             return;
         }
-
     }
 
     private handleSessionEndPayload(payload: TeamClusterDaemonSessionEndPayload): void {
@@ -679,36 +711,12 @@ export default class TeamClusterReverseChannelService {
 
         if (entry.type === 'terminal') {
             if (entry.timeout) {
-                this.clearTimeout(entry.timeout);
-                entry.timeout = null;
-                if (error) {
-                    this.pendingEntries.delete(payload.sessionId);
-                    entry.reject(error);
-                    return;
-                }
+                this.rejectPendingEntry(
+                    payload.sessionId,
+                    entry,
+                    error || new Error(payload.message || 'Daemon terminal session ended before attachment completed')
+                );
 
-                entry.resolve({
-                    exec: new ReverseChannelTerminalExec((size) => {
-                        const resizePayload: TeamClusterDaemonSessionResizePayload = {
-                            type: 'session-resize',
-                            sessionId: payload.sessionId,
-                            rows: size.rows,
-                            cols: size.cols
-                        };
-                        this.socketEmitter.emitToSocket(entry.socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, resizePayload);
-                    }),
-                    stream: new ReverseChannelTerminalStream(entry.stream, (input) => {
-                        const inputPayload: TeamClusterDaemonSessionInputPayload = {
-                            type: 'session-input',
-                            sessionId: payload.sessionId,
-                            chunkBase64: Buffer.from(input, 'utf8').toString('base64'),
-                            isBinary: false
-                        };
-                        this.socketEmitter.emitToSocket(entry.socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, inputPayload);
-                    }, () => {
-                        this.detachSession(payload.sessionId);
-                    })
-                });
                 return;
             }
 
@@ -722,15 +730,12 @@ export default class TeamClusterReverseChannelService {
 
         if (entry.type === 'websocket') {
             if (entry.timeout) {
-                this.clearTimeout(entry.timeout);
-                entry.timeout = null;
-                if (error) {
-                    this.pendingEntries.delete(payload.sessionId);
-                    entry.reject(error);
-                    return;
-                }
+                this.rejectPendingEntry(
+                    payload.sessionId,
+                    entry,
+                    error || new Error(payload.message || 'Daemon websocket session ended before attachment completed')
+                );
 
-                entry.resolve(entry.stream);
                 return;
             }
 
@@ -744,6 +749,33 @@ export default class TeamClusterReverseChannelService {
             }
             this.pendingEntries.delete(payload.sessionId);
         }
+    }
+
+    private createTerminalAttachment(entry: PendingTerminalEntry, sessionId: string): ContainerTerminalAttachment {
+        return {
+            exec: new ReverseChannelTerminalExec((size) => {
+                const resizePayload: TeamClusterDaemonSessionResizePayload = {
+                    type: 'session-resize',
+                    sessionId,
+                    rows: size.rows,
+                    cols: size.cols
+                };
+
+                this.socketEmitter.emitToSocket(entry.socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, resizePayload);
+            }),
+            stream: new ReverseChannelTerminalStream(entry.stream, (input) => {
+                const inputPayload: TeamClusterDaemonSessionInputPayload = {
+                    type: 'session-input',
+                    sessionId,
+                    chunkBase64: Buffer.from(input, 'utf8').toString('base64'),
+                    isBinary: false
+                };
+
+                this.socketEmitter.emitToSocket(entry.socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, inputPayload);
+            }, () => {
+                this.detachSession(sessionId);
+            })
+        };
     }
 
     private handleTunnelStatePayload(payload: TeamClusterDaemonTunnelStatePayload): void {

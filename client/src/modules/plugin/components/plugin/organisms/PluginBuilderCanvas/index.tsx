@@ -88,6 +88,7 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
     return (
         <Container className='h-max w-max p-relative plugin-builder-canvas' ref={reactFlowWrapper}>
             <ReactFlow
+                className='plugin-builder-flow'
                 nodes={nodes}
                 edges={edges}
                 nodeTypes={nodeTypes}
@@ -108,12 +109,13 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
                     animated: true,
                     style: { stroke: 'var(--color-border-strong)', strokeWidth: 2 }
                 }}
+                style={{ backgroundColor: 'var(--color-surface-1)' }}
             >
-                <Background bgColor='var(--color-bg)' color='var(--color-border-strong)' gap={16} size={0.8} />
+                <Background bgColor='var(--color-surface-1)' color='var(--plugin-canvas-grid)' gap={16} size={0.8} />
                 {!isEmpty && (
                     <MiniMap
                         nodeColor={nodeColor}
-                        maskColor='color-mix(in srgb, var(--color-bg) 72%, transparent)'
+                        maskColor='var(--plugin-canvas-minimap-mask)'
                         bgColor='var(--color-surface-2)'
                     />
                 )}

@@ -8,6 +8,11 @@
     margin: 0;
 }
 
+.collapsible-section-header-row {
+    width: 100%;
+    min-width: 0;
+}
+
 .collapsible-section-trigger {
     flex: 1;
     min-width: 0;
@@ -16,6 +21,11 @@
     border: none;
     background: transparent;
     text-align: left;
+}
+
+.collapsible-section-trigger-content {
+    flex: 1;
+    min-width: 0;
 }
 
 .collapsible-section-trigger:hover .collapsible-section-arrow,
@@ -37,7 +47,28 @@
     flex-shrink: 0;
 }
 
+.collapsible-section-chevron-trigger {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+}
+
+.collapsible-section-chevron-trigger:hover,
+.collapsible-section-chevron-trigger:focus-visible {
+    color: var(--color-text-primary);
+}
+
+.collapsible-section-chevron-trigger:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+}
+
 .collapsible-section-arrow {
+    color: inherit;
     transition: none;
 }
 
@@ -59,6 +90,7 @@
 }
 
 .collapsible-section-title-row {
+    justify-content: space-between;
     min-height: 2.75rem;
 }
 
@@ -80,4 +112,17 @@
 
 .collapsible-section-action--delete:hover {
     color: var(--accent-red);
+}
+
+.canvas-right-dropdown-header .collapsible-section-header-row {
+    align-items: center;
+    gap: 0;
+}
+
+.canvas-right-dropdown-header .collapsible-section-actions {
+    margin-left: auto;
+}
+
+.canvas-right-dropdown-header .collapsible-section-chevron-trigger {
+    margin-left: 0.125rem;
 }

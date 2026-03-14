@@ -1,11 +1,13 @@
 import EditableTrajectoryName from '../EditableTrajectoryName';
 import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import Container from '@/shared/presentation/components/Container';
+import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
+import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';
@@ -14,8 +16,6 @@ import { PiDotsThreeVerticalBold } from 'react-icons/pi';
 import { RxTrash } from 'react-icons/rx';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Popover from '@/shared/presentation/components/Popover';
-import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import type { User } from '@/modules/auth/api/entities/user';
 import './SimulationCardFooter.css';
 
@@ -66,6 +66,12 @@ export default function SimulationCardFooter({
     const deleteTrajectoryMutation = trajectoryQuery.useDeleteMutation();
     const { confirm } = useConfirm();
     const [isDeleting, setIsDeleting] = useState(false);
+    const creatorLabel = createdBy?.firstName
+        ? `By ${createdBy.firstName} ${createdBy.lastName}`.trim()
+        : 'Uploaded by team member';
+    const uploadedLabel = `Uploaded ${formatDistanceToNow(new Date(createdAt), { addSuffix: true })}`;
+    const updatedLabel = `Edited ${formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}`;
+    const activityLabel = `${uploadedLabel} · ${updatedLabel}`;
 
     const handleViewScene = useCallback(() => {
         navigate(`/canvas/${trajectoryId}/`);
@@ -80,8 +86,12 @@ export default function SimulationCardFooter({
             tone: ConfirmActionTone.Danger
         });
 
-        if (!isConfirmed) return;
+        if (!isConfirmed) {
+            return;
+        }
+
         setIsDeleting(true);
+
         try {
             onDelete?.(trajectoryId);
             await showPromise(
@@ -105,25 +115,35 @@ export default function SimulationCardFooter({
         isLoading: isDeleting
     }];
 
+    const popoverTrigger = (
+        <IconButton
+            className='footer-options-btn'
+            title={`Open actions for ${name}`}
+            aria-label={`Open actions for ${name}`}
+        >
+            <PiDotsThreeVerticalBold />
+        </IconButton>
+    );
+
     return (
         <Container className='simulation-card-footer z-10 p-1-5 d-flex items-center gap-05 p-absolute bottom-0 left-0 right-0'>
             <Container className='d-flex column gap-05 flex-1'>
                 <EditableTrajectoryName
                     trajectoryId={trajectoryId}
                     name={name}
-                    className='font-size-3 color-primary font-weight-5'
+                    className='simulation-card-title font-size-3 color-primary font-weight-5 text-truncate'
                 />
                 <Container className='simulation-card-metadata d-flex items-center gap-075 flex-wrap'>
-                    <Paragraph className='simulation-card-status-text color-muted'>
-                        {createdBy?.firstName ? `By ${createdBy.firstName} ${createdBy.lastName}` : 'Uploaded by team member'}
+                    <Paragraph className='simulation-card-status-text' title={creatorLabel}>
+                        {creatorLabel}
                     </Paragraph>
-                    <Paragraph className='simulation-card-status-text color-muted'>
+                    <Paragraph className='simulation-card-status-text' title={`${frameCount} frames`}>
                         {frameCount} frames
                     </Paragraph>
-                    <Paragraph className='simulation-card-status-text color-muted'>
+                    <Paragraph className='simulation-card-status-text' title={`${atomCount} atoms`}>
                         {atomCount} atoms
                     </Paragraph>
-                    <Paragraph className='simulation-card-status-text color-muted'>
+                    <Paragraph className='simulation-card-status-text' title={totalSize}>
                         {totalSize}
                     </Paragraph>
                 </Container>
@@ -131,11 +151,13 @@ export default function SimulationCardFooter({
                     {isProcessing ? (
                         <>
                             <Loader scale={0.4} isFixed={false} className='simulation-card-status-loader f-shrink-0' />
-                            <Paragraph className='simulation-card-status-text color-muted'>{processingMessage}</Paragraph>
+                            <Paragraph className='simulation-card-status-text' title={processingMessage}>
+                                {processingMessage}
+                            </Paragraph>
                         </>
                     ) : (
-                        <Paragraph className='simulation-card-status-text'>
-                            Uploaded {formatDistanceToNow(new Date(createdAt), { addSuffix: true })} · Edited {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}
+                        <Paragraph className='simulation-card-status-text' title={activityLabel}>
+                            {activityLabel}
                         </Paragraph>
                     )}
                 </Container>
@@ -143,15 +165,7 @@ export default function SimulationCardFooter({
 
             <Popover
                 id={`simulation-card-popover-${trajectoryId}`}
-                trigger={
-                    <IconButton
-                        className='footer-options-btn'
-                        title={`Open actions for ${name}`}
-                        aria-label={`Open actions for ${name}`}
-                    >
-                        <PiDotsThreeVerticalBold />
-                    </IconButton>
-                }
+                trigger={popoverTrigger}
             >
                 <PopoverMenu>
                     {popoverItems.map(({ Icon, onClick, label, ...props }, index) => (

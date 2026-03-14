@@ -16,7 +16,7 @@ const WorkspaceTabs = () => {
                 intent="canvas"
                 size="sm"
                 shape="rounded"
-                className="font-size-075 canvas-btn-compact"
+                className="font-size-1 canvas-btn-compact"
                 onClick={() => navigate('/dashboard')}
             >
                 Dashboard
@@ -27,7 +27,7 @@ const WorkspaceTabs = () => {
                     intent="canvas"
                     size="sm"
                     shape="rounded"
-                    className="font-size-075 canvas-btn-compact"
+                    className="font-size-1 canvas-btn-compact"
                     role="tab"
                     aria-selected={!isScripting}
                     onClick={() => setActiveWorkspace('modeling')}
@@ -39,7 +39,7 @@ const WorkspaceTabs = () => {
                     intent="canvas"
                     size="sm"
                     shape="rounded"
-                    className="font-size-075 canvas-btn-compact"
+                    className="font-size-1 canvas-btn-compact"
                     role="tab"
                     aria-selected={isScripting}
                     onClick={() => setActiveWorkspace('scripting')}

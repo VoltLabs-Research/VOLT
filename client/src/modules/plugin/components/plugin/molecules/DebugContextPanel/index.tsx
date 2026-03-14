@@ -3,8 +3,8 @@ import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { Braces, ChevronDown, ChevronRight, X, Repeat } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { Braces, ChevronDown, ChevronRight, Repeat } from 'lucide-react';
+import { useCallback, useId, useMemo, useState } from 'react';
 import './DebugContextPanel.css';
 
 type DebugContextOutput = Record<string, unknown>;
@@ -27,6 +27,7 @@ interface NodeLabelData {
 };
 
 const DebugContextPanel = () => {
+    const panelBodyId = useId();
     const contextSnapshot = usePluginDebugStore((s) => s.contextSnapshot);
     const isDebugging = usePluginDebugStore((s) => s.isDebugging || s.totalDuration !== null);
     const forEachNodeId = usePluginDebugStore((s) => s.forEachNodeId);
@@ -141,10 +142,8 @@ const DebugContextPanel = () => {
     const iterationKey = `__iteration_${currentIndex}`;
     const forEachGroupKey = '__foreach_group';
     const iterationCount = Number(forEachEntry?.[1].count ?? totalIterations ?? 0);
-    let panelToggleIcon = <ChevronRight size={12} />;
-    if (isOpen) {
-        panelToggleIcon = <X size={12} className='color-secondary' />;
-    }
+    const panelToggleLabel = isOpen ? 'Collapse debug context panel' : 'Expand debug context panel';
+    const panelToggleIcon = <Chevron expanded={isOpen} size={14} />;
 
     return (
         <Container className='debug-context-panel p-absolute d-flex column panel-floating top-1 right-1 z-10'>
@@ -153,7 +152,9 @@ const DebugContextPanel = () => {
                 className='debug-context-row debug-context-panel-header d-flex items-center content-between gap-05 cursor-pointer u-select-none'
                 onClick={handlePanelToggle}
                 aria-expanded={isOpen}
-                title='Toggle debug context panel'
+                aria-controls={panelBodyId}
+                aria-label={panelToggleLabel}
+                title={panelToggleLabel}
             >
                 <Braces size={12} />
                 <Paragraph className='debug-context-panel-title d-flex items-center gap-035 f-1 font-size-05 font-weight-6'>
@@ -164,7 +165,7 @@ const DebugContextPanel = () => {
             </button>
 
             {isOpen && (
-                <Container className='debug-context-panel-body nowheel y-auto flex-1 min-h-0 scrollbar-thin'>
+                <Container id={panelBodyId} className='debug-context-panel-body nowheel y-auto flex-1 min-h-0 scrollbar-thin'>
                     {preForEach.map(([nodeId, output]) => renderEntry(nodeId, output))}
 
                     {forEachEntry && (

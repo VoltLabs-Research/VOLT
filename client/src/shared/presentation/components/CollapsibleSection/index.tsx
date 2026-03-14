@@ -97,63 +97,80 @@ const CollapsibleSection = ({
         onAdd?.();
     };
 
+    const actions = (
+        <Container className='d-flex items-center gap-025 collapsible-section-actions'>
+            {headerAction}
+            {onAdd && (
+                <IconButton
+                    size='sm'
+                    variant='ghost'
+                    onClick={handleAdd}
+                    className='collapsible-section-action--add'
+                    title='Add item'
+                >
+                    <Plus size={16} />
+                </IconButton>
+            )}
+            {onDelete && (
+                <IconButton
+                    size='sm'
+                    variant='ghost'
+                    onClick={handleDelete}
+                    className='collapsible-section-action--delete'
+                    title='Delete section'
+                >
+                    <Trash2 size={16} />
+                </IconButton>
+            )}
+        </Container>
+    );
+
     return (
         <Container className={`d-flex column ${noSpacing ? '' : 'mb-1-5'} ${className}`}>
             <Container className={`${headerBaseClass} d-flex content-between items-center gap-05 ${headerClassName}`}>
                 <Title as={titleAs} id={headingId} className='collapsible-section-heading'>
                     {collapsible ? (
-                        <button
-                            id={triggerId}
-                            type='button'
-                            className='collapsible-section-trigger d-flex items-center content-between gap-05 u-select-none'
-                            onClick={handleToggle}
-                            aria-expanded={actualExpanded}
-                            aria-controls={bodyId}
-                        >
-                            <Container className='d-flex items-center gap-05'>
+                        <Container className='collapsible-section-header-row d-flex items-center gap-05'>
+                            <button
+                                id={triggerId}
+                                type='button'
+                                className='collapsible-section-trigger d-flex items-center gap-05 u-select-none'
+                                onClick={handleToggle}
+                                aria-expanded={actualExpanded}
+                                aria-controls={bodyId}
+                            >
+                                <Container className='collapsible-section-trigger-content d-flex items-center gap-05'>
+                                    {icon && <span className={`d-flex items-center ${iconClassName}`}>{icon}</span>}
+                                    <span className={`${titleBaseClass} ${titleClassName}`}>{title}</span>
+                                </Container>
+                            </button>
+                            {actions}
+                            <button
+                                type='button'
+                                className='collapsible-section-chevron-trigger d-flex flex-center color-muted'
+                                onClick={handleToggle}
+                                aria-expanded={actualExpanded}
+                                aria-controls={bodyId}
+                                aria-label={`${actualExpanded ? 'Collapse' : 'Expand'} ${title}`}
+                            >
+                                <Container
+                                    className={`collapsible-section-arrow d-flex flex-center ${!actualExpanded ? 'collapsible-section-arrow--collapsed' : ''}`}
+                                    aria-hidden='true'
+                                >
+                                    <ChevronDown size={arrowSize} />
+                                </Container>
+                            </button>
+                        </Container>
+                    ) : (
+                        <Container className='d-flex items-center gap-05 collapsible-section-title-row'>
+                            <Container className='collapsible-section-trigger-content d-flex items-center gap-05'>
                                 {icon && <span className={`d-flex items-center ${iconClassName}`}>{icon}</span>}
                                 <span className={`${titleBaseClass} ${titleClassName}`}>{title}</span>
                             </Container>
-                            <Container
-                                className={`collapsible-section-arrow d-flex flex-center color-muted ${!actualExpanded ? 'collapsible-section-arrow--collapsed' : ''}`}
-                                aria-hidden='true'
-                            >
-                                <ChevronDown size={arrowSize} />
-                            </Container>
-                        </button>
-                    ) : (
-                        <Container className='d-flex items-center gap-05 collapsible-section-title-row'>
-                            {icon && <span className={`d-flex items-center ${iconClassName}`}>{icon}</span>}
-                            <span className={`${titleBaseClass} ${titleClassName}`}>{title}</span>
+                            {actions}
                         </Container>
                     )}
                 </Title>
-
-                <Container className='d-flex items-center gap-025 collapsible-section-actions'>
-                    {headerAction}
-                    {onAdd && (
-                        <IconButton
-                            size='sm'
-                            variant='ghost'
-                            onClick={handleAdd}
-                            className='collapsible-section-action--add'
-                            title='Add item'
-                        >
-                            <Plus size={16} />
-                        </IconButton>
-                    )}
-                    {onDelete && (
-                        <IconButton
-                            size='sm'
-                            variant='ghost'
-                            onClick={handleDelete}
-                            className='collapsible-section-action--delete'
-                            title='Delete section'
-                        >
-                            <Trash2 size={16} />
-                        </IconButton>
-                    )}
-                </Container>
             </Container>
             {collapsible && (
                 <div

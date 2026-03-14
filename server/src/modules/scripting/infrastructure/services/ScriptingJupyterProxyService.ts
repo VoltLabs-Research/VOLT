@@ -45,6 +45,12 @@ const ACCESS_TOKEN_COOKIE_NAME = 'voltScriptingJupyterAccessToken';
 const UPGRADE_ACTION = Action.READ;
 const PROXY_URL_ORIGIN = 'http://volt.local';
 const UPSTREAM_URL_ORIGIN = 'http://upstream.local';
+const JUPYTER_PROXY_TEMPORARY_UNAVAILABLE_MESSAGE = 'Jupyter proxy is temporarily unavailable';
+const DAEMON_PROXY_UNAVAILABLE_ERROR_MESSAGES = [
+    'team cluster daemon connection was lost',
+    'team cluster daemon reverse channel is not connected',
+    'team cluster daemon connection is not ready yet'
+];
 
 const METHOD_ACTION_MAP: Record<string, Action> = {
     'GET': Action.READ,
@@ -154,7 +160,12 @@ export class ScriptingJupyterProxyService {
             this.persistAccessTokenCookie(req, res, context);
             const target = this.extractProxyTarget(req.originalUrl);
             const tunnel = await this.openNotebookTunnel(context.teamClusterId, runtime, TeamClusterServiceExposureAccessMode.Http);
-            const upstreamRequest = http.request(this.buildUpstreamHttpRequestOptions(req, runtime, target, tunnel), (upstreamResponse) => {
+            const upstreamAgent = this.createSingleUseTunnelHttpAgent(tunnel);
+            const destroyUpstreamAgent = (): void => {
+                upstreamAgent.destroy();
+            };
+            const upstreamRequest = http.request(this.buildUpstreamHttpRequestOptions(req, runtime, target, upstreamAgent), (upstreamResponse) => {
+                upstreamResponse.once('close', destroyUpstreamAgent);
                 this.prepareProxyResponse(req.originalUrl, res, upstreamResponse.headers, upstreamResponse.statusCode || 502, context);
                 upstreamResponse.on('error', (error: Error) => {
                     res.destroy(error);
@@ -162,20 +173,25 @@ export class ScriptingJupyterProxyService {
                 upstreamResponse.pipe(res);
             });
 
+            res.once('close', destroyUpstreamAgent);
+
             upstreamRequest.on('error', (error: Error) => {
+                destroyUpstreamAgent();
+                const mappedError = this.mapNotebookProxyError(error);
                 if (!res.headersSent) {
                     this.applyProxyResponseSecurityHeaders(res);
-                    BaseResponse.fromError(res, ApplicationError.internalServerError(error.message));
+                    BaseResponse.fromError(res, mappedError);
                     return;
                 }
 
-                res.destroy(error);
+                res.destroy(mappedError instanceof Error ? mappedError : error);
             });
 
             this.writeProxyRequestBody(req, upstreamRequest);
         } catch (error: unknown) {
+            const mappedError = this.mapNotebookProxyError(error);
             this.applyProxyResponseSecurityHeaders(res);
-            BaseResponse.fromError(res, error);
+            BaseResponse.fromError(res, mappedError);
         }
     };
 
@@ -206,11 +222,37 @@ export class ScriptingJupyterProxyService {
                 this.bindWebSocketProxy(webSocket, upstreamWebSocket);
             });
         } catch (error: unknown) {
-            const statusCode = error instanceof ApplicationError ? error.statusCode : 500;
-            const message = error instanceof Error ? error.message : 'WebSocket upgrade failed';
+            const mappedError = this.mapNotebookProxyError(error);
+            const statusCode = mappedError instanceof ApplicationError ? mappedError.statusCode : 500;
+            const message = mappedError instanceof Error ? mappedError.message : 'WebSocket upgrade failed';
             writeUpgradeError(socket, statusCode, message);
         }
     };
+
+    private mapNotebookProxyError(error: unknown): unknown {
+        if (!this.isDaemonProxyUnavailableError(error)) {
+            return error;
+        }
+
+        return new ApplicationError(
+            ErrorCodes.SCRIPTING_DAEMON_UNAVAILABLE,
+            JUPYTER_PROXY_TEMPORARY_UNAVAILABLE_MESSAGE,
+            503
+        );
+    }
+
+    private isDaemonProxyUnavailableError(error: unknown): boolean {
+        if (error instanceof ApplicationError && error.code === 'TeamCluster::DaemonUnavailable') {
+            return true;
+        }
+
+        if (!(error instanceof Error)) {
+            return false;
+        }
+
+        const normalizedMessage = error.message.toLowerCase();
+        return DAEMON_PROXY_UNAVAILABLE_ERROR_MESSAGES.some((message) => normalizedMessage.includes(message));
+    }
 
     private async authorizeHttpRequest(req: Request): Promise<AuthorizedProxyContext> {
         const context = await this.authorizeProxyAccess(
@@ -415,7 +457,11 @@ export class ScriptingJupyterProxyService {
         const { runtime } = await this.teamClusterDaemonClient.getNotebookRuntime(context.teamClusterId, context.runtimeNotebookId);
 
         if (!runtime) {
-            throw ApplicationError.conflict('Scripting::JupyterUnavailable', 'Jupyter runtime exposure is not available');
+            throw new ApplicationError(
+                'Scripting::JupyterUnavailable',
+                'Jupyter runtime is not ready yet',
+                503
+            );
         }
 
         return runtime;
@@ -433,22 +479,37 @@ export class ScriptingJupyterProxyService {
         });
     }
 
+    private createSingleUseTunnelHttpAgent(tunnel: Duplex): http.Agent {
+        const agent = new http.Agent({
+            keepAlive: false,
+            maxSockets: 1
+        });
+
+        agent.createConnection = (): Duplex => {
+            return tunnel;
+        };
+
+        return agent;
+    }
+
     private buildUpstreamHttpRequestOptions(
         req: Request,
         runtime: TeamClusterDaemonNotebookRuntime,
         target: { proxiedPath: string; rawQuery: string; },
-        tunnel: Duplex
+        agent: http.Agent
     ): RequestOptions {
         const headers = this.readProxyRequestHeaders(req.headers);
         headers.host = `${runtime.tunnelTargetHost}:${runtime.tunnelTargetPort}`;
 
         return {
             protocol: 'http:',
+            hostname: runtime.tunnelTargetHost,
+            host: runtime.tunnelTargetHost,
+            port: runtime.tunnelTargetPort,
             method: this.readRequestMethod(req.method),
             path: `${target.proxiedPath}${target.rawQuery}`,
             headers,
-            agent: false,
-            createConnection: () => tunnel
+            agent
         };
     }
 

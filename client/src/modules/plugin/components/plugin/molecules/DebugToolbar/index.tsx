@@ -8,7 +8,6 @@ import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Divider from '@/shared/presentation/components/Divider';
-import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Select from '@/shared/presentation/components/Select';
 import Tooltip from '@/shared/presentation/components/Tooltip';
@@ -153,7 +152,7 @@ const DebugToolbar = () => {
                     options={trajectoryOptions}
                     value={selectedTrajectoryId || null}
                     onChange={handleTrajectoryChange}
-                    placeholder={trajLoading ? 'Loading...' : 'Trajectory'}
+                    placeholder={trajLoading ? 'Loading…' : 'Trajectory'}
                     disabled={isDebugging || isStarting}
                     isLoading={trajLoading}
                     className='debug-toolbar-select'
@@ -175,65 +174,62 @@ const DebugToolbar = () => {
                 <Container className='d-flex items-center gap-025'>
                     <Tooltip content={canStart ? (hasConfigurableArgs ? 'Configure arguments & start' : 'Start debug (single frame)') : 'Select trajectory & frame first'} placement='bottom'>
                         <Button
-                            variant='ghost'
-                            intent='neutral'
-                            iconOnly
+                            variant='solid'
+                            intent='brand'
                             size='sm'
-                            className='debug-toolbar-action'
-                            aria-label={hasConfigurableArgs ? 'Configure arguments and start debug' : 'Start debug'}
+                            className='debug-toolbar-action debug-toolbar-action--primary'
                             onClick={handlePlayClick}
                             disabled={!canStart}
                             title={hasConfigurableArgs ? 'Configure arguments and start debug' : 'Start debug'}
+                            leftIcon={<Play size={16} />}
+                            isLoading={isStarting}
                         >
-                            {isStarting ? <Loader scale={0.6} isFixed={false} /> : <Play size={14} />}
+                            {hasConfigurableArgs ? 'Configure & Start' : 'Start'}
                         </Button>
                     </Tooltip>
 
                     <Tooltip content='Step to next node' placement='bottom'>
                         <Button
-                            variant='ghost'
+                            variant='outline'
                             intent='neutral'
-                            iconOnly
                             size='sm'
                             className='debug-toolbar-action'
-                            aria-label='Step to next node'
                             onClick={step}
                             disabled={!canStep}
                             title='Step to next node'
+                            leftIcon={<StepForward size={16} />}
                         >
-                            <StepForward size={14} />
+                            Step
                         </Button>
                     </Tooltip>
 
                     <Tooltip content='Continue (run all remaining)' placement='bottom'>
                         <Button
-                            variant='ghost'
-                            intent='neutral'
-                            iconOnly
+                            variant='solid'
+                            intent='brand'
                             size='sm'
-                            className='debug-toolbar-action'
-                            aria-label='Continue debug session'
+                            className='debug-toolbar-action debug-toolbar-action--primary'
                             onClick={continueAll}
                             disabled={!canContinue}
                             title='Continue debug session'
+                            leftIcon={<FastForward size={16} />}
                         >
-                            <FastForward size={14} />
+                            Continue
                         </Button>
                     </Tooltip>
 
                     <Tooltip content='Stop debug session' placement='bottom'>
                         <Button
-                            variant='ghost'
-                            intent='neutral'
-                            iconOnly
+                            variant='outline'
+                            intent='danger'
                             size='sm'
                             className='debug-toolbar-action'
-                            aria-label='Stop debug session'
                             onClick={stop}
                             disabled={!canStop}
                             title='Stop debug session'
+                            leftIcon={<Square size={16} />}
                         >
-                            <Square size={14} />
+                            Stop
                         </Button>
                     </Tooltip>
                 </Container>
