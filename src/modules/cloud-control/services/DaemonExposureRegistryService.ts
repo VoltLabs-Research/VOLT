@@ -10,6 +10,8 @@ const WEBSOCKET_PORT_LABEL = 'volt.exposure.websocket.ports';
 const TEAM_ID_LABEL = 'volt.team.id';
 const TEAM_CLUSTER_ID_LABEL = 'volt.team-cluster.id';
 
+type ContainerInspection = Awaited<ReturnType<DockerRuntimeService['getContainer']>>;
+
 const readPortSet = (value: string | undefined): Set<number> => {
     if (!value) {
         return new Set();
@@ -23,9 +25,27 @@ const readPortSet = (value: string | undefined): Set<number> => {
     return new Set(ports);
 };
 
-const readContainerName = (container: ContainerInfo): string => {
-    const candidate = container.Names?.[0] || container.Image || container.Id;
+const readInspectionContainerName = (container: ContainerInfo, inspection: ContainerInspection): string => {
+    const candidate = inspection.Name || container.Names?.[0] || container.Image || container.Id;
     return candidate.replace(/^\/+/, '');
+};
+
+const readPublishedTcpPorts = (inspection: ContainerInspection): number[] => {
+    const publishedPorts = inspection.NetworkSettings.Ports || {};
+    const containerPorts: number[] = [];
+
+    for (const [portDefinition, bindings] of Object.entries(publishedPorts)) {
+        const [rawPort, protocol] = portDefinition.split('/');
+        const containerPort = Number(rawPort);
+
+        if (protocol !== 'tcp' || !Number.isInteger(containerPort) || containerPort <= 0 || !bindings || bindings.length === 0) {
+            continue;
+        }
+
+        containerPorts.push(containerPort);
+    }
+
+    return containerPorts;
 };
 
 export class DaemonExposureRegistryService {
@@ -70,60 +90,61 @@ export class DaemonExposureRegistryService {
         const containers = await this.dockerRuntimeService.listContainers(true, {
             label: ['volt.managed=true']
         });
-        const nextExposures = this.buildExposures(containers);
+        const nextExposures = await this.buildExposures(containers);
         this.exposures = new Map(nextExposures.map((exposure) => [exposure.id, exposure]));
         this.emitSnapshot(nextExposures);
     }
 
-    private buildExposures(containers: ContainerInfo[]): TeamClusterServiceExposure[] {
-        const exposures: TeamClusterServiceExposure[] = [];
+    private async buildExposures(containers: ContainerInfo[]): Promise<TeamClusterServiceExposure[]> {
+        const exposureGroups = await Promise.all(containers.map(async (container) => {
+            try {
+                const inspection = await this.dockerRuntimeService.getContainer(container.Id);
+                const labels = inspection.Config.Labels || container.Labels || {};
+                const teamId = labels[TEAM_ID_LABEL];
+                const teamClusterId = labels[TEAM_CLUSTER_ID_LABEL];
 
-        for (const container of containers) {
-            const labels = container.Labels || {};
-            const teamId = labels[TEAM_ID_LABEL];
-            const teamClusterId = labels[TEAM_CLUSTER_ID_LABEL];
-
-            if (!teamId || !teamClusterId || teamClusterId !== this.config.teamClusterId) {
-                continue;
-            }
-
-            const httpPorts = readPortSet(labels[HTTP_PORT_LABEL]);
-            const websocketPorts = readPortSet(labels[WEBSOCKET_PORT_LABEL]);
-            const containerName = readContainerName(container);
-
-            for (const port of container.Ports || []) {
-                if (port.Type !== 'tcp' || typeof port.PrivatePort !== 'number' || typeof port.PublicPort !== 'number') {
-                    continue;
+                if (!teamId || !teamClusterId || teamClusterId !== this.config.teamClusterId) {
+                    return [];
                 }
 
-                const accessModes = [TeamClusterServiceExposureAccessMode.Tcp];
-                if (httpPorts.has(port.PrivatePort)) {
-                    accessModes.push(TeamClusterServiceExposureAccessMode.Http);
-                }
-                if (websocketPorts.has(port.PrivatePort)) {
-                    accessModes.push(TeamClusterServiceExposureAccessMode.WebSocket);
-                }
+                const httpPorts = readPortSet(labels[HTTP_PORT_LABEL]);
+                const websocketPorts = readPortSet(labels[WEBSOCKET_PORT_LABEL]);
+                const containerName = readInspectionContainerName(container, inspection);
+                const publishedPorts = readPublishedTcpPorts(inspection);
+                const status = inspection.State.Running
+                    ? TeamClusterServiceExposureStatus.Active
+                    : TeamClusterServiceExposureStatus.Unavailable;
 
-                exposures.push({
-                    id: `${container.Id}:${port.PrivatePort}`,
-                    teamClusterId,
-                    teamId,
-                    containerId: container.Id,
-                    containerName,
-                    exposureName: `${containerName}:${port.PrivatePort}`,
-                    accessModes,
-                    targetHost: containerName,
-                    targetPort: port.PrivatePort,
-                    containerPort: port.PrivatePort,
-                    status: container.State === 'running'
-                        ? TeamClusterServiceExposureStatus.Active
-                        : TeamClusterServiceExposureStatus.Unavailable,
-                    labels
+                return publishedPorts.map((containerPort) => {
+                    const accessModes = [TeamClusterServiceExposureAccessMode.Tcp];
+                    if (httpPorts.has(containerPort)) {
+                        accessModes.push(TeamClusterServiceExposureAccessMode.Http);
+                    }
+                    if (websocketPorts.has(containerPort)) {
+                        accessModes.push(TeamClusterServiceExposureAccessMode.WebSocket);
+                    }
+
+                    return {
+                        id: `${container.Id}:${containerPort}`,
+                        teamClusterId,
+                        teamId,
+                        containerId: container.Id,
+                        containerName,
+                        exposureName: `${containerName}:${containerPort}`,
+                        accessModes,
+                        targetHost: containerName,
+                        targetPort: containerPort,
+                        containerPort,
+                        status,
+                        labels
+                    };
                 });
+            } catch {
+                return [];
             }
-        }
+        }));
 
-        return exposures;
+        return exposureGroups.flat();
     }
 
     private emitSnapshot(exposures: TeamClusterServiceExposure[]): void {
