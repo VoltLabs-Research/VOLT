@@ -252,7 +252,7 @@ const SignInTemplate = () => {
                 <section className='sign-in-hero-section p-relative overflow-hidden content-between column p-4' aria-labelledby='sign-in-hero-title'>
                     <WireframeBackground />
                     <Container className='sign-in-hero-overlay p-absolute inset-0' />
-                    <Container className='d-flex column gap-1-5 sign-in-hero-text-container p-relative z-10'>
+                    <Container className='d-flex column content-end p-2 gap-1-5 sign-in-hero-text-container p-relative z-10'>
                         <Title as='h2' id='sign-in-hero-title' className='sign-in-hero-headline'>
                             Connect with<br />your VoltID
                         </Title>
