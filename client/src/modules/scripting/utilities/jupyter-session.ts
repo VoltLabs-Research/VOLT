@@ -7,12 +7,17 @@ export interface WaitForReadyScriptingSessionOptions {
     onPending?: (session: ScriptingSession, attempt: number) => Promise<void> | void;
 };
 
+export interface WaitForReadyScriptingSessionStateLoader {
+    initialSession: ScriptingSession;
+    readSession: () => Promise<ScriptingSession>;
+};
+
 export interface WaitForReadyScriptingSessionResult {
     session: ScriptingSession | null;
     timedOut: boolean;
 };
 
-interface LoadSessionWithinDeadlineResult {
+interface ReadSessionWithinDeadlineResult {
     session: ScriptingSession | null;
     timedOut: boolean;
 };
@@ -31,10 +36,10 @@ const getRemainingTimeMs = (deadlineMs: number): number => {
     return Math.max(0, deadlineMs - Date.now());
 };
 
-const loadSessionWithinDeadline = async (
-    loadSession: () => Promise<ScriptingSession>,
+const readSessionWithinDeadline = async (
+    readSession: () => Promise<ScriptingSession>,
     deadlineMs: number
-): Promise<LoadSessionWithinDeadlineResult> => {
+): Promise<ReadSessionWithinDeadlineResult> => {
     const remainingTimeMs = getRemainingTimeMs(deadlineMs);
     if (remainingTimeMs === 0) {
         return {
@@ -43,11 +48,11 @@ const loadSessionWithinDeadline = async (
         };
     }
 
-    const timeoutPromise = sleep(remainingTimeMs).then<LoadSessionWithinDeadlineResult>(() => ({
+    const timeoutPromise = sleep(remainingTimeMs).then<ReadSessionWithinDeadlineResult>(() => ({
         session: null,
         timedOut: true
     }));
-    const sessionPromise = loadSession().then<LoadSessionWithinDeadlineResult>((session) => ({
+    const sessionPromise = readSession().then<ReadSessionWithinDeadlineResult>((session) => ({
         session,
         timedOut: false
     }));
@@ -56,38 +61,61 @@ const loadSessionWithinDeadline = async (
 };
 
 /**
- * Re-checks notebook session startup until Jupyter reports ready or the polling window expires.
+ * Re-checks notebook session startup using an initial create result plus repeated status reads
+ * until Jupyter reports ready or the polling window expires.
  */
 export const waitForReadyScriptingSession = async (
-    loadSession: () => Promise<ScriptingSession>,
+    stateLoader: WaitForReadyScriptingSessionStateLoader,
     options: WaitForReadyScriptingSessionOptions = {}
 ): Promise<WaitForReadyScriptingSessionResult> => {
     const intervalMs = Math.max(250, options.intervalMs ?? DEFAULT_JUPYTER_SESSION_POLL_INTERVAL_MS);
     const timeoutMs = Math.max(intervalMs, options.timeoutMs ?? DEFAULT_JUPYTER_SESSION_TIMEOUT_MS);
     const deadlineMs = Date.now() + timeoutMs;
-    let lastSession: ScriptingSession | null = null;
-    let attempt = 0;
+    let lastSession: ScriptingSession | null = stateLoader.initialSession;
+    let attempt = 1;
+
+    if (lastSession.jupyter.ready) {
+        return {
+            session: lastSession,
+            timedOut: false
+        };
+    }
 
     while (getRemainingTimeMs(deadlineMs) > 0) {
         if (options.isCancelled?.()) {
             break;
         }
 
-        attempt += 1;
+        if (options.onPending) {
+            await options.onPending(lastSession, attempt);
+        }
 
-        const loadResult = await loadSessionWithinDeadline(loadSession, deadlineMs);
-        if (loadResult.timedOut) {
+        if (options.isCancelled?.()) {
+            break;
+        }
+
+        const remainingTimeMs = getRemainingTimeMs(deadlineMs);
+        if (remainingTimeMs > 0) {
+            await sleep(Math.min(intervalMs, remainingTimeMs));
+        }
+
+        if (options.isCancelled?.()) {
+            break;
+        }
+
+        const readResult = await readSessionWithinDeadline(stateLoader.readSession, deadlineMs);
+        if (readResult.timedOut) {
             return {
                 session: lastSession,
                 timedOut: true
             };
         }
 
-        if (!loadResult.session) {
+        if (!readResult.session) {
             break;
         }
 
-        lastSession = loadResult.session;
+        lastSession = readResult.session;
         if (lastSession.jupyter.ready) {
             return {
                 session: lastSession,
@@ -95,25 +123,7 @@ export const waitForReadyScriptingSession = async (
             };
         }
 
-        if (options.onPending) {
-            await options.onPending(lastSession, attempt);
-        }
-
-        const remainingTimeMs = getRemainingTimeMs(deadlineMs);
-        if (remainingTimeMs > 0) {
-            await sleep(Math.min(intervalMs, remainingTimeMs));
-        }
-    }
-
-    if (!lastSession) {
-        if (!options.isCancelled?.()) {
-            return {
-                session: null,
-                timedOut: true
-            };
-        }
-
-        throw new Error('Jupyter session polling was cancelled before the first request completed');
+        attempt += 1;
     }
 
     return {

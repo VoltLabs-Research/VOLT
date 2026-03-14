@@ -1,0 +1,25 @@
+.not-found-state {
+    min-height: 100%;
+}
+
+.not-found-state-content {
+    max-width: 24rem;
+}
+
+.not-found-state-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+}
+
+@media (max-width: 768px) {
+    .not-found-state {
+        min-height: 300px;
+    }
+
+    .not-found-state-content {
+        max-width: 90%;
+    }
+}

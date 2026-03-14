@@ -5,13 +5,13 @@
 }
 
 .file-attachment:hover {
-    background-color: var(--color-surface-hover);
+    background-color: var(--hover-bg);
 }
 
 .file-attachment-icon {
     width: 2.5rem;
     height: 2.5rem;
-    background: var(--color-surface-elevated);
+    background: var(--color-surface-1);
     border-radius: var(--radius-sm);
 }
 
@@ -33,7 +33,7 @@
 }
 
 .file-attachment-download:hover {
-    background-color: var(--color-surface-hover);
+    background-color: var(--hover-bg);
 }
 
 /* Variants */

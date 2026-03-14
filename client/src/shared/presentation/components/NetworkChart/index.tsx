@@ -1,15 +1,37 @@
-import { formatSize } from '@/shared/utils/format';
+import { Theme } from '@/shared/presentation/hooks/use-theme';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
+import { formatSize } from '@/shared/utils/format';
 import { Activity } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { AreaChart, Area, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import type { TooltipContentProps } from 'recharts';
+import type { ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent';
+import type { ContentType } from 'recharts/types/component/Tooltip';
 
-const MAX_HISTORY_POINTS = 60;
+interface ChartColors {
+    rx: string;
+    tx: string;
+    grid: string;
+    axis: string;
+    legend: string;
+};
 
-const CHART_COLORS = {
-    rx: '#0A84FF',
-    tx: '#30D158'
+const DEFAULT_CHART_COLORS: ChartColors = {
+    rx: '#0062FF',
+    tx: '#2dcc70',
+    grid: '#1D1D20',
+    axis: '#7e808b',
+    legend: '#f0f0f0'
+};
+
+const LIGHT_CHART_COLORS: ChartColors = {
+    rx: '#007aff',
+    tx: '#34c759',
+    grid: 'rgb(0 0 0 / 8%)',
+    axis: '#8e8e93',
+    legend: '#1d1d1f'
 };
 
 export interface NetworkData {
@@ -32,11 +54,37 @@ interface DataPoint {
     tx: number;
 };
 
+interface DataPointPayloadRecord {
+    time: string;
+};
+
+const MAX_HISTORY_POINTS = 60;
+
 const formatTime = (date: Date): string => {
     const h = date.getHours();
     const m = date.getMinutes().toString().padStart(2, '0');
     const s = date.getSeconds().toString().padStart(2, '0');
     return `${h}:${m}:${s}`;
+};
+
+const isDataPointPayloadRecord = (value: unknown): value is DataPointPayloadRecord => {
+    if(typeof value !== 'object' || value === null){
+        return false;
+    }
+
+    if(!('time' in value)){
+        return false;
+    }
+
+    return typeof value.time === 'string';
+};
+
+const formatTooltipValue = (value: ValueType): string => {
+    if(typeof value === 'number'){
+        return formatSize(value);
+    }
+
+    return String(value);
 };
 
 const NetworkChart = ({ 
@@ -48,6 +96,24 @@ const NetworkChart = ({
 }: NetworkChartProps) => {
     const [history, setHistory] = useState<DataPoint[]>([]);
     const [prevData, setPrevData] = useState<NetworkData | null>(null);
+    const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
+
+    useEffect(() => {
+        return subscribeToAppTheme(setTheme);
+    }, []);
+
+    const chartColors = useMemo<ChartColors>(() => {
+        const styles = getComputedStyle(document.documentElement);
+        const fallbackColors = theme === Theme.Light ? LIGHT_CHART_COLORS : DEFAULT_CHART_COLORS;
+
+        return {
+            rx: styles.getPropertyValue('--accent-blue').trim() || fallbackColors.rx,
+            tx: styles.getPropertyValue('--accent-green').trim() || fallbackColors.tx,
+            grid: styles.getPropertyValue('--color-border-soft').trim() || fallbackColors.grid,
+            axis: styles.getPropertyValue('--color-text-muted').trim() || fallbackColors.axis,
+            legend: styles.getPropertyValue('--color-text-primary').trim() || fallbackColors.legend
+        };
+    }, [theme]);
 
     useEffect(() => {
         if(!data) return;
@@ -93,15 +159,20 @@ const NetworkChart = ({
         };
     }, [history, data, calculateDelta]);
 
-    const renderTooltip = ({ active, payload }: any) => {
+    const renderTooltip: ContentType<ValueType, NameType> = ({ active, payload }: TooltipContentProps<ValueType, NameType>) => {
         if(!active || !payload?.length) return null;
+
+        const firstPayload = payload[0]?.payload;
+        if(!isDataPointPayloadRecord(firstPayload)){
+            return null;
+        }
 
         return (
             <ChartTooltip
-                title={payload[0].payload.time}
-                items={payload.map((entry: any) => ({
-                    label: entry.name,
-                    value: formatSize(entry.value),
+                title={firstPayload.time}
+                items={payload.map((entry) => ({
+                    label: String(entry.name || ''),
+                    value: formatTooltipValue(entry.value || 0),
                     color: entry.color
                 }))}
             />
@@ -128,29 +199,29 @@ const NetworkChart = ({
                 >
                     <defs>
                         <linearGradient id='colorNetRx' x1='0' y1='0' x2='0' y2='1'>
-                            <stop offset='5%' stopColor={CHART_COLORS.rx} stopOpacity={0.3} />
-                            <stop offset='95%' stopColor={CHART_COLORS.rx} stopOpacity={0} />
+                            <stop offset='5%' stopColor={chartColors.rx} stopOpacity={0.3} />
+                            <stop offset='95%' stopColor={chartColors.rx} stopOpacity={0} />
                         </linearGradient>
                         <linearGradient id='colorNetTx' x1='0' y1='0' x2='0' y2='1'>
-                            <stop offset='5%' stopColor={CHART_COLORS.tx} stopOpacity={0.3} />
-                            <stop offset='95%' stopColor={CHART_COLORS.tx} stopOpacity={0} />
+                            <stop offset='5%' stopColor={chartColors.tx} stopOpacity={0.3} />
+                            <stop offset='95%' stopColor={chartColors.tx} stopOpacity={0} />
                         </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />
+                    <CartesianGrid strokeDasharray='3 3' stroke={chartColors.grid} />
                     <YAxis
-                        stroke='var(--color-text-muted)'
+                        stroke={chartColors.axis}
                         style={{ fontSize: '12px' }}
                         tickFormatter={(v) => formatSize(v)}
                     />
                     <Tooltip content={renderTooltip} />
                     <Legend
-                        wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
+                        wrapperStyle={{ fontSize: '12px', paddingTop: '20px', color: chartColors.legend }}
                         iconType='circle'
                     />
                     <Area
                         type='monotone'
                         dataKey='rx'
-                        stroke={CHART_COLORS.rx}
+                        stroke={chartColors.rx}
                         strokeWidth={2}
                         fillOpacity={1}
                         fill='url(#colorNetRx)'
@@ -160,7 +231,7 @@ const NetworkChart = ({
                     <Area
                         type='monotone'
                         dataKey='tx'
-                        stroke={CHART_COLORS.tx}
+                        stroke={chartColors.tx}
                         strokeWidth={2}
                         fillOpacity={1}
                         fill='url(#colorNetTx)'

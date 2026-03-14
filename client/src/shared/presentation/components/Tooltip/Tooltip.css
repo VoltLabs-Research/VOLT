@@ -50,3 +50,9 @@
 .volt-tooltip-right {
     transform-origin: left center;
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .volt-tooltip {
+        animation: none;
+    }
+}

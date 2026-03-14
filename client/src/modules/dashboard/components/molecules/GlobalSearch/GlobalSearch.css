@@ -1,5 +1,16 @@
+.global-search-wrapper {
+    width: min(100%, 400px);
+    min-width: 0;
+}
+
+.global-search-wrapper .search-input-container {
+    width: 100%;
+}
+
 /* Search Results */
 .global-search-results {
+    width: min(32rem, calc(100vw - 1rem));
+    max-width: calc(100vw - 1rem);
     max-height: 60vh;
     z-index: var(--z-floating);
 }
@@ -72,6 +83,12 @@
 /* Mobile Responsive */
 @media screen and (max-width: 768px) {
     .global-search-wrapper {
-        display: none;
+        width: 100%;
+    }
+
+    .global-search-results {
+        width: min(100vw - 1rem, 32rem);
+        max-width: calc(100vw - 1rem);
+        max-height: min(60vh, 28rem);
     }
 }

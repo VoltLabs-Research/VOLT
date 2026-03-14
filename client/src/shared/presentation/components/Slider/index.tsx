@@ -1,4 +1,5 @@
 import './Slider.css';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { gsap } from 'gsap';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import React from 'react';
@@ -42,6 +43,7 @@ const Slider: React.FC<SliderProps> = ({
     const auraRef = useRef<HTMLDivElement | null>(null);
 
     const [isDragging, setIsDragging] = useState(false);
+    const prefersReducedMotion = usePrefersReducedMotion();
 
     const setScaleXRef = useRef<((n: number) => void) | null>(null);
     const setSheenXRef = useRef<((n: number) => void) | null>(null);
@@ -56,12 +58,20 @@ const Slider: React.FC<SliderProps> = ({
         if(progressRef.current){
             setScaleXRef.current = gsap.quickSetter(progressRef.current, 'scaleX') as(n: number) => void;
             gsap.set(progressRef.current, { transformOrigin: '0% 50%' });
-            qToScaleRef.current = gsap.quickTo(progressRef.current, 'scaleX', { duration: 0.14, ease: 'power3.out' });
+            if (!prefersReducedMotion) {
+                qToScaleRef.current = gsap.quickTo(progressRef.current, 'scaleX', { duration: 0.14, ease: 'power3.out' });
+            } else {
+                qToScaleRef.current = null;
+            }
         }
         if(sheenRef.current){
             setSheenXRef.current = gsap.quickSetter(sheenRef.current, 'xPercent') as(n: number) => void;
             gsap.set(sheenRef.current, { yPercent: -50 });
-            qToSheenRef.current = gsap.quickTo(sheenRef.current, 'xPercent', { duration: 0.14, ease: 'power3.out' });
+            if (!prefersReducedMotion) {
+                qToSheenRef.current = gsap.quickTo(sheenRef.current, 'xPercent', { duration: 0.14, ease: 'power3.out' });
+            } else {
+                qToSheenRef.current = null;
+            }
         }
         if(auraRef.current){
             setAuraVarRef.current = (n: number) => gsap.set(auraRef.current, { '--aura': n });
@@ -70,10 +80,22 @@ const Slider: React.FC<SliderProps> = ({
         setScaleXRef.current?.(r0);
         setSheenXRef.current?.(r0 * 100);
         setAuraVarRef.current?.(0);
-    }, []);
+    }, [prefersReducedMotion, ratioFromValue, value]);
 
     useEffect(() => {
         const r = ratioFromValue(value);
+        if (prefersReducedMotion) {
+            gsap.killTweensOf([progressRef.current, sheenRef.current, auraRef.current]);
+            if (progressRef.current) {
+                gsap.set(progressRef.current, { scaleX: r });
+            }
+            if (sheenRef.current) {
+                gsap.set(sheenRef.current, { xPercent: r * 100, opacity: 0 });
+            }
+            setAuraVarRef.current?.(0);
+            return;
+        }
+
         if(!isDragging){
             gsap.killTweensOf([progressRef.current, sheenRef.current]);
 
@@ -95,10 +117,22 @@ const Slider: React.FC<SliderProps> = ({
                 gsap.set(sheenRef.current, { xPercent: r * 100 });
             }
         }
-    }, [value, ratioFromValue, isDragging]);
+    }, [value, ratioFromValue, isDragging, prefersReducedMotion]);
 
     const pressOn = useCallback(() => {
         if(!trackRef.current) return;
+        if (prefersReducedMotion) {
+            gsap.set(trackRef.current, {
+                '--ringA': 1,
+                '--ringB': 1,
+                '--elev': 0
+            });
+            gsap.set(auraRef.current, {
+                opacity: 0,
+                scale: 1
+            });
+            return;
+        }
         gsap.to(trackRef.current, {
             scale: 1.05,
             duration: 0.15,
@@ -125,10 +159,23 @@ const Slider: React.FC<SliderProps> = ({
             duration: 0.2,
             ease: 'power3.out'
         });
-    }, []);
+    }, [prefersReducedMotion]);
 
     const pressOff = useCallback(() => {
         if(!trackRef.current) return;
+        if (prefersReducedMotion) {
+            gsap.set(trackRef.current, {
+                scale: 1,
+                '--ringA': 0,
+                '--ringB': 0,
+                '--elev': 0
+            });
+            gsap.set(auraRef.current, {
+                opacity: 0,
+                scale: 1
+            });
+            return;
+        }
         gsap.to(trackRef.current, {
             scale: 1,
             duration: 0.2,
@@ -155,10 +202,16 @@ const Slider: React.FC<SliderProps> = ({
             duration: 0.2,
             ease: 'power3.out'
         });
-    }, []);
+    }, [prefersReducedMotion]);
 
     const startSheen = useCallback(() => {
         if(!sheenRef.current) return;
+        if (prefersReducedMotion) {
+            gsap.set(sheenRef.current, {
+                opacity: 0
+            });
+            return;
+        }
         gsap.to(sheenRef.current, {
             keyframes: [
                 { xPercent: '-40', opacity: 0, scale: 0.8 },
@@ -168,18 +221,25 @@ const Slider: React.FC<SliderProps> = ({
             repeat: -1,
             repeatDelay: 0.1
         });
-    }, []);
+    }, [prefersReducedMotion]);
 
     const stopSheen = useCallback(() => {
         if(!sheenRef.current) return;
         gsap.killTweensOf(sheenRef.current);
+        if (prefersReducedMotion) {
+            gsap.set(sheenRef.current, {
+                opacity: 0,
+                scale: 1
+            });
+            return;
+        }
         gsap.to(sheenRef.current, {
             opacity: 0,
             scale: 1,
             duration: 0.15,
             ease: 'power3.out'
         });
-    }, []);
+    }, [prefersReducedMotion]);
 
     const updateFromClientX = useCallback((clientX: number) => {
         if(!trackRef.current || disabled) return;
@@ -196,14 +256,17 @@ const Slider: React.FC<SliderProps> = ({
         }
 
         if(sheenRef.current){
-            gsap.set(sheenRef.current, { xPercent: r * 100 });
+            gsap.set(sheenRef.current, {
+                xPercent: r * 100,
+                opacity: prefersReducedMotion ? 0 : undefined
+            });
         }
 
-        const auraIntensity = Math.min(0.6, Math.abs(ratio - r) * 8 + 0.2);
+        const auraIntensity = prefersReducedMotion ? 0 : Math.min(0.6, Math.abs(ratio - r) * 8 + 0.2);
         setAuraVarRef.current?.(auraIntensity);
 
         onChange(next);
-    }, [disabled, min, max, step, decimals, ratioFromValue, onChange]);
+    }, [disabled, min, max, step, decimals, ratioFromValue, onChange, prefersReducedMotion]);
 
     const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
         if(disabled) return;
@@ -225,10 +288,15 @@ const Slider: React.FC<SliderProps> = ({
         pressOff();
         stopSheen();
         const r = ratioFromValue(value);
-        qToScaleRef.current?.(r);
-        qToSheenRef.current?.(r * 100);
+        if (prefersReducedMotion) {
+            setScaleXRef.current?.(r);
+            setSheenXRef.current?.(r * 100);
+        } else {
+            qToScaleRef.current?.(r);
+            qToSheenRef.current?.(r * 100);
+        }
         setAuraVarRef.current?.(0);
-    }, [pressOff, stopSheen, ratioFromValue, value]);
+    }, [pressOff, stopSheen, ratioFromValue, value, prefersReducedMotion]);
 
     const onPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
         if(!isDragging) return;
@@ -245,13 +313,21 @@ const Slider: React.FC<SliderProps> = ({
         pressOff();
         stopSheen();
         const r = ratioFromValue(value);
-        qToScaleRef.current?.(r);
-        qToSheenRef.current?.(r * 100);
+        if (prefersReducedMotion) {
+            setScaleXRef.current?.(r);
+            setSheenXRef.current?.(r * 100);
+        } else {
+            qToScaleRef.current?.(r);
+            qToSheenRef.current?.(r * 100);
+        }
         setAuraVarRef.current?.(0);
-    }, [isDragging, pressOff, stopSheen, ratioFromValue, value]);
+    }, [isDragging, pressOff, stopSheen, ratioFromValue, value, prefersReducedMotion]);
 
     const onMouseEnter = useCallback(() => {
         if(disabled || isDragging) return;
+        if (prefersReducedMotion) {
+            return;
+        }
         gsap.killTweensOf(trackRef.current);
         gsap.to(trackRef.current, {
             scale: 1.02,
@@ -263,10 +339,13 @@ const Slider: React.FC<SliderProps> = ({
             duration: 0.15,
             ease: 'power2.out'
         });
-    }, [disabled, isDragging]);
+    }, [disabled, isDragging, prefersReducedMotion]);
 
     const onMouseLeave = useCallback(() => {
         if(disabled || isDragging) return;
+        if (prefersReducedMotion) {
+            return;
+        }
         gsap.killTweensOf(trackRef.current);
         gsap.to(trackRef.current, {
             scale: 1,
@@ -278,7 +357,7 @@ const Slider: React.FC<SliderProps> = ({
             duration: 0.15,
             ease: 'power2.out'
         });
-    }, [disabled, isDragging]);
+    }, [disabled, isDragging, prefersReducedMotion]);
 
     const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
         if(disabled) return;
@@ -319,6 +398,23 @@ const Slider: React.FC<SliderProps> = ({
 
         gsap.killTweensOf([progressRef.current, sheenRef.current, auraRef.current]);
 
+        if (prefersReducedMotion) {
+            if (progressRef.current) {
+                gsap.set(progressRef.current, { scaleX: r });
+            }
+
+            if (sheenRef.current) {
+                gsap.set(sheenRef.current, { xPercent: r * 100, opacity: 0 });
+            }
+
+            if (auraRef.current) {
+                gsap.set(auraRef.current, { opacity: 0, scale: 1 });
+            }
+
+            onChange(next);
+            return;
+        }
+
         gsap.to(progressRef.current, {
             scaleX: r,
             duration: 0.12,
@@ -342,7 +438,7 @@ const Slider: React.FC<SliderProps> = ({
         );
 
         onChange(next);
-    }, [disabled, value, step, min, max, decimals, ratioFromValue, onChange]);
+    }, [disabled, value, step, min, max, decimals, ratioFromValue, onChange, prefersReducedMotion]);
 
     return (
         <div className={`slider slider--ios ${disabled ? 'slider--disabled' : ''} ${className || ''} u-select-none`} style={style} aria-disabled={disabled || undefined} data-disabled={disabled || undefined}>

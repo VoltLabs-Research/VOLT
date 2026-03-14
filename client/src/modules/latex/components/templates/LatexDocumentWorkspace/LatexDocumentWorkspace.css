@@ -121,8 +121,8 @@
 }
 
 .latex-editor-tab__close {
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 1.75rem;
+    height: 1.75rem;
     margin-right: 0.125rem;
     border: none;
     border-radius: 4px;
@@ -207,7 +207,7 @@
 .latex-workspace__toolbar {
     border-bottom: 1px solid var(--color-border-soft);
     padding: 0 0.75rem;
-    height: 38px;
+    min-height: 38px;
     flex-shrink: 0;
 }
 
@@ -557,4 +557,109 @@
 .latex-workspace__ai-trigger.is-active {
     color: var(--accent-blue);
     background: var(--status-info-bg);
+}
+
+@media (max-width: 1280px) {
+    .latex-workspace__files {
+        min-width: 140px;
+    }
+
+    .latex-workspace__editor {
+        min-width: 240px;
+    }
+
+    .latex-workspace__preview {
+        min-width: 220px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .latex-workspace__files,
+    .latex-workspace__editor,
+    .latex-workspace__preview {
+        min-width: 0;
+    }
+
+    .latex-workspace__toolbar {
+        height: auto;
+        padding: 0.5rem 0.75rem;
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .latex-workspace__toolbar > :last-child {
+        flex: 1 1 100%;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    .latex-workspace__toolbar-title {
+        max-width: 100%;
+    }
+
+    .latex-editor-tabs__header {
+        flex-wrap: wrap;
+    }
+
+    .latex-drag-handle {
+        width: 8px;
+    }
+
+    .latex-drag-handle::after {
+        width: 2px;
+    }
+
+    .latex-drag-handle-horizontal {
+        height: 8px;
+    }
+
+    .latex-drag-handle-horizontal::after {
+        height: 2px;
+    }
+}
+
+@media (max-width: 768px) {
+    .latex-workspace__toolbar {
+        gap: 0.75rem;
+    }
+
+    .latex-workspace__toolbar > :last-child {
+        gap: 0.5rem;
+    }
+
+    .latex-editor-tab {
+        max-width: 100%;
+    }
+
+    .latex-editor-tab__button {
+        padding: 0.45rem 0 0.45rem 0.625rem;
+    }
+
+    .latex-editor-tab__label {
+        max-width: 9rem;
+    }
+
+    .latex-editor-tab__close {
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .latex-ai-panel__header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .latex-ai-panel__header > :first-child {
+        flex-wrap: wrap;
+    }
+
+    .latex-ai-panel__header .volt-icon-button--sm {
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+
+    .latex-ai-panel__header-select {
+        height: 2.25rem !important;
+        max-width: 100%;
+    }
 }

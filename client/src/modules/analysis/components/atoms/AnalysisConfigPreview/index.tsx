@@ -1,9 +1,9 @@
-import Editor from '@monaco-editor/react';
-import { ensureMonaco } from '@/shared/presentation/utilities/ensure-monaco';
-import Popover from '@/shared/presentation/components/Popover';
 import Container from '@/shared/presentation/components/Container';
-import { useEffect, useMemo } from 'react';
+import Popover from '@/shared/presentation/components/Popover';
+import { applyMonacoTheme, getActiveAppTheme, getMonacoThemeName, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
+import Editor from '@monaco-editor/react';
 import { RiCodeSSlashLine } from 'react-icons/ri';
+import { useEffect, useMemo, useState } from 'react';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 
 interface AnalysisConfigPreviewProps {
@@ -11,8 +11,15 @@ interface AnalysisConfigPreviewProps {
 };
 
 const AnalysisConfigPreview = ({ analysis }: AnalysisConfigPreviewProps) => {
+    const [monacoTheme, setMonacoTheme] = useState(() => getMonacoThemeName(getActiveAppTheme()));
+
     useEffect(() => {
-        ensureMonaco();
+        applyMonacoTheme();
+
+        return subscribeToAppTheme((theme) => {
+            setMonacoTheme(getMonacoThemeName(theme));
+            applyMonacoTheme(theme);
+        });
     }, []);
 
     const formattedConfig = useMemo(() => {
@@ -50,6 +57,7 @@ const AnalysisConfigPreview = ({ analysis }: AnalysisConfigPreviewProps) => {
                     height='20rem'
                     language='json'
                     value={formattedConfig}
+                    theme={monacoTheme}
                     loading={<Container className='p-1 color-secondary'>Loading editor...</Container>}
                     options={{
                         readOnly: true,

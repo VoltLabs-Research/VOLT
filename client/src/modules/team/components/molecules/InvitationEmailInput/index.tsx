@@ -38,6 +38,7 @@ export const InvitationEmailInput = ({
             <FormFieldRHF
                 autoFocus
                 type='email'
+                label='Invite by email'
                 placeholder='Add people by email...'
                 value={value}
                 onChange={onChange}

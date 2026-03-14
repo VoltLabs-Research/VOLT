@@ -29,5 +29,12 @@
 
 .canvas-viewport-gradient {
     pointer-events: none;
+}
+
+:root[data-theme='dark'] .canvas-viewport-gradient {
     background: radial-gradient(60% 60% at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.25) 100%);
+}
+
+:root[data-theme='light'] .canvas-viewport-gradient {
+    background: transparent;
 }

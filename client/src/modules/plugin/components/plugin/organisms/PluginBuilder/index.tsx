@@ -209,7 +209,9 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
                                 intent='neutral'
                                 iconOnly
                                 size='sm'
+                                aria-label='Back'
                                 onClick={handleBackClick}
+                                title='Back'
                             >
                                 <ArrowLeft size={18} />
                             </Button>

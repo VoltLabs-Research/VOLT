@@ -3,8 +3,18 @@
 }
 
 .team-member-item {
+    width: 100%;
+    padding: 0.625rem;
     border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: transparent;
+    text-align: left;
     cursor: pointer;
+}
+
+.team-member-item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
 }
 
 .team-member-item.selected {
@@ -27,5 +37,4 @@
 .team-member-item-info {
     min-width: 0;
 }
-
 

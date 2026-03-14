@@ -15,6 +15,7 @@ export interface SelectOption {
 
 export interface SelectProps {
     options: SelectOption[];
+    id?: string;
     value?: string | null;
     onChange?: (value: string) => void;
     disabled?: boolean;
@@ -44,10 +45,15 @@ export interface SelectProps {
     hasSearch?: boolean;
     /** Placeholder for the dropdown search input */
     searchPlaceholder?: string;
+    'aria-label'?: string;
+    'aria-labelledby'?: string;
+    'aria-describedby'?: string;
+    'aria-invalid'?: boolean;
 };
 
 const Select = ({
     options,
+    id,
     value = null,
     onChange,
     disabled = false,
@@ -69,7 +75,11 @@ const Select = ({
     allOption,
     renderTriggerLabel,
     hasSearch = false,
-    searchPlaceholder = 'Search...'
+    searchPlaceholder = 'Search...',
+    'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
+    'aria-describedby': ariaDescribedBy,
+    'aria-invalid': ariaInvalid
 }: SelectProps) => {
     const uid = useId();
     const floatingRoot = useFloatingRoot();
@@ -327,7 +337,7 @@ const Select = ({
             return (
                 <input
                     ref={setInputReference}
-                    id={uid}
+                    id={id ?? uid}
                     type='text'
                     value={inputDisplayValue}
                     placeholder={placeholder}
@@ -340,6 +350,10 @@ const Select = ({
                     title={title}
                     aria-haspopup='listbox'
                     aria-expanded={isOpen}
+                    aria-label={ariaLabel}
+                    aria-labelledby={ariaLabelledBy}
+                    aria-describedby={ariaDescribedBy}
+                    aria-invalid={ariaInvalid}
                     {...getReferenceProps()}
                 />
             );
@@ -354,7 +368,7 @@ const Select = ({
         return (
             <button
                 ref={refs.setReference}
-                id={uid}
+                id={id ?? uid}
                 type='button'
                 className={`select-trigger d-flex items-center gap-05 ${onDark ? 'on-dark' : ''} ${className} ${isOpen ? 'open' : ''} overflow-hidden cursor-pointer`}
                 style={style}
@@ -362,6 +376,10 @@ const Select = ({
                 title={title}
                 aria-haspopup='listbox'
                 aria-expanded={isOpen}
+                aria-label={ariaLabel}
+                aria-labelledby={ariaLabelledBy}
+                aria-describedby={ariaDescribedBy}
+                aria-invalid={ariaInvalid}
                 {...getReferenceProps()}
             >
                 <span className='select-value overflow-hidden'>

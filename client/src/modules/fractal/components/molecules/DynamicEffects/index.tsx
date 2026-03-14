@@ -1,4 +1,6 @@
 import { resolveSSAOSettings } from '@/shared/domain/rendering/effects';
+import { Theme } from '@/shared/presentation/hooks/use-theme';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
 import {
     Bloom,
     ChromaticAberration,
@@ -9,7 +11,7 @@ import {
     Sepia,
     Vignette
 } from '@react-three/postprocessing';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Vector2 } from 'three';
 
 import type { EffectsConfigState } from '@/modules/fractal/stores/contracts/editor/visual-types';
@@ -20,6 +22,7 @@ interface DynamicEffectsProps {
 };
 
 const DynamicEffects = ({ settings, isDefectScene }: DynamicEffectsProps) => {
+    const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
     const {
         bloom,
         chromaticAberration,
@@ -28,6 +31,12 @@ const DynamicEffects = ({ settings, isDefectScene }: DynamicEffectsProps) => {
         sepia,
         noise
     } = settings;
+
+    useEffect(() => {
+        return subscribeToAppTheme(setTheme);
+    }, []);
+
+    const darkTheme = theme === Theme.Dark;
     const ssao = useMemo(() => {
         return resolveSSAOSettings(settings.ssao, { isDefectScene });
     }, [isDefectScene, settings.ssao]);
@@ -36,7 +45,7 @@ const DynamicEffects = ({ settings, isDefectScene }: DynamicEffectsProps) => {
         ssao ||
         bloom.enabled ||
         chromaticAberration.enabled ||
-        vignette.enabled ||
+        (darkTheme && vignette.enabled) ||
         depthOfField.enabled ||
         sepia.enabled ||
         noise.enabled
@@ -88,7 +97,7 @@ const DynamicEffects = ({ settings, isDefectScene }: DynamicEffectsProps) => {
                             modulationOffset={0}
                         />
                     )}
-                    {vignette.enabled && (
+                    {darkTheme && vignette.enabled && (
                         <Vignette
                             key={`vignette-${vignette.offset}-${vignette.darkness}`}
                             blendFunction={vignette.blendFunction}

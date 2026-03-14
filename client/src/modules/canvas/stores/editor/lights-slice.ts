@@ -17,15 +17,73 @@ export interface LightsSlice {
     lights: LightsStore;
 };
 
+const resolveDirectionalUpdate = (partial: Partial<DirLight>): Partial<DirLight> => {
+    if (typeof partial.color === 'string') {
+        return {
+            ...partial,
+            colorFollowsTheme: false
+        };
+    }
+
+    return partial;
+};
+
+const resolvePointUpdate = (partial: Partial<PointLight>): Partial<PointLight> => {
+    if (typeof partial.color === 'string') {
+        return {
+            ...partial,
+            colorFollowsTheme: false
+        };
+    }
+
+    return partial;
+};
+
+const resolveSpotUpdate = (partial: Partial<SpotLight>): Partial<SpotLight> => {
+    if (typeof partial.color === 'string') {
+        return {
+            ...partial,
+            colorFollowsTheme: false
+        };
+    }
+
+    return partial;
+};
+
+const resolveHemisphereUpdate = (partial: Partial<HemiLight>): Partial<HemiLight> => {
+    const nextPartial: Partial<HemiLight> = { ...partial };
+
+    if (typeof partial.skyColor === 'string') {
+        nextPartial.skyColorFollowsTheme = false;
+    }
+
+    if (typeof partial.groundColor === 'string') {
+        nextPartial.groundColorFollowsTheme = false;
+    }
+
+    return nextPartial;
+};
+
+const resolveRectAreaUpdate = (partial: Partial<RectAreaLightCfg>): Partial<RectAreaLightCfg> => {
+    if (typeof partial.color === 'string') {
+        return {
+            ...partial,
+            colorFollowsTheme: false
+        };
+    }
+
+    return partial;
+};
+
 export const createLightsSlice: StateCreator<EditorStore, [], [], LightsSlice> = (set) => ({
     lights: {
         ...getDefaultLightsState(),
         setGlobal: (g: Partial<LightsGlobal>) => set((state) => mergeNestedSectionState(state, 'lights', 'global', g)),
-        setDirectional: (d: Partial<DirLight>) => set((state) => mergeNestedSectionState(state, 'lights', 'directional', d)),
-        setPoint: (p: Partial<PointLight>) => set((state) => mergeNestedSectionState(state, 'lights', 'point', p)),
-        setSpot: (sp: Partial<SpotLight>) => set((state) => mergeNestedSectionState(state, 'lights', 'spot', sp)),
-        setHemisphere: (h: Partial<HemiLight>) => set((state) => mergeNestedSectionState(state, 'lights', 'hemisphere', h)),
-        setRectArea: (r: Partial<RectAreaLightCfg>) => set((state) => mergeNestedSectionState(state, 'lights', 'rectArea', r)),
+        setDirectional: (d: Partial<DirLight>) => set((state) => mergeNestedSectionState(state, 'lights', 'directional', resolveDirectionalUpdate(d))),
+        setPoint: (p: Partial<PointLight>) => set((state) => mergeNestedSectionState(state, 'lights', 'point', resolvePointUpdate(p))),
+        setSpot: (sp: Partial<SpotLight>) => set((state) => mergeNestedSectionState(state, 'lights', 'spot', resolveSpotUpdate(sp))),
+        setHemisphere: (h: Partial<HemiLight>) => set((state) => mergeNestedSectionState(state, 'lights', 'hemisphere', resolveHemisphereUpdate(h))),
+        setRectArea: (r: Partial<RectAreaLightCfg>) => set((state) => mergeNestedSectionState(state, 'lights', 'rectArea', resolveRectAreaUpdate(r))),
         reset: () => set((state) => resetSectionState(state, 'lights', getDefaultLightsState()))
     }
 });

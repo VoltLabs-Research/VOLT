@@ -3,7 +3,7 @@
 }
 
 .canvas-right-dropdown-header {
-    height: 39px;
+    min-height: 39px;
     padding: 0 8px;
 }
 
@@ -34,4 +34,11 @@
 
 .canvas-render-subsection-body {
     padding: 8px;
+}
+
+@media (max-width: 768px) {
+    .canvas-right-dropdown-header {
+        min-height: 44px;
+        padding: 0 10px;
+    }
 }

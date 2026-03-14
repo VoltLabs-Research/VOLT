@@ -1,3 +1,4 @@
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
 
@@ -5,6 +6,8 @@ export const useStartPageEntrance = (
     wrapperRef: RefObject<HTMLDivElement | null>,
     pageCount: number
 ) => {
+    const prefersReducedMotion = usePrefersReducedMotion();
+
     useEffect(() => {
         const wrapper = wrapperRef.current;
 
@@ -13,6 +16,16 @@ export const useStartPageEntrance = (
         }
 
         const tiles = Array.from(wrapper.querySelectorAll<HTMLElement>('.metro-tile'));
+
+        if (prefersReducedMotion) {
+            tiles.forEach((tile) => {
+                tile.style.opacity = '1';
+                tile.style.transform = '';
+                tile.style.transition = '';
+            });
+            return;
+        }
+
         const timeouts: number[] = [];
 
         tiles.forEach((tile, index) => {
@@ -37,5 +50,5 @@ export const useStartPageEntrance = (
         return () => {
             timeouts.forEach(window.clearTimeout);
         };
-    }, [pageCount, wrapperRef]);
+    }, [pageCount, prefersReducedMotion, wrapperRef]);
 };

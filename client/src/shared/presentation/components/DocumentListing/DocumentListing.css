@@ -9,11 +9,19 @@
 }
 
 .document-listing-header-tab-container {
+    border: none;
     padding-bottom: 1rem;
     border-bottom: 2px solid transparent;
     cursor: pointer;
+    background: transparent;
     transition: border-color .15s ease, color .15s ease;
     min-width: 50px;
+}
+
+.document-listing-header-tab-container:focus-visible {
+    outline: none;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
 }
 
 .document-listing-header-tab-container.is-active {

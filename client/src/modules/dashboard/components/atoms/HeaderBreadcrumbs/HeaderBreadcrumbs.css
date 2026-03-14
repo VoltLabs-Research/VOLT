@@ -3,8 +3,26 @@
     text-transform: capitalize;
 }
 
+.breadcrumb-link {
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
 .breadcrumb-link:hover {
     color: var(--color-text-primary);
+}
+
+.breadcrumb-link:focus-visible {
+    outline: none;
+    color: var(--color-text-primary);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+    border-radius: var(--radius-sm);
+}
+
+.breadcrumb-current {
+    cursor: default;
 }
 
 .breadcrumb-separator {

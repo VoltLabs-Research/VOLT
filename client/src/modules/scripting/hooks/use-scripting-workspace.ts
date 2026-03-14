@@ -1,9 +1,7 @@
-import { useCreateScriptingSessionMutation, scriptingNotebooksQuery } from './queries';
+import { createApiClient } from '@/app/core/http/utilities/create-client';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-import {
-    JUPYTER_SESSION_TIMEOUT_MESSAGE,
-    waitForReadyScriptingSession
-} from '../utilities/jupyter-session';
+import { useCreateScriptingSessionMutation, scriptingNotebooksQuery } from './queries';
+import { JUPYTER_SESSION_TIMEOUT_MESSAGE } from '../utilities/jupyter-session';
 import {
     getJupyterStartErrorMessage,
     pickActiveNotebook
@@ -18,7 +16,21 @@ interface UseScriptingWorkspaceInput {
     notebookId?: string;
 };
 
+interface ScriptingSessionStatus {
+    notebookId?: string;
+    jupyter: {
+        ready: boolean;
+    };
+};
+
 const WORKSPACE_NOTEBOOKS_FETCH_LIMIT = 500;
+const JUPYTER_SESSION_STATUS_POLL_INTERVAL_MS = 2_000;
+const JUPYTER_SESSION_STATUS_TIMEOUT_MS = 120_000;
+const scriptingSessionStatusClient = createApiClient('/scripting', { useRBAC: true });
+
+const sleep = async (delayMs: number): Promise<void> => {
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+};
 
 const getTeamClusterId = (notebook?: ScriptingNotebook | null): string | undefined => {
     if (!notebook?.teamCluster) {
@@ -89,33 +101,59 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         sileo.info({ title: 'Starting Jupyter session...' });
 
         try {
-            const result = await waitForReadyScriptingSession(() => createScriptingSession({
+            const isRequestCancelled = (): boolean => {
+                return !isMountedRef.current || activeStartRequestRef.current !== requestId;
+            };
+            const session = await createScriptingSession({
                 trajectoryId,
                 notebookId: activeNotebook?._id,
                 teamClusterId: getTeamClusterId(activeNotebook)
-            }), {
-                isCancelled: () => {
-                    return !isMountedRef.current || activeStartRequestRef.current !== requestId;
-                }
             });
 
-            if (!isMountedRef.current || activeStartRequestRef.current !== requestId) {
+            if (isRequestCancelled()) {
                 return;
             }
 
-            if (result.session?.jupyter.ready) {
-                setJupyterUrl(result.session.jupyter.url);
+            if (session.jupyter.ready) {
+                setJupyterUrl(session.jupyter.url);
                 sileo.success({ title: 'Jupyter session ready' });
                 return;
             }
 
-            if (result.timedOut) {
-                setJupyterError(JUPYTER_SESSION_TIMEOUT_MESSAGE);
-                sileo.error({
-                    title: 'Jupyter is still starting',
-                    description: JUPYTER_SESSION_TIMEOUT_MESSAGE
-                });
+            const deadlineMs = Date.now() + JUPYTER_SESSION_STATUS_TIMEOUT_MS;
+
+            while (Date.now() < deadlineMs) {
+                if (isRequestCancelled()) {
+                    return;
+                }
+
+                const status = await scriptingSessionStatusClient.get<ScriptingSessionStatus>(
+                    `/${trajectoryId}/sessions/status`
+                );
+
+                if (isRequestCancelled()) {
+                    return;
+                }
+
+                if (status.jupyter.ready) {
+                    setJupyterUrl(session.jupyter.url);
+                    sileo.success({ title: 'Jupyter session ready' });
+                    return;
+                }
+
+                const remainingTimeMs = deadlineMs - Date.now();
+                if (remainingTimeMs <= 0) {
+                    break;
+                }
+
+                await sleep(Math.min(JUPYTER_SESSION_STATUS_POLL_INTERVAL_MS, remainingTimeMs));
             }
+
+            setJupyterError(JUPYTER_SESSION_TIMEOUT_MESSAGE);
+            sileo.error({
+                title: 'Jupyter is still starting',
+                description: JUPYTER_SESSION_TIMEOUT_MESSAGE
+            });
         } catch (error: unknown) {
             if (!isMountedRef.current || activeStartRequestRef.current !== requestId) {
                 return;

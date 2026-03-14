@@ -19,3 +19,13 @@
     transform: translateY(-4px);
     transition-duration: 0.2s;
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .page-transition,
+    .page-transition.entered,
+    .page-transition.exiting {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+}

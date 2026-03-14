@@ -11,6 +11,7 @@
 .code-editor-container {
     border-radius: var(--radius-sm);
     border: 1px solid var(--color-border-soft);
+    background: var(--color-content-bg);
     transition: border-color 0.2s ease;
 }
 
@@ -19,17 +20,32 @@
 }
 
 .code-editor-wrapper.has-error .code-editor-container {
-    border-color: var(--color-danger);
+    border-color: var(--status-error);
 }
 
 .code-editor-error {
     font-size: 0.7rem;
-    color: var(--color-danger);
+    color: var(--status-error);
     margin: 0;
+}
+
+.code-editor-textarea {
+    background: var(--color-content-bg);
+    color: var(--color-text-primary);
+    caret-color: var(--focus-ring);
+}
+
+.code-editor-textarea::placeholder {
+    color: var(--color-text-secondary);
+}
+
+.code-editor-textarea:disabled,
+.code-editor-textarea[readonly] {
+    color: var(--color-text-secondary);
 }
 
 /* Monaco background only - don't override syntax colors */
 .code-editor-container .monaco-editor,
 .code-editor-container .monaco-editor .margin {
-    background-color: var(--color-surface-2) !important;
+    background-color: var(--color-content-bg) !important;
 }

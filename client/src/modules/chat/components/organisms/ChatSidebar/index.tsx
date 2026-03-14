@@ -98,6 +98,8 @@ const ChatSidebar = ({
                                 size='sm'
                                 variant='ghost'
                                 onClick={() => setShowTeamMembers(!showTeamMembers)}
+                                title='New Chat'
+                                aria-label='New Chat'
                             >
                                 <IoPersonAddOutline size={18} />
                             </IconButton>
@@ -108,6 +110,8 @@ const ChatSidebar = ({
                                 variant='ghost'
                                 commandfor='create-group-modal'
                                 command='show-modal'
+                                title='Create Group'
+                                aria-label='Create Group'
                             >
                                 <IoPeopleOutline size={18} />
                             </IconButton>

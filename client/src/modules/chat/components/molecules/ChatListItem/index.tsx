@@ -18,8 +18,10 @@ const ChatListItem = ({ chat, currentUserId, isActive, onClick }: ChatListItemPr
     const displayName = getChatDisplayName(chat, currentUserId);
 
     return (
-        <Container
+        <button
+            type='button'
             className={cn('d-flex items-center gap-075 list-item-hoverable chat-list-item', isActive && 'active')}
+            aria-pressed={Boolean(isActive)}
             onClick={onClick}
         >
             <ChatAvatar chat={chat} currentUserId={currentUserId} size='sm' className='f-shrink-0' />
@@ -48,7 +50,7 @@ const ChatListItem = ({ chat, currentUserId, isActive, onClick }: ChatListItemPr
                     </Paragraph>
                 )}
             </Container>
-        </Container>
+        </button>
     );
 };
 

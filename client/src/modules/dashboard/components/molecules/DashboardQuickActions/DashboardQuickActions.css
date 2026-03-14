@@ -4,7 +4,18 @@
 }
 
 .dashboard-action-item {
+    width: 100%;
+    padding: 0.625rem;
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    text-align: left;
     cursor: pointer;
+}
+
+.dashboard-action-item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
 }
 
 .dashboard-action-item.is-disabled {
@@ -36,7 +47,17 @@
     transform: translateX(2px);
 }
 
+.dashboard-action-item:focus-visible .dashboard-action-arrow {
+    opacity: 1;
+    transform: translateX(2px);
+}
+
 .dashboard-action-item.is-disabled:hover .dashboard-action-arrow {
+    opacity: 0;
+    transform: none;
+}
+
+.dashboard-action-item.is-disabled:focus-visible .dashboard-action-arrow {
     opacity: 0;
     transform: none;
 }
