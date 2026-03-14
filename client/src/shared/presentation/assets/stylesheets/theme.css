@@ -100,47 +100,47 @@
 :root[data-theme='light'] {
     color-scheme: light;
 
-    --color-bg: #f0f0f2;
-    --color-content-bg: #ffffff;
-    --color-surface-1: #f5f5f7;
-    --color-surface-2: #e8e8ed;
-    --color-surface-3: #d1d1d6;
+    --color-bg: #F5F5F7;
+    --color-content-bg: #FFFFFF;
+    --color-surface-1: #FFFFFF;
+    --color-surface-2: #F6F6FA;
+    --color-surface-3: #EFEFF4;
 
-    --color-text-primary: #1d1d1f;
-    --color-text-secondary: #4f4f4f;
-    --color-text-muted: #8e8e93;
+    --color-text-primary: #1D1D1F;
+    --color-text-secondary: #6E6E73;
+    --color-text-muted: #8E8E93;
 
-    --color-border-strong: #c7c7cc;
-    --color-border: #d1d1d6;
-    --color-border-soft: rgb(0 0 0 / 8%);
+    --color-border-strong: rgba(60, 60, 67, 0.18);
+    --color-border: rgba(60, 60, 67, 0.12);
+    --color-border-soft: rgba(60, 60, 67, 0.08);
 
-    --material-regular: rgba(255, 255, 255, 0.72);
-    --material-regular-border: rgba(0, 0, 0, 0.05);
+    --material-regular: rgba(255, 255, 255, 0.74);
+    --material-regular-border: rgba(60, 60, 67, 0.08);
 
     --glass-bg: var(--material-regular);
     --glass-border: var(--material-regular-border);
     --glass-blur: blur(20px) saturate(180%);
-    --glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), inset 0 0 0 0.5px rgba(255, 255, 255, 0.5);
+    --glass-shadow: 0 6px 18px rgba(15, 23, 42, 0.04), inset 0 0 0 0.5px rgba(255, 255, 255, 0.62);
 
-    --color-overlay: rgba(255, 255, 255, 0.85);
-    --shadow-glass: 0 2px 12px rgba(0, 0, 0, 0.06);
-    --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
-    --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+    --color-overlay: rgba(255, 255, 255, 0.82);
+    --shadow-glass: 0 4px 14px rgba(15, 23, 42, 0.035), 0 1px 2px rgba(15, 23, 42, 0.02);
+    --shadow-elevated: 0 10px 28px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.03), 0 0 0 0.5px rgba(60, 60, 67, 0.06);
+    --shadow-card: 0 4px 16px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.025), 0 0 0 0.5px rgba(60, 60, 67, 0.06);
 
-    --color-scrollbar: #c7c7cc;
+    --color-scrollbar: #C7C7CC;
 
-    --color-contrast-high: #1d1d1f;
-    --color-contrast-low: #c7c7cc;
+    --color-contrast-high: #1D1D1F;
+    --color-contrast-low: #D1D1D6;
 
-    --color-autofill-bg: #f5f5f7;
-    --color-autofill-text: #1d1d1f;
+    --color-autofill-bg: #FFFFFF;
+    --color-autofill-text: #1D1D1F;
 
-    --button-bg: rgba(0, 0, 0, 0.04);
-    --button-bg-smooth: rgba(0, 0, 0, 0.03);
+    --button-bg: rgba(60, 60, 67, 0.032);
+    --button-bg-smooth: rgba(60, 60, 67, 0.02);
     --button-fg: var(--color-text-primary);
-    --button-border: rgba(0, 0, 0, 0.08);
+    --button-border: rgba(60, 60, 67, 0.1);
 
-    --input-bg: rgba(0, 0, 0, 0.03);
+    --input-bg: #FFFFFF;
     --input-fg: var(--color-text-primary);
     --input-focus-ring: #007aff;
 
@@ -171,8 +171,8 @@
     --status-info-bg: rgba(0, 122, 255, 0.1);
     --status-info-border: rgba(0, 122, 255, 0.2);
 
-    --hover-bg: rgba(0, 0, 0, 0.04);
-    --active-bg: rgba(0, 0, 0, 0.08);
+    --hover-bg: rgba(60, 60, 67, 0.03);
+    --active-bg: rgba(60, 60, 67, 0.05);
     --selected-indicator: #007aff;
     --focus-ring: #007aff;
 
