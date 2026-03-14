@@ -2,7 +2,6 @@ import { createTrajectoryRasterService } from '@/modules/trajectory-native/servi
 import type {
     FilterEvaluatorService,
     GlbExporterService,
-    NativeAtomsPageRequest,
     NativeColorModelRequest,
     NativeFilterPreviewRequest,
     NativeParticleFilterModelRequest,
@@ -27,7 +26,8 @@ import {
     readPluginAtomIndexRequest,
     readPluginModifierValuesRequest,
     readPluginModifierStatsRequest,
-    readPluginModifierUniqueValuesRequest
+    readPluginModifierUniqueValuesRequest,
+    readPluginAnalysisAllAtomsRequest
 } from './payloadValidation';
 
 interface TrajectoryHandlersDependencies {
@@ -82,14 +82,16 @@ const readNativeUniqueValuesRequest = (payload: unknown): NativeUniqueValuesRequ
     };
 };
 
-const readNativeAtomsPageRequest = (payload: unknown): NativeAtomsPageRequest => {
+const readNativeAtomsPageRequest = (payload: unknown) => {
     const request = readNativeTrajectoryRequest(payload);
     const record = readOptionalPayloadRecord(payload);
+    const analysisId = readOptionalString(record.analysisId);
 
     return {
         ...request,
         page: readNumber(record.page, 'page'),
-        limit: readNumber(record.limit, 'limit')
+        limit: readNumber(record.limit, 'limit'),
+        ...(analysisId ? { analysisId } : {})
     };
 };
 
@@ -196,9 +198,28 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
         },
         {
             command: 'trajectory.native.atoms',
-            execute: async (payload) => ({
-                data: await deps.trajectoryParserService.getAtomsPage(readNativeAtomsPageRequest(payload))
-            })
+            execute: async (payload) => {
+                const request = readNativeAtomsPageRequest(payload);
+                const nativeResult = await deps.trajectoryParserService.getAtomsPage(request);
+
+                if (!request.analysisId) {
+                    return { data: nativeResult };
+                }
+
+                const analysisResult = await deps.trajectoryPluginParserService.getAnalysisAllPerAtomData({
+                    trajectoryId: request.trajectoryId,
+                    analysisId: request.analysisId,
+                    timestep: request.timestep
+                });
+
+                return {
+                    data: {
+                        ...nativeResult,
+                        analysisPropertyNames: analysisResult.propertyNames,
+                        analysisAtoms: analysisResult.atoms
+                    }
+                };
+            }
         },
         {
             command: 'trajectory.native.filter-preview',
@@ -252,6 +273,14 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
             command: 'trajectory.plugin.modifier-unique-values',
             execute: async (payload) => ({
                 data: await deps.trajectoryPluginParserService.getModifierUniqueValues(readPluginModifierUniqueValuesRequest(payload))
+            })
+        },
+        {
+            command: 'trajectory.plugin.analysis-all-atoms',
+            execute: async (payload) => ({
+                data: await deps.trajectoryPluginParserService.getAnalysisAllPerAtomData(
+                    readPluginAnalysisAllAtomsRequest(payload)
+                )
             })
         }
     ];

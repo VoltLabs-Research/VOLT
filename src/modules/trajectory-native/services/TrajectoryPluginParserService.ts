@@ -39,6 +39,23 @@ export interface PluginModifierUniqueValuesRequest extends PluginModifierValuesR
     maxValues?: number;
 }
 
+export interface PluginAnalysisAllAtomsRequest {
+    trajectoryId: string;
+    analysisId: string;
+    timestep: number;
+}
+
+export interface PluginAnalysisAllAtomsResponse {
+    propertyNames: string[];
+    atoms: Record<string, unknown>[];
+}
+
+interface ExposureData {
+    exposureId: string;
+    propertyNames: string[];
+    rows: Record<string, unknown>[];
+};
+
 function getMinMaxFromTypedArray(arr: Float32Array | Float64Array | Int32Array | Uint32Array): { min: number; max: number } | undefined {
     if (arr.length === 0) return undefined;
     let min = arr[0];
@@ -186,6 +203,123 @@ export class TrajectoryPluginParserService {
         } catch (error) {
             return null;
         }
+    }
+
+    /**
+     * Fetches per-atom data for all exposures in a given analysis at a specific timestep,
+     * merging results into a single flat response with deduplicated property names.
+     *
+     * @param request - The trajectory, analysis, and timestep to query.
+     * @returns Merged property names and atom records across all exposures.
+     */
+    async getAnalysisAllPerAtomData(request: PluginAnalysisAllAtomsRequest): Promise<PluginAnalysisAllAtomsResponse> {
+        const { trajectoryId, analysisId, timestep } = request;
+        const analysisPrefix = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`;
+
+        const allObjects = await this.minioService.listObjects(ObjectBucketName.Plugins, analysisPrefix);
+
+        // Extract unique exposure IDs from object paths
+        // Path format: plugins/trajectory-{id}/analysis-{id}/{exposureId}/timestep-{ts}.msgpack
+        const exposureIds = new Set<string>();
+        for (const objectKey of allObjects) {
+            const relativePath = objectKey.slice(analysisPrefix.length);
+            const slashIndex = relativePath.indexOf('/');
+            if (slashIndex > 0) {
+                exposureIds.add(relativePath.slice(0, slashIndex));
+            }
+        }
+
+        if (exposureIds.size === 0) {
+            return { propertyNames: [], atoms: [] };
+        }
+
+        const exposureResults: ExposureData[] = [];
+
+        for (const exposureId of exposureIds) {
+            try {
+                const data = await this.getModifierAnalysisData({
+                    trajectoryId,
+                    analysisId,
+                    exposureId,
+                    timestep
+                });
+
+                if (!data || data.length === 0) continue;
+
+                // Extract property names from already-normalized rows (avoids double-normalization)
+                const keys = new Set<string>();
+                for (const row of data) {
+                    for (const key of Object.keys(row)) {
+                        if (key !== 'id') keys.add(key);
+                    }
+                }
+
+                const propNames = Array.from(keys);
+                if (propNames.length === 0) continue;
+
+                exposureResults.push({
+                    exposureId,
+                    propertyNames: propNames,
+                    rows: data
+                });
+            } catch {
+                continue;
+            }
+        }
+
+        if (exposureResults.length === 0) {
+            return { propertyNames: [], atoms: [] };
+        }
+
+        // Count property name occurrences across exposures for deduplication
+        const propertyOccurrences = new Map<string, number>();
+        for (const result of exposureResults) {
+            for (const prop of result.propertyNames) {
+                propertyOccurrences.set(prop, (propertyOccurrences.get(prop) || 0) + 1);
+            }
+        }
+
+        // Build per-exposure property name mappings (source -> display)
+        // If a property name appears in multiple exposures, prefix with exposureId
+        const exposureMappings = new Map<string, Map<string, string>>();
+        const allDisplayNames: string[] = [];
+
+        for (const result of exposureResults) {
+            const mapping = new Map<string, string>();
+            for (const prop of result.propertyNames) {
+                const occurrences = propertyOccurrences.get(prop) || 1;
+                const displayName = occurrences > 1
+                    ? `${result.exposureId}: ${prop}`
+                    : prop;
+                mapping.set(prop, displayName);
+                allDisplayNames.push(displayName);
+            }
+            exposureMappings.set(result.exposureId, mapping);
+        }
+
+        // Merge all per-atom rows by atom id
+        const mergedAtoms = new Map<number, Record<string, unknown>>();
+
+        for (const result of exposureResults) {
+            const mapping = exposureMappings.get(result.exposureId)!;
+            for (const row of result.rows) {
+                if (row.id === undefined) continue;
+                const atomId = Number(row.id);
+                const existing = mergedAtoms.get(atomId) ?? { id: atomId };
+
+                for (const [source, display] of mapping.entries()) {
+                    if (row[source] !== undefined) {
+                        existing[display] = row[source];
+                    }
+                }
+
+                mergedAtoms.set(atomId, existing);
+            }
+        }
+
+        const atoms = Array.from(mergedAtoms.values()).sort((a, b) => Number(a.id) - Number(b.id));
+
+        return { propertyNames: allDisplayNames, atoms };
     }
 
     private getPluginMsgpackKey(trajectoryId: string, analysisId: string, exposureId: string, timestep: string): string {

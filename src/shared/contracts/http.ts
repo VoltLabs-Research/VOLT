@@ -88,6 +88,7 @@ export interface PluginSyncRequest {
 export interface AnalysisQueueJobPayload {
     jobId: string;
     teamId: string;
+    timestep?: number;
     sessionId?: string;
     status: string;
     queueType: string;

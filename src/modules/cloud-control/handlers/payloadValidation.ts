@@ -217,6 +217,15 @@ export const readTextEncoding = (value: unknown): TextEncoding | undefined => {
     return encoding as TextEncoding;
 };
 
+export const readPluginAnalysisAllAtomsRequest = (payload: unknown) => {
+    const record = readOptionalPayloadRecord(payload);
+    return {
+        trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
+        analysisId: readString(record.analysisId, 'analysisId'),
+        timestep: readNumber(record.timestep, 'timestep')
+    };
+};
+
 export const readContainerAction = (value: unknown): ContainerAction => {
     const action = readString(value, 'action');
     if (!Object.values(ContainerAction).includes(action as ContainerAction)) {

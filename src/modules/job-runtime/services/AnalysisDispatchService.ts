@@ -90,17 +90,15 @@ export class AnalysisDispatchService {
 
     private buildJobs(input: AnalysisStartRequest, items: Record<string, unknown>[]): AnalysisQueueJobPayload[] {
         return items.map((item, index) => {
-            const timestepValue = item.timestep ?? item.frame;
-            const timestep = typeof timestepValue === 'number' || typeof timestepValue === 'string'
-                ? String(timestepValue)
-                : '';
-            if (!timestep) {
+            const timestep = this.resolveTimestep(item);
+            if (typeof timestep === 'undefined') {
                 throw new Error(`Missing timestep for analysis job ${input.analysisId}-${index}`);
             }
 
             return {
                 jobId: `${input.analysisId}-${index}`,
                 teamId: input.teamId,
+                timestep,
                 status: 'queued',
                 queueType: ANALYSIS_QUEUE_NAME,
                 ...(input.pluginDisplayName ? { name: input.pluginDisplayName } : {}),
@@ -108,8 +106,8 @@ export class AnalysisDispatchService {
                     trajectoryId: input.trajectoryId,
                     analysisId: input.analysisId,
                     config: input.config,
-                    inputFile: `trajectory-${input.trajectoryId}/timestep-${timestep}.dump.gz`,
-                    timestep: item.timestep ?? item.frame,
+                    inputFile: `trajectory-${input.trajectoryId}/timestep-${String(timestep)}.dump.gz`,
+                    timestep,
                     plugin: input.pluginId,
                     totalItems: items.length,
                     itemIndex: index,
@@ -120,6 +118,22 @@ export class AnalysisDispatchService {
                 updatedAt: new Date().toISOString()
             };
         });
+    }
+
+    private resolveTimestep(item: Record<string, unknown>): number | undefined {
+        const timestepValue = item.timestep ?? item.frame;
+        if (typeof timestepValue === 'number' && Number.isFinite(timestepValue)) {
+            return timestepValue;
+        }
+
+        if (typeof timestepValue === 'string' && timestepValue.trim().length > 0) {
+            const parsedTimestep = Number(timestepValue);
+            if (Number.isFinite(parsedTimestep)) {
+                return parsedTimestep;
+            }
+        }
+
+        return undefined;
     }
 
     private resolveEntrypoint(workflow: AnalysisStartRequest['workflow']): {

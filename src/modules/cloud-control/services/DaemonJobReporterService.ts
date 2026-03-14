@@ -5,10 +5,11 @@ export interface DaemonJobReporterService {
         jobId: string;
         analysisId: string;
         teamId: string;
+        timestep?: number;
         success: boolean;
         error?: string;
     }): Promise<void>;
-}
+};
 
 export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudConnection): DaemonJobReporterService => ({
     async reportJobCompletion(input) {

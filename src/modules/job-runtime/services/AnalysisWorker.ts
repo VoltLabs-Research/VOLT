@@ -21,6 +21,7 @@ const DUMPS_BUCKET = 'volt-dumps';
 interface QueueJobPayload extends Record<string, unknown> {
     jobId: string;
     teamId: string;
+    timestep?: number;
     status: string;
     queueType: string;
     metadata?: Record<string, unknown>;
@@ -121,9 +122,13 @@ export class AnalysisWorker {
         const metadata = job.metadata || {};
         const forEachItem = isRecord(metadata.forEachItem) ? metadata.forEachItem : {};
         const forEachIndex = typeof metadata.forEachIndex === 'number' ? metadata.forEachIndex : 0;
-        const timestep = typeof metadata.timestep === 'number' ? metadata.timestep : 0;
+        const timestep = this.resolveJobTimestep(job, metadata);
         const inputFile = typeof metadata.inputFile === 'string' ? metadata.inputFile : '';
         const runningTimestamp = new Date().toISOString();
+
+        if (typeof timestep === 'undefined') {
+            throw new Error(`Missing timestep for analysis job ${job.jobId}`);
+        }
 
         try {
             await this.redisConnectionService.projectJobStatus({
@@ -185,6 +190,7 @@ export class AnalysisWorker {
                 jobId: job.jobId,
                 analysisId: executionData.analysisId,
                 teamId: job.teamId,
+                timestep,
                 success: true
             });
 
@@ -206,12 +212,35 @@ export class AnalysisWorker {
                 jobId: job.jobId,
                 analysisId: executionData.analysisId,
                 teamId: job.teamId,
+                timestep,
                 success: false,
                 error: message
             }).catch(() => {});
 
             throw error instanceof Error ? error : new Error(message);
         }
+    }
+
+    private resolveJobTimestep(
+        job: QueueJobPayload,
+        metadata: Record<string, unknown>
+    ): number | undefined {
+        if (typeof job.timestep === 'number' && Number.isFinite(job.timestep)) {
+            return job.timestep;
+        }
+
+        if (typeof metadata.timestep === 'number' && Number.isFinite(metadata.timestep)) {
+            return metadata.timestep;
+        }
+
+        if (typeof metadata.timestep === 'string' && metadata.timestep.trim().length > 0) {
+            const parsedTimestep = Number(metadata.timestep);
+            if (Number.isFinite(parsedTimestep)) {
+                return parsedTimestep;
+            }
+        }
+
+        return undefined;
     }
 
     private buildOutputsMap(
