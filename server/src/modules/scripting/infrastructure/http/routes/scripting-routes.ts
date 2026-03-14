@@ -1,16 +1,19 @@
 import { Resource } from '@core/constants/resources';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import { ErrorCodes } from '@core/constants/error-codes';
 import scriptingControllers from '@modules/scripting/infrastructure/http/controllers';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { container } from 'tsyringe';
-import type { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Response } from 'express';
 
 const scriptingNotebookRepository = container.resolve<IScriptingNotebookRepository>(SCRIPTING_TOKENS.ScriptingNotebookRepository);
+const scriptingJupyterAccessTokenService = container.resolve(ScriptingJupyterAccessTokenService);
 const teamClusterDaemonClient = container.resolve(TeamClusterDaemonClient);
 
 interface ScriptingSessionStatusInput {
@@ -23,6 +26,46 @@ interface ScriptingSessionStatusRouteParams {
     teamId?: string | string[];
     trajectoryId?: string | string[];
     notebookId?: string | string[];
+};
+
+interface ScriptingSessionStatusResponse {
+    notebookId: string;
+    jupyter: {
+        ready: boolean;
+        url: string;
+    };
+};
+
+const buildServerBaseUrl = (): string => {
+    const configuredServerUrl = process.env.SERVER_ENDPOINT?.trim();
+    if (configuredServerUrl) {
+        return configuredServerUrl.replace(/\/+$/g, '');
+    }
+
+    const protocol = process.env.SERVER_SCHEMA?.trim() || 'http';
+    const host = process.env.SERVER_HOSTNAME?.trim() || 'localhost';
+
+    return `${protocol}://${host}`;
+};
+
+const buildScriptingProxyUrl = (
+    teamId: string,
+    runtimeNotebookId: string,
+    userId: string
+): string => {
+    const accessToken = scriptingJupyterAccessTokenService.create({
+        teamId,
+        runtimeNotebookId,
+        userId
+    });
+    const proxyUrl = new URL(
+        `/api/jupyter/${encodeURIComponent(teamId)}/notebooks/${encodeURIComponent(runtimeNotebookId)}`,
+        buildServerBaseUrl()
+    );
+
+    proxyUrl.searchParams.set('access_token', accessToken);
+
+    return proxyUrl.toString();
 };
 
 const normalizeRouteParam = (
@@ -90,7 +133,10 @@ const getScriptingSessionStatusInput = (
     notebookId: normalizeRouteParam(params.notebookId, 'notebookId')
 });
 
-const readScriptingSessionStatus = async (input: ScriptingSessionStatusInput) => {
+const readScriptingSessionStatus = async (
+    input: ScriptingSessionStatusInput,
+    userId: string
+): Promise<ScriptingSessionStatusResponse> => {
     const notebook = input.notebookId
         ? await scriptingNotebookRepository.findByTeamAndNotebookId(input.teamId, input.notebookId)
         : await scriptingNotebookRepository.findByTeamAndTrajectory(input.teamId, input.trajectoryId || '');
@@ -102,11 +148,24 @@ const readScriptingSessionStatus = async (input: ScriptingSessionStatusInput) =>
         );
     }
 
-    if (!notebook.props.teamCluster || !notebook.props.runtimeNotebookId) {
+    if (!notebook.props.runtimeNotebookId) {
         return {
             notebookId: notebook.id,
             jupyter: {
-                ready: false
+                ready: false,
+                url: ''
+            }
+        };
+    }
+
+    const jupyterUrl = buildScriptingProxyUrl(input.teamId, notebook.props.runtimeNotebookId, userId);
+
+    if (!notebook.props.teamCluster) {
+        return {
+            notebookId: notebook.id,
+            jupyter: {
+                ready: false,
+                url: jupyterUrl
             }
         };
     }
@@ -119,19 +178,28 @@ const readScriptingSessionStatus = async (input: ScriptingSessionStatusInput) =>
     return {
         notebookId: notebook.id,
         jupyter: {
-            ready: Boolean(runtime)
+            ready: Boolean(runtime),
+            url: jupyterUrl
         }
     };
 };
 
 const handleScriptingSessionStatus = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
 ): Promise<void> => {
     try {
+        if (!req.userId) {
+            throw ApplicationError.unauthorized(
+                ErrorCodes.AUTHENTICATION_REQUIRED,
+                ErrorCodes.AUTHENTICATION_REQUIRED
+            );
+        }
+
         const status = await readScriptingSessionStatus(
-            getScriptingSessionStatusInput(req.params)
+            getScriptingSessionStatusInput(req.params),
+            req.userId
         );
 
         res.json(status);

@@ -20,6 +20,7 @@ interface ScriptingSessionStatus {
     notebookId?: string;
     jupyter: {
         ready: boolean;
+        url?: string | null;
     };
 };
 
@@ -136,7 +137,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                 }
 
                 if (status.jupyter.ready) {
-                    setJupyterUrl(session.jupyter.url);
+                    setJupyterUrl(status.jupyter.url ?? session.jupyter.url ?? null);
                     sileo.success({ title: 'Jupyter session ready' });
                     return;
                 }

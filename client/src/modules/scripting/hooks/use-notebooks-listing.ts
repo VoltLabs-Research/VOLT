@@ -264,7 +264,10 @@ const useNotebooksListing = () => {
                 return;
             }
 
-            const result = await waitForReadyScriptingSession(() => getNotebookSessionStatus(teamId, notebook._id), {
+            const result = await waitForReadyScriptingSession({
+                initialSession: session,
+                readSession: () => getNotebookSessionStatus(teamId, notebook._id)
+            }, {
                 isCancelled: () => notebookTab.closed
             });
 
