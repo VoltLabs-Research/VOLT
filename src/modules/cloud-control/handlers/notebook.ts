@@ -1,5 +1,5 @@
 import type { JupyterRuntimeService } from '@/modules/jupyter';
-import type { CreateNotebookSessionRequest, NotebookSessionSnapshot } from '@/shared/contracts';
+import type { NotebookSessionSnapshot } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
 import {
     readOptionalPayloadRecord,
@@ -19,8 +19,12 @@ interface NotebookIdentifierPayload {
 interface NotebookRuntimeTarget {
     tunnelTargetHost: string;
     tunnelTargetPort: number;
-    internalPath?: string;
-    url?: string;
+};
+
+interface CreateNotebookSessionCommandPayload {
+    requestedBy: string;
+    publicBasePath: string;
+    notebook: NotebookSessionSnapshot;
 };
 
 const readNotebookSessionSnapshot = (value: unknown): NotebookSessionSnapshot => {
@@ -47,11 +51,10 @@ const readNotebookIdentifierPayload = (payload: unknown): NotebookIdentifierPayl
     };
 };
 
-const readNotebookSessionRequestPayload = (payload: unknown): CreateNotebookSessionRequest => {
+const readNotebookSessionRequestPayload = (payload: unknown): CreateNotebookSessionCommandPayload => {
     const record = readOptionalPayloadRecord(payload);
 
     return {
-        notebookId: readString(record.notebookId, 'notebookId'),
         requestedBy: readString(record.requestedBy, 'requestedBy'),
         publicBasePath: readString(record.publicBasePath, 'publicBasePath'),
         notebook: readNotebookSessionSnapshot(record.notebook)
@@ -93,9 +96,6 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
         command: 'notebook.session.create',
         execute: async (payload) => {
             const request = readNotebookSessionRequestPayload(payload);
-            if (request.notebook._id !== request.notebookId) {
-                throw new Error('notebookId must match notebook._id');
-            }
 
             return {
                 data: await deps.jupyterRuntimeService.ensureSession({

@@ -59,7 +59,6 @@ export interface NotebookSessionSnapshot {
 };
 
 export interface CreateNotebookSessionRequest {
-    notebookId: string;
     requestedBy: string;
     publicBasePath: string;
     notebook: NotebookSessionSnapshot;

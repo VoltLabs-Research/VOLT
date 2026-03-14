@@ -19,6 +19,8 @@ interface EnsureJupyterServerInput {
 interface NotebookRuntimeState {
     containerId: string;
     hostPort: number;
+    publishedHost?: string;
+    readinessOrigin?: string;
 };
 
 interface JupyterStartupOperation {
@@ -30,7 +32,6 @@ interface JupyterStartupOperation {
 
 const JUPYTER_HEALTH_CHECK_INTERVAL_MS = 1000;
 const DEFAULT_NOTEBOOK_FILE_NAME = 'notebook.ipynb';
-const JUPYTER_RUNTIME_HOST = '127.0.0.1';
 const RUNTIME_LABEL_KEY = 'volt.runtime.kind';
 const RUNTIME_LABEL_VALUE = 'jupyter';
 const NOTEBOOK_ID_LABEL_KEY = 'volt.notebook.id';
@@ -126,22 +127,22 @@ export class JupyterRuntimeService {
     }
 
     getRuntimeInternalOrigin(notebookId: string): string {
-        const runtimeState = this.runtimeStates.get(notebookId);
-        if (!runtimeState) {
-            throw new Error(`Jupyter runtime state not found for notebook ${notebookId}`);
-        }
-
-        return this.buildRuntimeOrigin(runtimeState.hostPort);
+        return this.buildRuntimeOrigin(notebookId);
     }
 
     private async ensureContainer(input: EnsureNotebookSessionInput): Promise<NotebookRuntimeState> {
         const existingContainer = await this.findRuntimeContainer(input.notebook._id);
         if (existingContainer) {
+            const currentRuntimeState = this.runtimeStates.get(input.notebook._id);
             await this.startContainerIfNeeded(existingContainer.containerId);
-            const refreshedHostPort = await this.dockerRuntimeService.getPublishedPort(existingContainer.containerId, this.config.jupyter.port);
+            const publishedBinding = await this.getPublishedPortBinding(existingContainer.containerId);
             return {
                 containerId: existingContainer.containerId,
-                hostPort: refreshedHostPort ?? existingContainer.hostPort
+                hostPort: publishedBinding?.hostPort ?? existingContainer.hostPort,
+                publishedHost: publishedBinding?.host,
+                readinessOrigin: currentRuntimeState?.containerId === existingContainer.containerId
+                    ? currentRuntimeState.readinessOrigin
+                    : undefined
             };
         }
 
@@ -199,15 +200,16 @@ export class JupyterRuntimeService {
             networkMode: this.resolveComposeNetworkName()
         });
 
-        const publishedHostPort = await this.dockerRuntimeService.getPublishedPort(container.Id, this.config.jupyter.port);
-        if (typeof publishedHostPort !== 'number') {
+        const publishedBinding = await this.getPublishedPortBinding(container.Id);
+        if (!publishedBinding) {
             await this.dockerRuntimeService.deleteContainer(container.Id).catch(() => {});
             throw new Error('Docker did not publish a host port for the Jupyter runtime');
         }
 
         return {
             containerId: container.Id,
-            hostPort: publishedHostPort
+            hostPort: publishedBinding.hostPort,
+            publishedHost: publishedBinding.host
         };
     }
 
@@ -232,7 +234,11 @@ export class JupyterRuntimeService {
 
         const runtimeState = {
             containerId: runtimeContainer.Id,
-            hostPort
+            hostPort,
+            publishedHost: await this.resolvePublishedHost(runtimeContainer.Id),
+            readinessOrigin: this.runtimeStates.get(notebookId)?.containerId === runtimeContainer.Id
+                ? this.runtimeStates.get(notebookId)?.readinessOrigin
+                : undefined
         };
 
         this.setRuntimeState(notebookId, runtimeState);
@@ -337,10 +343,6 @@ export class JupyterRuntimeService {
 
         if (!isJupyterProcessRunning) {
             try {
-                if (signal.aborted) {
-                    return;
-                }
-
                 await this.startJupyterServer(input.containerId, input.publicBasePath);
             } catch (error: unknown) {
                 if (signal.aborted) {
@@ -362,75 +364,10 @@ export class JupyterRuntimeService {
             return;
         }
 
-        if (signal.aborted) {
-            return;
-        }
-
         await this.logJupyterStartupTimeout(input.notebookId, input.containerId, input.publicBasePath);
-        if (signal.aborted) {
-            return;
-        }
-
-        const isJupyterProcessStillRunning = await this.isJupyterServerProcessRunning(input.containerId);
-        if (signal.aborted) {
-            return;
-        }
-
-        try {
-            await this.startJupyterServer(input.containerId, input.publicBasePath);
-            if (signal.aborted) {
-                return;
-            }
-
-            logger.warn(
-                {
-                    containerId: input.containerId,
-                    publicBasePath: input.publicBasePath,
-                    wasProcessRunning: isJupyterProcessStillRunning
-                },
-                'Reset Jupyter server after readiness timeout'
-            );
-        } catch (error: unknown) {
-            if (signal.aborted) {
-                return;
-            }
-
-            logger.warn({ err: error, containerId: input.containerId }, 'Failed to reset Jupyter server after readiness timeout');
-            return;
-        }
-
-        const recovered = await this.waitForJupyterReady(
-            input.notebookId,
-            input.publicBasePath,
-            this.config.jupyter.startTimeoutMs,
-            signal
-        );
-        if (signal.aborted || recovered) {
-            return;
-        }
-
-        if (signal.aborted) {
-            return;
-        }
-
-        await this.logJupyterStartupTimeout(input.notebookId, input.containerId, input.publicBasePath);
-        if (signal.aborted) {
-            return;
-        }
-
-        logger.warn(
-            {
-                notebookId: input.notebookId,
-                containerId: input.containerId,
-                runtimeOrigin: this.getRuntimeInternalOrigin(input.notebookId),
-                publicBasePath: input.publicBasePath
-            },
-            'Jupyter server is still not ready after restart'
-        );
     }
 
     private async startJupyterServer(containerId: string, publicBasePath: string): Promise<void> {
-        await this.dockerRuntimeService.exec(containerId, ['/bin/sh', '-lc', this.getStopCommand()]);
         await this.dockerRuntimeService.exec(containerId, ['/bin/sh', '-lc', 'rm -f /tmp/volt-jupyter.log']);
         await this.dockerRuntimeService.execDetached(containerId, ['/bin/sh', '-lc', this.getStartCommand(publicBasePath)]);
     }
@@ -451,28 +388,40 @@ export class JupyterRuntimeService {
         timeoutMs: number,
         signal?: AbortSignal
     ): Promise<boolean> {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), timeoutMs);
-        const abortFetch = (): void => controller.abort();
-
-        signal?.addEventListener('abort', abortFetch, { once: true });
-
-        try {
-            if (signal?.aborted) {
-                return false;
-            }
-
-            const apiPath = path.posix.join(publicBasePath, 'api');
-            const response = await fetch(`${this.getRuntimeInternalOrigin(notebookId)}${apiPath}?token=${encodeURIComponent(this.config.jupyter.token)}`, {
-                signal: controller.signal
-            });
-            return response.status < 500;
-        } catch {
+        if (signal?.aborted) {
             return false;
-        } finally {
-            clearTimeout(timeout);
-            signal?.removeEventListener('abort', abortFetch);
         }
+
+        const runtimeState = await this.getRuntimeState(notebookId);
+        if (!runtimeState) {
+            return false;
+        }
+
+        const readinessOrigins = await this.resolveReadinessOrigins(notebookId, runtimeState);
+        if (readinessOrigins.length === 0) {
+            return false;
+        }
+
+        const apiPath = path.posix.join(publicBasePath, 'api');
+        for (let index = 0; index < readinessOrigins.length; index += 1) {
+            const readinessOrigin = readinessOrigins[index];
+            const remainingAttempts = readinessOrigins.length - index;
+            const requestTimeoutMs = Math.max(1, Math.floor(timeoutMs / remainingAttempts));
+            const response = await this.fetchJupyterReadiness(
+                `${readinessOrigin}${apiPath}?token=${encodeURIComponent(this.config.jupyter.token)}`,
+                requestTimeoutMs,
+                signal
+            );
+            if (response?.status && response.status < 500) {
+                this.setRuntimeState(notebookId, {
+                    ...runtimeState,
+                    readinessOrigin
+                });
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private async waitForJupyterReady(
@@ -508,6 +457,7 @@ export class JupyterRuntimeService {
 
     private async logJupyterStartupTimeout(notebookId: string, containerId: string, publicBasePath: string): Promise<void> {
         try {
+            const readinessOrigins = await this.resolveReadinessOrigins(notebookId);
             const jupyterLog = await this.dockerRuntimeService.exec(containerId, [
                 '/bin/sh',
                 '-lc',
@@ -517,7 +467,8 @@ export class JupyterRuntimeService {
                 {
                     notebookId,
                     containerId,
-                    runtimeOrigin: this.getRuntimeInternalOrigin(notebookId),
+                    runtimeOrigin: readinessOrigins[0],
+                    readinessOrigins,
                     jupyterLog: jupyterLog.trim() || undefined,
                     publicBasePath
                 },
@@ -554,8 +505,131 @@ export class JupyterRuntimeService {
         this.runtimeStates.set(notebookId, runtimeState);
     }
 
-    private buildRuntimeOrigin(hostPort: number): string {
-        return `http://${JUPYTER_RUNTIME_HOST}:${hostPort}`;
+    private async getRuntimeState(notebookId: string): Promise<NotebookRuntimeState | null> {
+        return this.runtimeStates.get(notebookId) ?? await this.findRuntimeContainer(notebookId);
+    }
+
+    private async resolveReadinessOrigins(
+        notebookId: string,
+        runtimeState?: NotebookRuntimeState
+    ): Promise<string[]> {
+        const resolvedRuntimeState = runtimeState ?? await this.getRuntimeState(notebookId);
+        if (!resolvedRuntimeState) {
+            return [];
+        }
+
+        const readinessOrigins = new Set<string>();
+        if (resolvedRuntimeState.readinessOrigin) {
+            readinessOrigins.add(resolvedRuntimeState.readinessOrigin);
+        }
+
+        const composeRuntimeOrigin = await this.resolveComposeRuntimeOrigin(notebookId, resolvedRuntimeState.containerId);
+        if (composeRuntimeOrigin) {
+            readinessOrigins.add(composeRuntimeOrigin);
+        }
+
+        for (const publishedRuntimeOrigin of this.buildPublishedRuntimeOrigins(
+            resolvedRuntimeState.hostPort,
+            resolvedRuntimeState.publishedHost
+        )) {
+            readinessOrigins.add(publishedRuntimeOrigin);
+        }
+
+        return [...readinessOrigins];
+    }
+
+    private buildRuntimeOrigin(notebookId: string): string {
+        return `http://${this.buildContainerName(notebookId)}:${this.config.jupyter.port}`;
+    }
+
+    private async resolveComposeRuntimeOrigin(notebookId: string, containerId: string): Promise<string | null> {
+        const composeNetworkName = this.resolveComposeNetworkName();
+        if (!composeNetworkName) {
+            return null;
+        }
+
+        try {
+            const container = await this.dockerRuntimeService.getContainer(containerId);
+            const networks = container.NetworkSettings?.Networks;
+            return networks?.[composeNetworkName] ? this.getRuntimeInternalOrigin(notebookId) : null;
+        } catch {
+            return null;
+        }
+    }
+
+    private buildPublishedRuntimeOrigins(hostPort: number, publishedHost?: string): string[] {
+        const origins = new Set<string>();
+        if (publishedHost && !this.isWildcardHost(publishedHost)) {
+            origins.add(this.buildHttpOrigin(publishedHost, hostPort));
+        }
+
+        const configuredHost = this.config.host.trim();
+        if (configuredHost && !this.isWildcardHost(configuredHost)) {
+            origins.add(this.buildHttpOrigin(configuredHost, hostPort));
+        }
+
+        origins.add(this.buildHttpOrigin('127.0.0.1', hostPort));
+        return [...origins];
+    }
+
+    private buildHttpOrigin(host: string, port: number): string {
+        const normalizedHost = host.includes(':') && !host.startsWith('[')
+            ? `[${host}]`
+            : host;
+        return `http://${normalizedHost}:${port}`;
+    }
+
+    private isWildcardHost(host: string): boolean {
+        return host === '0.0.0.0' || host === '::' || host === '[::]';
+    }
+
+    private async getPublishedPortBinding(containerId: string): Promise<{
+        hostPort: number;
+        host?: string;
+    } | null> {
+        const hostPort = await this.dockerRuntimeService.getPublishedPort(containerId, this.config.jupyter.port);
+        if (typeof hostPort !== 'number') {
+            return null;
+        }
+
+        return {
+            hostPort,
+            host: await this.resolvePublishedHost(containerId)
+        };
+    }
+
+    private async resolvePublishedHost(containerId: string): Promise<string | undefined> {
+        try {
+            const container = await this.dockerRuntimeService.getContainer(containerId);
+            const binding = container.NetworkSettings?.Ports?.[`${this.config.jupyter.port}/tcp`]?.[0];
+            const host = binding?.HostIp?.trim();
+            return host ? host : undefined;
+        } catch {
+            return undefined;
+        }
+    }
+
+    private async fetchJupyterReadiness(url: string, timeoutMs: number, signal?: AbortSignal): Promise<Response | null> {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
+        const abortFetch = (): void => controller.abort();
+
+        signal?.addEventListener('abort', abortFetch, { once: true });
+
+        try {
+            if (signal?.aborted) {
+                return null;
+            }
+
+            return await fetch(url, {
+                signal: controller.signal
+            });
+        } catch {
+            return null;
+        } finally {
+            clearTimeout(timeout);
+            signal?.removeEventListener('abort', abortFetch);
+        }
     }
 
     private getNotebookFilePath(notebookPath?: string): string {
@@ -591,10 +665,6 @@ export class JupyterRuntimeService {
     ): boolean {
         return startupOperation.containerId === input.containerId
             && startupOperation.publicBasePath === input.publicBasePath;
-    }
-
-    private getStopCommand(): string {
-        return "pkill -f '[p]ython3 -m jupyter lab' >/dev/null 2>&1 || true; sleep 1";
     }
 
     private getStartCommand(publicBasePath: string): string {
