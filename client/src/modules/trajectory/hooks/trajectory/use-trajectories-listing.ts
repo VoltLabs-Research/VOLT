@@ -9,6 +9,7 @@ import {
     isTrajectoryItemRow,
     type TrajectoryListingRow
 } from '@/modules/trajectory/utilities/listing';
+import { buildAtomsViewerPath } from '@/modules/trajectory/utilities/build-atoms-viewer-path';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import { runAction } from '@/shared/presentation/actions/run-action';
@@ -241,7 +242,10 @@ const useTrajectoriesListing = () => {
                     if (firstTimestep === undefined) {
                         return;
                     }
-                    navigate(`/dashboard/trajectory/${trajectory._id}/analysis/default/atoms/default?timestep=${firstTimestep}`);
+                    navigate(buildAtomsViewerPath({
+                        trajectoryId: trajectory._id,
+                        timestep: firstTimestep
+                    }));
                 },
                 requiredPermission: 'trajectory:read'
             },

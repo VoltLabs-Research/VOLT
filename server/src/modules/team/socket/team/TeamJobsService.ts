@@ -17,7 +17,7 @@ type TeamJobStatus = JobStatus | 'retrying' | 'partial';
 interface TeamJobMetadata {
     trajectoryId?: string;
     trajectoryName?: string;
-    timestep?: number;
+    timestep?: number | string;
     analysisId?: string;
     message?: string;
     [key: string]: unknown;
@@ -207,13 +207,23 @@ export default class TeamJobsService {
 
         for (const [trajectoryId, trajectoryJobs] of trajectoryMap.entries()) {
             const frameMap = new Map<number, TeamJobSummary[]>();
+            const groupedJobs: TeamJobSummary[] = [];
 
             for (const job of trajectoryJobs) {
-                const timestep = job.timestep ?? 0;
+                const timestep = this.resolveJobTimestep(job);
+                if (typeof timestep === 'undefined') {
+                    continue;
+                }
+
                 if (!frameMap.has(timestep)) {
                     frameMap.set(timestep, []);
                 }
                 frameMap.get(timestep)?.push(job);
+                groupedJobs.push(job);
+            }
+
+            if (groupedJobs.length === 0) {
+                continue;
             }
 
             const frameGroups: FrameJobGroup[] = [];
@@ -228,10 +238,10 @@ export default class TeamJobsService {
 
             frameGroups.sort((a, b) => b.timestep - a.timestep);
 
-            const allJobs = trajectoryJobs;
+            const allJobs = groupedJobs;
             const overallStatus = this.computeFrameStatus(allJobs);
             const completedCount = allJobs.filter((job) => job.status === JobStatus.Completed).length;
-            const trajectoryName = trajectoryJobs[0]?.trajectoryName;
+            const trajectoryName = groupedJobs[0]?.trajectoryName;
 
             if (!trajectoryName) {
                 continue;
@@ -241,7 +251,7 @@ export default class TeamJobsService {
                 trajectoryId,
                 trajectoryName,
                 frameGroups,
-                latestTimestamp: trajectoryJobs[0]?.timestamp || trajectoryJobs[0]?.createdAt || new Date().toISOString(),
+                latestTimestamp: groupedJobs[0]?.timestamp || groupedJobs[0]?.createdAt || new Date().toISOString(),
                 overallStatus,
                 completedCount,
                 totalCount: allJobs.length
@@ -324,6 +334,25 @@ export default class TeamJobsService {
 
         if (typeof job.metadata?.trajectoryName === 'string') {
             return job.metadata.trajectoryName;
+        }
+
+        return undefined;
+    }
+
+    private resolveJobTimestep(job: TeamJobSummary): number | undefined {
+        if (typeof job.timestep === 'number' && Number.isFinite(job.timestep)) {
+            return job.timestep;
+        }
+
+        if (typeof job.metadata?.timestep === 'number' && Number.isFinite(job.metadata.timestep)) {
+            return job.metadata.timestep;
+        }
+
+        if (typeof job.metadata?.timestep === 'string' && job.metadata.timestep.trim().length > 0) {
+            const parsedTimestep = Number(job.metadata.timestep);
+            if (Number.isFinite(parsedTimestep)) {
+                return parsedTimestep;
+            }
         }
 
         return undefined;

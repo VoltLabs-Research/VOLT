@@ -14,22 +14,55 @@ export const computeGroupStatus = (jobs: Job[]): FrameJobGroupStatus => {
     return FrameJobGroupStatus.Partial;
 };
 
+const resolveJobTimestep = (job: Job): number | undefined => {
+    if (typeof job.timestep === 'number') {
+        return job.timestep;
+    }
+
+    if (typeof job.metadata?.timestep === 'number') {
+        return job.metadata.timestep;
+    }
+
+    if (typeof job.metadata?.timestep === 'string' && job.metadata.timestep.trim().length > 0) {
+        const parsedTimestep = Number(job.metadata.timestep);
+        if (Number.isFinite(parsedTimestep)) {
+            return parsedTimestep;
+        }
+    }
+
+    return undefined;
+};
+
+const normalizeJobTimestep = (job: Job, timestep: number): Job => {
+    return {
+        ...job,
+        timestep
+    };
+};
+
 const buildTrajectoryGroup = (updatedJob: Job): TrajectoryJobGroup | null => {
     if (!updatedJob.trajectoryName) {
         return null;
     }
 
+    const timestep = resolveJobTimestep(updatedJob);
+    if (typeof timestep === 'undefined') {
+        return null;
+    }
+
+    const normalizedJob = normalizeJobTimestep(updatedJob, timestep);
+
     return {
         trajectoryId: updatedJob.trajectoryId,
         trajectoryName: updatedJob.trajectoryName,
         frameGroups: [{
-            timestep: updatedJob.timestep,
-            jobs: [updatedJob],
-            overallStatus: computeGroupStatus([updatedJob])
+            timestep,
+            jobs: [normalizedJob],
+            overallStatus: computeGroupStatus([normalizedJob])
         }],
         latestTimestamp: updatedJob.timestamp || new Date().toISOString(),
-        overallStatus: FrameJobGroupStatus.Running,
-        completedCount: 0,
+        overallStatus: computeGroupStatus([normalizedJob]),
+        completedCount: normalizedJob.status === JobStatus.Completed ? 1 : 0,
         totalCount: 1
     };
 };
@@ -38,9 +71,15 @@ export const applyJobUpdate = (
     groups: TrajectoryJobGroup[],
     updatedJob: Job
 ): TrajectoryJobGroup[] => {
+    const timestep = resolveJobTimestep(updatedJob);
+    if (typeof timestep === 'undefined') {
+        return groups;
+    }
+
+    const normalizedJob = normalizeJobTimestep(updatedJob, timestep);
     const trajIndex = groups.findIndex((group) => group.trajectoryId === updatedJob.trajectoryId);
     if (trajIndex === -1) {
-        const trajectoryGroup = buildTrajectoryGroup(updatedJob);
+        const trajectoryGroup = buildTrajectoryGroup(normalizedJob);
 
         if (!trajectoryGroup) {
             return groups;
@@ -52,34 +91,40 @@ export const applyJobUpdate = (
     return groups.map((group, index) => {
         if (index !== trajIndex) return group;
 
-        const frameIndex = group.frameGroups.findIndex((frame) => frame.timestep === updatedJob.timestep);
-        let newFrameGroups = group.frameGroups;
+        let existingJob: Job | undefined;
+        const frameGroupsWithoutExistingJob = group.frameGroups
+            .map((frame) => {
+                const matchedJob = frame.jobs.find((job) => job.jobId === normalizedJob.jobId);
+                if (matchedJob) {
+                    existingJob = matchedJob;
+                }
+
+                return {
+                    ...frame,
+                    jobs: frame.jobs.filter((job) => job.jobId !== normalizedJob.jobId)
+                };
+            })
+            .filter((frame) => frame.jobs.length > 0);
+        const nextJob = existingJob
+            ? normalizeJobTimestep({
+                ...existingJob,
+                ...normalizedJob
+            }, timestep)
+            : normalizedJob;
+        const frameIndex = frameGroupsWithoutExistingJob.findIndex((frame) => frame.timestep === timestep);
+        let newFrameGroups = frameGroupsWithoutExistingJob;
 
         if (frameIndex === -1) {
             newFrameGroups = [{
-                timestep: updatedJob.timestep,
-                jobs: [updatedJob],
-                overallStatus: computeGroupStatus([updatedJob])
-            }, ...group.frameGroups];
+                timestep,
+                jobs: [nextJob],
+                overallStatus: computeGroupStatus([nextJob])
+            }, ...frameGroupsWithoutExistingJob];
         } else {
-            newFrameGroups = group.frameGroups.map((frame, framePosition) => {
+            newFrameGroups = frameGroupsWithoutExistingJob.map((frame, framePosition) => {
                 if (framePosition !== frameIndex) return frame;
 
-                const jobIndex = frame.jobs.findIndex((job) => job.jobId === updatedJob.jobId);
-                let newJobs = [updatedJob, ...frame.jobs];
-
-                if (jobIndex >= 0) {
-                    newJobs = frame.jobs.map((job, jobPosition) => {
-                        if (jobPosition === jobIndex) {
-                            return {
-                                ...job,
-                                ...updatedJob
-                            };
-                        }
-
-                        return job;
-                    });
-                }
+                const newJobs = [nextJob, ...frame.jobs];
 
                 return {
                     ...frame,
@@ -88,6 +133,8 @@ export const applyJobUpdate = (
                 };
             });
         }
+
+        newFrameGroups.sort((left, right) => right.timestep - left.timestep);
 
         const allJobs = newFrameGroups.flatMap((frame) => frame.jobs);
         const overallStatus = computeGroupStatus(allJobs);

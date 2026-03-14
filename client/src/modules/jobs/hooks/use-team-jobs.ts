@@ -18,12 +18,15 @@ import type { Job, TrajectoryJobGroup } from '../api/entities/job';
 type JobUpdateEvent = Job & { type?: string; sessionId?: string };
 type TeamJobsEventPayload = TrajectoryJobGroup[];
 
+const TEAM_JOBS_INITIAL_LOAD_TIMEOUT_MS = 5000;
+
 const useTeamJobs = () => {
     const queryClient = useQueryClient();
     const currentTeamId = useSelectedTeamId();
     const socketService = useSocket();
     const previousTeamIdRef = useRef<string | null>(null);
     const trajectoryInvalidationTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+    const jobsLoadingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
     const isConnected = useTeamJobsStore((state) => state.isConnected);
     const isLoading = useTeamJobsStore((state) => state.isLoading);
@@ -35,6 +38,18 @@ const useTeamJobs = () => {
 
     const { data: groups = [] } = teamJobsGroups();
 
+    const clearJobsLoadingTimeout = useCallback(() => {
+        clearTimeout(jobsLoadingTimeoutRef.current);
+        jobsLoadingTimeoutRef.current = undefined;
+    }, []);
+
+    const startJobsLoadingTimeout = useCallback(() => {
+        clearJobsLoadingTimeout();
+        jobsLoadingTimeoutRef.current = setTimeout(() => {
+            setLoading(false);
+        }, TEAM_JOBS_INITIAL_LOAD_TIMEOUT_MS);
+    }, [clearJobsLoadingTimeout, setLoading]);
+
     const setGroups = useCallback((newGroups: TrajectoryJobGroup[]) => {
         setTeamJobsGroupsQueryData(newGroups, queryClient);
     }, [queryClient]);
@@ -43,14 +58,16 @@ const useTeamJobs = () => {
         setConnected(connected);
 
         if (!connected) {
+            clearJobsLoadingTimeout();
             setLoading(false);
         }
-    }, [setConnected, setLoading]);
+    }, [clearJobsLoadingTimeout, setConnected, setLoading]);
 
     const handleTeamJobs = useCallback((incomingGroups: TrajectoryJobGroup[]) => {
+        clearJobsLoadingTimeout();
         setGroups(incomingGroups);
         setLoading(false);
-    }, [setGroups, setLoading]);
+    }, [clearJobsLoadingTimeout, setGroups, setLoading]);
 
     const handleJobUpdate = useCallback((event: JobUpdateEvent) => {
         if (event.type === 'session_expired' && event.sessionId) {
@@ -93,17 +110,20 @@ const useTeamJobs = () => {
         setGroups([]);
         setExpiredSessions(new Set());
         setLoading(true);
+        startJobsLoadingTimeout();
 
         teamSocketRoomService.subscribe(teamId, resolvedPreviousTeamId).catch(() => {
+            clearJobsLoadingTimeout();
             setLoading(false);
         });
-    }, [setCurrentTeamId, setExpiredSessions, setGroups, setLoading]);
+    }, [clearJobsLoadingTimeout, setCurrentTeamId, setExpiredSessions, setGroups, setLoading, startJobsLoadingTimeout]);
 
     const clearTeamJobs = useCallback(() => {
+        clearJobsLoadingTimeout();
         previousTeamIdRef.current = null;
         resetTeamJobsGroupsQueryData(queryClient);
         reset();
-    }, [queryClient, reset]);
+    }, [clearJobsLoadingTimeout, queryClient, reset]);
 
     useEffect(() => {
         const unsubscribeFromConnectionChanges = socketService.onConnectionChange(handleConnect);
@@ -121,9 +141,10 @@ const useTeamJobs = () => {
             unsubscribeFromInitialJobs();
             unsubscribeFromJobUpdates();
             clearTimeout(trajectoryInvalidationTimer.current);
+            clearJobsLoadingTimeout();
             clearTeamJobs();
         };
-    }, [clearTeamJobs, handleConnect, handleInitialJobsEvent, handleJobUpdateEvent, setLoading, socketService]);
+    }, [clearJobsLoadingTimeout, clearTeamJobs, handleConnect, handleInitialJobsEvent, handleJobUpdateEvent, setLoading, socketService]);
 
     useEffect(() => {
         if (currentTeamId) {

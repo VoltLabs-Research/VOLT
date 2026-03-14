@@ -3,7 +3,6 @@ import {
     createPaginationLimitSchema,
     createPaginationQuerySchema,
     createTeamScopedParamsSchema,
-    domainExposureIdSchema,
     objectIdSchema,
     paginationPageSchema,
     teamParamsSchema
@@ -21,20 +20,16 @@ const paginationQuerySchema = createPaginationQuerySchema({
 const trajectoryParamsSchema = createTeamScopedParamsSchema('trajectoryId');
 const folderParamsSchema = createTeamScopedParamsSchema('folderId');
 
-const trajectoryAnalysisParamsSchema = trajectoryParamsSchema.extend({
-    analysisId: trajectoryAnalysisIdSchema
-}).strict();
-
 const trajectoryGlbParamsSchema = trajectoryParamsSchema.extend({
     timestep: z.string().trim().min(1),
-    analysisId: trajectoryAnalysisIdSchema
+    analysisId: z.union([objectIdSchema, z.literal('default')])
 }).strict();
 
 const getAtomsQuerySchema = z.object({
     timestep: z.coerce.number().int().min(0),
-    exposureId: domainExposureIdSchema.optional(),
     page: paginationPageSchema,
-    limit: createPaginationLimitSchema(100000)
+    limit: createPaginationLimitSchema(100000),
+    analysisId: objectIdSchema.optional()
 }).strict();
 
 const sceneArtifactsQuerySchema = z.object({
@@ -103,10 +98,6 @@ export const trajectoryValidation = createResourceValidation({
     },
     getAtoms: {
         params: trajectoryParamsSchema,
-        query: getAtomsQuerySchema
-    },
-    getAtomsByAnalysis: {
-        params: trajectoryAnalysisParamsSchema,
         query: getAtomsQuerySchema
     },
     getSceneArtifacts: {

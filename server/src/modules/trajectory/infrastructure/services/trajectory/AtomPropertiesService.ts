@@ -4,7 +4,7 @@ import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTok
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
-import { IAtomPropertiesService, ExposureAtomConfig } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
+import { IAtomPropertiesService, ExposureAtomConfig, AnalysisAllAtomsResult } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import Analysis from '@modules/analysis/domain/entities/Analysis';
@@ -12,21 +12,6 @@ import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 import { injectable, inject } from 'tsyringe';
-
-/**
- * Pure JS min/max for TypedArrays. Replaces nativeStats.getMinMaxFromTypedArray().
- */
-function getMinMaxFromTypedArray(arr: Float32Array | Float64Array | Int32Array | Uint32Array): { min: number; max: number } | undefined {
-    if (arr.length === 0) return undefined;
-    let min = arr[0];
-    let max = arr[0];
-    for (let i = 1; i < arr.length; i++) {
-        const v = arr[i];
-        if (v < min) min = v;
-        if (v > max) max = v;
-    }
-    return { min, max };
-}
 
 @injectable()
 export default class AtomPropertiesService implements IAtomPropertiesService {
@@ -42,42 +27,20 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
     ) { }
 
     async getModifierPerAtomProps(analysisId: string): Promise<Record<string, string[]>> {
-        const { analysis, plugin } = await this.getAnalysisAndPlugin(analysisId);
-        const workflow = plugin.props.workflow;
-        const trajectoryId = analysis.props.trajectory;
-        const teamClusterId = analysis.props.teamCluster;
+        const exposureConfigs = await this.getAnalysisExposureAtomConfigs(analysisId);
         const props: Record<string, string[]> = {};
 
-        if (!teamClusterId) {
-            throw new ApplicationError(ErrorCodes.TEAM_CLUSTER_NOT_FOUND, ErrorCodes.TEAM_CLUSTER_NOT_FOUND, 404);
-        }
-
-        const exposureNodes = workflow.props.nodes.filter(
-            (node) => node.type === WorkflowNodeType.Exposure
-        );
-
-        for (const exposureNode of exposureNodes) {
-            const propertyNames = await this.daemonClient.command<string[]>(
-                teamClusterId,
-                'trajectory.plugin.property-names',
-                {
-                    trajectoryId,
-                    analysisId,
-                    exposureId: String(exposureNode.id)
-                }
-            );
-
-            if (propertyNames && propertyNames.length > 0) {
-                props[String(exposureNode.id)] = propertyNames;
+        for (const config of exposureConfigs) {
+            if (config.perAtomProperties.length > 0) {
+                props[config.exposureId] = config.perAtomProperties;
             }
         }
 
         return props;
     }
 
-    async getExposureAtomConfig(analysisId: string, exposureId: string): Promise<ExposureAtomConfig> {
+    async getAnalysisExposureAtomConfigs(analysisId: string): Promise<ExposureAtomConfig[]> {
         const { analysis, plugin } = await this.getAnalysisAndPlugin(analysisId);
-        const workflow = plugin.props.workflow;
         const trajectoryId = analysis.props.trajectory;
         const teamClusterId = analysis.props.teamCluster;
 
@@ -85,54 +48,70 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             throw new ApplicationError(ErrorCodes.TEAM_CLUSTER_NOT_FOUND, ErrorCodes.TEAM_CLUSTER_NOT_FOUND, 404);
         }
 
-        const exposureNode = workflow.props.nodes
-            .filter((node) => node.type === WorkflowNodeType.Exposure)
-            .find((node) => String(node.id) === String(exposureId));
+        const exposureNodes = this.getExposureNodes(plugin);
+        const configs: ExposureAtomConfig[] = [];
 
-        if (!exposureNode) throw new ApplicationError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404);
-
-        const exposureName: string = typeof exposureNode?.data?.exposure?.name === 'string'
-            ? exposureNode.data.exposure.name.trim()
-            : '';
-
-        const perAtomProperties = await this.daemonClient.command<string[]>(
-            teamClusterId,
-            'trajectory.plugin.property-names',
-            {
+        for (const exposureNode of exposureNodes) {
+            const exposureId = String(exposureNode.id);
+            const perAtomProperties = await this.getPerAtomProperties(
+                teamClusterId,
                 trajectoryId,
                 analysisId,
-                exposureId: String(exposureId)
-            }
-        );
+                exposureId
+            );
 
-        return {
-            exposureId: String(exposureId),
-            exposureName,
-            perAtomProperties: perAtomProperties || [],
-            schemaKeysMap: new Map()
-        };
+            configs.push({
+                exposureId,
+                exposureName: this.getExposureName(exposureNode),
+                perAtomProperties,
+                schemaKeysMap: new Map()
+            });
+        }
+
+        return configs;
     }
 
-    async getModifierAnalysis(
-        trajectoryId: string,
-        analysisId: string,
-        exposureId: string,
-        timestep: string
-    ): Promise<Record<string, unknown>[] | null> {
-        const { analysis } = await this.getAnalysisAndPlugin(analysisId);
+    async getExposureAtomConfig(analysisId: string, exposureId: string): Promise<ExposureAtomConfig> {
+        const { analysis, plugin } = await this.getAnalysisAndPlugin(analysisId);
+        const trajectoryId = analysis.props.trajectory;
         const teamClusterId = analysis.props.teamCluster;
 
         if (!teamClusterId) {
             throw new ApplicationError(ErrorCodes.TEAM_CLUSTER_NOT_FOUND, ErrorCodes.TEAM_CLUSTER_NOT_FOUND, 404);
         }
 
-        return this.daemonClient.command<Record<string, unknown>[] | null>(
+        const exposureNode = this.getExposureNodes(plugin)
+            .find((node) => String(node.id) === String(exposureId));
+
+        if (!exposureNode) throw new ApplicationError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404);
+
+        const perAtomProperties = await this.getPerAtomProperties(
             teamClusterId,
-            'trajectory.plugin.modifier-analysis',
+            trajectoryId,
+            analysisId,
+            String(exposureId)
+        );
+
+        return {
+            exposureId: String(exposureId),
+            exposureName: this.getExposureName(exposureNode),
+            perAtomProperties,
+            schemaKeysMap: new Map()
+        };
+    }
+
+    async getAnalysisAllPerAtomProperties(
+        teamClusterId: string,
+        trajectoryId: string,
+        analysisId: string,
+        timestep: string
+    ): Promise<AnalysisAllAtomsResult | null> {
+        return this.daemonClient.command<AnalysisAllAtomsResult | null>(
+            teamClusterId,
+            'trajectory.plugin.analysis-all-atoms',
             {
                 trajectoryId,
                 analysisId,
-                exposureId,
                 timestep: Number(timestep)
             }
         );
@@ -243,7 +222,6 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         );
 
         return result || undefined;
-        j
     }
 
     async getModifierUniqueValues(
@@ -283,5 +261,34 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         if (!plugin) throw new ApplicationError(ErrorCodes.PLUGIN_NOT_FOUND, ErrorCodes.PLUGIN_NOT_FOUND, 404);
 
         return { analysis, plugin };
+    }
+
+    private getExposureNodes(plugin: Plugin) {
+        return plugin.props.workflow.props.nodes.filter((node) => node.type === WorkflowNodeType.Exposure);
+    }
+
+    private getExposureName(exposureNode: Plugin['props']['workflow']['props']['nodes'][number]): string {
+        return typeof exposureNode?.data?.exposure?.name === 'string'
+            ? exposureNode.data.exposure.name.trim()
+            : '';
+    }
+
+    private async getPerAtomProperties(
+        teamClusterId: string,
+        trajectoryId: string,
+        analysisId: string,
+        exposureId: string
+    ): Promise<string[]> {
+        const perAtomProperties = await this.daemonClient.command<string[]>(
+            teamClusterId,
+            'trajectory.plugin.property-names',
+            {
+                trajectoryId,
+                analysisId,
+                exposureId
+            }
+        );
+
+        return perAtomProperties || [];
     }
 };

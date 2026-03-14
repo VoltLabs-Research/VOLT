@@ -123,10 +123,9 @@ export const routesConfig: RouteGroup = {
             requiredPermissions: ['whiteboard:read']
         },
         {
-            path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/atoms/:exposureId?',
+            path: '/dashboard/trajectory/:trajectoryId/atoms',
             loader: () => import('@/modules/trajectory/components/templates/PerAtomViewer'),
-            requiredPermissions: ['trajectory:read', 'analysis:read'],
-            permissionMode: 'all'
+            requiredPermissions: ['trajectory:read']
         },
         {
             path: '/dashboard/analysis-configs/list',

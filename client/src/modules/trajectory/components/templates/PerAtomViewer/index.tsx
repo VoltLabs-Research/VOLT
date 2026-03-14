@@ -1,19 +1,18 @@
 import useGetAtoms from '@/modules/trajectory/hooks/trajectory/use-get-atoms';
-import type { AtomData } from '@/modules/trajectory/api/dtos/trajectory';
 import { TRAJECTORY_QUERY_KEYS, trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import formatAtomValue from '@/modules/trajectory/shared/format-atom-value';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import AtomTypeBadge from '../../atoms/AtomTypeBadge';
+import type { AtomData } from '@/modules/trajectory/api/dtos/trajectory';
+import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 
 interface PerAtomViewerContext {
     trajectoryId: string;
-    analysisId: string;
-    exposureId?: string;
+    analysisId?: string;
     timestep: number;
 };
 
@@ -52,18 +51,19 @@ const renderAtomTypeBadge = (value: unknown) => {
 };
 
 export default function PerAtomViewer() {
-    const { trajectoryId, analysisId, exposureId } = useParams();
+    const { trajectoryId } = useParams();
     const { searchParams } = useSearchParamsState();
+    const hasTimestep = searchParams.has('timestep');
     const timestep = Number(searchParams.get('timestep')) || 0;
+    const analysisId = searchParams.get('analysisId') ?? undefined;
 
     const getAtoms = useGetAtoms();
-    const isEnabled = Boolean(trajectoryId && analysisId);
+    const isEnabled = Boolean(trajectoryId && hasTimestep && Number.isFinite(timestep));
 
     const firstPageAtomsQuery = trajectoryAtomsQuery(
         {
             trajectoryId: trajectoryId ?? '',
-            analysisId: analysisId ?? '',
-            exposureId,
+            analysisId,
             timestep,
             page: 1,
             limit: 100
@@ -79,7 +79,6 @@ export default function PerAtomViewer() {
         const result = await getAtoms({
             trajectoryId: params.trajectoryId,
             analysisId: params.analysisId,
-            exposureId: params.exposureId,
             timestep: params.timestep,
             page: params.page,
             limit: params.limit
@@ -141,11 +140,10 @@ export default function PerAtomViewer() {
     }, [properties]);
 
     const listingContext: PerAtomViewerContext = useMemo(() => ({
-        trajectoryId: trajectoryId!,
-        analysisId: analysisId!,
-        exposureId,
+        trajectoryId: trajectoryId ?? '',
+        analysisId,
         timestep
-    }), [trajectoryId, analysisId, exposureId, timestep]);
+    }), [trajectoryId, analysisId, timestep]);
 
     return (
         <DocumentListing<AtomListingRow, PerAtomViewerContext>
@@ -155,7 +153,7 @@ export default function PerAtomViewer() {
             fetchData={fetchData}
             context={listingContext}
             defaultLimit={100}
-            enabled={!!trajectoryId && !!analysisId}
+            enabled={isEnabled}
             emptyMessage='No atoms data found.'
         />
     );

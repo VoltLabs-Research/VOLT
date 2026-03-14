@@ -12,17 +12,24 @@ export interface ExposureAtomConfig {
     schemaKeysMap: Map<string, string[]>;
 };
 
+export interface AnalysisAllAtomsResult {
+    propertyNames: string[];
+    atoms: Record<string, unknown>[];
+};
+
 export interface IAtomPropertiesService {
     getModifierPerAtomProps(analysisId: string): Promise<Record<string, string[]>>;
 
+    getAnalysisExposureAtomConfigs(analysisId: string): Promise<ExposureAtomConfig[]>;
+
     getExposureAtomConfig(analysisId: string, exposureId: string): Promise<ExposureAtomConfig>;
 
-    getModifierAnalysis(
+    getAnalysisAllPerAtomProperties(
+        teamClusterId: string,
         trajectoryId: string,
         analysisId: string,
-        exposureId: string,
         timestep: string
-    ): Promise<any>;
+    ): Promise<AnalysisAllAtomsResult | null>;
 
     buildPluginIndexForAtomIds(
         trajectoryId: string,
@@ -30,7 +37,7 @@ export interface IAtomPropertiesService {
         exposureId: string,
         timestep: string,
         targetIds: Set<number>
-    ): Promise<Map<number, any> | null>;
+    ): Promise<Map<number, Record<string, unknown>> | null>;
 
     getModifierValues(
         trajectoryId: string,
