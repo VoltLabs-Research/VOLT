@@ -37,6 +37,11 @@ interface JupyterStartupOperation {
     publicBasePath: string;
 };
 
+export interface JupyterRuntimeTunnelTarget {
+    host: string;
+    port: number;
+};
+
 const JUPYTER_HEALTH_CHECK_INTERVAL_MS = 1000;
 const RUNTIME_LABEL_KEY = 'volt.runtime.kind';
 const RUNTIME_LABEL_VALUE = 'jupyter';
@@ -130,30 +135,21 @@ export class JupyterRuntimeService {
     }
 
     async getRuntimeHostPort(notebookId: string): Promise<number | null> {
-        const runtimeState = await this.findRuntimeContainer(notebookId);
-        if (!runtimeState) {
-            return null;
-        }
-
-        if (runtimeState.readinessOrigin) {
-            return runtimeState.hostPort;
-        }
-
-        const ready = await this.isJupyterReady(
-            notebookId,
-            runtimeState.publicBasePath,
-            JUPYTER_HEALTH_CHECK_INTERVAL_MS
-        );
-        if (!ready) {
-            return null;
-        }
-
-        const readyRuntimeState = this.runtimeStates.get(notebookId);
-        return readyRuntimeState?.readinessOrigin ? readyRuntimeState.hostPort : null;
+        const runtimeTarget = await this.getReadyRuntimeTunnelTarget(notebookId);
+        return runtimeTarget?.port ?? null;
     }
 
     getRuntimeInternalOrigin(notebookId: string): string {
         return this.buildRuntimeOrigin(notebookId);
+    }
+
+    async getReadyRuntimeTunnelTarget(notebookId: string): Promise<JupyterRuntimeTunnelTarget | null> {
+        const runtimeState = await this.getReadyRuntimeState(notebookId);
+        if (!runtimeState) {
+            return null;
+        }
+
+        return this.buildRuntimeTunnelTarget(notebookId);
     }
 
     private async ensureContainer(input: EnsureNotebookSessionInput): Promise<NotebookRuntimeState> {
@@ -532,6 +528,29 @@ export class JupyterRuntimeService {
         return this.runtimeStates.get(notebookId) ?? await this.findRuntimeContainer(notebookId);
     }
 
+    private async getReadyRuntimeState(notebookId: string): Promise<NotebookRuntimeState | null> {
+        const runtimeState = await this.findRuntimeContainer(notebookId);
+        if (!runtimeState) {
+            return null;
+        }
+
+        if (runtimeState.readinessOrigin) {
+            return runtimeState;
+        }
+
+        const ready = await this.isJupyterReady(
+            notebookId,
+            runtimeState.publicBasePath,
+            JUPYTER_HEALTH_CHECK_INTERVAL_MS
+        );
+        if (!ready) {
+            return null;
+        }
+
+        const readyRuntimeState = this.runtimeStates.get(notebookId);
+        return readyRuntimeState?.readinessOrigin ? readyRuntimeState : null;
+    }
+
     private async resolveReadinessOrigins(
         notebookId: string,
         runtimeState?: NotebookRuntimeState
@@ -562,7 +581,15 @@ export class JupyterRuntimeService {
     }
 
     private buildRuntimeOrigin(notebookId: string): string {
-        return `http://${this.buildContainerName(notebookId)}:${this.config.jupyter.port}`;
+        const runtimeTarget = this.buildRuntimeTunnelTarget(notebookId);
+        return this.buildHttpOrigin(runtimeTarget.host, runtimeTarget.port);
+    }
+
+    private buildRuntimeTunnelTarget(notebookId: string): JupyterRuntimeTunnelTarget {
+        return {
+            host: this.buildContainerName(notebookId),
+            port: this.config.jupyter.port
+        };
     }
 
     private async resolveComposeRuntimeOrigin(notebookId: string, containerId: string): Promise<string | null> {

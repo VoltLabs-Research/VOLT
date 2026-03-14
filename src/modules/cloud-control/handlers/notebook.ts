@@ -65,16 +65,14 @@ const getReadinessGatedRuntimeTarget = async (
     jupyterRuntimeService: JupyterRuntimeService,
     notebookId: string
 ): Promise<NotebookRuntimeTarget | null> => {
-    const tunnelTargetPort = await jupyterRuntimeService.getRuntimeHostPort(notebookId);
-    if (tunnelTargetPort === null) {
+    const runtimeTarget = await jupyterRuntimeService.getReadyRuntimeTunnelTarget(notebookId);
+    if (!runtimeTarget) {
         return null;
     }
 
-    const tunnelTarget = new URL(jupyterRuntimeService.getRuntimeInternalOrigin(notebookId));
-
     return {
-        tunnelTargetHost: tunnelTarget.hostname,
-        tunnelTargetPort
+        tunnelTargetHost: runtimeTarget.host,
+        tunnelTargetPort: runtimeTarget.port
     };
 };
 
