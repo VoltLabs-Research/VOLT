@@ -1,4 +1,5 @@
 import { DAEMON_PATHS } from '@/core/paths';
+import { logger } from '@/core/logger';
 import { ContainerAction } from '@/shared/contracts';
 import Docker from 'dockerode';
 import { readdir } from 'node:fs/promises';
@@ -285,19 +286,105 @@ done`, '--', normalizedDirectoryPath]);
     }
 
     async ensureImage(imageName: string): Promise<void> {
+        const startedAt = Date.now();
+        const localBuildContext = this.resolveLocalImageBuildContext(imageName);
+        const hasLocalBuildContext = typeof localBuildContext === 'string';
+
+        logger.info({
+            imageName,
+            hasLocalBuildContext,
+            buildContext: localBuildContext,
+            provisioningAction: 'inspect'
+        }, 'Checking Docker image availability');
+
         try {
             await this.docker.getImage(imageName).inspect();
-        } catch {
-            const localBuildContext = this.resolveLocalImageBuildContext(imageName);
-            if (localBuildContext) {
-                try {
-                    await this.buildImage(imageName, localBuildContext);
-                    return;
-                } catch {
-                }
-            }
+            logger.info({
+                imageName,
+                hasLocalBuildContext,
+                buildContext: localBuildContext,
+                provisioningAction: 'inspect',
+                success: true,
+                durationMs: Date.now() - startedAt
+            }, 'Docker image already available locally');
+            return;
+        } catch (error: unknown) {
+            logger.info({
+                err: error,
+                imageName,
+                hasLocalBuildContext,
+                buildContext: localBuildContext,
+                provisioningAction: hasLocalBuildContext ? 'build' : 'pull',
+                success: false,
+                durationMs: Date.now() - startedAt
+            }, 'Docker image not available locally; provisioning required');
+        }
 
+        if (localBuildContext) {
+            const buildStartedAt = Date.now();
+
+            logger.info({
+                imageName,
+                hasLocalBuildContext: true,
+                buildContext: localBuildContext,
+                provisioningAction: 'build'
+            }, 'Provisioning Docker image from local build context');
+
+            try {
+                await this.buildImage(imageName, localBuildContext);
+                logger.info({
+                    imageName,
+                    hasLocalBuildContext: true,
+                    buildContext: localBuildContext,
+                    provisioningAction: 'build',
+                    success: true,
+                    durationMs: Date.now() - buildStartedAt,
+                    pullSkipped: true,
+                    pullSkippedReason: 'image mapped to LOCAL_IMAGE_BUILD_CONTEXTS'
+                }, 'Docker image build completed; registry pull skipped');
+                return;
+            } catch (error: unknown) {
+                logger.error({
+                    err: error,
+                    imageName,
+                    hasLocalBuildContext: true,
+                    buildContext: localBuildContext,
+                    provisioningAction: 'build',
+                    success: false,
+                    durationMs: Date.now() - buildStartedAt,
+                    pullSkipped: true,
+                    pullSkippedReason: 'image mapped to LOCAL_IMAGE_BUILD_CONTEXTS'
+                }, 'Docker image build failed; registry pull skipped for local-build image');
+                throw error;
+            }
+        }
+
+        const pullStartedAt = Date.now();
+        logger.info({
+            imageName,
+            hasLocalBuildContext: false,
+            provisioningAction: 'pull'
+        }, 'Provisioning Docker image from registry');
+
+        try {
             await this.pullImage(imageName);
+            logger.info({
+                imageName,
+                hasLocalBuildContext: false,
+                provisioningAction: 'pull',
+                success: true,
+                durationMs: Date.now() - pullStartedAt
+            }, 'Docker image pull completed');
+        } catch (error: unknown) {
+            logger.error({
+                err: error,
+                imageName,
+                hasLocalBuildContext: false,
+                provisioningAction: 'pull',
+                success: false,
+                durationMs: Date.now() - pullStartedAt
+            }, 'Docker image pull failed');
+            throw error;
         }
     }
 

@@ -31,7 +31,6 @@ interface JupyterStartupOperation {
 };
 
 const JUPYTER_HEALTH_CHECK_INTERVAL_MS = 1000;
-const DEFAULT_NOTEBOOK_FILE_NAME = 'notebook.ipynb';
 const RUNTIME_LABEL_KEY = 'volt.runtime.kind';
 const RUNTIME_LABEL_VALUE = 'jupyter';
 const NOTEBOOK_ID_LABEL_KEY = 'volt.notebook.id';
@@ -77,7 +76,6 @@ export class JupyterRuntimeService {
     }
 
     async initialize(): Promise<void> {
-        await this.dockerRuntimeService.ensureImage(this.config.jupyter.image);
     }
 
     async ensureSession(input: EnsureNotebookSessionInput): Promise<CreateNotebookSessionResponse> {
@@ -342,16 +340,7 @@ export class JupyterRuntimeService {
         }
 
         if (!isJupyterProcessRunning) {
-            try {
-                await this.startJupyterServer(input.containerId, input.publicBasePath);
-            } catch (error: unknown) {
-                if (signal.aborted) {
-                    return;
-                }
-
-                logger.warn({ err: error, containerId: input.containerId }, 'Failed to start Jupyter server inside container');
-                return;
-            }
+            await this.startJupyterServer(input.containerId, input.publicBasePath);
         }
 
         const ready = await this.waitForJupyterReady(
@@ -479,14 +468,10 @@ export class JupyterRuntimeService {
         }
     }
 
-    private buildJupyterPath(notebookPath?: string): string {
+    private buildJupyterPath(notebookPath: string): string {
         const uiPath = this.resolveUiPath();
-        const encodedNotebookPath = notebookPath
-            ? notebookPath.split('/').map(encodeURIComponent).join('/')
-            : '';
-        const basePath = encodedNotebookPath
-            ? path.posix.join(uiPath, 'tree', encodedNotebookPath)
-            : uiPath;
+        const encodedNotebookPath = notebookPath.split('/').map(encodeURIComponent).join('/');
+        const basePath = path.posix.join(uiPath, 'tree', encodedNotebookPath);
 
         return `${basePath}?token=${encodeURIComponent(this.config.jupyter.token)}`;
     }
@@ -632,8 +617,8 @@ export class JupyterRuntimeService {
         }
     }
 
-    private getNotebookFilePath(notebookPath?: string): string {
-        return path.posix.join(this.config.jupyter.notebookRoot, notebookPath?.trim() || DEFAULT_NOTEBOOK_FILE_NAME);
+    private getNotebookFilePath(notebookPath: string): string {
+        return path.posix.join(this.config.jupyter.notebookRoot, notebookPath.trim());
     }
 
     private buildContainerName(notebookId: string): string {
