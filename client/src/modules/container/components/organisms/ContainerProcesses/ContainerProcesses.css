@@ -9,3 +9,11 @@
 .container-processes-command-cell {
     max-width: 250px;
 }
+
+@media (max-width: 768px) {
+    .container-processes-command-cell {
+        max-width: none;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+}

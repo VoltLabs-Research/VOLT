@@ -8,8 +8,31 @@
     padding: 0 16px;
 }
 
+.canvas-toolbar-logo {
+    gap: 0.5rem;
+    min-width: 88px;
+    text-decoration: none;
+}
+
+.canvas-toolbar-logo-mark {
+    display: inline-flex;
+    width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--color-surface-2);
+}
+
 .canvas-toolbar-logo:hover .canvas-volt {
     color: var(--color-text-primary);
+}
+
+.canvas-toolbar-logo:focus-visible,
+.canvas-toolbar-user-trigger:focus-visible {
+    outline: none;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--accent-blue);
 }
 
 .canvas-toolbar-menus{
@@ -34,15 +57,31 @@
 
 /* ── Compact canvas buttons ── */
 .canvas-btn-compact {
-    min-height: 30px !important;
-    padding: 0 10px !important;
+    min-height: 36px !important;
+    padding: 0 12px !important;
     gap: 0.375rem !important;
     border-radius: var(--radius-sm) !important;
 }
 
 .canvas-btn-compact.shape-circle {
-    width: 30px !important;
+    width: 36px !important;
     padding: 0 !important;
+}
+
+.canvas-toolbar-user-trigger {
+    background: none !important;
+    border: none !important;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .canvas-toolbar-logo,
+    .canvas-toolbar-logo-mark,
+    .canvas-btn-compact {
+        transition: none !important;
+    }
 }
 
 @media (max-width: 768px) {
@@ -60,4 +99,3 @@
         width: 36px !important;
     }
 }
-

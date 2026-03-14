@@ -21,33 +21,33 @@ const NotificationList = ({
     onLoadMore, 
     onClose 
 }: NotificationListProps) => {
-    const containerRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLUListElement>(null);
 
     const handleScroll = useCallback(() => {
         const container = containerRef.current;
-        if(!container || isLoading || !hasMore) return;
+        if (!container || isLoading || !hasMore) return;
 
         const { scrollTop, scrollHeight, clientHeight } = container;
         const threshold = 50;
 
-        if(scrollHeight - scrollTop - clientHeight < threshold){
+        if (scrollHeight - scrollTop - clientHeight < threshold) {
             onLoadMore();
         }
     }, [isLoading, hasMore, onLoadMore]);
 
     useEffect(() => {
         const container = containerRef.current;
-        if(!container) return;
+        if (!container) return;
 
         container.addEventListener('scroll', handleScroll);
         return () => container.removeEventListener('scroll', handleScroll);
     }, [handleScroll]);
 
-    if(isLoading && notifications.length === 0){
+    if (isLoading && notifications.length === 0) {
         return (
             <Container className='d-flex column gap-05 p-05'>
                 {Array.from({ length: 5 }).map((_, i) => (
-                    <Container key={`notif-skel-${i}`} className='notification-item list-item-hoverable p-075'>
+                    <Container key={`notif-skel-${i}`} className='notification-item notification-item-skeleton list-item-hoverable p-075 radius-sm'>
                         <Skeleton variant='text' width='60%' height={20} />
                         <Skeleton variant='text' width='90%' height={16} />
                     </Container>
@@ -56,14 +56,15 @@ const NotificationList = ({
         );
     }
 
-    if(notifications.length === 0){
+    if (notifications.length === 0) {
         return <EmptyState title='No notifications' description="You're all caught up!" />;
     }
 
     return (
-        <Container 
+        <ul
             ref={containerRef}
-            className='d-flex column gap-05 p-05 notification-list-container y-auto'
+            className='notification-list-container d-flex column gap-05 p-05 y-auto'
+            aria-busy={isLoading}
         >
             {notifications.map((notification) => (
                 <NotificationItem
@@ -73,12 +74,14 @@ const NotificationList = ({
                 />
             ))}
             {isLoading && (
-                <Container className='notification-item list-item-hoverable p-075'>
-                    <Skeleton variant='text' width='60%' height={20} />
-                    <Skeleton variant='text' width='90%' height={16} />
-                </Container>
+                <li className='notification-row'>
+                    <Container className='notification-item notification-item-skeleton list-item-hoverable p-075 radius-sm'>
+                        <Skeleton variant='text' width='60%' height={20} />
+                        <Skeleton variant='text' width='90%' height={16} />
+                    </Container>
+                </li>
             )}
-        </Container>
+        </ul>
     );
 };
 

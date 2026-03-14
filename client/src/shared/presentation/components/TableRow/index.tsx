@@ -3,12 +3,12 @@ import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopo
 import EditableTag from '@/shared/presentation/components/EditableTag';
 import Select from '@/shared/presentation/components/Select';
 import { EditableType } from '@/shared/presentation/components/DocumentListingTable';
-import { motion } from 'framer-motion';
 import { CSS } from '@dnd-kit/utilities';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { motion } from 'framer-motion';
 import type { ColumnConfig, Identifiable } from '@/shared/presentation/components/DocumentListingTable';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react';
 
 interface TableRowProps<T extends Identifiable> {
     item: T;
@@ -17,8 +17,8 @@ interface TableRowProps<T extends Identifiable> {
     getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
     selectedItems: T[];
     isSelected: boolean;
-    onClick: (event: React.MouseEvent, item: T) => void;
-    onItemClick?: (item: T, event: React.MouseEvent) => boolean;
+    onClick: (event: MouseEvent | KeyboardEvent, item: T) => void;
+    onItemClick?: (item: T, event: MouseEvent) => boolean;
     onContextMenu: (item: T) => void;
     useFlexDistribution: boolean;
     columnGap?: number;
@@ -125,21 +125,16 @@ const TableRow = <T extends Identifiable>({
         return defaultContent;
     };
 
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
 
         event.preventDefault();
-        const syntheticEvent = event as unknown as React.MouseEvent;
-        const isHandled = onItemClick?.(item, syntheticEvent);
-
-        if (isHandled) return;
-
-        onClick(syntheticEvent, item);
+        onClick(event, item);
     };
 
     const content = (
         <motion.div
-            role='button'
+            role='row'
             tabIndex={0}
             ref={setRowNodeRef}
             style={rowStyle}
@@ -158,7 +153,7 @@ const TableRow = <T extends Identifiable>({
             }}
             onKeyDown={handleKeyDown}
             onContextMenu={() => onContextMenu(item)}
-            aria-pressed={isSelected}
+            aria-selected={isSelected}
         >
             {columns.map((col, colIdx) => {
                 const columnKey = getColumnKey(col);
@@ -172,6 +167,8 @@ const TableRow = <T extends Identifiable>({
                         data-label={columnTitle}
                         key={`cell-${columnTitle}-${colIdx}`}
                         title={title}
+                        role='gridcell'
+                        aria-label={title ? `${columnTitle}: ${title}` : `${columnTitle}: no value`}
                         style={
                             useFlexDistribution
                                 ? { flex: 1, minWidth: 0 }

@@ -37,3 +37,11 @@
     background-color: var(--color-bg);
     border: 1px solid var(--color-border-soft);
 }
+
+@media (max-width: 768px) {
+    .container-terminal-window {
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+    }
+}

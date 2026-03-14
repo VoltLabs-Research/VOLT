@@ -1,5 +1,6 @@
 import Container from '@/shared/presentation/components/Container';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
+import './AutoScrollList.css';
 import { Fragment, useCallback, useEffect, useRef } from 'react';
 import type { Key, ReactNode } from 'react';
 
@@ -48,6 +49,7 @@ const AutoScrollList = <T,>({
     const bottomRef = useRef<HTMLDivElement>(null);
     const previousItemsLengthRef = useRef(items.length);
     const prefersReducedMotion = usePrefersReducedMotion();
+    const hasItems = items.length > 0;
 
     const scrollToBottom = useCallback((smooth: boolean) => {
         let behavior: ScrollBehavior = 'auto';
@@ -90,11 +92,16 @@ const AutoScrollList = <T,>({
         }
     };
 
-    const listClassName = joinClasses('d-flex column gap-05 flex-1 y-auto', className);
+    const listClassName = joinClasses('auto-scroll-list d-flex column gap-05 flex-1 y-auto', className);
 
     if (isLoading && items.length === 0) {
         return (
-            <Container className={joinClasses(listClassName, loadingClassName)}>
+            <Container
+                className={joinClasses(listClassName, loadingClassName)}
+                role='status'
+                aria-live='polite'
+                aria-atomic='true'
+            >
                 {renderLoading}
             </Container>
         );
@@ -102,14 +109,29 @@ const AutoScrollList = <T,>({
 
     if (items.length === 0) {
         return (
-            <Container className={joinClasses('d-flex flex-center flex-1', className, emptyClassName)}>
+            <Container
+                className={joinClasses('d-flex flex-center flex-1', className, emptyClassName)}
+                role='status'
+                aria-live='polite'
+                aria-atomic='true'
+            >
                 {renderEmpty}
             </Container>
         );
     }
 
     return (
-        <Container ref={containerRef} className={listClassName} onScroll={handleScroll}>
+        <Container
+            ref={containerRef}
+            className={listClassName}
+            onScroll={handleScroll}
+            role='log'
+            aria-live='polite'
+            aria-relevant='additions text'
+            aria-atomic='false'
+            aria-busy={isLoading}
+            aria-label='Auto-updating content'
+        >
             {hasMore ? loadMoreIndicator : null}
             {items.map((item, index) => (
                 <Fragment key={getItemKey ? getItemKey(item, index) : index}>
@@ -117,7 +139,7 @@ const AutoScrollList = <T,>({
                 </Fragment>
             ))}
             {renderAfter}
-            <Container ref={bottomRef} />
+            <Container ref={bottomRef} className='auto-scroll-list-anchor' aria-hidden={hasItems} />
         </Container>
     );
 };

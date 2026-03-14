@@ -76,7 +76,7 @@ const OAuthCallbackTemplate = () => {
     }, [markAuthenticated, navigate]);
 
     return (
-        <Container className='d-flex flex-center items-center oauth-callback-container p-relative vh-max overflow-hidden'>
+        <Container className='d-flex items-center content-center oauth-callback-container p-relative vh-max overflow-hidden'>
             <Container className='p-absolute inset-0 overflow-hidden'>
                 <Container className='oauth-background-blob radius-full oauth-blob-blue p-absolute w-50' />
                 <Container className='oauth-background-blob radius-full oauth-blob-purple p-absolute' />
@@ -87,7 +87,7 @@ const OAuthCallbackTemplate = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 className='oauth-card glass-bg radius-2xl p-relative w-max text-center p-2'
             >
-                <Container className='d-flex flex-center mb-1-5 oauth-status-icon'>
+                <Container className='d-flex items-center content-center mb-1-5 oauth-status-icon'>
                     {status === 'loading' && (
                         <Loader scale={0.6} isFixed={false} />
                     )}

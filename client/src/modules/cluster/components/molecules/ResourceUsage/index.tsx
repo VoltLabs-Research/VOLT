@@ -1,9 +1,7 @@
 import MetricBar from '../../atoms/MetricBar';
 import './ResourceUsage.css';
-import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
-import { MoreVertical } from 'lucide-react';
 import { Skeleton } from '@mui/material';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 
@@ -143,9 +141,6 @@ const ResourceUsage = ({ metrics }: ResourceUsageProps) => {
         <Container className='d-flex column resource-usage h-max p-1-5 radius-lg'>
             <Container className='d-flex items-start content-between resource-usage-header mb-1-5 f-shrink-0'>
                 <Title className='font-size-3 font-weight-6 color-primary'>Resource Usage</Title>
-                <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='More resource usage options' title='More resource usage options'>
-                    <MoreVertical className='color-muted' style={{ width: '1rem', height: '1rem' }} />
-                </Button>
             </Container>
             {content}
         </Container>

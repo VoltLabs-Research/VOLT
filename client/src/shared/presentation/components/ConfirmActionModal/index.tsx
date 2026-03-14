@@ -6,6 +6,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import { ConfirmActionTone, registerConfirmActionController } from '@/shared/presentation/hooks/use-confirm';
 import './ConfirmActionModal.css';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import type { InputHTMLAttributes } from 'react';
 import type { ConfirmActionOptions } from '@/shared/presentation/hooks/use-confirm';
 
 interface ConfirmActionModalState extends ConfirmActionOptions {
@@ -79,6 +80,12 @@ const ConfirmActionModal = () => {
     const typedConfirmationDescription = modalState?.requireTypedText
         ? `This action requires an exact confirmation phrase: ${modalState.requireTypedText}`
         : '';
+    const typedConfirmationInputProps: InputHTMLAttributes<HTMLInputElement> & {
+        'data-modal-initial-focus'?: string;
+    } = {
+        'aria-describedby': typedConfirmationDescriptionId,
+        'data-modal-initial-focus': 'true'
+    };
     const footer = (
         <ModalFooterActions
             secondary={{
@@ -113,9 +120,7 @@ const ConfirmActionModal = () => {
                             label={typedConfirmationLabel}
                             value={typedText}
                             onChange={(event) => setTypedText(event.target.value)}
-                            inputProps={{
-                                'aria-describedby': typedConfirmationDescriptionId
-                            }}
+                            inputProps={typedConfirmationInputProps}
                         />
                     </>
                 )}

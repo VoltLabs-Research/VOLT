@@ -49,6 +49,7 @@ export interface SelectProps {
     'aria-labelledby'?: string;
     'aria-describedby'?: string;
     'aria-invalid'?: boolean;
+    'aria-errormessage'?: string;
 };
 
 const Select = ({
@@ -58,7 +59,7 @@ const Select = ({
     onChange,
     disabled = false,
     onDark = false,
-    placeholder = 'Select...',
+    placeholder = 'Select…',
     className = '',
     style,
     optionClassName = '',
@@ -75,11 +76,12 @@ const Select = ({
     allOption,
     renderTriggerLabel,
     hasSearch = false,
-    searchPlaceholder = 'Search...',
+    searchPlaceholder = 'Search…',
     'aria-label': ariaLabel,
     'aria-labelledby': ariaLabelledBy,
     'aria-describedby': ariaDescribedBy,
-    'aria-invalid': ariaInvalid
+    'aria-invalid': ariaInvalid,
+    'aria-errormessage': ariaErrorMessage
 }: SelectProps) => {
     const uid = useId();
     const floatingRoot = useFloatingRoot();
@@ -354,6 +356,7 @@ const Select = ({
                     aria-labelledby={ariaLabelledBy}
                     aria-describedby={ariaDescribedBy}
                     aria-invalid={ariaInvalid}
+                    aria-errormessage={ariaErrorMessage}
                     {...getReferenceProps()}
                 />
             );
@@ -380,6 +383,7 @@ const Select = ({
                 aria-labelledby={ariaLabelledBy}
                 aria-describedby={ariaDescribedBy}
                 aria-invalid={ariaInvalid}
+                aria-errormessage={ariaErrorMessage}
                 {...getReferenceProps()}
             >
                 <span className='select-value overflow-hidden'>
@@ -424,6 +428,7 @@ const Select = ({
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder={searchPlaceholder}
+                                    aria-label='Search options'
                                     containerClassName='select-dropdown-search'
                                 />
                             )}
@@ -432,7 +437,7 @@ const Select = ({
 
                             {isLoading && (
                                 <div className='select-option-loading d-flex items-center content-center'>
-                                    <Paragraph className='color-muted font-size-1'>Loading...</Paragraph>
+                                    <Paragraph className='color-muted font-size-1'>Loading…</Paragraph>
                                 </div>
                             )}
                         </div>

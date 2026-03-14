@@ -1,26 +1,12 @@
 .plugin-listing-trajectory-select {
-    padding: 0.5rem 0.75rem;
-    background: var(--button-bg);
-    border: 1px solid var(--button-border);
-    border-radius: var(--radius-sm);
-    color: var(--color-text-primary);
-    font-size: 0.875rem;
     min-width: 180px;
-    cursor: pointer;
+    min-height: 2.5rem;
+    font-weight: 500;
 }
 
-.plugin-listing-trajectory-select:hover {
-    background: var(--active-bg);
-    border-color: var(--color-border-strong);
-}
-
-.plugin-listing-trajectory-select:focus {
-    outline: none;
-    border-color: var(--accent-blue);
-    box-shadow: 0 0 0 2px rgba(0, 98, 255, 0.2);
-}
-
-.plugin-listing-trajectory-select option {
-    background: var(--color-color-bg);
-    color: var(--color-text-primary);
+@media (max-width: 640px) {
+    .plugin-listing-trajectory-select {
+        min-width: 0;
+        width: 100%;
+    }
 }

@@ -5,6 +5,15 @@
     overflow: hidden;
 }
 
+.avatar-upload-trigger {
+    min-height: 5rem;
+}
+
+.avatar-upload-trigger:hover .avatar-overlay,
+.avatar-upload-trigger:focus-visible .avatar-overlay {
+    opacity: 1;
+}
+
 .avatar-image {
     width: 100%;
     height: 100%;
@@ -17,14 +26,10 @@
 }
 
 .avatar-overlay {
-    background: rgba(0, 0, 0, 0.5);
+    background: color-mix(in srgb, var(--color-bg) 55%, transparent);
     transition: opacity 0.2s ease;
-    color: white;
+    color: var(--color-contrast-high);
     opacity: 0;
-}
-
-.avatar-upload:hover .avatar-overlay {
-    opacity: 1;
 }
 
 .avatar-file-input {

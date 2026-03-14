@@ -1,9 +1,9 @@
 import { ChevronDown, ChevronRight, Download, Eye, FlaskConical, Atom, Minus, MousePointerClick, Plus, Trash2 } from 'lucide-react';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
+import CanvasSlider from '../../atoms/CanvasSlider';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
-import Slider from '@/shared/presentation/components/Slider';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../../utilities/analysis-status';
 
@@ -34,6 +34,10 @@ interface AnalysisTreeNodeProps {
     sceneOpacities: Record<string, number>;
     setSceneOpacity: (sceneKey: string, opacity: number) => void;
 };
+
+const ANALYSIS_ICON_COLOR = 'var(--color-text-secondary)';
+const ANALYSIS_ICON_ACTIVE_COLOR = 'var(--color-text-primary)';
+const SCENE_ICON_COLOR = 'var(--accent-blue)';
 
 const AnalysisTreeNode = ({
     section,
@@ -116,7 +120,7 @@ const AnalysisTreeNode = ({
                     : <ChevronRight style={{ width: 13, height: 13 }} />
                 }
             </Button>
-            <FlaskConical style={{ width: 13, height: 13, color: isCurrentAnalysis ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.3)' }} />
+            <FlaskConical style={{ width: 13, height: 13, color: isCurrentAnalysis ? ANALYSIS_ICON_ACTIVE_COLOR : ANALYSIS_ICON_COLOR }} />
             <span className={`${isCurrentAnalysis ? 'color-primary' : 'color-secondary'}`}>
                 {pluginDisplayName}
             </span>
@@ -160,12 +164,14 @@ const AnalysisTreeNode = ({
                 const transparencySubmenu = (
                     <div className="context-menu-transparency">
                         <span className="context-menu-transparency__label">Transparency</span>
-                        <Slider
+                        <CanvasSlider
+                            ariaLabel={`Adjust ${exposure.name} transparency`}
                             min={0}
                             max={1}
                             step={0.01}
                             value={currentOpacity}
                             onChange={(value: number) => setSceneOpacity(sceneKey, value)}
+                            ariaValueText={`${Math.round(currentOpacity * 100)}% opacity`}
                         />
                     </div>
                 );
@@ -208,21 +214,21 @@ const AnalysisTreeNode = ({
                         key={exposure.exposureId}
                         id={`canvas-ctx-exposure-${exposure.analysisId}-${exposure.exposureId}`}
                         trigger={(
-                            <Container
+                            <button
                                 className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none canvas-tree-item--indent-lg ${isActive ? 'selected' : ''}`}
                                 onClick={() => {
                                     onSelectScene(scene, analysis);
                                 }}
                                 role="treeitem"
                                 aria-selected={isActive}
-                                tabIndex={0}
+                                type="button"
                             >
                                 <span className="canvas-tree-spacer" />
-                                <Atom style={{ width: 12, height: 12, color: '#60a5fa' }} />
+                                <Atom style={{ width: 12, height: 12, color: SCENE_ICON_COLOR }} />
                                 <span className={`${isActive ? 'color-primary' : 'color-secondary'}`}>
                                     {exposure.name}
                                 </span>
-                            </Container>
+                            </button>
                         )}
                         options={exposureMenuOptions}
                         size='sm'

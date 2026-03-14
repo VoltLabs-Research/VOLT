@@ -17,7 +17,7 @@ const StatusGroup = ({ items }: { items: StatusItem[] }) => (
         {items.map(([label, value], i) => (
             <Container key={label} className="d-flex items-center gap-05">
                 {i > 0 && <Container className="canvas-status-divider" />}
-                <span className="font-size-05 color-muted">{label}{label && ': '}{value}</span>
+                <span className="font-size-075 color-muted">{label}{label && ': '}{value}</span>
             </Container>
         ))}
     </Container>

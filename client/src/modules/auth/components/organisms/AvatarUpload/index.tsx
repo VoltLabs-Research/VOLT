@@ -1,9 +1,10 @@
 import './AvatarUpload.css';
+import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import Title from '@/shared/presentation/components/Title';
 import { Camera, User } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 
 interface AvatarUploadProps {
@@ -17,6 +18,7 @@ const AvatarUpload = ({
     isUploading,
     onUpload
 }: AvatarUploadProps) => {
+    const helperTextId = useId();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(avatarUrl);
 
@@ -24,7 +26,7 @@ const AvatarUpload = ({
         setPreview(avatarUrl);
     }, [avatarUrl]);
 
-    const handleAvatarClick = () => {
+    const handleAvatarTrigger = () => {
         fileInputRef.current?.click();
     };
 
@@ -44,13 +46,13 @@ const AvatarUpload = ({
 
         try{
             await onUpload(file);
-        }catch (error){
+        }catch {
             setPreview(avatarUrl);
         }
     };
 
     let avatarContent = (
-        <Container className="wh-max d-flex items-center content-center avatar-placeholder">
+        <Container className="w-max h-max d-flex items-center content-center avatar-placeholder">
             <User size={32} />
         </Container>
     );
@@ -67,15 +69,31 @@ const AvatarUpload = ({
 
     return (
         <Container className="d-flex items-center gap-1">
-            <Container
-                className="avatar-upload radius-full p-relative overflow-hidden cursor-pointer f-shrink-0"
-                onClick={handleAvatarClick}
+            <Button
+                type='button'
+                variant='ghost'
+                className='avatar-upload-trigger d-flex items-center gap-1 p-0'
+                onClick={handleAvatarTrigger}
+                aria-describedby={helperTextId}
+                aria-label={preview ? 'Change profile picture' : 'Upload profile picture'}
+                disabled={isUploading}
             >
-                {avatarContent}
-                <Container className="avatar-overlay p-absolute inset-0 d-flex items-center content-center">
-                    {overlayContent}
+                <Container className="avatar-upload radius-full p-relative overflow-hidden f-shrink-0">
+                    {avatarContent}
+                    <Container className="avatar-overlay p-absolute inset-0 d-flex items-center content-center">
+                        {overlayContent}
+                    </Container>
                 </Container>
-            </Container>
+
+                <Container className="d-flex column gap-025 text-left">
+                    <Title className="font-size-2 font-weight-6">
+                        Profile Picture
+                    </Title>
+                    <Container id={helperTextId} className="color-muted font-size-1">
+                        Click to upload a new avatar (JPG, PNG, max 5MB)
+                    </Container>
+                </Container>
+            </Button>
 
             <input
                 ref={fileInputRef}
@@ -83,16 +101,9 @@ const AvatarUpload = ({
                 accept="image/*"
                 onChange={handleFileChange}
                 className="avatar-file-input"
+                tabIndex={-1}
+                aria-hidden='true'
             />
-            
-            <Container className="d-flex column gap-025">
-                <Title className="font-size-2 font-weight-6">
-                    Profile Picture
-                </Title>
-                <Container className="color-muted font-size-1">
-                    Click to upload a new avatar (JPG, PNG, max 5MB)
-                </Container>
-            </Container>
         </Container>
     );
 };

@@ -120,9 +120,28 @@ const DebugToolbar = () => {
 
     const completedCount = Object.values(nodeStates).filter((s) => s.status === 'completed').length;
 
+    let debugStatusMessage: string | null = null;
+    if (isStarting) {
+        debugStatusMessage = 'Starting debug session.';
+    } else if (sessionError) {
+        debugStatusMessage = `Debug session error: ${sessionError}`;
+    } else if (isDebugging && isPaused && currentNodeLabel) {
+        debugStatusMessage = `Debug paused at ${currentNodeLabel}. Node ${currentNodeIndex + 1} of ${totalNodes}.`;
+    } else if (isDebugging) {
+        debugStatusMessage = `Debug running. ${completedCount} of ${totalNodes} nodes completed.`;
+    } else if (totalDuration !== null && totalDuration >= 0) {
+        debugStatusMessage = `Debug completed in ${totalDuration < 1000 ? `${totalDuration} milliseconds` : `${(totalDuration / 1000).toFixed(1)} seconds`}.`;
+    }
+
     return (
         <Container className='p-absolute z-10 d-flex column items-center top-1 center-x debug-toolbar-wrapper'>
-            <Container className='d-flex items-center gap-05 panel-floating radius-full debug-toolbar'>
+            {debugStatusMessage && (
+                <Container className='plugin-accessible-status' role='status' aria-live='polite'>
+                    {debugStatusMessage}
+                </Container>
+            )}
+
+            <Container className='d-flex items-center gap-05 panel-floating radius-full debug-toolbar' role='toolbar' aria-label='Debug controls'>
                 <Container className='d-flex items-center gap-05'>
                     <Bug size={14} className='color-secondary' />
                     <Paragraph className='font-size-2 color-secondary font-weight-6'>Debug</Paragraph>
@@ -138,6 +157,7 @@ const DebugToolbar = () => {
                     disabled={isDebugging || isStarting}
                     isLoading={trajLoading}
                     className='debug-toolbar-select'
+                    aria-label='Select trajectory for debugging'
                 />
 
                 <Select
@@ -147,6 +167,7 @@ const DebugToolbar = () => {
                     placeholder='Frame'
                     disabled={!selectedTrajectoryId || isDebugging || isStarting}
                     className='debug-toolbar-select'
+                    aria-label='Select frame for debugging'
                 />
 
                 <Divider orientation='vertical' className='debug-toolbar-divider' />
@@ -158,6 +179,7 @@ const DebugToolbar = () => {
                             intent='neutral'
                             iconOnly
                             size='sm'
+                            className='debug-toolbar-action'
                             aria-label={hasConfigurableArgs ? 'Configure arguments and start debug' : 'Start debug'}
                             onClick={handlePlayClick}
                             disabled={!canStart}
@@ -173,6 +195,7 @@ const DebugToolbar = () => {
                             intent='neutral'
                             iconOnly
                             size='sm'
+                            className='debug-toolbar-action'
                             aria-label='Step to next node'
                             onClick={step}
                             disabled={!canStep}
@@ -188,6 +211,7 @@ const DebugToolbar = () => {
                             intent='neutral'
                             iconOnly
                             size='sm'
+                            className='debug-toolbar-action'
                             aria-label='Continue debug session'
                             onClick={continueAll}
                             disabled={!canContinue}
@@ -203,6 +227,7 @@ const DebugToolbar = () => {
                             intent='neutral'
                             iconOnly
                             size='sm'
+                            className='debug-toolbar-action'
                             aria-label='Stop debug session'
                             onClick={stop}
                             disabled={!canStop}
@@ -221,16 +246,18 @@ const DebugToolbar = () => {
                         {isPaused && currentNodeLabel && (
                             <>
                                 <span className='debug-toolbar-status-dot debug-toolbar-status-dot--paused radius-full f-shrink-0' />
+                                <span className='debug-toolbar-state-badge debug-toolbar-state-badge--paused'>Paused</span>
                                 <Paragraph className='font-size-2'>
-                                    Paused at: {currentNodeLabel} ({currentNodeIndex + 1}/{totalNodes})
+                                    {currentNodeLabel} ({currentNodeIndex + 1}/{totalNodes})
                                 </Paragraph>
                             </>
                         )}
                         {!isPaused && (
                             <>
                                 <span className='debug-toolbar-status-dot debug-toolbar-status-dot--running radius-full f-shrink-0' />
+                                <span className='debug-toolbar-state-badge debug-toolbar-state-badge--running'>Running</span>
                                 <Paragraph className='font-size-2 color-secondary'>
-                                    Running... {completedCount}/{totalNodes}
+                                    {completedCount}/{totalNodes} completed
                                 </Paragraph>
                             </>
                         )}

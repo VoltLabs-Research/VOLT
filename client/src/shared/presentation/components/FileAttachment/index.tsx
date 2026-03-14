@@ -4,7 +4,10 @@ import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import './FileAttachment.css';
+import Button from '@/shared/presentation/components/Button';
 import { IoDocumentOutline, IoDownloadOutline, IoImageOutline } from 'react-icons/io5';
+import { Copy } from 'lucide-react';
+import { sileo } from 'sileo';
 
 type FileAttachmentVariant = 'compact' | 'detailed';
 
@@ -63,6 +66,15 @@ const FileAttachment = ({
 }: FileAttachmentProps) => {
     const isImage = isImageAttachment(fileType, fileName, fileUrl);
     const iconSize = variant === 'compact' ? 18 : 20;
+
+    const handleCopyName = async () => {
+        try {
+            await navigator.clipboard.writeText(fileName);
+            sileo.success({ title: 'File name copied to clipboard' });
+        } catch {
+            sileo.error({ title: 'Failed to copy file name' });
+        }
+    };
     
     return (
         <Container className={cn('d-flex items-center gap-075 file-attachment', `file-attachment--${variant}`, className)}>
@@ -81,9 +93,25 @@ const FileAttachment = ({
             </Container>
             
             <Container className='d-flex column flex-1 overflow-hidden'>
-                <Paragraph className='font-size-2 font-weight-5 file-attachment-name text-truncate'>
-                    {fileName}
-                </Paragraph>
+                <Container className='d-flex items-center gap-05 flex-1 overflow-hidden'>
+                    <Paragraph className='font-size-2 font-weight-5 file-attachment-name text-truncate' title={fileName}>
+                        {fileName}
+                    </Paragraph>
+                    <Tooltip content='Copy full file name'>
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
+                            size='sm'
+                            iconOnly
+                            aria-label={`Copy full name for ${fileName}`}
+                            title='Copy full file name'
+                            className='file-attachment-copy'
+                            onClick={handleCopyName}
+                        >
+                            <Copy size={14} aria-hidden='true' />
+                        </Button>
+                    </Tooltip>
+                </Container>
                 <Container className='d-flex items-center gap-05 font-size-1'>
                     {fileSize !== undefined && <Paragraph>{formatSize(fileSize)}</Paragraph>}
                     {timestamp && (
@@ -100,10 +128,12 @@ const FileAttachment = ({
                     <a
                         href={fileUrl}
                         download={fileName}
-                        className='d-flex flex-center file-attachment-download color-'
+                        className='d-flex flex-center file-attachment-download color-secondary'
                         onClick={(e) => e.stopPropagation()}
+                        aria-label={`Download ${fileName}`}
+                        title={`Download ${fileName}`}
                     >
-                        <IoDownloadOutline size={18} />
+                        <IoDownloadOutline size={18} aria-hidden='true' />
                     </a>
                 </Tooltip>
             )}

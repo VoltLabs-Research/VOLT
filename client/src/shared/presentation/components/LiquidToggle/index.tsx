@@ -15,6 +15,7 @@ interface LiquidToggleProps {
     'aria-labelledby'?: string;
     'aria-describedby'?: string;
     'aria-invalid'?: boolean;
+    'aria-errormessage'?: string;
 };
 
 const LiquidToggle = ({
@@ -28,7 +29,8 @@ const LiquidToggle = ({
     'aria-label': ariaLabel = 'toggle',
     'aria-labelledby': ariaLabelledBy,
     'aria-describedby': ariaDescribedBy,
-    'aria-invalid': ariaInvalid
+    'aria-invalid': ariaInvalid,
+    'aria-errormessage': ariaErrorMessage
 }: LiquidToggleProps) => {
     const btnRef = useRef<HTMLButtonElement | null>(null);
 
@@ -240,6 +242,7 @@ const LiquidToggle = ({
                 aria-labelledby={ariaLabelledBy}
                 aria-describedby={ariaDescribedBy}
                 aria-invalid={ariaInvalid}
+                aria-errormessage={ariaErrorMessage}
                 aria-pressed={effectivePressed}
                 className={`liquid-toggle${className ? ` ${className}` : ''}`}
                 data-active={String(active)}

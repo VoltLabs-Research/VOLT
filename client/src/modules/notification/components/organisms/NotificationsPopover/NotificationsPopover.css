@@ -8,14 +8,31 @@
     border-bottom: 1px solid var(--color-border-soft);
 }
 
+.notifications-header-action {
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
 .notifications-close {
     background: transparent;
     font-size: 18px;
     transition: color 0.15s ease;
 }
 
-.notifications-close:hover {
+.notifications-header-action:hover,
+.notifications-header-action:focus-visible,
+.notifications-close:hover,
+.notifications-close:focus-visible {
     color: var(--color-text-primary);
+}
+
+.notifications-header-action:disabled {
+    cursor: progress;
+    opacity: 0.7;
 }
 
 @media screen and (max-width: 480px) {

@@ -5,8 +5,8 @@ import Title from '@/shared/presentation/components/Title';
 import FloatingRootContext from '@/shared/presentation/contexts/FloatingRootContext';
 import { getActiveDialog, setActiveDialog } from '@/shared/presentation/utilities/active-dialog-store';
 import './Modal.css';
-import { useState, useEffect } from 'react';
 import React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 declare module 'react' {
@@ -30,8 +30,53 @@ interface ModalProps {
     onClose?: () => void;
 };
 
+const COARSE_POINTER_MEDIA_QUERY = '(pointer: coarse)';
+
 const isDialogElement = (element: HTMLElement | null): element is HTMLDialogElement => {
     return element instanceof HTMLDialogElement;
+};
+
+const isCoarsePointerDevice = () => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+        return false;
+    }
+
+    return window.matchMedia(COARSE_POINTER_MEDIA_QUERY).matches;
+};
+
+const getFocusableElements = (dialog: HTMLDialogElement) => {
+    const selector = [
+        'button:not([disabled])',
+        '[href]',
+        'input:not([disabled])',
+        'select:not([disabled])',
+        'textarea:not([disabled])',
+        '[tabindex]:not([tabindex="-1"])'
+    ].join(',');
+
+    const focusableElements = dialog.querySelectorAll<HTMLElement>(selector);
+
+    return Array.from(focusableElements).filter((element) => {
+        return !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true';
+    });
+};
+
+const getInitialFocusTarget = (dialog: HTMLDialogElement) => {
+    if (isCoarsePointerDevice()) {
+        return dialog;
+    }
+
+    const preferredFocusTarget = dialog.querySelector<HTMLElement>('[data-modal-initial-focus="true"]');
+    if (preferredFocusTarget && !preferredFocusTarget.hasAttribute('disabled')) {
+        return preferredFocusTarget;
+    }
+
+    const autofocusElement = dialog.querySelector<HTMLElement>('[autofocus]');
+    if (autofocusElement && !autofocusElement.hasAttribute('disabled')) {
+        return autofocusElement;
+    }
+
+    return getFocusableElements(dialog)[0] ?? dialog;
 };
 
 const Modal = ({
@@ -45,45 +90,72 @@ const Modal = ({
     width,
     onClose
 }: ModalProps) => {
-    // Callback ref stored in state so the context value triggers a re-render
-    // once the <dialog> element mounts, giving consumers the actual DOM node.
     const [dialogElement, setDialogElement] = useState<HTMLDialogElement | null>(null);
+    const restoreFocusElementRef = useRef<HTMLElement | null>(null);
+    const titleId = title ? `${id}-title` : undefined;
+    const descriptionId = description ? `${id}-description` : undefined;
 
-    /**
-     * Tracks this dialog in the active-dialog store so that top-layer-aware
-     * consumers (AppToaster) can portal their content here when this dialog
-     * is open, keeping them visible above the modal backdrop.
-     */
     useEffect(() => {
-        if (!dialogElement) return;
+        if (!dialogElement) {
+            return;
+        }
 
-        const observer = new MutationObserver(() => {
+        const syncDialogState = () => {
             if (dialogElement.open) {
+                if (!restoreFocusElementRef.current && document.activeElement instanceof HTMLElement) {
+                    restoreFocusElementRef.current = document.activeElement;
+                }
+
                 setActiveDialog(dialogElement);
-            } else if (getActiveDialog() === dialogElement) {
-                setActiveDialog(null);
+
+                window.requestAnimationFrame(() => {
+                    if (!dialogElement.open) {
+                        return;
+                    }
+
+                    const focusTarget = getInitialFocusTarget(dialogElement);
+                    focusTarget.focus({ preventScroll: true });
+                });
+
+                return;
             }
-        });
 
-        observer.observe(dialogElement, { attributes: true, attributeFilter: ['open'] });
-
-        return () => {
-            observer.disconnect();
             if (getActiveDialog() === dialogElement) {
                 setActiveDialog(null);
             }
+
+            if (restoreFocusElementRef.current?.isConnected) {
+                restoreFocusElementRef.current.focus({ preventScroll: true });
+            }
+
+            restoreFocusElementRef.current = null;
+        };
+
+        const observer = new MutationObserver(syncDialogState);
+        observer.observe(dialogElement, { attributes: true, attributeFilter: ['open'] });
+        syncDialogState();
+
+        return () => {
+            observer.disconnect();
+
+            if (getActiveDialog() === dialogElement) {
+                setActiveDialog(null);
+            }
+
+            restoreFocusElementRef.current = null;
         };
     }, [dialogElement]);
 
-    const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
-        const dialog = e.currentTarget;
+    const handleBackdropClick = (event: React.MouseEvent<HTMLDialogElement>) => {
+        const dialog = event.currentTarget;
         const rect = dialog.getBoundingClientRect();
         const isInDialog = (
-            rect.top <= e.clientY && 
-            e.clientY <= rect.top + rect.height &&
-            rect.left <= e.clientX && 
-            e.clientX <= rect.left + rect.width
+            rect.top <= event.clientY
+            && event.clientY <= rect.top + rect.height
+            && rect.left <= event.clientX
+            && event.clientX <= rect.left + rect.width
         );
+
         if (!isInDialog) {
             dialog.close();
         }
@@ -95,6 +167,8 @@ const Modal = ({
                 React.cloneElement(trigger as ModalTriggerElement, {
                     command: 'show-modal',
                     commandfor: id,
+                    'aria-controls': id,
+                    'aria-haspopup': 'dialog',
                     type: 'button'
                 })
             ) : null}
@@ -106,14 +180,18 @@ const Modal = ({
                 style={width ? { maxWidth: width } : undefined}
                 onClick={handleBackdropClick}
                 onClose={onClose}
+                aria-modal='true'
+                aria-labelledby={titleId}
+                aria-describedby={descriptionId}
+                tabIndex={-1}
             >
                 <FloatingRootContext.Provider value={dialogElement ?? undefined}>
                     <Container className='d-flex column w-max'>
                         {(title || description) && (
                             <Container className='d-flex items-start content-between volt-modal-header'>
                                 <Container className='d-flex column gap-025'>
-                                    {title && <Title className='font-size-4 font-weight-6'>{title}</Title>}
-                                    {description && <Paragraph className='font-size-2 color-secondary'>{description}</Paragraph>}
+                                    {title && <Title id={titleId} className='font-size-4 font-weight-6'>{title}</Title>}
+                                    {description && <Paragraph id={descriptionId} className='font-size-2 color-secondary'>{description}</Paragraph>}
                                 </Container>
                                 <CloseButton
                                     commandfor={id}
@@ -141,28 +219,23 @@ const Modal = ({
 
 export default Modal;
 
+/** Opens a modal dialog by id when it is not already open. */
 export const openModal = (id: string) => {
     const element = document.getElementById(id);
-    if (isDialogElement(element)) {
-        if (element.open) {
-            return;
-        }
-
+    if (isDialogElement(element) && !element.open) {
         element.showModal();
     }
 };
 
+/** Closes a modal dialog by id when it is open. */
 export const closeModal = (id: string) => {
     const element = document.getElementById(id);
-    if (isDialogElement(element)) {
-        if (!element.open) {
-            return;
-        }
-
+    if (isDialogElement(element) && element.open) {
         element.close();
     }
 };
 
+/** Closes a modal and runs reset work after the close animation delay. */
 export const resetModal = (id: string, reset: () => void, delay = 300) => {
     closeModal(id);
     window.setTimeout(reset, delay);

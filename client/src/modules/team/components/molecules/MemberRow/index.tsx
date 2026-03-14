@@ -5,6 +5,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';
 import { MessageCircle, UserMinus } from 'lucide-react';
@@ -33,11 +34,13 @@ export const MemberRow = ({
         const memberName = `${member.user.firstName} ${member.user.lastName}`;
         const isConfirmed = await confirm({
             title: `Remove ${memberName} from this team?`,
-            description: 'This action cannot be undone.',
-            confirmText: 'Remove'
+            description: 'This immediately removes the member from the team and cannot be undone.',
+            confirmText: 'Remove member',
+            cancelText: 'Cancel',
+            tone: ConfirmActionTone.Danger
         });
 
-        if(!isConfirmed) return;
+        if (!isConfirmed) return;
         onRemove(member);
     };
 
@@ -46,7 +49,12 @@ export const MemberRow = ({
             id={`member-menu-${member._id}`}
             triggerAction='contextmenu'
             trigger={
-                <Container className='member-row radius-sm d-flex items-center content-between gap-1 p-1'>
+                <button
+                    type='button'
+                    className='member-row radius-sm d-flex items-center content-between gap-1 p-1 w-max'
+                    aria-haspopup='menu'
+                    aria-label={`Open actions for ${member.user.firstName} ${member.user.lastName}`}
+                >
                     <Container className='d-flex items-center gap-1'>
                         <Avatar
                             src={member.user.avatar}
@@ -71,13 +79,13 @@ export const MemberRow = ({
                             {isOwner ? 'Owner' : member.role.name}
                         </Container>
 
-                        {member.joinedAt && (
-                            <Paragraph className='font-size-1 color-tertiary'>
-                                Joined {formatDistanceToNow(new Date(member.joinedAt), { addSuffix: true })}
-                            </Paragraph>
-                        )}
+                            {member.joinedAt && (
+                                <Paragraph className='font-size-1 color-tertiary'>
+                                    Joined {formatDistanceToNow(new Date(member.joinedAt), { addSuffix: true })}
+                                </Paragraph>
+                            )}
                     </Container>
-                </Container>
+                </button>
             }
         >
             {(close) => (

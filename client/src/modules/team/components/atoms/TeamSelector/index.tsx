@@ -5,6 +5,8 @@ import { runAction } from '@/shared/presentation/actions/run-action';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Select from '@/shared/presentation/components/Select';
+import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { IoExitOutline } from 'react-icons/io5';
 import { useCallback, useMemo } from 'react';
@@ -14,6 +16,15 @@ import './TeamSelector.css';
 
 interface TeamSelectorProps {
     className?: string;
+};
+
+const toOptionalDescription = (value: string | null | undefined): string | undefined => {
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+
+    const normalizedValue = value.trim();
+    return normalizedValue.length > 0 ? normalizedValue : undefined;
 };
 
 const LEAVE_TEAM_TOAST_OPTIONS = createPromiseToastOptions({
@@ -26,6 +37,7 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
     const { teams } = useTeamData();
     const selectedTeamId = useSelectedTeamId();
     const leaveTeamMutation = useLeaveTeamMutation();
+    const { confirm } = useConfirm();
 
     const handleTeamChange = useCallback((teamId: string) => {
         if (selectedTeamId === teamId) return;
@@ -37,6 +49,19 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
     const handleLeaveTeam = useCallback(async (event: MouseEvent, teamId: string) => {
         event.preventDefault();
         event.stopPropagation();
+
+        const team = teams.find((entry) => entry._id === teamId);
+        const isConfirmed = await confirm({
+            title: `Leave ${team?.name ?? 'this team'}?`,
+            description: 'You will lose access to this team until someone invites you again.',
+            confirmText: 'Leave team',
+            cancelText: 'Stay',
+            tone: ConfirmActionTone.Danger
+        });
+
+        if (!isConfirmed) {
+            return;
+        }
 
         await runAction({
             action: () => leaveTeamMutation.mutateAsync({ teamId }),
@@ -59,13 +84,13 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
                 }
             }
         });
-    }, [leaveTeamMutation, teams]);
+    }, [confirm, leaveTeamMutation, teams]);
 
     const teamOptions = useMemo(() =>
         teams.map(team => ({
             value: team._id,
             title: team.name,
-            description: team.description || undefined
+            description: toOptionalDescription(team.description)
         })), [teams]
     );
 
@@ -76,6 +101,7 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
             className='team-selector-leave'
             onClick={(e) => handleLeaveTeam(e, option.value)}
             title='Leave team'
+            aria-label={`Leave ${option.title}`}
         >
             <IoExitOutline size={16} />
         </IconButton>

@@ -7,6 +7,7 @@ import { Trash2 } from 'lucide-react';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import UserInfo from '@/modules/auth/components/atoms/UserInfo';
 import Button from '@/shared/presentation/components/Button';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 
 export default function StartPage() {
     const user = useCurrentUser();
@@ -15,6 +16,16 @@ export default function StartPage() {
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     useStartPageEntrance(wrapperRef, pages.length);
+
+    const handleClearHistory = () => {
+        const shouldClearHistory = window.confirm('Clear your recent page history? Saved previews will be removed from this device.');
+
+        if (!shouldClearHistory) {
+            return;
+        }
+
+        clearAll();
+    };
 
     return (
         <div className="metro-start-screen">
@@ -28,7 +39,7 @@ export default function StartPage() {
 
                 {pages.length > 0 && (
                     <Button
-                        onClick={clearAll}
+                        onClick={handleClearHistory}
                         variant="ghost"
                         intent="neutral"
                         leftIcon={<Trash2 size={18} />}
@@ -42,10 +53,11 @@ export default function StartPage() {
                 <h1 className="metro-title">Start</h1>
 
                 {pages.length === 0 ? (
-                    <p className="metro-empty-state">
-                        You have not visited pages yet. <br />
-                        As you navigate through the application, your recent pages will appear here.
-                    </p>
+                    <EmptyState
+                        className='metro-empty-state-card'
+                        title='No recent pages yet'
+                        description='Open dashboards, analyses, whiteboards, or settings and they will show up here with quick-return previews on this device.'
+                    />
                 ) : (
                     <div className="metro-grid-wrapper" ref={wrapperRef}>
                         <div className="metro-grid">

@@ -18,7 +18,7 @@ const toRgba = (color: string, alpha: number): string => {
 
     const rgbMatch = color.match(/\d+/g);
     if (!rgbMatch || rgbMatch.length < 3) {
-        return `rgba(255, 255, 255, ${alpha})`;
+        return color;
     }
 
     const [red, green, blue] = rgbMatch;
@@ -56,10 +56,13 @@ const WireframeBackground = () => {
             const theme = document.documentElement.getAttribute('data-theme');
 
             if (theme === 'light') {
-                return styles.getPropertyValue('--accent-blue').trim() || '#007aff';
+                return styles.getPropertyValue('--accent-blue').trim()
+                    || styles.getPropertyValue('--focus-ring').trim()
+                    || styles.getPropertyValue('--color-text-primary').trim();
             }
 
-            return styles.getPropertyValue('--color-contrast-high').trim() || '#ffffff';
+            return styles.getPropertyValue('--color-contrast-high').trim()
+                || styles.getPropertyValue('--color-text-primary').trim();
         };
 
         const draw = () => {

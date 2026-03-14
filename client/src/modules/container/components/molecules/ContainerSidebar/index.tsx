@@ -127,7 +127,13 @@ const ContainerSidebar = ({
         navigate(`${basePath}/${path}`);
     };
 
-    const isSelected = (path: string) => pathname.endsWith(`/${path}`);
+    const isSelected = (path: string) => {
+        if (!path) {
+            return pathname === basePath;
+        }
+
+        return pathname.endsWith(`/${path}`);
+    };
 
     return (
         <Container className='container-details-sidebar d-flex column f-shrink-0'>
@@ -155,7 +161,7 @@ const ContainerSidebar = ({
                 </Container>
             </Container>
 
-            <nav className='container-details-nav d-flex gap-1 column flex-1 y-auto'>
+            <nav className='container-details-nav d-flex gap-1 column flex-1 y-auto' aria-label='Container detail sections'>
                 {navItems.map(({ path, label, icon }) => (
                     <SidebarNavItem
                         key={path}
@@ -175,7 +181,7 @@ const ContainerSidebar = ({
                         href={`http://localhost:${container.ports[0].public}`}
                         target='_blank'
                         rel='noopener noreferrer'
-                        className='d-flex items-center content-center gap-05 container-details-visit-btn transition-normal radius-sm font-size-2 font-weight-6'
+                        className='d-flex items-center content-center gap-05 container-details-visit-btn radius-sm font-size-2 font-weight-6'
                     >
                         Visit App <ExternalLink size={14} />
                     </a>

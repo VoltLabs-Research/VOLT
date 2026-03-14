@@ -1,8 +1,10 @@
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import './CursorTooltip.css';
 import { useFloating, offset, flip, shift, autoUpdate, FloatingPortal } from '@floating-ui/react';
-import { useRef, useMemo } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import React from 'react';
+import type { Middleware, VirtualElement } from '@floating-ui/react';
 
 interface CursorTooltipProps {
     isOpen: boolean;
@@ -13,7 +15,19 @@ interface CursorTooltipProps {
     autoPosition?: boolean;
     interactive?: boolean;
     offset?: number;
+    ariaLabel?: string;
 };
+
+const createVirtualCursorRect = (x: number, y: number) => ({
+    x,
+    y,
+    top: y,
+    right: x,
+    bottom: y,
+    left: x,
+    width: 0,
+    height: 0
+});
 
 const CursorTooltip: React.FC<CursorTooltipProps> = ({
     isOpen,
@@ -21,58 +35,38 @@ const CursorTooltip: React.FC<CursorTooltipProps> = ({
     y,
     content,
     className = '',
+    autoPosition = true,
     interactive = false,
-    offset: cursorOffset = 16
+    offset: cursorOffset = 16,
+    ariaLabel = 'Additional details'
 }) => {
     const arrowOffset = cursorOffset;
     const floatingRoot = useFloatingRoot();
+    const prefersReducedMotion = usePrefersReducedMotion();
+    const reactId = useId();
+    const tooltipId = `cursor-tooltip-${reactId}`;
 
-    const virtualElementRef = useRef({
-        getBoundingClientRect() {
-            return {
-                x,
-                y,
-                top: y,
-                left: x,
-                bottom: y,
-                right: x,
-                width: 0,
-                height: 0
-            };
-        }
+    const virtualElementRef = useRef<VirtualElement>({
+        getBoundingClientRect: () => createVirtualCursorRect(x, y)
     });
 
-    // Keep the virtual element in sync with current x/y
-    virtualElementRef.current.getBoundingClientRect = () => ({
-        x,
-        y,
-        top: y,
-        left: x,
-        bottom: y,
-        right: x,
-        width: 0,
-        height: 0
-    });
+    const middleware: Middleware[] = [offset({ mainAxis: arrowOffset, crossAxis: arrowOffset })];
+
+    if (autoPosition) {
+        middleware.push(flip({ padding: 16 }));
+        middleware.push(shift({ padding: 16 }));
+    }
 
     const { refs, floatingStyles } = useFloating({
         open: isOpen,
         placement: 'right-start',
-        middleware: [
-            offset({ mainAxis: arrowOffset, crossAxis: arrowOffset }),
-            flip({ padding: 16 }),
-            shift({ padding: 16 })
-        ],
+        middleware,
         whileElementsMounted: autoUpdate
     });
 
-    // Attach virtual element as reference
-    useMemo(() => {
-        refs.setReference(virtualElementRef.current as unknown as Element);
-    }, [refs]);
-
-    // Update position when x/y change
-    useMemo(() => {
-        refs.setReference(virtualElementRef.current as unknown as Element);
+    useEffect(() => {
+        virtualElementRef.current.getBoundingClientRect = () => createVirtualCursorRect(x, y);
+        refs.setPositionReference(virtualElementRef.current);
     }, [x, y, refs]);
 
     if (!isOpen) return null;
@@ -83,6 +77,12 @@ const CursorTooltip: React.FC<CursorTooltipProps> = ({
                 ref={refs.setFloating}
                 className={`cursor-tooltip visible ${interactive ? 'interactive' : ''} ${className}`}
                 style={floatingStyles}
+                id={tooltipId}
+                role={interactive ? 'dialog' : 'tooltip'}
+                aria-label={interactive ? ariaLabel : undefined}
+                aria-modal={interactive ? false : undefined}
+                tabIndex={interactive ? -1 : undefined}
+                data-reduced-motion={prefersReducedMotion ? 'true' : 'false'}
             >
                 {content}
             </div>

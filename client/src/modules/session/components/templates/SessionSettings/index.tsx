@@ -5,6 +5,7 @@ import {
 import {
     formatSessionRelativeTime,
     getSessionActivityIcon,
+    getSessionTokenInfo,
     isMobileUserAgent,
     parseSessionUserAgent,
     SESSION_ACTION_LABELS,
@@ -26,6 +27,22 @@ import type { ActiveSession, LoginActivityEntry } from '@/modules/session/api/en
 import type { FC, ReactNode } from 'react';
 import './SessionSettings.css';
 
+interface SessionRowMeta {
+    browser: string;
+    os: string;
+    tokenInfo: string;
+};
+
+const getSessionRowMeta = (session: ActiveSession): SessionRowMeta => {
+    const { browser, os } = parseSessionUserAgent(session.userAgent);
+
+    return {
+        browser,
+        os,
+        tokenInfo: getSessionTokenInfo(session.token).shortValue
+    };
+};
+
 const SessionSettings: FC = () => {
     const {
         activities,
@@ -46,11 +63,11 @@ const SessionSettings: FC = () => {
 
     const renderSession = (session: ActiveSession) => {
         const isCurrent = isCurrentSession(session);
-        const { browser, os } = parseSessionUserAgent(session.userAgent);
+        const meta = getSessionRowMeta(session);
         const DeviceIcon = isMobileUserAgent(session.userAgent) ? Smartphone : Monitor;
 
         return (
-            <Container
+            <li
                 key={session._id}
                 className={`session-card d-flex items-center gap-1 p-075 ${isCurrent ? 'current-session' : ''}`}
             >
@@ -58,18 +75,21 @@ const SessionSettings: FC = () => {
                     <DeviceIcon size={20} />
                 </Container>
 
-                <Container className="flex-1 d-flex column gap-025">
-                    <Container className="d-flex items-center gap-05">
+                <Container className="session-card-main flex-1 d-flex column gap-025">
+                    <Container className="session-card-title-row d-flex items-center gap-05 flex-wrap">
                         <Paragraph className="font-weight-5 font-size-2">
-                            {browser} on {os}
+                            {meta.browser} on {meta.os}
                         </Paragraph>
                         {isCurrent && (
                             <StatusBadge variant="brand" size="compact">Current</StatusBadge>
                         )}
                     </Container>
-                    <Container className="d-flex items-center gap-05">
+                    <Container className="session-card-meta-row d-flex items-center gap-05 flex-wrap">
                         <Paragraph className="session-ip color-muted">
                             {session.ip}
+                        </Paragraph>
+                        <Paragraph className='session-token color-muted font-size-1'>
+                            Token {meta.tokenInfo}
                         </Paragraph>
                         <Paragraph className="color-muted font-size-1">
                             · {formatSessionRelativeTime(session.lastActivity)}
@@ -77,7 +97,7 @@ const SessionSettings: FC = () => {
                     </Container>
                 </Container>
 
-                <Container className="d-flex items-center gap-05 f-shrink-0">
+                <Container className="session-card-actions d-flex items-center gap-05 f-shrink-0">
                     <StatusBadge
                         variant={SESSION_ACTION_VARIANTS[session.action]}
                         size="compact"
@@ -95,7 +115,7 @@ const SessionSettings: FC = () => {
                         </Button>
                     )}
                 </Container>
-            </Container>
+            </li>
         );
     };
 
@@ -104,19 +124,19 @@ const SessionSettings: FC = () => {
         const ActionIcon = getSessionActivityIcon(activity.action);
 
         return (
-            <Container
+            <li
                 key={`${activity._id}-${index}`}
-                className="d-flex items-center gap-075 p-05 radius-md"
+                className="session-activity-row d-flex items-center gap-075 p-05 radius-md"
             >
                 <Container className="d-flex items-center content-center f-shrink-0 color-muted">
                     <ActionIcon size={16} />
                 </Container>
 
-                <Container className="flex-1 d-flex column gap-025">
+                <Container className="session-card-main flex-1 d-flex column gap-025">
                     <Paragraph className="font-weight-5 font-size-2">
                         {SESSION_ACTION_LABELS[activity.action]} · {browser} on {os}
                     </Paragraph>
-                    <Container className="d-flex items-center gap-05">
+                    <Container className="session-card-meta-row d-flex items-center gap-05 flex-wrap">
                         <Paragraph className="session-ip color-muted">
                             {activity.ip}
                         </Paragraph>
@@ -137,7 +157,7 @@ const SessionSettings: FC = () => {
                         {activity.success ? 'Success' : 'Failed'}
                     </StatusBadge>
                 </Container>
-            </Container>
+            </li>
         );
     };
 
@@ -212,9 +232,9 @@ const SessionSettings: FC = () => {
                     action={activeSessionsAction}
                 />
 
-                <Container className="d-flex column gap-075">
+                <ul className='session-list d-flex column gap-075'>
                     {sessionsContent}
-                </Container>
+                </ul>
             </SettingsSection>
 
             <SettingsSection>
@@ -224,9 +244,9 @@ const SessionSettings: FC = () => {
                     action={undefined}
                 />
 
-                <Container className="d-flex column gap-075">
+                <ul className='session-list d-flex column gap-075'>
                     {activityContent}
-                </Container>
+                </ul>
             </SettingsSection>
 
             <Modal

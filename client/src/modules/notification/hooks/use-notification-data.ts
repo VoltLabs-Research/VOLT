@@ -54,6 +54,7 @@ const useNotificationData = () => {
         fetchNotifications,
         loadMore,
         markAllAsRead,
+        isMarkingAllAsRead: markAllReadMutation.isPending,
         hasMore: !!infiniteQuery.hasNextPage,
         isLoading: infiniteQuery.isLoading
     };

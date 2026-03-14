@@ -1,10 +1,12 @@
 .notification-badge {
-    top: 4px;
-    right: 4px;
-    font-size: 9px;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
+    top: 2px;
+    right: 2px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
     background: var(--accent-red);
     color: var(--color-contrast-high);
+    border: 1px solid var(--color-surface-1);
+    font-size: 11px;
+    line-height: 1;
 }

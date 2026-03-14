@@ -1,0 +1,18 @@
+.simulation-cell-axis-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.45rem;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--color-border-soft);
+    white-space: nowrap;
+}
+
+.simulation-cell-axis-pill.is-enabled {
+    background: color-mix(in srgb, var(--accent-green) 12%, transparent);
+    color: var(--color-text-primary);
+}
+
+.simulation-cell-axis-pill.is-disabled {
+    background: var(--color-surface-2);
+    color: var(--color-text-secondary);
+}

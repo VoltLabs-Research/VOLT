@@ -1,13 +1,16 @@
 .simulation-card-footer{
     padding: 1rem;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+    background: linear-gradient(to top, color-mix(in srgb, var(--color-bg) 82%, transparent), transparent);
 }
 
 .footer-options-btn{
-    background: transparent;
-    border: none;
-    padding: 0.25rem;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
     font-size: 1.25rem;
+}
+
+.simulation-card-metadata {
+    row-gap: 0.25rem;
 }
 
 .simulation-card-status-loader{

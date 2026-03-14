@@ -160,6 +160,7 @@ const CreateContainer = () => {
                 }
             >
                 <FormFieldRHF
+                    label='Docker image'
                     placeholder='e.g., nginx:latest, mysql:8.0'
                     value={tempCustomImage}
                     onChange={(e) => setTempCustomImage(e.target.value)}

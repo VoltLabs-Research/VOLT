@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { alpha } from '@mui/material/styles';
 import { LineChart } from '@mui/x-charts/LineChart';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 
 interface TinyLineChartProps {
     lineColor: string;
@@ -19,6 +20,7 @@ const TinyLineChart = ({
     width = 300, 
     height = 80 
 }: TinyLineChartProps) => {
+    const prefersReducedMotion = usePrefersReducedMotion();
     const { labels, data } = useMemo(() => {
         const L = Math.max(xLabels?.length || 0, pData?.length || 0);
         const safeLabels = Array.from({ length: L }, (_, i) => xLabels?.[i] ?? '');
@@ -57,7 +59,7 @@ const TinyLineChart = ({
                 }
             ]}
             disableAxisListener
-            skipAnimation={false}
+            skipAnimation={prefersReducedMotion}
             sx={{
                 '& .MuiLineElement-root': { strokeWidth: 2 },
                 '& .MuiAreaElement-root': { fill: areaColor },

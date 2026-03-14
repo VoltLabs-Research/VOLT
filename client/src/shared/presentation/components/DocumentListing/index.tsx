@@ -25,6 +25,7 @@ import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import Title from '@/shared/presentation/components/Title';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 
 import './DocumentListing.css';
 import { Skeleton } from '@mui/material';
@@ -35,6 +36,7 @@ import type { ChangeEvent } from 'react';
 import { RxDotsHorizontal } from 'react-icons/rx';
 import { sileo } from 'sileo';
 import React from 'react';
+import type { CSSProperties } from 'react';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { QueryKey } from '@tanstack/react-query';
@@ -141,6 +143,18 @@ const EXPORT_TYPE_OPTIONS: ExportTypeOption[] = [
     }
 ];
 
+const VISUALLY_HIDDEN_STYLES: CSSProperties = {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    padding: 0,
+    margin: -1,
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    border: 0
+};
+
 const isExportType = (value: string): value is ExportType => {
     return value === 'json' || value === 'csv';
 };
@@ -190,6 +204,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     compact = false
 }: DocumentListingProps<T, TContext>) => {
     const socketService = useSocket();
+    const prefersReducedMotion = usePrefersReducedMotion();
     const resolvedTabs = useMemo(() => {
         return tabs?.length ? tabs : DEFAULT_TABS;
     }, [tabs]);
@@ -297,13 +312,38 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
 
         const columnKey = getColumnSortKey(col);
         if (!sortConfig || sortConfig.key !== columnKey) {
-            return <span className='sort-indicator'>⇅</span>;
+            return <span className='sort-indicator' aria-hidden='true'>⇅</span>;
         }
 
         return sortConfig.direction === 'asc'
-            ? <span className='sort-indicator'>↑</span>
-            : <span className='sort-indicator'>↓</span>;
+            ? <span className='sort-indicator' aria-hidden='true'>↑</span>
+            : <span className='sort-indicator' aria-hidden='true'>↓</span>;
     }, [getColumnSortKey, sortConfig]);
+
+    const getAriaSort = useCallback((col: ColumnConfig<T>): 'ascending' | 'descending' | 'none' => {
+        if (!col.sortable) {
+            return 'none';
+        }
+
+        const columnKey = getColumnSortKey(col);
+        if (!sortConfig || sortConfig.key !== columnKey) {
+            return 'none';
+        }
+
+        return sortConfig.direction === 'asc' ? 'ascending' : 'descending';
+    }, [getColumnSortKey, sortConfig]);
+
+    const sortAnnouncement = useMemo(() => {
+        if (!sortConfig) {
+            return 'List sorted by default order.';
+        }
+
+        const activeColumn = columns.find((column) => getColumnSortKey(column) === sortConfig.key);
+        const columnTitle = activeColumn ? String(activeColumn.title ?? activeColumn.label ?? activeColumn.key ?? activeColumn.path ?? 'selected column') : 'selected column';
+        const directionLabel = sortConfig.direction === 'asc' ? 'ascending' : 'descending';
+
+        return `Sorted by ${columnTitle} in ${directionLabel} order.`;
+    }, [columns, getColumnSortKey, sortConfig]);
 
     const headerMenuTrigger = useMemo(() => {
         if (!headerMenuOptions.length) {
@@ -428,16 +468,18 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         return (
             <Container ref={scrollContainerRef} className='document-listing-body-container overflow-auto flex-1'>
                 <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: 15 }}
+                    animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
                     style={{ height: '100%' }}
                 >
                     <DocumentListingTable
+                        listingLabel={typeof title === 'string' ? title : undefined}
                         columns={columns}
                         data={sortedData}
                         onCellClick={handleSort}
                         getCellTitle={(col) => <>{col.title} {getSortIndicator(col)}</>}
+                        getAriaSort={getAriaSort}
                         isLoading={isLoading}
                         getMenuOptions={wrappedGetMenuOptions}
                         onItemClick={onItemClick}
@@ -462,6 +504,9 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
 
     return (
         <Container className={`d-flex column h-max document-listing-container color-secondary ${compact ? 'is-compact' : ''}`}>
+            <span style={VISUALLY_HIDDEN_STYLES} aria-live='polite' aria-atomic='true'>
+                {sortAnnouncement}
+            </span>
             {!hideHeader && (
                 <Container className={`d-flex column ${gap}`}>
                     <Container className='d-flex column gap-1-5 document-listing-header-top-container p-2'>
@@ -509,7 +554,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
 
                     {!hideTabs && (
                         <Container>
-                            <Container className='d-flex w-max gap-1 document-listing-header-tabs-container'>
+                            <Container className='d-flex w-max gap-1 document-listing-header-tabs-container' role='group' aria-label='Listing view and actions'>
                                 {resolvedTabs.map((tab) => (
                                     <button
                                         key={tab.id}
@@ -517,6 +562,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                                         className={`d-flex items-center gap-1 color-secondary document-listing-header-tab-container d-flex flex-center ${activeTabId === tab.id ? 'is-active' : ''}`}
                                         onClick={() => handleTabChange(tab.id)}
                                         aria-pressed={activeTabId === tab.id}
+                                        aria-label={tab.label}
                                     >
                                         <Paragraph>{tab.label}</Paragraph>
                                     </button>

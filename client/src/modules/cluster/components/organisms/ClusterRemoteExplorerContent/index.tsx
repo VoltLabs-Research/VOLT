@@ -203,6 +203,14 @@ const ClusterRemoteExplorerContent = ({
         explorerState.setSelectedPath(toExplorerPath(entry.path));
     };
 
+    const handlePathCopy = async () => {
+        if (!selectedEntry) {
+            return;
+        }
+
+        await navigator.clipboard.writeText(selectedEntry.path);
+    };
+
     const handleEntryDoubleClick = (entry: TeamClusterRemoteExplorerEntry) => {
         if (!isNavigableEntry(entry)) {
             explorerState.setSelectedPath(toExplorerPath(entry.path));
@@ -403,15 +411,25 @@ const ClusterRemoteExplorerContent = ({
             </Container>
 
             <Container className='cluster-remote-explorer-detail cluster-remote-explorer-panel radius-md p-1 d-flex column gap-1'>
-                <Container className='d-flex items-center gap-1'>
+                <Container className='cluster-remote-explorer-detail-header d-flex items-center gap-1'>
                     <Container className='d-flex column gap-025 flex-1'>
                         <Title className='font-size-3 font-weight-6 color-primary'>Details</Title>
-                        <Paragraph className='font-size-2 color-secondary'>
+                        <Paragraph className='font-size-2 color-secondary cluster-remote-explorer-detail-path' title={selectedEntry?.path}>
                             {selectedEntry
                                 ? selectedEntry.path
                                 : 'Select a collection, key or object to inspect its contents.'}
                         </Paragraph>
                     </Container>
+                    {selectedEntry && (
+                        <Button
+                            variant='outline'
+                            intent='white'
+                            size='sm'
+                            onClick={handlePathCopy}
+                        >
+                            Copy path
+                        </Button>
+                    )}
                     {selectedEntry && isDownloadableEntry(selectedEntry) && (
                         <Button
                             variant='outline'

@@ -9,8 +9,26 @@ import { AlertCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, useCallback, useId } from 'react';
 import { Controller } from 'react-hook-form';
 import type { SelectOption } from '@/shared/presentation/components/Select';
-import type { ReactNode, KeyboardEvent, ChangeEvent } from 'react';
+import type { ChangeEvent, InputHTMLAttributes, KeyboardEvent, ReactNode, RefCallback } from 'react';
 import type { Control, FieldValues, Path } from 'react-hook-form';
+
+type NativeInputProps = InputHTMLAttributes<HTMLInputElement>;
+type BooleanInputProp = boolean | 'true' | 'false';
+
+interface SyntheticInputTarget {
+    name: string;
+    value: string;
+};
+
+interface SyntheticChangeEvent {
+    target: SyntheticInputTarget;
+    currentTarget: SyntheticInputTarget;
+};
+
+type FormFieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> | SyntheticChangeEvent;
+type FormFieldChangeHandler = {
+    bivarianceHack(event: FormFieldChangeEvent): void;
+}['bivarianceHack'];
 
 export type { SelectOption };
 
@@ -46,7 +64,7 @@ interface SharedFieldProps {
     suggestions?: Array<string | number>;
     onFetchSuggestions?: () => void;
     autocomplete?: FormFieldAutocompleteConfig;
-    inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
+    inputProps?: NativeInputProps;
     isLoading?: boolean;
     error?: string;
 };
@@ -66,7 +84,7 @@ interface UncontrolledProps extends SharedFieldProps {
     name?: string;
     control?: never;
     value?: string | number | boolean;
-    onChange?: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+    onChange?: FormFieldChangeHandler;
     onBlur?: () => void;
     fieldKey?: never;
     fieldValue?: never;
@@ -128,6 +146,22 @@ const mergeDescribedBy = (...values: Array<string | undefined>) => {
     }
 
     return mergedValues.join(' ');
+};
+
+const resolveBooleanInputProp = (value?: BooleanInputProp) => {
+    return value;
+};
+
+const resolveAutocomplete = (inputProps?: NativeInputProps) => {
+    return inputProps?.autoComplete;
+};
+
+const resolveInputMode = (inputProps?: NativeInputProps) => {
+    return inputProps?.inputMode;
+};
+
+const resolveSpellCheck = (inputProps?: NativeInputProps) => {
+    return resolveBooleanInputProp(inputProps?.spellCheck);
 };
 
 const isSyntheticFieldChangeEvent = (value: unknown): value is ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> => {
@@ -250,10 +284,14 @@ const FormFieldRHF = <TForm extends FieldValues = FieldValues>(props: FormFieldR
                 target: {
                     name: uncontrolledProps.name ?? '',
                     value: String(eventOrValue ?? '')
+                },
+                currentTarget: {
+                    name: uncontrolledProps.name ?? '',
+                    value: String(eventOrValue ?? '')
                 }
             };
 
-            uncontrolledProps.onChange(syntheticEvent as ChangeEvent<HTMLInputElement>);
+            uncontrolledProps.onChange(syntheticEvent);
         },
         onBlur: uncontrolledProps.onBlur ?? (() => {}),
         name: uncontrolledProps.name ?? '',
@@ -289,7 +327,7 @@ interface ControllerField {
     onChange: (...args: unknown[]) => void;
     onBlur: () => void;
     name: string;
-    ref: React.RefCallback<HTMLInputElement | HTMLTextAreaElement>;
+    ref: RefCallback<HTMLInputElement | HTMLTextAreaElement>;
 };
 
 interface FieldRendererProps {
@@ -309,7 +347,7 @@ interface FieldRendererProps {
     suggestions?: Array<string | number>;
     onFetchSuggestions?: () => void;
     autocomplete?: FormFieldAutocompleteConfig;
-    inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
+    inputProps?: NativeInputProps;
     isLoading: boolean;
 };
 
@@ -343,6 +381,11 @@ const DefaultRenderer = ({
     const fieldId = inputProps?.id ?? ids.fieldId;
     const describedBy = mergeDescribedBy(inputProps?.['aria-describedby'], error ? ids.errorId : undefined);
     const ariaInvalid = error ? true : undefined;
+    const errorMessageId = error ? ids.errorId : undefined;
+    const fieldName = inputProps?.name ?? field.name;
+    const autoComplete = resolveAutocomplete(inputProps);
+    const inputMode = resolveInputMode(inputProps);
+    const spellCheck = resolveSpellCheck(inputProps);
 
     const renderField = () => {
         if (fieldType === 'select') {
@@ -357,6 +400,7 @@ const DefaultRenderer = ({
                     aria-labelledby={label ? ids.labelId : undefined}
                     aria-describedby={describedBy}
                     aria-invalid={ariaInvalid}
+                    aria-errormessage={errorMessageId}
                 />
             );
         }
@@ -370,6 +414,7 @@ const DefaultRenderer = ({
                     aria-labelledby={label ? ids.labelId : undefined}
                     aria-describedby={describedBy}
                     aria-invalid={ariaInvalid}
+                    aria-errormessage={errorMessageId}
                 />
             );
         }
@@ -379,6 +424,7 @@ const DefaultRenderer = ({
                 <input
                     id={fieldId}
                     type='color'
+                    name={fieldName}
                     value={String(field.value ?? '#000000')}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
@@ -386,6 +432,7 @@ const DefaultRenderer = ({
                     disabled={disabled}
                     aria-describedby={describedBy}
                     aria-invalid={ariaInvalid}
+                    aria-errormessage={errorMessageId}
                 />
             );
         }
@@ -395,12 +442,15 @@ const DefaultRenderer = ({
                 <textarea
                     ref={field.ref}
                     id={fieldId}
-                    name={field.name}
+                    name={fieldName}
                     value={String(field.value ?? '')}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     placeholder={placeholder}
                     rows={rows}
+                    autoComplete={autoComplete}
+                    inputMode={inputMode}
+                    spellCheck={spellCheck}
                     disabled={disabled}
                     className={cn(
                         'form-field-input radius-sm w-max',
@@ -413,6 +463,7 @@ const DefaultRenderer = ({
                     }}
                     aria-describedby={describedBy}
                     aria-invalid={ariaInvalid}
+                    aria-errormessage={errorMessageId}
                 />
             );
         }
@@ -421,13 +472,16 @@ const DefaultRenderer = ({
             <input
                 ref={field.ref}
                 id={fieldId}
-                name={field.name}
+                name={fieldName}
                 {...inputProps}
                 type={type ?? 'text'}
                 value={String(field.value ?? '')}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 placeholder={placeholder}
+                autoComplete={autoComplete}
+                inputMode={inputMode}
+                spellCheck={spellCheck}
                 disabled={disabled}
                 autoFocus={autoFocus}
                 className={cn(
@@ -438,6 +492,7 @@ const DefaultRenderer = ({
                 )}
                 aria-describedby={describedBy}
                 aria-invalid={ariaInvalid}
+                aria-errormessage={errorMessageId}
             />
         );
     };
@@ -464,7 +519,7 @@ const DefaultRenderer = ({
             </Container>
 
             {error && (
-                <Container id={ids.errorId} role='alert' aria-live='polite' className='d-flex items-center gap-025 form-field-error font-size-1'>
+                <Container id={ids.errorId} role='status' aria-live='polite' aria-atomic='true' className='d-flex items-center gap-025 form-field-error font-size-1'>
                     <AlertCircle size={12} />
                     <span>{error}</span>
                 </Container>
@@ -641,6 +696,11 @@ const InlineCanvasRenderer = ({
     const fieldId = inputProps?.id ?? ids.fieldId;
     const describedBy = mergeDescribedBy(inputProps?.['aria-describedby'], error ? ids.errorId : undefined);
     const ariaInvalid = error ? true : undefined;
+    const errorMessageId = error ? ids.errorId : undefined;
+    const fieldName = inputProps?.name ?? field.name;
+    const autoComplete = resolveAutocomplete(inputProps);
+    const inputMode = resolveInputMode(inputProps);
+    const spellCheck = resolveSpellCheck(inputProps);
 
     const handleInlineFocus = (target: HTMLInputElement | HTMLTextAreaElement) => {
         onFetchSuggestions?.();
@@ -703,6 +763,7 @@ const InlineCanvasRenderer = ({
                     aria-labelledby={hasLabel ? ids.labelId : undefined}
                     aria-describedby={describedBy}
                     aria-invalid={ariaInvalid}
+                    aria-errormessage={errorMessageId}
                 />
             );
         }
@@ -716,6 +777,7 @@ const InlineCanvasRenderer = ({
                     aria-labelledby={hasLabel ? ids.labelId : undefined}
                     aria-describedby={describedBy}
                     aria-invalid={ariaInvalid}
+                    aria-errormessage={errorMessageId}
                 />
             );
         }
@@ -725,12 +787,14 @@ const InlineCanvasRenderer = ({
                 <input
                     id={fieldId}
                     type='color'
+                    name={fieldName}
                     value={typeof effectiveValue === 'string' ? effectiveValue : String(effectiveValue)}
                     onChange={(event) => field.onChange(event.target.value)}
                     className='labeled-input-color'
                     disabled={disabled}
                     aria-describedby={describedBy}
                     aria-invalid={ariaInvalid}
+                    aria-errormessage={errorMessageId}
                     {...inputProps}
                 />
             );
@@ -741,7 +805,7 @@ const InlineCanvasRenderer = ({
                 <textarea
                     ref={textareaElementRef}
                     id={fieldId}
-                    name={field.name}
+                    name={fieldName}
                     className={`${fieldClass} ${textareaClass}`}
                     value={String(effectiveValue ?? '')}
                     onChange={(event) => {
@@ -757,9 +821,13 @@ const InlineCanvasRenderer = ({
                     onKeyDown={handleAutocompleteKeyDown}
                     placeholder={placeholder}
                     rows={rows}
+                    autoComplete={autoComplete}
+                    inputMode={inputMode}
+                    spellCheck={spellCheck}
                     disabled={disabled}
                     aria-describedby={describedBy}
                     aria-invalid={ariaInvalid}
+                    aria-errormessage={errorMessageId}
                 />
             );
         }
@@ -769,7 +837,7 @@ const InlineCanvasRenderer = ({
                 <input
                     ref={assignInputRef}
                     id={fieldId}
-                    name={field.name}
+                    name={fieldName}
                     {...inputProps}
                     className={`${fieldClass} labeled-input`}
                     value={String(effectiveValue ?? '')}
@@ -781,6 +849,9 @@ const InlineCanvasRenderer = ({
                     }}
                     onBlur={field.onBlur}
                     placeholder={placeholder}
+                    autoComplete={autoComplete}
+                    inputMode={inputMode}
+                    spellCheck={spellCheck}
                     list={datalistId}
                     onFocus={(event) => handleInlineFocus(event.currentTarget)}
                     onClick={(event) => autocompleteEnabled && syncAutocompleteContext(event.currentTarget)}
@@ -789,6 +860,7 @@ const InlineCanvasRenderer = ({
                     disabled={disabled}
                     aria-describedby={describedBy}
                     aria-invalid={ariaInvalid}
+                    aria-errormessage={errorMessageId}
                 />
                 {datalistId && suggestions && (
                     <datalist id={datalistId}>
@@ -866,7 +938,7 @@ const InlineCanvasRenderer = ({
             )}
 
             {error && (
-                <Container id={ids.errorId} role='alert' aria-live='polite' className='d-flex items-center gap-025 form-field-error font-size-1'>
+                <Container id={ids.errorId} role='status' aria-live='polite' aria-atomic='true' className='d-flex items-center gap-025 form-field-error font-size-1'>
                     <AlertCircle size={12} />
                     <span>{error}</span>
                 </Container>

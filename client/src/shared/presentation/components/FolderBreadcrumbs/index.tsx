@@ -1,51 +1,39 @@
-import Container from '@/shared/presentation/components/Container';
+import './FolderBreadcrumbs.css';
 import { ChevronRight } from 'lucide-react';
 import type { FolderBreadcrumbItem } from '@/shared/presentation/hooks/use-folder-breadcrumbs';
-import type { CSSProperties } from 'react';
 
 interface FolderBreadcrumbsProps {
     items: FolderBreadcrumbItem[];
     onNavigate: (folderId: string | null) => void;
 };
 
-const breadcrumbButtonStyle: CSSProperties = {
-    border: 'none',
-    background: 'transparent',
-    padding: 0,
-    font: 'inherit',
-    color: 'inherit',
-    textAlign: 'left'
-};
-
 const FolderBreadcrumbs = ({ items, onNavigate }: FolderBreadcrumbsProps) => {
     return (
-        <nav className='d-flex items-center gap-05 font-size-2'>
-            {items.map((item, index) => {
-                const isCurrent = index === items.length - 1;
-                const className = isCurrent
-                    ? 'color-primary font-weight-6'
-                    : 'color-secondary cursor-pointer';
+        <nav className='folder-breadcrumbs d-flex items-center font-size-2' aria-label='Folder breadcrumbs'>
+            <ol className='folder-breadcrumbs__list'>
+                {items.map((item, index) => {
+                    const isCurrent = index === items.length - 1;
 
-                return (
-                    <Container key={item.id ?? 'root'} className='d-flex items-center gap-05'>
-                        {index > 0 && <ChevronRight size={12} className='color-muted' />}
-                        {isCurrent ? (
-                            <span className={className} aria-current='page'>
-                                {item.title}
-                            </span>
-                        ) : (
-                            <button
-                                type='button'
-                                className={`${className} folder-breadcrumb-button`}
-                                onClick={() => onNavigate(item.id)}
-                                style={breadcrumbButtonStyle}
-                            >
-                                {item.title}
-                            </button>
-                        )}
-                    </Container>
-                );
-            })}
+                    return (
+                        <li key={item.id ?? 'root'} className='folder-breadcrumbs__item'>
+                            {index > 0 && <ChevronRight size={12} className='folder-breadcrumbs__separator' aria-hidden='true' />}
+                            {isCurrent ? (
+                                <span className='folder-breadcrumbs__current' aria-current='page'>
+                                    {item.title}
+                                </span>
+                            ) : (
+                                <button
+                                    type='button'
+                                    className='folder-breadcrumbs__link'
+                                    onClick={() => onNavigate(item.id)}
+                                >
+                                    {item.title}
+                                </button>
+                            )}
+                        </li>
+                    );
+                })}
+            </ol>
         </nav>
     );
 };

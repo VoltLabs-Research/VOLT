@@ -5,9 +5,19 @@
     border-radius: var(--radius-sm);
 }
 
+.terminal-container:focus-within {
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
+}
+
 .terminal-container .xterm,
 .terminal-container .xterm-viewport,
 .terminal-container .xterm-screen,
 .terminal-container .xterm-helper-textarea {
     background-color: var(--color-surface-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .terminal-container .xterm-cursor {
+        animation: none !important;
+    }
 }

@@ -35,3 +35,10 @@
     min-width: 120px;
     padding: 8px 12px;
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .cursor-tooltip {
+        transition: none;
+        scale: 1;
+    }
+}

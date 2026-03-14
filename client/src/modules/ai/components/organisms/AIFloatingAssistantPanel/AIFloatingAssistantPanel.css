@@ -9,11 +9,15 @@
     border-radius: var(--radius-lg);
     overflow: hidden;
     z-index: 80;
+    right: max(1rem, env(safe-area-inset-right, 0px));
+    bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+    box-shadow: var(--shadow-elevated);
 }
 
 .ai-floating-assistant-header {
     padding: 0.75rem;
     gap: 0.5rem;
+    border-bottom: 1px solid var(--color-border-soft);
 }
 
 .ai-floating-assistant-toolbar {
@@ -28,7 +32,7 @@
 
 .ai-floating-assistant .ai-thread-list {
     padding: 0.75rem;
-    gap: 0.6rem;
+    gap: 0.75rem;
 }
 
 .ai-floating-assistant .ai-message-row {
@@ -44,7 +48,7 @@
 }
 
 .ai-floating-assistant .ai-composer {
-    padding: 0.65rem 0.75rem;
+    padding: 0.75rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
 }
 
 .ai-floating-assistant .ai-composer-input-wrapper {
@@ -62,11 +66,23 @@
     background: var(--status-error-bg);
 }
 
+.ai-floating-assistant:focus-visible,
+.ai-floating-assistant .volt-icon-button:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
 @media screen and (max-width: 768px) {
     .ai-floating-assistant {
-        width: calc(100vw - 1rem);
-        right: 0.5rem;
-        bottom: 0.5rem;
-        height: min(72vh, 620px);
+        width: calc(100vw - max(1rem, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)));
+        right: max(0.5rem, env(safe-area-inset-right, 0px));
+        bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+        height: min(72vh, calc(100vh - 5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ai-floating-assistant {
+        scroll-behavior: auto;
     }
 }

@@ -4,7 +4,8 @@
 
 .team-member-item {
     width: 100%;
-    padding: 0.625rem;
+    min-height: 3rem;
+    padding: 0.75rem;
     border: 1px solid transparent;
     border-radius: var(--radius-md);
     background: transparent;
@@ -23,10 +24,16 @@
 }
 
 .team-member-item-checkbox {
-    width: 18px;
-    height: 18px;
+    width: 1.25rem;
+    height: 1.25rem;
     border-radius: var(--radius-xs);
     border: 2px solid var(--color-border-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .team-member-item-checkbox {
+        transition: none;
+    }
 }
 
 .team-member-item.selected .team-member-item-checkbox {
@@ -37,4 +44,3 @@
 .team-member-item-info {
     min-width: 0;
 }
-

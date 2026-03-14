@@ -29,7 +29,7 @@ import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constan
 import { FolderInput, FolderOpen, Pencil, SquarePen, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createEmptyWhiteboardsResponse, getDeleteConfirmationMessage } from '../utilities/whiteboards';
+import { createEmptyWhiteboardsResponse, getDeleteConfirmationMessage, getSafeFolderTitle, getSafeWhiteboardTitle } from '../utilities/whiteboards';
 import {
     createWhiteboardFolderRow,
     createWhiteboardItemRow,
@@ -88,7 +88,7 @@ const fetchFolderById = (folderId: string): Promise<WhiteboardFolder> => {
 };
 
 const getDeleteFolderConfirmDescription = (folderTitle: string): string => {
-    return `Delete "${folderTitle}"? Nested folders and all whiteboards inside them will be deleted recursively.`;
+    return `Delete "${getSafeFolderTitle(folderTitle)}"? Nested folders and all whiteboards inside them will be deleted recursively.`;
 };
 
 const useWhiteboardsListing = () => {
@@ -215,7 +215,7 @@ const useWhiteboardsListing = () => {
     const handleMoveWhiteboardOpen = useCallback((whiteboard: Whiteboard) => {
         setMovingWhiteboard({
             _id: whiteboard._id,
-            title: whiteboard.title,
+            title: getSafeWhiteboardTitle(whiteboard.title),
             folder: whiteboard.folder
         });
         openModal(MOVE_WHITEBOARD_MODAL_ID);

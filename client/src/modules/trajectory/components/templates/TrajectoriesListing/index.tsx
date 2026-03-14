@@ -149,6 +149,8 @@ export default function TrajectoriesListing() {
                 onItemClick={handleItemClick}
                 dragAndDrop={dragAndDrop}
                 emptyMessage='No trajectories found in this location.'
+                emptyButtonText='Upload'
+                onEmptyButtonClick={handleCreate}
                 headerActions={(
                     <>
                         <input

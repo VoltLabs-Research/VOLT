@@ -1,8 +1,10 @@
-import AsyncMenuItemWrapper from '@/shared/presentation/components/AsyncMenuItemWrapper';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import AsyncContextMenuItem from './AsyncContextMenuItem';
 import SubmenuItemWrapper from './SubmenuItemWrapper';
 import './ContextMenuPopover.css';
+import { useState } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { ReactNode } from 'react';
 
@@ -21,6 +23,8 @@ const ContextMenuPopover = ({
     size = 'md',
     triggerAction = 'contextmenu'
 }: ContextMenuPopoverProps) => {
+    const [menuError, setMenuError] = useState<string | null>(null);
+
     if (options.length === 0) {
         return <>{trigger}</>;
     }
@@ -34,16 +38,18 @@ const ContextMenuPopover = ({
                     key={key}
                     option={option}
                     size={size}
+                    onOpen={() => setMenuError(null)}
                 />
             );
         }
 
         return (
-            <AsyncMenuItemWrapper
+            <AsyncContextMenuItem
                 key={key}
                 option={option}
                 size={size}
-                onSuccess={close}
+                onClose={close}
+                onError={setMenuError}
             />
         );
     };
@@ -55,9 +61,22 @@ const ContextMenuPopover = ({
             triggerAction={triggerAction}
             noPadding
             className={`context-menu-popover context-menu-popover--${size}`}
+            role='menu'
+            triggerAriaHaspopup='menu'
+            ariaLabel='Context menu'
+            onOpenChange={(isOpen) => {
+                if (!isOpen) {
+                    setMenuError(null);
+                }
+            }}
         >
             {(close) => (
-                <PopoverMenu>
+                <PopoverMenu label='Context menu actions' onClose={close}>
+                    {menuError && (
+                        <Paragraph className='context-menu-popover-error font-size-1 color-danger' role='status' aria-live='polite' aria-atomic='true'>
+                            {menuError}
+                        </Paragraph>
+                    )}
                     {options.map((option, index) => renderOption(option, index, close))}
                 </PopoverMenu>
             )}

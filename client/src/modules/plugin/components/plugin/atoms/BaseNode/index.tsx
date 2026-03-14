@@ -150,8 +150,11 @@ const BaseNode = ({
             {hasInspectableOutput && (
                 <Container className='p-absolute center-x items-center workflow-node-btn-group'>
                     <button
+                        type='button'
                         className={`b-soft radius-full cursor-pointer font-weight-6 workflow-node-data-btn ${isExpanded ? 'workflow-node-data-btn--active' : ''}`}
                         onClick={handleDataToggle}
+                        aria-pressed={isExpanded}
+                        title='Toggle node data'
                     >
                         <Database size={11} />
                         Data
@@ -159,8 +162,11 @@ const BaseNode = ({
 
                     {hasLog && (
                         <button
+                            type='button'
                             className={`b-soft radius-full cursor-pointer font-weight-6 workflow-node-data-btn ${showLog ? 'workflow-node-data-btn--active' : ''}`}
                             onClick={handleLogToggle}
+                            aria-pressed={showLog}
+                            title='Toggle execution log'
                         >
                             <Terminal size={11} />
                             Execution Log

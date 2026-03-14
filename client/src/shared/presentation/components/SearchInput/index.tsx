@@ -1,9 +1,21 @@
 import { cn } from '@/shared/utils/cn';
 import Container from '@/shared/presentation/components/Container';
 import './SearchInput.css';
-import { forwardRef, InputHTMLAttributes } from 'react';
-import type { ReactNode } from 'react';
+import { forwardRef, useRef } from 'react';
+import type { InputHTMLAttributes, ReactNode } from 'react';
 import { IoSearchOutline } from 'react-icons/io5';
+
+const MISSING_SEARCH_INPUT_NAME_ERROR = 'SearchInput requires an accessible name via aria-label, aria-labelledby, or an external label bound to its id.';
+const FALLBACK_SEARCH_LABEL = 'Search';
+
+const resolveAccessibleText = (value?: string): string | undefined => {
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+
+    const trimmedValue = value.trim();
+    return trimmedValue || undefined;
+};
 
 interface SearchInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
     containerClassName?: string;
@@ -16,14 +28,34 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
     containerClassName,
     variant = 'default',
     className,
-    placeholder = 'Search...',
+    placeholder = 'Search…',
     overlayContent,
     overlayVisible = false,
+    id,
+    title,
+    'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
     ...props
 }, ref) => {
+    const hasWarnedForMissingNameRef = useRef(false);
+    const resolvedAriaLabel = resolveAccessibleText(ariaLabel);
+    const resolvedAriaLabelledBy = resolveAccessibleText(ariaLabelledBy);
+    const resolvedTitle = resolveAccessibleText(title);
+    const hasExternalLabelContract = Boolean(id);
+
+    let accessibleName = resolvedAriaLabel ?? resolvedTitle;
+    if (!resolvedAriaLabelledBy && !accessibleName && !hasExternalLabelContract) {
+        if (!hasWarnedForMissingNameRef.current) {
+            console.warn(MISSING_SEARCH_INPUT_NAME_ERROR);
+            hasWarnedForMissingNameRef.current = true;
+        }
+
+        accessibleName = FALLBACK_SEARCH_LABEL;
+    }
+
     return (
         <Container className={cn('search-input-container d-flex items-center gap-05', variant === 'small' && 'search-input-container--small', containerClassName)}>
-            <IoSearchOutline className={cn('search-input-icon color-muted f-shrink-0', variant === 'small' && 'search-input-icon--small')} />
+            <IoSearchOutline aria-hidden='true' className={cn('search-input-icon color-muted f-shrink-0', variant === 'small' && 'search-input-icon--small')} />
             <Container className='search-input-content p-relative flex-1'>
                 {overlayVisible && overlayContent && (
                     <Container className='search-input-overlay d-flex items-center'>
@@ -32,8 +64,12 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
                 )}
                 <input
                     ref={ref}
-                    type='text'
-                    placeholder={overlayVisible ? '' : placeholder}
+                    id={id}
+                    type='search'
+                    title={resolvedTitle}
+                    aria-label={accessibleName}
+                    aria-labelledby={resolvedAriaLabelledBy}
+                    placeholder={overlayVisible ? '' : (placeholder || 'Search…')}
                     className={cn('search-input font-size-2 color-primary flex-1', variant === 'small' && 'search-input--small', className, overlayVisible && 'search-input--with-overlay')}
                     {...props}
                 />

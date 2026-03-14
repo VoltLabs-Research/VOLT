@@ -53,11 +53,13 @@ export interface ColumnConfig<TRow = unknown> {
 };
 
 interface DocumentListingTableProps<T extends Identifiable> {
+    listingLabel?: string;
     columns: ColumnConfig<T>[];
     data: T[];
     onCellClick?: (col: ColumnConfig<T>) => void;
     onItemClick?: (item: T, event: React.MouseEvent) => boolean;
     getCellTitle?: (col: ColumnConfig<T>) => React.ReactNode;
+    getAriaSort?: (col: ColumnConfig<T>) => 'ascending' | 'descending' | 'none';
     isLoading?: boolean;
     getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
     dragAndDrop?: DocumentListingDragAndDropConfig<T>;
@@ -79,11 +81,13 @@ interface DocumentListingTableProps<T extends Identifiable> {
 const getColumnTitle = <T,>(col: ColumnConfig<T>): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
 
 const DocumentListingTable = <T extends Identifiable>({
+    listingLabel = 'Document listing',
     columns,
     data,
     onCellClick = () => {},
     onItemClick,
     getCellTitle = (col) => col.title,
+    getAriaSort = () => 'none',
     isLoading = false,
     getMenuOptions,
     dragAndDrop,
@@ -242,8 +246,9 @@ const DocumentListingTable = <T extends Identifiable>({
         return nextMap;
     }, [data, dragAndDrop]);
 
-    const handleRowClick = useCallback((event: React.MouseEvent, item: T) => {
-        const isMultiSelection = event.ctrlKey || event.metaKey;
+    const handleRowClick = useCallback((event: React.MouseEvent | React.KeyboardEvent, item: T) => {
+        const isMouseEvent = 'ctrlKey' in event && 'metaKey' in event;
+        const isMultiSelection = isMouseEvent && (event.ctrlKey || event.metaKey);
 
         setSelectedIds((prev) => {
             if (!isMultiSelection) {
@@ -307,10 +312,18 @@ const DocumentListingTable = <T extends Identifiable>({
     ));
 
     return (
-        <Container className={`d-flex column document-listing-table-container h-max ${compact ? 'is-compact' : ''}`}>
+        <Container
+            className={`d-flex column document-listing-table-container h-max ${compact ? 'is-compact' : ''}`}
+            role='grid'
+            aria-label={listingLabel}
+            aria-colcount={columns.length}
+            aria-rowcount={data.length}
+            aria-busy={isLoading || isFetchingMore}
+        >
             {columns.length > 0 && shouldShowContent && (
                 <Container
                     className='document-listing-table-header-container p-sticky top-0 d-flex'
+                    role='row'
                     style={{
                         width: effectiveWidth,
                         gap: useFlexDistribution ? undefined : `${resolvedGap}px`,
@@ -319,24 +332,37 @@ const DocumentListingTable = <T extends Identifiable>({
                 >
                     {columns.map((col, colIdx) => (
                         <Container
-                            className={`document-listing-cell header-cell ${col.sortable ? 'sortable cursor-pointer' : ''} overflow-hidden d-flex items-center color-secondary`}
+                            className='document-listing-cell header-cell overflow-hidden d-flex items-center color-secondary'
                             key={`header-${getColumnTitle(col)}-${colIdx}`}
-                            onClick={() => onCellClick(col)}
+                            role='columnheader'
+                            aria-sort={getAriaSort(col)}
                             style={
                                 useFlexDistribution
                                     ? { flex: 1, minWidth: 0 }
                                     : { width: columnWidths[colIdx], minWidth: columnWidths[colIdx], maxWidth: columnWidths[colIdx], flexShrink: 0 }
                             }
                         >
-                            <Title className='font-size-2-5 font-weight-5 color-secondary'>{getCellTitle(col)}</Title>
+                            {col.sortable ? (
+                                <button
+                                    type='button'
+                                    className='document-listing-sort-button d-flex items-center color-secondary'
+                                    onClick={() => onCellClick(col)}
+                                    aria-label={`Sort by ${getColumnTitle(col)}`}
+                                >
+                                    <Title className='font-size-2-5 font-weight-5 color-secondary'>{getCellTitle(col)}</Title>
+                                </button>
+                            ) : (
+                                <Title className='font-size-2-5 font-weight-5 color-secondary'>{getCellTitle(col)}</Title>
+                            )}
                         </Container>
                     ))}
                 </Container>
             )}
 
             <Container
-                ref={bodyRef as React.RefObject<HTMLDivElement>}
+                ref={bodyRef}
                 className='d-flex column p-relative document-listing-table-body-container flex-1'
+                role='rowgroup'
                 style={{ minWidth: (useFlexDistribution || !shouldShowContent) ? undefined : `${minContentWidth}px` }}
             >
                 {dragAndDrop ? (
@@ -355,7 +381,7 @@ const DocumentListingTable = <T extends Identifiable>({
                     />
                 ))}
 
-                <Container ref={sentinelRef} style={{ height: 1 }} />
+                <Container ref={sentinelRef} style={{ height: 1 }} aria-hidden='true' />
 
                 {shouldShowEmptyState && (
                     <RecoveryState

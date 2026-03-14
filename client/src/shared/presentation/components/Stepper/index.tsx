@@ -1,7 +1,10 @@
 import Container from '../Container';
 import './Stepper.css';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ReactNode, useState } from 'react';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useId, useState } from 'react';
+import type { KeyboardEvent } from 'react';
+import type { ReactNode } from 'react';
 
 export interface Step<K extends string>{
     key: K;
@@ -47,6 +50,21 @@ const variants = {
     })
 };
 
+const reducedMotionVariants = {
+    enter: {
+        x: 0,
+        opacity: 0
+    },
+    center: {
+        x: 0,
+        opacity: 1
+    },
+    exit: {
+        x: 0,
+        opacity: 0
+    }
+};
+
 const Stepper = <K extends string>({ 
     steps, 
     activeStep, 
@@ -56,21 +74,88 @@ const Stepper = <K extends string>({
     canNavigateTo
 }: StepperProps<K>) => {
     const [prevStep, setPrevStep] = useState<K>(activeStep);
+    const prefersReducedMotion = usePrefersReducedMotion();
+    const stepperId = useId();
+    const stepIndicators = indicators ?? [];
+    const stepVariants = prefersReducedMotion ? reducedMotionVariants : variants;
     
     const currentIndex = steps.findIndex((step) => step.key === activeStep);
     const prevIndex = steps.findIndex((step) => step.key === prevStep);
     const direction: Direction = currentIndex >= prevIndex ? 'forward' : 'backward';
 
-    if(activeStep !== prevStep){
-        setPrevStep(activeStep);
-    }
+    useEffect(() => {
+        if (activeStep !== prevStep) {
+            setPrevStep(activeStep);
+        }
+    }, [activeStep, prevStep]);
 
     const currentStep = steps.find((state) => state.key === activeStep);
+    const activePanelId = `${stepperId}-${activeStep}-panel`;
 
     const handleIndicatorClick = (key: K) => {
         if(!onStepClick) return;
         if(canNavigateTo && !canNavigateTo(key)) return;
         onStepClick(key);
+    };
+
+    const getNavigableIndex = (startIndex: number, increment: number) => {
+        let nextIndex = startIndex;
+
+        while (nextIndex >= 0 && nextIndex < stepIndicators.length) {
+            const nextIndicator = stepIndicators[nextIndex];
+            if (!nextIndicator) {
+                return null;
+            }
+
+            if (!canNavigateTo || canNavigateTo(nextIndicator.key)) {
+                return nextIndex;
+            }
+
+            nextIndex += increment;
+        }
+
+        return null;
+    };
+
+    const handleIndicatorKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+        if (!indicators || !onStepClick) {
+            return;
+        }
+
+        if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+            event.preventDefault();
+            const nextIndex = getNavigableIndex(index + 1, 1);
+            if (nextIndex !== null) {
+                handleIndicatorClick(stepIndicators[nextIndex].key);
+            }
+            return;
+        }
+
+        if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+            event.preventDefault();
+            const nextIndex = getNavigableIndex(index - 1, -1);
+            if (nextIndex !== null) {
+                handleIndicatorClick(stepIndicators[nextIndex].key);
+            }
+            return;
+        }
+
+        if (event.key === 'Home') {
+            event.preventDefault();
+            const nextIndex = getNavigableIndex(0, 1);
+            if (nextIndex !== null) {
+                handleIndicatorClick(stepIndicators[nextIndex].key);
+            }
+            return;
+        }
+
+        if (event.key === 'End') {
+            event.preventDefault();
+            const nextIndex = getNavigableIndex(stepIndicators.length - 1, -1);
+            if (nextIndex !== null) {
+                handleIndicatorClick(stepIndicators[nextIndex].key);
+            }
+        }
     };
 
     const renderStepContent = () => (
@@ -81,12 +166,16 @@ const Stepper = <K extends string>({
             <motion.div
                 key={activeStep}
                 custom={direction}
-                variants={variants}
+                variants={stepVariants}
                 initial='enter'
                 animate='center'
                 exit='exit'
-                transition={{ duration: 0.25 }}
-                className={`stepper-step ${className}`}>
+                transition={{ duration: prefersReducedMotion ? 0 : 0.25 }}
+                className={`stepper-step ${className}`}
+                id={activePanelId}
+                role='tabpanel'
+                aria-labelledby={`${stepperId}-${activeStep}-tab`}
+                tabIndex={0}>
                 {currentStep?.content}
             </motion.div>
         </AnimatePresence>
@@ -98,17 +187,28 @@ const Stepper = <K extends string>({
 
     return (
         <Container className='stepper-with-sidebar d-flex overflow-hidden flex-1'>
-            <Container className='stepper-sidebar d-flex column gap-05'>
-                {indicators.map((indicator, index) => {
+            <Container className='stepper-sidebar d-flex column gap-05' role='tablist' aria-orientation='vertical'>
+                {stepIndicators.map((indicator, index) => {
                     const indicatorIndex = steps.findIndex((s) => s.key === indicator.key);
-                    const isActive = indicatorIndex <= currentIndex;
+                    const isActive = indicator.key === activeStep;
+                    const isComplete = indicatorIndex < currentIndex;
                     const isClickable = !canNavigateTo || canNavigateTo(indicator.key);
+                    const tabId = `${stepperId}-${indicator.key}-tab`;
+                    const panelId = `${stepperId}-${indicator.key}-panel`;
                     
                     return (
                         <Container key={indicator.key}>
-                            <Container
-                                className={`stepper-indicator d-flex items-center gap-1 ${isActive ? 'active' : ''} ${isClickable && onStepClick ? 'cursor-pointer' : ''}`}
+                            <button
+                                id={tabId}
+                                type='button'
+                                role='tab'
+                                aria-selected={isActive}
+                                aria-controls={panelId}
+                                tabIndex={isActive ? 0 : -1}
+                                className={`stepper-indicator d-flex items-center gap-1 ${isActive ? 'active' : ''} ${isComplete ? 'complete' : ''} ${isClickable && onStepClick ? 'cursor-pointer' : ''}`}
+                                disabled={!isClickable || !onStepClick}
                                 onClick={() => handleIndicatorClick(indicator.key)}
+                                onKeyDown={(event) => handleIndicatorKeyDown(event, index)}
                             >
                                 <Container className='stepper-indicator-number d-flex flex-center font-weight-6'>
                                     {index + 1}
@@ -119,8 +219,8 @@ const Stepper = <K extends string>({
                                         <small className='stepper-indicator-desc'>{indicator.description}</small>
                                     )}
                                 </Container>
-                            </Container>
-                            {index < indicators.length - 1 && (
+                            </button>
+                            {index < stepIndicators.length - 1 && (
                                 <Container className={`stepper-line ${indicatorIndex < currentIndex ? 'active' : ''}`} />
                             )}
                         </Container>

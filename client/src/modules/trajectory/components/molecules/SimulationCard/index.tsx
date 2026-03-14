@@ -1,5 +1,6 @@
 import { getStageMessage, isProcessingStatus } from '@/modules/trajectory/api/entities/trajectory';
 import useTrajectoryPreview from '@/modules/trajectory/hooks/trajectory/use-trajectory-preview';
+import { formatNumber, formatSize } from '@/shared/utils/format';
 import SimulationCardFooter from '../../atoms/SimulationCardFooter';
 import SimulationCardHeader from '../../atoms/SimulationCardHeader';
 import SimulationCardUsers from '../../atoms/SimulationCardUsers';
@@ -53,11 +54,38 @@ export default function SimulationCard({ trajectory, isSelected, onSelect, onDel
         }
     }, [navigate, onSelect, trajectory._id]);
 
+    const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLElement>) => {
+        if (isInteractiveTarget(event.target)) {
+            return;
+        }
+
+        if (event.key !== 'Enter' && event.key !== ' ') {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (event.metaKey || event.ctrlKey) {
+            onSelect(trajectory._id);
+            return;
+        }
+
+        navigate(`/canvas/${trajectory._id}/`);
+    }, [navigate, onSelect, trajectory._id]);
+
     const showPreview = previewBlobUrl && !previewError;
     const showPlaceholder = !showPreview || previewLoading;
+    const atomCount = trajectory.frames[0]?.natoms ?? 0;
 
     return (
-        <Container className={containerClass} onClick={handleClick}>
+        <article
+            className={containerClass}
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            role='link'
+            aria-label={`Open trajectory ${trajectory.name}`}
+        >
             <Container className='d-flex flex-center overflow-hidden p-relative w-max cover-container radius-md'>
                 {showPlaceholder && (
                     <Container className='d-flex flex-center w-max h-max color-muted font-size-5-5'>
@@ -75,19 +103,25 @@ export default function SimulationCard({ trajectory, isSelected, onSelect, onDel
             </Container>
 
             <SimulationCardHeader 
-                user={typeof trajectory.createdBy === 'object' ? trajectory.createdBy : null} 
+                user={typeof trajectory.createdBy === 'object' ? trajectory.createdBy : null}
+                createdAt={trajectory.createdAt}
             />
 
             <SimulationCardFooter
                 trajectoryId={trajectory._id}
                 name={trajectory.name}
+                createdBy={typeof trajectory.createdBy === 'object' ? trajectory.createdBy : null}
+                createdAt={trajectory.createdAt}
                 updatedAt={trajectory.updatedAt}
                 isProcessing={isProcessing}
                 processingMessage={processingMessage}
+                atomCount={formatNumber(atomCount)}
+                frameCount={formatNumber(trajectory.frames.length)}
+                totalSize={formatSize(trajectory.stats.totalSize)}
                 onDelete={onDelete}
             />
 
             <SimulationCardUsers trajectoryId={trajectory._id} />
-        </Container>
+        </article>
     );
 }

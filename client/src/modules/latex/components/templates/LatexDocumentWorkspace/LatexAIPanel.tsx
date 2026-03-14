@@ -245,7 +245,7 @@ const LatexAIPanel = ({ documentId, documentTitle, files, width, height, onClose
     }
 
     return (
-        <Container className='latex-ai-panel d-flex column' style={{ width, height }}>
+        <Container id='latex-ai-panel' className='latex-ai-panel d-flex column' style={{ width, height }}>
             <Container className='latex-ai-panel__header d-flex items-center content-between'>
                 <Container className='d-flex items-center gap-025 flex-1 min-w-0'>
                     <Tooltip content='New conversation' placement='top'>

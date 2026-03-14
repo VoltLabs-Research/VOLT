@@ -31,31 +31,56 @@ const RegisterStep = ({
             <FormFieldRHF
                 name='fullName'
                 control={control}
+                label='Full name'
                 placeholder='Full Name'
+                inputProps={{
+                    autoComplete: 'name',
+                    inputMode: 'text',
+                    spellCheck: false,
+                    name: 'fullName'
+                }}
             />
             <FormFieldRHF
                 name='password'
                 control={control}
+                label='Password'
                 type='password'
                 placeholder='Password'
+                inputProps={{
+                    autoComplete: 'new-password',
+                    inputMode: 'text',
+                    spellCheck: false,
+                    name: 'password',
+                    autoCapitalize: 'none',
+                    autoCorrect: 'off'
+                }}
             />
             <FormFieldRHF
                 name='passwordConfirm'
                 control={control}
+                label='Confirm password'
                 type='password'
                 placeholder='Confirm Password'
+                inputProps={{
+                    autoComplete: 'new-password',
+                    inputMode: 'text',
+                    spellCheck: false,
+                    name: 'passwordConfirm',
+                    autoCapitalize: 'none',
+                    autoCorrect: 'off'
+                }}
             />
             <Button
                 type='submit'
                 isLoading={isLoading}
                 variant='solid'
-                intent='white'
+                intent='brand'
                 block>
                 Create Account
             </Button>
             <Button
                 variant='ghost'
-                intent='white'
+                intent='neutral'
                 block
                 leftIcon={<ArrowLeft size={16} />}
                 onClick={onBack}>

@@ -2,7 +2,7 @@ import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootCont
 import composeRefs from '@/shared/presentation/utilities/compose-refs';
 import './Tooltip.css';
 import { useFloating, useHover, useFocus, useDismiss, useRole, useInteractions, FloatingPortal, offset, flip, shift, autoUpdate } from '@floating-ui/react';
-import { useState, cloneElement, isValidElement } from 'react';
+import { useId, useState, cloneElement, isValidElement } from 'react';
 import React from 'react';
 import type { Placement } from '@floating-ui/react';
 import type { HTMLAttributes, ReactNode, ReactElement, Ref } from 'react';
@@ -30,6 +30,7 @@ const Tooltip = ({
 }: TooltipProps) => {
     const [isVisible, setIsVisible] = useState(false);
     const floatingRoot = useFloatingRoot();
+    const tooltipId = useId();
 
     const { refs, floatingStyles, context, placement: actualPlacement } = useFloating({
         open: isVisible,
@@ -74,9 +75,14 @@ const Tooltip = ({
     const placementSide = actualPlacement.split('-')[0];
     const childProps = triggerElement.props;
     const originalRef = childProps.ref;
+    const childDescribedBy = typeof childProps['aria-describedby'] === 'string'
+        ? childProps['aria-describedby']
+        : undefined;
+    const describedBy = [childDescribedBy, tooltipId].filter(Boolean).join(' ') || undefined;
 
     const clonedChild = cloneElement(triggerElement, {
         ref: composeRefs(refs.setReference, originalRef),
+        'aria-describedby': describedBy,
         ...getReferenceProps(childProps)
     });
 
@@ -88,6 +94,7 @@ const Tooltip = ({
                 <FloatingPortal root={floatingRoot}>
                     <div
                         ref={refs.setFloating}
+                        id={tooltipId}
                         className={`volt-tooltip volt-tooltip-${placementSide} ${className} overflow-hidden`}
                         style={floatingStyles}
                         role='tooltip'

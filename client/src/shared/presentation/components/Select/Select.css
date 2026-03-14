@@ -1,5 +1,6 @@
 .select-trigger {
-    padding: .5rem .75rem;
+    padding: 0.4375rem 0.75rem;
+    min-height: 2.5rem;
     border-radius: var(--radius-lg);
     background-color: transparent;
     transition: border-color .15s ease;
@@ -16,7 +17,7 @@
 .select-trigger:focus-visible {
     outline: none;
     border-color: var(--focus-ring);
-    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }
 
 .select-trigger:disabled {
@@ -73,10 +74,10 @@
 }
 
 .select-option {
-    padding: .5rem .6rem;
+    padding: 0.4375rem 0.6rem;
     border-radius: var(--radius-sm);
     transition: background .12s ease;
-    min-height: 36px;
+    min-height: 40px;
 }
 
 .select-option:hover,
@@ -99,8 +100,8 @@
 }
 
 .select-option-loading {
-    padding: .5rem .6rem;
-    min-height: 36px;
+    padding: 0.4375rem 0.6rem;
+    min-height: 40px;
 }
 
 .select-dropdown-search {
@@ -118,11 +119,12 @@
 
 .select-trigger--editable:focus-visible {
     border-color: var(--focus-ring);
-    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
     .select-trigger,
+    .select-trigger--editable,
     .select-chevron,
     .select-option {
         transition: none;

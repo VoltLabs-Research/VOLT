@@ -44,10 +44,10 @@ export const RoleEditorModal = ({
     const hasWildcard = role?.permissions.includes('*') ?? false;
 
     useEffect(() => {
-        if(role){
+        if (role) {
             setName(role.name);
             setPermissions(new Set(role.permissions));
-        }else{
+        } else {
             setName('');
             setPermissions(new Set());
         }
@@ -56,19 +56,19 @@ export const RoleEditorModal = ({
     const getPermission = (resource: string, action: string) => `${resource}:${action}`;
 
     const isPermissionChecked = useCallback((resourceKey: string, actionKey: string): boolean => {
-        if(hasWildcard) return true;
+        if (hasWildcard) return true;
         return permissions.has(getPermission(resourceKey, actionKey));
     }, [permissions, hasWildcard]);
 
     const handleTogglePermission = useCallback((resourceKey: string, actionKey: string) => {
-        if(isSystemRole) return;
+        if (isSystemRole) return;
 
         const permission = getPermission(resourceKey, actionKey);
         setPermissions((prev) => {
             const next = new Set(prev);
-            if(next.has(permission)){
+            if (next.has(permission)) {
                 next.delete(permission);
-            }else{
+            } else {
                 next.add(permission);
             }
             return next;
@@ -76,16 +76,16 @@ export const RoleEditorModal = ({
     }, [isSystemRole]);
 
     const handleToggleResourceAll = useCallback((resourceKey: string) => {
-        if(isSystemRole) return;
+        if (isSystemRole) return;
 
         const resourcePermissions = actions.map((action) => getPermission(resourceKey, action.key));
         const allChecked = resourcePermissions.every(permissions.has, permissions);
 
         setPermissions((prev) => {
             const next = new Set(prev);
-            if(allChecked){
+            if (allChecked) {
                 resourcePermissions.forEach(next.delete, next);
-            }else{
+            } else {
                 resourcePermissions.forEach(next.add, next);
             }
             return next;
@@ -93,7 +93,7 @@ export const RoleEditorModal = ({
     }, [isSystemRole, permissions, actions]);
 
     const handleSubmit = async () => {
-        if(!name.trim()) return;
+        if (!name.trim()) return;
 
         await runAction({
             action: () => onSave({
@@ -145,42 +145,52 @@ export const RoleEditorModal = ({
                     autoFocus={!isEditing}
                 />
 
-                <Container className='d-flex column gap-1'>
-                    <Title className='font-size-3 color-secondary font-weight-6'>Permissions</Title>
+                <fieldset className='role-editor-fieldset d-flex column gap-1'>
+                    <legend className='role-editor-legend'>
+                        <Title className='font-size-3 color-secondary font-weight-6'>Permissions</Title>
+                    </legend>
 
                     <Container className='role-editor-permissions-grid'>
                         <Container className='role-editor-grid-header'>Resource</Container>
-                        {actions.map(action => (
+                        {actions.map((action) => (
                             <Container key={action.key} className='role-editor-grid-header text-center'>
                                 {action.label}
                             </Container>
                         ))}
 
-                        {resources.map(resource => (
-                            <Fragment key={resource.key}>
-                                <Container
-                                    className='role-editor-grid-resource font-size-2 font-weight-5 color-primary'
-                                    onClick={() => !isSystemRole && handleToggleResourceAll(resource.key)}
-                                    style={{ cursor: isSystemRole ? 'default' : 'pointer' }}
-                                    title={isSystemRole ? undefined : 'Click to toggle all'}
-                                >
-                                    {resource.label}
-                                </Container>
-                                {actions.map(action => (
-                                    <Container key={`${resource.key}-${action.key}`} className='role-editor-grid-cell'>
-                                        <input
-                                            type='checkbox'
-                                            checked={isPermissionChecked(resource.key, action.key)}
-                                            onChange={() => handleTogglePermission(resource.key, action.key)}
-                                            disabled={isSystemRole || hasWildcard}
-                                            className='role-editor-checkbox'
-                                        />
-                                    </Container>
-                                ))}
-                            </Fragment>
-                        ))}
+                        {resources.map((resource) => {
+                            const resourcePermissions = actions.map((action) => getPermission(resource.key, action.key));
+                            const areAllPermissionsChecked = resourcePermissions.every(permissions.has, permissions);
+
+                            return (
+                                <Fragment key={resource.key}>
+                                    <button
+                                        type='button'
+                                        className='role-editor-grid-resource font-size-2 font-weight-5 color-primary'
+                                        onClick={() => handleToggleResourceAll(resource.key)}
+                                        disabled={isSystemRole}
+                                        aria-pressed={areAllPermissionsChecked}
+                                        title={isSystemRole ? 'System permissions are read-only' : `Toggle all permissions for ${resource.label}`}
+                                    >
+                                        {resource.label}
+                                    </button>
+                                    {actions.map((action) => (
+                                        <Container key={`${resource.key}-${action.key}`} className='role-editor-grid-cell'>
+                                            <input
+                                                type='checkbox'
+                                                checked={isPermissionChecked(resource.key, action.key)}
+                                                onChange={() => handleTogglePermission(resource.key, action.key)}
+                                                disabled={isSystemRole || hasWildcard}
+                                                className='role-editor-checkbox'
+                                                aria-label={`${action.label} permission for ${resource.label}`}
+                                            />
+                                        </Container>
+                                    ))}
+                                </Fragment>
+                            );
+                        })}
                     </Container>
-                </Container>
+                </fieldset>
             </Container>
         </Modal>
     );

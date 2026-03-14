@@ -11,7 +11,7 @@ const NotificationBadge = ({ count }: NotificationBadgeProps) => {
     const displayCount = count > 99 ? '99+' : count;
 
     return (
-        <Container className='notification-badge p-absolute d-flex items-center content-center radius-sm font-weight-6'>
+        <Container className='notification-badge p-absolute d-flex items-center content-center radius-sm font-weight-6' aria-hidden='true'>
             {displayCount}
         </Container>
     );

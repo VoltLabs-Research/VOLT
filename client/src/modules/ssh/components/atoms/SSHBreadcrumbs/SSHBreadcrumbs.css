@@ -1,0 +1,40 @@
+.ssh-breadcrumbs {
+    min-width: 0;
+    width: 100%;
+}
+
+.ssh-breadcrumbs-list {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ssh-breadcrumbs-item {
+    min-width: 0;
+}
+
+.ssh-breadcrumbs-separator {
+    flex-shrink: 0;
+}
+
+.ssh-breadcrumbs-trigger,
+.ssh-breadcrumbs-current {
+    display: inline-block;
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ssh-breadcrumbs-trigger {
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.ssh-breadcrumbs-trigger:hover,
+.ssh-breadcrumbs-trigger:focus-visible {
+    color: var(--color-text-primary);
+}

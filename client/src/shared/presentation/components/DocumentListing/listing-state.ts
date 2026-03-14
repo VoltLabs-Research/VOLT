@@ -15,6 +15,7 @@ interface GetListingDisplayStateParams {
 
 interface ListingDisplayState {
     hasNoData: boolean;
+    hasError: boolean;
     isInitialLoading: boolean;
     mode: ListingDisplayMode;
     shouldShowContent: boolean;
@@ -30,22 +31,24 @@ const getListingDisplayState = ({
     isAccessDenied = false
 }: GetListingDisplayStateParams): ListingDisplayState => {
     const hasNoData = dataLength === 0;
-    const isInitialLoading = isLoading && hasNoData;
+    const hasError = Boolean(errorMessage);
+    const isInitialLoading = isLoading && hasNoData && !isAccessDenied && !hasError;
 
     let mode = ListingDisplayMode.Content;
 
-    if (isInitialLoading) {
-        mode = ListingDisplayMode.Loading;
-    } else if (isAccessDenied) {
+    if (isAccessDenied) {
         mode = ListingDisplayMode.AccessDenied;
-    } else if (hasNoData && errorMessage) {
+    } else if (hasNoData && hasError) {
         mode = ListingDisplayMode.Error;
+    } else if (isInitialLoading) {
+        mode = ListingDisplayMode.Loading;
     } else if (hasNoData) {
         mode = ListingDisplayMode.Empty;
     }
 
     return {
         hasNoData,
+        hasError,
         isInitialLoading,
         mode,
         shouldShowContent: mode === ListingDisplayMode.Content,

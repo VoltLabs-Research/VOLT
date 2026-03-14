@@ -18,9 +18,18 @@
 .metric-card {
     border: 1px solid var(--glass-border);
     padding: 1.25rem;
+    background: var(--color-surface-1);
 }
 
 .metric-card-value {
     letter-spacing: -0.02em;
     font-feature-settings: 'tnum' on, 'lnum' on;
+}
+
+.metric-card-trend-positive {
+    color: var(--status-success);
+}
+
+.metric-card-trend-negative {
+    color: var(--status-error);
 }

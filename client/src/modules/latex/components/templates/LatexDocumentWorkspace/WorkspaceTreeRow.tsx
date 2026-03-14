@@ -7,8 +7,11 @@ interface WorkspaceTreeRowProps extends HTMLAttributes<HTMLDivElement> {
     icon: ReactNode;
     label: string;
     selected?: boolean;
+    expanded?: boolean;
     dragging?: boolean;
     trailing?: ReactNode;
+    treeItemLevel?: number;
+    ariaLabel?: string;
     className?: string;
 }
 
@@ -17,8 +20,11 @@ const WorkspaceTreeRow = ({
     icon,
     label,
     selected = false,
+    expanded,
     dragging = false,
     trailing,
+    treeItemLevel,
+    ariaLabel,
     className = '',
     style,
     ...props
@@ -28,11 +34,17 @@ const WorkspaceTreeRow = ({
     return (
         <Container
             className={cn(
-                'latex-workspace__file-row d-flex items-center content-between gap-05',
+                'latex-workspace__file-row latex-workspace__tree-row d-flex items-center content-between gap-05',
                 selected && 'is-selected',
                 dragging && 'is-dragging',
                 className
             )}
+            role='treeitem'
+            tabIndex={0}
+            aria-label={ariaLabel ?? label}
+            aria-level={treeItemLevel}
+            aria-expanded={expanded}
+            aria-selected={selected}
             style={{ ...style, paddingLeft: `${0.75 + indent / 16}rem` }}
             {...props}
         >

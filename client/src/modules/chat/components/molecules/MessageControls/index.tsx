@@ -60,7 +60,7 @@ const MessageControls = ({ messageId, isOwn, onReact, onEdit, onDelete }: Messag
             <Popover
                 id={`reactions-${messageId}`}
                 trigger={
-                    <IconButton size='sm' variant='ghost'>
+                    <IconButton size='sm' variant='ghost' title='Add reaction' aria-label='Add reaction'>
                         <IoHappyOutline size={16} />
                     </IconButton>
                 }
@@ -72,7 +72,7 @@ const MessageControls = ({ messageId, isOwn, onReact, onEdit, onDelete }: Messag
                 <Popover
                     id={`options-${messageId}`}
                     trigger={
-                        <IconButton size='sm' variant='ghost'>
+                        <IconButton size='sm' variant='ghost' title='Open message actions' aria-label='Open message actions'>
                             <IoEllipsisVerticalOutline size={16} />
                         </IconButton>
                     }

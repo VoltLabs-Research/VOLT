@@ -1,4 +1,6 @@
+import { getFrameGroupStatusLabel } from '@/modules/jobs/utilities/job-status-label';
 import Container from '@/shared/presentation/components/Container';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Title from '@/shared/presentation/components/Title';
@@ -12,20 +14,28 @@ interface JobGroupHeaderProps {
     group: TrajectoryJobGroup;
     statusClassName: string;
     isExpanded: boolean;
+    contentId: string;
     onToggle: () => void;
 };
 
-const JobGroupHeader = forwardRef<HTMLDivElement, JobGroupHeaderProps>(({
+const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({ 
     group,
     statusClassName,
     isExpanded,
+    contentId,
     onToggle
 }, ref) => {
+    const prefersReducedMotion = usePrefersReducedMotion();
+    const statusLabel = getFrameGroupStatusLabel(group.overallStatus);
+
     return (
-        <Container
+        <button
             ref={ref}
-            className={`job-group-header ${statusClassName} ${isExpanded ? 'expanded' : ''} u-select-none cursor-pointer`}
+            type='button'
+            className={`job-group-header ${statusClassName} ${isExpanded ? 'expanded' : ''} job-group-toggle u-select-none`}
             onClick={onToggle}
+            aria-expanded={isExpanded}
+            aria-controls={contentId}
         >
             <Container className='d-flex w-max items-center content-between gap-05 p-1'>
                 <Container className='d-flex column gap-01'>
@@ -37,17 +47,20 @@ const JobGroupHeader = forwardRef<HTMLDivElement, JobGroupHeaderProps>(({
                     </Paragraph>
                 </Container>
                 <Container className='d-flex items-center gap-1'>
-                    <StatusBadge status={group.overallStatus} size='compact' />
+                    <StatusBadge status={group.overallStatus} size='compact'>
+                        {statusLabel}
+                    </StatusBadge>
                     <motion.i
                         className='chevron-icon font-size-1 color-secondary'
                         animate={{ rotate: isExpanded ? 90 : 0 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
+                        aria-hidden='true'
                     >
                         <IoChevronForward />
                     </motion.i>
                 </Container>
             </Container>
-        </Container>
+        </button>
     );
 });
 

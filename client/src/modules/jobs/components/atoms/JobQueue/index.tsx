@@ -1,9 +1,9 @@
 import { JobStatus } from '@/modules/jobs/api/entities/job';
+import { getJobStatusLabel } from '@/modules/jobs/utilities/job-status-label';
 import useRetryJobAnalysis from '@/modules/jobs/hooks/use-retry-job-analysis';
+import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import Popover from '@/shared/presentation/components/Popover';
-import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import Title from '@/shared/presentation/components/Title';
 import '@/modules/jobs/components/atoms/JobQueue/JobQueue.css';
 import { formatDistanceToNow } from 'date-fns';
@@ -60,6 +60,7 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
     const isFailed = job.status === JobStatus.Failed;
     const isAnalysisJob = job.queueType === 'analysis_processing';
     const retryJobAnalysis = useRetryJobAnalysis();
+    const statusLabel = getJobStatusLabel(job.status);
 
     const analysisId = job.jobId?.split('-').slice(0, -1).join('-');
 
@@ -75,18 +76,21 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
         }
     };
 
-    const jobContent = (
-        <Container className={containerClass + ' d-flex content-between items-center'}>
-            <Container className='d-flex column gap-025 flex-1'>
-                <Container className='d-flex items-center content-between gap-05'>
+    const showRetryAction = isFailed && isAnalysisJob && Boolean(analysisId);
+
+    return (
+        <Container className={containerClass + ' d-flex content-between items-center gap-075'}>
+            <span className='job-status-icon font-size-3' aria-hidden='true'>{statusConfig[job.status]?.icon}</span>
+            <Container className='d-flex column gap-025 flex-1 min-w-0'>
+                <Container className='d-flex items-center content-between gap-05 flex-wrap'>
                     <Title className='font-size-1 job-name font-weight-6 color-primary'>
                         {getJobDisplayName(job)}
                     </Title>
-                    <span className={`job-status-badge ${job.status} p-025 radius-full font-size-1`}>
-                        {job.status}
+                    <span className={`job-status-badge ${job.status} p-025 radius-full font-size-1`} aria-label={`Status: ${statusLabel}`}>
+                        {statusLabel}
                     </span>
                 </Container>
-                <Container className='d-flex items-center gap-05'>
+                <Container className='d-flex items-center gap-05 flex-wrap'>
                     <Paragraph className='job-message color-secondary font-size-1 d-flex items-center gap-05'>
                         {job.timestep !== undefined && <span>Frame {job.timestep}</span>}
                         {job.timestep !== undefined && job.timestamp && <span>&middot;</span>}
@@ -100,41 +104,31 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
                     <Paragraph className='job-error font-size-1 mt-025'>{job.error}</Paragraph>
                 )}
             </Container>
-            {(job.progress !== undefined && job.progress > 0 && job.status === JobStatus.Running) && (
-                <Container className='job-progress-bar p-relative overflow-hidden radius-xs'>
-                    <Container
-                        className='job-progress-fill p-absolute h-max top-0 left-0'
-                        style={{ width: `${Math.min(100, job.progress)}%` }}
-                    />
-                    <span className='job-progress-text p-absolute font-weight-6 color-primary font-size-1'>{Math.round(job.progress)}%</span>
-                </Container>
-            )}
-        </Container>
-    );
-
-    if (isFailed && isAnalysisJob && analysisId) {
-        return (
-            <Popover
-                id={`job-popover-${job.jobId}`}
-                trigger={jobContent}
-                triggerAction='click'
-            >
-                {(close) => (
-                    <PopoverMenuItem
-                        icon={<CiRedo />}
-                        onClick={() => {
-                            handleRetry();
-                            close();
-                        }}
+            <Container className='d-flex items-center gap-075'>
+                {(job.progress !== undefined && job.progress > 0 && job.status === JobStatus.Running) && (
+                    <Container className='job-progress-bar p-relative overflow-hidden radius-xs' aria-label={`Progress ${Math.round(job.progress)} percent`}>
+                        <Container
+                            className='job-progress-fill p-absolute h-max top-0 left-0'
+                            style={{ width: `${Math.min(100, job.progress)}%` }}
+                        />
+                        <span className='job-progress-text p-absolute font-weight-6 color-primary font-size-1'>{Math.round(job.progress)}%</span>
+                    </Container>
+                )}
+                {showRetryAction && (
+                    <Button
+                        variant='outline'
+                        intent='neutral'
+                        size='sm'
+                        onClick={handleRetry}
+                        leftIcon={<CiRedo />}
+                        className='job-retry-button'
                     >
                         Retry
-                    </PopoverMenuItem>
+                    </Button>
                 )}
-            </Popover>
-        );
-    }
-
-    return jobContent;
+            </Container>
+        </Container>
+    );
 };
 
 export default JobQueue;

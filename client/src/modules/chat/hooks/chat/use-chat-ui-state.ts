@@ -6,7 +6,7 @@ import { useState } from 'react';
 const useChatUIState = () => {
     const [showDetails, setShowDetails] = useState(false);
 
-    const toggleDetails = () => setShowDetails(prev => !prev);
+    const toggleDetails = () => setShowDetails((prev) => !prev);
     const openDetails = () => setShowDetails(true);
     const closeDetails = () => setShowDetails(false);
 

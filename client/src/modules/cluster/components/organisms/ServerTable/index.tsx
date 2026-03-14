@@ -11,10 +11,9 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Title from '@/shared/presentation/components/Title';
-import Tooltip from '@/shared/presentation/components/Tooltip';
 import { Skeleton } from '@mui/material';
 import { useMemo, useCallback } from 'react';
-import { ChevronDown, Database, Download, FolderOpen, KeyRound, Terminal, Trash2 } from 'lucide-react';
+import { Database, FolderOpen, KeyRound, MoreHorizontal, Terminal, Trash2 } from 'lucide-react';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
@@ -197,29 +196,58 @@ const ServerTable = ({
                         <Skeleton variant='text' width='70%' height={20} animation='wave' />
                     </td>
                 ))}
+                <td>
+                    <Skeleton variant='circular' width={28} height={28} animation='wave' />
+                </td>
             </tr>
         ));
 
     const renderRow = (row: ServerRow) => {
-        const rowElement = (
+        const isSelected = row.id === selectedClusterId;
+        const actionsTrigger = (
+            <Button
+                variant='ghost'
+                intent='neutral'
+                iconOnly
+                size='sm'
+                aria-label={`Open actions for ${row.name}`}
+                title={`Open actions for ${row.name}`}
+                onClick={(event) => {
+                    event.stopPropagation();
+                }}
+            >
+                <MoreHorizontal size={16} />
+            </Button>
+        );
+
+        return (
             <tr
                 key={row.id}
-                className={row.id === selectedClusterId ? 'clickable selected' : 'clickable'}
+                className={`server-table-row ${isSelected ? 'selected' : ''}`}
                 onClick={() => onSelectCluster(row.id)}
+                onKeyDown={(event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    onSelectCluster(row.id);
+                }}
+                tabIndex={0}
+                aria-selected={isSelected}
             >
                 {COLUMNS.map((col) => (
                     <td key={col.key}>{col.render(row)}</td>
                 ))}
+                <td className='server-table-actions-cell'>
+                    <ContextMenuPopover
+                        id={`cluster-row-menu-${row.id}`}
+                        trigger={actionsTrigger}
+                        options={getMenuOptions(row)}
+                        triggerAction='click'
+                    />
+                </td>
             </tr>
-        );
-
-        return (
-            <ContextMenuPopover
-                key={row.id}
-                id={`cluster-row-menu-${row.id}`}
-                trigger={rowElement}
-                options={getMenuOptions(row)}
-            />
         );
     };
 
@@ -230,29 +258,17 @@ const ServerTable = ({
                     <Container className='server-table-title-bar' />
                     <Title className='font-size-3 font-weight-6 color-primary'>Clusters</Title>
                 </Container>
-                <Container className='d-flex items-center gap-05'>
-                    <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown size={12} />}>
-                        Status
-                    </Button>
-                    <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown size={12} />}>
-                        Sort
-                    </Button>
-                    <RefreshButton size='sm' />
-                    <Tooltip content='Download Report' placement='bottom'>
-                        <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Download report' title='Download report'>
-                            <Download size={16} />
-                        </Button>
-                    </Tooltip>
-                </Container>
+                <RefreshButton size='sm' />
             </Container>
 
             <Container className='server-table-wrapper'>
-                <table className='table'>
+                <table className='table' aria-label='Clusters table'>
                     <thead>
                         <tr>
                             {COLUMNS.map((col) => (
                                 <th key={col.key}>{col.header}</th>
                             ))}
+                            <th className='server-table-actions-header'>Actions</th>
                         </tr>
                     </thead>
                     <tbody>

@@ -1,10 +1,11 @@
 import Modal, { closeModal } from '@/shared/presentation/components/Modal';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Container from '@/shared/presentation/components/Container';
+import Paragraph from '@/shared/presentation/components/Paragraph';
 import { RENAME_SCRIPTING_NOTEBOOK_MODAL_ID } from '@/modules/scripting/hooks/use-notebooks-listing';
 import { useCallback, useEffect, useState } from 'react';
 import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';
+import type { FormEvent } from 'react';
 import type { ScriptingNotebook } from '@/modules/scripting/api/entities/scripting-notebook';
 
 interface RenameScriptingNotebookModalProps {
@@ -24,10 +25,14 @@ const RenameScriptingNotebookModal = ({
 
     useEffect(() => {
         if (notebook) {
-            setTitle(notebook.title);
+            setTitle(notebook.title || '');
             setError(undefined);
         }
     }, [notebook]);
+
+    const trimmedTitle = title.trim();
+    const currentTitle = notebook?.title.trim() || '';
+    const isUnchanged = trimmedTitle.length > 0 && trimmedTitle === currentTitle;
 
     const handleClose = useCallback(() => {
         closeModal(RENAME_SCRIPTING_NOTEBOOK_MODAL_ID);
@@ -35,37 +40,51 @@ const RenameScriptingNotebookModal = ({
     }, [onClose]);
 
     const handleSubmit = useCallback(async () => {
-        const trimmed = title.trim();
-        if (!trimmed) {
+        if (!trimmedTitle) {
             setError('Title is required');
+            return;
+        }
+
+        if (isUnchanged) {
+            setError('Enter a different notebook name.');
             return;
         }
 
         setIsSubmitting(true);
         try {
-            await onSubmit(trimmed);
+            await onSubmit(trimmedTitle);
         } finally {
             setIsSubmitting(false);
         }
-    }, [title, onSubmit]);
+    }, [isUnchanged, onSubmit, trimmedTitle]);
 
     const handleTitleChange = useCallback((event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setTitle(event.target.value);
         setError(undefined);
     }, []);
 
+    const handleFormSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        handleSubmit();
+    }, [handleSubmit]);
+
     const inputProps: React.InputHTMLAttributes<HTMLInputElement> = {
+        autoComplete: 'off',
+        enterKeyHint: 'done',
+        maxLength: 120,
+        spellCheck: false,
         onKeyDown: (event) => {
             if (event.key === 'Enter') {
+                event.preventDefault();
                 handleSubmit();
             }
         }
     };
 
     const primaryAction: ModalFooterAction = {
-        label: 'Rename',
+        label: isSubmitting ? 'Renaming...' : 'Rename',
         onClick: handleSubmit,
-        disabled: isSubmitting || !title.trim()
+        disabled: isSubmitting || !trimmedTitle || isUnchanged
     };
 
     const secondaryAction: ModalFooterAction = {
@@ -80,11 +99,16 @@ const RenameScriptingNotebookModal = ({
         <Modal
             id={RENAME_SCRIPTING_NOTEBOOK_MODAL_ID}
             title='Rename Notebook'
-            description='Enter a new name for this notebook.'
+            description='Choose a clear notebook name so it is easier to find later.'
             onClose={handleClose}
             footer={footer}
         >
-            <Container className='p-1-5'>
+            <form className='p-1-5 d-flex column gap-075' onSubmit={handleFormSubmit}>
+                {notebook && (
+                    <Paragraph className='font-size-1 color-secondary text-truncate'>
+                        Current name: {notebook.title || 'Untitled notebook'}
+                    </Paragraph>
+                )}
                 <FormFieldRHF
                     label='Notebook title'
                     placeholder='Enter notebook title'
@@ -94,7 +118,10 @@ const RenameScriptingNotebookModal = ({
                     inputProps={inputProps}
                     error={error}
                 />
-            </Container>
+                <Paragraph className='font-size-1 color-muted'>
+                    Use up to 120 characters.
+                </Paragraph>
+            </form>
         </Modal>
     );
 };

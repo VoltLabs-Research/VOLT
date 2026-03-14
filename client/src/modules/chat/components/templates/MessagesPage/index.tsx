@@ -4,6 +4,7 @@ import ChatSidebar from '../../organisms/ChatSidebar';
 import CreateGroupModal from '../../organisms/CreateGroupModal';
 import GroupManagementModal from '../../organisms/GroupManagementModal';
 import ChatDetailsPanel from '../../molecules/ChatDetailsPanel';
+import { cn } from '@/shared/utils';
 import { useParams } from 'react-router-dom';
 import Container from '@/shared/presentation/components/Container';
 import './MessagesPage.css';
@@ -28,6 +29,7 @@ const MessagesPage = () => {
         showDetails,
         handleSelectChat,
         handleStartChat,
+        handleBackToList,
         handleLoadMore,
         handleTyping,
         handleCreateGroup,
@@ -35,7 +37,10 @@ const MessagesPage = () => {
         handleUpdateGroupInfo,
         handleUpdateAdmins,
         handleInfoClick,
+        closeDetails,
         sendMessage,
+        isSendingMessage,
+        isSendingFile,
         editMessage,
         deleteMessage,
         toggleReaction,
@@ -44,7 +49,13 @@ const MessagesPage = () => {
     } = useMessagesPage(chatId);
 
     return (
-        <Container className='d-flex h-max messages-page'>
+        <Container
+            className={cn(
+                'd-flex h-max messages-page',
+                chatId && 'messages-page--chat-open',
+                showDetails && currentChat && 'messages-page--details-open'
+            )}
+        >
             <ChatSidebar
                 chats={chats}
                 currentChatId={chatId}
@@ -63,8 +74,10 @@ const MessagesPage = () => {
                 currentUserId={currentUserId}
                 presence={otherParticipantPresence}
                 isLoading={isMessagesLoading}
+                isSending={isSendingMessage || isSendingFile}
                 hasMore={hasMoreMessages}
                 onLoadMore={handleLoadMore}
+                onBackClick={handleBackToList}
                 onTyping={handleTyping}
                 onSendText={sendMessage}
                 onSendFiles={handleSendFiles}
@@ -72,6 +85,7 @@ const MessagesPage = () => {
                 onDeleteMessage={deleteMessage}
                 onToggleReaction={toggleReaction}
                 onInfoClick={handleInfoClick}
+                isDetailsOpen={showDetails}
             />
 
             {showDetails && (
@@ -80,6 +94,7 @@ const MessagesPage = () => {
                     messages={messages}
                     currentUserId={currentUserId}
                     presence={otherParticipantPresence}
+                    onClose={closeDetails}
                 />
             )}
 

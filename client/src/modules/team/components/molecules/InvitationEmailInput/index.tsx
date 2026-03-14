@@ -1,8 +1,7 @@
 import { InviteButton } from '../../atoms/InviteButton';
 import type { InviteButtonState } from '../../atoms/InviteButton';
-import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import type { ChangeEvent, KeyboardEvent } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import './InvitationEmailInput.css';
 
 interface InvitationEmailInputProps {
@@ -26,15 +25,13 @@ export const InvitationEmailInput = ({
     buttonState,
     disabled = false
 }: InvitationEmailInputProps) => {
-    const handleKeyPress = (event: KeyboardEvent<HTMLInputElement>) => {
-        if(event.key === 'Enter'){
-            event.preventDefault();
-            onSubmit();
-        }
+    const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        await onSubmit();
     };
 
     return (
-        <Container className='invitation-email-input d-flex items-center gap-05'>
+        <form className='invitation-email-input d-flex items-end gap-05' onSubmit={handleFormSubmit}>
             <FormFieldRHF
                 autoFocus
                 type='email'
@@ -43,7 +40,6 @@ export const InvitationEmailInput = ({
                 value={value}
                 onChange={onChange}
                 onBlur={onBlur}
-                inputProps={{ onKeyPress: handleKeyPress }}
                 error={error}
                 disabled={isSubmitting || disabled}
                 className='invitation-email-input-field'
@@ -51,9 +47,9 @@ export const InvitationEmailInput = ({
             <InviteButton
                 state={buttonState}
                 isLoading={isSubmitting}
-                onClick={onSubmit}
                 disabled={disabled}
+                type='submit'
             />
-        </Container>
+        </form>
     );
 };

@@ -35,7 +35,7 @@ const SSHExplorerHeaderLeft = ({ connectionName, cwd, onBack, onGoUp }: SSHExplo
                 </Button>
             </Tooltip>
             {connectionName && (
-                <Title className='font-size-3 font-weight-5 m-l-05'>{connectionName}</Title>
+                <Title as='h1' className='font-size-3 font-weight-5 m-l-05'>{connectionName}</Title>
             )}
         </>
     );

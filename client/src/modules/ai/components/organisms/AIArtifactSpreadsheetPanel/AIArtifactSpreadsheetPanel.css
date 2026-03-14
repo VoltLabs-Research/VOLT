@@ -6,7 +6,7 @@
 }
 
 .ai-artifact-spreadsheet-header {
-    padding: 0.65rem 0.75rem;
+    padding: 0.75rem;
     border-bottom: 1px solid var(--color-border-soft);
     background: var(--color-surface-1);
     flex-shrink: 0;
@@ -27,6 +27,11 @@
 .ai-sheet-toolbar-btn:hover {
     color: var(--color-text-primary);
     background: var(--hover-bg);
+}
+
+.ai-sheet-toolbar-btn:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .ai-sheet-toolbar-divider {
@@ -98,6 +103,17 @@
     position: relative;
 }
 
+.ai-sheet-cell.is-active {
+    outline: 2px solid color-mix(in srgb, var(--accent-blue) 32%, transparent);
+    outline-offset: -2px;
+    background: color-mix(in srgb, var(--accent-blue) 6%, transparent);
+}
+
+.ai-sheet-cell:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: -2px;
+}
+
 .ai-sheet-cell-value {
     display: block;
     padding: 0.45rem 0.65rem;
@@ -148,6 +164,12 @@
         max-width: none;
         border-left: none;
         border-top: 1px solid var(--color-border-soft);
-        max-height: 45vh;
+        max-height: calc(45vh - env(safe-area-inset-bottom, 0px));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ai-sheet-toolbar-btn {
+        transition: none;
     }
 }

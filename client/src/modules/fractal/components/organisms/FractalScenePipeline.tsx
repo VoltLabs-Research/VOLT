@@ -32,6 +32,7 @@ interface FractalScenePipelineProps {
     modelWorldBounds?: ModelWorldBounds | null;
     screenshotCaptureRequested?: boolean;
     onScreenshotCaptureHandled?: () => void;
+    onScreenshotStatusChange?: (message: string) => void;
     onControlsRef?: (ref: OrbitControlsHandle | null) => void;
     markInteracting: (active: boolean) => void;
     children?: ReactNode;
@@ -46,6 +47,7 @@ const FractalScenePipeline = ({
     modelWorldBounds,
     screenshotCaptureRequested = false,
     onScreenshotCaptureHandled,
+    onScreenshotStatusChange,
     onControlsRef,
     markInteracting,
     children
@@ -113,6 +115,7 @@ const FractalScenePipeline = ({
             <ScreenshotCapture
                 captureRequested={screenshotCaptureRequested}
                 onCaptureHandled={onScreenshotCaptureHandled ?? (() => undefined)}
+                onStatusChange={onScreenshotStatusChange}
             />
         </>
     );

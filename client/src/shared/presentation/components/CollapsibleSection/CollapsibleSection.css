@@ -2,10 +2,17 @@
     padding: 0.5rem;
 }
 
+.collapsible-section-heading {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+
 .collapsible-section-trigger {
     flex: 1;
     min-width: 0;
-    padding: 0;
+    min-height: 2.75rem;
+    padding: 0.25rem 0;
     border: none;
     background: transparent;
     text-align: left;
@@ -51,8 +58,12 @@
     line-height: 1.2;
 }
 
+.collapsible-section-title-row {
+    min-height: 2.75rem;
+}
+
 .collapsible-section-action--add:hover {
-    color: var(--accent-green, #4ade80);
+    color: var(--accent-green);
 }
 
 .collapsible-section-action--delete {
@@ -68,5 +79,5 @@
 }
 
 .collapsible-section-action--delete:hover {
-    color: var(--accent-red, #ff6b6b);
+    color: var(--accent-red);
 }

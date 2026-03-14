@@ -35,6 +35,7 @@ const RefreshButton = ({
                 leftIcon={icon}
                 onClick={onClick}
                 disabled={isLoading}
+                aria-busy={isLoading}
             >
                 {label}
             </Button>
@@ -52,6 +53,7 @@ const RefreshButton = ({
                 onClick={onClick}
                 disabled={isLoading}
                 title={tooltipContent}
+                aria-busy={isLoading}
             >
                 {icon}
             </Button>

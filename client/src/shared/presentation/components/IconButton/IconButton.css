@@ -4,6 +4,8 @@
     border-radius: var(--radius-sm);
     cursor: pointer;
     color: var(--color-text-secondary);
+    min-width: 2.75rem;
+    min-height: 2.75rem;
 }
 
 .volt-icon-button:hover {
@@ -14,7 +16,7 @@
 .volt-icon-button:focus-visible {
     background-color: var(--hover-bg);
     color: var(--color-text-primary);
-    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }
 
 .volt-icon-button--disabled {
@@ -29,21 +31,21 @@
 
 /* Sizes */
 .volt-icon-button--sm {
-    width: 1.5rem;
-    height: 1.5rem;
-    padding: 0.25rem;
+    width: 2.375rem;
+    height: 2.375rem;
+    padding: 0.4375rem;
 }
 
 .volt-icon-button--md {
-    width: 2rem;
-    height: 2rem;
-    padding: 0.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0.625rem;
 }
 
 .volt-icon-button--lg {
-    width: 2.5rem;
-    height: 2.5rem;
-    padding: 0.625rem;
+    width: 2.875rem;
+    height: 2.875rem;
+    padding: 0.6875rem;
 }
 
 /* Variants */
@@ -53,4 +55,10 @@
 
 .volt-icon-button--ghost:hover {
     background-color: var(--hover-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .volt-icon-button {
+        transition: none;
+    }
 }

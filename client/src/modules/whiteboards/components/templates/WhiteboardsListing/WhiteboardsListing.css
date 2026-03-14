@@ -1,0 +1,10 @@
+.whiteboards-listing-title-cell {
+    min-width: 0;
+}
+
+.whiteboards-listing-title {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

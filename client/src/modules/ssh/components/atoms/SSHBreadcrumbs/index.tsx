@@ -1,4 +1,4 @@
-import Container from '@/shared/presentation/components/Container';
+import './SSHBreadcrumbs.css';
 
 interface Breadcrumb {
     name: string;
@@ -8,6 +8,16 @@ interface Breadcrumb {
 interface SSHBreadcrumbsProps {
     cwd: string;
     onNavigate: (path: string) => void;
+};
+
+const MAX_BREADCRUMB_LABEL_LENGTH = 24;
+
+const truncateBreadcrumbLabel = (label: string) => {
+    if (label.length <= MAX_BREADCRUMB_LABEL_LENGTH) {
+        return label;
+    }
+
+    return `${label.slice(0, MAX_BREADCRUMB_LABEL_LENGTH - 1)}…`;
 };
 
 const buildBreadcrumbs = (cwd: string): Breadcrumb[] => {
@@ -28,19 +38,34 @@ const SSHBreadcrumbs = ({ cwd, onNavigate }: SSHBreadcrumbsProps) => {
     const breadcrumbs = buildBreadcrumbs(cwd);
 
     return (
-        <Container className='d-flex items-center gap-025'>
-            {breadcrumbs.map((crumb, index) => (
-                <Container key={`${index}-${crumb.path}`} className='d-flex items-center gap-025'>
-                    {index > 0 && <span className='color-muted'>/</span>}
-                    <span
-                        className={`cursor-pointer ${index === breadcrumbs.length - 1 ? 'font-weight-5' : 'color-muted'}`}
-                        onClick={() => onNavigate(crumb.path)}
-                    >
-                        {crumb.name}
-                    </span>
-                </Container>
-            ))}
-        </Container>
+        <nav className='ssh-breadcrumbs' aria-label='Current directory path' title={cwd}>
+            <ol className='ssh-breadcrumbs-list d-flex items-center gap-025'>
+                {breadcrumbs.map((crumb, index) => {
+                    const isCurrentPage = index === breadcrumbs.length - 1;
+                    const label = truncateBreadcrumbLabel(crumb.name);
+
+                    return (
+                        <li key={`${index}-${crumb.path}`} className='ssh-breadcrumbs-item d-flex items-center gap-025'>
+                            {index > 0 && <span className='ssh-breadcrumbs-separator color-muted'>/</span>}
+                            {isCurrentPage ? (
+                                <span className='ssh-breadcrumbs-current font-weight-5' aria-current='page' title={crumb.name}>
+                                    {label}
+                                </span>
+                            ) : (
+                                <button
+                                    type='button'
+                                    className='ssh-breadcrumbs-trigger color-muted'
+                                    onClick={() => onNavigate(crumb.path)}
+                                    title={crumb.name}
+                                >
+                                    {label}
+                                </button>
+                            )}
+                        </li>
+                    );
+                })}
+            </ol>
+        </nav>
     );
 };
 

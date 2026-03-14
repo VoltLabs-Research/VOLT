@@ -75,6 +75,10 @@
     gap: 0.1rem;
 }
 
+.dashboard-inapp-activity-empty {
+    min-height: 100%;
+}
+
 @media screen and (max-width: 1200px) {
     .dashboard-inapp-activity-card {
         grid-column: span 6;

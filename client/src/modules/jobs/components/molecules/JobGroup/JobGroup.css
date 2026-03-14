@@ -1,23 +1,42 @@
 .job-group {
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.job-group__row {
+    align-items: stretch;
 }
 
 .job-group-header {
     transition: background-color 0.2s ease;
 }
 
-.job-group-header:hover {
+.job-group-toggle,
+.frame-job-group-toggle {
+    width: 100%;
+    border: 0;
+    text-align: left;
+    background: transparent;
+}
+
+.job-group-toggle {
+    min-height: 3.25rem;
+    border-radius: var(--radius-lg);
+}
+
+.job-group-header:hover,
+.frame-job-group-header:hover {
     background: var(--hover-bg);
 }
 
 .job-group-name {
     max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-
-
 .job-group-children {
-    padding-left: 1rem;
+    padding: 0.25rem 0 0 1rem;
 }
 
 .job-group-children .job-container {
@@ -32,16 +51,21 @@
 }
 
 .frame-job-group-header {
-    padding: 0.35rem 0.5rem;
+    padding: 0.625rem 0.75rem;
+    min-height: 2.75rem;
+    border-radius: var(--radius-md);
 }
 
-.frame-job-group-header:hover {
-    background: var(--hover-bg);
+.job-group-actions-button {
+    align-self: center;
+    flex-shrink: 0;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
 }
 
 .frame-status-badge {
-    font-size: 0.6rem;
-    padding: 0.1rem 0.4rem;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
     border-radius: var(--radius-xs);
 }
 
@@ -64,4 +88,11 @@
 
 .frame-status-badge.status-partial {
     color: var(--status-warning);
+}
+
+.job-group-toggle:focus-visible,
+.frame-job-group-toggle:focus-visible,
+.job-group-actions-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }

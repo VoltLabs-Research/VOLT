@@ -5,6 +5,8 @@ import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 
 import type { MenuConfig, MenuItem } from '../TopToolbarMenus';
 
+import { MenuItemType } from '../TopToolbarMenus';
+
 interface MenuPopoverProps {
     menu: MenuConfig;
     openMenu: string | null;
@@ -28,11 +30,15 @@ const renderMenuItemShortcut = (item: MenuItem) => {
 };
 
 const createMenuItemRenderer = (close: () => void) => (item: MenuItem, index: number) => {
-    if (item.type === 'separator') {
-        return <Container key={index} className="canvas-menu-separator" />;
+    if (item.type === MenuItemType.Separator) {
+        return <Container key={index} className="canvas-menu-separator" role="separator" aria-orientation="horizontal" />;
     }
 
     const handleClick = () => {
+        if (item.disabled) {
+            return;
+        }
+
         item.action?.();
         close();
     };
@@ -50,6 +56,9 @@ const createMenuItemRenderer = (close: () => void) => (item: MenuItem, index: nu
             leftIcon={renderMenuItemIcon(item)}
             rightIcon={renderMenuItemShortcut(item)}
             onClick={handleClick}
+            disabled={item.disabled}
+            aria-disabled={item.disabled}
+            title={item.disabled ? `${item.label} is not available yet` : item.label}
         >
             {item.label}
         </Button>

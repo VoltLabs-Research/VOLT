@@ -1,5 +1,6 @@
 .ai-page {
     border-top: 1px solid var(--color-border-soft);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .ai-page-main {

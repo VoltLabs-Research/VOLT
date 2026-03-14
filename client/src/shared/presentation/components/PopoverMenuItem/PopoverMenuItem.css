@@ -2,19 +2,34 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-height: 2.75rem;
     transition: background-color 0.15s ease;
     color: var(--color-text-primary);
 }
 
 .popover-menu-item--md {
-    padding: 0.5rem 0.75rem;
+    padding: 0.625rem 0.75rem;
     font-size: 0.875rem;
 }
 
 .popover-menu-item--sm {
     gap: 0.375rem;
-    padding: 0.375rem 0.5rem;
+    min-height: 2.5rem;
+    padding: 0.5rem 0.625rem;
     font-size: 0.75rem;
+}
+
+.popover-menu-item-content {
+    width: 100%;
+}
+
+.popover-menu-item-label {
+    min-width: 0;
+    text-align: left;
+}
+
+.popover-menu-item-adornment {
+    color: var(--color-text-muted);
 }
 
 .popover-menu-item-icon {

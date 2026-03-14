@@ -170,7 +170,7 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
     if(embedded) return content;
 
     return (
-        <Container className='p-fixed inset-0 d-flex items-center content-center container-terminal-overlay'>
+        <Container className='p-fixed inset-0 d-flex items-center content-center container-terminal-overlay' role='dialog' aria-modal='true' aria-label={`Terminal for ${container.name}`}>
             {content}
         </Container>
     );

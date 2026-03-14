@@ -1,5 +1,5 @@
 import { IoAttachOutline, IoHappyOutline, IoPaperPlaneOutline, IoDocumentOutline, IoCloseOutline } from 'react-icons/io5';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { formatSize } from '@/shared/utils/format';
 import Button from '@/shared/presentation/components/Button';
 import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
@@ -9,44 +9,55 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Popover from '@/shared/presentation/components/Popover';
 import Tooltip from '@/shared/presentation/components/Tooltip';
+import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';
 import './ChatInput.css';
 
 interface ChatInputProps {
     disabled?: boolean;
+    isSending?: boolean;
     onTyping: () => void;
     onSendText: (text: string) => Promise<unknown>;
     onSendFiles: (files: File[]) => Promise<unknown>;
 };
 
-const ChatInput = ({ disabled, onTyping, onSendText, onSendFiles }: ChatInputProps) => {
+const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFiles }: ChatInputProps) => {
     const [message, setMessage] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const { files, previews, inputRef, removeFile, clear, handleInputChange: handleFileInput, openFilePicker, hasFiles } = useFilePreview();
+    const textareaId = useId();
+    const statusId = `${textareaId}-status`;
+    const isPending = disabled || isSending || isSubmitting;
 
-    const handleSend = async (e: React.FormEvent) => {
+    const handleSend = async (e: FormEvent) => {
         e.preventDefault();
-        if (!message.trim() && !hasFiles) return;
+        if (isPending || (!message.trim() && !hasFiles)) return;
 
-        if (hasFiles) {
-            try {
-                await onSendFiles(files);
-                clear();
-            } catch (_error) {
-                return;
+        setIsSubmitting(true);
+        try {
+            if (hasFiles) {
+                try {
+                    await onSendFiles(files);
+                    clear();
+                } catch (_error) {
+                    return;
+                }
             }
-        }
 
-        if (message.trim()) {
-            await onSendText(message);
-            setMessage('');
+            if (message.trim()) {
+                await onSendText(message);
+                setMessage('');
+            }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
-    const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
         setMessage(e.target.value);
         onTyping();
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend(e);
@@ -84,11 +95,11 @@ const ChatInput = ({ disabled, onTyping, onSendText, onSendFiles }: ChatInputPro
                 <Paragraph className='font-size-2 font-weight-5 color-primary chat-file-preview-name'>
                     {item.file.name}
                 </Paragraph>
-                <Paragraph className='font-size-1 color-muted'>
+                <Paragraph className='font-size-2 color-muted'>
                     {formatSize(item.file.size)}
                 </Paragraph>
             </Container>
-            <IconButton size='sm' variant='ghost' onClick={() => removeFile(index)} title='Remove file' aria-label='Remove file'>
+            <IconButton size='sm' variant='ghost' onClick={() => removeFile(index)} title={`Remove ${item.file.name}`} aria-label={`Remove ${item.file.name}`}>
                 <IoCloseOutline size={16} />
             </IconButton>
         </Container>
@@ -102,29 +113,35 @@ const ChatInput = ({ disabled, onTyping, onSendText, onSendFiles }: ChatInputPro
                 </Container>
             )}
 
+            <label htmlFor={textareaId} className='chat-input-visually-hidden'>
+                Message
+            </label>
+
             <Container className='d-flex items-center gap-05 chat-input-wrapper'>
                 <input type='file' ref={inputRef} onChange={handleFileInput} multiple hidden />
 
                 <Tooltip content='Attach file'>
-                    <IconButton size='sm' variant='ghost' onClick={openFilePicker} disabled={disabled} title='Attach file' aria-label='Attach file'>
+                    <IconButton size='sm' variant='ghost' onClick={openFilePicker} disabled={isPending} title='Attach file' aria-label='Attach file'>
                         <IoAttachOutline size={20} />
                     </IconButton>
                 </Tooltip>
 
                 <textarea
-                    className='flex-1 chat-input-textarea font-size-2-5 color-primary'
+                    id={textareaId}
+                    className='flex-1 chat-input-textarea font-size-2 color-primary'
                     placeholder='Type a message...'
                     rows={1}
                     value={message}
                     onChange={handleTextChange}
                     onKeyDown={handleKeyDown}
-                    disabled={disabled}
+                    disabled={isPending}
+                    aria-describedby={isPending ? statusId : undefined}
                 />
 
                 <Popover
                     id='chat-emoji-picker'
                     trigger={
-                        <IconButton size='sm' variant='ghost' disabled={disabled} title='Open emoji picker' aria-label='Open emoji picker'>
+                        <IconButton size='sm' variant='ghost' disabled={isPending} title='Open emoji picker' aria-label='Open emoji picker'>
                             <IoHappyOutline size={20} />
                         </IconButton>
                     }
@@ -138,14 +155,20 @@ const ChatInput = ({ disabled, onTyping, onSendText, onSendFiles }: ChatInputPro
                         intent='brand'
                         iconOnly
                         type='submit'
-                        disabled={disabled || (!message.trim() && !hasFiles)}
+                        disabled={isPending || (!message.trim() && !hasFiles)}
+                        isLoading={isPending}
                         title='Send message'
                         aria-label='Send message'
+                        aria-describedby={isPending ? statusId : undefined}
                     >
                         <IoPaperPlaneOutline size={18} />
                     </Button>
                 </Tooltip>
             </Container>
+
+            <Paragraph id={statusId} className='chat-input-status font-size-2 color-muted' role='status' aria-live='polite'>
+                {isPending ? 'Sending message…' : ''}
+            </Paragraph>
         </form>
     );
 };

@@ -1,7 +1,7 @@
 .ai-composer {
     width: min(880px, 100%);
     margin: auto;
-    padding: 0.65rem 1rem 1.1rem;
+    padding: 0.8rem 1rem calc(1.1rem + env(safe-area-inset-bottom, 0px));
     border-top: none;
     background: transparent;
 }
@@ -10,7 +10,14 @@
     border: 1px solid var(--color-border-soft);
     border-radius: 999px;
     background: var(--input-bg);
-    padding: 0.45rem 0.55rem 0.45rem 0.7rem;
+    padding: 0.5rem 0.55rem 0.5rem 0.75rem;
+    min-height: 3rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.ai-composer-input-wrapper:focus-within {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-blue) 18%, transparent);
 }
 
 .ai-composer-input {
@@ -22,6 +29,10 @@
     color: var(--input-fg);
     line-height: 1.45;
     padding: 0;
+}
+
+.ai-composer-input:focus-visible {
+    outline: none;
 }
 
 .ai-composer-input::placeholder {
@@ -41,6 +52,13 @@
 .ai-composer-side-icon:hover:not(:disabled) {
     color: var(--color-text-primary);
     background: var(--hover-bg);
+}
+
+.ai-composer-side-icon:focus-visible,
+.ai-composer-send:focus-visible,
+.ai-composer-model-select:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .ai-composer-side-icon:disabled {
@@ -91,5 +109,25 @@
     .ai-composer {
         padding-left: 0.75rem;
         padding-right: 0.75rem;
+    }
+
+    .ai-composer-input-wrapper {
+        gap: 0.35rem;
+    }
+
+    .ai-composer-model-select {
+        max-width: 132px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ai-composer-input-wrapper,
+    .ai-composer-side-icon,
+    .ai-composer-send {
+        transition: none;
+    }
+
+    .ai-composer-send:hover:not(:disabled) {
+        transform: none;
     }
 }

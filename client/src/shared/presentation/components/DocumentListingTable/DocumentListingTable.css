@@ -57,6 +57,22 @@
     font-weight: 600;
 }
 
+.document-listing-sort-button {
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+}
+
+.document-listing-sort-button:focus-visible {
+    outline: none;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+}
+
 .document-listing-table-footer-container {
     padding: 1rem 0;
 }
@@ -75,6 +91,17 @@
 @keyframes pulse-infinite {
     0%, 100% { opacity: 0.4; }
     50% { opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .document-listing-table-row-container,
+    .document-listing-sort-button {
+        transition: none;
+    }
+
+    .document-listing-infinite-skeleton-loader {
+        animation: none;
+    }
 }
 
 .document-listing-infinite-skeleton-loader .skeleton-row {

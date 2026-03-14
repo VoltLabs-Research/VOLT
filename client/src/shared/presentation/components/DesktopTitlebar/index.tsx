@@ -43,7 +43,7 @@ const DesktopTitlebar = () => {
 
     return (
         <header className='desktop-titlebar'>
-            <Container className='desktop-titlebar__controls d-flex items-center gap-05'>
+            <Container className='desktop-titlebar__controls d-flex items-center gap-05' role='toolbar' aria-label='Window controls'>
                 {controls.map((control) => (
                     <Tooltip key={control.label} content={control.label} placement='bottom'>
                         <IconButton
@@ -53,7 +53,7 @@ const DesktopTitlebar = () => {
                             size='sm'
                             variant='ghost'
                         >
-                            <span aria-hidden='true' />
+                            <span className='desktop-titlebar__window-control-dot' aria-hidden='true' />
                         </IconButton>
                     </Tooltip>
                 ))}

@@ -76,8 +76,7 @@
 }
 
 .dashboard-notifications-empty {
-    flex-direction: column;
-    gap: 0.5rem;
+    min-height: 100%;
 }
 
 @media screen and (max-width: 1200px) {

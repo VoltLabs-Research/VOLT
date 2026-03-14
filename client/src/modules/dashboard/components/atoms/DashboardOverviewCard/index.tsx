@@ -35,53 +35,91 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
     }
 
     return (
-        <DashboardCard
-            className='dashboard-stat-card'
-            isClickable={isClickable}
-            isRelative={true}
-            overflowHidden={true}
-            onClick={handleClick}
-        >
-            <Container className='d-flex column gap-1 p-relative z-5'>
-                <Container className='d-flex items-center gap-075'>
-                    <Container className='dashboard-stat-card-icon d-flex flex-center radius-md'>
-                        {icon}
-                    </Container>
-                    <Container className='d-flex column gap-01'>
-                        <span className='font-size-2 font-weight-5'>{card.name}</span>
-                        {card.pluginName && (
-                            <span className='font-size-1 color-muted'>{card.pluginName}</span>
-                        )}
-                    </Container>
-                </Container>
+        <DashboardCard className='dashboard-stat-card' isRelative={true} overflowHidden={true}>
+            {isClickable ? (
+                <button
+                    type='button'
+                    className='dashboard-stat-card-button'
+                    onClick={handleClick}
+                    aria-label={`Open ${card.name}`}
+                >
+                    <Container className='d-flex column gap-1 p-relative z-5'>
+                        <Container className='d-flex items-center gap-075'>
+                            <Container className='dashboard-stat-card-icon d-flex flex-center radius-md'>
+                                {icon}
+                            </Container>
+                            <Container className='d-flex column gap-01'>
+                                <span className='font-size-2 font-weight-5'>{card.name}</span>
+                                {card.pluginName && (
+                                    <span className='font-size-1 color-muted'>{card.pluginName}</span>
+                                )}
+                            </Container>
+                        </Container>
 
-                <Container className='d-flex items-end gap-075'>
-                    <span className='dashboard-stat-value'>{card.count}</span>
-                    <Container className={`dashboard-stat-trend d-flex items-center gap-025 ${up ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
-                        {trendIcon}
-                        <span>{Math.abs(card.lastMonthStatus ?? 0)}%</span>
+                        <Container className='d-flex items-end gap-075'>
+                            <span className='dashboard-stat-value'>{card.count}</span>
+                            <Container className={`dashboard-stat-trend d-flex items-center gap-025 ${up ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
+                                {trendIcon}
+                                <span>{Math.abs(card.lastMonthStatus ?? 0)}%</span>
+                            </Container>
+                        </Container>
+
+                        <span className='font-size-1 color-muted'>vs last month</span>
                     </Container>
-                </Container>
 
-                <span className='font-size-1 color-muted'>vs last month</span>
-            </Container>
+                    <Container className='dashboard-stat-navigate p-absolute top-1 right-1'>
+                        <GoArrowRight />
+                    </Container>
 
-            {isClickable && (
-                <Container className='dashboard-stat-navigate p-absolute top-1 right-1'>
-                    <GoArrowRight />
-                </Container>
+                    <Container className='dashboard-stat-sparkline p-absolute bottom-0 right-0'>
+                        <TinyLineChart
+                            lineColor={lineColor || '#30d158'}
+                            pData={card.series}
+                            xLabels={card.labels}
+                            yDomain={card.yDomain}
+                            width={160}
+                            height={60}
+                        />
+                    </Container>
+                </button>
+            ) : (
+                <>
+                    <Container className='d-flex column gap-1 p-relative z-5 dashboard-stat-card-content'>
+                        <Container className='d-flex items-center gap-075'>
+                            <Container className='dashboard-stat-card-icon d-flex flex-center radius-md'>
+                                {icon}
+                            </Container>
+                            <Container className='d-flex column gap-01'>
+                                <span className='font-size-2 font-weight-5'>{card.name}</span>
+                                {card.pluginName && (
+                                    <span className='font-size-1 color-muted'>{card.pluginName}</span>
+                                )}
+                            </Container>
+                        </Container>
+
+                        <Container className='d-flex items-end gap-075'>
+                            <span className='dashboard-stat-value'>{card.count}</span>
+                            <Container className={`dashboard-stat-trend d-flex items-center gap-025 ${up ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
+                                {trendIcon}
+                                <span>{Math.abs(card.lastMonthStatus ?? 0)}%</span>
+                            </Container>
+                        </Container>
+
+                        <span className='font-size-1 color-muted'>vs last month</span>
+                    </Container>
+
+                    <Container className='dashboard-stat-sparkline p-absolute bottom-0 right-0'>
+                        <TinyLineChart
+                            lineColor={lineColor || '#30d158'}
+                            pData={card.series}
+                            xLabels={card.labels}
+                            yDomain={card.yDomain}
+                            width={160}
+                            height={60}
+                        />
+                    </Container>
+                </>
             )}
-
-            <Container className='dashboard-stat-sparkline p-absolute bottom-0 right-0'>
-                <TinyLineChart
-                    lineColor={lineColor || '#30d158'}
-                    pData={card.series}
-                    xLabels={card.labels}
-                    yDomain={card.yDomain}
-                    width={160}
-                    height={60}
-                />
-            </Container>
         </DashboardCard>
     );
 };

@@ -16,9 +16,9 @@ import useTeamMemberData from '@/modules/team/hooks/member/use-team-member-data'
 import type { User } from '@/modules/auth/api/entities/user';
 
 const useMessagesPage = (chatId?: string) => {
-    const { handleSelectChat } = useChatNavigation();
+    const { handleSelectChat, navigateToMessages } = useChatNavigation();
     const uiState = useChatUIState();
-    const { toggleDetails } = uiState;
+    const { closeDetails, toggleDetails } = uiState;
 
     const currentUser = useCurrentUser();
     const currentUserId = currentUser?._id;
@@ -110,8 +110,13 @@ const useMessagesPage = (chatId?: string) => {
     }, [fetchChats, resetPresenceStore, resetState, selectedTeamId]);
 
     useEffect(() => {
-        if (chatId) selectChat(chatId);
-    }, [chatId, selectChat]);
+        if (!chatId) {
+            closeDetails();
+            return;
+        }
+
+        selectChat(chatId);
+    }, [chatId, closeDetails, selectChat]);
 
     useEffect(() => {
         return () => {
@@ -120,9 +125,19 @@ const useMessagesPage = (chatId?: string) => {
         };
     }, [resetPresenceStore, resetState]);
 
+    const handleSelectConversation = useCallback((nextChatId: string) => {
+        closeDetails();
+        handleSelectChat(nextChatId);
+    }, [closeDetails, handleSelectChat]);
+
     const handleStartChat = useCallback(async (memberId: string) => {
         if (selectedTeam) await chatActions.getOrCreateChat(selectedTeam._id, memberId);
     }, [selectedTeam, chatActions]);
+
+    const handleBackToList = useCallback(() => {
+        closeDetails();
+        navigateToMessages();
+    }, [closeDetails, navigateToMessages]);
 
     const handleLoadMore = useCallback(() => {
         if (chatId && hasMoreMessages) {
@@ -173,8 +188,9 @@ const useMessagesPage = (chatId?: string) => {
         messagesError,
         ...uiState,
 
-        handleSelectChat,
+        handleSelectChat: handleSelectConversation,
         handleStartChat,
+        handleBackToList,
         handleLoadMore,
         handleTyping,
         handleCreateGroup,
@@ -184,6 +200,8 @@ const useMessagesPage = (chatId?: string) => {
         handleInfoClick,
 
         sendMessage: messageActions.sendMessage,
+        isSendingMessage: messageActions.isSendingMessage,
+        isSendingFile: messageActions.isSendingFile,
         editMessage: messageActions.editMessage,
         deleteMessage: messageActions.deleteMessage,
         toggleReaction: messageActions.toggleReaction,

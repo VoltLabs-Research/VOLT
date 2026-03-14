@@ -1,5 +1,12 @@
+.sign-in-page{
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--color-bg);
+}
+
 .sign-in-layout{
     display: grid;
+    min-height: inherit;
 }
 
 @media (min-width: 1024px){
@@ -16,14 +23,19 @@
 @media (min-width: 1024px){
     .sign-in-hero-section{
         display: flex;
-        height: 100vh;
+        min-height: 100vh;
+        min-height: 100dvh;
         position: sticky;
         top: 0;
     }
 }
 
 .sign-in-hero-overlay{
-    background: linear-gradient(to bottom, rgba(9, 9, 11, 0) 20%, rgba(9, 9, 11, 1) 100%);
+    background: linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--color-surface-1) 18%, transparent) 10%,
+        color-mix(in srgb, var(--color-bg) 92%, transparent) 100%
+    );
     pointer-events: none;
     z-index: 1;
 }
@@ -38,10 +50,7 @@
     font-weight: 700;
     line-height: 1.1;
     letter-spacing: -0.04em;
-    background: linear-gradient(to bottom right, #ffffff 40%, var(--color-text-secondary) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--color-text-primary);
 }
 
 .sign-in-hero-description{
@@ -53,7 +62,13 @@
 
 .sign-in-form-section{
     max-width: 26rem;
+    width: 100%;
     margin: 0 auto;
+}
+
+.sign-in-form-shell{
+    min-height: 100vh;
+    min-height: 100dvh;
 }
 
 .sign-in-form-title{
@@ -81,11 +96,19 @@
     padding: 0 1rem;
 }
 
-.sign-in-footer-link{
+.sign-in-consent{
     color: var(--color-text-secondary);
-    text-decoration: underline;
+    font-size: 0.875rem;
+    line-height: 1.6;
 }
 
-.sign-in-footer-link:hover{
+.sign-in-legal-text{
     color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+@media (max-width: 1023px){
+    .sign-in-form-shell{
+        justify-content: center;
+    }
 }

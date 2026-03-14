@@ -157,7 +157,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
                 variant='outline'
                 intent='white'
                 onClick={() => {
-                    void explorer.refresh();
+                    explorer.refresh();
                 }}
                 isLoading={explorer.isRefreshing}
             />
