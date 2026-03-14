@@ -1,4 +1,7 @@
-import { useEffect } from 'react';
+import { resolveEnvironmentColor, EnvironmentColorField } from '@/shared/domain/rendering/environment';
+import { Theme } from '@/shared/presentation/hooks/use-theme';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
+import { useEffect, useState } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Color, Fog } from 'three';
 
@@ -10,18 +13,37 @@ interface DynamicEnvironmentProps {
 
 const DynamicEnvironment = ({ settings }: DynamicEnvironmentProps) => {
     const { scene } = useThree();
+    const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
 
     useEffect(() => {
-        scene.background = new Color(settings.backgroundColor);
+        return subscribeToAppTheme(setTheme);
+    }, []);
+
+    const darkTheme = theme === Theme.Dark;
+    const backgroundColor = resolveEnvironmentColor(
+        settings.backgroundColor,
+        settings.backgroundColorFollowsTheme,
+        EnvironmentColorField.Background,
+        darkTheme
+    );
+    const fogColor = resolveEnvironmentColor(
+        settings.fogColor,
+        settings.fogColorFollowsTheme,
+        EnvironmentColorField.Fog,
+        darkTheme
+    );
+
+    useEffect(() => {
+        scene.background = new Color(backgroundColor);
 
         return () => {
             scene.background = null;
         };
-    }, [scene, settings.backgroundColor]);
+    }, [backgroundColor, scene]);
 
     useEffect(() => {
         if (settings.enableFog) {
-            scene.fog = new Fog(settings.fogColor, settings.fogNear, settings.fogFar);
+            scene.fog = new Fog(fogColor, settings.fogNear, settings.fogFar);
         } else {
             scene.fog = null;
         }
@@ -29,7 +51,7 @@ const DynamicEnvironment = ({ settings }: DynamicEnvironmentProps) => {
         return () => {
             scene.fog = null;
         };
-    }, [scene, settings.enableFog, settings.fogColor, settings.fogNear, settings.fogFar]);
+    }, [fogColor, scene, settings.enableFog, settings.fogFar, settings.fogNear]);
 
     return null;
 };

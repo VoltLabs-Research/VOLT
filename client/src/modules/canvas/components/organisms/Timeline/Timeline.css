@@ -112,3 +112,48 @@
 .canvas-simcell-value--mono {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
+
+@media (max-width: 900px) {
+    .canvas-timeline-header {
+        height: auto;
+        min-height: 40px;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .canvas-timeline-tabs-region,
+    .canvas-timeline-frame-region {
+        flex: 1 1 100%;
+    }
+
+    .canvas-timeline-controls-region {
+        position: static;
+        left: auto;
+        top: auto;
+        transform: none;
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        padding: 0;
+    }
+
+    .canvas-timeline-controls-center {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .canvas-timeline-tabs {
+        max-width: 100%;
+    }
+
+    .canvas-timeline-frame-region {
+        justify-content: flex-start;
+    }
+
+    .canvas-timeline-frame-info {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+}

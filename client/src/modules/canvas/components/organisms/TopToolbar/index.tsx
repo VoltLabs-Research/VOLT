@@ -100,7 +100,7 @@ const TopToolbar = () => {
                     onSignOut={handleSignOut}
                     isSigningOut={isSigningOut}
                     trigger={
-                        <Button variant='ghost' intent='neutral' iconOnly className="cursor-pointer" style={{ background: 'none', border: 'none', padding: 0 }}>
+                        <Button variant='ghost' intent='neutral' iconOnly aria-label='Open user menu' title='Open user menu' className="cursor-pointer" style={{ background: 'none', border: 'none', padding: 0 }}>
                             <Avatar user={user} size="xs" />
                         </Button>
                     }

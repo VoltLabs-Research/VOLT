@@ -20,9 +20,11 @@ const TeamMemberList = ({ members, selectedIds, currentUserId, onToggle }: TeamM
         const isSelected = selectedIds.includes(member._id);
 
         return (
-            <Container
+            <button
+                type='button'
                 key={member._id}
                 className={cn('d-flex items-center gap-075 list-item-hoverable team-member-item', isSelected && 'selected')}
+                aria-pressed={isSelected}
                 onClick={() => onToggle(member._id)}
             >
                 <Container className='d-flex flex-center team-member-item-checkbox transition-normal f-shrink-0'>
@@ -39,7 +41,7 @@ const TeamMemberList = ({ members, selectedIds, currentUserId, onToggle }: TeamM
                         {member.email}
                     </Paragraph>
                 </Container>
-            </Container>
+            </button>
         );
     };
 

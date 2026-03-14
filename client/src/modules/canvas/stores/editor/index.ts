@@ -91,14 +91,18 @@ export const useEditorStore = create<EditorStore>()(
                     fadeDistance: state.grid.fadeDistance,
                     fadeStrength: state.grid.fadeStrength,
                     sectionColor: state.grid.sectionColor,
+                    sectionColorFollowsTheme: state.grid.sectionColorFollowsTheme,
                     cellColor: state.grid.cellColor,
+                    cellColorFollowsTheme: state.grid.cellColorFollowsTheme,
                     position: state.grid.position,
                     rotation: state.grid.rotation
                 },
                 environment: {
                     backgroundColor: state.environment.backgroundColor,
+                    backgroundColorFollowsTheme: state.environment.backgroundColorFollowsTheme,
                     enableFog: state.environment.enableFog,
                     fogColor: state.environment.fogColor,
+                    fogColorFollowsTheme: state.environment.fogColorFollowsTheme,
                     fogNear: state.environment.fogNear,
                     fogFar: state.environment.fogFar
                 },

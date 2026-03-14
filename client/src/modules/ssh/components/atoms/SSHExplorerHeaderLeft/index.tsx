@@ -16,7 +16,7 @@ const SSHExplorerHeaderLeft = ({ connectionName, cwd, onBack, onGoUp }: SSHExplo
     return (
         <>
             <Tooltip content='Back to Connections' placement='bottom'>
-                <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={onBack}>
+                <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Back to connections' title='Back to connections' onClick={onBack}>
                     <LuArrowLeft size={18} />
                 </Button>
             </Tooltip>
@@ -26,8 +26,10 @@ const SSHExplorerHeaderLeft = ({ connectionName, cwd, onBack, onGoUp }: SSHExplo
                     intent='neutral'
                     iconOnly
                     size='sm'
+                    aria-label='Go up'
                     onClick={onGoUp}
                     disabled={isAtRoot}
+                    title='Go up'
                 >
                     <LuArrowUp size={18} />
                 </Button>

@@ -1,10 +1,31 @@
-import { LightingPreset } from '@/shared/domain/rendering/lights';
+import { LightingPreset, LightsColorField, resolveLightsColor } from '@/shared/domain/rendering/lights';
+import { Theme } from '@/shared/presentation/hooks/use-theme';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
 import { useThree } from '@react-three/fiber';
 import { Color, DirectionalLight, DirectionalLightHelper, HemisphereLight, HemisphereLightHelper, PointLight, PointLightHelper, RectAreaLight, SpotLight, SpotLightHelper } from 'three';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { LightsState } from '@/shared/domain/rendering/lights';
 import type { FC } from 'react';
+
+interface ResolvedLightConfig {
+    color: Color;
+    position: [number, number, number];
+};
+
+interface ResolvedSpotLightConfig extends ResolvedLightConfig {
+    target: [number, number, number];
+};
+
+interface ResolvedHemisphereLightConfig {
+    sky: Color;
+    ground: Color;
+    position: [number, number, number];
+};
+
+interface ResolvedRectAreaLightConfig extends ResolvedLightConfig {
+    lookAt: [number, number, number];
+};
 
 export { LightingPreset };
 
@@ -13,84 +34,106 @@ interface DynamicLightsProps {
     preset?: LightingPreset;
 };
 
-interface CustomLightsProps {
-    settings: LightsState;
+interface PresetLightColors {
+    ambientIntensity: number;
+    keyColor: string;
+    fillColor: string;
+    hemisphereGroundColor: string;
 };
 
-const TrajectoryPreset: FC = () => {
-    const directionalLightRef = useRef<DirectionalLight>(null);
+interface PresetShadowConfig {
+    mapSize: [number, number];
+    bias?: number;
+    near: number;
+    far: number;
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+};
+
+const TRAJECTORY_PRESET_SHADOW: PresetShadowConfig = {
+    mapSize: [1024, 1024],
+    near: 1,
+    far: 100,
+    left: -15,
+    right: 15,
+    top: 15,
+    bottom: -15
+};
+
+const DEFECT_PRESET_SHADOW: PresetShadowConfig = {
+    mapSize: [256, 256],
+    bias: -0.0001,
+    near: 1,
+    far: 30,
+    left: -15,
+    right: 15,
+    top: 15,
+    bottom: -15
+};
+
+const getTrajectoryPresetColors = (darkTheme: boolean): PresetLightColors => {
+    if (darkTheme) {
+        return {
+            ambientIntensity: 0.8,
+            keyColor: '#f0f0f0',
+            fillColor: '#f0f0f0',
+            hemisphereGroundColor: '#1D1D20'
+        };
+    }
+
+    return {
+        ambientIntensity: 0.55,
+        keyColor: '#1d1d1f',
+        fillColor: '#4f4f4f',
+        hemisphereGroundColor: '#d1d1d6'
+    };
+};
+
+const getDefectPresetColors = (darkTheme: boolean): Omit<PresetLightColors, 'hemisphereGroundColor'> => {
+    if (darkTheme) {
+        return {
+            ambientIntensity: 0.15,
+            keyColor: '#f0f0f0',
+            fillColor: '#8e8e93'
+        };
+    }
+
+    return {
+        ambientIntensity: 0.35,
+        keyColor: '#1d1d1f',
+        fillColor: '#4f4f4f'
+    };
+};
+
+const useThemeMode = (): boolean => {
+    const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
 
     useEffect(() => {
-        const light = directionalLightRef.current;
-        if (!light) return;
-        light.shadow.mapSize.set(1024, 1024);
-        light.shadow.camera.far = 100;
-        light.shadow.camera.near = 1;
-        light.shadow.camera.left = -15;
-        light.shadow.camera.right = 15;
-        light.shadow.camera.top = 15;
-        light.shadow.camera.bottom = -15;
-        light.shadow.camera.updateProjectionMatrix();
+        return subscribeToAppTheme(setTheme);
     }, []);
 
-    return (
-        <>
-            <ambientLight intensity={0.8} />
-            <directionalLight
-                ref={directionalLightRef}
-                castShadow
-                position={[15, 15, 15]}
-                intensity={2.0}
-            />
-            <directionalLight
-                position={[-10, 10, -10]}
-                intensity={0.8}
-                color='#ffffff'
-            />
-            <hemisphereLight
-                groundColor='#362d1d'
-                intensity={0.5}
-            />
-        </>
-    );
+    return theme === Theme.Dark;
 };
 
-const DefectPreset: FC = () => {
-    const directionalLightRef = useRef<DirectionalLight>(null);
+const applyPresetShadow = (light: DirectionalLight, shadow: PresetShadowConfig): void => {
+    light.shadow.mapSize.set(shadow.mapSize[0], shadow.mapSize[1]);
 
-    useEffect(() => {
-        const light = directionalLightRef.current;
-        if (!light) return;
-        light.shadow.mapSize.set(256, 256);
-        light.shadow.bias = -0.0001;
-        light.shadow.camera.near = 1;
-        light.shadow.camera.far = 30;
-        light.shadow.camera.left = -15;
-        light.shadow.camera.right = 15;
-        light.shadow.camera.top = 15;
-        light.shadow.camera.bottom = -15;
-        light.shadow.camera.updateProjectionMatrix();
-    }, []);
+    if (typeof shadow.bias === 'number') {
+        light.shadow.bias = shadow.bias;
+    }
 
-    return (
-        <>
-            <ambientLight intensity={0.15} />
-            <directionalLight
-                ref={directionalLightRef}
-                castShadow
-                position={[10, 15, -5]}
-                intensity={2.0}
-            />
-            <directionalLight
-                position={[-10, 5, 10]}
-                intensity={0.2}
-            />
-        </>
-    );
+    light.shadow.camera.near = shadow.near;
+    light.shadow.camera.far = shadow.far;
+    light.shadow.camera.left = shadow.left;
+    light.shadow.camera.right = shadow.right;
+    light.shadow.camera.top = shadow.top;
+    light.shadow.camera.bottom = shadow.bottom;
+    light.shadow.camera.updateProjectionMatrix();
 };
 
-const CustomLights: FC<CustomLightsProps> = ({ settings }) => {
-    const st = settings;
+const DynamicLights: FC<DynamicLightsProps> = ({ settings, preset }) => {
     const dirLightRef = useRef<DirectionalLight>(null);
     const dirHelperRef = useRef<DirectionalLightHelper | null>(null);
     const pointLightRef = useRef<PointLight>(null);
@@ -100,44 +143,67 @@ const CustomLights: FC<CustomLightsProps> = ({ settings }) => {
     const hemiLightRef = useRef<HemisphereLight>(null);
     const hHelperRef = useRef<HemisphereLightHelper | null>(null);
     const { scene } = useThree();
+    const darkTheme = useThemeMode();
+    const isTrajectoryPreset = preset === LightingPreset.Trajectory;
+    const isDefectPreset = preset === LightingPreset.Defect;
+    const customSettings = settings;
+    const trajectoryColors = getTrajectoryPresetColors(darkTheme);
+    const defectColors = getDefectPresetColors(darkTheme);
 
     useEffect(() => {
         RectAreaLightUniformsLib.init();
     }, []);
 
     useEffect(() => {
-        if (scene.environmentRotation) {
-            scene.environmentRotation.set(st.global.envRotationPitch, st.global.envRotationYaw, 0);
+        if (!customSettings || isTrajectoryPreset || isDefectPreset) {
+            return;
         }
-    }, [scene, st.global.envRotationYaw, st.global.envRotationPitch]);
+
+        if (scene.environmentRotation) {
+            scene.environmentRotation.set(customSettings.global.envRotationPitch, customSettings.global.envRotationYaw, 0);
+        }
+    }, [customSettings, isDefectPreset, isTrajectoryPreset, scene]);
 
     useEffect(() => {
         const light = dirLightRef.current;
         if (!light) return;
-        light.shadow.bias = st.directional.shadowBias;
-        light.shadow.normalBias = st.directional.shadowNormalBias;
-        light.shadow.camera.left = st.directional.camLeft;
-        light.shadow.camera.right = st.directional.camRight;
-        light.shadow.camera.top = st.directional.camTop;
-        light.shadow.camera.bottom = st.directional.camBottom;
-        light.shadow.camera.near = st.directional.camNear;
-        light.shadow.camera.far = st.directional.camFar;
+        if (isTrajectoryPreset) {
+            applyPresetShadow(light, TRAJECTORY_PRESET_SHADOW);
+            return;
+        }
+
+        if (isDefectPreset) {
+            applyPresetShadow(light, DEFECT_PRESET_SHADOW);
+            return;
+        }
+
+        if (!customSettings) {
+            return;
+        }
+
+        light.shadow.bias = customSettings.directional.shadowBias;
+        light.shadow.normalBias = customSettings.directional.shadowNormalBias;
+        light.shadow.camera.left = customSettings.directional.camLeft;
+        light.shadow.camera.right = customSettings.directional.camRight;
+        light.shadow.camera.top = customSettings.directional.camTop;
+        light.shadow.camera.bottom = customSettings.directional.camBottom;
+        light.shadow.camera.near = customSettings.directional.camNear;
+        light.shadow.camera.far = customSettings.directional.camFar;
         light.shadow.camera.updateProjectionMatrix();
     }, [
-        st.directional.shadowBias,
-        st.directional.shadowNormalBias,
-        st.directional.camLeft,
-        st.directional.camRight,
-        st.directional.camTop,
-        st.directional.camBottom,
-        st.directional.camNear,
-        st.directional.camFar
+        customSettings,
+        isDefectPreset,
+        isTrajectoryPreset
     ]);
 
     useEffect(() => {
+        if (!customSettings || isTrajectoryPreset || isDefectPreset) {
+            return;
+        }
+
         const light = dirLightRef.current;
         if (!light) return;
-        if (st.directional.helper) {
+        if (customSettings.directional.helper) {
             if (!dirHelperRef.current) {
                 dirHelperRef.current = new DirectionalLightHelper(light, 2);
             }
@@ -146,12 +212,16 @@ const CustomLights: FC<CustomLightsProps> = ({ settings }) => {
         } else if (dirHelperRef.current) {
             light.remove(dirHelperRef.current);
         }
-    }, [st.directional.helper]);
+    }, [customSettings, isDefectPreset, isTrajectoryPreset]);
 
     useEffect(() => {
+        if (!customSettings || isTrajectoryPreset || isDefectPreset) {
+            return;
+        }
+
         const light = pointLightRef.current;
         if (!light) return;
-        if (st.point.helper) {
+        if (customSettings.point.helper) {
             if (!pHelperRef.current) {
                 pHelperRef.current = new PointLightHelper(light, 1);
             }
@@ -160,12 +230,16 @@ const CustomLights: FC<CustomLightsProps> = ({ settings }) => {
         } else if (pHelperRef.current) {
             light.remove(pHelperRef.current);
         }
-    }, [st.point.helper]);
+    }, [customSettings, isDefectPreset, isTrajectoryPreset]);
 
     useEffect(() => {
+        if (!customSettings || isTrajectoryPreset || isDefectPreset) {
+            return;
+        }
+
         const light = spotLightRef.current;
         if (!light) return;
-        if (st.spot.helper) {
+        if (customSettings.spot.helper) {
             if (!sHelperRef.current) {
                 sHelperRef.current = new SpotLightHelper(light);
             }
@@ -174,19 +248,27 @@ const CustomLights: FC<CustomLightsProps> = ({ settings }) => {
         } else if (sHelperRef.current) {
             light.remove(sHelperRef.current);
         }
-    }, [st.spot.helper]);
+    }, [customSettings, isDefectPreset, isTrajectoryPreset]);
 
     useEffect(() => {
+        if (!customSettings || isTrajectoryPreset || isDefectPreset) {
+            return;
+        }
+
         const light = spotLightRef.current;
         if (!light) return;
-        const [x, y, z] = st.spot.target;
+        const [x, y, z] = customSettings.spot.target;
         light.target.position.set(x, y, z);
-    }, [st.spot.target]);
+    }, [customSettings, isDefectPreset, isTrajectoryPreset]);
 
     useEffect(() => {
+        if (!customSettings || isTrajectoryPreset || isDefectPreset) {
+            return;
+        }
+
         const light = hemiLightRef.current;
         if (!light) return;
-        if (st.hemisphere.helper) {
+        if (customSettings.hemisphere.helper) {
             if (!hHelperRef.current) {
                 hHelperRef.current = new HemisphereLightHelper(light, 2);
             }
@@ -195,84 +277,192 @@ const CustomLights: FC<CustomLightsProps> = ({ settings }) => {
         } else if (hHelperRef.current) {
             light.remove(hHelperRef.current);
         }
-    }, [st.hemisphere.helper]);
+    }, [customSettings, isDefectPreset, isTrajectoryPreset]);
 
-    const dir = useMemo(() => ({
-        color: new Color(st.directional.color),
-        position: st.directional.position
-    }), [st.directional.color, st.directional.position]);
+    const dir = useMemo<ResolvedLightConfig | null>(() => {
+        if (!customSettings) {
+            return null;
+        }
 
-    const point = useMemo(() => ({
-        color: new Color(st.point.color),
-        position: st.point.position
-    }), [st.point.color, st.point.position]);
+        return {
+            color: new Color(resolveLightsColor(
+                customSettings.directional.color,
+                customSettings.directional.colorFollowsTheme,
+                LightsColorField.Directional,
+                darkTheme
+            )),
+            position: customSettings.directional.position
+        };
+    }, [customSettings, darkTheme]);
 
-    const spot = useMemo(() => ({
-        color: new Color(st.spot.color),
-        position: st.spot.position,
-        target: st.spot.target
-    }), [st.spot.color, st.spot.position, st.spot.target]);
+    const point = useMemo<ResolvedLightConfig | null>(() => {
+        if (!customSettings) {
+            return null;
+        }
 
-    const hemi = useMemo(() => ({
-        sky: new Color(st.hemisphere.skyColor),
-        ground: new Color(st.hemisphere.groundColor),
-        position: st.hemisphere.position
-    }), [st.hemisphere.skyColor, st.hemisphere.groundColor, st.hemisphere.position]);
+        return {
+            color: new Color(resolveLightsColor(
+                customSettings.point.color,
+                customSettings.point.colorFollowsTheme,
+                LightsColorField.Point,
+                darkTheme
+            )),
+            position: customSettings.point.position
+        };
+    }, [customSettings, darkTheme]);
 
-    const rect = useMemo(() => ({
-        color: new Color(st.rectArea.color),
-        position: st.rectArea.position,
-        lookAt: st.rectArea.lookAt
-    }), [st.rectArea.color, st.rectArea.position, st.rectArea.lookAt]);
+    const spot = useMemo<ResolvedSpotLightConfig | null>(() => {
+        if (!customSettings) {
+            return null;
+        }
+
+        return {
+            color: new Color(resolveLightsColor(
+                customSettings.spot.color,
+                customSettings.spot.colorFollowsTheme,
+                LightsColorField.Spot,
+                darkTheme
+            )),
+            position: customSettings.spot.position,
+            target: customSettings.spot.target
+        };
+    }, [customSettings, darkTheme]);
+
+    const hemi = useMemo<ResolvedHemisphereLightConfig | null>(() => {
+        if (!customSettings) {
+            return null;
+        }
+
+        return {
+            sky: new Color(resolveLightsColor(
+                customSettings.hemisphere.skyColor,
+                customSettings.hemisphere.skyColorFollowsTheme,
+                LightsColorField.HemisphereSky,
+                darkTheme
+            )),
+            ground: new Color(resolveLightsColor(
+                customSettings.hemisphere.groundColor,
+                customSettings.hemisphere.groundColorFollowsTheme,
+                LightsColorField.HemisphereGround,
+                darkTheme
+            )),
+            position: customSettings.hemisphere.position
+        };
+    }, [customSettings, darkTheme]);
+
+    const rect = useMemo<ResolvedRectAreaLightConfig | null>(() => {
+        if (!customSettings) {
+            return null;
+        }
+
+        return {
+            color: new Color(resolveLightsColor(
+                customSettings.rectArea.color,
+                customSettings.rectArea.colorFollowsTheme,
+                LightsColorField.RectArea,
+                darkTheme
+            )),
+            position: customSettings.rectArea.position,
+            lookAt: customSettings.rectArea.lookAt
+        };
+    }, [customSettings, darkTheme]);
+
+    if (isTrajectoryPreset) {
+        return (
+            <>
+                <ambientLight intensity={trajectoryColors.ambientIntensity} />
+                <directionalLight
+                    ref={dirLightRef}
+                    castShadow
+                    position={[15, 15, 15]}
+                    intensity={2.0}
+                    color={trajectoryColors.keyColor}
+                />
+                <directionalLight
+                    position={[-10, 10, -10]}
+                    intensity={0.8}
+                    color={trajectoryColors.fillColor}
+                />
+                <hemisphereLight
+                    groundColor={trajectoryColors.hemisphereGroundColor}
+                    intensity={0.5}
+                />
+            </>
+        );
+    }
+
+    if (isDefectPreset) {
+        return (
+            <>
+                <ambientLight intensity={defectColors.ambientIntensity} />
+                <directionalLight
+                    ref={dirLightRef}
+                    castShadow
+                    position={[10, 15, -5]}
+                    intensity={2.0}
+                    color={defectColors.keyColor}
+                />
+                <directionalLight
+                    position={[-10, 5, 10]}
+                    intensity={0.2}
+                    color={defectColors.fillColor}
+                />
+            </>
+        );
+    }
+
+    if (!customSettings || !dir || !point || !spot || !hemi || !rect) {
+        return null;
+    }
 
     return (
         <>
-            {st.directional.enabled && (
+            {customSettings.directional.enabled && (
                 <directionalLight
                     ref={dirLightRef}
                     color={dir.color}
-                    intensity={st.directional.intensity}
+                    intensity={customSettings.directional.intensity}
                     position={dir.position}
-                    castShadow={st.directional.castShadow}
+                    castShadow={customSettings.directional.castShadow}
                 />
             )}
-            {st.point.enabled && (
+            {customSettings.point.enabled && (
                 <pointLight
                     ref={pointLightRef}
                     color={point.color}
-                    intensity={st.point.intensity}
+                    intensity={customSettings.point.intensity}
                     position={point.position}
-                    distance={st.point.distance}
-                    decay={st.point.decay}
-                    castShadow={st.point.castShadow}
+                    distance={customSettings.point.distance}
+                    decay={customSettings.point.decay}
+                    castShadow={customSettings.point.castShadow}
                 />
             )}
-            {st.spot.enabled && (
+            {customSettings.spot.enabled && (
                 <spotLight
                     ref={spotLightRef}
                     color={spot.color}
-                    intensity={st.spot.intensity}
+                    intensity={customSettings.spot.intensity}
                     position={spot.position}
-                    distance={st.spot.distance}
-                    angle={st.spot.angle}
-                    penumbra={st.spot.penumbra}
-                    decay={st.spot.decay}
-                    castShadow={st.spot.castShadow}
+                    distance={customSettings.spot.distance}
+                    angle={customSettings.spot.angle}
+                    penumbra={customSettings.spot.penumbra}
+                    decay={customSettings.spot.decay}
+                    castShadow={customSettings.spot.castShadow}
                 />
             )}
-            {st.hemisphere.enabled && (
+            {customSettings.hemisphere.enabled && (
                 <hemisphereLight
                     ref={hemiLightRef}
-                    args={[hemi.sky, hemi.ground, st.hemisphere.intensity]}
+                    args={[hemi.sky, hemi.ground, customSettings.hemisphere.intensity]}
                     position={hemi.position}
                 />
             )}
-            {st.rectArea.enabled && (
+            {customSettings.rectArea.enabled && (
                 <rectAreaLight
                     color={rect.color}
-                    intensity={st.rectArea.intensity}
-                    width={st.rectArea.width}
-                    height={st.rectArea.height}
+                    intensity={customSettings.rectArea.intensity}
+                    width={customSettings.rectArea.width}
+                    height={customSettings.rectArea.height}
                     position={rect.position}
                     ref={(r: RectAreaLight | null) => {
                         if (r) r.lookAt(...rect.lookAt);
@@ -281,19 +471,6 @@ const CustomLights: FC<CustomLightsProps> = ({ settings }) => {
             )}
         </>
     );
-};
-
-const DynamicLights: FC<DynamicLightsProps> = ({ settings, preset }) => {
-    if (preset === LightingPreset.Trajectory) {
-        return <TrajectoryPreset />;
-    }
-    if (preset === LightingPreset.Defect) {
-        return <DefectPreset />;
-    }
-    if (!settings) {
-        return null;
-    }
-    return <CustomLights settings={settings} />;
 };
 
 export default DynamicLights;

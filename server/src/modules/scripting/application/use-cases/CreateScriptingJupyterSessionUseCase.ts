@@ -25,6 +25,13 @@ interface ResolveNotebookForSessionInput extends CreateScriptingJupyterSessionIn
 
 const LOCK_TTL_MS = 90_000;
 
+const PENDING_JUPYTER_SESSION: CreateScriptingJupyterSessionOutputDTO = {
+    jupyter: {
+        url: '',
+        ready: false
+    }
+};
+
 const toPropsRecord = (notebook: ScriptingNotebook): Record<string, unknown> => {
     return notebook.props as unknown as Record<string, unknown>;
 };
@@ -94,10 +101,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         try {
             lease = await this.scriptingSessionLock.acquire(lockKey, LOCK_TTL_MS);
             if (!lease) {
-                return Result.fail(ApplicationError.conflict(
-                    ErrorCodes.INTERNAL_SERVER_ERROR,
-                    'Session creation already in progress'
-                ));
+                return Result.ok(PENDING_JUPYTER_SESSION);
             }
 
             const resolvedInput: ResolveNotebookForSessionInput = {
@@ -182,10 +186,14 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         const templateRaw = await this.scriptingSessionOrchestrator.resolveDefaultNotebookTemplateContent({
             trajectoryId: input.trajectoryId
         });
+        const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(
+            input.teamId,
+            input.teamClusterId
+        );
         const now = new Date();
         const createData: ScriptingNotebookProps = {
             team: input.teamId,
-            teamCluster: input.teamClusterId,
+            teamCluster: teamClusterId,
             title: 'Scripting Notebook',
             notebookPath: buildScriptingNotebookPath(input.trajectoryId),
             trajectory: input.trajectoryId,

@@ -1,3 +1,16 @@
+.loader-content {
+    max-width: 18rem;
+}
+
+.loader-visual {
+    width: 1px;
+    height: 1px;
+}
+
+.loader-label {
+    max-width: 18rem;
+}
+
 .Loader-Item {
     width: 12px;
     height: 3px;
@@ -82,5 +95,12 @@
 
     100% {
         background: rotate(360deg)
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .Loader-Item {
+        animation: none !important;
+        background: var(--color-text-muted);
     }
 }

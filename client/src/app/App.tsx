@@ -13,30 +13,14 @@ import DesktopShell from '@/shared/presentation/components/DesktopShell';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
 import GlobalErrorListener from '@/shared/presentation/components/GlobalErrorListener';
 import QueryProvider from '@/shared/presentation/components/QueryProvider';
-import { useCallback, useEffect } from 'react';
+import NotFoundState from '@/shared/presentation/components/NotFoundState';
+import { useThemeInitialization } from '@/shared/presentation/hooks/use-theme';
+import { useCallback } from 'react';
 import { BrowserRouter, HashRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import 'sileo/styles.css';
 import type { ErrorInfo } from 'react';
 
-interface NotFoundNavigationState {
-    fromNotFound: boolean;
-};
-
-const NOT_FOUND_NAVIGATION_STATE: NotFoundNavigationState = {
-    fromNotFound: true
-};
-
 ensureApplicationStoreCleanupsRegistered();
-
-const NotFoundRedirect = () => {
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        navigate('/dashboard', { replace: true, state: NOT_FOUND_NAVIGATION_STATE });
-    }, [navigate]);
-
-    return null;
-};
 
 const AppRoutes = () => {
     const location = useLocation();
@@ -76,7 +60,7 @@ const AppRoutes = () => {
                     {renderPublicRoutes()}
                     {renderGuestRoutes()}
                     {renderProtectedRoutes()}
-                    <Route path='*' element={<NotFoundRedirect />} />
+                    <Route path='*' element={<NotFoundState />} />
                 </Routes>
             </ErrorBoundary>
         </>
@@ -86,6 +70,7 @@ const AppRoutes = () => {
 export default function App() {
     const Router = isElectronEnvironment() ? HashRouter : BrowserRouter;
     usePageScale();
+    useThemeInitialization();
 
     return (
         <QueryProvider>

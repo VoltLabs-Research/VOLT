@@ -141,7 +141,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
         return (
             <Container className='d-flex items-center gap-1 flex-1'>
                 <Tooltip content='Go to Parent Directory' placement='bottom'>
-                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={explorer.goUp} disabled={explorer.isAtRoot}>
+                    <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Go to parent directory' title='Go to parent directory' onClick={explorer.goUp} disabled={explorer.isAtRoot}>
                         <IoArrowBack />
                     </Button>
                 </Tooltip>

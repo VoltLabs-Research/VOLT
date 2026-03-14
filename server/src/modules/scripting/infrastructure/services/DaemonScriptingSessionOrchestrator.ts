@@ -17,14 +17,13 @@ import type { IScriptingNotebookRepository } from '@modules/scripting/domain/por
 import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
 
 interface DaemonNotebookJupyterResponse {
-    internalPath?: string;
-    path?: string;
+    internalPath: string;
     url?: string;
     ready: boolean;
 };
 
 interface DaemonNotebookSessionResponse {
-    jupyter?: DaemonNotebookJupyterResponse;
+    jupyter: DaemonNotebookJupyterResponse;
 };
 
 interface DaemonNotebookSessionSnapshot {
@@ -37,13 +36,10 @@ interface DaemonNotebookSessionSnapshot {
 
 interface DaemonNotebookSessionRequest {
     [key: string]: unknown;
-    notebookId: string;
     requestedBy: string;
     publicBasePath: string;
     notebook: DaemonNotebookSessionSnapshot;
 };
-
-const LEGACY_DAEMON_PROXY_BASE_PATH = '/api/notebooks/proxy';
 
 const getNotebookTeamClusterId = (teamCluster: unknown): string | null => {
     if (!teamCluster) {
@@ -106,7 +102,6 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
 
         const runtimeNotebookId = input.notebookId;
         const request: DaemonNotebookSessionRequest = {
-            notebookId: runtimeNotebookId,
             requestedBy: input.userId,
             publicBasePath: this.buildPublicProxyBasePath(input.teamId, runtimeNotebookId),
             notebook: {
@@ -127,23 +122,12 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
             teamCluster: teamClusterId
         });
 
-        if (response.jupyter) {
-            const daemonPath = this.resolveDaemonJupyterPath(response.jupyter);
-            const jupyterUrl = this.buildProxyJupyterUrl(input.teamId, runtimeNotebookId, daemonPath, input.userId);
-            return {
-                jupyter: response.jupyter
-                    ? {
-                        ...response.jupyter,
-                        url: jupyterUrl
-                    }
-                    : response.jupyter
-            };
-        }
-
+        const daemonPath = this.resolveDaemonJupyterPath(response.jupyter);
+        const jupyterUrl = this.buildProxyJupyterUrl(input.teamId, runtimeNotebookId, daemonPath, input.userId);
         return {
             jupyter: {
-                url: '',
-                ready: false
+                ...response.jupyter,
+                url: jupyterUrl
             }
         };
     }
@@ -196,46 +180,6 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
     }
 
     private resolveDaemonJupyterPath(jupyter: DaemonNotebookJupyterResponse): string {
-        if (jupyter.internalPath) {
-            return this.normalizeDaemonPath(jupyter.internalPath);
-        }
-
-        if (jupyter.path) {
-            return this.normalizeDaemonPath(jupyter.path);
-        }
-
-        return this.normalizeDaemonPath(jupyter.url || '/');
-    }
-
-    private normalizeDaemonPath(value: string): string {
-        if (!value) {
-            return '/';
-        }
-
-        if (value.startsWith('/')) {
-            return this.stripLegacyDaemonProxyPrefix(value);
-        }
-
-        try {
-            const parsedUrl = new URL(value);
-            const search = parsedUrl.search || '';
-            return `${this.stripLegacyDaemonProxyPrefix(parsedUrl.pathname)}${search}`;
-        } catch {
-            const normalizedValue = value.startsWith('/') ? value : `/${value.replace(/^\/+/, '')}`;
-            return this.stripLegacyDaemonProxyPrefix(normalizedValue);
-        }
-    }
-
-    private stripLegacyDaemonProxyPrefix(pathname: string): string {
-        const normalizedPathname = pathname.startsWith('/') ? pathname : `/${pathname}`;
-        if (normalizedPathname === LEGACY_DAEMON_PROXY_BASE_PATH) {
-            return '/';
-        }
-
-        if (normalizedPathname.startsWith(`${LEGACY_DAEMON_PROXY_BASE_PATH}/`)) {
-            return normalizedPathname.slice(LEGACY_DAEMON_PROXY_BASE_PATH.length);
-        }
-
-        return normalizedPathname;
+        return jupyter.internalPath;
     }
 };

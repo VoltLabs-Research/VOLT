@@ -21,11 +21,24 @@
 .file-explorer-row {
     display: grid;
     grid-template-columns: 1fr 100px 100px 120px;
+    width: 100%;
     padding: 0.625rem 1rem;
     align-items: center;
+    border: none;
+    background: transparent;
+    text-align: left;
     cursor: pointer;
     transition: background 0.15s;
     border-bottom: 1px solid var(--color-border-soft);
+}
+
+.file-explorer-row.is-interactive {
+    cursor: pointer;
+}
+
+.file-explorer-row:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--color-border), inset 0 0 0 3px var(--focus-ring);
 }
 
 .file-explorer-row:hover {
@@ -111,4 +124,71 @@
 
 .file-explorer-state {
     min-height: 240px;
+}
+
+@media (max-width: 900px) {
+    .file-explorer-header {
+        flex-wrap: wrap;
+    }
+
+    .file-explorer-breadcrumb {
+        order: 3;
+        flex-basis: 100%;
+        min-width: 0;
+    }
+
+    .file-explorer-columns {
+        display: none;
+    }
+
+    .file-explorer-row {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+        align-items: start;
+        padding: 0.75rem 1rem;
+    }
+
+    .file-explorer-row-name {
+        align-items: flex-start;
+    }
+
+    .file-explorer-row-text {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .file-explorer-row-meta {
+        margin-left: 1.75rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .file-explorer-row-meta::before {
+        display: inline-block;
+        min-width: 3rem;
+        margin-right: 0.375rem;
+        color: var(--color-text-secondary);
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .file-explorer-row-meta:nth-child(2)::before {
+        content: 'Type';
+    }
+
+    .file-explorer-row-meta:nth-child(3)::before {
+        content: 'Size';
+    }
+
+    .file-explorer-row-meta:nth-child(4)::before {
+        content: 'Date';
+    }
+
+    .file-explorer-nav-btn {
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+        padding: 0.625rem;
+    }
 }

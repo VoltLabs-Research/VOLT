@@ -86,7 +86,9 @@ export interface CanvasGridSettingsState {
     fadeDistance: number;
     fadeStrength: number;
     sectionColor: string;
+    sectionColorFollowsTheme: boolean;
     cellColor: string;
+    cellColorFollowsTheme: boolean;
     position: [number, number, number];
     rotation: [number, number, number];
 };

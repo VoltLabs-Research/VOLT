@@ -2,11 +2,25 @@
     /* Base Properties */
     display: inline-flex;
     border: 1px solid transparent;
-    outline: none;
     text-decoration: none;
     white-space: nowrap;
     line-height: 1;
     font-weight: 500;
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
+}
+
+.button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+}
+
+.button:active:not(:disabled) {
+    transform: translateY(1px);
 }
 
 .button:disabled {
@@ -102,26 +116,32 @@
     color: currentColor;
 }
 
+.button-icon-only-content,
+.button-icon-left,
+.button-icon-right {
+    font-size: var(--button-icon-size, inherit);
+}
+
 /* Loader color for each intent */
 .button.is-loading.intent-neutral .button-loader,
 .button.is-loading.intent-white .button-loader {
-    color: #ffffff;
+    color: var(--color-contrast-high);
 }
 
 .button.is-loading.intent-brand .button-loader {
-    color: #000000;
+    color: var(--color-bg);
 }
 
 :root[data-theme='light'] .button.is-loading.intent-brand .button-loader {
-    color: #ffffff;
+    color: var(--color-contrast-high);
 }
 
 .button.is-loading.intent-danger .button-loader {
-    color: #ffffff;
+    color: var(--color-contrast-high);
 }
 
 .button.is-loading.intent-success .button-loader {
-    color: #ffffff;
+    color: var(--color-contrast-high);
 }
 
 /* Start Analysis button specific styling */
@@ -177,14 +197,14 @@
 
 /* Intent: Brand - Dark mode: white bg, black text. Light mode: accent blue */
 .button.intent-brand.variant-solid {
-    background-color: #ffffff;
-    color: #000000;
-    border-color: #ffffff;
+    background-color: var(--color-contrast-high);
+    color: var(--color-bg);
+    border-color: var(--color-contrast-high);
 }
 
 .button.intent-brand.variant-solid:hover:not(:disabled) {
-    background-color: rgba(255, 255, 255, 0.85);
-    border-color: rgba(255, 255, 255, 0.85);
+    background-color: color-mix(in srgb, var(--color-contrast-high) 85%, transparent);
+    border-color: color-mix(in srgb, var(--color-contrast-high) 85%, transparent);
 }
 
 /* Light Mode - Accent Blue */
@@ -446,14 +466,14 @@
 
 /* --- Premium (CTA buttons) - Dark: white, Light: accent blue --- */
 .button.premium {
-    background: #ffffff;
-    color: #000000;
-    border: 1px solid #ffffff;
+    background: var(--color-contrast-high);
+    color: var(--color-bg);
+    border: 1px solid var(--color-contrast-high);
 }
 
 .button.premium:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.85);
-    border-color: rgba(255, 255, 255, 0.85);
+    background: color-mix(in srgb, var(--color-contrast-high) 85%, transparent);
+    border-color: color-mix(in srgb, var(--color-contrast-high) 85%, transparent);
 }
 
 .button.premium:active:not(:disabled) {

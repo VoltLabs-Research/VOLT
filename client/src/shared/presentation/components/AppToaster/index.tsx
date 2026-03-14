@@ -1,5 +1,7 @@
+import { Theme } from '@/shared/presentation/hooks/use-theme';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
 import { Toaster } from 'sileo';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 /**
  * Renders Sileo's <Toaster /> at the application root.
@@ -9,23 +11,55 @@ import { useEffect, useRef } from 'react';
  */
 const AppToaster = () => {
     const popoverRef = useRef<HTMLDivElement>(null);
+    const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
+
+    const toasterFill = useMemo(() => {
+        const styles = getComputedStyle(document.documentElement);
+
+        return styles.getPropertyValue('--color-surface-1').trim()
+            || styles.getPropertyValue('--color-content-bg').trim()
+            || '#171719';
+    }, [theme]);
+
+    const popoverStyle = useMemo(() => {
+        return {
+            padding: 0,
+            margin: 0,
+            border: 'none',
+            background: 'transparent',
+            overflow: 'visible'
+        };
+    }, []);
 
     useEffect(() => {
-        if (popoverRef.current) {
+        const popoverElement = popoverRef.current;
+
+        if (popoverElement) {
             try {
-                popoverRef.current.showPopover();
+                popoverElement.showPopover();
             } catch (e) {
                 // Ignore if browser doesn't support or already shown
             }
         }
+
+        const unsubscribeTheme = subscribeToAppTheme(setTheme);
+
+        return () => {
+            unsubscribeTheme();
+        };
     }, []);
 
     return (
-        <div ref={popoverRef} popover='manual' style={{ padding: 0, margin: 0, border: 'none', background: 'transparent', overflow: 'visible' }}>
+        <div
+            ref={popoverRef}
+            popover='manual'
+            style={popoverStyle}
+            data-theme={theme}
+        >
             <Toaster
                 position='bottom-right'
-                theme='light'
-                options={{ fill: '#171717' }}
+                theme={theme === Theme.Dark ? 'dark' : 'light'}
+                options={{ fill: toasterFill }}
             />
         </div>
     );

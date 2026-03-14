@@ -44,6 +44,8 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
             <IconButton
                 className='sidebar-close-btn p-absolute'
                 onClick={() => setSidebarOpen(false)}
+                title='Close sidebar'
+                aria-label='Close sidebar'
             >
                 <IoCloseOutline size={20} />
             </IconButton>

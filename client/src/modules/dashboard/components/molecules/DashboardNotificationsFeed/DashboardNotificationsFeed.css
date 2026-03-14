@@ -33,6 +33,19 @@
     align-items: flex-start;
 }
 
+.dashboard-notification-button {
+    width: 100%;
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+}
+
+.dashboard-notification-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+}
+
 .dashboard-notification-item.unread {
     background: color-mix(in srgb, var(--accent-blue) 5%, transparent);
 }
@@ -55,6 +68,10 @@
 }
 
 .dashboard-notification-item:hover .dashboard-notification-arrow {
+    opacity: 1;
+}
+
+.dashboard-notification-button:focus-visible .dashboard-notification-arrow {
     opacity: 1;
 }
 

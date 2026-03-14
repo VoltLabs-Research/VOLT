@@ -31,6 +31,10 @@
     background: var(--color-surface-2);
 }
 
+.cluster-list-panel-row:focus-within {
+    background: var(--color-surface-2);
+}
+
 .cluster-list-panel-name {
     min-width: 0;
     overflow: hidden;

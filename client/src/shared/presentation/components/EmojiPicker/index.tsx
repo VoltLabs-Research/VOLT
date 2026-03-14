@@ -23,6 +23,8 @@ const EmojiPicker = ({ onSelect, emojis = DEFAULT_EMOJIS, columns = 6 }: EmojiPi
                     intent='neutral'
                     iconOnly
                     size='sm'
+                    aria-label={`Select ${emoji} emoji`}
+                    title={`Select ${emoji}`}
                     onClick={() => onSelect(emoji)}
                 >
                     {emoji}

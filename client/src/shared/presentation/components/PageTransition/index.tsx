@@ -1,4 +1,5 @@
 import './PageTransition.css';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { useRef, useLayoutEffect } from 'react';
 import type { PropsWithChildren } from 'react';
 
@@ -15,16 +16,19 @@ import type { PropsWithChildren } from 'react';
  */
 const PageTransition = ({ children }: PropsWithChildren) => {
     const ref = useRef<HTMLDivElement>(null);
+    const prefersReducedMotion = usePrefersReducedMotion();
 
     useLayoutEffect(() => {
         const el = ref.current;
-        if (!el) return;
+        if (!el || prefersReducedMotion) return;
         el.getBoundingClientRect();
         el.classList.add('entered');
-    }, []);
+    }, [prefersReducedMotion]);
+
+    const className = prefersReducedMotion ? 'page-transition entered' : 'page-transition';
 
     return (
-        <div ref={ref} className='page-transition'>
+        <div ref={ref} className={className}>
             {children}
         </div>
     );

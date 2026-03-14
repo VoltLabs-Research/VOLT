@@ -5,7 +5,7 @@ import Modal, { closeModal, openModal } from '@/shared/presentation/components/M
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { ConfirmActionTone, registerConfirmActionController } from '@/shared/presentation/hooks/use-confirm';
 import './ConfirmActionModal.css';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ConfirmActionOptions } from '@/shared/presentation/hooks/use-confirm';
 
 interface ConfirmActionModalState extends ConfirmActionOptions {
@@ -21,6 +21,7 @@ const ConfirmActionModal = () => {
     const [typedText, setTypedText] = useState('');
     const resolverRef = useRef<((value: boolean) => void) | null>(null);
     const pendingResultRef = useRef(false);
+    const typedConfirmationDescriptionId = useId();
 
     const resolvePendingRequest = useCallback((value: boolean) => {
         const resolver = resolverRef.current;
@@ -105,13 +106,16 @@ const ConfirmActionModal = () => {
             <Container className='d-flex column gap-1'>
                 {modalState?.requireTypedText && (
                     <>
-                        <Paragraph className='font-size-2 color-secondary'>
+                        <Paragraph id={typedConfirmationDescriptionId} className='font-size-2 color-secondary'>
                             {typedConfirmationDescription}
                         </Paragraph>
                         <FormFieldRHF
                             label={typedConfirmationLabel}
                             value={typedText}
                             onChange={(event) => setTypedText(event.target.value)}
+                            inputProps={{
+                                'aria-describedby': typedConfirmationDescriptionId
+                            }}
                         />
                     </>
                 )}

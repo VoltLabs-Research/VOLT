@@ -3,20 +3,33 @@
 }
 
 .chat-reaction {
+    appearance: none;
     padding: 0.25rem 0.5rem;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .chat-reaction:hover {
     background: var(--color-surface-3);
+    border-color: var(--color-border);
+}
+
+.chat-reaction:focus-visible {
+    outline: none;
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+}
+
+.chat-reaction:active {
+    transform: translateY(1px);
 }
 
 .chat-reaction.user-reacted {
     background: var(--accent-blue);
-    color: white;
+    color: var(--color-contrast-high);
     border-color: var(--accent-blue);
     box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
 }
@@ -27,11 +40,11 @@
 }
 
 :root[data-theme='light'] .chat-reaction {
-    background: rgba(255, 255, 255, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: var(--color-content-bg);
+    border: 1px solid var(--color-border);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 :root[data-theme='light'] .chat-reaction:hover {
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--color-surface-1);
 }

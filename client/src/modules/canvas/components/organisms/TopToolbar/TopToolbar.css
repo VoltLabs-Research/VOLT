@@ -1,5 +1,5 @@
 .canvas-top-toolbar {
-    height: 44px;
+    min-height: 44px;
     border-bottom: 1px solid var(--color-border-soft);
 }
 
@@ -32,17 +32,32 @@
     margin: 4px 12px;
 }
 
-/* ── Compact canvas buttons (24px, used in headers/toolbars) ── */
+/* ── Compact canvas buttons ── */
 .canvas-btn-compact {
-    height: 24px !important;
-    padding: 0 8px !important;
+    min-height: 30px !important;
+    padding: 0 10px !important;
     gap: 0.375rem !important;
     border-radius: var(--radius-sm) !important;
 }
 
 .canvas-btn-compact.shape-circle {
-    width: 24px !important;
+    width: 30px !important;
     padding: 0 !important;
 }
 
+@media (max-width: 768px) {
+    .canvas-top-toolbar {
+        min-height: 48px;
+        height: auto;
+    }
+
+    .canvas-btn-compact {
+        min-height: 36px !important;
+        padding: 0 12px !important;
+    }
+
+    .canvas-btn-compact.shape-circle {
+        width: 36px !important;
+    }
+}
 

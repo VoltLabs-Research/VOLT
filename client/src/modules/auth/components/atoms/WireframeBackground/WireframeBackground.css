@@ -2,3 +2,7 @@
     opacity: 0.6;
     pointer-events: none;
 }
+
+:root[data-theme='light'] .wireframe-canvas {
+    opacity: 0.4;
+}

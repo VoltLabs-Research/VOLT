@@ -126,7 +126,7 @@ const EditableKeyValueCard = <T extends Record<string, any>>({
                                     <Button variant='ghost' intent='neutral' size='sm' onClick={handleCancel}>Cancel</Button>
                                 </>
                             ) : (
-                                <Button variant='ghost' intent='neutral' size='sm' iconOnly onClick={handleEdit}>
+                                <Button variant='ghost' intent='neutral' size='sm' iconOnly aria-label='Edit items' title='Edit items' onClick={handleEdit}>
                                     <Settings size={16} />
                                 </Button>
                             )
@@ -158,7 +158,7 @@ const EditableKeyValueCard = <T extends Record<string, any>>({
                                         />
                                     </Container>
                                 ))}
-                                <Button variant='ghost' intent='danger' size='sm' iconOnly onClick={() => handleRemove(i)}>
+                                <Button variant='ghost' intent='danger' size='sm' iconOnly aria-label={`Remove item ${i + 1}`} title={`Remove item ${i + 1}`} onClick={() => handleRemove(i)}>
                                     <Trash2 size={16} />
                                 </Button>
                             </Container>

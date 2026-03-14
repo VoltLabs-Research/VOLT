@@ -155,7 +155,7 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
                         <span>root@{container.name}:~</span>
                     </Container>
                     <Tooltip content='Close Terminal' placement='bottom'>
-                        <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={onClose}>
+                        <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Close terminal' title='Close terminal' onClick={onClose}>
                             <IoClose size={20} />
                         </Button>
                     </Tooltip>

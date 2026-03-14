@@ -72,6 +72,8 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
                         <IconButton
                             variant='ghost'
                             size='sm'
+                            title={`Delete cluster ${cluster.name}`}
+                            aria-label={`Delete cluster ${cluster.name}`}
                             onClick={() => onDelete(cluster)}
                         >
                             <Trash2 size={14} />

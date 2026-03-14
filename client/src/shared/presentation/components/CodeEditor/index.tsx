@@ -35,12 +35,13 @@ const CodeEditor = ({
         onChange(e.target.value);
     }, [onChange]);
 
-    // Convert rows to height
-    const editorHeight = height 
-        ? (typeof height === 'number' ? `${height}px` : height)
-        : rows 
-            ? `${rows * 20}px`
-            : '200px';
+    let editorHeight = '200px';
+
+    if (height) {
+        editorHeight = typeof height === 'number' ? `${height}px` : height;
+    } else if (rows) {
+        editorHeight = `${rows * 20}px`;
+    }
 
     return (
         <Container className={`code-editor-wrapper d-flex column h-max gap-05 ${className} ${error ? 'has-error' : ''}`}>
@@ -60,12 +61,13 @@ const CodeEditor = ({
                         fontFamily: '\'JetBrains Mono\', \'Fira Code\', \'Monaco\', \'Menlo\', \'Ubuntu Mono\', monospace',
                         fontSize: `${fontSize}px`,
                         padding: '12px',
-                        backgroundColor: '#1E1E1E',
-                        color: '#D4D4D4',
-                        border: '1px solid #333',
-                        borderRadius: '4px',
+                        backgroundColor: 'var(--color-content-bg)',
+                        color: 'var(--color-text-primary)',
+                        border: 'none',
+                        borderRadius: 'var(--radius-sm)',
                         outline: 'none'
                     }}
+                    className='code-editor-textarea'
                 />
             </Container>
 

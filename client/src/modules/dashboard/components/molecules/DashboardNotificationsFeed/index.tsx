@@ -24,13 +24,8 @@ const DashboardNotificationsFeed = () => {
         }
     };
 
-    let content = displayed.map((notification) => (
-        <Container
-            key={notification._id}
-            className={`dashboard-notification-item list-item-hoverable d-flex gap-075 ${!notification.read ? 'unread' : ''}`}
-            onClick={() => handleClickNotification(notification)}
-            style={{ cursor: notification.link ? 'pointer' : 'default' }}
-        >
+    const renderNotificationBody = (notification: Notification) => (
+        <>
             {!notification.read && (
                 <span className='dashboard-notification-unread-dot' />
             )}
@@ -50,8 +45,32 @@ const DashboardNotificationsFeed = () => {
                     <GoArrowRight size={12} />
                 </Container>
             )}
-        </Container>
-    ));
+        </>
+    );
+
+    let content = displayed.map((notification) => {
+        const className = `dashboard-notification-item d-flex gap-075 ${notification.link ? 'dashboard-notification-button list-item-hoverable' : ''} ${!notification.read ? 'unread' : ''}`;
+
+        if (notification.link) {
+            return (
+                <button
+                    key={notification._id}
+                    type='button'
+                    className={className}
+                    onClick={() => handleClickNotification(notification)}
+                    aria-label={`Open notification: ${notification.title}`}
+                >
+                    {renderNotificationBody(notification)}
+                </button>
+            );
+        }
+
+        return (
+            <Container key={notification._id} className={className}>
+                {renderNotificationBody(notification)}
+            </Container>
+        );
+    });
 
     if (isLoading && notifications.length === 0) {
         content = Array.from({ length: 4 }, (_, i) => (
@@ -75,7 +94,11 @@ const DashboardNotificationsFeed = () => {
                 <Container className='d-flex items-center gap-05'>
                     <Title className='font-size-3 color-primary font-weight-5'>Notifications</Title>
                     {unreadCount > 0 && (
-                        <span className='dashboard-notifications-badge d-flex flex-center font-size-1 font-weight-6'>
+                        <span
+                            className='dashboard-notifications-badge d-flex flex-center font-size-1 font-weight-6'
+                            aria-label={`${unreadCount} unread notifications`}
+                            title={`${unreadCount} unread notifications`}
+                        >
                             {unreadCount}
                         </span>
                     )}

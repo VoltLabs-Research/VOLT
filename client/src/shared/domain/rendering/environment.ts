@@ -3,16 +3,28 @@ import type { RenderingOption } from '@/shared/domain/rendering/renderer';
 export interface FogSettings {
     enableFog: boolean;
     fogColor: string;
+    fogColorFollowsTheme: boolean;
     fogNear: number;
     fogFar: number;
 };
 
 export interface EnvironmentSettings extends FogSettings {
     backgroundColor: string;
+    backgroundColorFollowsTheme: boolean;
+};
+
+interface EnvironmentThemeDefaults {
+    backgroundColor: string;
+    fogColor: string;
 };
 
 /** @deprecated Use {@link RenderingOption} from `renderer.ts` directly. */
 export type EnvironmentOption<TValue> = RenderingOption<TValue>;
+
+export enum EnvironmentColorField {
+    Background = 'backgroundColor',
+    Fog = 'fogColor'
+};
 
 /**
  * Controls what is rendered as the scene background.
@@ -64,14 +76,62 @@ export const ENVIRONMENT_SUBSECTION_TITLES = {
     fog: 'Fog Settings'
 };
 
-export const ENVIRONMENT_DEFAULT_SETTINGS: EnvironmentSettings = {
-    backgroundColor: '#0a0a0a',
-    enableFog: false,
-    fogColor: '#ffffff',
-    fogNear: 1,
-    fogFar: 100
+const DARK_ENVIRONMENT_DEFAULTS: EnvironmentThemeDefaults = {
+    backgroundColor: '#070708',
+    fogColor: '#171719'
 };
 
-export const getDefaultEnvironmentSettings = (): EnvironmentSettings => ({
-    ...ENVIRONMENT_DEFAULT_SETTINGS
-});
+const LIGHT_ENVIRONMENT_DEFAULTS: EnvironmentThemeDefaults = {
+    backgroundColor: '#ffffff',
+    fogColor: '#f5f5f7'
+};
+
+const isDarkTheme = (): boolean => {
+    if (typeof document === 'undefined') {
+        return true;
+    }
+
+    return document.documentElement.getAttribute('data-theme') !== 'light';
+};
+
+const getEnvironmentThemeDefaults = (darkTheme = isDarkTheme()): EnvironmentThemeDefaults => {
+    if (darkTheme) {
+        return DARK_ENVIRONMENT_DEFAULTS;
+    }
+
+    return LIGHT_ENVIRONMENT_DEFAULTS;
+};
+
+const createEnvironmentSettings = (darkTheme = isDarkTheme()): EnvironmentSettings => {
+    const defaults = getEnvironmentThemeDefaults(darkTheme);
+
+    return {
+        backgroundColor: defaults.backgroundColor,
+        backgroundColorFollowsTheme: true,
+        enableFog: false,
+        fogColor: defaults.fogColor,
+        fogColorFollowsTheme: true,
+        fogNear: 1,
+        fogFar: 100
+    };
+};
+
+export const ENVIRONMENT_DEFAULT_SETTINGS: EnvironmentSettings = createEnvironmentSettings();
+
+/** Resolves a scene environment color from the explicit theme-follow flag. */
+export const resolveEnvironmentColor = (
+    color: string,
+    followsTheme: boolean,
+    field: EnvironmentColorField,
+    darkTheme = isDarkTheme()
+): string => {
+    if (followsTheme) {
+        return getEnvironmentThemeDefaults(darkTheme)[field];
+    }
+
+    return color;
+};
+
+export const getDefaultEnvironmentSettings = (darkTheme = isDarkTheme()): EnvironmentSettings => {
+    return createEnvironmentSettings(darkTheme);
+};

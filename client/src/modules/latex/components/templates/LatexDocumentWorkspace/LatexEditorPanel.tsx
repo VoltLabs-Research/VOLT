@@ -1,15 +1,14 @@
-import Editor from '@monaco-editor/react';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Button from '@/shared/presentation/components/Button';
-import { ensureMonaco } from '@/shared/presentation/utilities/ensure-monaco';
-import { cn } from '@/shared/utils';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
-import { Download, File, FileCode, FileImage, FileText, X } from 'lucide-react';
+import { applyMonacoTheme, getActiveAppTheme, getMonacoThemeName, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
+import Editor from '@monaco-editor/react';
 import type { BeforeMount, OnMount } from '@monaco-editor/react';
+import { Download, File, FileCode, FileImage, FileText, X } from 'lucide-react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { editor } from 'monaco-editor';
+import type { ReactNode } from 'react';
 import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
 import type { LatexFileEntry, LatexWorkspaceSelection, LatexWorkspaceTab } from '@/modules/latex/hooks/use-latex-workspace';
 import { getAssetDisplayName, isWorkspaceImageFile, isWorkspacePdfFile, isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
@@ -25,9 +24,14 @@ interface LatexEditorPanelProps {
     onChange: (value: string | undefined) => void;
     onTabSelect: (tab: LatexWorkspaceTab) => void;
     onTabClose: (tab: LatexWorkspaceTab) => void;
-}
+};
 
-type AssetKind = 'pdf' | 'image' | 'text' | 'binary';
+enum AssetKind {
+    Pdf = 'pdf',
+    Image = 'image',
+    Text = 'text',
+    Binary = 'binary'
+}
 
 interface EditorTabItem {
     key: string;
@@ -52,8 +56,6 @@ const getFileLanguage = (filename: string): string => {
     if (lower.endsWith('.sh')) return 'shell';
     return 'plaintext';
 };
-
-const PANEL_ICON = <FileCode size={14} />;
 
 const MONACO_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
     fontSize: 13,
@@ -88,10 +90,10 @@ const getAssetKind = (asset: LatexAsset | null): AssetKind | null => {
     if (!asset) return null;
 
     const pathname = asset.path ?? asset.originalName;
-    if (isWorkspacePdfFile(pathname, asset.mimetype)) return 'pdf';
-    if (isWorkspaceImageFile(pathname, asset.mimetype)) return 'image';
-    if (isWorkspaceTextLikeFile(pathname, asset.mimetype)) return 'text';
-    return 'binary';
+    if (isWorkspacePdfFile(pathname, asset.mimetype)) return AssetKind.Pdf;
+    if (isWorkspaceImageFile(pathname, asset.mimetype)) return AssetKind.Image;
+    if (isWorkspaceTextLikeFile(pathname, asset.mimetype)) return AssetKind.Text;
+    return AssetKind.Binary;
 };
 
 const getSelectionKey = (selection: LatexWorkspaceTab): string => `${selection.type}:${selection.id}`;
@@ -110,6 +112,7 @@ const LatexEditorPanel = ({
     const containerRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
     const [isMonacoReady, setIsMonacoReady] = useState(false);
+    const [monacoTheme, setMonacoTheme] = useState(() => getMonacoThemeName(getActiveAppTheme()));
 
     const activeFile = useMemo(
         () => activeSelection?.type === 'file'
@@ -153,9 +156,9 @@ const LatexEditorPanel = ({
         }
 
         const assetKind = getAssetKind(asset);
-        const icon = assetKind === 'image'
+        const icon = assetKind === AssetKind.Image
             ? <FileImage size={14} />
-            : assetKind === 'pdf'
+            : assetKind === AssetKind.Pdf
                 ? <FileText size={14} />
                 : <File size={14} />;
 
@@ -177,7 +180,7 @@ const LatexEditorPanel = ({
     useEffect(() => {
         let isMounted = true;
 
-        void ensureMonaco().then(() => {
+        applyMonacoTheme().then(() => {
             if (isMounted) {
                 setIsMonacoReady(true);
             }
@@ -186,6 +189,13 @@ const LatexEditorPanel = ({
         return () => {
             isMounted = false;
         };
+    }, []);
+
+    useEffect(() => {
+        return subscribeToAppTheme((theme) => {
+            setMonacoTheme(getMonacoThemeName(theme));
+            applyMonacoTheme(theme);
+        });
     }, []);
 
     useEffect(() => {
@@ -233,7 +243,7 @@ const LatexEditorPanel = ({
     const renderAsset = () => {
         if (!activeAsset) return renderEmpty();
 
-        if (activeAssetKind === 'pdf') {
+        if (activeAssetKind === AssetKind.Pdf) {
             return (
                 <LatexPdfViewer
                     pdfUrl={activeAsset.url}
@@ -243,7 +253,7 @@ const LatexEditorPanel = ({
             );
         }
 
-        if (activeAssetKind === 'image') {
+        if (activeAssetKind === AssetKind.Image) {
             return (
                 <Container className='h-100 d-flex flex-center items-center p-1 overflow-auto'>
                     <img
@@ -277,7 +287,7 @@ const LatexEditorPanel = ({
                 language={getFileLanguage(activeFile.name)}
                 value={content}
                 onChange={onChange}
-                theme='vs-dark'
+                theme={monacoTheme}
                 beforeMount={handleBeforeMount}
                 onMount={handleMount}
                 options={MONACO_OPTIONS}
@@ -297,10 +307,56 @@ const LatexEditorPanel = ({
         return renderEmpty();
     };
 
+    const renderTab = (tab: EditorTabItem) => {
+        const tabId = `latex-editor-tab-${tab.key}`;
+        const panelId = `latex-editor-panel-${tab.key}`;
+
+        return (
+            <Container key={tab.key} className={`latex-editor-tab d-flex items-center ${tab.isActive ? 'is-active' : ''}`}>
+                <button
+                    type='button'
+                    id={tabId}
+                    role='tab'
+                    aria-selected={tab.isActive}
+                    aria-controls={panelId}
+                    className='latex-editor-tab__button d-flex items-center gap-05 flex-1 min-w-0'
+                    onClick={() => onTabSelect(tab.selection)}
+                >
+                    <span className='latex-editor-tab__icon d-flex items-center content-center'>
+                        {tab.icon}
+                    </span>
+                    <span className='latex-editor-tab__label'>
+                        {tab.title}
+                    </span>
+                    {tab.isDirty && <span className='latex-editor-tab__dirty-dot' />}
+                </button>
+
+                <button
+                    type='button'
+                    className='latex-editor-tab__close d-flex items-center content-center'
+                    aria-label={`Close ${tab.title}`}
+                    onClick={() => onTabClose(tab.selection)}
+                >
+                    <X size={13} />
+                </button>
+            </Container>
+        );
+    };
+
     return (
         <Container className='latex-workspace__editor d-flex column'>
+            {tabItems.length > 0 && (
+                <Container className='latex-editor-tabs__header d-flex items-center p-05'>
+                    <Container className='latex-editor-tabs d-flex items-center gap-05 overflow-auto' role='tablist' aria-label='Open LaTeX files'>
+                        {tabItems.map(renderTab)}
+                    </Container>
+                </Container>
+            )}
             <Container
                 ref={containerRef}
+                id={activeSelection ? `latex-editor-panel-${getSelectionKey(activeSelection)}` : undefined}
+                role='tabpanel'
+                aria-labelledby={activeSelection ? `latex-editor-tab-${getSelectionKey(activeSelection)}` : undefined}
                 className='latex-workspace__editor-inner flex-1 min-h-0'
             >
                 {renderContent()}

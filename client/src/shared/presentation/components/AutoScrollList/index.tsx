@@ -1,5 +1,6 @@
 import Container from '@/shared/presentation/components/Container';
-import { Fragment, useEffect, useRef } from 'react';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
+import { Fragment, useCallback, useEffect, useRef } from 'react';
 import type { Key, ReactNode } from 'react';
 
 interface AutoScrollListProps<T> {
@@ -46,27 +47,38 @@ const AutoScrollList = <T,>({
     const containerRef = useRef<HTMLDivElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
     const previousItemsLengthRef = useRef(items.length);
+    const prefersReducedMotion = usePrefersReducedMotion();
+
+    const scrollToBottom = useCallback((smooth: boolean) => {
+        let behavior: ScrollBehavior = 'auto';
+
+        if (smooth && !prefersReducedMotion) {
+            behavior = 'smooth';
+        }
+
+        bottomRef.current?.scrollIntoView({ behavior });
+    }, [prefersReducedMotion]);
 
     useEffect(() => {
         if (items.length > previousItemsLengthRef.current) {
-            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+            scrollToBottom(true);
         }
         previousItemsLengthRef.current = items.length;
-    }, [items.length]);
+    }, [items.length, scrollToBottom]);
 
     useEffect(() => {
         if (items.length > 0 && !isLoading) {
-            bottomRef.current?.scrollIntoView();
+            scrollToBottom(false);
         }
-    }, [isLoading, items.length]);
+    }, [isLoading, items.length, scrollToBottom]);
 
     useEffect(() => {
         if (!autoScrollDependencyEnabled || autoScrollDependency == null) {
             return;
         }
 
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [autoScrollDependency, autoScrollDependencyEnabled]);
+        scrollToBottom(true);
+    }, [autoScrollDependency, autoScrollDependencyEnabled, scrollToBottom]);
 
     const handleScroll = () => {
         if (!containerRef.current || !hasMore || isLoading || !onLoadMore) {

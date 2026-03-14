@@ -6,6 +6,7 @@ import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Loader from '@/shared/presentation/components/Loader';
 import PageTransition from '@/shared/presentation/components/PageTransition';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
@@ -57,19 +58,31 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
     }
 
     if (!hasHydratedSelection) {
-        return <Loader scale={0.6} />;
+        return <Loader scale={0.6} label='Loading teams…' announce />;
     }
 
     if (!selectedTeamId) {
-        return <AccessDenied />;
+        return (
+            <RecoveryState
+                title='Select a workspace to continue'
+                description='Choose a team or finish onboarding before opening this page.'
+                tone={RecoveryStateTone.Info}
+            />
+        );
     }
 
     if (isPermissionsLoading) {
-        return <Loader scale={0.6} />;
+        return <Loader scale={0.6} label='Checking access…' announce />;
     }
 
     if (!isScopeReady) {
-        return <AccessDenied />;
+        return (
+            <RecoveryState
+                title='Preparing workspace access'
+                description='We are still loading the permissions for this team. Please wait a moment.'
+                tone={RecoveryStateTone.Info}
+            />
+        );
     }
 
     const isAllowed = canAccessByPermissions(scopedPermissions, permissions, mode);
@@ -86,7 +99,7 @@ const renderRouteElement = (route: RouteConfig, withTransition = true) => {
 
     return (
         <RoutePermissionGuard route={route}>
-            <Suspense fallback={<Loader scale={0.6} />}>
+            <Suspense fallback={<Loader scale={0.6} label='Loading workspace…' announce />}>
                 {withTransition ? wrapWithPageTransition(Component) : <Component />}
             </Suspense>
         </RoutePermissionGuard>

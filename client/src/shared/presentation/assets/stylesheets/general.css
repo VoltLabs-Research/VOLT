@@ -352,7 +352,7 @@
 }
 
 .color-muted-foreground {
-    color: var(--muted-foreground);
+    color: var(--color-text-muted);
 }
 
 .color-primary {
@@ -479,11 +479,15 @@
 
 /** Transitions **/
 .transition-fast {
-    transition: all 0.15s ease;
+    transition-property: background-color, border-color, color, box-shadow, opacity, transform;
+    transition-duration: 0.15s;
+    transition-timing-function: ease;
 }
 
 .transition-normal {
-    transition: all 0.2s ease;
+    transition-property: background-color, border-color, color, box-shadow, opacity, transform;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
 }
 
 /** List Items **/

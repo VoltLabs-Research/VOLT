@@ -114,7 +114,7 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     }, [hasToken, isAuthenticated, isOnboardingRoute, mode, selectedTeamId]);
 
     if(!isInitialized || isLoading){
-        return renderProtectedContent(<Loader scale={0.6} />);
+        return renderProtectedContent(<Loader scale={0.6} label='Loading workspace…' announce />);
     }
 
     if(mode === RouteMode.Protected){
@@ -127,7 +127,7 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
         }
 
         if(isTeamsLoading && teams.length === 0){
-            return renderProtectedContent(<Loader scale={0.6} />);
+            return renderProtectedContent(<Loader scale={0.6} label='Loading teams…' announce />);
         }
 
         if(!hasTeam){
@@ -135,11 +135,11 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
                 return renderProtectedContent(<Navigate to='/onboarding' replace />);
             }
 
-            return renderProtectedContent(<Loader scale={0.6} />);
+            return renderProtectedContent(<Loader scale={0.6} label='Loading teams…' announce />);
         }
 
         if (isClusterCheckLoading) {
-            return renderProtectedContent(<Loader scale={0.6} />);
+            return renderProtectedContent(<Loader scale={0.6} label='Checking cluster access…' announce />);
         }
 
         if (shouldRedirectToOnboarding) {

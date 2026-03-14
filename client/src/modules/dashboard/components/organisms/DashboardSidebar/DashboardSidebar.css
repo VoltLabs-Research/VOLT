@@ -11,7 +11,7 @@
 
 .sidebar-overlay {
     display: none;
-    background: rgba(0, 0, 0, 0.6);
+    background: color-mix(in srgb, var(--color-overlay) 78%, transparent);
     z-index: 99;
 }
 
@@ -22,6 +22,8 @@
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-xs);
+    align-items: center;
+    justify-content: center;
 }
 
 /* Footer */
@@ -154,5 +156,8 @@
 
     .sidebar-close-btn {
         display: flex;
+        width: 2.75rem;
+        height: 2.75rem;
+        padding: 0;
     }
 }

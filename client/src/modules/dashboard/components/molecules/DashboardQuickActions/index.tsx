@@ -98,9 +98,11 @@ export const DashboardQuickActions = () => {
         }
 
         const content = (
-            <Container
-                key={action.label}
+            <button
+                type='button'
                 className={actionClassName}
+                aria-disabled={!isAllowed}
+                title={!isAllowed ? action.disabledReason : undefined}
                 onClick={() => handleActionClick(action)}
             >
                 <Container className={`dashboard-action-icon ${action.variant}`}>
@@ -113,7 +115,7 @@ export const DashboardQuickActions = () => {
                 <Container className='dashboard-action-arrow'>
                     <GoArrowRight size={14} />
                 </Container>
-            </Container>
+            </button>
         );
 
         return (

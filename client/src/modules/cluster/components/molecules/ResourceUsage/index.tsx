@@ -143,7 +143,7 @@ const ResourceUsage = ({ metrics }: ResourceUsageProps) => {
         <Container className='d-flex column resource-usage h-max p-1-5 radius-lg'>
             <Container className='d-flex items-start content-between resource-usage-header mb-1-5 f-shrink-0'>
                 <Title className='font-size-3 font-weight-6 color-primary'>Resource Usage</Title>
-                <Button variant='ghost' intent='neutral' iconOnly size='sm'>
+                <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='More resource usage options' title='More resource usage options'>
                     <MoreVertical className='color-muted' style={{ width: '1rem', height: '1rem' }} />
                 </Button>
             </Container>

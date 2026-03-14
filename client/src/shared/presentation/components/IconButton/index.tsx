@@ -8,14 +8,17 @@ interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
     size?: 'sm' | 'md' | 'lg';
 };
 
-const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(({
+const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(({ 
     children,
     className = '',
     variant = 'default',
     size = 'md',
     disabled,
+    title,
+    'aria-label': ariaLabel,
     ...props
 }, ref) => {
+    const resolvedAriaLabel = !ariaLabel && title ? title : ariaLabel;
     const classes = [
         'volt-icon-button',
         'flex-center',
@@ -32,6 +35,8 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(({
             className={classes}
             disabled={disabled}
             type='button'
+            title={title}
+            aria-label={resolvedAriaLabel}
             {...props}
         >
             {children}
