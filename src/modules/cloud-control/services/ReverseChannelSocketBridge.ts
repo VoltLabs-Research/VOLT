@@ -6,6 +6,7 @@ import type { RuntimeTerminalAttachment } from '@/modules/platform/services';
 import type {
     TeamClusterDaemonTunnelClosePayload,
     TeamClusterDaemonTunnelDataPayload,
+    TeamClusterDaemonTunnelOpenPayload as LocalTeamClusterDaemonTunnelOpenPayload,
     TeamClusterDaemonTunnelStatePayload,
     TeamClusterDaemonSessionAttachPayload,
     TeamClusterDaemonSessionDataPayload,
@@ -21,7 +22,7 @@ import type {
     ReverseChannelHandler,
     CommandResult,
     TeamClusterDaemonMessage,
-    TeamClusterDaemonTunnelOpenPayload
+    TeamClusterDaemonTunnelOpenPayload as InboundTeamClusterDaemonTunnelOpenPayload
 } from '@voltstack/daemon-cluster-client';
 
 export interface ReverseChannelCommandHandler {
@@ -176,7 +177,18 @@ export class ReverseChannelSocketBridge {
         }
 
         if (message.type === 'tunnel-open') {
-            this.handleTunnelOpen(message);
+            const tunnelOpenPayload = this.validateTunnelOpenPayload(message);
+            if (!tunnelOpenPayload) {
+                this.emitTunnelState({
+                    type: 'tunnel-state',
+                    sessionId: message.sessionId,
+                    status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
+                    error: 'Invalid tunnel-open payload'
+                });
+                return;
+            }
+
+            this.handleTunnelOpen(tunnelOpenPayload);
             return;
         }
 
@@ -432,41 +444,90 @@ export class ReverseChannelSocketBridge {
         this.cleanupWebSocketSession(payload.sessionId);
     }
 
-    private handleTunnelOpen(payload: TeamClusterDaemonTunnelOpenPayload): void {
-        if (!this.exposureRegistryService) {
-            this.emitTunnelState({
-                type: 'tunnel-state',
-                sessionId: payload.sessionId,
-                status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
-                error: 'Exposure registry is not available'
-            });
-            return;
+    private validateTunnelOpenPayload(
+        message: InboundTeamClusterDaemonTunnelOpenPayload
+    ): LocalTeamClusterDaemonTunnelOpenPayload | null {
+        if (!this.isTunnelAccessMode(message.accessMode)) {
+            return null;
         }
 
-        const exposure = this.exposureRegistryService.getExposure(payload.exposureId);
-        if (!exposure) {
-            this.emitTunnelState({
-                type: 'tunnel-state',
-                sessionId: payload.sessionId,
-                status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
-                error: 'Exposure not found'
-            });
-            return;
+        if ('targetHost' in message && 'targetPort' in message) {
+            if (
+                typeof message.targetHost !== 'string' ||
+                message.targetHost.length === 0 ||
+                typeof message.targetPort !== 'number' ||
+                !Number.isInteger(message.targetPort) ||
+                message.targetPort <= 0
+            ) {
+                return null;
+            }
+
+            return {
+                type: 'tunnel-open',
+                sessionId: message.sessionId,
+                targetHost: message.targetHost,
+                targetPort: message.targetPort,
+                accessMode: message.accessMode
+            };
         }
 
-        if (!exposure.accessModes.some(mode => mode === payload.accessMode)) {
-            this.emitTunnelState({
-                type: 'tunnel-state',
-                sessionId: payload.sessionId,
-                status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
-                error: 'Exposure access mode is not supported'
-            });
-            return;
+        if ('exposureId' in message) {
+            if (typeof message.exposureId !== 'string' || message.exposureId.length === 0) {
+                return null;
+            }
+
+            return {
+                type: 'tunnel-open',
+                sessionId: message.sessionId,
+                exposureId: message.exposureId,
+                accessMode: message.accessMode
+            };
+        }
+
+        return null;
+    }
+
+    private isTunnelAccessMode(value: string): value is TeamClusterServiceExposureAccessMode {
+        return Object.values(TeamClusterServiceExposureAccessMode).some(accessMode => accessMode === value);
+    }
+
+    private handleTunnelOpen(payload: LocalTeamClusterDaemonTunnelOpenPayload): void {
+        let targetHost: string;
+        let targetPort: number;
+
+        if ('targetHost' in payload) {
+            targetHost = payload.targetHost;
+            targetPort = payload.targetPort;
+        } else {
+            const exposure = this.exposureRegistryService?.getExposure(payload.exposureId);
+
+            if (!exposure) {
+                this.emitTunnelState({
+                    type: 'tunnel-state',
+                    sessionId: payload.sessionId,
+                    status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
+                    error: 'Exposure not found'
+                });
+                return;
+            }
+
+            if (!exposure.accessModes.some(mode => mode === payload.accessMode)) {
+                this.emitTunnelState({
+                    type: 'tunnel-state',
+                    sessionId: payload.sessionId,
+                    status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
+                    error: 'Exposure access mode is not supported'
+                });
+                return;
+            }
+
+            targetHost = exposure.targetHost;
+            targetPort = exposure.targetPort;
         }
 
         const tunnelSocket = net.createConnection({
-            host: exposure.targetHost,
-            port: exposure.targetPort
+            host: targetHost,
+            port: targetPort
         });
         tunnelSocket.setNoDelay(true);
 

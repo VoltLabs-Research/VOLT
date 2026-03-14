@@ -141,15 +141,27 @@ export interface TeamClusterDaemonExposureRemovePayload {
     exposureIds: string[];
 };
 
-/**
- * Opens a generic tunnel session against a persistent exposure.
- */
-export interface TeamClusterDaemonTunnelOpenPayload {
+export interface TeamClusterDaemonTunnelOpenBasePayload {
     type: 'tunnel-open';
     sessionId: string;
-    exposureId: string;
     accessMode: TeamClusterServiceExposureAccessMode;
 };
+
+export interface TeamClusterDaemonExposureTunnelOpenPayload extends TeamClusterDaemonTunnelOpenBasePayload {
+    exposureId: string;
+};
+
+export interface TeamClusterDaemonDirectTunnelOpenPayload extends TeamClusterDaemonTunnelOpenBasePayload {
+    targetHost: string;
+    targetPort: number;
+};
+
+/**
+ * Opens a generic tunnel session against either a persistent exposure or a direct target.
+ */
+export type TeamClusterDaemonTunnelOpenPayload =
+    | TeamClusterDaemonExposureTunnelOpenPayload
+    | TeamClusterDaemonDirectTunnelOpenPayload;
 
 /**
  * Acknowledges the final state of a tunnel session transition.

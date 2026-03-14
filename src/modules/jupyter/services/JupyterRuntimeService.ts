@@ -1,4 +1,3 @@
-import { DAEMON_PATHS } from '@/core/paths';
 import { DockerRuntimeService } from '@/modules/platform/services';
 import { logger } from '@/core/logger';
 import path from 'node:path';
@@ -14,12 +13,10 @@ interface EnsureNotebookSessionInput {
 interface EnsureJupyterServerInput {
     notebookId: string;
     containerId: string;
-    hostPort: number;
-    targetAuthority: string;
     publicBasePath: string;
 };
 
-interface NotebookRuntimeContainer {
+interface NotebookRuntimeState {
     containerId: string;
     hostPort: number;
 };
@@ -27,14 +24,13 @@ interface NotebookRuntimeContainer {
 interface JupyterStartupOperation {
     containerId: string;
     controller: AbortController;
-    hostPort: number;
-    targetAuthority: string;
     promise: Promise<void>;
     publicBasePath: string;
 };
 
 const JUPYTER_HEALTH_CHECK_INTERVAL_MS = 1000;
 const DEFAULT_NOTEBOOK_FILE_NAME = 'notebook.ipynb';
+const JUPYTER_RUNTIME_HOST = '127.0.0.1';
 const RUNTIME_LABEL_KEY = 'volt.runtime.kind';
 const RUNTIME_LABEL_VALUE = 'jupyter';
 const NOTEBOOK_ID_LABEL_KEY = 'volt.notebook.id';
@@ -71,6 +67,7 @@ const getRemainingTimeMs = (deadlineMs: number): number => {
 
 export class JupyterRuntimeService {
     private readonly startupOperations = new Map<string, JupyterStartupOperation>();
+    private readonly runtimeStates = new Map<string, NotebookRuntimeState>();
 
     constructor(
         private readonly config: DaemonConfig,
@@ -79,32 +76,26 @@ export class JupyterRuntimeService {
     }
 
     async initialize(): Promise<void> {
-        try {
-            await this.dockerRuntimeService.ensureImage(this.config.jupyter.image);
-        } catch {
-            await this.dockerRuntimeService.buildImage(this.config.jupyter.image, DAEMON_PATHS.scriptingImageContext);
-        }
+        await this.dockerRuntimeService.ensureImage(this.config.jupyter.image);
     }
 
     async ensureSession(input: EnsureNotebookSessionInput): Promise<CreateNotebookSessionResponse> {
-        const runtimeContainer = await this.ensureContainer(input);
+        const runtimeState = await this.ensureContainer(input);
         const notebookFilePath = this.getNotebookFilePath(input.notebook.notebookPath);
         const internalPath = this.buildJupyterPath(input.notebook.notebookPath);
         const publicBasePath = this.normalizePublicBasePath(input.publicBasePath);
 
+        this.setRuntimeState(input.notebook._id, runtimeState);
+
         await this.dockerRuntimeService.writeContainerFile(
-            runtimeContainer.containerId,
+            runtimeState.containerId,
             notebookFilePath,
             JSON.stringify(input.notebook.content, null, 2)
         );
 
-        const containerName = this.buildContainerName(input.notebook._id);
-        const targetAuthority = `${containerName}:${this.config.jupyter.port}`;
         const ready = await this.ensureJupyterServer({
             notebookId: input.notebook._id,
-            containerId: runtimeContainer.containerId,
-            hostPort: runtimeContainer.hostPort,
-            targetAuthority,
+            containerId: runtimeState.containerId,
             publicBasePath
         });
         return {
@@ -118,25 +109,32 @@ export class JupyterRuntimeService {
 
     async deleteSession(notebookId: string): Promise<boolean> {
         await this.cancelStartupOperation(notebookId);
-        const runtimeContainer = await this.findRuntimeContainer(notebookId);
-        if (!runtimeContainer) {
+        const runtimeState = await this.findRuntimeContainer(notebookId);
+        if (!runtimeState) {
+            this.runtimeStates.delete(notebookId);
             return false;
         }
 
-        await this.dockerRuntimeService.deleteContainer(runtimeContainer.containerId);
+        await this.dockerRuntimeService.deleteContainer(runtimeState.containerId);
+        this.runtimeStates.delete(notebookId);
         return true;
     }
 
     async getRuntimeHostPort(notebookId: string): Promise<number | null> {
-        const runtimeContainer = await this.findRuntimeContainer(notebookId);
-        return runtimeContainer ? runtimeContainer.hostPort : null;
+        const runtimeState = this.runtimeStates.get(notebookId) ?? await this.findRuntimeContainer(notebookId);
+        return runtimeState ? runtimeState.hostPort : null;
     }
 
     getRuntimeInternalOrigin(notebookId: string): string {
-        return `http://${this.buildContainerName(notebookId)}:${this.config.jupyter.port}`;
+        const runtimeState = this.runtimeStates.get(notebookId);
+        if (!runtimeState) {
+            throw new Error(`Jupyter runtime state not found for notebook ${notebookId}`);
+        }
+
+        return this.buildRuntimeOrigin(runtimeState.hostPort);
     }
 
-    private async ensureContainer(input: EnsureNotebookSessionInput): Promise<NotebookRuntimeContainer> {
+    private async ensureContainer(input: EnsureNotebookSessionInput): Promise<NotebookRuntimeState> {
         const existingContainer = await this.findRuntimeContainer(input.notebook._id);
         if (existingContainer) {
             await this.startContainerIfNeeded(existingContainer.containerId);
@@ -213,7 +211,7 @@ export class JupyterRuntimeService {
         };
     }
 
-    private async findRuntimeContainer(notebookId: string): Promise<NotebookRuntimeContainer | null> {
+    private async findRuntimeContainer(notebookId: string): Promise<NotebookRuntimeState | null> {
         const containers = await this.dockerRuntimeService.listContainers(true, {
             label: [
                 `${RUNTIME_LABEL_KEY}=${RUNTIME_LABEL_VALUE}`,
@@ -222,18 +220,23 @@ export class JupyterRuntimeService {
         });
         const runtimeContainer = containers[0];
         if (!runtimeContainer) {
+            this.runtimeStates.delete(notebookId);
             return null;
         }
 
         const hostPort = runtimeContainer.Ports?.find((port) => port.PrivatePort === this.config.jupyter.port)?.PublicPort;
         if (typeof hostPort !== 'number') {
+            this.runtimeStates.delete(notebookId);
             return null;
         }
 
-        return {
+        const runtimeState = {
             containerId: runtimeContainer.Id,
             hostPort
         };
+
+        this.setRuntimeState(notebookId, runtimeState);
+        return runtimeState;
     }
 
     private async startContainerIfNeeded(containerId: string): Promise<void> {
@@ -251,7 +254,7 @@ export class JupyterRuntimeService {
      */
     private async ensureJupyterServer(input: EnsureJupyterServerInput): Promise<boolean> {
         const isAlreadyReady = await this.isJupyterReady(
-            input.targetAuthority,
+            input.notebookId,
             input.publicBasePath,
             JUPYTER_HEALTH_CHECK_INTERVAL_MS
         );
@@ -275,8 +278,6 @@ export class JupyterRuntimeService {
         const startupOperation: JupyterStartupOperation = {
             containerId: input.containerId,
             controller,
-            hostPort: input.hostPort,
-            targetAuthority: input.targetAuthority,
             promise: Promise.resolve(),
             publicBasePath: input.publicBasePath
         };
@@ -291,7 +292,6 @@ export class JupyterRuntimeService {
                         err: error,
                         notebookId: input.notebookId,
                         containerId: input.containerId,
-                        hostPort: input.hostPort,
                         publicBasePath: input.publicBasePath
                     },
                     'Unexpected error while ensuring Jupyter server startup'
@@ -353,7 +353,7 @@ export class JupyterRuntimeService {
         }
 
         const ready = await this.waitForJupyterReady(
-            input.targetAuthority,
+            input.notebookId,
             input.publicBasePath,
             this.config.jupyter.startTimeoutMs,
             signal
@@ -366,7 +366,7 @@ export class JupyterRuntimeService {
             return;
         }
 
-        await this.logJupyterStartupTimeout(input.containerId, input.targetAuthority, input.publicBasePath);
+        await this.logJupyterStartupTimeout(input.notebookId, input.containerId, input.publicBasePath);
         if (signal.aborted) {
             return;
         }
@@ -385,7 +385,6 @@ export class JupyterRuntimeService {
             logger.warn(
                 {
                     containerId: input.containerId,
-                    hostPort: input.hostPort,
                     publicBasePath: input.publicBasePath,
                     wasProcessRunning: isJupyterProcessStillRunning
                 },
@@ -401,7 +400,7 @@ export class JupyterRuntimeService {
         }
 
         const recovered = await this.waitForJupyterReady(
-            input.targetAuthority,
+            input.notebookId,
             input.publicBasePath,
             this.config.jupyter.startTimeoutMs,
             signal
@@ -414,7 +413,7 @@ export class JupyterRuntimeService {
             return;
         }
 
-        await this.logJupyterStartupTimeout(input.containerId, input.targetAuthority, input.publicBasePath);
+        await this.logJupyterStartupTimeout(input.notebookId, input.containerId, input.publicBasePath);
         if (signal.aborted) {
             return;
         }
@@ -423,7 +422,7 @@ export class JupyterRuntimeService {
             {
                 notebookId: input.notebookId,
                 containerId: input.containerId,
-                targetAuthority: input.targetAuthority,
+                runtimeOrigin: this.getRuntimeInternalOrigin(input.notebookId),
                 publicBasePath: input.publicBasePath
             },
             'Jupyter server is still not ready after restart'
@@ -447,7 +446,7 @@ export class JupyterRuntimeService {
     }
 
     private async isJupyterReady(
-        targetAuthority: string,
+        notebookId: string,
         publicBasePath: string,
         timeoutMs: number,
         signal?: AbortSignal
@@ -464,7 +463,7 @@ export class JupyterRuntimeService {
             }
 
             const apiPath = path.posix.join(publicBasePath, 'api');
-            const response = await fetch(`http://${targetAuthority}${apiPath}?token=${encodeURIComponent(this.config.jupyter.token)}`, {
+            const response = await fetch(`${this.getRuntimeInternalOrigin(notebookId)}${apiPath}?token=${encodeURIComponent(this.config.jupyter.token)}`, {
                 signal: controller.signal
             });
             return response.status < 500;
@@ -477,7 +476,7 @@ export class JupyterRuntimeService {
     }
 
     private async waitForJupyterReady(
-        targetAuthority: string,
+        notebookId: string,
         publicBasePath: string,
         timeoutMs: number,
         signal?: AbortSignal
@@ -494,7 +493,7 @@ export class JupyterRuntimeService {
                 break;
             }
 
-            if (await this.isJupyterReady(targetAuthority, publicBasePath, requestTimeoutMs, signal)) {
+            if (await this.isJupyterReady(notebookId, publicBasePath, requestTimeoutMs, signal)) {
                 return true;
             }
 
@@ -507,7 +506,7 @@ export class JupyterRuntimeService {
         return false;
     }
 
-    private async logJupyterStartupTimeout(containerId: string, targetAuthority: string, publicBasePath: string): Promise<void> {
+    private async logJupyterStartupTimeout(notebookId: string, containerId: string, publicBasePath: string): Promise<void> {
         try {
             const jupyterLog = await this.dockerRuntimeService.exec(containerId, [
                 '/bin/sh',
@@ -516,8 +515,9 @@ export class JupyterRuntimeService {
             ]);
             logger.warn(
                 {
+                    notebookId,
                     containerId,
-                    targetAuthority,
+                    runtimeOrigin: this.getRuntimeInternalOrigin(notebookId),
                     jupyterLog: jupyterLog.trim() || undefined,
                     publicBasePath
                 },
@@ -548,6 +548,14 @@ export class JupyterRuntimeService {
         const trimmedValue = value.trim();
         const normalizedValue = trimmedValue.startsWith('/') ? trimmedValue : `/${trimmedValue}`;
         return normalizedValue.endsWith('/') ? normalizedValue.slice(0, -1) : normalizedValue;
+    }
+
+    private setRuntimeState(notebookId: string, runtimeState: NotebookRuntimeState): void {
+        this.runtimeStates.set(notebookId, runtimeState);
+    }
+
+    private buildRuntimeOrigin(hostPort: number): string {
+        return `http://${JUPYTER_RUNTIME_HOST}:${hostPort}`;
     }
 
     private getNotebookFilePath(notebookPath?: string): string {
@@ -582,8 +590,6 @@ export class JupyterRuntimeService {
         input: EnsureJupyterServerInput
     ): boolean {
         return startupOperation.containerId === input.containerId
-            && startupOperation.hostPort === input.hostPort
-            && startupOperation.targetAuthority === input.targetAuthority
             && startupOperation.publicBasePath === input.publicBasePath;
     }
 

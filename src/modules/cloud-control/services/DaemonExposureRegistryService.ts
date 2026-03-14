@@ -81,9 +81,9 @@ export class DaemonExposureRegistryService {
         for (const container of containers) {
             const labels = container.Labels || {};
             const teamId = labels[TEAM_ID_LABEL];
-            const teamClusterId = labels[TEAM_CLUSTER_ID_LABEL] || this.config.teamClusterId;
+            const teamClusterId = labels[TEAM_CLUSTER_ID_LABEL];
 
-            if (!teamId || teamClusterId !== this.config.teamClusterId) {
+            if (!teamId || !teamClusterId || teamClusterId !== this.config.teamClusterId) {
                 continue;
             }
 
@@ -106,7 +106,7 @@ export class DaemonExposureRegistryService {
 
                 exposures.push({
                     id: `${container.Id}:${port.PrivatePort}`,
-                    teamClusterId: this.config.teamClusterId,
+                    teamClusterId,
                     teamId,
                     containerId: container.Id,
                     containerName,

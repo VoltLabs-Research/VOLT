@@ -1,11 +1,8 @@
 import type { JupyterRuntimeService } from '@/modules/jupyter';
 import type { CreateNotebookSessionRequest, NotebookSessionSnapshot } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
-import { isRecord } from '@/shared/utils';
 import {
     readOptionalPayloadRecord,
-    readOptionalString,
-    readOptionalStringRecord,
     readOptionalUnknownRecord,
     readRecord,
     readString
@@ -19,12 +16,11 @@ interface NotebookIdentifierPayload {
     notebookId: string;
 };
 
-interface NotebookProxyRequestPayload extends NotebookIdentifierPayload {
-    proxiedPath: string;
-    rawQuery: string;
-    method: string;
-    headers?: Record<string, string>;
-    body?: string;
+interface NotebookRuntimeTarget {
+    tunnelTargetHost: string;
+    tunnelTargetPort: number;
+    internalPath?: string;
+    url?: string;
 };
 
 const readNotebookSessionSnapshot = (value: unknown): NotebookSessionSnapshot => {
@@ -62,35 +58,6 @@ const readNotebookSessionRequestPayload = (payload: unknown): CreateNotebookSess
     };
 };
 
-const readNotebookProxyBody = (value: unknown): string | undefined => {
-    if (typeof value === 'undefined') {
-        return undefined;
-    }
-
-    if (typeof value === 'string') {
-        return value;
-    }
-
-    if (isRecord(value)) {
-        return JSON.stringify(value);
-    }
-
-    return undefined;
-};
-
-const readNotebookProxyRequestPayload = (payload: unknown): NotebookProxyRequestPayload => {
-    const record = readOptionalPayloadRecord(payload);
-
-    return {
-        notebookId: readString(record.notebookId, 'notebookId'),
-        proxiedPath: readOptionalString(record.proxiedPath, '/'),
-        rawQuery: readOptionalString(record.rawQuery),
-        method: readOptionalString(record.method, 'GET'),
-        headers: readOptionalStringRecord(record.headers, 'headers'),
-        body: readNotebookProxyBody(record.body)
-    };
-};
-
 export const createNotebookHandlers = (deps: NotebookHandlersDependencies): ReverseChannelCommandHandler[] => [
     {
         command: 'notebook.delete',
@@ -107,9 +74,17 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
         command: 'notebook.runtime.get',
         execute: async (payload) => {
             const request = readNotebookIdentifierPayload(payload);
+            const tunnelTargetPort = await deps.jupyterRuntimeService.getRuntimeHostPort(request.notebookId);
+            const runtime: NotebookRuntimeTarget | null = typeof tunnelTargetPort === 'number'
+                ? {
+                    tunnelTargetHost: '127.0.0.1',
+                    tunnelTargetPort
+                }
+                : null;
+
             return {
                 data: {
-                    hostPort: await deps.jupyterRuntimeService.getRuntimeHostPort(request.notebookId)
+                    runtime
                 }
             };
         }
@@ -129,29 +104,6 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
                     publicBasePath: request.publicBasePath
                 }),
                 status: 201
-            };
-        }
-    },
-    {
-        command: 'notebook.proxy.http',
-        execute: async (payload) => {
-            const request = readNotebookProxyRequestPayload(payload);
-            const internalOrigin = deps.jupyterRuntimeService.getRuntimeInternalOrigin(request.notebookId);
-            const targetUrl = `${internalOrigin}${request.proxiedPath}${request.rawQuery}`;
-            const response = await fetch(targetUrl, {
-                method: request.method,
-                headers: request.headers,
-                body: request.body
-            });
-            const responseHeaders: Record<string, string> = {};
-            response.headers.forEach((value, key) => {
-                responseHeaders[key] = value;
-            });
-
-            return {
-                status: response.status,
-                headers: responseHeaders,
-                stream: response.body || undefined
             };
         }
     }
