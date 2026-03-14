@@ -40,7 +40,7 @@ const ModifierItem = ({
         expanded={isOpen}
         onExpandedChange={() => onToggleOpen(option.modifierId)}
         className="canvas-section"
-        headerClassName="d-flex items-center gap-05 p-05"
+        headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
         titleClassName="font-size-1 color-secondary"
         iconClassName="color-muted"
         bodyClassName=""

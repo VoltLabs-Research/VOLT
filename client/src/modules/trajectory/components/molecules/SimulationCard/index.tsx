@@ -1,15 +1,15 @@
+import { cn } from '@/shared/utils';
+import { formatNumber, formatSize } from '@/shared/utils/format';
 import { getStageMessage, isProcessingStatus } from '@/modules/trajectory/api/entities/trajectory';
 import useTrajectoryPreview from '@/modules/trajectory/hooks/trajectory/use-trajectory-preview';
-import { formatNumber, formatSize } from '@/shared/utils/format';
+import Container from '@/shared/presentation/components/Container';
 import SimulationCardFooter from '../../atoms/SimulationCardFooter';
 import SimulationCardHeader from '../../atoms/SimulationCardHeader';
 import SimulationCardUsers from '../../atoms/SimulationCardUsers';
-import { cn } from '@/shared/utils';
-import { PiAtomThin } from 'react-icons/pi';
 import React, { useCallback } from 'react';
+import { PiAtomThin } from 'react-icons/pi';
 import { useNavigate } from 'react-router-dom';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-import Container from '@/shared/presentation/components/Container';
 import './SimulationCard.css';
 
 interface SimulationCardProps {
@@ -21,6 +21,7 @@ interface SimulationCardProps {
 
 export default function SimulationCard({ trajectory, isSelected, onSelect, onDelete }: SimulationCardProps) {
     const navigate = useNavigate();
+    const createdBy = typeof trajectory.createdBy === 'object' ? trajectory.createdBy : null;
 
     const { previewBlobUrl, isLoading: previewLoading, error: previewError, retry: retryPreview } = useTrajectoryPreview({
         trajectoryId: trajectory._id,
@@ -30,10 +31,13 @@ export default function SimulationCard({ trajectory, isSelected, onSelect, onDel
 
     const isProcessing = isProcessingStatus(trajectory.status);
     const processingMessage = getStageMessage(trajectory.status);
+    const cardAriaLabel = isSelected
+        ? `Open selected trajectory ${trajectory.name}`
+        : `Open trajectory ${trajectory.name}`;
 
     const isInteractiveTarget = (target: EventTarget | null) => {
         return target instanceof Element
-            && Boolean(target.closest('button, a, input, select, textarea, [data-popover-trigger]'));
+            && Boolean(target.closest('button, a, input, select, textarea, [data-popover-trigger], [data-interactive-card-control="true"]'));
     };
 
     const containerClass = cn(
@@ -42,16 +46,17 @@ export default function SimulationCard({ trajectory, isSelected, onSelect, onDel
         isSelected && 'is-selected'
     );
 
-    const handleClick = useCallback((e: React.MouseEvent) => {
-        if (isInteractiveTarget(e.target)) {
+    const handleClick = useCallback((event: React.MouseEvent) => {
+        if (isInteractiveTarget(event.target)) {
             return;
         }
 
-        if (e.metaKey || e.ctrlKey) {
+        if (event.metaKey || event.ctrlKey) {
             onSelect(trajectory._id);
-        } else {
-            navigate(`/canvas/${trajectory._id}/`);
+            return;
         }
+
+        navigate(`/canvas/${trajectory._id}/`);
     }, [navigate, onSelect, trajectory._id]);
 
     const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLElement>) => {
@@ -84,7 +89,8 @@ export default function SimulationCard({ trajectory, isSelected, onSelect, onDel
             onKeyDown={handleKeyDown}
             tabIndex={0}
             role='link'
-            aria-label={`Open trajectory ${trajectory.name}`}
+            aria-label={cardAriaLabel}
+            aria-busy={isProcessing}
         >
             <Container className='d-flex flex-center overflow-hidden p-relative w-max cover-container radius-md'>
                 {showPlaceholder && (
@@ -102,15 +108,15 @@ export default function SimulationCard({ trajectory, isSelected, onSelect, onDel
                 )}
             </Container>
 
-            <SimulationCardHeader 
-                user={typeof trajectory.createdBy === 'object' ? trajectory.createdBy : null}
+            <SimulationCardHeader
+                user={createdBy}
                 createdAt={trajectory.createdAt}
             />
 
             <SimulationCardFooter
                 trajectoryId={trajectory._id}
                 name={trajectory.name}
-                createdBy={typeof trajectory.createdBy === 'object' ? trajectory.createdBy : null}
+                createdBy={createdBy}
                 createdAt={trajectory.createdAt}
                 updatedAt={trajectory.updatedAt}
                 isProcessing={isProcessing}

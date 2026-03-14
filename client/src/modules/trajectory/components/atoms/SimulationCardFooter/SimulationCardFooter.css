@@ -1,23 +1,52 @@
-.simulation-card-footer{
+.simulation-card-footer {
     padding: 1rem;
-    background: linear-gradient(to top, color-mix(in srgb, var(--color-bg) 82%, transparent), transparent);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--glass-bg) 12%, transparent) 0%, color-mix(in srgb, var(--glass-bg) 90%, transparent) 32%, color-mix(in srgb, var(--glass-bg) 96%, transparent) 100%);
+    border-top: 1px solid color-mix(in srgb, var(--glass-border) 90%, transparent);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
 }
 
-.footer-options-btn{
-    min-width: 2.5rem;
-    min-height: 2.5rem;
+.footer-options-btn {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
     font-size: 1.25rem;
+    flex-shrink: 0;
+    align-self: flex-start;
+    background: color-mix(in srgb, var(--glass-bg) 96%, transparent);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-glass);
+}
+
+.footer-options-btn:hover {
+    border-color: var(--color-border-strong);
 }
 
 .simulation-card-metadata {
     row-gap: 0.25rem;
 }
 
-.simulation-card-status-loader{
-    margin-left: 0.5rem;
-    padding-right: .4rem;
+.simulation-card-title {
+    line-height: 1.2;
 }
 
-.simulation-card-status-text{
+.simulation-card-metadata .simulation-card-status-text {
+    color: var(--color-text-secondary);
+}
+
+.simulation-card-status-loader {
+    margin-left: 0;
+    padding-right: 0.25rem;
+}
+
+.simulation-card-status-text {
     margin: 0;
+    line-height: 1.35;
+}
+
+.simulation-card-status {
+    flex-wrap: wrap;
+}
+
+.simulation-card-status .simulation-card-status-text {
+    color: var(--color-text-muted);
 }

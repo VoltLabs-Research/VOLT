@@ -3,8 +3,46 @@
 }
 
 .canvas-right-dropdown-header {
-    min-height: 39px;
-    padding: 0 8px;
+    min-height: 32px;
+    padding: 0 12px;
+}
+
+.canvas-right-dropdown-body {
+}
+
+.canvas-right-dropdown-body .canvas-tree-container {
+    padding: 6px 0 10px;
+}
+
+.canvas-right-dropdown-header .collapsible-section-header-row {
+    min-height: 32px;
+}
+
+.canvas-right-dropdown-header .collapsible-section-trigger {
+    min-height: 32px;
+    padding: 0;
+    margin-right: 0.25rem;
+}
+
+.canvas-right-dropdown-header .collapsible-section-title-row {
+    min-height: 32px;
+}
+
+.canvas-right-dropdown-header .collapsible-section-actions {
+    align-items: center;
+    gap: 0.125rem;
+}
+
+.canvas-right-dropdown-header .collapsible-section-chevron-trigger {
+    width: 1.625rem;
+    height: 1.625rem;
+    color: var(--color-text-tertiary);
+}
+
+.canvas-right-dropdown-header .collapsible-section-chevron-trigger:hover,
+.canvas-right-dropdown-header .collapsible-section-chevron-trigger:focus-visible {
+    background: var(--hover-bg);
+    color: var(--color-text-secondary);
 }
 
 .canvas-right-dropdown-icon {
@@ -33,12 +71,20 @@
 }
 
 .canvas-render-subsection-body {
-    padding: 8px;
+    padding: 8px 0;
 }
 
 @media (max-width: 768px) {
     .canvas-right-dropdown-header {
-        min-height: 44px;
-        padding: 0 10px;
+        min-height: 34px;
+        padding: 0 12px;
+    }
+
+    .canvas-right-dropdown-header .collapsible-section-trigger {
+        min-height: 34px;
+    }
+
+    .canvas-right-dropdown-header .collapsible-section-title-row {
+        min-height: 34px;
     }
 }

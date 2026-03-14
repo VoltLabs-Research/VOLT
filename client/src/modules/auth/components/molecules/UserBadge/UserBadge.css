@@ -1,6 +1,6 @@
 .user-badge{
-    background: var(--color-surface-1);
-    border: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-surface-1) 88%, var(--color-surface-2) 12%);
+    border: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
 }
 
 .user-badge-info{
@@ -8,8 +8,13 @@
     flex: 1;
 }
 
+.user-badge-label{
+    color: var(--color-text-secondary);
+}
+
 .user-badge-email{
     display: block;
+    color: var(--color-text-primary);
 }
 
 .user-badge-status-icon {

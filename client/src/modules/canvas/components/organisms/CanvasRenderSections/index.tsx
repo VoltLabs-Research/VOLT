@@ -121,7 +121,7 @@ const CanvasRenderSections = () => {
                                                                 role="group"
                                                                 aria-label={r.label}
                                                             >
-                                                                <span className="canvas-form-label font-size-075">{r.label}</span>
+                                                                <span className="canvas-form-label font-size-1">{r.label}</span>
                                                                 <Container className="canvas-form-control d-flex items-center gap-02">
                                                                     <CanvasSlider
                                                                         ariaLabel={r.label}
@@ -132,7 +132,7 @@ const CanvasRenderSections = () => {
                                                                         onChange={onChange}
                                                                         ariaValueText={String(r.format?.(value) ?? value)}
                                                                     />
-                                                                    <span className="canvas-form-value font-size-075">
+                                                                    <span className="canvas-form-value font-size-1">
                                                                         {r.format?.(value) ?? value}
                                                                     </span>
                                                                 </Container>

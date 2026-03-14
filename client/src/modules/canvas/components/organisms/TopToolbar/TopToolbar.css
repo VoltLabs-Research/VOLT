@@ -12,6 +12,9 @@
     gap: 0.5rem;
     min-width: 88px;
     text-decoration: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .canvas-toolbar-logo-mark {

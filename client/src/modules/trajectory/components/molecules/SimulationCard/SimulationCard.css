@@ -1,22 +1,39 @@
-@keyframes opacity-pulse {
-    0%, 100% { border-color: color-mix(in srgb, var(--accent-blue), transparent 60%); }
-    50% { border-color: color-mix(in srgb, var(--accent-blue), transparent 20%); }
+@keyframes simulation-card-processing-pulse {
+    0%, 100% {
+        box-shadow:
+            var(--shadow-card),
+            0 0 0 1px color-mix(in srgb, var(--status-info-border) 75%, transparent);
+    }
+
+    50% {
+        box-shadow:
+            var(--shadow-elevated),
+            0 0 0 1px color-mix(in srgb, var(--status-info-border) 100%, transparent);
+    }
 }
 
-.simulation-card{
+.simulation-card {
     overflow: hidden;
-    background: transparent;
-    transition: border-color 0.3s ease, transform 0.2s ease;
+    background: var(--color-surface-1);
+    box-shadow: var(--shadow-card);
+    transition:
+        background-color 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        transform 0.2s ease;
 }
 
-.simulation-card:hover{
-    border-color: var(--accent-blue);
+.simulation-card:hover {
+    border-color: var(--color-border-strong);
+    box-shadow: var(--shadow-elevated);
+    transform: translateY(-2px);
 }
 
 .simulation-card:focus-visible {
     outline: none;
-    border-color: var(--accent-blue);
-    transform: translateY(-1px);
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent), var(--shadow-elevated);
+    transform: translateY(-2px);
 }
 
 .simulation-card .simulation-card-header {
@@ -24,28 +41,54 @@
     visibility: visible;
 }
 
-.simulation-card.has-jobs{
-    animation: opacity-pulse 2s ease-in-out infinite;
-    cursor: wait;
+.simulation-card.has-jobs {
+    animation: simulation-card-processing-pulse 2s ease-in-out infinite;
 }
 
-.simulation-card.is-selected{
-    border-color: var(--accent-blue);
+.simulation-card.is-selected {
+    background: color-mix(in srgb, var(--color-surface-1) 90%, var(--status-info-bg));
+    border-color: var(--selected-indicator);
+    box-shadow:
+        var(--shadow-elevated),
+        0 0 0 1px color-mix(in srgb, var(--selected-indicator) 35%, transparent);
 }
 
-.cover-container{
+.cover-container {
     height: 200px;
+    background: linear-gradient(180deg, var(--color-surface-2) 0%, color-mix(in srgb, var(--color-surface-2) 60%, var(--color-surface-1)) 100%);
 }
 
-.cover-container::before{
+.cover-container::before {
     content: '';
     position: absolute;
     inset: 0;
     z-index: 2;
-    background: linear-gradient(to top, color-mix(in srgb, var(--color-bg), transparent 35%) 0%, transparent 100%);
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-overlay) 58%, transparent) 0%,
+        transparent 28%,
+        transparent 64%,
+        color-mix(in srgb, var(--color-overlay) 72%, transparent) 100%
+    );
     pointer-events: none;
 }
 
-.cover-image{
+.cover-image {
     object-fit: cover;
+    display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .simulation-card {
+        transition: none;
+    }
+
+    .simulation-card:hover,
+    .simulation-card:focus-visible {
+        transform: none;
+    }
+
+    .simulation-card.has-jobs {
+        animation: none;
+    }
 }

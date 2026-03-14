@@ -7,17 +7,21 @@
 .sign-in-layout{
     display: grid;
     min-height: inherit;
+    position: relative;
 }
 
 @media (min-width: 1024px){
     .sign-in-layout{
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
 }
 
 .sign-in-hero-section{
     display: none;
-    background: radial-gradient(circle at 50% 50%, var(--color-surface-3) 0%, var(--color-bg) 100%);
+    background:
+        radial-gradient(circle at top left, color-mix(in srgb, var(--color-surface-3) 88%, transparent), transparent 48%),
+        linear-gradient(180deg, var(--color-surface-3) 0%, var(--color-bg) 100%);
+    border-right: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
 }
 
 @media (min-width: 1024px){
@@ -33,11 +37,19 @@
 .sign-in-hero-overlay{
     background: linear-gradient(
         to bottom,
-        color-mix(in srgb, var(--color-surface-1) 18%, transparent) 10%,
-        color-mix(in srgb, var(--color-bg) 92%, transparent) 100%
+        color-mix(in srgb, var(--color-surface-1) 12%, transparent) 0%,
+        color-mix(in srgb, var(--color-bg) 84%, transparent) 100%
     );
     pointer-events: none;
     z-index: 1;
+}
+
+:root[data-theme='light'] .sign-in-hero-overlay{
+    background: linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--color-surface-1) 42%, transparent) 0%,
+        color-mix(in srgb, var(--color-bg) 78%, transparent) 100%
+    );
 }
 
 .sign-in-hero-text-container{
@@ -69,19 +81,22 @@
 .sign-in-form-shell{
     min-height: 100vh;
     min-height: 100dvh;
+    background: var(--color-bg);
+    position: relative;
 }
 
 .sign-in-form-title{
     font-weight: 700;
     letter-spacing: -0.03em;
     font-size: 2rem;
+    color: var(--color-text-primary);
 }
 
 .sign-in-divider{
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin: 2rem 0;
+    margin: 1.25rem 0 0.25rem;
 }
 
 .sign-in-divider::before,
@@ -100,6 +115,8 @@
     color: var(--color-text-secondary);
     font-size: 0.875rem;
     line-height: 1.6;
+    padding-top: 0.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
 }
 
 .sign-in-legal-text{
@@ -110,5 +127,16 @@
 @media (max-width: 1023px){
     .sign-in-form-shell{
         justify-content: center;
+        padding: 1.5rem;
+    }
+
+    .sign-in-form-title{
+        font-size: 1.75rem;
+    }
+}
+
+@media (max-width: 640px){
+    .sign-in-form-shell{
+        padding: 1rem;
     }
 }

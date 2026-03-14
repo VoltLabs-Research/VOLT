@@ -41,19 +41,12 @@
 }
 
 .canvas-tree-item.selected {
-    border-radius: var(--radius-xs);
+    color: var(--selected-indicator);
 }
 
-.canvas-tree-item.selected::before {
-    content: '';
-    position: absolute;
-    left: 2px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 2px;
-    height: 12px;
-    border-radius: 1px;
-    background: var(--color-text-primary);
+.canvas-tree-item.selected:hover,
+.canvas-tree-item.selected:focus-visible {
+    color: var(--selected-indicator);
 }
 
 .canvas-tree-toggle {

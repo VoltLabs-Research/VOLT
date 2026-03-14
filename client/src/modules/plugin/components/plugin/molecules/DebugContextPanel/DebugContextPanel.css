@@ -1,10 +1,10 @@
 .debug-context-panel {
     width: min(280px, calc(100vw - 1.5rem));
-    max-height: min(320px, calc(100vh - 6rem));
+    max-height: min(360px, calc(100vh - 6rem));
 }
 
 .debug-context-panel-header {
-    padding: 0.5rem 0.625rem;
+    padding: 0.625rem 0.75rem;
     border-bottom: 1px solid var(--color-border-soft);
 }
 
@@ -19,7 +19,8 @@
 /* Shared clickable row - used for panel header, entry headers, iteration headers */
 .debug-context-row {
     width: 100%;
-    padding: 0.35rem 0.625rem;
+    min-height: 2.5rem;
+    padding: 0.5rem 0.75rem;
     border: none;
     background: transparent;
     color: inherit;
@@ -46,30 +47,36 @@
 }
 
 .debug-context-label {
-    font-size: 0.65rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--color-text-secondary);
+    color: var(--color-text-primary);
+    line-height: 1.35;
 }
 
 .debug-context-id {
-    font-size: 0.55rem;
+    font-size: 0.65rem;
     font-family: monospace;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 200px;
+    line-height: 1.4;
 }
 
 /* Expanded JSON tree container */
 .debug-context-tree {
-    padding: 0 0.625rem 0.375rem;
+    padding: 0 0.75rem 0.625rem;
     font-family: monospace;
-    font-size: 0.65rem;
-    line-height: 1.5;
+    font-size: 0.7rem;
+    line-height: 1.6;
 }
 
 /* Tree-line nesting for ForEach body and iteration body */
 .debug-context-nested {
     border-left: 1px solid var(--color-border-soft);
     margin-left: 0.625rem;
+}
+
+.debug-context-panel-body {
+    padding-block: 0.125rem;
 }

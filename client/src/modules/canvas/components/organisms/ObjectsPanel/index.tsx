@@ -7,12 +7,11 @@ import useSceneArtifacts from '../../../hooks/use-scene-artifacts';
 import PanelHeader from '../../atoms/PanelHeader';
 import SceneCollection from '../../molecules/SceneCollection';
 
-import { Eye, Filter, Layers, Minus, Palette, Plus, SlidersHorizontal } from 'lucide-react';
+import { Eye, Filter, Layers, Minus, Palette, Plus } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
-import IconButton from '@/shared/presentation/components/IconButton';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -137,11 +136,6 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
             <PanelHeader
                 icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                 title="Objects"
-                actions={
-                    <IconButton variant="ghost" size="sm" aria-label="Filter objects">
-                        <SlidersHorizontal style={{ width: 13, height: 13 }} />
-                    </IconButton>
-                }
             />
 
             <CollapsibleSection

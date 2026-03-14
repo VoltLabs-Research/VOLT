@@ -83,8 +83,7 @@ const TopToolbar = () => {
                     navigate('/dashboard');
                 }}
             >
-                <span className="canvas-toolbar-logo-mark font-size-1 color-primary font-weight-6" aria-hidden="true">V</span>
-                <h1 className="canvas-volt font-size-075 color-secondary">Volt</h1>
+                <span className="canvas-toolbar-logo-mark font-size-1 color-primary font-weight-6" aria-hidden="true">VOLT</span>
             </a>
 
             <nav className="canvas-toolbar-menus px-1 d-flex gap-025 items-center" aria-label="Canvas primary navigation">

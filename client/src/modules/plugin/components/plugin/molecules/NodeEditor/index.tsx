@@ -4,6 +4,8 @@ import { Trash2 } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import DangerZone from '@/shared/presentation/components/DangerZone';
+import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import ModifierEditor from './editors/ModifierEditor';
@@ -20,6 +22,10 @@ interface NodeEditorProps {
     node: Node;
 };
 
+interface NodeDisplayData {
+    label?: string;
+};
+
 const EDITOR_COMPONENTS: Partial<Record<NodeType, FC<{ node: Node }>>> = {
     [NodeType.MODIFIER]: ModifierEditor,
     [NodeType.ARGUMENTS]: ArgumentsEditor,
@@ -32,13 +38,27 @@ const EDITOR_COMPONENTS: Partial<Record<NodeType, FC<{ node: Node }>>> = {
 };
 
 const NodeEditor = ({ node }: NodeEditorProps) => {
+    const { confirm } = useConfirm();
     const deleteNode = usePluginBuilderStore((state) => state.deleteNode);
     const selectNode = usePluginBuilderStore((state) => state.selectNode);
 
-    const nodeType = node.type as NodeType;
-    const EditorComponent = EDITOR_COMPONENTS[nodeType];
+    const nodeType = Object.values(NodeType).find((value) => value === node.type);
+    const EditorComponent = nodeType ? EDITOR_COMPONENTS[nodeType] : undefined;
+    const nodeData = typeof node.data === 'object' && node.data !== null ? node.data as NodeDisplayData : null;
+    const nodeLabel = nodeData?.label?.trim() || nodeType || 'node';
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
+        const isConfirmed = await confirm({
+            title: 'Delete node?',
+            description: `Remove ${nodeLabel} and its connections. This action cannot be undone.`,
+            confirmText: 'Delete node',
+            tone: ConfirmActionTone.Danger
+        });
+
+        if (!isConfirmed) {
+            return;
+        }
+
         deleteNode(node.id);
         selectNode(null);
     };

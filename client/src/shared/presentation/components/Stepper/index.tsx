@@ -173,8 +173,8 @@ const Stepper = <K extends string>({
                 transition={{ duration: prefersReducedMotion ? 0 : 0.25 }}
                 className={`stepper-step ${className}`}
                 id={activePanelId}
-                role='tabpanel'
-                aria-labelledby={`${stepperId}-${activeStep}-tab`}
+                role={indicators ? 'tabpanel' : undefined}
+                aria-labelledby={indicators ? `${stepperId}-${activeStep}-tab` : undefined}
                 tabIndex={0}>
                 {currentStep?.content}
             </motion.div>
@@ -182,7 +182,11 @@ const Stepper = <K extends string>({
     );
 
     if(!indicators){
-        return renderStepContent();
+        return (
+            <Container className='stepper-standalone'>
+                {renderStepContent()}
+            </Container>
+        );
     }
 
     return (

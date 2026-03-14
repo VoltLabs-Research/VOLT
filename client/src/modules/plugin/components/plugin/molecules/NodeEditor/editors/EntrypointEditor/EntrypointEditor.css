@@ -3,24 +3,38 @@
 }
 
 .binary-uploaded {
-    padding: 10px 12px;
+    padding: 0.75rem;
     background: var(--status-success-bg);
     border: 1px solid var(--status-success-border);
     border-radius: var(--radius-sm);
 }
 
 .binary-file-info {
-    color: var(--accent-green);
+    min-width: 0;
+    color: var(--color-text-primary);
+}
+
+.binary-file-icon {
+    color: var(--status-success);
+    flex-shrink: 0;
+}
+
+.binary-upload-status {
+    color: var(--status-success);
+    margin: 0;
 }
 
 .binary-filename {
     max-width: 180px;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--color-text-primary);
+    margin: 0;
 }
 
 .binary-check-icon {
-    color: var(--accent-green);
+    color: var(--status-success);
+    flex-shrink: 0;
 }
 
 .binary-upload-hint {
@@ -30,20 +44,30 @@
 }
 
 .binary-upload-error {
-    color: var(--accent-red);
+    color: var(--status-error);
     margin: 0;
 }
 
 .binary-upload-progress {
-    height: 4px;
-    background: color-mix(in srgb, var(--accent-indigo) 10%, transparent);
-    border-radius: 2px;
+    height: 0.5rem;
+    background: var(--status-info-bg);
+    border: 1px solid color-mix(in srgb, var(--accent-blue) 18%, transparent);
+    border-radius: var(--radius-full);
 }
 
 .binary-upload-progress-bar {
-    background: linear-gradient(90deg, var(--accent-indigo), color-mix(in srgb, var(--accent-indigo) 70%, white));
-    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-indigo));
+    border-radius: var(--radius-full);
     transition: width 0.2s ease;
+}
+
+.binary-remove-action,
+.binary-upload-action {
+    min-height: 2.75rem;
+}
+
+.binary-remove-action {
+    min-width: 2.75rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
