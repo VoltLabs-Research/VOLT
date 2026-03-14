@@ -136,12 +136,8 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
         command: 'notebook.proxy.http',
         execute: async (payload) => {
             const request = readNotebookProxyRequestPayload(payload);
-            const hostPort = await deps.jupyterRuntimeService.getRuntimeHostPort(request.notebookId);
-            if (!hostPort) {
-                throw new Error('Jupyter runtime is not available');
-            }
-
-            const targetUrl = `http://127.0.0.1:${hostPort}${request.proxiedPath}${request.rawQuery}`;
+            const internalOrigin = deps.jupyterRuntimeService.getRuntimeInternalOrigin(request.notebookId);
+            const targetUrl = `${internalOrigin}${request.proxiedPath}${request.rawQuery}`;
             const response = await fetch(targetUrl, {
                 method: request.method,
                 headers: request.headers,

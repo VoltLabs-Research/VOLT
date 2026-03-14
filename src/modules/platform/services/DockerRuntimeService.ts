@@ -109,7 +109,8 @@ export class DockerRuntimeService {
                 Memory: input.memoryInMegabytes * 1024 * 1024,
                 NanoCpus: Math.round(input.cpus * 1_000_000_000),
                 Binds: input.binds,
-                PortBindings: toPortBindings(input.ports)
+                PortBindings: toPortBindings(input.ports),
+                ...(input.networkMode ? { NetworkMode: input.networkMode } : {})
             }
         });
 

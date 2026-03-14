@@ -47,6 +47,7 @@ export interface CreateContainerRequest {
     cpus: number;
     binds?: string[];
     labels?: Record<string, string>;
+    networkMode?: string;
     cmd?: string[];
 };
 

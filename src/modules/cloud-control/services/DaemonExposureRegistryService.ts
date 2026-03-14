@@ -112,8 +112,8 @@ export class DaemonExposureRegistryService {
                     containerName,
                     exposureName: `${containerName}:${port.PrivatePort}`,
                     accessModes,
-                    targetHost: '127.0.0.1',
-                    targetPort: port.PublicPort,
+                    targetHost: containerName,
+                    targetPort: port.PrivatePort,
                     containerPort: port.PrivatePort,
                     status: container.State === 'running'
                         ? TeamClusterServiceExposureStatus.Active
