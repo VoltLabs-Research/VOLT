@@ -293,7 +293,7 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
             <Container className='d-flex items-center content-between ai-floating-assistant-header'>
                 <Container className='d-flex column gap-025'>
                     <Paragraph id={titleId} className='font-size-2 font-weight-6 color-primary'>
-                        Volt AI assistant
+                        {/** YOUR RESEARCH ASSISTANT */}
                     </Paragraph>
                     <span id={descriptionId} style={VISUALLY_HIDDEN_STYLES}>
                         Floating assistant dialog. Press Escape to close. Tab moves between controls inside the dialog.

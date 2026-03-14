@@ -33,11 +33,23 @@
 }
 
 .container-remote-desktop-stage {
+    position: relative;
     min-height: 34rem;
     border: 1px solid var(--color-border-soft);
     border-radius: 1rem;
     background: var(--color-surface-1);
     overflow: hidden;
+}
+
+.container-remote-desktop-stage--fullscreen {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    border: none;
+}
+
+.container-remote-desktop-stage--fullscreen::backdrop {
+    background: var(--color-bg);
 }
 
 .container-remote-desktop-display {
@@ -47,9 +59,23 @@
     background: var(--color-bg);
 }
 
+.container-remote-desktop-stage--fullscreen .container-remote-desktop-display {
+    min-height: 100vh;
+}
+
+.container-remote-desktop-display:focus {
+    outline: 2px solid color-mix(in srgb, var(--color-brand-primary) 45%, transparent);
+    outline-offset: -2px;
+}
+
 .container-remote-desktop-display canvas {
     display: block;
     max-width: 100%;
+}
+
+.container-remote-desktop-display > div {
+    width: 100%;
+    height: 100%;
 }
 
 .container-remote-desktop-status {
@@ -86,6 +112,10 @@
     border-radius: 0.85rem;
     background: color-mix(in srgb, var(--color-danger) 14%, transparent);
     color: var(--color-danger);
+}
+
+.container-remote-desktop-hint {
+    margin: 0;
 }
 
 @media (max-width: 768px) {

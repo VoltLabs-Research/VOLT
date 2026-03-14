@@ -65,6 +65,16 @@ export class CreateContainerXrdpSessionUseCase implements IUseCase<CreateContain
             );
         }
 
+        try {
+            await this.xrdpGatewayService.ensureGatewayAvailable();
+        } catch {
+            throw new ApplicationError(
+                'temporary-unavailable',
+                'XRDP gateway is temporarily unavailable',
+                503
+            );
+        }
+
         const session = this.xrdpGatewayService.createSession({
             teamId: input.teamId,
             containerId: input.containerId,

@@ -2,6 +2,7 @@ import logger from '@shared/infrastructure/logger';
 import GuacamoleLite from 'guacamole-lite';
 import { createCipheriv, createHash, randomBytes } from 'node:crypto';
 import type { IncomingMessage, Server as HttpServer } from 'node:http';
+import { Socket } from 'node:net';
 import type { Duplex } from 'node:stream';
 import { injectable } from 'tsyringe';
 
@@ -78,7 +79,8 @@ const DEFAULT_MAX_INACTIVITY_MS = 300_000;
 const DEFAULT_WIDTH = 1280;
 const DEFAULT_HEIGHT = 720;
 const DEFAULT_DPI = 96;
-const DEFAULT_XRDP_SECURITY_MODE: ContainerXrdpRdpConnectionSettings['security'] = 'rdp';
+const GUACD_REACHABILITY_TIMEOUT_MS = 1_000;
+const DEFAULT_XRDP_SECURITY_MODE: ContainerXrdpRdpConnectionSettings['security'] = 'tls';
 
 const readNumberEnv = (name: string, fallback: number): number => {
     const rawValue = process.env[name]?.trim();
@@ -243,6 +245,45 @@ export class ContainerXrdpGatewayService {
         return pathname === XRDP_TUNNEL_PATH;
     }
 
+    public async ensureGatewayAvailable(): Promise<void> {
+        await new Promise<void>((resolve, reject) => {
+            const socket = new Socket();
+            let settled = false;
+
+            const finalize = (error?: Error): void => {
+                if (settled) {
+                    return;
+                }
+
+                settled = true;
+                socket.removeAllListeners();
+                socket.destroy();
+
+                if (error) {
+                    logger.error({
+                        action: 'container.xrdp.guacd.unreachable',
+                        error,
+                        guacdHost: this.guacdHost,
+                        guacdPort: this.guacdPort,
+                        timeoutMs: GUACD_REACHABILITY_TIMEOUT_MS
+                    }, 'Failed XRDP guacd reachability preflight');
+                    reject(error);
+                    return;
+                }
+
+                resolve();
+            };
+
+            socket.setTimeout(GUACD_REACHABILITY_TIMEOUT_MS);
+            socket.once('connect', () => finalize());
+            socket.once('timeout', () => {
+                finalize(new Error(`Timed out connecting to guacd at ${this.guacdHost}:${this.guacdPort}`));
+            });
+            socket.once('error', (error: Error) => finalize(error));
+            socket.connect(this.guacdPort, this.guacdHost);
+        });
+    }
+
     public createSession(input: CreateContainerXrdpSessionInput): ContainerXrdpSessionDescriptor {
         const expiresAt = Date.now() + this.sessionTtlMs;
         const payload: ContainerXrdpTokenPayload = {
@@ -272,6 +313,17 @@ export class ContainerXrdpGatewayService {
                 expiresAt
             }
         };
+
+        logger.info({
+            action: 'container.xrdp.session.created',
+            teamId: input.teamId,
+            containerId: input.containerId,
+            userId: input.userId,
+            hostname: payload.connection.settings.hostname,
+            port: payload.connection.settings.port,
+            security: payload.connection.settings.security,
+            expiresAt: new Date(expiresAt).toISOString()
+        }, 'Created XRDP session target');
 
         return {
             token: this.encrypt(payload),

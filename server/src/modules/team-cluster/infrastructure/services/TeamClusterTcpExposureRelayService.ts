@@ -9,6 +9,7 @@ import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCluster
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import net from 'node:net';
+import { networkInterfaces } from 'node:os';
 import type TeamClusterExposureRegistryService from './TeamClusterExposureRegistryService';
 
 interface PublicExposureBinding {
@@ -21,7 +22,6 @@ interface PublicExposureBinding {
 const DEFAULT_PUBLIC_PORT_START = 23000;
 const DEFAULT_PUBLIC_PORT_END = 23999;
 const DEFAULT_RELAY_BIND_HOST = '127.0.0.1';
-const DEFAULT_RELAY_ADVERTISED_HOST = '127.0.0.1';
 const XRDP_PRIVATE_PORT = 3389;
 
 const readPortRangeValue = (name: string, fallback: number): number => {
@@ -47,12 +47,41 @@ const readHostValue = (name: string, fallback: string): string => {
     return rawValue;
 };
 
+const readOptionalHostValue = (name: string): string | null => {
+    const rawValue = process.env[name]?.trim();
+    if (!rawValue) {
+        return null;
+    }
+
+    return rawValue;
+};
+
 const isWildcardHost = (value: string): boolean => {
     return value === '0.0.0.0' || value === '::' || value === '[::]';
 };
 
+const detectNonInternalIpv4Host = (): string | null => {
+    const interfaces = networkInterfaces();
+
+    for (const addresses of Object.values(interfaces)) {
+        if (!addresses) {
+            continue;
+        }
+
+        for (const address of addresses) {
+            if (address.family !== 'IPv4' || address.internal || isWildcardHost(address.address)) {
+                continue;
+            }
+
+            return address.address;
+        }
+    }
+
+    return null;
+};
+
 const resolveRelayAdvertisedHost = (bindHost: string): string => {
-    const configuredAdvertisedHost = process.env.TEAM_CLUSTER_TCP_RELAY_ADVERTISED_HOST?.trim();
+    const configuredAdvertisedHost = readOptionalHostValue('TEAM_CLUSTER_TCP_RELAY_ADVERTISED_HOST');
     if (configuredAdvertisedHost) {
         if (isWildcardHost(configuredAdvertisedHost)) {
             throw new Error('TEAM_CLUSTER_TCP_RELAY_ADVERTISED_HOST must be a reachable host, not a wildcard bind address');
@@ -61,11 +90,38 @@ const resolveRelayAdvertisedHost = (bindHost: string): string => {
         return configuredAdvertisedHost;
     }
 
-    if (isWildcardHost(bindHost)) {
-        return readHostValue('SERVER_HOSTNAME', DEFAULT_RELAY_ADVERTISED_HOST);
+    if (!isWildcardHost(bindHost)) {
+        return bindHost;
     }
 
-    return bindHost;
+    const configuredServerHostname = readOptionalHostValue('SERVER_HOSTNAME');
+    if (configuredServerHostname) {
+        if (!isWildcardHost(configuredServerHostname)) {
+            return configuredServerHostname;
+        }
+
+        logger.warn(
+            { bindHost, serverHostname: configuredServerHostname },
+            '[TcpExposureRelay] Ignoring wildcard SERVER_HOSTNAME for relay advertised host resolution'
+        );
+    }
+
+    const autoDetectedHost = detectNonInternalIpv4Host();
+    if (autoDetectedHost) {
+        logger.warn(
+            { bindHost, advertisedHost: autoDetectedHost },
+            '[TcpExposureRelay] Auto-detected relay advertised host because bind host is wildcard'
+        );
+        return autoDetectedHost;
+    }
+
+    logger.error(
+        { bindHost },
+        '[TcpExposureRelay] Unable to determine a reachable relay advertised host for wildcard bind host'
+    );
+    throw new Error(
+        'Unable to determine a reachable TEAM_CLUSTER_TCP_RELAY_ADVERTISED_HOST. Configure TEAM_CLUSTER_TCP_RELAY_ADVERTISED_HOST or SERVER_HOSTNAME to a non-wildcard host.'
+    );
 };
 
 @injectable()
