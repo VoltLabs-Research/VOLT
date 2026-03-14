@@ -578,6 +578,7 @@ export class JupyterRuntimeService {
             'exec python3 -m jupyter lab',
             '--ip=0.0.0.0',
             `--port=${this.config.jupyter.port}`,
+            '--port-retries=0',
             '--no-browser',
             `--ServerApp.token="${this.config.jupyter.token}"`,
             `--ServerApp.base_url="${publicBasePath}/"`,
