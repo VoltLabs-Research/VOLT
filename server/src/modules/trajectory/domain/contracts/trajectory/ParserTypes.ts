@@ -48,4 +48,6 @@ export interface AtomPageResult {
     atoms: AtomPageEntry[];
     totalAtoms: number;
     nativeProperties: string[];
+    analysisPropertyNames?: string[];
+    analysisAtoms?: Record<string, unknown>[];
 };

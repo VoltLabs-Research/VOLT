@@ -2,11 +2,10 @@ import type { PaginatedResponse } from '@/shared/domain/pagination';
 
 export interface GetAtomsInputDTO {
     trajectoryId: string;
-    analysisId: string;
-    exposureId?: string;
+    analysisId?: string;
     timestep: number;
-    page: number;
-    limit: number;
+    page?: number;
+    limit?: number;
 };
 
 export interface AtomData {

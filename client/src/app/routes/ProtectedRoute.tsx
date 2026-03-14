@@ -1,5 +1,6 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import { refreshSocketSession } from '@/modules/socket/core/services/socket-auth-session';
 import { setGetTeamId } from '@/app/core/http/utilities/create-client';
 import { resetTeamSessionState, useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -12,7 +13,7 @@ import useTeamActivityHeartbeat from '@/modules/team/hooks/team/use-team-activit
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useTeamPresenceSocket from '@/modules/team/hooks/team/use-team-presence-socket';
 import Loader from '@/shared/presentation/components/Loader';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
@@ -40,6 +41,8 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
     const shouldLoadTeamData = mode === RouteMode.Protected && hasToken;
     const { teams, fetchTeams, isTeamsLoading } = useTeamData({ enabled: shouldLoadTeamData });
+    const previousSelectedTeamIdRef = useRef<string | null>(selectedTeamId);
+    const refreshedOnboardingTeamIdRef = useRef<string | null>(null);
 
     useTeamSocketSubscription();
     useSocketConnectionToast();
@@ -89,6 +92,26 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
             fetchTeams();
         }
     }, [hasToken, hasTeam, isTeamsLoading, fetchTeams]);
+
+    useEffect(() => {
+        const previousSelectedTeamId = previousSelectedTeamIdRef.current;
+        previousSelectedTeamIdRef.current = selectedTeamId;
+
+        if (
+            mode !== RouteMode.Protected
+            || !hasToken
+            || !isAuthenticated
+            || !isOnboardingRoute
+            || !selectedTeamId
+            || previousSelectedTeamId
+            || refreshedOnboardingTeamIdRef.current === selectedTeamId
+        ) {
+            return;
+        }
+
+        refreshedOnboardingTeamIdRef.current = selectedTeamId;
+        refreshSocketSession().catch(() => undefined);
+    }, [hasToken, isAuthenticated, isOnboardingRoute, mode, selectedTeamId]);
 
     if(!isInitialized || isLoading){
         return renderProtectedContent(<Loader scale={0.6} />);

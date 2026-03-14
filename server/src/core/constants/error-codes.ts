@@ -125,6 +125,7 @@ export const ErrorCodes = createErrorCodes({
     PLUGIN_NOT_VALID_CANNOT_EXECUTE: 'Plugin::NotValid::CannotExecute',
 
     TRAJECTORY_NOT_FOUND: 'Trajectory::NotFound',
+    TRAJECTORY_ANALYSIS_MISMATCH: 'Trajectory::Analysis::Mismatch',
     TRAJECTORY_TEAM_CLUSTER_REQUIRED: 'Trajectory::TeamCluster::Required',
     TRAJECTORY_DUMP_NOT_FOUND: 'Trajectory::Dump::NotFound',
     TRAJECTORY_FORMAT_UNSUPPORTED: 'Trajectory::Format::Unsupported',
@@ -132,6 +133,8 @@ export const ErrorCodes = createErrorCodes({
     TRAJECTORY_DUMP_PARSE_FAILED: 'Trajectory::Dump::ParseFailed',
     TRAJECTORY_STATS_PARSE_FAILED: 'Trajectory::Stats::ParseFailed',
     TRAJECTORY_GLB_GENERATION_FAILED: 'Trajectory::GLB::GenerationFailed',
+    TRAJECTORY_ATOMS_EXPOSURE_ID_REQUIRED: 'Trajectory::Atoms::ExposureIdRequired',
+    TRAJECTORY_ATOMS_PLUGIN_FETCH_FAILED: 'Trajectory::Atoms::PluginFetchFailed',
 
     TEAM_ROLE_NOT_FOUND: 'TeamRole::NotFound',
     TEAM_ROLE_IS_SYSTEM: 'TeamRole::IsSystem',

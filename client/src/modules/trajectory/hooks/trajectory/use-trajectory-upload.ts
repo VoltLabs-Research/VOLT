@@ -1,7 +1,18 @@
 import useCreateTrajectory from './use-create-trajectory';
 import { buildFileFormData } from '@/shared/utils/file';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback, useState } from 'react';
 import type { FileWithPath } from '@/shared/utils/file';
+import type { Trajectory } from '../../api/entities/trajectory';
+
+const UPLOAD_TRAJECTORY_TOAST = {
+    loading: { title: 'Uploading...' },
+    success: { title: 'Trajectory uploaded successfully' },
+    error: {
+        title: 'Failed to upload trajectory',
+        description: 'Please check your files and try again.'
+    }
+};
 
 interface UseTrajectoryUploadResult {
     uploadTrajectory: (files: FileWithPath[], folderName: string) => Promise<void>;
@@ -31,7 +42,8 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
                 formData.append('folderId', folderId);
             }
 
-            await createTrajectory(formData);
+            const uploadPromise: Promise<Trajectory> = createTrajectory(formData);
+            await showPromise(uploadPromise, UPLOAD_TRAJECTORY_TOAST);
         } finally {
             setIsUploading(false);
         }

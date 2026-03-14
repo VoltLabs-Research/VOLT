@@ -1,10 +1,18 @@
-export type JobMetadataValue = boolean | number | string | null | undefined;
+type JobMetadataPrimitive = boolean | number | string | null | undefined;
+
+export interface JobMetadata {
+    timestep?: number | string;
+    [key: string]: JobMetadataPrimitive | JobMetadata;
+};
+
+export type JobMetadataValue = JobMetadataPrimitive | JobMetadata;
 
 export interface Job {
     jobId: string;
     trajectoryId: string;
     trajectoryName?: string;
-    timestep: number;
+    timestep?: number;
+    metadata?: JobMetadata;
     sessionId?: string;
     status: JobStatus;
     timestamp: string;

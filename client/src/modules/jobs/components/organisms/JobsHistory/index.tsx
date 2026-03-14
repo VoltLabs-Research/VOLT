@@ -21,7 +21,6 @@ const JobsHistory = ({
     trajectoryId,
     queueFilter,
     groups,
-    isConnected,
     isLoading,
     displayMode = 'full'
 }: JobsHistoryProps) => {
@@ -43,7 +42,7 @@ const JobsHistory = ({
         return result;
     }, [groups, trajectoryId, queueFilter]);
 
-    const shouldShowSkeleton = !isConnected || isLoading;
+    const shouldShowSkeleton = isLoading;
     let content: ReactNode = filteredGroups.map((group: TJG, index: number) => {
         if (displayMode === 'children-only') {
             return group.frameGroups.map((frame) => (

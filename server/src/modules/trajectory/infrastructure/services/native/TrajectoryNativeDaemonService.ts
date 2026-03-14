@@ -24,6 +24,7 @@ interface TrajectoryNativeUniqueValuesRequest extends TrajectoryNativePropertyRe
 interface TrajectoryNativeAtomsPageRequest extends TrajectoryNativeRequest {
     page: number;
     limit: number;
+    analysisId?: string;
 };
 
 interface TrajectoryNativeFilterPreviewRequest extends TrajectoryNativeRequest {
@@ -58,6 +59,8 @@ interface TrajectoryNativeAtomsPageResponse {
     }>;
     totalAtoms: number;
     nativeProperties: string[];
+    analysisPropertyNames?: string[];
+    analysisAtoms?: Record<string, unknown>[];
 };
 
 interface TrajectoryNativeFilterPreviewResponse {
@@ -100,7 +103,8 @@ export default class TrajectoryNativeDaemonService {
         return this.teamClusterDaemonClient.command(input.teamClusterId, 'trajectory.native.atoms', {
             ...this.toBaseBody(input),
             page: input.page,
-            limit: input.limit
+            limit: input.limit,
+            ...(input.analysisId ? { analysisId: input.analysisId } : {})
         });
     }
 

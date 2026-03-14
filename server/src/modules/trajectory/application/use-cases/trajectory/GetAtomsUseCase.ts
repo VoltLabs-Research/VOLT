@@ -1,30 +1,17 @@
+import { ErrorCodes } from '@core/constants/error-codes';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { GetAtomsInputDTO, AtomRecord } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
-import { IAtomPropertiesService } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 import { injectable, inject } from 'tsyringe';
 
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { AtomRecord, GetAtomsInputDTO } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
 import type { ITrajectoryReader } from '@modules/trajectory/domain/port/trajectory/ITrajectoryReader';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-
-interface ExposureFetchResult {
-    exposureName: string;
-    properties: string[];
-    data: unknown;
-};
-
-interface PropertyRenameMap {
-    original: string;
-    display: string;
-};
-
-type PerAtomRecord = Record<string, unknown> & {
-    id: number;
-};
 
 @injectable()
 export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResult<AtomRecord>, ApplicationError> {
@@ -35,100 +22,67 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepository: ITrajectoryRepository,
 
-        @inject(TRAJECTORY_TOKENS.AtomPropertiesService)
-        private readonly atomProps: IAtomPropertiesService
+        @inject(ANALYSIS_TOKENS.AnalysisRepository)
+        private readonly analysisRepository: IAnalysisRepository
     ) {}
 
     async execute(input: GetAtomsInputDTO): Promise<Result<PaginatedResult<AtomRecord>, ApplicationError>> {
         try {
-            const { trajectoryId, analysisId, timestep, exposureId } = input;
+            const { trajectoryId, analysisId, timestep } = input;
             const page = input.page ?? 1;
             const limit = input.limit ?? 100;
-            const timestepKey = String(timestep);
 
             const pageNum = Math.max(1, page);
             const limitNum = Math.min(100000, Math.max(1, limit));
 
             const trajectory = await this.trajectoryRepository.findById(trajectoryId);
+            if (!trajectory) {
+                return Result.fail(ApplicationError.notFound(
+                    ErrorCodes.TRAJECTORY_NOT_FOUND,
+                    'Trajectory not found'
+                ));
+            }
+
             const teamClusterId = trajectory?.props.teamCluster;
+            if (!teamClusterId) {
+                return Result.fail(ApplicationError.notFound(
+                    ErrorCodes.TRAJECTORY_TEAM_CLUSTER_REQUIRED,
+                    'Trajectory team cluster is required to retrieve atoms'
+                ));
+            }
+
+            if (analysisId) {
+                const analysis = await this.analysisRepository.findById(analysisId);
+
+                if (!analysis) {
+                    return Result.fail(ApplicationError.notFound(
+                        ErrorCodes.ANALYSIS_NOT_FOUND,
+                        'Analysis not found'
+                    ));
+                }
+
+                if (analysis.props.trajectory !== trajectoryId) {
+                    return Result.fail(ApplicationError.badRequest(
+                        ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH,
+                        'Analysis does not belong to the requested trajectory'
+                    ));
+                }
+            }
+
             const atomsPage = await this.trajectoryReader.readPage(
-                teamClusterId,
-                trajectoryId,
-                timestep,
-                pageNum,
-                limitNum
+                teamClusterId, trajectoryId, timestep, pageNum, limitNum, analysisId
             );
 
             const totalAtoms = atomsPage.totalAtoms;
             const nativeProperties = atomsPage.nativeProperties ?? [];
+            const analysisPropertyNames = atomsPage.analysisPropertyNames ?? [];
 
-            let perAtomData: Map<number, PerAtomRecord> | null = null;
-            let displayProperties: string[] = [];
-
-            const isDefaultAnalysis = !analysisId || analysisId === 'default';
-            let exposureIdsToFetch: string[] = [];
-            const normalizedAnalysisId = isDefaultAnalysis ? null : analysisId;
-
-            if (normalizedAnalysisId) {
-                if (exposureId) {
-                    exposureIdsToFetch = [exposureId];
-                } else {
-                    const exposurePropsMap = await this.atomProps.getModifierPerAtomProps(normalizedAnalysisId);
-                    exposureIdsToFetch = Object.entries(exposurePropsMap)
-                        .filter(([, properties]) => Array.isArray(properties) && properties.length > 0)
-                        .map(([candidateId]) => candidateId);
-                }
-            }
-
-            if (normalizedAnalysisId && exposureIdsToFetch.length > 0) {
+            let perAtomData: Map<number, Record<string, unknown>> | null = null;
+            if (atomsPage.analysisAtoms && atomsPage.analysisAtoms.length > 0) {
                 perAtomData = new Map();
-                
-                const fetchPromises = exposureIdsToFetch.map(async (currentExposureId): Promise<ExposureFetchResult | null> => {
-                    const config = await this.atomProps.getExposureAtomConfig(normalizedAnalysisId, currentExposureId);
-                    if (config.perAtomProperties.length === 0) return null;
-
-                    const modifierData = await this.atomProps.getModifierAnalysis(
-                        trajectoryId,
-                        normalizedAnalysisId,
-                        currentExposureId,
-                        timestepKey
-                    );
-
-                    return {
-                        exposureName: config.exposureName,
-                        properties: config.perAtomProperties,
-                        data: modifierData
-                    };
-                });
-
-                const results = await Promise.all(fetchPromises);
-                const validResults = results.filter((r): r is ExposureFetchResult => r !== null);
-                const renameMap = this.buildPropertyRenameMap(validResults);
-                displayProperties = renameMap.map((entry) => entry.display);
-
-                for (const fetchResult of validResults) {
-                    if (!Array.isArray(fetchResult.data)) continue;
-
-                    const exposureRenames = renameMap.filter((entry) =>
-                        fetchResult.properties.includes(entry.original.includes(': ')
-                            ? entry.original.split(': ').slice(1).join(': ')
-                            : entry.original)
-                    );
-
-                    for (const item of fetchResult.data) {
-                        if (item?.id === undefined) continue;
-
-                        const existing: PerAtomRecord = perAtomData.get(item.id) ?? { id: item.id };
-                        for (const rename of exposureRenames) {
-                            const sourceProp = fetchResult.properties.find((p) =>
-                                rename.display === p || rename.display === `${fetchResult.exposureName}: ${p}`
-                            );
-                            if (sourceProp && item[sourceProp] !== undefined) {
-                                existing[rename.display] = item[sourceProp];
-                            }
-                        }
-                        perAtomData.set(item.id, existing);
-                    }
+                for (const item of atomsPage.analysisAtoms) {
+                    if (item?.id === undefined) continue;
+                    perAtomData.set(Number(item.id), item);
                 }
             }
 
@@ -150,7 +104,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
 
                 if (perAtomData?.has(atom.id)) {
                     const pluginData = perAtomData.get(atom.id)!;
-                    for (const prop of displayProperties) {
+                    for (const prop of analysisPropertyNames) {
                         const propertyValue = pluginData[prop];
                         if (propertyValue !== undefined) {
                             record[prop] = propertyValue;
@@ -169,7 +123,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
                 limit: limitNum,
                 total: totalAtoms,
                 totalPages,
-                _meta: { properties: [...nativeProperties, ...displayProperties] }
+                _meta: { properties: [...nativeProperties, ...analysisPropertyNames] }
             });
         } catch (error: unknown) {
             if (error instanceof ApplicationError) {
@@ -182,32 +136,4 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
         }
     }
 
-    private buildPropertyRenameMap(results: ExposureFetchResult[]): PropertyRenameMap[] {
-        const propertyOccurrences = new Map<string, number>();
-
-        for (const fetchResult of results) {
-            for (const prop of fetchResult.properties) {
-                propertyOccurrences.set(prop, (propertyOccurrences.get(prop) || 0) + 1);
-            }
-        }
-
-        const renameMap: PropertyRenameMap[] = [];
-
-        for (const fetchResult of results) {
-            for (const prop of fetchResult.properties) {
-                const occurrenceCount = propertyOccurrences.get(prop) || 1;
-                const needsPrefix = occurrenceCount > 1 && fetchResult.exposureName;
-                const displayName = needsPrefix
-                    ? `${fetchResult.exposureName}: ${prop}`
-                    : prop;
-
-                renameMap.push({
-                    original: prop,
-                    display: displayName
-                });
-            }
-        }
-
-        return renameMap;
-    }
 };
