@@ -1,6 +1,5 @@
 import { cn } from '@/shared/utils';
 import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import type { ChatReaction } from '@/modules/chat/api/entities/message';
 import './ReactionsDisplay.css';
 
@@ -31,16 +30,19 @@ const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: Reactions
     return (
         <Container className='d-flex flex-wrap gap-025 chat-reactions-display'>
             {validReactions.map((reaction) => (
-                <Paragraph
+                <button
                     key={reaction.emoji}
+                    type='button'
                     className={cn(
                         'd-flex items-center gap-025 font-size-1 cursor-pointer chat-reaction transition-normal',
                         hasUserReacted(reaction) && 'user-reacted'
                     )}
                     onClick={() => onToggle(reaction.emoji)}
+                    aria-pressed={hasUserReacted(reaction)}
+                    aria-label={`${reaction.emoji} reaction, ${reaction.users.length} ${reaction.users.length === 1 ? 'person' : 'people'}`}
                 >
                     {reaction.emoji} {reaction.users.length}
-                </Paragraph>
+                </button>
             ))}
         </Container>
     );

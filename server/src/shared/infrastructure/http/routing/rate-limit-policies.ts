@@ -29,6 +29,8 @@ export const RATE_LIMIT_POLICIES = {
     pluginImport: createStandardRateLimiter(3),
     rasterTrigger: createStandardRateLimiter(3),
     scriptingSessionCreate: createStandardRateLimiter(5),
+    scriptingSessionReadiness: createGeneralRateLimiter(60, 'Too many scripting session readiness requests, please try again later'),
+    scriptingSessionStatus: createGeneralRateLimiter(60, 'Too many scripting session status requests, please try again later'),
     simulationCellRead: createGeneralRateLimiter(60),
     sshConnectionCreate: createStandardRateLimiter(10),
     sshConnectionTest: createStandardRateLimiter(10),

@@ -7,6 +7,7 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import type { Readable } from 'node:stream';
+import type { TeamClusterTunnelOpenRequest } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import type { TeamClusterReverseChannelStreamAttachment } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import type { ContainerTerminalAttachment } from '@modules/container/domain/port/IContainerService';
 
@@ -14,6 +15,15 @@ interface TeamClusterDaemonResponseEnvelope<T> {
     status: string;
     data: T;
     message?: string;
+};
+
+export interface TeamClusterDaemonNotebookRuntime {
+    tunnelTargetHost: string;
+    tunnelTargetPort: number;
+};
+
+export interface TeamClusterDaemonNotebookRuntimeLookupResponse {
+    runtime: TeamClusterDaemonNotebookRuntime | null;
 };
 
 /** Structured error payload emitted by the daemon's `adaptHandler` catch block. */
@@ -109,6 +119,15 @@ export default class TeamClusterDaemonClient {
         return response.data.data;
     }
 
+    async getNotebookRuntime(
+        teamClusterId: string,
+        notebookId: string
+    ): Promise<TeamClusterDaemonNotebookRuntimeLookupResponse> {
+        return this.command<TeamClusterDaemonNotebookRuntimeLookupResponse>(teamClusterId, 'notebook.runtime.get', {
+            notebookId
+        });
+    }
+
     async commandStream(teamClusterId: string, command: string, payload?: Record<string, unknown>): Promise<Readable> {
         return this.teamClusterReverseChannelService.openStream(teamClusterId, {
             command,
@@ -163,7 +182,26 @@ export default class TeamClusterDaemonClient {
         teamClusterId: string,
         exposureId: string,
         accessMode: TeamClusterServiceExposureAccessMode
+    ): Promise<TeamClusterReverseTunnelStream>;
+
+    async openTunnel(
+        teamClusterId: string,
+        request: TeamClusterTunnelOpenRequest
+    ): Promise<TeamClusterReverseTunnelStream>;
+
+    async openTunnel(
+        teamClusterId: string,
+        target: string | TeamClusterTunnelOpenRequest,
+        accessMode?: TeamClusterServiceExposureAccessMode
     ): Promise<TeamClusterReverseTunnelStream> {
-        return this.teamClusterReverseChannelService.openTunnel(teamClusterId, exposureId, accessMode);
+        if (typeof target === 'string') {
+            if (accessMode === undefined) {
+                throw ApplicationError.internalServerError('Tunnel access mode is required for exposure tunnel requests');
+            }
+
+            return this.teamClusterReverseChannelService.openTunnel(teamClusterId, target, accessMode);
+        }
+
+        return this.teamClusterReverseChannelService.openTunnel(teamClusterId, target);
     }
 };

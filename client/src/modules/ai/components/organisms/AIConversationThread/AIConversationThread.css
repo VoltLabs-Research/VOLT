@@ -520,3 +520,19 @@
         padding-right: 0.75rem;
     }
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .ai-thinking-dot,
+    .ai-message-skeleton {
+        animation: none;
+    }
+
+    .ai-thinking-dot {
+        opacity: 0.7;
+        transform: none;
+    }
+
+    .ai-message-skeleton {
+        opacity: 0.85;
+    }
+}

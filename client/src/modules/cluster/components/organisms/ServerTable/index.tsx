@@ -239,7 +239,7 @@ const ServerTable = ({
                     </Button>
                     <RefreshButton size='sm' />
                     <Tooltip content='Download Report' placement='bottom'>
-                        <Button variant='ghost' intent='neutral' iconOnly size='sm'>
+                        <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Download report' title='Download report'>
                             <Download size={16} />
                         </Button>
                     </Tooltip>

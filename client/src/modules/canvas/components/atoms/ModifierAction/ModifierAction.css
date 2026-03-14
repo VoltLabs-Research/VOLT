@@ -2,8 +2,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 28px;
+    height: 28px;
     border-radius: var(--radius-xs);
     cursor: pointer;
     opacity: 0;
@@ -51,4 +51,11 @@
 
 .modifier-action-spinner {
     animation: animate-spin 0.8s linear infinite;
+}
+
+@media (max-width: 768px) {
+    .modifier-action {
+        width: 36px;
+        height: 36px;
+    }
 }

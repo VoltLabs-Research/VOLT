@@ -41,8 +41,38 @@ import type TeamClusterExposureRegistryService from './TeamClusterExposureRegist
 interface TeamClusterDaemonCommandPayload {
     command: string;
     payload?: Record<string, unknown>;
-    responseType?: TeamClusterDaemonResponseType;
+    responseType: TeamClusterDaemonResponseType;
 };
+
+export interface TeamClusterExposureTunnelOpenRequest {
+    exposureId: string;
+    accessMode: TeamClusterServiceExposureAccessMode;
+};
+
+export interface TeamClusterDirectTunnelOpenRequest {
+    targetHost: string;
+    targetPort: number;
+    accessMode: TeamClusterServiceExposureAccessMode;
+};
+
+export type TeamClusterTunnelOpenRequest = TeamClusterExposureTunnelOpenRequest | TeamClusterDirectTunnelOpenRequest;
+
+interface TeamClusterDaemonExposureTunnelOpenMessage {
+    type: 'tunnel-open';
+    sessionId: string;
+    exposureId: string;
+    accessMode: TeamClusterServiceExposureAccessMode;
+};
+
+interface TeamClusterDaemonDirectTunnelOpenMessage {
+    type: 'tunnel-open';
+    sessionId: string;
+    targetHost: string;
+    targetPort: number;
+    accessMode: TeamClusterServiceExposureAccessMode;
+};
+
+type TeamClusterDaemonTunnelOpenMessage = TeamClusterDaemonExposureTunnelOpenMessage | TeamClusterDaemonDirectTunnelOpenMessage;
 
 interface BasePendingEntry {
     socketId: string;
@@ -241,13 +271,7 @@ export default class TeamClusterReverseChannelService {
                 reject
             });
 
-            const message: TeamClusterDaemonCommandMessage = {
-                type: 'command',
-                requestId,
-                command: payload.command,
-                responseType: payload.responseType || TeamClusterDaemonResponseType.Json,
-                payload: payload.payload
-            };
+            const message = this.createCommandMessage(requestId, payload);
             this.socketEmitter.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, message);
         });
     }
@@ -281,13 +305,11 @@ export default class TeamClusterReverseChannelService {
                 reject
             });
 
-            const message: TeamClusterDaemonCommandMessage = {
-                type: 'command',
-                requestId,
+            const message = this.createCommandMessage(requestId, {
                 command: payload.command,
-                responseType: TeamClusterDaemonResponseType.Stream,
-                payload: payload.payload
-            };
+                payload: payload.payload,
+                responseType: TeamClusterDaemonResponseType.Stream
+            });
             this.socketEmitter.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, message);
         });
     }
@@ -326,9 +348,7 @@ export default class TeamClusterReverseChannelService {
                 reject
             });
 
-            const message: TeamClusterDaemonCommandMessage = {
-                type: 'command',
-                requestId: sessionId,
+            const message = this.createCommandMessage(sessionId, {
                 command: 'session.attach',
                 responseType: TeamClusterDaemonResponseType.Json,
                 payload: {
@@ -336,7 +356,7 @@ export default class TeamClusterReverseChannelService {
                     kind: TeamClusterDaemonSessionKind.WebSocket,
                     targetUrl
                 }
-            };
+            });
             this.socketEmitter.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, message);
         });
     }
@@ -365,9 +385,7 @@ export default class TeamClusterReverseChannelService {
                 reject
             });
 
-            const message: TeamClusterDaemonCommandMessage = {
-                type: 'command',
-                requestId: sessionId,
+            const message = this.createCommandMessage(sessionId, {
                 command: 'session.attach',
                 responseType: TeamClusterDaemonResponseType.Json,
                 payload: {
@@ -375,7 +393,7 @@ export default class TeamClusterReverseChannelService {
                     kind: TeamClusterDaemonSessionKind.Terminal,
                     containerId
                 }
-            };
+            });
             this.socketEmitter.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, message);
         });
     }
@@ -384,9 +402,21 @@ export default class TeamClusterReverseChannelService {
         teamClusterId: string,
         exposureId: string,
         accessMode: TeamClusterServiceExposureAccessMode
+    ): Promise<TeamClusterReverseTunnelStream>;
+
+    async openTunnel(
+        teamClusterId: string,
+        request: TeamClusterTunnelOpenRequest
+    ): Promise<TeamClusterReverseTunnelStream>;
+
+    async openTunnel(
+        teamClusterId: string,
+        target: string | TeamClusterTunnelOpenRequest,
+        accessMode?: TeamClusterServiceExposureAccessMode
     ): Promise<TeamClusterReverseTunnelStream> {
         const socketId = await this.requireDaemonSocketId(teamClusterId);
         const sessionId = randomUUID();
+        const openPayload = this.createTunnelOpenPayload(sessionId, target, accessMode);
         const stream = new TeamClusterReverseTunnelStream({
             onWrite: (chunk) => {
                 const inputPayload: TeamClusterDaemonTunnelDataPayload = {
@@ -421,12 +451,7 @@ export default class TeamClusterReverseChannelService {
                 reject
             });
 
-            this.socketEmitter.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
-                type: 'tunnel-open',
-                sessionId,
-                exposureId,
-                accessMode
-            });
+            this.socketEmitter.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, openPayload);
         });
     }
 
@@ -454,9 +479,7 @@ export default class TeamClusterReverseChannelService {
                 reject
             });
 
-            const message: TeamClusterDaemonCommandMessage = {
-                type: 'command',
-                requestId: sessionId,
+            const message = this.createCommandMessage(sessionId, {
                 command: 'session.attach',
                 responseType: TeamClusterDaemonResponseType.Json,
                 payload: {
@@ -464,7 +487,7 @@ export default class TeamClusterReverseChannelService {
                     kind: TeamClusterDaemonSessionKind.Terminal,
                     terminalTarget: 'host'
                 }
-            };
+            });
             this.socketEmitter.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, message);
         });
     }
@@ -644,9 +667,6 @@ export default class TeamClusterReverseChannelService {
             return;
         }
 
-        if (entry.type === 'tunnel') {
-            entry.stream.pushChunk(Buffer.from(payload.chunkBase64, 'base64'));
-        }
     }
 
     private handleSessionEndPayload(payload: TeamClusterDaemonSessionEndPayload): void {
@@ -783,6 +803,68 @@ export default class TeamClusterReverseChannelService {
         if (timeout) {
             clearTimeout(timeout);
         }
+    }
+
+    private createCommandMessage(
+        requestId: string,
+        payload: TeamClusterDaemonCommandPayload
+    ): TeamClusterDaemonCommandMessage {
+        return {
+            type: 'command',
+            requestId,
+            command: payload.command,
+            responseType: this.requireCommandResponseType(payload.responseType),
+            payload: payload.payload
+        };
+    }
+
+    private requireCommandResponseType(
+        responseType: TeamClusterDaemonResponseType | undefined
+    ): TeamClusterDaemonResponseType {
+        if (!responseType) {
+            throw ApplicationError.internalServerError('Daemon command response type is required');
+        }
+
+        return responseType;
+    }
+
+    private createTunnelOpenPayload(
+        sessionId: string,
+        target: string | TeamClusterTunnelOpenRequest,
+        accessMode?: TeamClusterServiceExposureAccessMode
+    ): TeamClusterDaemonTunnelOpenMessage {
+        if (typeof target === 'string') {
+            if (!accessMode) {
+                throw ApplicationError.badRequest(
+                    'TeamCluster::TunnelAccessModeRequired',
+                    'Tunnel access mode is required when opening a tunnel by exposure id'
+                );
+            }
+
+            return {
+                type: 'tunnel-open',
+                sessionId,
+                exposureId: target,
+                accessMode
+            };
+        }
+
+        if ('exposureId' in target) {
+            return {
+                type: 'tunnel-open',
+                sessionId,
+                exposureId: target.exposureId,
+                accessMode: target.accessMode
+            };
+        }
+
+        return {
+            type: 'tunnel-open',
+            sessionId,
+            targetHost: target.targetHost,
+            targetPort: target.targetPort,
+            accessMode: target.accessMode
+        };
     }
 
     private async requireDaemonSocketId(teamClusterId: string): Promise<string> {

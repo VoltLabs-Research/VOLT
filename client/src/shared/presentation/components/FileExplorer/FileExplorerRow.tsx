@@ -23,6 +23,8 @@ const FileExplorerRow = ({
     onClick,
     onDoubleClick
 }: FileExplorerRowProps) => {
+    const isInteractive = Boolean(onClick || onDoubleClick);
+
     const handleClick = (e: MouseEvent) => {
         e.stopPropagation();
         onClick?.();
@@ -33,12 +35,10 @@ const FileExplorerRow = ({
         onDoubleClick?.();
     };
 
-    return (
-        <Container
-            className={cn('file-explorer-row', isSelected && 'is-selected')}
-            onClick={handleClick}
-            onDoubleClick={handleDoubleClick}
-        >
+    const rowClassName = cn('file-explorer-row', isInteractive && 'is-interactive', isSelected && 'is-selected');
+
+    const content = (
+        <>
             <Container className='file-explorer-row-name'>
                 <span className='file-explorer-row-icon'>{icon}</span>
                 <span className='file-explorer-row-text'>{name}</span>
@@ -46,7 +46,27 @@ const FileExplorerRow = ({
             <span className='file-explorer-row-meta'>{type ?? '-'}</span>
             <span className='file-explorer-row-meta'>{size ?? '-'}</span>
             <span className='file-explorer-row-meta'>{date ?? '-'}</span>
-        </Container>
+        </>
+    );
+
+    if (!isInteractive) {
+        return (
+            <Container className={rowClassName}>
+                {content}
+            </Container>
+        );
+    }
+
+    return (
+        <button
+            type='button'
+            className={rowClassName}
+            onClick={handleClick}
+            onDoubleClick={handleDoubleClick}
+            aria-pressed={isSelected}
+        >
+            {content}
+        </button>
     );
 };
 

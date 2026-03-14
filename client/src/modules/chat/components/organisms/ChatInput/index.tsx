@@ -88,7 +88,7 @@ const ChatInput = ({ disabled, onTyping, onSendText, onSendFiles }: ChatInputPro
                     {formatSize(item.file.size)}
                 </Paragraph>
             </Container>
-            <IconButton size='sm' variant='ghost' onClick={() => removeFile(index)}>
+            <IconButton size='sm' variant='ghost' onClick={() => removeFile(index)} title='Remove file' aria-label='Remove file'>
                 <IoCloseOutline size={16} />
             </IconButton>
         </Container>
@@ -106,7 +106,7 @@ const ChatInput = ({ disabled, onTyping, onSendText, onSendFiles }: ChatInputPro
                 <input type='file' ref={inputRef} onChange={handleFileInput} multiple hidden />
 
                 <Tooltip content='Attach file'>
-                    <IconButton size='sm' variant='ghost' onClick={openFilePicker} disabled={disabled}>
+                    <IconButton size='sm' variant='ghost' onClick={openFilePicker} disabled={disabled} title='Attach file' aria-label='Attach file'>
                         <IoAttachOutline size={20} />
                     </IconButton>
                 </Tooltip>
@@ -124,7 +124,7 @@ const ChatInput = ({ disabled, onTyping, onSendText, onSendFiles }: ChatInputPro
                 <Popover
                     id='chat-emoji-picker'
                     trigger={
-                        <IconButton size='sm' variant='ghost' disabled={disabled}>
+                        <IconButton size='sm' variant='ghost' disabled={disabled} title='Open emoji picker' aria-label='Open emoji picker'>
                             <IoHappyOutline size={20} />
                         </IconButton>
                     }
@@ -139,6 +139,8 @@ const ChatInput = ({ disabled, onTyping, onSendText, onSendFiles }: ChatInputPro
                         iconOnly
                         type='submit'
                         disabled={disabled || (!message.trim() && !hasFiles)}
+                        title='Send message'
+                        aria-label='Send message'
                     >
                         <IoPaperPlaneOutline size={18} />
                     </Button>

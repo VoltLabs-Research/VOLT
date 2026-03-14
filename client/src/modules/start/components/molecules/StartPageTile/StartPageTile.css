@@ -1,29 +1,44 @@
-.metro-tile {
+.metro-tile-shell {
     position: relative;
     min-width: min(80vw, 1100px);
     width: min(80vw, 1100px);
     height: calc(100% - 1rem);
-    background: var(--color-surface-2);
-    border-radius: 20px;
-    overflow: hidden;
-    cursor: pointer;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-    border: 1px solid var(--color-border);
     flex-shrink: 0;
     will-change: transform;
     transform-style: preserve-3d;
+}
+
+.metro-tile {
+    appearance: none;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    background: var(--color-content-bg);
+    border-radius: 20px;
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: var(--shadow-elevated);
+    text-align: left;
     transition: box-shadow 0.5s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.metro-tile:hover {
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55),
-        0 0 0 1px rgba(255, 255, 255, 0.06),
-        0 0 80px -20px rgba(120, 120, 255, 0.08);
+.metro-tile-shell:hover .metro-tile,
+.metro-tile-shell:focus-within .metro-tile {
+    box-shadow: 0 20px 60px color-mix(in srgb, var(--color-bg) 55%, transparent),
+        0 0 0 1px color-mix(in srgb, var(--color-contrast-high) 8%, transparent),
+        0 0 80px -20px color-mix(in srgb, var(--accent-indigo) 16%, transparent);
     z-index: 10;
 }
 
 .metro-tile:active {
     transition-duration: 0.15s;
+}
+
+.metro-tile:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring), var(--shadow-elevated);
 }
 
 .metro-tile-shine {
@@ -39,7 +54,8 @@
             transparent 60%);
 }
 
-.metro-tile:hover .metro-tile-shine {
+.metro-tile-shell:hover .metro-tile-shine,
+.metro-tile-shell:focus-within .metro-tile-shine {
     opacity: 1;
 }
 
@@ -103,30 +119,70 @@
     right: 14px;
     width: 36px;
     height: 36px;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--material-regular);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: white;
+    border: 1px solid var(--material-regular-border);
+    color: var(--color-text-primary);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
     transform: scale(0.7) translateY(-4px);
-    transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+    transition:
+        opacity 0.35s cubic-bezier(0.23, 1, 0.32, 1),
+        transform 0.35s cubic-bezier(0.23, 1, 0.32, 1),
+        background-color 0.35s cubic-bezier(0.23, 1, 0.32, 1),
+        border-color 0.35s cubic-bezier(0.23, 1, 0.32, 1),
+        color 0.35s cubic-bezier(0.23, 1, 0.32, 1);
     z-index: 20;
     cursor: pointer;
 }
 
-.metro-tile:hover .metro-tile-close {
+.metro-tile-shell:hover .metro-tile-close,
+.metro-tile-shell:focus-within .metro-tile-close {
     opacity: 1;
     transform: scale(1) translateY(0);
 }
 
+.metro-tile-close:focus-visible {
+    opacity: 1;
+    outline: none;
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+    transform: scale(1) translateY(0);
+}
+
 .metro-tile-close:hover {
-    background: #ff3b30;
-    border-color: #ff3b30;
-    color: white;
+    background: var(--accent-red);
+    border-color: var(--accent-red);
+    color: var(--color-contrast-high);
     transform: scale(1.15) translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .metro-tile,
+    .metro-tile-shine,
+    .metro-tile-close {
+        transition: none;
+    }
+
+    .metro-tile:hover {
+        box-shadow: var(--shadow-elevated);
+    }
+
+    .metro-tile-shell:hover .metro-tile-shine {
+        opacity: 0;
+    }
+
+    .metro-tile-close {
+        opacity: 1;
+        transform: none;
+    }
+
+    .metro-tile:hover .metro-tile-close,
+    .metro-tile-close:hover {
+        transform: none;
+    }
 }

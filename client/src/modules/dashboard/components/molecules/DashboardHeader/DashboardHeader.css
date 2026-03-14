@@ -8,7 +8,9 @@
 }
 
 .dashboard-header-center {
-    width: 400px;
+    width: min(400px, 100%);
+    min-width: 0;
+    flex: 0 1 400px;
 }
 
 .mobile-sidebar-trigger {
@@ -30,6 +32,20 @@
 @media screen and (max-width: 768px) {
     .dashboard-top-header {
         padding: 0.75rem 1rem;
+        flex-wrap: wrap;
+        row-gap: 0.75rem;
+    }
+
+    .dashboard-header-left,
+    .dashboard-header-right,
+    .dashboard-header-center {
+        min-width: 0;
+    }
+
+    .dashboard-header-center {
+        order: 4;
+        width: 100%;
+        flex: 1 1 100%;
     }
 
     .dashboard-header-right .volt-icon-button:not(.notification-trigger):not(.dashboard-ai-trigger) {

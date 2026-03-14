@@ -124,7 +124,7 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
                             </span>
                         </Container>
                         <Tooltip content='More Options' placement='bottom'>
-                            <Button variant='ghost' intent='neutral' iconOnly size='sm'>
+                            <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='More metric options' title='More metric options'>
                                 <MoreVertical className='metric-card-icon color-muted-foreground' />
                             </Button>
                         </Tooltip>

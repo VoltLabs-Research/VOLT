@@ -22,4 +22,13 @@
         border-right: none;
         border-bottom: 1px solid var(--color-border-soft);
     }
+
+    .chat-sidebar-header {
+        padding: 0.875rem 1rem;
+    }
+
+    .chat-sidebar-header .volt-icon-button {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
 }

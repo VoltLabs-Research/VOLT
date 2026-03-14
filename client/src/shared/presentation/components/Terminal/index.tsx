@@ -1,8 +1,16 @@
 import './Terminal.css';
 import 'xterm/css/xterm.css';
+import { subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
+import { FitAddon } from 'xterm-addon-fit';
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Terminal as XTerm } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
+
+interface TerminalTheme {
+    background: string;
+    cursor: string;
+    foreground: string;
+    selectionBackground: string;
+};
 
 export interface TerminalHandle {
     write: (data: string) => void;
@@ -18,7 +26,24 @@ interface TerminalProps {
     className?: string;
 };
 
-const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
+const getTerminalTheme = (): TerminalTheme => {
+    const styles = getComputedStyle(document.documentElement);
+    const background = styles.getPropertyValue('--color-surface-1').trim()
+        || styles.getPropertyValue('--color-bg').trim()
+        || '#171719';
+    const foreground = styles.getPropertyValue('--color-text-primary').trim() || '#f0f0f0';
+    const cursor = styles.getPropertyValue('--focus-ring').trim() || foreground;
+    const selectionBackground = styles.getPropertyValue('--hover-bg').trim() || 'rgba(255, 255, 255, 0.12)';
+
+    return {
+        background,
+        cursor,
+        foreground,
+        selectionBackground
+    };
+};
+
+const Terminal = forwardRef<TerminalHandle, TerminalProps>(({ 
     onData,
     fontSize = 14,
     fontFamily = 'Menlo, Monaco, "Courier New", monospace',
@@ -40,23 +65,18 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
         let fitAddon: FitAddon | null = null;
         let fitTimer: number | null = null;
         let isDisposed = false;
+        let disposeThemeSubscription: (() => void) | null = null;
 
         const initTimer = window.setTimeout(() => {
-            if(isDisposed || !containerRef.current || xtermRef.current) return;
+            if (isDisposed || !containerRef.current || xtermRef.current) return;
 
-            const bgColor = getComputedStyle(document.documentElement)
-                .getPropertyValue('--color-bg').trim() || '#1e1e1e';
+            const theme = getTerminalTheme();
 
             term = new XTerm({
                 cursorBlink: true,
                 fontSize,
                 fontFamily,
-                theme: {
-                    background: bgColor,
-                    foreground: '#f0f0f0',
-                    cursor: '#ffffff',
-                    selectionBackground: 'rgba(255, 255, 255, 0.3)'
-                },
+                theme,
                 allowProposedApi: true
             });
 
@@ -68,30 +88,45 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
             xtermRef.current = term;
             fitAddonRef.current = fitAddon;
 
-            if(onData){
+            disposeThemeSubscription = subscribeToAppTheme(() => {
+                const activeTerminal = xtermRef.current;
+
+                if (!activeTerminal) {
+                    return;
+                }
+
+                activeTerminal.options.theme = getTerminalTheme();
+                fitAddonRef.current?.fit();
+            });
+
+            if (onData) {
                 term.onData(onData);
             }
 
             fitTimer = window.setTimeout(() => {
-                if(!isDisposed && fitAddonRef.current){
+                if (!isDisposed && fitAddonRef.current) {
                     fitAddonRef.current.fit();
                 }
             }, 100);
         }, 0);
 
         const handleResize = () => {
-            if(!isDisposed && fitAddonRef.current){
+            if (!isDisposed && fitAddonRef.current) {
                 fitAddonRef.current.fit();
             }
         };
+
         window.addEventListener('resize', handleResize);
 
         return () => {
             isDisposed = true;
             window.clearTimeout(initTimer);
-            if(fitTimer !== null){
+
+            if (fitTimer !== null) {
                 window.clearTimeout(fitTimer);
             }
+
+            disposeThemeSubscription?.();
             window.removeEventListener('resize', handleResize);
             term?.dispose();
             xtermRef.current = null;

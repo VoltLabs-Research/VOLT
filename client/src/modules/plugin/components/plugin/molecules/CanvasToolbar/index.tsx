@@ -61,7 +61,7 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
 
             <Container className='d-flex items-center gap-025'>
                 <Tooltip content='Zoom out' placement='top'>
-                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleZoomOut}>
+                    <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Zoom out' title='Zoom out' onClick={handleZoomOut}>
                         <ZoomOut size={16} />
                     </Button>
                 </Tooltip>
@@ -69,13 +69,13 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                     {zoomPercent}%
                 </Paragraph>
                 <Tooltip content='Zoom in' placement='top'>
-                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleZoomIn}>
+                    <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Zoom in' title='Zoom in' onClick={handleZoomIn}>
                         <ZoomIn size={16} />
                     </Button>
                 </Tooltip>
                 <Divider orientation='vertical' className='canvas-toolbar-divider' />
                 <Tooltip content='Fit to view' placement='top'>
-                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleFitView}>
+                    <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Fit to view' title='Fit to view' onClick={handleFitView}>
                         <Maximize size={16} />
                     </Button>
                 </Tooltip>
@@ -87,8 +87,10 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                     intent='neutral'
                     iconOnly
                     size='sm'
+                    aria-label='Save workflow'
                     onClick={onSave}
                     disabled={saveStatus === 'saving'}
+                    title='Save workflow'
                 >
                     <Save size={16} />
                 </Button>

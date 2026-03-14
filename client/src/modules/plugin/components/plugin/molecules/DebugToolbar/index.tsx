@@ -158,8 +158,10 @@ const DebugToolbar = () => {
                             intent='neutral'
                             iconOnly
                             size='sm'
+                            aria-label={hasConfigurableArgs ? 'Configure arguments and start debug' : 'Start debug'}
                             onClick={handlePlayClick}
                             disabled={!canStart}
+                            title={hasConfigurableArgs ? 'Configure arguments and start debug' : 'Start debug'}
                         >
                             {isStarting ? <Loader scale={0.6} isFixed={false} /> : <Play size={14} />}
                         </Button>
@@ -171,8 +173,10 @@ const DebugToolbar = () => {
                             intent='neutral'
                             iconOnly
                             size='sm'
+                            aria-label='Step to next node'
                             onClick={step}
                             disabled={!canStep}
+                            title='Step to next node'
                         >
                             <StepForward size={14} />
                         </Button>
@@ -184,8 +188,10 @@ const DebugToolbar = () => {
                             intent='neutral'
                             iconOnly
                             size='sm'
+                            aria-label='Continue debug session'
                             onClick={continueAll}
                             disabled={!canContinue}
+                            title='Continue debug session'
                         >
                             <FastForward size={14} />
                         </Button>
@@ -197,8 +203,10 @@ const DebugToolbar = () => {
                             intent='neutral'
                             iconOnly
                             size='sm'
+                            aria-label='Stop debug session'
                             onClick={stop}
                             disabled={!canStop}
+                            title='Stop debug session'
                         >
                             <Square size={14} />
                         </Button>

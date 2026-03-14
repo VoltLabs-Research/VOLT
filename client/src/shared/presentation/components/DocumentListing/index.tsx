@@ -511,13 +511,15 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                         <Container>
                             <Container className='d-flex w-max gap-1 document-listing-header-tabs-container'>
                                 {resolvedTabs.map((tab) => (
-                                    <Container
+                                    <button
                                         key={tab.id}
+                                        type='button'
                                         className={`d-flex items-center gap-1 color-secondary document-listing-header-tab-container d-flex flex-center ${activeTabId === tab.id ? 'is-active' : ''}`}
                                         onClick={() => handleTabChange(tab.id)}
+                                        aria-pressed={activeTabId === tab.id}
                                     >
                                         <Paragraph>{tab.label}</Paragraph>
-                                    </Container>
+                                    </button>
                                 ))}
                             </Container>
                             <Container className='document-listing-header-filters-container' />

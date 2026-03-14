@@ -1,10 +1,20 @@
 import Container from '@/shared/presentation/components/Container';
 import { ChevronRight } from 'lucide-react';
 import type { FolderBreadcrumbItem } from '@/shared/presentation/hooks/use-folder-breadcrumbs';
+import type { CSSProperties } from 'react';
 
 interface FolderBreadcrumbsProps {
     items: FolderBreadcrumbItem[];
     onNavigate: (folderId: string | null) => void;
+};
+
+const breadcrumbButtonStyle: CSSProperties = {
+    border: 'none',
+    background: 'transparent',
+    padding: 0,
+    font: 'inherit',
+    color: 'inherit',
+    textAlign: 'left'
 };
 
 const FolderBreadcrumbs = ({ items, onNavigate }: FolderBreadcrumbsProps) => {
@@ -19,12 +29,20 @@ const FolderBreadcrumbs = ({ items, onNavigate }: FolderBreadcrumbsProps) => {
                 return (
                     <Container key={item.id ?? 'root'} className='d-flex items-center gap-05'>
                         {index > 0 && <ChevronRight size={12} className='color-muted' />}
-                        <span
-                            className={className}
-                            onClick={isCurrent ? undefined : () => onNavigate(item.id)}
-                        >
-                            {item.title}
-                        </span>
+                        {isCurrent ? (
+                            <span className={className} aria-current='page'>
+                                {item.title}
+                            </span>
+                        ) : (
+                            <button
+                                type='button'
+                                className={`${className} folder-breadcrumb-button`}
+                                onClick={() => onNavigate(item.id)}
+                                style={breadcrumbButtonStyle}
+                            >
+                                {item.title}
+                            </button>
+                        )}
                     </Container>
                 );
             })}

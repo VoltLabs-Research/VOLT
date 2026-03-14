@@ -48,8 +48,10 @@ const RefreshButton = ({
                 intent={intent}
                 size={size}
                 iconOnly
+                aria-label={tooltipContent}
                 onClick={onClick}
                 disabled={isLoading}
+                title={tooltipContent}
             >
                 {icon}
             </Button>

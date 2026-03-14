@@ -1,5 +1,5 @@
 .avatar{
-    background: var(--color-bg-tertiary);
+    background: var(--color-surface-2);
     color: var(--color-text-secondary);
     overflow: hidden;
 }

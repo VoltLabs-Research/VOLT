@@ -7,13 +7,21 @@ import DynamicEnvironment from '@/modules/fractal/components/molecules/DynamicEn
 import DynamicLights from '@/modules/fractal/components/molecules/DynamicLights';
 import DynamicRenderer from '@/modules/fractal/components/molecules/DynamicRenderer';
 import { LightingPreset } from '@/shared/domain/rendering/lights';
+import { Theme } from '@/shared/presentation/hooks/use-theme';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
 import { DprMode } from '@/shared/domain/rendering/performance';
 import { AdaptiveDpr, Bvh, GizmoHelper, GizmoViewport, OrbitControls, Preload } from '@react-three/drei';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
 import type { MutableRefObject, ReactNode } from 'react';
+
+interface GizmoColors {
+    axisColors: [string, string, string];
+    labelColor: string;
+};
 
 interface FractalScenePipelineProps {
     config: FractalSceneConfig;
@@ -44,6 +52,25 @@ const FractalScenePipeline = ({
 }: FractalScenePipelineProps) => {
     const isDefectScene = config.activeScene?.sceneType === 'defect';
     const gridEnabled = showGrid ?? config.grid.enabled;
+    const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
+
+    useEffect(() => {
+        return subscribeToAppTheme(setTheme);
+    }, []);
+
+    const gizmoColors = useMemo<GizmoColors>(() => {
+        if (theme === Theme.Light) {
+            return {
+                axisColors: ['#4f4f4f', '#4f4f4f', '#4f4f4f'],
+                labelColor: '#8e8e93'
+            };
+        }
+
+        return {
+            axisColors: ['#f0f0f0', '#f0f0f0', '#f0f0f0'],
+            labelColor: '#6F717B'
+        };
+    }, [theme]);
 
     return (
         <>
@@ -55,7 +82,12 @@ const FractalScenePipeline = ({
                 <GizmoHelper alignment='top-left' renderPriority={1} margin={[80, 70]}>
                     <directionalLight position={[5, 5, 5]} intensity={1} />
                     <ambientLight intensity={0.7} />
-                    <GizmoViewport scale={30} hideNegativeAxes axisColors={['#2c2c2e', '#2c2c2e', '#2c2c2e']} labelColor='#8e8e93' />
+                    <GizmoViewport
+                        scale={30}
+                        hideNegativeAxes
+                        axisColors={gizmoColors.axisColors}
+                        labelColor={gizmoColors.labelColor}
+                    />
                 </GizmoHelper>
             )}
             <DynamicEffects settings={config.effects} isDefectScene={isDefectScene} />

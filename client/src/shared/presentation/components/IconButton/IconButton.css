@@ -11,6 +11,12 @@
     color: var(--color-text-primary);
 }
 
+.volt-icon-button:focus-visible {
+    background-color: var(--hover-bg);
+    color: var(--color-text-primary);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+}
+
 .volt-icon-button--disabled {
     cursor: not-allowed;
     opacity: 0.5;

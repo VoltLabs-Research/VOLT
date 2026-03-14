@@ -20,7 +20,9 @@ const SidebarHeader = ({ collapsed, onToggle, children }: SidebarHeaderProps) =>
                 intent='neutral'
                 iconOnly
                 size='sm'
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 onClick={onToggle}
+                title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
                 <LuPanelRight
                     className={`editor-sidebar-toggle-icon ${collapsed ? 'rotated' : ''}`}

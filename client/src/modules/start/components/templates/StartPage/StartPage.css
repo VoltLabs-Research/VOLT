@@ -1,8 +1,14 @@
 .metro-start-screen {
+    --start-page-foreground: var(--color-contrast-high);
+    --start-page-foreground-muted: color-mix(in srgb, var(--color-contrast-high) 70%, transparent);
+    --start-page-header-overlay: color-mix(in srgb, var(--color-overlay) 65%, transparent);
+    --start-page-title-shadow: color-mix(in srgb, var(--color-bg) 65%, transparent);
+    --start-page-avatar-border: color-mix(in srgb, var(--color-contrast-high) 20%, transparent);
+
     width: 100vw;
     height: 100vh;
     background: var(--color-bg);
-    color: #ffffff;
+    color: var(--start-page-foreground);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -13,21 +19,21 @@
     align-items: center;
     justify-content: space-between;
     padding: 1.5rem 3rem;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, transparent 100%);
+    background: linear-gradient(180deg, var(--start-page-header-overlay) 0%, transparent 100%);
     flex-shrink: 0;
 }
 
 .metro-user-info .user-info-name {
-    color: white !important;
+    color: var(--start-page-foreground) !important;
     font-size: 1.1rem;
 }
 
 .metro-user-info .user-info-email {
-    color: rgba(255, 255, 255, 0.7) !important;
+    color: var(--start-page-foreground-muted) !important;
 }
 
 .metro-user-info .avatar {
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    border: 2px solid var(--start-page-avatar-border);
     width: 48px;
     height: 48px;
 }
@@ -48,13 +54,13 @@
     margin-bottom: 1.5rem;
     margin-top: 0.5rem;
     padding-left: 3rem;
-    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    text-shadow: 0 4px 12px var(--start-page-title-shadow);
     flex-shrink: 0;
 }
 
 .metro-empty-state {
     font-size: 1.2rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: color-mix(in srgb, var(--start-page-foreground) 60%, transparent);
     line-height: 1.6;
     max-width: 600px;
     padding-left: 3rem;

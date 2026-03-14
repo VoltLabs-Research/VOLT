@@ -2,18 +2,34 @@ import { cn } from '@/shared/utils';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import './Button.css';
-import { forwardRef } from 'react';
+import { Children, forwardRef, useRef } from 'react';
+import type { ButtonHTMLAttributes, CSSProperties, MouseEvent, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import React from 'react';
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>{
+interface ButtonStyles extends CSSProperties {
+    '--button-icon-size'?: string;
+};
+
+const MISSING_ICON_ONLY_LABEL_ERROR = 'Button with iconOnly requires an accessible name via aria-label, title, or text children.';
+const FALLBACK_ICON_ONLY_LABEL = 'Icon button';
+
+const resolveAccessibleText = (value?: string): string | undefined => {
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+
+    const trimmedValue = value.trim();
+    return trimmedValue || undefined;
+};
+
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>{
     /**
      * Visual style of the button
      * @default 'solid'
      */
     variant?: 'solid' | 'soft' | 'outline' | 'ghost' | 'toggle';
 
-    children?: React.ReactNode;
+    children?: ReactNode;
 
     /**
      * Color theme/intent of the button
@@ -59,12 +75,12 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
     /**
      * Left icon
      */
-    leftIcon?: React.ReactNode;
+    leftIcon?: ReactNode;
 
     /**
      * Right icon
      */
-    rightIcon?: React.ReactNode;
+    rightIcon?: ReactNode;
 
     /**
      * Icon-only mode - renders just the icon without text
@@ -86,7 +102,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 };
 
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(({ 
     className = '',
     variant = 'solid',
     intent = 'neutral',
@@ -104,12 +120,47 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     premium = false,
     children,
     onClick,
+    style,
+    title,
     type = 'button',
+    'aria-label': ariaLabel,
     ...props
 }, ref) => {
     const navigate = useNavigate();
+    const hasWarnedForMissingLabelRef = useRef(false);
 
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const textContent = Children.toArray(children)
+        .filter((child): child is string | number => typeof child === 'string' || typeof child === 'number')
+        .join(' ')
+        .trim();
+
+    const resolvedTextContent = textContent || undefined;
+    const normalizedAriaLabel = resolveAccessibleText(ariaLabel);
+    const normalizedTitle = resolveAccessibleText(title);
+
+    let resolvedAriaLabel = normalizedAriaLabel;
+    if (iconOnly && !resolvedAriaLabel) {
+        resolvedAriaLabel = normalizedTitle ?? resolvedTextContent;
+    }
+
+    if (iconOnly && !resolvedAriaLabel) {
+        if (!hasWarnedForMissingLabelRef.current) {
+            console.warn(MISSING_ICON_ONLY_LABEL_ERROR);
+
+            hasWarnedForMissingLabelRef.current = true;
+        }
+
+        resolvedAriaLabel = FALLBACK_ICON_ONLY_LABEL;
+    }
+
+    const resolvedStyle: ButtonStyles = {
+        ...style,
+        ...(iconSize ? { '--button-icon-size': `${iconSize}px` } : {})
+    };
+
+    const resolvedTitle = normalizedTitle ?? (iconOnly ? resolvedAriaLabel : undefined);
+
+    const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
         if (isLoading || disabled) {
             e.preventDefault();
             return;
@@ -152,6 +203,10 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
             className={classes}
             disabled={disabled || isLoading}
             onClick={handleClick}
+            title={resolvedTitle}
+            aria-label={resolvedAriaLabel}
+            aria-busy={isLoading || undefined}
+            style={resolvedStyle}
             {...props}
         >
             {isLoading && (
@@ -160,9 +215,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
                 </Container>
             )}
 
-            {leftIcon && <span className="button-icon-left font-size-4">{leftIcon}</span>}
-            {children}
-            {rightIcon && <span className="button-icon-right">{rightIcon}</span>}
+            {leftIcon && <span className="button-icon-left font-size-4" aria-hidden='true'>{leftIcon}</span>}
+            {iconOnly ? (
+                <span className='button-icon-only-content d-flex items-center content-center' aria-hidden='true'>
+                    {children}
+                </span>
+            ) : children}
+            {rightIcon && <span className="button-icon-right" aria-hidden='true'>{rightIcon}</span>}
         </button>
     );
 });

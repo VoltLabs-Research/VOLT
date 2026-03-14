@@ -1,10 +1,11 @@
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import EmptyState from '@/shared/presentation/components/EmptyState';
-import { AlertTriangle, FileText } from 'lucide-react';
+import { AlertTriangle, CircleHelp, FileText } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 export enum RecoveryStateTone {
     Empty = 'empty',
+    Info = 'info',
     Error = 'error',
     AccessDenied = 'access-denied'
 };
@@ -43,9 +44,16 @@ const RecoveryState = ({
         );
     }
 
-    const resolvedIcon = icon ?? (tone === RecoveryStateTone.Error
-        ? <AlertTriangle size={26} strokeWidth={1.5} />
-        : <FileText size={26} strokeWidth={1.5} />);
+    let resolvedIcon = icon;
+    if (!resolvedIcon) {
+        if (tone === RecoveryStateTone.Error) {
+            resolvedIcon = <AlertTriangle size={26} strokeWidth={1.5} />;
+        } else if (tone === RecoveryStateTone.Info) {
+            resolvedIcon = <CircleHelp size={26} strokeWidth={1.5} />;
+        } else {
+            resolvedIcon = <FileText size={26} strokeWidth={1.5} />;
+        }
+    }
 
     let buttonText: string | undefined;
     if (onRetry) {

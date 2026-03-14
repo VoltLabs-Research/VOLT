@@ -2,8 +2,32 @@
     padding: 0.5rem;
 }
 
-.collapsible-section-header:hover .collapsible-section-arrow {
+.collapsible-section-trigger {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    text-align: left;
+}
+
+.collapsible-section-trigger:hover .collapsible-section-arrow,
+.collapsible-section-trigger:focus-visible .collapsible-section-arrow {
     color: var(--color-text-primary);
+}
+
+.collapsible-section-trigger:focus-visible {
+    outline: none;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+}
+
+.collapsible-section-trigger:disabled {
+    cursor: default;
+}
+
+.collapsible-section-actions {
+    flex-shrink: 0;
 }
 
 .collapsible-section-arrow {
@@ -17,6 +41,10 @@
 .collapsible-section-body {
     overflow: hidden;
     transition: none;
+}
+
+.collapsible-section-body--static {
+    overflow: visible;
 }
 
 .collapsible-section-title {
@@ -33,7 +61,8 @@
     transition: opacity 0.15s ease;
 }
 
-.collapsible-section-header:hover .collapsible-section-action--delete {
+.collapsible-section-header:hover .collapsible-section-action--delete,
+.collapsible-section-header:focus-within .collapsible-section-action--delete {
     opacity: 1;
     pointer-events: auto;
 }
