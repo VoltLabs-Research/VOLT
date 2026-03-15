@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { DefaultValues, FieldValues, UseFormReturn } from 'react-hook-form';
 import type { Node } from '@xyflow/react';
 import type { ZodSchema } from 'zod';
@@ -11,14 +11,12 @@ interface UseNodeEditorFormOptions<TFormValues extends FieldValues, TDataKey ext
     node: Node<INodeData>;
     dataKey: TDataKey;
     defaults: TFormValues;
-    debounceMs?: number;
 }
 
 interface CreateNodeEditorFormOptions<TFormValues extends FieldValues, TDataKey extends keyof INodeData> {
     schema: ZodSchema;
     defaults: TFormValues;
     dataKey: TDataKey;
-    debounceMs?: number;
 }
 
 const useNodeEditorForm = <TFormValues extends FieldValues, TDataKey extends keyof INodeData>(
@@ -28,13 +26,11 @@ const useNodeEditorForm = <TFormValues extends FieldValues, TDataKey extends key
         schema,
         node,
         dataKey,
-        defaults,
-        debounceMs = 300
+        defaults
     } = options;
 
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
     const storeNodes = usePluginBuilderStore((state) => state.nodes);
-    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const initialValues = useMemo((): TFormValues => {
         const storeNode = storeNodes.find((storeNodeItem) => storeNodeItem.id === node.id);
@@ -52,23 +48,13 @@ const useNodeEditorForm = <TFormValues extends FieldValues, TDataKey extends key
 
     useEffect(() => {
         const subscription = form.watch((formData) => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-
-            timeoutRef.current = setTimeout(() => {
-                updateNodeData(node.id, { [dataKey]: formData });
-            }, debounceMs);
+            updateNodeData(node.id, { [dataKey]: formData });
         });
 
         return () => {
             subscription.unsubscribe();
-
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
         };
-    }, [form, updateNodeData, node.id, dataKey, debounceMs]);
+    }, [form, updateNodeData, node.id, dataKey]);
 
     useEffect(() => {
         form.reset(initialValues as DefaultValues<TFormValues>);
@@ -85,8 +71,7 @@ export const createNodeEditorForm = <TFormValues extends FieldValues, TDataKey e
             schema: config.schema,
             node,
             dataKey: config.dataKey,
-            defaults: config.defaults,
-            debounceMs: config.debounceMs
+            defaults: config.defaults
         });
     }
 

@@ -24,7 +24,6 @@ import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import Title from '@/shared/presentation/components/Title';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
-import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 
 import './DocumentListing.css';
@@ -267,8 +266,6 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
             unsubscribers.forEach((unsubscribe) => unsubscribe());
         };
     }, [socketService, socketInvalidation]);
-
-    useKeyboardShortcut('F5', refresh);
 
     const exportModalId = useMemo(() => `document-listing-export-${Math.random().toString(36).slice(2)}`, []);
 
