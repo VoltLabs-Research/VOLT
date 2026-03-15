@@ -27,6 +27,8 @@ body.desktop-window {
 }
 
 .desktop-shell .metro-start-screen,
+.desktop-shell .onboarding-layout,
+.desktop-shell .onboarding-layout__content,
 .desktop-shell .cluster-onboarding-page,
 .desktop-shell .cluster-onboarding-center,
 .desktop-shell .cluster-onboarding-success,

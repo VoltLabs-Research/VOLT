@@ -3,12 +3,13 @@ import SimulationSkeletonCard from '../../atoms/SimulationSkeletonCard';
 import trajectoryService from '@/modules/trajectory/api/services/trajectory';
 import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
 import useDeleteSelectedTrajectories from '@/modules/trajectory/hooks/trajectory/use-delete-selected-trajectories';
+import useDownloadSamples from '@/modules/trajectory/hooks/trajectory/use-download-samples';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
-import { Download } from 'lucide-react';
-import { useEffect, useCallback, useMemo } from 'react';
+import { Download, Upload } from 'lucide-react';
+import { useEffect, useCallback, useMemo, useState } from 'react';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
@@ -27,6 +28,8 @@ export default function SimulationGrid() {
     const { selectedIds, isSelected, toggleSelection, clearSelection } = useSelectionParams();
     const deleteSelectedTrajectories = useDeleteSelectedTrajectories();
     const { fileInputRef, handlePickerChange, openFilePicker, isUploading } = useTrajectoryFilePicker();
+    const { downloadAllSamples, isDownloading } = useDownloadSamples();
+    const [hasDownloadedSamples, setHasDownloadedSamples] = useState(false);
 
     const handleKeyDown = useCallback(async (e: KeyboardEvent) => {
         if(selectedIds.length === 0) return;
@@ -73,15 +76,32 @@ export default function SimulationGrid() {
         <SimulationSkeletonCard />
     ), []);
 
+    const handleDownloadSamples = useCallback(async () => {
+        await downloadAllSamples();
+        setHasDownloadedSamples(true);
+    }, [downloadAllSamples]);
+
     const emptyStateConfig = useMemo(() => {
+        if (hasDownloadedSamples) {
+            return {
+                icon: <Upload size={24} strokeWidth={1.5} />,
+                title: 'Sample simulations ready',
+                message: 'The sample simulations were downloaded. Now upload any of those files to start working.',
+                buttonText: 'Upload simulation',
+                onButtonClick: openFilePicker,
+                buttonIsLoading: isUploading
+            };
+        }
+
         return {
             icon: <Download size={24} strokeWidth={1.5} />,
             title: 'No simulations yet',
-            message: 'Upload a trajectory file to get started',
-            buttonText: 'Upload trajectory',
-            onButtonClick: openFilePicker
+            message: 'Download the sample simulations to get started. After that, upload any of those files here.',
+            buttonText: 'Download sample simulations',
+            onButtonClick: handleDownloadSamples,
+            buttonIsLoading: isDownloading
         };
-    }, [openFilePicker]);
+    }, [handleDownloadSamples, hasDownloadedSamples, isDownloading, isUploading, openFilePicker]);
 
     return (
         <>
@@ -107,7 +127,7 @@ export default function SimulationGrid() {
                 emptyTitle={emptyStateConfig.title}
                 emptyMessage={emptyStateConfig.message}
                 emptyButtonText={emptyStateConfig.buttonText}
-                emptyButtonIsLoading={isUploading}
+                emptyButtonIsLoading={emptyStateConfig.buttonIsLoading}
                 onEmptyButtonClick={emptyStateConfig.onButtonClick}
                 socketInvalidation={[
                     {
