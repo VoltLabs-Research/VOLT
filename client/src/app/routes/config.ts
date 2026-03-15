@@ -35,6 +35,7 @@ import MyTeamTemplate from '@/modules/team/components/templates/MyTeam';
 import SecretKeyMetrics from '@/modules/team/components/templates/SecretKeyMetrics';
 import SecretKeysListing from '@/modules/team/components/templates/SecretKeysListing';
 import TeamInvitationTemplate from '@/modules/team/components/templates/TeamInvitation';
+import TeamInvitationByCodeTemplate from '@/modules/team/components/templates/TeamInvitationByCode';
 import TrajectoryArtifactsListing from '@/modules/trajectory/components/templates/TrajectoryArtifactsListing';
 import TrajectoriesListing from '@/modules/trajectory/components/templates/TrajectoriesListing';
 import ErrorPage from '@/shared/presentation/components/ErrorPage';
@@ -256,6 +257,10 @@ export const routesConfig: RouteGroup = {
             path: '/dashboard/whiteboards',
             component: WhiteboardsListing,
             requiredPermissions: ['whiteboard:read']
+        },
+        {
+            path: '/team-invitation/code/:code',
+            component: TeamInvitationByCodeTemplate
         },
         {
             path: '/team-invitation/:invitationId',

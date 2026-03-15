@@ -26,6 +26,21 @@ interface EnvVariableFormItem extends Record<string, unknown> {
     value: string;
 };
 
+type PortMappingSourceItem = ContainerConfig['ports'][number] | PortMappingFormItem;
+
+const getPortMappingFormItem = (item: PortMappingSourceItem): PortMappingFormItem => {
+    if (typeof item.public === 'number' && item.public > 0) {
+        return {
+            private: item.private,
+            public: item.public
+        };
+    }
+
+    return {
+        private: item.private
+    };
+};
+
 const MAX_CPU = 8;
 const MAX_MEMORY = 8192;
 const CONTAINER_USERNAME_ENV_KEY = 'CONTAINER_USERNAME';
@@ -242,10 +257,7 @@ const ConfigurationStep = ({
     onBack,
     onNext
 }: ConfigurationStepProps) => {
-    const portItems: PortMappingFormItem[] = config.ports.map((item) => ({
-        private: item.private,
-        public: item.public
-    }));
+    const portItems: PortMappingFormItem[] = config.ports.map(getPortMappingFormItem);
     const envItems: EnvVariableFormItem[] = config.env.map((item) => ({
         key: item.key,
         value: item.value
@@ -423,8 +435,8 @@ const ConfigurationStep = ({
                         fields={PORT_FIELDS}
                         alwaysEditing
                         showCard={false}
-                        onChange={(items) => onConfigChange('ports', items)}
-                        createEmpty={() => ({ private: 80, public: 0 })}
+                        onChange={(items) => onConfigChange('ports', items.map(getPortMappingFormItem))}
+                        createEmpty={() => ({ private: 80 })}
                         emptyMessage='No port mappings added.'
                     />
                 </Container>

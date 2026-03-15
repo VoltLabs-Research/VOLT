@@ -13,7 +13,6 @@ import { buildDockerContainerConfig } from '@modules/container/utilities/DockerC
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
 import Docker from 'dockerode';
-import net from 'node:net';
 import path from 'node:path';
 import { Writable } from 'node:stream';
 import type { Readable } from 'node:stream';
@@ -27,6 +26,18 @@ const execFileAsync = promisify(execFile);
 interface DockerApiError {
     statusCode?: number;
     message?: string;
+};
+
+interface RuntimePublishedPort {
+    hostIp: string | null;
+    hostPort: number | null;
+    privatePort: number;
+    protocol: string;
+};
+
+interface RuntimeNetworking {
+    internalIp: string | null;
+    publishedPorts: RuntimePublishedPort[];
 };
 
 @injectable()
@@ -241,20 +252,25 @@ export class DockerContainerService implements IContainerService {
 
     async getPublishedPort(containerId: string, privatePort: number): Promise<number | null> {
         try {
-            const container = this.docker.getContainer(containerId);
-            const info = await container.inspect();
-            const bindingKey = `${privatePort}/tcp`;
-            const bindings = info?.NetworkSettings?.Ports?.[bindingKey];
+            const runtimeNetworking = await this.getRuntimeNetworking(containerId);
+            const publishedPort = runtimeNetworking.publishedPorts.find(
+                (binding) => binding.privatePort === privatePort && binding.protocol === 'tcp'
+            );
 
-            if (!Array.isArray(bindings) || bindings.length === 0) {
-                return null;
-            }
-
-            const hostPort = Number(bindings[0]?.HostPort);
-            return Number.isFinite(hostPort) ? hostPort : null;
+            return publishedPort?.hostPort ?? null;
         } catch {
             return null;
         }
+    }
+
+    private async getRuntimeNetworking(containerId: string): Promise<RuntimeNetworking> {
+        const container = this.docker.getContainer(containerId);
+        const info = await container.inspect();
+
+        return {
+            internalIp: this.getContainerInternalIp(info),
+            publishedPorts: this.getPublishedPorts(info)
+        };
     }
 
     async resolveDockerSocketGroupAdd(): Promise<string[]> {
@@ -265,31 +281,6 @@ export class DockerContainerService implements IContainerService {
         } catch {
             return [];
         }
-    }
-
-    private async isHostPortAvailable(port: number): Promise<boolean> {
-        return new Promise((resolve) => {
-            const server = net.createServer();
-            server.unref();
-
-            server.on('error', () => {
-                resolve(false);
-            });
-
-            server.listen(port, '0.0.0.0', () => {
-                server.close(() => resolve(true));
-            });
-        });
-    }
-
-    async findAvailableHostPort(start: number, end: number): Promise<number | null> {
-        for (let port = start; port <= end; port += 1) {
-            if (await this.isHostPortAvailable(port)) {
-                return port;
-            }
-        }
-
-        return null;
     }
 
     async exec(containerId: string, command: string[], stdin?: string): Promise<string> {
@@ -642,6 +633,62 @@ done`;
 
         const output = await this.exec(containerId, ['sh', '-c', shellScript, '--', directoryPath]);
         return this.parseFindListingOutput(output);
+    }
+
+    private getContainerInternalIp(info: RuntimeContainerInfo): string | null {
+        const primaryIp = info.NetworkSettings?.IPAddress;
+
+        if (typeof primaryIp === 'string' && primaryIp.length > 0) {
+            return primaryIp;
+        }
+
+        const networks = info.NetworkSettings?.Networks;
+
+        if (!networks) {
+            return null;
+        }
+
+        for (const endpoint of Object.values(networks)) {
+            const address = endpoint?.IPAddress;
+
+            if (typeof address === 'string' && address.length > 0) {
+                return address;
+            }
+        }
+
+        return null;
+    }
+
+    private getPublishedPorts(info: RuntimeContainerInfo): RuntimePublishedPort[] {
+        const ports = info.NetworkSettings?.Ports;
+
+        if (!ports) {
+            return [];
+        }
+
+        const publishedPorts: RuntimePublishedPort[] = [];
+
+        for (const [bindingKey, bindings] of Object.entries(ports)) {
+            const [privatePortValue, protocol] = bindingKey.split('/');
+            const privatePort = Number(privatePortValue);
+
+            if (!Number.isFinite(privatePort) || !Array.isArray(bindings)) {
+                continue;
+            }
+
+            for (const binding of bindings) {
+                const hostPortValue = Number(binding?.HostPort);
+
+                publishedPorts.push({
+                    hostIp: typeof binding?.HostIp === 'string' && binding.HostIp.length > 0 ? binding.HostIp : null,
+                    hostPort: Number.isFinite(hostPortValue) ? hostPortValue : null,
+                    privatePort,
+                    protocol: protocol ?? ''
+                });
+            }
+        }
+
+        return publishedPorts;
     }
 
     private getErrorMessage(error: unknown): string {

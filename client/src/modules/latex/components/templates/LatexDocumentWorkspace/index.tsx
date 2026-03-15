@@ -14,7 +14,7 @@ import LatexFilePanel from './LatexFilePanel';
 import LatexPreviewPanel from './LatexPreviewPanel';
 import './LatexDocumentWorkspace.css';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { Download, FileArchive, FileText, FolderUp, Sparkles } from 'lucide-react';
+import { Download, FileArchive, FileText, FolderUp, Play, Sparkles } from 'lucide-react';
 import { IoSparklesOutline } from 'react-icons/io5';
 import { useParams } from 'react-router-dom';
 import type { ChangeEvent } from 'react';
@@ -119,6 +119,7 @@ const LatexDocumentWorkspace = () => {
         handleExportTex,
         handleExportZip,
         handleExportPdf,
+        handleCompile,
         handleSelectFileById,
         handleSelectAssetById,
         handleSelectTab,
@@ -131,8 +132,6 @@ const LatexDocumentWorkspace = () => {
         deleteAsset,
         updateFile,
         updateAsset,
-        handleMoveFile,
-        handleMoveAsset,
         handleRenameFile,
         handleRenameAsset,
         handleWorkspaceFilesSelected,
@@ -372,6 +371,21 @@ const LatexDocumentWorkspace = () => {
         </Button>
     );
 
+    const compileButton = (
+        <Button
+            variant='ghost'
+            intent='neutral'
+            size='sm'
+            shape='rounded'
+            disabled={isCompiling}
+            onClick={handleCompile}
+            title='Compile PDF'
+        >
+            <Play size={14} />
+            Compile
+        </Button>
+    );
+
     const exportTexButton = (
         <Button
             variant='ghost'
@@ -450,6 +464,7 @@ const LatexDocumentWorkspace = () => {
                         {isSaving ? 'Saving…' : isDirty ? 'Unsaved changes' : 'Saved'}
                     </span>
                     {writeWithAIButton}
+                    {compileButton}
                     {exportTexButton}
                     {exportPdfButton}
                     {exportZipButton}
@@ -540,8 +555,6 @@ const LatexDocumentWorkspace = () => {
                             onDeleteAssetDirect={deleteAsset}
                             onUpdateFileDirect={updateFile}
                             onUpdateAssetDirect={updateAsset}
-                            onMoveFile={handleMoveFile}
-                            onMoveAsset={handleMoveAsset}
                             onRenameFile={handleRenameFile}
                             onRenameAsset={handleRenameAsset}
                             onUploadFiles={handleWorkspaceFilesSelected}

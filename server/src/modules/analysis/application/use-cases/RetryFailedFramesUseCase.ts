@@ -40,21 +40,6 @@ export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFra
             ));
         }
 
-        const analysis = await this.analysisRepository.findById(analysisId);
-        if (!analysis) {
-            return Result.fail(ApplicationError.notFound(
-                ErrorCodes.ANALYSIS_NOT_FOUND,
-                'Analysis not found'
-            ));
-        }
-
-        if (analysis.props.team !== teamId) {
-            return Result.fail(ApplicationError.forbidden(
-                ErrorCodes.TEAM_ACCESS_DENIED,
-                'Analysis does not belong to this team'
-            ));
-        }
-
         const teamJobs = await this.teamJobsQueryService.getFlatTeamJobs(teamId);
         const failedTimesteps: number[] = [];
         const failedJobIds: string[] = [];
@@ -80,6 +65,23 @@ export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFra
             }
         }
 
+        if (totalFrames === 0) {
+            const analysis = await this.analysisRepository.findById(analysisId);
+            if (!analysis) {
+                return Result.fail(ApplicationError.notFound(
+                    ErrorCodes.ANALYSIS_NOT_FOUND,
+                    'Analysis not found'
+                ));
+            }
+
+            if (analysis.props.team !== teamId) {
+                return Result.fail(ApplicationError.forbidden(
+                    ErrorCodes.TEAM_ACCESS_DENIED,
+                    'Analysis does not belong to this team'
+                ));
+            }
+        }
+
         if (failedFrames === 0) {
             return Result.ok({
                 message: 'No failed frames found for this analysis',
@@ -94,7 +96,7 @@ export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFra
         return Result.ok({
             message: retryResult.retriedFrames > 0
                 ? `Requested retry for ${retryResult.retriedFrames} failed frame(s)`
-                : 'No failed frames found for this analysis',
+                : 'No retriable failed frames found for this analysis',
             retriedFrames: retryResult.retriedFrames,
             totalFrames,
             failedTimesteps: failedTimesteps.length > 0 ? failedTimesteps : undefined

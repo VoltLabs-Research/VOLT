@@ -27,6 +27,13 @@ export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDT
 
     async execute(input: DeleteWhiteboardInputDTO): Promise<Result<DeleteWhiteboardOutputDTO, ApplicationError>> {
         try {
+            if (!input.userId) {
+                return Result.fail(ApplicationError.unauthorized(
+                    ErrorCodes.AUTHENTICATION_REQUIRED,
+                    'Authentication required'
+                ));
+            }
+
             const whiteboard = await this.whiteboardRepository.findByTeamAndWhiteboardId(
                 input.teamId,
                 input.whiteboardId
@@ -51,7 +58,7 @@ export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDT
             await this.eventBus.publish(new WhiteboardDeletedEvent({
                 whiteboardId: input.whiteboardId,
                 teamId: input.teamId,
-                userId: input.userId ?? '',
+                userId: input.userId,
                 whiteboardTitle: whiteboard.props.title ?? ''
             }));
 

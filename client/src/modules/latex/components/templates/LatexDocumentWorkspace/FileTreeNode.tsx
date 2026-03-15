@@ -1,8 +1,6 @@
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import IconButton from '@/shared/presentation/components/IconButton';
-import DraggableRow from './DraggableRow';
-import DroppableFolder from './DroppableFolder';
 import WorkspaceEntryInput from './WorkspaceEntryInput';
 import WorkspaceTreeRow from './WorkspaceTreeRow';
 import { isWorkspaceImageFile, isWorkspacePdfFile, isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
@@ -272,7 +270,7 @@ const FileTreeNode = ({
         );
 
         return (
-            <DroppableFolder id={`folder:${node.folderPath}`}>
+            <>
                 <ContextMenuPopover
                     id={`folder-ctx-${node.folderPath || 'root'}`}
                     trigger={folderRow}
@@ -302,7 +300,7 @@ const FileTreeNode = ({
                         )}
                     </Container>
                 )}
-            </DroppableFolder>
+            </>
         );
     }
 
@@ -324,38 +322,33 @@ const FileTreeNode = ({
         ];
 
         return (
-            <DraggableRow id={node.id}>
-                {(isDragging) => (
-                    <ContextMenuPopover
-                        id={`file-ctx-${file._id}`}
-                        trigger={isRenaming ? (
-                            <WorkspaceEntryInput
-                                icon={<FileCode size={13} />}
-                                label={`Rename file ${renamingTarget?.initialName ?? file.name}`}
-                                placeholder='File name'
-                                defaultValue={renamingTarget?.initialName}
-                                onConfirm={onConfirmRename}
-                                onCancel={onCancelRename}
-                            />
-                        ) : (
-                            <WorkspaceTreeRow
-                                depth={depth}
-                                icon={<FileCode size={13} />}
-                                label={file.name}
-                                selected={file.isSelected}
-                                dragging={isDragging}
-                                treeItemLevel={depth + 1}
-                                ariaLabel={`File ${file.name}`}
-                                onClick={() => onFileSelect(file._id)}
-                                onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onFileSelect(file._id))}
-                                title={file.path}
-                            />
-                        )}
-                        options={menuOptions}
-                        size='sm'
+            <ContextMenuPopover
+                id={`file-ctx-${file._id}`}
+                trigger={isRenaming ? (
+                    <WorkspaceEntryInput
+                        icon={<FileCode size={13} />}
+                        label={`Rename file ${renamingTarget?.initialName ?? file.name}`}
+                        placeholder='File name'
+                        defaultValue={renamingTarget?.initialName}
+                        onConfirm={onConfirmRename}
+                        onCancel={onCancelRename}
+                    />
+                ) : (
+                    <WorkspaceTreeRow
+                        depth={depth}
+                        icon={<FileCode size={13} />}
+                        label={file.name}
+                        selected={file.isSelected}
+                        treeItemLevel={depth + 1}
+                        ariaLabel={`File ${file.name}`}
+                        onClick={() => onFileSelect(file._id)}
+                        onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onFileSelect(file._id))}
+                        title={file.path}
                     />
                 )}
-            </DraggableRow>
+                options={menuOptions}
+                size='sm'
+            />
         );
     }
 
@@ -383,38 +376,33 @@ const FileTreeNode = ({
     ];
 
     return (
-        <DraggableRow id={node.id}>
-            {(isDragging) => (
-                <ContextMenuPopover
-                    id={`asset-ctx-${asset._id}`}
-                    trigger={isRenaming ? (
-                        <WorkspaceEntryInput
-                            icon={getAssetIcon(asset)}
-                            label={`Rename asset ${renamingTarget?.initialName ?? node.name}`}
-                            placeholder='File name'
-                            defaultValue={renamingTarget?.initialName}
-                            onConfirm={onConfirmRename}
-                            onCancel={onCancelRename}
-                        />
-                    ) : (
-                        <WorkspaceTreeRow
-                            depth={depth}
-                            icon={getAssetIcon(asset)}
-                            label={node.name}
-                            selected={isSelected}
-                            dragging={isDragging}
-                            treeItemLevel={depth + 1}
-                            ariaLabel={`Asset ${node.name}`}
-                            onClick={() => onAssetSelect(asset._id)}
-                            onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onAssetSelect(asset._id))}
-                            title={assetPath}
-                        />
-                    )}
-                    options={assetMenuOptions}
-                    size='sm'
+        <ContextMenuPopover
+            id={`asset-ctx-${asset._id}`}
+            trigger={isRenaming ? (
+                <WorkspaceEntryInput
+                    icon={getAssetIcon(asset)}
+                    label={`Rename asset ${renamingTarget?.initialName ?? node.name}`}
+                    placeholder='File name'
+                    defaultValue={renamingTarget?.initialName}
+                    onConfirm={onConfirmRename}
+                    onCancel={onCancelRename}
+                />
+            ) : (
+                <WorkspaceTreeRow
+                    depth={depth}
+                    icon={getAssetIcon(asset)}
+                    label={node.name}
+                    selected={isSelected}
+                    treeItemLevel={depth + 1}
+                    ariaLabel={`Asset ${node.name}`}
+                    onClick={() => onAssetSelect(asset._id)}
+                    onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onAssetSelect(asset._id))}
+                    title={assetPath}
                 />
             )}
-        </DraggableRow>
+            options={assetMenuOptions}
+            size='sm'
+        />
     );
 };
 

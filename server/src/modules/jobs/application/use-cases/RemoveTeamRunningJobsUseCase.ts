@@ -19,12 +19,6 @@ export default class RemoveTeamRunningJobsUseCase extends BaseTeamJobActionUseCa
     }
 
     protected async run(teamId: string): Promise<RemoveTeamRunningJobsOutputDTO> {
-        const result = await this.teamJobMaintenanceService.removeRunningJobs(teamId);
-
-        return {
-            deletedJobs: result.deletedJobs,
-            deletedAnalyses: result.deletedAnalyses,
-            affectedClusters: result.affectedClusters
-        };
+        return this.teamJobMaintenanceService.removeRunningJobs(teamId);
     }
 };

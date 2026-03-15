@@ -7,7 +7,6 @@ export const CHAT_TOKENS = Object.freeze({
     DeleteMessageUseCase: Symbol.for('DeleteMessageUseCase'),
     ToggleMessageReactionUseCase: Symbol.for('ToggleMessageReactionUseCase'),
     MarkMessageAsReadUseCase: Symbol.for('MarkMessageAsReadUseCase'),
-    MarkMessagesAsReadUseCase: Symbol.for('MarkMessageAsReadUseCase'),
     ChatSocketModule: Symbol.for('ChatSocketModule'),
     ChatSocketAccessPolicy: Symbol.for('ChatSocketAccessPolicy'),
     ChatSocketEventOrchestrator: Symbol.for('ChatSocketEventOrchestrator'),

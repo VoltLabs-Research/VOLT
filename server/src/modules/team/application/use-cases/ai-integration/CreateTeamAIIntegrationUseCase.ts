@@ -84,13 +84,6 @@ export default class CreateTeamAIIntegrationUseCase implements IUseCase<CreateTe
             userId: input.userId
         }));
 
-        if (!persisted) {
-            return Result.fail(ApplicationError.notFound(
-                ErrorCodes.TEAM_AI_INTEGRATION_NOT_FOUND,
-                'AI integration could not be persisted'
-            ));
-        }
-
         await this.eventBus.publish(new TeamAIIntegrationCreatedEvent({
             teamAIIntegrationId: persisted._id,
             teamId: persisted.getTeamId(),

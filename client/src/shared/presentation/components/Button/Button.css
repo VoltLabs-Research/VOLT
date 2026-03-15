@@ -1,7 +1,6 @@
 .button {
     /* Base Properties */
     display: inline-flex;
-    min-height: 2.5rem;
     border: 1px solid transparent;
     text-decoration: none;
     white-space: nowrap;

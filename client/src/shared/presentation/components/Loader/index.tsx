@@ -36,7 +36,7 @@ const Loader = ({
 
     return (
         <Container className={`d-flex flex-center ${isFixed ? 'p-fixed inset-0' : ''} ${className}`} {...accessibilityProps}>
-            <Container className='d-flex column items-center gap-075 loader-content'>
+            <Container className='d-flex column items-center gap-2 loader-content'>
                 <Container className='p-relative loader-visual' style={{ transform: `scale(${scale})` }}>
                     {loaderItems.map((item) => (
                         <Container

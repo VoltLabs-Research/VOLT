@@ -49,9 +49,14 @@
     color: var(--selected-indicator);
 }
 
-.canvas-tree-toggle {
+.canvas-tree-toggle.button.icon-only {
     background-color: transparent;
     color: var(--color-text-muted);
+    padding: 0;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    min-height: 0;
 }
 
 .canvas-tree-spacer {

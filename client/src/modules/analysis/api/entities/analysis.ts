@@ -9,7 +9,7 @@ export interface AnalysisTrajectory {
 
 export interface Analysis extends BaseEntity {
     plugin: string;
-    pluginDisplayName?: string;
+    pluginDisplayName: string;
     config: Record<string, unknown>;
     trajectory: AnalysisTrajectory;
     teamCluster?: TeamCluster | string | null;

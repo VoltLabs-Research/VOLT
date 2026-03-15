@@ -14,6 +14,7 @@ export interface TeamJobMetadata {
 
 export interface TeamJobSnapshot {
     jobId: string;
+    name?: string;
     teamId: string;
     teamClusterId?: string;
     queueType: string;

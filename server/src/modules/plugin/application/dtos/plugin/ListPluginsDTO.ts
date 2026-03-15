@@ -4,7 +4,6 @@ import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin
 
 export interface ListPluginsInputDTO {
     teamId: string;
-    userId: string;
     page?: number;
     limit?: number;
 };

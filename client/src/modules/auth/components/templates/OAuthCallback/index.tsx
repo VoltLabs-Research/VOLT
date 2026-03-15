@@ -1,5 +1,10 @@
 import './OAuthCallback.css';
 import { fetchCurrentUser } from '@/modules/auth/hooks/queries';
+import {
+    clearPostAuthDestination,
+    getPostAuthRedirectPath,
+    resolvePostAuthDestination
+} from '@/modules/auth/services/post-auth-destination-storage';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
@@ -46,12 +51,15 @@ const OAuthCallbackTemplate = () => {
 
                 setStatus('success');
 
-                const next = params.get('next') ?? '/dashboard';
-                const onboardingUrl = next === '/dashboard' ? '/onboarding' : `/onboarding?next=${encodeURIComponent(next)}`;
+                const next = resolvePostAuthDestination({
+                    queryNext: params.get('next')
+                });
+                const redirectPath = getPostAuthRedirectPath(next);
 
                 redirectTimeoutReference.current = window.setTimeout(() => {
+                    clearPostAuthDestination();
                     redirectTimeoutReference.current = null;
-                    navigate(onboardingUrl);
+                    navigate(redirectPath);
                 }, 1500);
             }catch{
                 if (isCancelled) {

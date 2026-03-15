@@ -1,6 +1,5 @@
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
-import DroppableFolder from './DroppableFolder';
 import { ChevronDown, ChevronRight, FolderOpen, Folder, FolderPlus, Plus } from 'lucide-react';
 import { useCallback } from 'react';
 import type { FileTreeNode as FileTreeNodeType } from '@/modules/latex/utilities/file-tree';
@@ -63,7 +62,7 @@ const FolderNode = ({
     const folderIcon = isExpanded ? <FolderOpen size={13} /> : <Folder size={13} />;
 
     return (
-        <DroppableFolder id={`folder:${node.folderPath}`}>
+        <>
             <Container
                 className='latex-tree__folder-row d-flex items-center content-between gap-05'
                 style={{ paddingLeft: `${0.5 + indent / 16}rem` }}
@@ -101,7 +100,7 @@ const FolderNode = ({
                     {showNewFileInput && newFileInputSlot}
                 </Container>
             )}
-        </DroppableFolder>
+        </>
     );
 };
 

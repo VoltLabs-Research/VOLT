@@ -15,11 +15,23 @@ import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { createController, createStreamController } from '@shared/infrastructure/http/controllers/createController';
 import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
+import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+
+const withAuthenticatedUserId = (
+    req: AuthenticatedRequest,
+    params: Record<string, unknown>
+): Record<string, unknown> => ({
+    ...params,
+    userId: req.userId
+});
+
 const ClonePluginController = createController(ClonePluginUseCase, HttpStatus.Created);
 const CreatePluginController = createController(CreatePluginUseCase, HttpStatus.Created);
 const DeleteBinaryController = createController(DeleteBinaryUseCase, HttpStatus.NoContent);
 const DeletePluginByIdController = createController(DeletePluginByIdUseCase, HttpStatus.NoContent);
-const ExecutePluginController = createController(ExecutePluginUseCase);
+const ExecutePluginController = createController(ExecutePluginUseCase, {
+    extendParams: withAuthenticatedUserId
+});
 const ExportPluginController = createStreamController(ExportPluginUseCase, {
     getHeaders: (resultValue) => resultValue.headers,
     prepareOutput: async (resultValue) => {

@@ -28,7 +28,10 @@ export class UpdateLatexDocumentUseCase implements IUseCase<UpdateLatexDocumentI
                 ));
             }
 
-            const patch: Record<string, unknown> = { updatedAt: new Date() };
+            const patch: Record<string, unknown> = {
+                updatedAt: new Date(),
+                ...(input.userId === undefined ? {} : { lastEditedBy: input.userId })
+            };
 
             if (input.title !== undefined) {
                 patch.title = input.title.trim();
@@ -36,10 +39,6 @@ export class UpdateLatexDocumentUseCase implements IUseCase<UpdateLatexDocumentI
 
             if (input.content !== undefined) {
                 patch.content = input.content;
-            }
-
-            if (input.userId) {
-                patch.lastEditedBy = input.userId;
             }
 
             const updated = await this.latexDocumentRepository.updateById(

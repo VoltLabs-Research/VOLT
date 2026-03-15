@@ -1,3 +1,3 @@
-import { TeamScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
+import { EntityIdInputDTO, TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
 
-export type DeleteSecretKeyByIdInputDTO = TeamScopedEntityIdInputDTO<'secretKeyId'> & { userId?: string };
+export type DeleteSecretKeyByIdInputDTO = TeamUserScopedInputDTO & EntityIdInputDTO<'secretKeyId'>;

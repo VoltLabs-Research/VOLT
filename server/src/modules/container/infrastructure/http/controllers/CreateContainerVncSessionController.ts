@@ -3,5 +3,10 @@ import { containerValidation } from '@modules/container/infrastructure/http/vali
 import { createController } from '@shared/infrastructure/http/controllers/createController';
 
 export default createController(CreateContainerVncSessionUseCase, {
-    validationSchema: containerValidation.createVncSession
+    validationSchema: containerValidation.createVncSession,
+    contextProviders: [
+        (request) => ({
+            userId: request.userId ?? ''
+        })
+    ]
 });

@@ -79,18 +79,22 @@ const AnalysisTreeNode = ({
             return;
         }
 
-        onToggle(analysis._id);
-
         if (isRasterSelectionMode) {
+            onToggle(analysis._id);
             return;
         }
 
-        onSelectScene({ sceneType: 'trajectory', source: 'default' as const }, analysis);
+        if (isSelectedAnalysis) {
+            onSelectScene({ sceneType: 'trajectory', source: 'default' as const });
+        } else {
+            onToggle(analysis._id);
+            onSelectScene({ sceneType: 'trajectory', source: 'default' as const }, analysis);
+        }
     };
 
     const analysisMenuOptions: MenuOption[] = [
         {
-            label: 'Select',
+            label: isSelectedAnalysis ? 'Deselect' : 'Select',
             icon: MousePointerClick,
             onClick: handleSelectAnalysis,
             disabled: isAnalysisInProgress

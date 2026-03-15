@@ -8,5 +8,4 @@ export { default as GetTeamByIdUseCase } from './GetTeamByIdUseCase';
 export { default as JoinTeamByInviteCodeUseCase } from './JoinTeamByInviteCodeUseCase';
 export { default as LeaveTeamUseCase } from './LeaveTeamUseCase';
 export { default as ListUserTeamsUseCase } from './ListUserTeamsUseCase';
-export { default as RemoveUserFromTeamUseCase } from './RemoveUserFromTeamUseCase';
 export { default as UpdateTeamByIdUseCase } from './UpdateTeamByIdUseCase';

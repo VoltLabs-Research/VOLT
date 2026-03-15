@@ -78,7 +78,6 @@ export interface IContainerService {
     writeFile(containerId: string, path: string, content: string): Promise<void>;
     getProcesses(containerId: string): Promise<ContainerProcessInfo[]>;
     getPublishedPort(containerId: string, privatePort: number): Promise<number | null>;
-    findAvailableHostPort(start: number, end: number): Promise<number | null>;
     resolveDockerSocketGroupAdd(): Promise<string[]>;
     exec(containerId: string, command: string[], stdin?: string): Promise<string>;
     pullImage(imageName: string): Promise<void>;

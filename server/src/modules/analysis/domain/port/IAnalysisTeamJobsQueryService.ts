@@ -8,6 +8,7 @@ export interface AnalysisJobMetadata {
 
 export interface AnalysisJobSummary {
     jobId: string;
+    name?: string;
     teamId: string;
     queueType: string;
     status: string;

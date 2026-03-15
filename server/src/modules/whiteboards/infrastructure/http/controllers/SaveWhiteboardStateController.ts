@@ -9,6 +9,7 @@ export default createController(SaveWhiteboardStateUseCase, {
     statusCode: HttpStatus.NoContent,
     extendParams: (req: AuthenticatedRequest, params: Record<string, unknown>) => ({
         ...params,
+        userId: req.userId,
         stateBuffer: Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body))
     })
 });

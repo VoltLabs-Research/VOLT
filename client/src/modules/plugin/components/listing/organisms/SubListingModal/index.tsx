@@ -13,7 +13,7 @@ interface SubListingModalProps {
     onClose?: () => void;
 }
 
-const SubListingModal: React.FC<SubListingModalProps> = ({ subListingParams }) => {
+const SubListingModal: React.FC<SubListingModalProps> = ({ subListingParams, onClose }) => {
 
     const title = subListingParams
         ? formatSnakeCaseToTitle(subListingParams.subListingName)
@@ -69,6 +69,7 @@ const SubListingModal: React.FC<SubListingModalProps> = ({ subListingParams }) =
         <Modal
             id={SUB_LISTING_MODAL_ID}
             title={title}
+            onClose={onClose}
             width='min(1100px, 92vw)'
         >
             <div style={{ height: '60vh' }}>

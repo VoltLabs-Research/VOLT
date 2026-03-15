@@ -90,7 +90,7 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
     };
 
     return (
-        <Container className='cluster-list-panel card-elevated'>
+        <Container className='cluster-list-panel'>
             <Container className='cluster-list-panel-header'>
                 <Paragraph className='font-size-2 font-weight-6 color-primary'>Your clusters</Paragraph>
             </Container>

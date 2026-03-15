@@ -2,5 +2,11 @@ import { createController } from '@shared/infrastructure/http/controllers/create
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import CreateSecretKeyUseCase from '@modules/team/application/use-cases/secret-key/CreateSecretKeyUseCase';
 
-const CreateSecretKeyController = createController(CreateSecretKeyUseCase, HttpStatus.Created);
+const CreateSecretKeyController = createController(CreateSecretKeyUseCase, {
+    statusCode: HttpStatus.Created,
+    extendParams: (request, params) => ({
+        ...params,
+        userId: request.userId
+    })
+});
 export default CreateSecretKeyController;

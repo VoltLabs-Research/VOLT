@@ -1,6 +1,6 @@
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { GetAnalysesByTrajectoryIdInputDTO, GetAnalysesByTrajectoryIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTrajectoryIdDTO';
-import AnalysisPluginDisplayNameService, { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
+import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
@@ -21,10 +21,7 @@ interface AnalysisSort extends Record<string, 1 | -1> {
 export class GetAnalysesByTrajectoryIdUseCase implements IUseCase<GetAnalysesByTrajectoryIdInputDTO, GetAnalysesByTrajectoryIdOutputDTO, ApplicationError> {
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
-
-        @inject(AnalysisPluginDisplayNameService)
-        private readonly pluginDisplayNameService: AnalysisPluginDisplayNameService
+        private readonly analysisRepository: IAnalysisRepository
     ) {}
 
     async execute(input: GetAnalysesByTrajectoryIdInputDTO): Promise<Result<GetAnalysesByTrajectoryIdOutputDTO, ApplicationError>> {
@@ -50,19 +47,17 @@ export class GetAnalysesByTrajectoryIdUseCase implements IUseCase<GetAnalysesByT
             sort
         });
 
-        const data = await Promise.all(analyses.data.map(async (analysis) => {
+        const data = analyses.data.map((analysis) => {
             const props = { ...analysis.props };
             const pluginValue = props.plugin;
             const pluginId = extractPluginId(pluginValue);
-            const pluginDisplayName = await this.pluginDisplayNameService.resolveModifierName(pluginValue);
 
             return {
                 ...props,
                 _id: analysis._id,
-                plugin: pluginId,
-                pluginDisplayName
+                plugin: pluginId
             };
-        }));
+        });
 
         return Result.ok({
             ...analyses,

@@ -120,7 +120,7 @@ export default function MyTeamTemplate() {
 
         for (const member of members) {
             await runAction({
-                action: () => removeTeamMemberMutation.mutateAsync({ teamId: selectedTeam._id, userId: member.user._id }),
+                action: () => removeTeamMemberMutation.mutateAsync({ teamId: selectedTeam._id, memberId: member._id }),
                 toast: getRemoveMemberToastOptions(member)
             });
         }

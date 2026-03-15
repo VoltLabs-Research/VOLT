@@ -1,7 +1,6 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import logger from '@shared/infrastructure/logger';
 import IORedis from 'ioredis';
 import { inject, injectable } from 'tsyringe';
 import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
@@ -11,8 +10,10 @@ import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/traj
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
+const SAFE_FALLBACK_GROUP_TIMESTAMP = '1970-01-01T00:00:00.000Z';
 
 type TeamJobStatus = JobStatus | 'retrying' | 'partial';
+type TeamJobSource = 'daemon' | 'projected';
 
 interface TeamJobMetadata {
     trajectoryId?: string;
@@ -25,6 +26,7 @@ interface TeamJobMetadata {
 
 interface TeamJobStatusRecord {
     jobId: string;
+    name?: string;
     teamId?: string;
     queueType?: string;
     status?: TeamJobStatus;
@@ -38,6 +40,8 @@ interface TeamJobStatusRecord {
     trajectoryId?: string;
     trajectoryName?: string;
     timestep?: number;
+    teamClusterId?: string;
+    source?: TeamJobSource;
 };
 
 export interface TeamJobSummary extends TeamJobStatusRecord {
@@ -46,6 +50,11 @@ export interface TeamJobSummary extends TeamJobStatusRecord {
     status: TeamJobStatus;
     teamId: string;
     [key: string]: unknown;
+};
+
+interface GroupedTeamJobSummary extends TeamJobSummary {
+    trajectoryId: string;
+    trajectoryName: string;
 };
 
 interface TrajectoryJobGroup {
@@ -85,35 +94,19 @@ export default class TeamJobsService {
     ) { }
 
     async getTeamJobs(teamId: string): Promise<TrajectoryJobGroup[]> {
-        try {
-            const grouped = this.groupJobsByTrajectory(await this.getFlatTeamJobs(teamId));
-
-            return grouped;
-        } catch (error) {
-            logger.error(error, `[TeamJobsService] Error fetching team jobs`);
-            return [];
-        }
+        return this.groupJobsByTrajectory(await this.getFlatTeamJobs(teamId));
     }
 
     async getFlatTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
-        const jobsById = new Map<string, TeamJobSummary>();
-
         const [clusterJobs, projectedJobs] = await Promise.all([
             this.getClusterTeamJobs(teamId),
             this.getProjectedTeamJobs(teamId)
         ]);
 
-        for (const job of [...clusterJobs, ...projectedJobs]) {
-            jobsById.set(job.jobId, job);
-        }
+        const mergedJobs = this.mergeVisibleTeamJobs(clusterJobs, projectedJobs);
+        const enrichedJobs = await this.enrichTrajectoryNames(mergedJobs);
 
-        const enrichedJobs = await this.enrichTrajectoryNames(Array.from(jobsById.values()));
-
-        return enrichedJobs.sort((left, right) => {
-            const leftTimestamp = left.timestamp || left.updatedAt || left.createdAt || '';
-            const rightTimestamp = right.timestamp || right.updatedAt || right.createdAt || '';
-            return new Date(rightTimestamp).getTime() - new Date(leftTimestamp).getTime();
-        });
+        return enrichedJobs.sort((left, right) => this.compareJobsForDisplay(left, right));
     }
 
     private async getClusterTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
@@ -129,25 +122,22 @@ export default class TeamJobsService {
         const jobs: TeamJobSummary[] = [];
 
         for (const teamCluster of teamClusters.data) {
-            try {
-                const response = await this.teamClusterDaemonClient.command<DaemonTeamJobsResponse>(
-                    teamCluster.id,
-                    'jobs.list',
-                    {
-                        teamId
-                    }
-                );
-
-                for (const job of response.data || []) {
-                    if (this.isTeamJobSummary(job)) {
-                        jobs.push({
-                            ...job,
-                            teamClusterId: teamCluster.id
-                        });
-                    }
+            const response = await this.teamClusterDaemonClient.command<DaemonTeamJobsResponse>(
+                teamCluster.id,
+                'jobs.list',
+                {
+                    teamId
                 }
-            } catch (error) {
-                logger.warn(error, `[TeamJobsService] Failed to fetch daemon jobs for cluster ${teamCluster.id}`);
+            );
+
+            for (const job of response.data || []) {
+                if (this.isTeamJobSummary(job)) {
+                    jobs.push({
+                        ...job,
+                        teamClusterId: teamCluster.id,
+                        source: 'daemon'
+                    });
+                }
             }
         }
 
@@ -168,13 +158,12 @@ export default class TeamJobsService {
                 continue;
             }
 
-            try {
-                const parsed = JSON.parse(record) as Record<string, unknown> | null;
-                if (this.isTeamJobSummary(parsed)) {
-                    jobs.push(parsed);
-                }
-            } catch {
-                continue;
+            const parsed = JSON.parse(record) as Record<string, unknown> | null;
+            if (this.isTeamJobSummary(parsed)) {
+                jobs.push({
+                    ...parsed,
+                    source: 'projected'
+                });
             }
         }
 
@@ -182,14 +171,18 @@ export default class TeamJobsService {
     }
 
     private groupJobsByTrajectory(jobs: TeamJobSummary[]): TrajectoryJobGroup[] {
-        const trajectoryMap = new Map<string, TeamJobSummary[]>();
+        const trajectoryMap = new Map<string, GroupedTeamJobSummary[]>();
 
         for (const job of jobs) {
             const trajectoryId = this.resolveTrajectoryId(job);
             const trajectoryName = this.resolveTrajectoryName(job);
 
-            if (!trajectoryId || !trajectoryName) {
+            if (!trajectoryId) {
                 continue;
+            }
+
+            if (typeof trajectoryName !== 'string') {
+                throw new Error(`Missing trajectory name for team job ${job.jobId}`);
             }
 
             if (!trajectoryMap.has(trajectoryId)) {
@@ -206,8 +199,8 @@ export default class TeamJobsService {
         const groups: TrajectoryJobGroup[] = [];
 
         for (const [trajectoryId, trajectoryJobs] of trajectoryMap.entries()) {
-            const frameMap = new Map<number, TeamJobSummary[]>();
-            const groupedJobs: TeamJobSummary[] = [];
+            const frameMap = new Map<number, GroupedTeamJobSummary[]>();
+            const groupedJobs: GroupedTeamJobSummary[] = [];
 
             for (const job of trajectoryJobs) {
                 const timestep = this.resolveJobTimestep(job);
@@ -241,17 +234,15 @@ export default class TeamJobsService {
             const allJobs = groupedJobs;
             const overallStatus = this.computeFrameStatus(allJobs);
             const completedCount = allJobs.filter((job) => job.status === JobStatus.Completed).length;
-            const trajectoryName = groupedJobs[0]?.trajectoryName;
+            const trajectoryName = groupedJobs[0].trajectoryName;
 
-            if (!trajectoryName) {
-                continue;
-            }
+            const latestTimestamp = this.resolveLatestTimestamp(groupedJobs) ?? SAFE_FALLBACK_GROUP_TIMESTAMP;
 
             groups.push({
                 trajectoryId,
                 trajectoryName,
                 frameGroups,
-                latestTimestamp: groupedJobs[0]?.timestamp || groupedJobs[0]?.createdAt || new Date().toISOString(),
+                latestTimestamp,
                 overallStatus,
                 completedCount,
                 totalCount: allJobs.length
@@ -259,11 +250,38 @@ export default class TeamJobsService {
         }
 
         // Sort trajectories by latest timestamp descending
-        groups.sort((a, b) =>
-            new Date(b.latestTimestamp).getTime() - new Date(a.latestTimestamp).getTime()
-        );
+        groups.sort((left, right) => this.compareTimestampValues(
+            this.parseTimestamp(right.latestTimestamp),
+            this.parseTimestamp(left.latestTimestamp)
+        ) || left.trajectoryId.localeCompare(right.trajectoryId));
 
         return groups;
+    }
+
+    private mergeVisibleTeamJobs(clusterJobs: TeamJobSummary[], projectedJobs: TeamJobSummary[]): TeamJobSummary[] {
+        const jobsById = this.indexJobsById(clusterJobs);
+
+        for (const [jobId, projectedJob] of this.indexJobsById(projectedJobs).entries()) {
+            if (!jobsById.has(jobId)) {
+                jobsById.set(jobId, projectedJob);
+            }
+        }
+
+        return Array.from(jobsById.values());
+    }
+
+    private indexJobsById(jobs: TeamJobSummary[]): Map<string, TeamJobSummary> {
+        const jobsById = new Map<string, TeamJobSummary>();
+
+        const sortedJobs = [...jobs].sort((left, right) => this.compareJobsForFreshness(left, right));
+
+        for (const job of sortedJobs) {
+            if (!jobsById.has(job.jobId)) {
+                jobsById.set(job.jobId, job);
+            }
+        }
+
+        return jobsById;
     }
 
     private async enrichTrajectoryNames(jobs: TeamJobSummary[]): Promise<TeamJobSummary[]> {
@@ -356,6 +374,156 @@ export default class TeamJobsService {
         }
 
         return undefined;
+    }
+
+    private resolveLatestTimestamp(jobs: TeamJobSummary[]): string | undefined {
+        let latestJob: TeamJobSummary | undefined;
+
+        for (const job of jobs) {
+            if (!latestJob || this.compareJobsForDisplay(job, latestJob) < 0) {
+                latestJob = job;
+            }
+        }
+
+        return latestJob ? this.resolveJobTimestamp(latestJob) : undefined;
+    }
+
+    private compareJobsForDisplay(left: TeamJobSummary, right: TeamJobSummary): number {
+        const timestampComparison = this.compareTimestampValues(
+            this.resolveJobTimestampValue(right),
+            this.resolveJobTimestampValue(left)
+        );
+
+        if (timestampComparison !== 0) {
+            return timestampComparison;
+        }
+
+        const sourceComparison = this.compareSourcePriority(left.source, right.source);
+        if (sourceComparison !== 0) {
+            return sourceComparison;
+        }
+
+        const clusterComparison = (left.teamClusterId ?? '').localeCompare(right.teamClusterId ?? '');
+        if (clusterComparison !== 0) {
+            return clusterComparison;
+        }
+
+        return left.jobId.localeCompare(right.jobId);
+    }
+
+    private compareJobsForFreshness(left: TeamJobSummary, right: TeamJobSummary): number {
+        const timestampComparison = this.compareTimestampValues(
+            this.resolveJobTimestampValue(right),
+            this.resolveJobTimestampValue(left)
+        );
+
+        if (timestampComparison !== 0) {
+            return timestampComparison;
+        }
+
+        const completenessComparison = this.getJobCompletenessScore(right) - this.getJobCompletenessScore(left);
+        if (completenessComparison !== 0) {
+            return completenessComparison;
+        }
+
+        const displayComparison = this.compareJobsForDisplay(left, right);
+        if (displayComparison !== 0) {
+            return displayComparison;
+        }
+
+        return left.status.localeCompare(right.status);
+    }
+
+    private compareSourcePriority(left?: TeamJobSource, right?: TeamJobSource): number {
+        return this.getSourcePriority(right) - this.getSourcePriority(left);
+    }
+
+    private getSourcePriority(source?: TeamJobSource): number {
+        if (source === 'daemon') {
+            return 2;
+        }
+
+        if (source === 'projected') {
+            return 1;
+        }
+
+        return 0;
+    }
+
+    private getJobCompletenessScore(job: TeamJobSummary): number {
+        const fields: Array<unknown> = [
+            job.name,
+            job.sessionId,
+            job.message,
+            job.metadata,
+            job.timestamp,
+            job.updatedAt,
+            job.createdAt,
+            job.analysisId,
+            job.trajectoryId,
+            job.trajectoryName,
+            job.timestep,
+            job.teamClusterId,
+            job.source
+        ];
+
+        let score = 0;
+
+        for (const field of fields) {
+            if (typeof field !== 'undefined') {
+                score += 1;
+            }
+        }
+
+        return score;
+    }
+
+    private resolveJobTimestamp(job: TeamJobSummary): string | undefined {
+        const candidates = [job.timestamp, job.updatedAt, job.createdAt];
+
+        for (const candidate of candidates) {
+            if (typeof candidate !== 'string' || candidate.trim().length === 0) {
+                continue;
+            }
+
+            if (typeof this.parseTimestamp(candidate) === 'number') {
+                return candidate;
+            }
+        }
+
+        return undefined;
+    }
+
+    private resolveJobTimestampValue(job: TeamJobSummary): number | undefined {
+        const timestamp = this.resolveJobTimestamp(job);
+
+        return timestamp ? this.parseTimestamp(timestamp) : undefined;
+    }
+
+    private parseTimestamp(timestamp?: string): number | undefined {
+        if (typeof timestamp !== 'string' || timestamp.trim().length === 0) {
+            return undefined;
+        }
+
+        const parsedTimestamp = Date.parse(timestamp);
+
+        return Number.isFinite(parsedTimestamp) ? parsedTimestamp : undefined;
+    }
+
+    private compareTimestampValues(left?: number, right?: number): number {
+        if (typeof left === 'number' && typeof right === 'number') {
+            return left - right;
+        }
+
+        if (typeof left === 'number') {
+            return 1;
+        }
+
+        if (typeof right === 'number') {
+            return -1;
+        }
+
+        return 0;
     }
 
     private computeFrameStatus(jobs: TeamJobSummary[]): TeamJobStatus {

@@ -1,16 +1,20 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri';
 import DocumentListing, { type ColumnConfig as ListingColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/components/listing/organisms/PluginCompactTable';
 import SubListingModal from '@/modules/plugin/components/listing/organisms/SubListingModal';
 import { LISTING_QUERY_KEYS, usePluginListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queries';
-import usePluginListing from '@/modules/plugin/hooks/listing/use-plugin-listing';
+import usePluginListing, { SUB_LISTING_MODAL_ID } from '@/modules/plugin/hooks/listing/use-plugin-listing';
 import usePluginSubListing from '@/modules/plugin/hooks/listing/use-plugin-sub-listing';
 import useDeletePluginListingAnalyses from '@/modules/plugin/hooks/listing/use-delete-plugin-listing-analyses';
 import { isAccessDeniedError, normalizeError } from '@/shared/errors/core';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import { openModal } from '@/shared/presentation/components/Modal';
+import type { ReactNode } from 'react';
+import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
 import '@/modules/plugin/components/listing/organisms/PluginExposureTable/PluginExposureTable.css';
 
 export interface PluginExposureTableProps {
@@ -50,7 +54,10 @@ const CompactPluginExposureTable = ({
     teamId,
     onDataReady
 }: PluginExposureTableProps) => {
+    const navigate = useNavigate();
     const pageSize = 20;
+    const { subListingParams, setSubListingParams, resetSubListing } = usePluginSubListing();
+    const deleteRows = useDeletePluginListingAnalyses();
 
     const compactEnabled = Boolean(pluginId && (exposureName || exposureId) && (trajectoryId || teamId));
 
@@ -99,6 +106,15 @@ const CompactPluginExposureTable = ({
         return [];
     }, [infiniteData]);
 
+    const subListingNames = useMemo<string[]>(() => {
+        if (!infiniteData?.pages?.length) return [];
+        for (const page of infiniteData.pages) {
+            const names = page._meta?.subListingNames;
+            if (names?.length) return names;
+        }
+        return [];
+    }, [infiniteData]);
+
     const handleLoadMore = useCallback(() => {
         if (hasNextPage && !isFetchingNextPage) {
             fetchNextPage();
@@ -109,6 +125,53 @@ const CompactPluginExposureTable = ({
         if (!onDataReady) return;
         onDataReady(compactColumns, compactRows);
     }, [compactColumns, compactRows, onDataReady]);
+
+    const openSubListing = useCallback((params: { analysisId: string; exposureId: string; timestep: number; subListingName: string }) => {
+        setSubListingParams(params);
+        openModal(SUB_LISTING_MODAL_ID);
+    }, [setSubListingParams]);
+
+    const getMenuOptions = useCallback((row: Record<string, unknown>): MenuOption[] => {
+        const item = row as Record<string, unknown> & { _id?: string; trajectoryId?: string; analysisId?: string; exposureId?: string; timestep?: number };
+        const options: MenuOption[] = [];
+
+        if (item.trajectoryId && item.analysisId && item.timestep !== undefined) {
+            options.push({
+                label: 'Inspect Atoms',
+                icon: RiEyeLine,
+                onClick: () => navigate(
+                    `/dashboard/trajectory/${item.trajectoryId}/analysis/${item.analysisId}/atoms?timestep=${item.timestep}`
+                )
+            });
+
+            for (const name of subListingNames) {
+                options.push({
+                    label: `View ${formatSnakeCaseToTitle(name)}`,
+                    icon: RiTableLine,
+                    onClick: () => {
+                        if (!item.analysisId || !item.exposureId || item.timestep === undefined) return;
+                        openSubListing({
+                            analysisId: item.analysisId,
+                            exposureId: item.exposureId,
+                            timestep: item.timestep,
+                            subListingName: name
+                        });
+                    }
+                });
+            }
+        }
+
+        if (item.analysisId) {
+            options.push({
+                label: 'Delete',
+                icon: RiDeleteBin6Line,
+                onClick: () => deleteRows([row as ListingRow]),
+                destructive: true
+            });
+        }
+
+        return options;
+    }, [navigate, subListingNames, openSubListing, deleteRows]);
 
     if (compactError && isAccessDeniedError(compactError)) {
         return (
@@ -137,8 +200,12 @@ const CompactPluginExposureTable = ({
                 onLoadMore={handleLoadMore}
                 error={compactErrorMessage}
                 onDataReady={onDataReady}
+                getMenuOptions={getMenuOptions}
             />
-            <SubListingModal subListingParams={null} />
+            <SubListingModal
+                subListingParams={subListingParams}
+                onClose={resetSubListing}
+            />
         </>
     );
 };

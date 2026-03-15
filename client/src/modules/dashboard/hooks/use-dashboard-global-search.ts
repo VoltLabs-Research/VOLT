@@ -64,7 +64,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
             key: 'analyses',
             items: analyses.map((analysis) => ({
                 id: analysis._id,
-                title: analysis.pluginDisplayName || analysis.plugin,
+                title: analysis.pluginDisplayName,
                 subtitle: formatSearchDate(analysis.createdAt),
                 path: `/canvas/${analysis.trajectory._id}?analysis=${analysis._id}`
             }))

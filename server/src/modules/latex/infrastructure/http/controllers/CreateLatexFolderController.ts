@@ -5,5 +5,9 @@ import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 
 export default createController(CreateLatexFolderUseCase, {
     validationSchema: latexValidation.createFolder,
-    statusCode: HttpStatus.Created
+    statusCode: HttpStatus.Created,
+    extendParams: (request, params) => ({
+        ...params,
+        userId: request.userId
+    })
 });

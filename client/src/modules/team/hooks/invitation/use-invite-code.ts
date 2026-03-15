@@ -5,6 +5,7 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import { useCallback, useMemo } from 'react';
 
 const GENERATE_INVITE_CODE_TOAST_OPTIONS = createPromiseToastOptions({
@@ -19,6 +20,16 @@ const DELETE_INVITE_CODE_TOAST_OPTIONS = createPromiseToastOptions({
     error: 'Failed to delete invite code'
 });
 
+const getTeamInviteLink = (inviteCode: string): string => {
+    const invitePath = `/team-invitation/code/${inviteCode}`;
+
+    if (typeof window === 'undefined') {
+        return invitePath;
+    }
+
+    return new URL(invitePath, window.location.origin).toString();
+};
+
 interface UseInviteCodeReturn {
     inviteCode: string | null;
     canManageCode: boolean;
@@ -26,7 +37,7 @@ interface UseInviteCodeReturn {
     isDeleting: boolean;
     handleGenerate: () => Promise<void>;
     handleDelete: () => Promise<void>;
-    handleCopy: () => void;
+    handleCopy: () => Promise<void>;
 };
 
 export default function useInviteCode(): UseInviteCodeReturn {
@@ -74,9 +85,12 @@ export default function useInviteCode(): UseInviteCodeReturn {
         });
     }, [deleteMutation, teamId]);
 
-    const handleCopy = useCallback(() => {
+    const handleCopy = useCallback(async () => {
         if (!selectedTeam?.inviteCode) return;
-        navigator.clipboard.writeText(selectedTeam.inviteCode);
+
+        await copyTextToClipboard(getTeamInviteLink(selectedTeam.inviteCode), {
+            successMessage: 'Invite link copied to clipboard'
+        });
     }, [selectedTeam]);
 
     return {

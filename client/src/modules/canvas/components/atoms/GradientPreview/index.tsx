@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
-import { sileo } from 'sileo';
+import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import Container from '@/shared/presentation/components/Container';
+import { useState, useRef } from 'react';
 
 import './GradientPreview.css';
 
@@ -55,9 +55,9 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
         const result = calculateValue(e);
         if (!result) return;
 
-        await navigator.clipboard.writeText(result.value);
-
-        sileo.info({ title: `Value ${result.value} copied to clipboard` });
+        await copyTextToClipboard(result.value, {
+            successMessage: `Value ${result.value} copied to clipboard`
+        });
     };
 
     const gradientStyle = GRADIENT_CSS[gradient];

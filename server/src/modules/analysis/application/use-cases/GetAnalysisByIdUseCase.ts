@@ -3,6 +3,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
 import { inject, injectable } from 'tsyringe';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import type { GetAnalysisByIdInputDTO, GetAnalysisByIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysisByIdDTO';
@@ -31,6 +32,11 @@ export default class GetAnalysisByIdUseCase {
             ));
         }
 
-        return Result.ok(toPersistedOutput(analysis));
+        const persisted = toPersistedOutput(analysis);
+
+        return Result.ok({
+            ...persisted,
+            plugin: extractPluginId(persisted.plugin)
+        });
     }
 };

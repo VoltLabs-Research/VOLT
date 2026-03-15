@@ -34,7 +34,7 @@ export const useDashboardRecentAnalyses = () => {
     const items = useMemo((): DashboardRecentAnalysisItem[] => {
         return (recentAnalysesQuery.data?.data ?? []).map((analysis) => ({
             id: analysis._id,
-            title: analysis.pluginDisplayName || analysis.plugin,
+            title: analysis.pluginDisplayName,
             subtitle: `${analysis.trajectory.name} · ${(analysis.totalFrames ?? 0).toLocaleString()} frames`,
             status: analysis.status,
             createdAtLabel: formatDistanceToNow(new Date(analysis.createdAt), { addSuffix: true }),

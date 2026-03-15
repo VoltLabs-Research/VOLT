@@ -239,7 +239,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
             return {
                 analysis,
                 pluginId: analysis.plugin,
-                pluginDisplayName: analysis.pluginDisplayName || '',
+                pluginDisplayName: analysis.pluginDisplayName,
                 entry,
                 isCurrentAnalysis: analysis._id === analysisConfigId,
                 config: analysis.config
@@ -301,6 +301,8 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         setActiveScene(scene);
         if (analysis?._id) {
             setAnalysisId(analysis._id, { replace: true });
+        } else {
+            setAnalysisId(undefined, { replace: true });
         }
     }, [currentTimestep, setActiveScene, setAnalysisId, setCurrentTimestep, trajectoryTimesteps]);
 

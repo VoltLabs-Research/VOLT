@@ -23,6 +23,13 @@ export class SaveWhiteboardStateUseCase implements IUseCase<SaveWhiteboardStateI
 
     async execute(input: SaveWhiteboardStateInputDTO): Promise<Result<SaveWhiteboardStateOutputDTO, ApplicationError>> {
         try {
+            if (!input.userId) {
+                return Result.fail(ApplicationError.unauthorized(
+                    ErrorCodes.AUTHENTICATION_REQUIRED,
+                    'Authentication required'
+                ));
+            }
+
             const whiteboard = await this.whiteboardRepository.findByTeamAndWhiteboardId(
                 input.teamId,
                 input.whiteboardId
@@ -44,10 +51,9 @@ export class SaveWhiteboardStateUseCase implements IUseCase<SaveWhiteboardStateI
                 { 'Content-Type': 'application/json' }
             );
 
-            const updates: Partial<WhiteboardProps> = {};
-            if (input.userId) {
-                updates.lastEditedBy = input.userId;
-            }
+            const updates: Partial<WhiteboardProps> = {
+                lastEditedBy: input.userId
+            };
 
             await this.whiteboardRepository.updateById(input.whiteboardId, updates);
 

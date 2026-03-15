@@ -26,12 +26,6 @@ const SET_ENTRYPOINT_TOAST = {
     error: { title: 'Failed to set entrypoint' }
 };
 
-const MOVE_FILE_TOAST = {
-    loading: { title: 'Moving file...' },
-    success: { title: 'File moved' },
-    error: { title: 'Failed to move file' }
-};
-
 const RENAME_FILE_TOAST = {
     loading: { title: 'Renaming file...' },
     success: { title: 'File renamed' },
@@ -89,19 +83,6 @@ const useLatexFiles = ({ documentId, onFileSelected }: UseLatexFilesInput) => {
         );
     }, [setEntrypoint, documentId]);
 
-    /**
-     * Moves a file to a new folder by updating its `path` prefix.
-     *
-     * @param fileId    - The ID of the file to move.
-     * @param newPath   - Target directory prefix, e.g. `"chapters/"` or `""` for root.
-     */
-    const handleMoveFile = useCallback(async (fileId: string, newPath: string): Promise<void> => {
-        await showPromise(
-            updateFile({ documentId, fileId, path: newPath }),
-            MOVE_FILE_TOAST
-        );
-    }, [documentId, updateFile]);
-
     const handleRenameFile = useCallback(async (fileId: string, name: string): Promise<void> => {
         await showPromise(
             updateFile({ documentId, fileId, name }),
@@ -118,7 +99,6 @@ const useLatexFiles = ({ documentId, onFileSelected }: UseLatexFilesInput) => {
         handleCreateFile,
         handleDeleteFile,
         handleSetEntrypoint,
-        handleMoveFile,
         handleRenameFile,
         deleteFile,
         updateFile
