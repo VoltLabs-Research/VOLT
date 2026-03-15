@@ -201,14 +201,6 @@ const ClusterOnboardingPage = () => {
     const successMessage = connectedClusterName ? `${connectedClusterName} connected!` : 'Cluster connected!';
     const goBackIcon = <ArrowLeft size={16} />;
 
-    const renderProgress = () => (
-        <Container className='cluster-onboarding-progress-block d-flex column items-center'>
-            <Container className='cluster-onboarding-progress' aria-hidden='true'>
-                <span className='cluster-onboarding-progress-fill' />
-            </Container>
-        </Container>
-    );
-
     let leftSlot: ReactNode | undefined;
     if (hasConnectedCluster) {
         leftSlot = (
@@ -286,7 +278,6 @@ const ClusterOnboardingPage = () => {
                 <Container className='cluster-onboarding-center'>
                     <OnboardingStepContent step={OnboardingStep.Type} activeStep={step} className='gap-3'>
                         <Container className='d-flex column gap-1 items-center'>
-                            {renderProgress()}
                             <Container className='d-flex column gap-075 items-center'>
                                 <Title as='h2' className='cluster-onboarding-title font-size-6 font-weight-6 color-primary'>
                                     Connect a cluster
@@ -336,7 +327,6 @@ const ClusterOnboardingPage = () => {
 
                     <OnboardingStepContent step={OnboardingStep.Name} activeStep={step} className='gap-1-5'>
                         <form className='cluster-onboarding-form d-flex column gap-1-5 items-center' onSubmit={handleSubmit}>
-                            {renderProgress()}
                             <Container className='d-flex column gap-075 items-center'>
                                 <Title className='cluster-onboarding-title font-size-5 font-weight-6 color-primary'>
                                     Let's name your cluster
