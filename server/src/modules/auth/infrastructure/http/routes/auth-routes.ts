@@ -10,8 +10,8 @@ export default createHttpModule({
     basePath: '/api/auth',
     routes: (router) => {
         router.post('/sessions', RATE_LIMIT_POLICIES.authPublic, controllers.signIn.handle);
-        router.post('/users', RATE_LIMIT_POLICIES.authPublic, controllers.signUp.handle);
-        router.get('/emails/:email/availability', RATE_LIMIT_POLICIES.authPublic, controllers.checkEmail.handle);
+        router.post('/users', controllers.signUp.handle);
+        router.get('/emails/:email/availability', controllers.checkEmail.handle);
 
         router.get('/guest-identity', controllers.getGuestIdentity.handle);
         router.get('/github', createOAuthLoginRoute(OAuthProvider.GitHub, ['user:email']));

@@ -219,10 +219,10 @@ export default createHttpModule({
         router.post('/notebooks', scriptingControllers.createNotebook.handle);
         router.patch('/notebooks/:notebookId', scriptingControllers.updateNotebook.handle);
         router.get('/:trajectoryId/notebooks', scriptingControllers.listNotebooks.handle);
-        router.get('/sessions/:notebookId/status', RATE_LIMIT_POLICIES.scriptingSessionStatus, handleScriptingSessionStatus);
-        router.get('/:trajectoryId/sessions/status', RATE_LIMIT_POLICIES.scriptingSessionStatus, handleScriptingSessionStatus);
-        router.post('/sessions', RATE_LIMIT_POLICIES.scriptingSessionCreate, scriptingControllers.createNotebookJupyterSession.handle);
-        router.post('/:trajectoryId/sessions', RATE_LIMIT_POLICIES.scriptingSessionCreate, scriptingControllers.createJupyterSession.handle);
+        router.get('/sessions/:notebookId/status', handleScriptingSessionStatus);
+        router.get('/:trajectoryId/sessions/status', handleScriptingSessionStatus);
+        router.post('/sessions', scriptingControllers.createNotebookJupyterSession.handle);
+        router.post('/:trajectoryId/sessions', scriptingControllers.createJupyterSession.handle);
         router.delete('/notebooks/:notebookId', scriptingControllers.deleteNotebook.handle);
     }
 });

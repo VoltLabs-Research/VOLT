@@ -12,7 +12,6 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isDevelopment = !app.isPackaged;
-const rendererDistPath = path.join(__dirname, '../../dist');
 const preloadPath = path.join(__dirname, 'preload.js');
 const developmentServerUrl = process.env.VITE_DEV_SERVER_URL;
 const defaultWindowWidth = 1800;
@@ -20,6 +19,14 @@ const defaultWindowHeight = 960;
 const defaultMinWindowWidth = 1180;
 const defaultMinWindowHeight = 720;
 const defaultWindowBackgroundColor = '#070708';
+
+const getRendererEntryPath = (): string => {
+    if (app.isPackaged) {
+        return path.join(app.getAppPath(), 'dist', 'index.html');
+    }
+
+    return path.join(__dirname, '../../dist/index.html');
+};
 
 const createDesktopWindowState = (window: BrowserWindow): DesktopWindowState => {
     return {
@@ -103,10 +110,22 @@ const createMainWindow = () => {
         mainWindow.show();
     });
 
+    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+        if (!isMainFrame) {
+            return;
+        }
+
+        console.error('Failed to load Electron renderer', {
+            errorCode,
+            errorDescription,
+            validatedURL
+        });
+    });
+
     if (developmentServerUrl) {
         mainWindow.loadURL(developmentServerUrl);
     } else {
-        mainWindow.loadFile(path.join(rendererDistPath, 'index.html'));
+        mainWindow.loadFile(getRendererEntryPath());
     }
 
     mainWindow.webContents.once('did-finish-load', () => {
