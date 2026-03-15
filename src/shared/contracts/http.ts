@@ -92,7 +92,7 @@ export interface AnalysisQueueJobPayload {
     sessionId?: string;
     status: string;
     queueType: string;
-    name?: string;
+    name: string;
     maxRetries?: number;
     metadata?: Record<string, unknown>;
     completedAt?: string;
@@ -136,6 +136,7 @@ export interface AnalysisExposureDefinition {
 export interface DaemonAnalysisDocument {
     _id: string;
     plugin?: string;
+    pluginDisplayName: string;
     clusterId?: string;
     teamCluster?: string;
     config?: Record<string, unknown>;
@@ -189,7 +190,7 @@ export interface AnalysisStartRequest {
     analysis: DaemonAnalysisDocument;
     analysisId: string;
     pluginId: string;
-    pluginDisplayName?: string;
+    pluginDisplayName: string;
     teamId: string;
     teamClusterId: string;
     trajectoryId: string;

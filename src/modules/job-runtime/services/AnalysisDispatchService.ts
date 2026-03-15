@@ -96,14 +96,15 @@ export class AnalysisDispatchService {
 
             return {
                 jobId: `${input.analysisId}-${index}`,
+                name: input.pluginDisplayName,
                 teamId: input.teamId,
                 timestep,
                 status: 'queued',
                 queueType: ANALYSIS_QUEUE_NAME,
-                ...(input.pluginDisplayName ? { name: input.pluginDisplayName } : {}),
                 metadata: {
                     trajectoryId: input.trajectoryId,
                     analysisId: input.analysisId,
+                    name: input.pluginDisplayName,
                     config: input.config,
                     inputFile: `trajectory-${input.trajectoryId}/timestep-${String(timestep)}.dump.gz`,
                     timestep,

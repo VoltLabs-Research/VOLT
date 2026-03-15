@@ -159,8 +159,7 @@ const readRasterizeTrajectoryRequest = (payload: unknown): RasterizeTrajectoryRe
     return {
         trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
         teamId: readString(record.teamId, 'teamId'),
-        trajectoryName: readOptionalString(record.trajectoryName),
-        config: readOptionalPayloadRecord(record.config)
+        trajectoryName: readOptionalString(record.trajectoryName)
     };
 };
 

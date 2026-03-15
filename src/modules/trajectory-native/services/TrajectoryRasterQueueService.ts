@@ -44,7 +44,7 @@ const getExistingOutputKeys = async (
 
     for (const model of models) {
         try {
-            await minioService.statObject(ObjectBucketName.Models, model.outputObjectKey);
+            await minioService.statObject(ObjectBucketName.Rasterizer, model.outputObjectKey);
             existingOutputKeys.add(model.outputObjectKey);
         } catch (error) {
             if (isObjectNotFoundError(error)) {
@@ -92,8 +92,7 @@ const buildRasterJobPayload = (input: RasterizeTrajectoryRequest, model: ParsedT
         metadata: {
             trajectoryId: input.trajectoryId,
             trajectoryName: input.trajectoryName,
-            timestep: model.timestep,
-            source: 'manual-rasterization'
+            timestep: model.timestep
         },
         createdAt: timestamp,
         updatedAt: timestamp

@@ -1,18 +1,30 @@
+import type { QueueService, RedisConnectionService, TeamJobRecord } from '@/modules/platform/services';
 import type { JobsActionResponse, RetryJobsRequest, RemoveRunningJobsRequest, ClearJobsHistoryRequest } from '@/shared/contracts';
-import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
 import { stopProcess } from './processTracker';
 
-interface RetryableJobRecord extends Record<string, unknown> {
-    jobId: string;
-    teamId: string;
-    queueType: string;
-};
+const isDaemonControllableJob = (jobRecord: TeamJobRecord): boolean => {
+    const source = typeof jobRecord.source === 'string'
+        ? jobRecord.source
+        : undefined;
+    const jobClassification = typeof jobRecord.jobClassification === 'string'
+        ? jobRecord.jobClassification
+        : undefined;
+    const daemonBacked = typeof jobRecord.daemonBacked === 'boolean'
+        ? jobRecord.daemonBacked
+        : undefined;
+    const retriable = typeof jobRecord.retriable === 'boolean'
+        ? jobRecord.retriable
+        : undefined;
 
-const isRetryableJobRecord = (value: Record<string, unknown> | null): value is RetryableJobRecord => {
-    return value !== null
-        && typeof value.jobId === 'string'
-        && typeof value.teamId === 'string'
-        && typeof value.queueType === 'string';
+    if (source === 'projected' && jobClassification === 'synthetic') {
+        return false;
+    }
+
+    if (daemonBacked === false || retriable === false) {
+        return false;
+    }
+
+    return true;
 };
 
 export interface JobControlService {
@@ -30,31 +42,25 @@ export const createJobControlService = (
 
         for (const jobId of input.jobIds) {
             const projectedJob = await redisConnectionService.getJobRecord(jobId);
-            if (!projectedJob || !isRetryableJobRecord(projectedJob)) {
+            if (!projectedJob || !isDaemonControllableJob(projectedJob)) {
                 continue;
             }
 
             const queueName = projectedJob.queueType;
-            const payload = await queueService.getJobPayload(queueName, jobId) || projectedJob;
-
             const retried = await queueService.retryJob(queueName, jobId);
             if (!retried) {
-                await queueService.enqueue(queueName, {
-                    ...payload,
-                    status: 'queued',
-                    updatedAt: new Date().toISOString(),
-                    error: undefined
-                });
+                continue;
             }
 
+            const updatedAt = new Date().toISOString();
+
             await redisConnectionService.projectJobStatus({
-                ...payload,
+                ...projectedJob,
                 jobId,
-                teamId: String(payload.teamId || projectedJob.teamId),
                 queueType: queueName,
                 status: 'queued',
                 error: undefined,
-                updatedAt: new Date().toISOString()
+                updatedAt
             });
             affectedJobs += 1;
         }
@@ -67,30 +73,46 @@ export const createJobControlService = (
 
         for (const jobId of input.jobIds) {
             const projectedJob = await redisConnectionService.getJobRecord(jobId);
-            const queueName = projectedJob?.queueType;
+            if (!projectedJob || !isDaemonControllableJob(projectedJob)) {
+                continue;
+            }
+
+            const queueName = projectedJob.queueType;
             const stopped = stopProcess(jobId);
-            const removed = queueName
-                ? await queueService.removeJob(queueName, jobId).catch(() => false)
-                : false;
+            const removed = await queueService.removeJob(queueName, jobId).catch(() => false);
 
             if (!stopped && !removed) {
                 continue;
             }
 
-            if (projectedJob?.teamId) {
-                await redisConnectionService.removeJobs(projectedJob.teamId, [jobId]);
-            }
-
-            affectedJobs += 1;
+            affectedJobs += await redisConnectionService.removeJobs(projectedJob.teamId, [jobId]);
         }
 
         return { affectedJobs };
     },
 
     async clearJobsHistory(input) {
-        const affectedJobs = input.jobIds.length > 0
-            ? await redisConnectionService.removeJobs(input.teamId, input.jobIds)
-            : await redisConnectionService.clearTeamJobs(input.teamId);
+        if (input.jobIds.length === 0) {
+            const affectedJobs = await redisConnectionService.clearTeamJobs(input.teamId);
+
+            return { affectedJobs };
+        }
+
+        const daemonOwnedJobIds: string[] = [];
+
+        for (const jobId of input.jobIds) {
+            const projectedJob = await redisConnectionService.getJobRecord(jobId);
+
+            if (!projectedJob || projectedJob.teamId !== input.teamId) {
+                continue;
+            }
+
+            daemonOwnedJobIds.push(jobId);
+        }
+
+        const affectedJobs = daemonOwnedJobIds.length > 0
+            ? await redisConnectionService.removeJobs(input.teamId, daemonOwnedJobIds)
+            : 0;
 
         return { affectedJobs };
     }

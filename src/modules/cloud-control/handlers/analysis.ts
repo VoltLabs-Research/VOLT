@@ -12,7 +12,6 @@ import {
     readOptionalBoolean,
     readOptionalNumber,
     readOptionalNumberArray,
-    readOptionalString,
     readPayloadRecord,
     readRecord,
     readString
@@ -32,7 +31,8 @@ interface AnalysisTrajectoryFrame {
 const readAnalysisDocument = (value: unknown): DaemonAnalysisDocument => {
     const record = readRecord(value, 'analysis');
     const analysis: DaemonAnalysisDocument = {
-        _id: readDocumentId(record._id)
+        _id: readDocumentId(record._id),
+        pluginDisplayName: readString(record.pluginDisplayName, 'analysis.pluginDisplayName')
     };
 
     if (!analysis._id) {
@@ -184,7 +184,7 @@ const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
         : readOptionalBoolean(record.selectedFrameOnly, false);
     const selectedTimesteps = readOptionalNumberArray(record.selectedTimesteps, 'selectedTimesteps');
     const timestep = readOptionalNumber(record.timestep);
-    const pluginDisplayName = readOptionalString(record.pluginDisplayName);
+    const pluginDisplayName = readString(record.pluginDisplayName, 'pluginDisplayName');
 
     if (typeof selectedFrameOnly !== 'undefined') {
         request.selectedFrameOnly = selectedFrameOnly;
@@ -198,9 +198,7 @@ const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
         request.timestep = timestep;
     }
 
-    if (pluginDisplayName) {
-        request.pluginDisplayName = pluginDisplayName;
-    }
+    request.pluginDisplayName = pluginDisplayName;
 
     return request;
 };

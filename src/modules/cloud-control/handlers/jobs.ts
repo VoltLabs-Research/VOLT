@@ -79,11 +79,7 @@ export const createJobHandlers = (deps: JobHandlersDependencies): ReverseChannel
                 const jobs = await deps.redisConnectionService.getTeamJobs(request.teamId);
                 return {
                     data: {
-                        data: jobs.map((job: Record<string, unknown>) => ({
-                            createdAt: typeof job.createdAt === 'string' ? job.createdAt : new Date().toISOString(),
-                            updatedAt: typeof job.updatedAt === 'string' ? job.updatedAt : new Date().toISOString(),
-                            ...job
-                        }))
+                        data: jobs
                     }
                 };
             }

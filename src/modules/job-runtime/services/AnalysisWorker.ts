@@ -11,22 +11,15 @@ import type { ResultProcessorService } from '@/modules/artifacts/services';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import type { AnalysisJobExecutionData } from '@/shared/contracts';
+import type { AnalysisJobExecutionData, AnalysisQueueJobPayload } from '@/shared/contracts';
 import type { Job as BullMQJob, Worker } from 'bullmq';
 import type { Readable } from 'node:stream';
 import { isRecord } from '@/shared/utils';
 const DUMPS_BUCKET = 'volt-dumps';
 
-interface QueueJobPayload extends Record<string, unknown> {
-    jobId: string;
-    teamId: string;
-    timestep?: number;
-    status: string;
-    queueType: string;
+interface QueueJobPayload extends AnalysisQueueJobPayload {
     metadata?: Record<string, unknown>;
     executionData: AnalysisJobExecutionData;
-    createdAt: string;
-    updatedAt: string;
 };
 
 
@@ -187,6 +180,7 @@ export class AnalysisWorker {
             await this.cleanup(dumpLocalPath, outputDir);
             await this.daemonJobReporterService.reportJobCompletion({
                 jobId: job.jobId,
+                name: job.name,
                 analysisId: executionData.analysisId,
                 teamId: job.teamId,
                 timestep,
@@ -209,6 +203,7 @@ export class AnalysisWorker {
             });
             await this.daemonJobReporterService.reportJobCompletion({
                 jobId: job.jobId,
+                name: job.name,
                 analysisId: executionData.analysisId,
                 teamId: job.teamId,
                 timestep,

@@ -68,7 +68,8 @@ export const bootstrap = async (): Promise<void> => {
     const trajectoryRasterWorkerService = new TrajectoryRasterWorkerService(
         platform.queueService,
         platform.redisConnectionService,
-        trajectoryNative.rasterizerService
+        trajectoryNative.rasterizerService,
+        cloudControl.daemonJobReporterService
     );
 
     await platform.connect();

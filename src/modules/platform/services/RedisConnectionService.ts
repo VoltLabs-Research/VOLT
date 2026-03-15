@@ -22,6 +22,33 @@ export interface TeamJobRecord {
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const STATUS_TTL_SECONDS = 86_400;
 
+const countDeletedJobStatusKeys = (
+    responses: Array<[Error | null, unknown]> | null,
+    deleteCommandCount: number
+): number => {
+    if (!responses) {
+        return 0;
+    }
+
+    let deletedKeys = 0;
+
+    for (const [index, [error, result]] of responses.entries()) {
+        if (error) {
+            throw error;
+        }
+
+        if (index < deleteCommandCount && typeof result === 'number') {
+            deletedKeys += result;
+        }
+    }
+
+    return deletedKeys;
+};
+
+const getDistinctJobIds = (jobIds: string[]): string[] => {
+    return Array.from(new Set(jobIds));
+};
+
 
 const isTeamJobRecord = (value: unknown): value is TeamJobRecord => {
     if (!isRecord(value)) {
@@ -72,10 +99,6 @@ export class RedisConnectionService {
         }
 
         await this.client.quit();
-    }
-
-    async publish(channel: string, payload: Record<string, unknown>): Promise<void> {
-        await this.client.publish(channel, JSON.stringify(payload));
     }
 
     async projectJobStatus(payload: TeamJobRecord): Promise<void> {
@@ -147,14 +170,17 @@ export class RedisConnectionService {
             return 0;
         }
 
+        const distinctJobIds = getDistinctJobIds(jobIds);
         const pipeline = this.client.pipeline();
-        for (const jobId of jobIds) {
+
+        for (const jobId of distinctJobIds) {
             pipeline.del(`${JOB_STATUS_KEY_PREFIX}${jobId}`);
         }
-        pipeline.srem(`team:${teamId}:jobs`, ...jobIds);
-        await pipeline.exec();
+        pipeline.srem(`team:${teamId}:jobs`, ...distinctJobIds);
 
-        return jobIds.length;
+        const responses = await pipeline.exec();
+
+        return countDeletedJobStatusKeys(responses, distinctJobIds.length);
     }
 
     async clearTeamJobs(teamId: string): Promise<number> {
@@ -163,8 +189,7 @@ export class RedisConnectionService {
             return 0;
         }
 
-        await this.removeJobs(teamId, jobIds);
-        return jobIds.length;
+        return this.removeJobs(teamId, jobIds);
     }
 
     async listExplorerDatabases(): Promise<Array<{ databaseId: number; keyCount: number; }>> {
