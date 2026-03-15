@@ -46,9 +46,10 @@ export interface UseCreateContainerFormReturn {
     getSelectedImage: () => string | undefined;
     getSelectedTemplate: () => ContainerTemplate | undefined;
     canProceedToConfig: boolean;
+    canProceedToReview: boolean;
 };
 
-const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormReturn => {
+const useCreateContainerForm = (): UseCreateContainerFormReturn => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const createContainerMutation = containerQuery.useCreateMutation();
@@ -151,16 +152,17 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
             env,
             mountDockerSocket: template.id === 'coder'
         }));
-        goToConfig();
-    }, [goToConfig]);
+    }, []);
 
     const setCustomImage = useCallback((image: string, goToConfigFunction: () => void) => {
-        if (!image.trim()) {
+        const trimmedImage = image.trim();
+
+        if (!trimmedImage) {
             sileo.error({ title: 'Please enter a valid image name' });
             return;
         }
 
-        setCustomImageState(image);
+        setCustomImageState(trimmedImage);
         setSelectedTemplate(null);
         setConfig((previousConfig) => ({
             ...previousConfig,
@@ -254,7 +256,8 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
         handleCreate,
         getSelectedImage,
         getSelectedTemplate,
-        canProceedToConfig: !!(selectedTemplate || customImage)
+        canProceedToConfig: !!(selectedTemplate || customImage),
+        canProceedToReview: Boolean(config.name.trim() && selectedTeamId && selectedTeamClusterId && (selectedTemplate || customImage))
     };
 };
 

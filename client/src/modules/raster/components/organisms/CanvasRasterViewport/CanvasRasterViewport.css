@@ -1,13 +1,5 @@
-.canvas-raster-viewport--split {
-    gap: 0.75rem;
-    padding: 0.125rem;
-}
-
-.canvas-raster-viewport__panel {
-    border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-md);
-    background: var(--color-surface-1);
-    overflow: hidden;
+.canvas-raster-viewport__panel:first-child{
+    border-right: 1px solid var(--color-border-soft);
 }
 
 .canvas-raster-viewport__body {

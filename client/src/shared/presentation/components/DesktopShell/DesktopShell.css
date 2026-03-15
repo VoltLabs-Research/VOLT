@@ -35,6 +35,12 @@ body.desktop-window {
 .desktop-shell .error-page,
 .desktop-shell .sign-in-hero-section {
     min-height: var(--volt-desktop-content-height);
+}
+
+.desktop-shell .onboarding-layout,
+.desktop-shell .onboarding-layout__content,
+.desktop-shell .cluster-onboarding-center,
+.desktop-shell .cluster-onboarding-success-content {
     height: var(--volt-desktop-content-height);
 }
 

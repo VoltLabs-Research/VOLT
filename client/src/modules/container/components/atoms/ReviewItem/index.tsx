@@ -1,14 +1,15 @@
 import Container from '@/shared/presentation/components/Container';
+import type { ReactNode } from 'react';
 
 interface ReviewItemProps {
     label: string;
-    value: React.ReactNode;
+    value: ReactNode;
     valueClassName?: string;
 };
 
 const ReviewItem = ({ label, value, valueClassName = '' }: ReviewItemProps) => (
-    <Container className='d-flex content-between create-container-review-item'>
-        <span className='create-container-label color-muted'>{label}</span>
+    <Container className='create-container-review-item'>
+        <span className='create-container-label color-secondary font-size-2'>{label}</span>
         <span className={`create-container-value font-weight-5 ${valueClassName}`}>{value}</span>
     </Container>
 );

@@ -4,7 +4,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
-import type { IRasterJobEnqueuer } from '@modules/raster/domain/port/IRasterJobEnqueuer';
+import type { IRasterJobEnqueuer, RasterJobEnqueueResult } from '@modules/raster/domain/port/IRasterJobEnqueuer';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
@@ -26,7 +26,7 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
-    async triggerRasterization(trajectoryId: string, teamId: string, config?: unknown): Promise<boolean> {
+    async triggerRasterization(trajectoryId: string, teamId: string, config?: unknown): Promise<RasterJobEnqueueResult> {
         const trajectory = await this.trajectoryRepository.findById(trajectoryId);
 
         if (!trajectory || trajectory.props.team !== teamId) {
@@ -42,7 +42,9 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
         }
 
         const payload: SerializableConfig = {
-            trajectoryId
+            trajectoryId,
+            teamId,
+            trajectoryName: trajectory.props.name
         };
 
         if (isSerializableConfig(config)) {
@@ -50,14 +52,18 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
         }
 
         try {
-            const response = await this.teamClusterDaemonClient.command<{ triggered: boolean }>(
+            const response = await this.teamClusterDaemonClient.command<RasterJobEnqueueResult>(
                 trajectory.props.teamCluster,
                 'trajectory.rasterize',
                 payload
             );
 
-            return response.triggered;
+            return response;
         } catch (error) {
+            if (error instanceof ApplicationError) {
+                throw error;
+            }
+
             logger.warn(error, `Failed to queue rasterization jobs for trajectory ${trajectoryId}`);
             throw new ApplicationError(
                 ErrorCodes.RASTER_FAILED,

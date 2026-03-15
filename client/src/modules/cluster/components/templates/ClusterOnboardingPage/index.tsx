@@ -7,11 +7,10 @@ import { buildClusterInstallCommand } from '@/modules/cluster/utilities/build-cl
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
-import TeamSelector from '@/modules/team/components/atoms/TeamSelector';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import CopyableField from '@/shared/presentation/components/CopyableField';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
@@ -22,7 +21,7 @@ import { HiOutlineComputerDesktop, HiOutlineServerStack } from 'react-icons/hi2'
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
-import type { ReactNode } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 
 interface ClusterOnboardingLocationState {
     next?: string;
@@ -39,6 +38,13 @@ enum OnboardingStep {
     Success = 'success'
 }
 
+interface OnboardingStepContentProps {
+    step: OnboardingStep;
+    activeStep: OnboardingStep;
+    children: ReactNode;
+    className: string;
+};
+
 const INSTALL_MODAL_ID = 'cluster-onboarding-install-modal';
 
 const isClusterOnboardingLocationState = (state: unknown): state is ClusterOnboardingLocationState => {
@@ -48,6 +54,30 @@ const isClusterOnboardingLocationState = (state: unknown): state is ClusterOnboa
 
     const next = Reflect.get(state, 'next');
     return next === undefined || typeof next === 'string';
+};
+
+const OnboardingStepContent = ({
+    step,
+    activeStep,
+    children,
+    className
+}: OnboardingStepContentProps) => {
+    const isActive = step === activeStep;
+    const stateClassName = isActive
+        ? 'is-active'
+        : step === OnboardingStep.Type
+            ? 'exit-left'
+            : 'enter-right';
+
+    return (
+        <Container
+            className={`cluster-onboarding-step d-flex column items-center ${stateClassName} ${className}`}
+            aria-hidden={!isActive}
+            inert={!isActive}
+        >
+            {children}
+        </Container>
+    );
 };
 
 const ClusterOnboardingPage = () => {
@@ -96,6 +126,14 @@ const ClusterOnboardingPage = () => {
         return () => clearTimeout(timer);
     }, [navigate, nextDestination, step]);
 
+    useEffect(() => {
+        if (createdCluster && !clusters.find((cluster) => cluster._id === createdCluster._id)) {
+            closeModal(INSTALL_MODAL_ID);
+            setCreatedCluster(null);
+            setEnrollmentToken(null);
+        }
+    }, [clusters, createdCluster]);
+
     const handleSignOut = () => {
         try {
             setIsSigningOut(true);
@@ -136,6 +174,11 @@ const ClusterOnboardingPage = () => {
         }
     };
 
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        await handleSubmitName();
+    };
+
     const handlePanelDelete = (cluster: TeamCluster) => {
         setDeleteTarget(cluster);
         openModal(DELETE_CLUSTER_MODAL_ID);
@@ -149,33 +192,38 @@ const ClusterOnboardingPage = () => {
         return deleteCluster(deleteTarget._id, password);
     };
 
-    useEffect(() => {
-        if (createdCluster && !clusters.find((cluster) => cluster._id === createdCluster._id)) {
-            closeModal(INSTALL_MODAL_ID);
-            setCreatedCluster(null);
-            setEnrollmentToken(null);
-        }
-    }, [clusters, createdCluster]);
-
     const installCommand = createdCluster && enrollmentToken
         ? buildClusterInstallCommand(createdCluster._id, enrollmentToken)
         : '';
     const statusVariant = liveCluster ? getTeamClusterStatusVariant(liveCluster.status) : 'inactive';
     const statusLabel = liveCluster ? getTeamClusterStatusLabel(liveCluster.status) : 'Waiting for connection';
     const targetLabel = clusterType === ClusterType.Computer ? 'Computer' : 'Server';
+    const successMessage = connectedClusterName ? `${connectedClusterName} connected!` : 'Cluster connected!';
+    const progressLabel = 'Step 2 of 2 · Cluster setup';
     const goBackIcon = <ArrowLeft size={16} />;
+
+    const renderProgress = () => (
+        <Container className='cluster-onboarding-progress-block d-flex column gap-025 items-center'>
+            <span className='font-size-1 font-weight-6 color-secondary'>{progressLabel}</span>
+            <Container className='cluster-onboarding-progress' aria-hidden='true'>
+                <span className='cluster-onboarding-progress-fill' />
+            </Container>
+        </Container>
+    );
 
     let leftSlot: ReactNode | undefined;
     if (hasConnectedCluster) {
         leftSlot = (
             <nav className='cluster-onboarding-breadcrumb' aria-label='Cluster onboarding breadcrumbs'>
-                <button
-                    type='button'
+                <Button
+                    to='/dashboard'
                     className='cluster-onboarding-breadcrumb-link font-size-2'
-                    onClick={() => navigate('/dashboard')}
+                    variant='ghost'
+                    intent='neutral'
+                    size='sm'
                 >
                     Dashboard
-                </button>
+                </Button>
                 <ChevronRight size={14} className='cluster-onboarding-breadcrumb-separator' />
                 <Paragraph className='font-size-2 color-secondary' aria-current='page'>Add new cluster</Paragraph>
             </nav>
@@ -211,10 +259,18 @@ const ClusterOnboardingPage = () => {
                 onSignOut={handleSignOut}
                 isSigningOut={isSigningOut}
             >
-                <Container className='cluster-onboarding-success-content d-flex column gap-1 items-center content-center'>
-                    <Title className='cluster-onboarding-success-title font-size-7 font-weight-6 color-primary'>
-                        {connectedClusterName} connected!
+                <Container
+                    className='cluster-onboarding-success-content d-flex column gap-1 items-center content-center'
+                    role='status'
+                    aria-live='polite'
+                    aria-atomic='true'
+                >
+                    <Title as='h1' className='cluster-onboarding-success-title font-weight-6 color-primary'>
+                        {successMessage}
                     </Title>
+                    <Paragraph className='color-secondary'>
+                        Redirecting you to the dashboard.
+                    </Paragraph>
                 </Container>
             </OnboardingLayout>
         );
@@ -230,12 +286,14 @@ const ClusterOnboardingPage = () => {
         >
             <>
                 <Container className='cluster-onboarding-center'>
-                    <Container className={`cluster-onboarding-step d-flex column gap-3 items-center ${step === OnboardingStep.Type ? 'is-active' : 'exit-left'}`}>
+                    <OnboardingStepContent step={OnboardingStep.Type} activeStep={step} className='gap-3'>
                         <Container className='d-flex column gap-1 items-center'>
-                            <TeamSelector className='cluster-onboarding-team-selector' />
-                            <Title className='cluster-onboarding-title font-size-6 font-weight-6 color-primary'>
-                                Connect a cluster
-                            </Title>
+                            {renderProgress()}
+                            <Container className='d-flex column gap-075 items-center'>
+                                <Title as='h2' className='cluster-onboarding-title font-size-6 font-weight-6 color-primary'>
+                                    Connect a cluster
+                                </Title>
+                            </Container>
                             <Paragraph className='cluster-onboarding-description font-size-2-5 color-secondary'>
                                 Clusters provide the compute capacity used to run simulations and analyses in Volt. You can connect more later.
                             </Paragraph>
@@ -250,8 +308,12 @@ const ClusterOnboardingPage = () => {
                                 <Container className='cluster-onboarding-card-icon d-flex items-center content-center'>
                                     <HiOutlineComputerDesktop size={20} />
                                 </Container>
-                                <Title className='font-size-3 font-weight-6 color-primary'>Use my computer <br/> (Useful to start)</Title>
-                                <Paragraph className='font-size-2 color-secondary' style={{ textAlign: 'center' }}>
+                                <Title className='font-size-3 font-weight-6 color-primary'>
+                                    Use my computer
+                                    <br />
+                                    (Useful to start)
+                                </Title>
+                                <Paragraph className='font-size-2 color-secondary cluster-onboarding-card-copy'>
                                     Use your own computer as a cluster.
                                 </Paragraph>
                             </button>
@@ -267,52 +329,50 @@ const ClusterOnboardingPage = () => {
                                 <Container className='d-flex items-center gap-05'>
                                     <Title className='font-size-3 font-weight-6 color-primary'>I have a server</Title>
                                 </Container>
-                                <Paragraph className='font-size-2 color-secondary' style={{ textAlign: 'center' }}>
+                                <Paragraph className='font-size-2 color-secondary cluster-onboarding-card-copy'>
                                     Using a server as a cluster enables smoother collaboration across your team.
                                 </Paragraph>
                             </button>
                         </Container>
-                    </Container>
+                    </OnboardingStepContent>
 
-                    <Container className={`cluster-onboarding-step d-flex column gap-1-5 items-center ${step === OnboardingStep.Name ? 'is-active' : 'enter-right'}`}>
-                        <Title className='cluster-onboarding-title font-size-5 font-weight-6 color-primary'>
-                            Let's name your cluster
-                        </Title>
+                    <OnboardingStepContent step={OnboardingStep.Name} activeStep={step} className='gap-1-5'>
+                        <form className='cluster-onboarding-form d-flex column gap-1-5 items-center' onSubmit={handleSubmit}>
+                            {renderProgress()}
+                            <Container className='d-flex column gap-075 items-center'>
+                                <Title className='cluster-onboarding-title font-size-5 font-weight-6 color-primary'>
+                                    Let's name your cluster
+                                </Title>
+                            </Container>
 
-                        <Container className='cluster-onboarding-name-input'>
-                            <FormFieldRHF
-                                label='Cluster name'
-                                placeholder='e.g., Research Lab Cluster'
-                                value={name}
-                                error={error}
-                                onChange={(event) => {
-                                    setName(event.target.value);
-                                    if (error) {
-                                        setError(undefined);
-                                    }
-                                }}
-                                inputProps={{
-                                    onKeyDown: (event) => {
-                                        if (event.key === 'Enter') {
-                                            handleSubmitName();
+                            <Container className='cluster-onboarding-name-input'>
+                                <FormFieldRHF
+                                    label='Cluster name'
+                                    placeholder='e.g., Research Lab Cluster'
+                                    value={name}
+                                    error={error}
+                                    onChange={(event) => {
+                                        setName(event.target.value);
+                                        if (error) {
+                                            setError(undefined);
                                         }
-                                    }
-                                }}
-                            />
-                        </Container>
+                                    }}
+                                />
+                            </Container>
 
-                        <Button
-                            className='cluster-onboarding-continue-btn'
-                            variant='solid'
-                            intent='brand'
-                            size='lg'
-                            shape='pill'
-                            onClick={handleSubmitName}
-                            isLoading={isSubmitting}
-                        >
-                            Continue
-                        </Button>
-                    </Container>
+                            <Button
+                                className='cluster-onboarding-continue-btn'
+                                variant='solid'
+                                intent='brand'
+                                size='lg'
+                                shape='pill'
+                                type='submit'
+                                isLoading={isSubmitting}
+                            >
+                                Continue
+                            </Button>
+                        </form>
+                    </OnboardingStepContent>
                 </Container>
 
                 <Modal
@@ -326,7 +386,7 @@ const ClusterOnboardingPage = () => {
                             successMessage='Install command copied'
                         />
 
-                        <Container className='cluster-onboarding-status-row d-flex items-center gap-075'>
+                        <Container className='cluster-onboarding-status-row d-flex items-center gap-075' role='status' aria-live='polite' aria-atomic='true'>
                             <Container className='d-flex items-center gap-05'>
                                 <span className={`cluster-onboarding-status-dot variant-${statusVariant}`} />
                                 <Paragraph className='font-size-2 color-secondary'>
