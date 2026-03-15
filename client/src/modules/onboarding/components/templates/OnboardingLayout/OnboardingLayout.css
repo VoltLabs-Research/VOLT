@@ -9,8 +9,8 @@
     --onboarding-layout-overlay-z-index: 1;
     --onboarding-layout-chrome-z-index: 2;
     position: relative;
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
     background: var(--color-bg);
     overflow: hidden;
 }
@@ -18,8 +18,8 @@
 .onboarding-layout__content {
     position: relative;
     z-index: var(--onboarding-layout-content-z-index);
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100%;
+    min-height: 0;
     padding:
         calc(var(--onboarding-layout-top-offset) + var(--onboarding-layout-top-reserved-space))
         calc(var(--onboarding-layout-right-offset) + 1.5rem)
@@ -27,6 +27,7 @@
         calc(var(--onboarding-layout-left-offset) + 1.5rem);
     display: grid;
     place-items: center;
+    overflow: hidden;
 }
 
 .onboarding-layout__overlay,

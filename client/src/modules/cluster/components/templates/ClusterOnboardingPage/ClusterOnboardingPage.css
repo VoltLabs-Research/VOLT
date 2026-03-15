@@ -1,8 +1,9 @@
 .cluster-onboarding-center {
     position: relative;
     width: min(100%, 560px);
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
     padding: 2rem 1rem;
 }
 
@@ -10,6 +11,7 @@
     position: absolute;
     inset: 0;
     padding: inherit;
+    min-height: 0;
     justify-content: center;
     transition:
         opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
@@ -168,8 +170,8 @@
 }
 
 .cluster-onboarding-success-content {
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100%;
+    min-height: 0;
 }
 
 .cluster-onboarding-success-title {
@@ -216,7 +218,7 @@
 
 @media (max-width: 768px) {
     .cluster-onboarding-center {
-        min-height: auto;
+        height: 100%;
         padding: 1rem 0 0;
     }
 }

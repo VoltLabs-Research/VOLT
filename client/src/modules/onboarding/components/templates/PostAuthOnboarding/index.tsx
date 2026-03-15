@@ -23,7 +23,6 @@ import type { FormEvent, ReactNode } from 'react';
 interface OnboardingStepState {
     title: string;
     description: string;
-    progressLabel: string;
     progressValue: number;
 };
 
@@ -72,7 +71,6 @@ const PostAuthOnboarding = () => {
     const stepState: OnboardingStepState = {
         title: "Let's create a team for you!",
         description: "Invite other users to collaborate or join existing teams. You'll have the option to create new teams later.",
-        progressLabel: 'Step 1 of 2 · Team setup',
         progressValue: 50
     };
 
@@ -132,13 +130,12 @@ const PostAuthOnboarding = () => {
     };
 
     let content: ReactNode = (
-        <Container className='post-auth-onboarding-shell d-flex column gap-2'>
-            <Container className='d-flex column gap-075 items-center'>
-                <Container className='d-flex column gap-025 items-center'>
-                    <span className='font-size-1 font-weight-6 color-secondary'>{stepState.progressLabel}</span>
-                    <Container className='post-auth-onboarding-progress' aria-hidden='true'>
-                        <span className='post-auth-onboarding-progress-fill' style={{ width: `${stepState.progressValue}%` }} />
-                    </Container>
+            <Container className='post-auth-onboarding-shell d-flex column gap-2'>
+                <Container className='d-flex column gap-075 items-center'>
+                    <Container className='d-flex column items-center'>
+                        <Container className='post-auth-onboarding-progress' aria-hidden='true'>
+                            <span className='post-auth-onboarding-progress-fill' style={{ width: `${stepState.progressValue}%` }} />
+                        </Container>
                 </Container>
             </Container>
 
