@@ -2,7 +2,6 @@ import { Resource } from '@core/constants/resources';
 import controllers from '@modules/team-cluster/infrastructure/http/controllers';
 import { teamClusterValidation } from '@modules/team-cluster/infrastructure/http/validation/team-cluster-schemas';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
-import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 
 export default createHttpModule({
     basePath: '/api/teams/:teamId/clusters',
@@ -10,23 +9,20 @@ export default createHttpModule({
     routes: (router) => {
         router.route('/')
             .get(teamClusterValidation.listByTeamId, controllers.listByTeamId.handle)
-            .post(RATE_LIMIT_POLICIES.teamClusterCreate, teamClusterValidation.create, controllers.create.handle);
+            .post(teamClusterValidation.create, controllers.create.handle);
         router.get('/:teamClusterId', teamClusterValidation.getById, controllers.getById.handle);
         router.get(
             '/:teamClusterId/available-updates',
-            RATE_LIMIT_POLICIES.teamClusterAvailableVersions,
             teamClusterValidation.fetchAvailableVersions,
             controllers.fetchAvailableVersions.handle
         );
         router.post(
             '/:teamClusterId/credentials/reveal',
-            RATE_LIMIT_POLICIES.teamClusterRevealCredentials,
             teamClusterValidation.revealCredentials,
             controllers.revealCredentials.handle
         );
         router.post(
             '/:teamClusterId/remote-access/sessions',
-            RATE_LIMIT_POLICIES.teamClusterRevealCredentials,
             teamClusterValidation.createRemoteAccessSession,
             controllers.createRemoteAccessSession.handle
         );
@@ -52,13 +48,11 @@ export default createHttpModule({
         );
         router.post(
             '/:teamClusterId/delete-requests',
-            RATE_LIMIT_POLICIES.teamClusterDelete,
             teamClusterValidation.deleteById,
             controllers.deleteById.handle
         );
         router.post(
             '/:teamClusterId/update-requests',
-            RATE_LIMIT_POLICIES.teamClusterUpdate,
             teamClusterValidation.requestUpdate,
             controllers.requestUpdate.handle
         );

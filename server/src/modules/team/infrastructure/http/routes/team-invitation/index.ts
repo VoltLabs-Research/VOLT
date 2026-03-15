@@ -2,13 +2,12 @@ import { Resource } from '@core/constants/resources';
 import controllers from '@modules/team/infrastructure/http/controllers/team-invitation';
 import { teamInvitationValidation } from '@modules/team/infrastructure/http/validation/team-invitation';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
-import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 
 export default createHttpModule({
     basePath: '/api/teams/:teamId/invitations',
     resource: Resource.TEAM_INVITATION,
     routes: (router) => {
-        router.post('/', RATE_LIMIT_POLICIES.teamInvitationSend, teamInvitationValidation.send, controllers.send.handle);
+        router.post('/', teamInvitationValidation.send, controllers.send.handle);
         router.get('/', controllers.listPendingByTeamId.handle);
         router.delete('/:invitationId', controllers.deleteById.handle);
         router.patch('/:invitationId', teamInvitationValidation.update, controllers.updateById.handle);
