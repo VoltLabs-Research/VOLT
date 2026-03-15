@@ -104,6 +104,11 @@
     transition: opacity 0.15s ease;
 }
 
+.collapsible-section-action--delete-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 .collapsible-section-header:hover .collapsible-section-action--delete,
 .collapsible-section-header:focus-within .collapsible-section-action--delete {
     opacity: 1;

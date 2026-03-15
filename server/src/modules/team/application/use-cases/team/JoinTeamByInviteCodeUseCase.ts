@@ -64,6 +64,9 @@ export default class JoinTeamByInviteCodeUseCase implements IUseCase<JoinTeamByI
 
         await this.teamRepository.addMemberToTeam(teamMember._id, team._id);
 
-        return Result.ok({ message: 'Successfully joined team' });
+        return Result.ok({
+            message: 'Successfully joined team',
+            teamId: team._id
+        });
     }
 };

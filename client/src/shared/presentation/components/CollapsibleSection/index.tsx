@@ -25,6 +25,8 @@ interface CollapsibleSectionProps {
     useDefaultHeaderStyles?: boolean;
     useDefaultTitleStyles?: boolean;
     onDelete?: () => void;
+    deleteActionLabel?: string;
+    deleteActionAlwaysVisible?: boolean;
     onAdd?: () => void;
     icon?: ReactNode;
     headerAction?: ReactNode;
@@ -49,6 +51,8 @@ const CollapsibleSection = ({
     useDefaultHeaderStyles = true,
     useDefaultTitleStyles = true,
     onDelete,
+    deleteActionLabel = 'Delete section',
+    deleteActionAlwaysVisible = false,
     onAdd,
     icon,
     headerAction,
@@ -116,8 +120,9 @@ const CollapsibleSection = ({
                     size='sm'
                     variant='ghost'
                     onClick={handleDelete}
-                    className='collapsible-section-action--delete'
-                    title='Delete section'
+                    className={`collapsible-section-action--delete ${deleteActionAlwaysVisible ? 'collapsible-section-action--delete-visible' : ''}`}
+                    title={deleteActionLabel}
+                    aria-label={deleteActionLabel}
                 >
                     <Trash2 size={16} />
                 </IconButton>

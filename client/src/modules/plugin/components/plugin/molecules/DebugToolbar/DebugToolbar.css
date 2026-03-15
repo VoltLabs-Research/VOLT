@@ -82,6 +82,10 @@
     font-weight: 600;
 }
 
+.debug-toolbar-action--continue {
+    font-weight: 600;
+}
+
 .debug-toolbar-state-badge {
     display: inline-flex;
     align-items: center;
@@ -89,25 +93,61 @@
     min-height: 1.5rem;
     padding: 0.125rem 0.45rem;
     border-radius: 999px;
-    border: 1px solid currentColor;
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-surface-2);
+    color: var(--color-text-primary);
     font-size: 0.65rem;
     font-weight: 700;
     line-height: 1;
 }
 
-.debug-toolbar-state-badge--paused {
-    color: var(--status-warning);
-    background: var(--status-warning-bg);
+.debug-toolbar-status-panel {
+    width: min(860px, calc(100vw - 1.5rem));
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-surface-1);
+    box-shadow: var(--shadow-card);
 }
 
-.debug-toolbar-state-badge--running {
-    color: var(--accent-blue);
-    background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
+.debug-toolbar-status-panel--idle,
+.debug-toolbar-status-panel--ready {
+    background: color-mix(in srgb, var(--color-surface-2) 85%, var(--color-surface-1));
 }
 
-.debug-toolbar-below-status {
-    white-space: nowrap;
-    max-width: min(32rem, calc(100vw - 2rem));
+.debug-toolbar-status-panel--running {
+    border-color: color-mix(in srgb, var(--accent-blue) 35%, var(--color-border-soft));
+    background: color-mix(in srgb, var(--accent-blue) 6%, var(--color-surface-1));
+}
+
+.debug-toolbar-status-panel--paused {
+    border-color: var(--status-warning-border);
+    background: color-mix(in srgb, var(--status-warning-bg) 55%, var(--color-surface-1));
+}
+
+.debug-toolbar-status-panel--completed {
+    border-color: var(--status-success-border);
+    background: color-mix(in srgb, var(--status-success-bg) 55%, var(--color-surface-1));
+}
+
+.debug-toolbar-status-panel--error {
+    border-color: var(--status-error-border);
+    background: color-mix(in srgb, var(--status-error-bg) 60%, var(--color-surface-1));
+}
+
+.debug-toolbar-status-icon {
+    margin-top: 0.125rem;
+    color: var(--color-text-primary);
+    flex-shrink: 0;
+}
+
+.debug-toolbar-status-icon--idle {
+    color: var(--color-text-secondary);
+}
+
+.debug-toolbar-inline-copy,
+.debug-toolbar-status-copy {
+    margin: 0;
+    white-space: normal;
+    word-break: break-word;
 }
 
 @media screen and (max-width: 768px) {
@@ -121,6 +161,10 @@
 
     .debug-toolbar-select.select-trigger {
         max-width: 100%;
+    }
+
+    .debug-toolbar-status-panel {
+        width: calc(100vw - 1.5rem);
     }
 }
 

@@ -8,9 +8,10 @@ import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import { useReactFlow, useViewport } from '@xyflow/react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { MouseEvent } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import type { KeyboardEvent, MouseEvent } from 'react';
 import type { Node } from '@xyflow/react';
+import type { NodeTypeConfig } from '@/modules/plugin/utilities/plugin/node-registry';
 
 const PANEL_WIDTH = 380;
 const PANEL_MARGIN = 16;
@@ -27,6 +28,19 @@ const panelVariants = {
     exit: { opacity: 0, scale: 0.97, y: 4 }
 };
 
+const getNodeConfig = (node: Node | null): NodeTypeConfig | null => {
+    if (!node || typeof node.type !== 'string') {
+        return null;
+    }
+
+    const nodeType = Object.values(NodeType).find((value) => value === node.type);
+    if (!nodeType) {
+        return null;
+    }
+
+    return NODE_CONFIGS[nodeType];
+};
+
 const FloatingNodePanel = () => {
     const selectedNode = usePluginBuilderStore((state) => state.selectedNode);
     const selectNode = usePluginBuilderStore((state) => state.selectNode);
@@ -34,9 +48,13 @@ const FloatingNodePanel = () => {
     const { flowToScreenPosition } = useReactFlow();
     const viewport = useViewport();
     const prefersReducedMotion = useReducedMotion();
-    const panelRef = useRef<HTMLDivElement>(null);
+    const panelRef = useRef<HTMLElement>(null);
     const containerRef = useRef<HTMLElement | null>(null);
+    const restoreFocusRef = useRef<HTMLElement | null>(null);
+    const previousNodeIdRef = useRef<string | null>(null);
     const [position, setPosition] = useState<PanelPosition | null>(null);
+    const titleId = useId();
+    const descriptionId = useId();
 
     const computePosition = useCallback((node: Node) => {
         const container = containerRef.current;
@@ -92,15 +110,52 @@ const FloatingNodePanel = () => {
         }
     }, []);
 
+    useEffect(() => {
+        const currentNodeId = liveSelectedNode?.id ?? null;
+        const previousNodeId = previousNodeIdRef.current;
+
+        if (currentNodeId && currentNodeId !== previousNodeId) {
+            const activeElement = document.activeElement;
+            if (activeElement instanceof HTMLElement) {
+                restoreFocusRef.current = activeElement;
+            }
+
+            requestAnimationFrame(() => {
+                panelRef.current?.focus();
+            });
+        }
+
+        if (!currentNodeId && previousNodeId) {
+            const restoreElement = restoreFocusRef.current;
+            if (restoreElement?.isConnected) {
+                requestAnimationFrame(() => {
+                    restoreElement.focus();
+                });
+            }
+        }
+
+        previousNodeIdRef.current = currentNodeId;
+    }, [liveSelectedNode?.id]);
+
     const handleClose = useCallback(() => {
         selectNode(null);
     }, [selectNode]);
 
-    const handlePanelClick = useCallback((event: MouseEvent<HTMLDivElement>) => {
+    const handlePanelClick = useCallback((event: MouseEvent<HTMLElement>) => {
         event.stopPropagation();
     }, []);
 
-    const config = liveSelectedNode ? NODE_CONFIGS[liveSelectedNode.type as NodeType] : null;
+    const handlePanelKeyDown = useCallback((event: KeyboardEvent<HTMLElement>) => {
+        if (event.key !== 'Escape') {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        handleClose();
+    }, [handleClose]);
+
+    const config = getNodeConfig(liveSelectedNode);
     const panelTransition = {
         duration: prefersReducedMotion ? 0 : 0.18
     };
@@ -108,7 +163,7 @@ const FloatingNodePanel = () => {
     return (
         <AnimatePresence mode='wait'>
             {liveSelectedNode && config && position && (
-                <motion.div
+                <motion.aside
                     ref={panelRef}
                     className='floating-node-panel p-absolute overflow-hidden card-elevated d-flex column'
                     style={{ top: position.top, right: position.right, width: position.width }}
@@ -119,24 +174,30 @@ const FloatingNodePanel = () => {
                     transition={panelTransition}
                     key={liveSelectedNode.id}
                     onClick={handlePanelClick}
-                    role='dialog'
-                    aria-label={`${config.label} settings`}
-                    aria-modal='false'
+                    onKeyDown={handlePanelKeyDown}
+                    role='complementary'
+                    aria-labelledby={titleId}
+                    aria-describedby={descriptionId}
+                    tabIndex={-1}
                 >
                     <Container className='d-flex items-center gap-075 floating-node-panel-header p-1'>
                         <Container className='d-flex flex-center floating-node-panel-icon radius-sm color-secondary'>
                             <DynamicIcon iconName={config.icon} />
                         </Container>
-                        <Title className='font-size-3 font-weight-6 flex-1'>
+                        <Title id={titleId} className='font-size-3 font-weight-6 flex-1'>
                             {config.label}
                         </Title>
                         <CloseButton onClick={handleClose} aria-label='Close node editor' />
                     </Container>
 
-                    <Container className='floating-node-panel-body flex-1 min-h-0 y-auto'>
+                    <Container id={descriptionId} className='plugin-accessible-status'>
+                        Node inspector. Changes apply immediately. Press Escape to close and return to the builder.
+                    </Container>
+
+                    <Container className='floating-node-panel-body flex-1 min-h-0 y-auto scrollbar-thin'>
                         <NodeEditor node={liveSelectedNode} />
                     </Container>
-                </motion.div>
+                </motion.aside>
             )}
         </AnimatePresence>
     );

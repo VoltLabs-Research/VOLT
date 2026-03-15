@@ -11,17 +11,24 @@ import Divider from '@/shared/presentation/components/Divider';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Select from '@/shared/presentation/components/Select';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import { Bug, FastForward, Play, Square, StepForward } from 'lucide-react';
+import { AlertTriangle, Bug, CheckCircle2, FastForward, Play, Square, StepForward } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
-import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
 import './DebugToolbar.css';
 
-interface ArgumentsNodeArguments {
-    arguments?: IArgumentDefinition[];
+interface DebugStatusContent {
+    detail: string;
+    helper: string | null;
+    label: string;
+    liveMessage: string;
+    modifierClassName: string;
 };
 
-interface ArgumentsNodeData {
-    arguments?: ArgumentsNodeArguments;
+const resolveNodeType = (value: string | null): NodeType | null => {
+    if (!value) {
+        return null;
+    }
+
+    return Object.values(NodeType).find((nodeType) => nodeType === value) ?? null;
 };
 
 const DebugToolbar = () => {
@@ -58,8 +65,7 @@ const DebugToolbar = () => {
             return false;
         }
 
-        const argsNodeData = argsNode.data as ArgumentsNodeData;
-        const argumentDefinitions = argsNodeData?.arguments?.arguments;
+        const argumentDefinitions = argsNode.data.arguments?.arguments;
         if (!argumentDefinitions) {
             return false;
         }
@@ -106,37 +112,82 @@ const DebugToolbar = () => {
         startDebug();
     }, [startDebug]);
 
-    let currentNodeType: string | null = null;
+    let currentNodeType: NodeType | null = null;
     if (currentNodeId) {
-        currentNodeType = executionOrder.find((node) => node.nodeId === currentNodeId)?.type ?? null;
+        currentNodeType = resolveNodeType(executionOrder.find((node) => node.nodeId === currentNodeId)?.type ?? null);
     }
 
     let currentNodeLabel: string | null = null;
     if (currentNodeType) {
-        const resolvedNodeType = currentNodeType as NodeType;
-        currentNodeLabel = NODE_CONFIGS[resolvedNodeType]?.label ?? currentNodeType;
+        currentNodeLabel = NODE_CONFIGS[currentNodeType]?.label ?? currentNodeType;
     }
 
     const completedCount = Object.values(nodeStates).filter((s) => s.status === 'completed').length;
 
-    let debugStatusMessage: string | null = null;
+    let debugStatusContent: DebugStatusContent | null = null;
     if (isStarting) {
-        debugStatusMessage = 'Starting debug session.';
+        debugStatusContent = {
+            detail: 'Preparing debug session…',
+            helper: 'Loading the selected trajectory frame and initializing node state.',
+            label: 'Debug starting',
+            liveMessage: 'Starting debug session.',
+            modifierClassName: 'debug-toolbar-status-panel--running'
+        };
     } else if (sessionError) {
-        debugStatusMessage = `Debug session error: ${sessionError}`;
+        debugStatusContent = {
+            detail: 'Debug session failed.',
+            helper: sessionError,
+            label: 'Debug error',
+            liveMessage: `Debug session error: ${sessionError}`,
+            modifierClassName: 'debug-toolbar-status-panel--error'
+        };
     } else if (isDebugging && isPaused && currentNodeLabel) {
-        debugStatusMessage = `Debug paused at ${currentNodeLabel}. Node ${currentNodeIndex + 1} of ${totalNodes}.`;
+        debugStatusContent = {
+            detail: `Paused at ${currentNodeLabel}.`,
+            helper: `Node ${currentNodeIndex + 1} of ${totalNodes} is ready for inspection or stepping.`,
+            label: 'Debug paused',
+            liveMessage: `Debug paused at ${currentNodeLabel}. Node ${currentNodeIndex + 1} of ${totalNodes}.`,
+            modifierClassName: 'debug-toolbar-status-panel--paused'
+        };
     } else if (isDebugging) {
-        debugStatusMessage = `Debug running. ${completedCount} of ${totalNodes} nodes completed.`;
+        debugStatusContent = {
+            detail: 'Debug session running.',
+            helper: `${completedCount} of ${totalNodes} nodes completed.`,
+            label: 'Debug running',
+            liveMessage: `Debug running. ${completedCount} of ${totalNodes} nodes completed.`,
+            modifierClassName: 'debug-toolbar-status-panel--running'
+        };
     } else if (totalDuration !== null && totalDuration >= 0) {
-        debugStatusMessage = `Debug completed in ${totalDuration < 1000 ? `${totalDuration} milliseconds` : `${(totalDuration / 1000).toFixed(1)} seconds`}.`;
+        debugStatusContent = {
+            detail: 'Debug session completed.',
+            helper: `Finished in ${totalDuration < 1000 ? `${totalDuration} milliseconds` : `${(totalDuration / 1000).toFixed(1)} seconds`}.`,
+            label: 'Debug complete',
+            liveMessage: `Debug completed in ${totalDuration < 1000 ? `${totalDuration} milliseconds` : `${(totalDuration / 1000).toFixed(1)} seconds`}.`,
+            modifierClassName: 'debug-toolbar-status-panel--completed'
+        };
+    } else if (!selectedTrajectoryId || selectedTimestep === null) {
+        debugStatusContent = {
+            detail: 'Select a trajectory and frame to start debugging.',
+            helper: 'Debug controls stay secondary until a debug session becomes the active task.',
+            label: 'Debug setup required',
+            liveMessage: 'Select a trajectory and frame to start debugging.',
+            modifierClassName: 'debug-toolbar-status-panel--idle'
+        };
+    } else {
+        debugStatusContent = {
+            detail: 'Ready to start debugging.',
+            helper: hasConfigurableArgs ? 'This workflow has configurable arguments that must be reviewed before start.' : 'Start runs the selected trajectory frame through the current workflow.',
+            label: 'Debug ready',
+            liveMessage: 'Debug session is ready to start.',
+            modifierClassName: 'debug-toolbar-status-panel--ready'
+        };
     }
 
     return (
         <Container className='p-absolute z-10 d-flex column items-center top-1 center-x debug-toolbar-wrapper'>
-            {debugStatusMessage && (
+            {debugStatusContent && (
                 <Container className='plugin-accessible-status' role='status' aria-live='polite'>
-                    {debugStatusMessage}
+                    {debugStatusContent.liveMessage}
                 </Container>
             )}
 
@@ -174,7 +225,7 @@ const DebugToolbar = () => {
                 <Container className='d-flex items-center gap-025'>
                     <Tooltip content={canStart ? (hasConfigurableArgs ? 'Configure arguments & start' : 'Start debug (single frame)') : 'Select trajectory & frame first'} placement='bottom'>
                         <Button
-                            variant='solid'
+                            variant='soft'
                             intent='brand'
                             size='sm'
                             className='debug-toolbar-action debug-toolbar-action--primary'
@@ -205,10 +256,10 @@ const DebugToolbar = () => {
 
                     <Tooltip content='Continue (run all remaining)' placement='bottom'>
                         <Button
-                            variant='solid'
+                            variant='outline'
                             intent='brand'
                             size='sm'
-                            className='debug-toolbar-action debug-toolbar-action--primary'
+                            className='debug-toolbar-action debug-toolbar-action--continue'
                             onClick={continueAll}
                             disabled={!canContinue}
                             title='Continue debug session'
@@ -235,48 +286,37 @@ const DebugToolbar = () => {
                 </Container>
             </Container>
 
-            {isDebugging && (
-                <>
-                    <Divider orientation='vertical' className='debug-toolbar-divider' />
-                    <Container className='d-flex items-center gap-05 debug-toolbar-status'>
-                        {isPaused && currentNodeLabel && (
-                            <>
-                                <span className='debug-toolbar-status-dot debug-toolbar-status-dot--paused radius-full f-shrink-0' />
-                                <span className='debug-toolbar-state-badge debug-toolbar-state-badge--paused'>Paused</span>
-                                <Paragraph className='font-size-2'>
+            {debugStatusContent && (
+                <Container className={`d-flex items-start gap-05 radius-md p-1 debug-toolbar-status-panel ${debugStatusContent.modifierClassName}`} role={sessionError ? 'alert' : 'status'} aria-live={sessionError ? 'assertive' : 'polite'}>
+                    {sessionError && <AlertTriangle size={16} className='debug-toolbar-status-icon' aria-hidden='true' />}
+                    {!sessionError && totalDuration !== null && totalDuration >= 0 && !isDebugging && !isStarting && (
+                        <CheckCircle2 size={16} className='debug-toolbar-status-icon' aria-hidden='true' />
+                    )}
+                    {!sessionError && (isDebugging || isStarting) && (
+                        <span className={`debug-toolbar-status-dot ${isPaused ? 'debug-toolbar-status-dot--paused' : 'debug-toolbar-status-dot--running'} radius-full f-shrink-0`} aria-hidden='true' />
+                    )}
+                    {!sessionError && !isDebugging && !isStarting && totalDuration === null && (
+                        <Bug size={16} className='debug-toolbar-status-icon debug-toolbar-status-icon--idle' aria-hidden='true' />
+                    )}
+
+                    <Container className='d-flex column gap-025 min-w-0'>
+                        <Container className='d-flex items-center gap-05 flex-wrap'>
+                            <span className='debug-toolbar-state-badge'>{debugStatusContent.label}</span>
+                            {isDebugging && isPaused && currentNodeLabel && (
+                                <Paragraph className='font-size-2 debug-toolbar-inline-copy'>
                                     {currentNodeLabel} ({currentNodeIndex + 1}/{totalNodes})
                                 </Paragraph>
-                            </>
-                        )}
-                        {!isPaused && (
-                            <>
-                                <span className='debug-toolbar-status-dot debug-toolbar-status-dot--running radius-full f-shrink-0' />
-                                <span className='debug-toolbar-state-badge debug-toolbar-state-badge--running'>Running</span>
-                                <Paragraph className='font-size-2 color-secondary'>
-                                    {completedCount}/{totalNodes} completed
-                                </Paragraph>
-                            </>
+                            )}
+                        </Container>
+                        <Paragraph className='font-size-2 debug-toolbar-status-copy'>{debugStatusContent.detail}</Paragraph>
+                        {debugStatusContent.helper && (
+                            <Paragraph className='font-size-2 color-secondary debug-toolbar-status-copy'>{debugStatusContent.helper}</Paragraph>
                         )}
                     </Container>
-                </>
+                </Container>
             )}
 
             <DebugArgumentsPanel onStart={handleStartFromPanel} canStart={canStart} />
-
-            {!isDebugging && (totalDuration !== null || sessionError) && (
-                <Container className='text-center mt-1 debug-toolbar-below-status'>
-                    {totalDuration !== null && totalDuration >= 0 && (
-                        <Paragraph className='font-size-2 debug-toolbar-status--completed'>
-                            Completed in {totalDuration < 1000 ? `${totalDuration}ms` : `${(totalDuration / 1000).toFixed(1)}s`}
-                        </Paragraph>
-                    )}
-                    {sessionError && (
-                        <Paragraph className='font-size-2 debug-toolbar-status--error'>
-                            {sessionError}
-                        </Paragraph>
-                    )}
-                </Container>
-            )}
         </Container>
     );
 };

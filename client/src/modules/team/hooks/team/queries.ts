@@ -10,7 +10,7 @@ import type { DeleteTeamInputDTO } from '../../api/dtos/team/delete-team';
 import type { LeaveTeamInputDTO } from '../../api/dtos/team/leave-team';
 import type { GenerateInviteCodeInputDTO } from '../../api/dtos/team/generate-invite-code';
 import type { DeleteInviteCodeInputDTO } from '../../api/dtos/team/delete-invite-code';
-import type { JoinByInviteCodeInputDTO } from '../../api/dtos/team/join-by-invite-code';
+import type { JoinByInviteCodeInputDTO, JoinByInviteCodeOutputDTO } from '../../api/dtos/team/join-by-invite-code';
 import queryClient from '@/shared/infrastructure/query/query-client';
 
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
@@ -216,7 +216,7 @@ export const useDeleteInviteCodeMutation = () => {
 };
 
 export const useJoinByCodeMutation = () => {
-    return useMutation<void, Error, JoinByInviteCodeInputDTO>({
+    return useMutation<JoinByInviteCodeOutputDTO, Error, JoinByInviteCodeInputDTO>({
         mutationFn: teamService.joinByCode,
         onSuccess: () => {
             invalidateTeamsQuery();

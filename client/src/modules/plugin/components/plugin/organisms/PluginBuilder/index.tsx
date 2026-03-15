@@ -2,19 +2,21 @@ import PaletteItem from '@/modules/plugin/components/plugin/atoms/PaletteItem';
 import PluginBuilderCanvas from '@/modules/plugin/components/plugin/organisms/PluginBuilderCanvas';
 import { PluginBuilderSaveStatus } from '@/modules/plugin/components/plugin/organisms/PluginBuilder/save-status';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import type { IModifierData } from '@/modules/plugin/api/entities/plugin/workflow';
 import useSaveWorkflow from '@/modules/plugin/hooks/plugin/use-save-workflow';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { buildDeleteNodeConfirmOptions } from '@/modules/plugin/utilities/plugin/destructive-action-options';
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Sidebar from '@/shared/presentation/components/Sidebar';
 import Tooltip from '@/shared/presentation/components/Tooltip';
+import useConfirm, { useConfirmActionState } from '@/shared/presentation/hooks/use-confirm';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import { ArrowLeft, Check, PencilLine, Save, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import type { IModifierData } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { ChangeEvent, DragEvent, KeyboardEvent, ReactNode } from 'react';
 import '@xyflow/react/dist/style.css';
 import './PluginBuilder.css';
@@ -41,6 +43,8 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
     const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pluginNameInputRef = useRef<HTMLInputElement | null>(null);
     const pluginNameBeforeEditingRef = useRef(DEFAULT_PLUGIN_NAME);
+    const { confirm } = useConfirm();
+    const isConfirmActionOpen = useConfirmActionState();
 
     const { nodes, updateNodeData, selectedNode, selectNode, deleteNode, addNode, undo, redo, isDirty, isSaving } = usePluginBuilderStore(
         useShallow((state) => ({
@@ -56,6 +60,8 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             isSaving: state.isSaving
         }))
     );
+    const saveError = usePluginBuilderStore((state) => state.saveError);
+    const setSaveError = usePluginBuilderStore((state) => state.setSaveError);
 
     const saveWorkflow = useSaveWorkflow();
 
@@ -91,6 +97,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
         try {
             const result = await saveWorkflow();
             if (result) {
+                setSaveError(null);
                 setSaveStatus(PluginBuilderSaveStatus.Saved);
                 saveStatusTimeoutRef.current = setTimeout(() => {
                     setSaveStatus(PluginBuilderSaveStatus.Idle);
@@ -98,37 +105,46 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
                 }, 2000);
             } else {
                 setSaveStatus(PluginBuilderSaveStatus.Error);
-                saveStatusTimeoutRef.current = setTimeout(() => {
-                    setSaveStatus(PluginBuilderSaveStatus.Idle);
-                    saveStatusTimeoutRef.current = null;
-                }, 3000);
             }
         } catch {
             setSaveStatus(PluginBuilderSaveStatus.Error);
-            saveStatusTimeoutRef.current = setTimeout(() => {
-                setSaveStatus(PluginBuilderSaveStatus.Idle);
-                saveStatusTimeoutRef.current = null;
-            }, 3000);
         }
-    }, [clearSaveStatusTimeout, saveWorkflow, isSaving]);
+    }, [clearSaveStatusTimeout, saveWorkflow, isSaving, setSaveError]);
 
-    useKeyboardShortcut('s', handleSave, { ctrl: true });
+    const handleDismissSaveError = useCallback(() => {
+        clearSaveStatusTimeout();
+        setSaveError(null);
+        if (saveStatus === PluginBuilderSaveStatus.Error) {
+            setSaveStatus(PluginBuilderSaveStatus.Idle);
+        }
+    }, [clearSaveStatusTimeout, saveStatus, setSaveError]);
+
+    useKeyboardShortcut('s', handleSave, { ctrl: true, enabled: !isConfirmActionOpen });
 
     const handleEscape = useCallback(() => {
         if (selectedNode) selectNode(null);
     }, [selectedNode, selectNode]);
 
-    const handleDeleteSelected = useCallback(() => {
-        if (selectedNode) deleteNode(selectedNode.id);
-    }, [selectedNode, deleteNode]);
+    const handleDeleteSelected = useCallback(async () => {
+        if (!selectedNode) {
+            return;
+        }
+
+        const isConfirmed = await confirm(buildDeleteNodeConfirmOptions(selectedNode));
+        if (!isConfirmed) {
+            return;
+        }
+
+        deleteNode(selectedNode.id);
+    }, [confirm, deleteNode, selectedNode]);
 
     const handleUndo = useCallback(() => { undo(); }, [undo]);
     const handleRedo = useCallback(() => { redo(); }, [redo]);
 
-    useKeyboardShortcut('Escape', handleEscape, { preventDefault: false });
-    useKeyboardShortcut('Delete', handleDeleteSelected, { preventDefault: false });
-    useKeyboardShortcut('z', handleUndo, { ctrl: true });
-    useKeyboardShortcut('z', handleRedo, { ctrl: true, shift: true });
+    useKeyboardShortcut('Escape', handleEscape, { preventDefault: false, enabled: !isConfirmActionOpen });
+    useKeyboardShortcut('Delete', handleDeleteSelected, { preventDefault: false, enabled: !isConfirmActionOpen });
+    useKeyboardShortcut('z', handleUndo, { ctrl: true, enabled: !isConfirmActionOpen });
+    useKeyboardShortcut('z', handleRedo, { ctrl: true, shift: true, enabled: !isConfirmActionOpen });
 
     useEffect(() => {
         if (!isEditingPluginName || !pluginNameInputRef.current) {
@@ -247,7 +263,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             };
         }
 
-        if (saveStatus === PluginBuilderSaveStatus.Error) {
+        if (saveError) {
             return {
                 detail: 'Save failed',
                 label: 'Error',
@@ -268,7 +284,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             label: 'Saved',
             modifierClassName: 'plugin-builder-header-status--saved'
         };
-    }, [isDirty, isSaving, saveStatus]);
+    }, [isDirty, isSaving, saveError, saveStatus]);
 
     const SIDEBAR_TAGS = useMemo(() => [
         {
@@ -380,7 +396,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
                     </Container>
 
                     <Button
-                        variant='solid'
+                        variant='outline'
                         intent='brand'
                         size='sm'
                         aria-keyshortcuts='Control+S'
@@ -413,7 +429,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
                 </Sidebar>
 
                 <main className='plugin-builder-main' aria-label='Plugin builder workspace'>
-                    <PluginBuilderCanvas saveStatus={saveStatus} onSave={handleSave} />
+                    <PluginBuilderCanvas saveStatus={saveStatus} onDismissSaveError={handleDismissSaveError} onSave={handleSave} />
                 </main>
             </Container>
         </Container>
