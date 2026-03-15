@@ -33,6 +33,14 @@ export interface DashboardGlobalSearchSection {
     items: DashboardGlobalSearchItem[];
 };
 
+const ensureArray = <T>(value: T[] | undefined | null): T[] => {
+    if (Array.isArray(value)) {
+        return value;
+    }
+
+    return [];
+};
+
 const formatSearchDate = (value: string): string => {
     const date = new Date(value);
 
@@ -44,10 +52,17 @@ const formatSearchDate = (value: string): string => {
 };
 
 const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSection[] => {
+    const analyses = ensureArray(results.analyses);
+    const trajectories = ensureArray(results.trajectories);
+    const containers = ensureArray(results.containers);
+    const plugins = ensureArray(results.plugins);
+    const teams = ensureArray(results.teams);
+    const chats = ensureArray(results.chats);
+
     return [
         {
             key: 'analyses',
-            items: results.analyses.map((analysis) => ({
+            items: analyses.map((analysis) => ({
                 id: analysis._id,
                 title: analysis.pluginDisplayName || analysis.plugin,
                 subtitle: formatSearchDate(analysis.createdAt),
@@ -56,7 +71,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
         },
         {
             key: 'trajectories',
-            items: results.trajectories.map((trajectory) => ({
+            items: trajectories.map((trajectory) => ({
                 id: trajectory._id,
                 title: trajectory.name,
                 subtitle: trajectory.status || '',
@@ -65,7 +80,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
         },
         {
             key: 'containers',
-            items: results.containers.map((container) => ({
+            items: containers.map((container) => ({
                 id: container._id,
                 title: container.name,
                 subtitle: container.image,
@@ -74,7 +89,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
         },
         {
             key: 'plugins',
-            items: results.plugins.map((plugin) => {
+            items: plugins.map((plugin) => {
                 const listingExposure = plugin.listingExposures?.exposures[0] ?? getListingRelevantExposures(plugin.exposures)[0];
 
                 return {
@@ -89,7 +104,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
         },
         {
             key: 'teams',
-            items: results.teams.map((team) => ({
+            items: teams.map((team) => ({
                 id: team._id,
                 title: team.name,
                 subtitle: team.description || '',
@@ -99,7 +114,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
         },
         {
             key: 'chats',
-            items: results.chats.map((chat) => ({
+            items: chats.map((chat) => ({
                 id: chat._id,
                 title: chat.participants
                     .map((participant) => participant.firstName || participant.email)
