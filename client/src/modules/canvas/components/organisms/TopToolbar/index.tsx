@@ -14,6 +14,7 @@ import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-t
 import Avatar from '@/shared/presentation/components/Avatar';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
 
 import './TopToolbar.css';
 
@@ -100,6 +101,7 @@ const TopToolbar = () => {
             <WorkspaceTabs />
 
             <Container className="canvas-toolbar-info d-flex items-center content-end w-max">
+                <ThemeToggleButton className="canvas-toolbar-theme-toggle" />
                 <UserMenuPopover
                     onSettingsClick={handleSettingsClick}
                     onSignOut={handleSignOut}

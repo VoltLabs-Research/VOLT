@@ -48,7 +48,7 @@
         flex: 1 1 100%;
     }
 
-    .dashboard-header-right .volt-icon-button:not(.notification-trigger):not(.dashboard-ai-trigger) {
+    .dashboard-header-right .volt-icon-button:not(.notification-trigger):not(.dashboard-ai-trigger):not(.dashboard-theme-toggle) {
         display: none;
     }
 }
