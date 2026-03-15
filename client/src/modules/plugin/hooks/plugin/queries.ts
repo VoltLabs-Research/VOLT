@@ -33,7 +33,7 @@ import type { UploadBinaryInputDTO, UploadBinaryOutputDTO } from '../../api/dtos
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
 
 // ---------------------------------------------------------------------------
-// buildKeys - hierarchical keys with prefix support
+// buildKeys — hierarchical keys with prefix support
 // ---------------------------------------------------------------------------
 
 const pluginBaseKeys = buildKeys<{
@@ -55,7 +55,7 @@ const teamClusterKeys = buildKeys<{
 }>(['plugins', 'team-clusters']);
 
 // ---------------------------------------------------------------------------
-// PLUGIN_QUERY_KEYS - public facade
+// PLUGIN_QUERY_KEYS — public facade
 // ---------------------------------------------------------------------------
 
 export const PLUGIN_QUERY_KEYS = {

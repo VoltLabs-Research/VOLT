@@ -47,28 +47,19 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     />
 
                     {watchedBinaryObjectPath ? (
-                        <Container className='d-flex items-center content-between gap-075 binary-uploaded'>
-                            <Container className='d-flex items-start gap-05 binary-file-info'>
-                                <TbFile size={20} className='binary-file-icon' />
-                                <Container className='d-flex column gap-025 min-w-0'>
-                                    <Paragraph className='binary-upload-status font-size-1 font-weight-6'>
-                                        Binary uploaded
-                                    </Paragraph>
-                                    <Paragraph className='binary-filename overflow-hidden font-size-2 font-weight-5'>
-                                        {watchedBinaryFileName || watchedBinary}
-                                    </Paragraph>
-                                </Container>
+                        <Container className='d-flex items-center content-between binary-uploaded'>
+                            <Container className='d-flex items-center gap-05 binary-file-info'>
+                                <TbFile size={20} />
+                                <span className='binary-filename overflow-hidden font-size-2 font-weight-5'>
+                                    {watchedBinaryFileName || watchedBinary}
+                                </span>
                                 <TbCheck size={16} className='binary-check-icon' />
                             </Container>
                             <Button
                                 variant='ghost'
                                 intent='danger'
                                 size='sm'
-                                iconOnly
-                                className='binary-remove-action'
                                 onClick={handleRemoveBinary}
-                                aria-label='Remove uploaded binary'
-                                title='Remove uploaded binary'
                             >
                                 <TbTrash size={16} />
                             </Button>
@@ -78,12 +69,11 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                             variant='outline'
                             intent='neutral'
                             size='sm'
-                            className='binary-upload-action'
                             leftIcon={<TbUpload size={18} />}
                             onClick={triggerFileSelect}
                             disabled={isUploading || !currentPluginId}
                         >
-                            {isUploading ? `Uploading… ${uploadProgress}%` : 'Upload Binary'}
+                            {isUploading ? `Uploading... ${uploadProgress}%` : 'Upload Binary'}
                         </Button>
                     )}
 

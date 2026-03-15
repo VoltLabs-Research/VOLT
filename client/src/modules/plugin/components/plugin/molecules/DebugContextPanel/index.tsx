@@ -3,8 +3,8 @@ import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { Braces, ChevronDown, ChevronRight, Repeat } from 'lucide-react';
-import { useCallback, useId, useMemo, useState } from 'react';
+import { Braces, ChevronDown, ChevronRight, X, Repeat } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 import './DebugContextPanel.css';
 
 type DebugContextOutput = Record<string, unknown>;
@@ -27,7 +27,6 @@ interface NodeLabelData {
 };
 
 const DebugContextPanel = () => {
-    const panelBodyId = useId();
     const contextSnapshot = usePluginDebugStore((s) => s.contextSnapshot);
     const isDebugging = usePluginDebugStore((s) => s.isDebugging || s.totalDuration !== null);
     const forEachNodeId = usePluginDebugStore((s) => s.forEachNodeId);
@@ -40,10 +39,6 @@ const DebugContextPanel = () => {
 
     const entries = Object.entries(contextSnapshot);
     const hasData = entries.length > 0;
-
-    const handlePanelToggle = useCallback(() => {
-        setIsOpen((value) => !value);
-    }, []);
 
     const toggleKey = useCallback((key: string) => {
         setExpandedKeys((prev) => {
@@ -117,19 +112,16 @@ const DebugContextPanel = () => {
         const isExpanded = expandedKeys.has(nodeId);
         return (
             <Container key={nodeId} className='debug-context-entry'>
-                <button
-                    type='button'
+                <Container
                     className='debug-context-row d-flex items-center content-between gap-05 cursor-pointer'
                     onClick={() => toggleKey(nodeId)}
-                    aria-expanded={isExpanded}
-                    title={`Toggle context for ${getNodeLabel(nodeId)}`}
                 >
                     <Container className='d-flex column'>
                         <Paragraph className='debug-context-label'>{getNodeLabel(nodeId)}</Paragraph>
                         <Paragraph className='debug-context-id color-muted'>{nodeId}</Paragraph>
                     </Container>
                     <Chevron expanded={isExpanded} />
-                </button>
+                </Container>
                 {isExpanded && (
                     <Container className='debug-context-tree'>
                         <JsonTree data={output} defaultExpanded={true} />
@@ -142,19 +134,16 @@ const DebugContextPanel = () => {
     const iterationKey = `__iteration_${currentIndex}`;
     const forEachGroupKey = '__foreach_group';
     const iterationCount = Number(forEachEntry?.[1].count ?? totalIterations ?? 0);
-    const panelToggleLabel = isOpen ? 'Collapse debug context panel' : 'Expand debug context panel';
-    const panelToggleIcon = <Chevron expanded={isOpen} size={14} />;
+    let panelToggleIcon = <ChevronRight size={12} />;
+    if (isOpen) {
+        panelToggleIcon = <X size={12} className='color-secondary' />;
+    }
 
     return (
         <Container className='debug-context-panel p-absolute d-flex column panel-floating top-1 right-1 z-10'>
-            <button
-                type='button'
+            <Container
                 className='debug-context-row debug-context-panel-header d-flex items-center content-between gap-05 cursor-pointer u-select-none'
-                onClick={handlePanelToggle}
-                aria-expanded={isOpen}
-                aria-controls={panelBodyId}
-                aria-label={panelToggleLabel}
-                title={panelToggleLabel}
+                onClick={() => setIsOpen((v) => !v)}
             >
                 <Braces size={12} />
                 <Paragraph className='debug-context-panel-title d-flex items-center gap-035 f-1 font-size-05 font-weight-6'>
@@ -162,20 +151,17 @@ const DebugContextPanel = () => {
                     <span className='debug-context-panel-count radius-full font-weight-6'>{entries.length}</span>
                 </Paragraph>
                 {panelToggleIcon}
-            </button>
+            </Container>
 
             {isOpen && (
-                <Container id={panelBodyId} className='debug-context-panel-body nowheel y-auto flex-1 min-h-0 scrollbar-thin'>
+                <Container className='debug-context-panel-body nowheel y-auto flex-1 min-h-0 scrollbar-thin'>
                     {preForEach.map(([nodeId, output]) => renderEntry(nodeId, output))}
 
                     {forEachEntry && (
                         <Container className='debug-context-entry'>
-                            <button
-                                type='button'
+                            <Container
                                 className='debug-context-row d-flex items-center content-between gap-05 cursor-pointer'
                                 onClick={() => toggleKey(forEachGroupKey)}
-                                aria-expanded={expandedKeys.has(forEachGroupKey)}
-                                title='Toggle ForEach context'
                             >
                                 <Container className='d-flex items-center gap-05'>
                                     <Repeat size={10} className='color-muted' />
@@ -187,21 +173,18 @@ const DebugContextPanel = () => {
                                     </Container>
                                 </Container>
                                 <Chevron expanded={expandedKeys.has(forEachGroupKey)} />
-                            </button>
+                            </Container>
 
                             {expandedKeys.has(forEachGroupKey) && (
                                 <Container className='debug-context-nested'>
                                     <Container className='debug-context-entry'>
-                                        <button
-                                            type='button'
+                                        <Container
                                             className='debug-context-row d-flex items-center content-between gap-05 cursor-pointer'
                                             onClick={() => toggleKey(iterationKey)}
-                                            aria-expanded={expandedKeys.has(iterationKey)}
-                                            title={`Toggle iteration ${currentIndex}`}
                                         >
                                             <Paragraph className='debug-context-label'>Iteration {currentIndex}</Paragraph>
                                             <Chevron expanded={expandedKeys.has(iterationKey)} size={10} />
-                                        </button>
+                                        </Container>
 
                                         {expandedKeys.has(iterationKey) && (
                                             <Container className='debug-context-nested'>

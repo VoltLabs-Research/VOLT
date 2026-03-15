@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { ModifierContext } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 
 export const contextEditorSchema = z.object({

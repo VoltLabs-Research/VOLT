@@ -33,22 +33,7 @@ const requireExposureSelector = (params: ExposureSelectorParams, message: string
 const endpoints = {
     getListing: get<GetPluginListingInputDTO, GetPluginListingOutputDTO, RawListingResponse>('/:pluginId/listings', {
         unwrap: 'raw',
-        omit: ['pluginId', 'teamId'],
-        query: ({
-            analysisId,
-            exposureId,
-            exposureName,
-            trajectoryId,
-            page,
-            limit
-        }) => ({
-            ...(analysisId ? { analysisId } : {}),
-            ...(exposureId ? { exposureId } : {}),
-            ...(exposureName ? { exposureName } : {}),
-            ...(trajectoryId ? { trajectoryId } : {}),
-            ...(page !== undefined ? { page } : {}),
-            ...(limit !== undefined ? { limit } : {})
-        }),
+        omit: ['pluginId'],
         validate: (params) => requireExposureSelector(params, 'Exposure::IdRequired'),
         map: (result) => {
             const inner = result.data;

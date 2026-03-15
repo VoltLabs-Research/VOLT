@@ -5,50 +5,73 @@ import DebugToolbar from '@/modules/plugin/components/plugin/molecules/DebugTool
 import CanvasToolbar from '@/modules/plugin/components/plugin/molecules/CanvasToolbar';
 import { nodeTypes } from '@/modules/plugin/components/plugin/molecules/nodes';
 import FloatingNodePanel from '@/modules/plugin/components/plugin/organisms/FloatingNodePanel';
-import { PluginBuilderSaveStatus } from '@/modules/plugin/components/plugin/organisms/PluginBuilder/save-status';
 import useCanvasHandlers from '@/modules/plugin/hooks/plugin/use-canvas-handlers';
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import Container from '@/shared/presentation/components/Container';
 import { Background, MiniMap, ReactFlow } from '@xyflow/react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { ReactFlowInstance } from '@xyflow/react';
 
-interface NodeColorInput {
-    type?: string;
-};
+/** Reads a CSS custom property from the document root. */
+const getCSSVar = (name: string): string =>
+    getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
-interface ViewportPosition {
-    x: number;
-    y: number;
-    zoom: number;
-};
+/** Resolves all theme-dependent colors that ReactFlow needs as raw strings. */
+const resolveThemeColors = () => ({
+    minimapColors: {
+        [NodeType.MODIFIER]: getCSSVar('--accent-blue'),
+        [NodeType.ARGUMENTS]: getCSSVar('--accent-indigo'),
+        [NodeType.CONTEXT]: getCSSVar('--accent-teal'),
+        [NodeType.FOREACH]: getCSSVar('--accent-purple'),
+        [NodeType.ENTRYPOINT]: getCSSVar('--accent-green'),
+        [NodeType.EXPOSURE]: getCSSVar('--accent-orange'),
+        [NodeType.EXPORT]: getCSSVar('--accent-red'),
+        [NodeType.IF_STATEMENT]: getCSSVar('--accent-purple')
+    } as Record<string, string>,
+    edgeStroke: getCSSVar('--color-border-strong'),
+    canvasBg: getCSSVar('--color-bg'),
+    gridColor: getCSSVar('--color-text-muted'),
+    minimapMask: getCSSVar('--color-overlay'),
+    minimapBg: getCSSVar('--color-surface-1'),
+    nodeFallback: getCSSVar('--color-text-muted')
+});
 
-const NODE_MINIMAP_COLORS: Record<string, string> = {
-    [NodeType.MODIFIER]: 'var(--accent-blue)',
-    [NodeType.ARGUMENTS]: 'var(--accent-indigo)',
-    [NodeType.CONTEXT]: 'var(--accent-blue)',
-    [NodeType.FOREACH]: 'var(--accent-purple)',
-    [NodeType.ENTRYPOINT]: 'var(--accent-green)',
-    [NodeType.EXPOSURE]: 'var(--accent-orange)',
-    [NodeType.EXPORT]: 'var(--accent-red)',
-    [NodeType.IF_STATEMENT]: 'var(--accent-purple)'
-};
+/** Returns resolved theme colors for ReactFlow, re-reading when the theme changes. */
+const useCanvasThemeColors = () => {
+    const [colors, setColors] = useState(resolveThemeColors);
 
-const nodeColor = (node: NodeColorInput) =>
-    NODE_MINIMAP_COLORS[node.type ?? ''] ?? 'var(--color-border-strong)';
+    useEffect(() => {
+        const observer = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+                if (m.attributeName === 'data-theme') {
+                    setColors(resolveThemeColors());
+                }
+            }
+        });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        return () => observer.disconnect();
+    }, []);
+
+    return colors;
+};
 
 interface PluginBuilderCanvasProps {
-    saveStatus: PluginBuilderSaveStatus;
-    onDismissSaveError: () => void;
+    saveStatus: 'idle' | 'saving' | 'saved' | 'error';
     onSave: () => void;
 };
 
-const PluginBuilderCanvas = ({ saveStatus, onDismissSaveError, onSave }: PluginBuilderCanvasProps) => {
+const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) => {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [currentZoom, setCurrentZoom] = useState(1);
+    const themeColors = useCanvasThemeColors();
+
+    const nodeColor = useCallback(
+        (node: { type?: string }) => themeColors.minimapColors[node.type ?? ''] ?? themeColors.nodeFallback,
+        [themeColors]
+    );
 
     // Initialize debug socket subscriptions
     usePluginDebugSocket();
@@ -80,7 +103,7 @@ const PluginBuilderCanvas = ({ saveStatus, onDismissSaveError, onSave }: PluginB
         setCurrentZoom(instance.getZoom());
     }, []);
 
-    const handleMoveEnd = useCallback((_event: unknown, viewport: ViewportPosition) => {
+    const handleMoveEnd = useCallback((_event: unknown, viewport: { x: number; y: number; zoom: number }) => {
         setCurrentZoom(viewport.zoom);
     }, []);
 
@@ -89,7 +112,6 @@ const PluginBuilderCanvas = ({ saveStatus, onDismissSaveError, onSave }: PluginB
     return (
         <Container className='h-max w-max p-relative plugin-builder-canvas' ref={reactFlowWrapper}>
             <ReactFlow
-                className='plugin-builder-flow'
                 nodes={nodes}
                 edges={edges}
                 nodeTypes={nodeTypes}
@@ -108,16 +130,15 @@ const PluginBuilderCanvas = ({ saveStatus, onDismissSaveError, onSave }: PluginB
                 snapGrid={[16, 16]}
                 defaultEdgeOptions={{
                     animated: true,
-                    style: { stroke: 'var(--color-border-strong)', strokeWidth: 2 }
+                    style: { stroke: themeColors.edgeStroke, strokeWidth: 2 }
                 }}
-                style={{ backgroundColor: 'var(--color-surface-1)' }}
             >
-                <Background bgColor='var(--color-surface-1)' color='var(--plugin-canvas-grid)' gap={16} size={0.8} />
+                <Background bgColor={themeColors.canvasBg} color={themeColors.gridColor} gap={16} size={0.8} />
                 {!isEmpty && (
                     <MiniMap
                         nodeColor={nodeColor}
-                        maskColor='var(--plugin-canvas-minimap-mask)'
-                        bgColor='var(--color-surface-2)'
+                        maskColor={themeColors.minimapMask}
+                        bgColor={themeColors.minimapBg}
                     />
                 )}
             </ReactFlow>
@@ -130,7 +151,7 @@ const PluginBuilderCanvas = ({ saveStatus, onDismissSaveError, onSave }: PluginB
 
             <DebugContextPanel />
 
-            <CanvasToolbar saveStatus={saveStatus} onDismissSaveError={onDismissSaveError} onSave={onSave} zoom={currentZoom} />
+            <CanvasToolbar saveStatus={saveStatus} onSave={onSave} zoom={currentZoom} />
         </Container>
     );
 };

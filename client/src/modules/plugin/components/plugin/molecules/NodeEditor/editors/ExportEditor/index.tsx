@@ -1,22 +1,21 @@
+import { useCallback, useState, useMemo, useEffect } from 'react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import CodeEditor from '@/shared/presentation/components/CodeEditor';
 import { createNodeEditorForm } from '@/shared/forms';
 import { EXPORTER_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
 import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ChangeEvent } from 'react';
 import type { IExportData } from '@/modules/plugin/api/entities/plugin/workflow';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import type { EditorProps } from '../types';
 import { EXPORT_EDITOR_DEFAULT_VALUES, exportEditorSchema, type ExportEditorFormValues } from './schema';
 
-const EXPORTER_SELECT_OPTIONS = EXPORTER_OPTIONS.map((opt) => ({
+const EXPORTER_SELECT_OPTIONS = EXPORTER_OPTIONS.map(opt => ({
     value: opt.value,
     title: opt.label
 }));
 
-const EXPORT_TYPE_SELECT_OPTIONS = EXPORT_TYPE_OPTIONS.map((opt) => ({
+const EXPORT_TYPE_SELECT_OPTIONS = EXPORT_TYPE_OPTIONS.map(opt => ({
     value: opt.value,
     title: opt.label
 }));
@@ -66,7 +65,7 @@ const ExportEditor = ({ node }: EditorProps) => {
     }, [form, node.id, updateNodeData]);
 
     const createChartOptionChangeHandler = useCallback((key: string) => {
-        return (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
             updateChartOption(key, e.target.value);
         };
     }, [updateChartOption]);
@@ -175,8 +174,6 @@ const ExportEditor = ({ node }: EditorProps) => {
             {!isChartExporter && (
                 <CollapsibleSection title='Export Options' defaultExpanded>
                     <CodeEditor
-                        label='Export options JSON'
-                        description='Define exporter-specific options as JSON.'
                         value={jsonValue}
                         onChange={handleJsonChange}
                         rows={6}

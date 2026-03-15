@@ -9,7 +9,9 @@ interface UseTeamDataOptions {
 
 export default function useTeamData(options?: UseTeamDataOptions) {
     const enabled = options?.enabled ?? true;
+    const confirmSelectedTeamId = useTeamStore((state) => state.confirmSelectedTeamId);
     const setSelectedTeamId = useTeamStore((state) => state.setSelectedTeamId);
+    const pendingSelectedTeamId = useTeamStore((state) => state.pendingSelectedTeamId);
     const selectedTeamId = useTeamStore((state) => state.selectedTeamId);
     const hasHydratedSelection = useTeamStore((state) => state.hasHydratedSelection);
     const hydrateSelectedTeamId = useTeamStore((state) => state.hydrateSelectedTeamId);
@@ -50,13 +52,26 @@ export default function useTeamData(options?: UseTeamDataOptions) {
         }
 
         const fetchedTeams = teamsQuery.data;
+        const pendingSelectedTeam = pendingSelectedTeamId
+            ? fetchedTeams.find((team) => team._id === pendingSelectedTeamId)
+            : null;
+
+        if (pendingSelectedTeam) {
+            confirmSelectedTeamId(pendingSelectedTeam._id);
+            return;
+        }
+
+        if (pendingSelectedTeamId && selectedTeamId === pendingSelectedTeamId) {
+            return;
+        }
+
         const selectedTeam = fetchedTeams.find((team) => team._id === selectedTeamId);
         const teamToSelect = selectedTeam ?? fetchedTeams[0] ?? null;
 
         if (teamToSelect && teamToSelect._id !== selectedTeamId) {
             setSelectedTeamId(teamToSelect._id);
         }
-    }, [hasHydratedSelection, teamsQuery.data, selectedTeamId, setSelectedTeamId]);
+    }, [confirmSelectedTeamId, hasHydratedSelection, pendingSelectedTeamId, teamsQuery.data, selectedTeamId, setSelectedTeamId]);
 
     const fetchTeams = useCallback(async () => {
         if (!enabled) {

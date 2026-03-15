@@ -1,13 +1,11 @@
-import { buildDeleteNodeConfirmOptions } from '@/modules/plugin/utilities/plugin/destructive-action-options';
+import type { FC } from 'react';
+import type { Node } from '@xyflow/react';
+import { Trash2 } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
-import DangerZone from '@/shared/presentation/components/DangerZone';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import DangerZone from '@/shared/presentation/components/DangerZone';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import { Trash2 } from 'lucide-react';
-import type { Node } from '@xyflow/react';
-import type { FC } from 'react';
 import ModifierEditor from './editors/ModifierEditor';
 import ArgumentsEditor from './editors/ArgumentsEditor';
 import ContextEditor from './editors/ContextEditor';
@@ -22,11 +20,7 @@ interface NodeEditorProps {
     node: Node;
 };
 
-interface NodeEditorComponentProps {
-    node: Node;
-};
-
-const EDITOR_COMPONENTS: Partial<Record<NodeType, FC<NodeEditorComponentProps>>> = {
+const EDITOR_COMPONENTS: Partial<Record<NodeType, FC<{ node: Node }>>> = {
     [NodeType.MODIFIER]: ModifierEditor,
     [NodeType.ARGUMENTS]: ArgumentsEditor,
     [NodeType.CONTEXT]: ContextEditor,
@@ -38,27 +32,20 @@ const EDITOR_COMPONENTS: Partial<Record<NodeType, FC<NodeEditorComponentProps>>>
 };
 
 const NodeEditor = ({ node }: NodeEditorProps) => {
-    const { confirm } = useConfirm();
     const deleteNode = usePluginBuilderStore((state) => state.deleteNode);
     const selectNode = usePluginBuilderStore((state) => state.selectNode);
 
-    const nodeType = Object.values(NodeType).find((value) => value === node.type);
-    const EditorComponent = nodeType ? EDITOR_COMPONENTS[nodeType] : undefined;
+    const nodeType = node.type as NodeType;
+    const EditorComponent = EDITOR_COMPONENTS[nodeType];
 
-    const handleDelete = async () => {
-        const isConfirmed = await confirm(buildDeleteNodeConfirmOptions(node));
-
-        if (!isConfirmed) {
-            return;
-        }
-
+    const handleDelete = () => {
         deleteNode(node.id);
         selectNode(null);
     };
 
     return (
-        <Container className='node-editor-content d-flex column gap-1 p-1'>
-            <Container className='node-editor-fields d-flex column gap-1'>
+        <Container className='p-1 y-auto'>
+            <Container>
                 {EditorComponent ? (
                     <EditorComponent node={node} />
                 ) : (
@@ -68,10 +55,10 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
                 )}
             </Container>
 
-            <Container className='node-editor-danger-zone mt-1 pt-1'>
+            <Container className='mt-1'>
                 <DangerZone
                     title='Delete Node'
-                    description='Remove this node and all of its connections after confirmation.'
+                    description='Remove this node and its connections'
                     actionLabel='Delete'
                     actionIcon={<Trash2 size={14} />}
                     onAction={handleDelete}

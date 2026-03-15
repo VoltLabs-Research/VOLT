@@ -252,15 +252,12 @@ const PluginsListing = () => {
             render: (_, row) => {
                 const plugin = row as PluginListingRow;
                 return (
-                    <button
-                        type='button'
-                        className='plugin-name-link plugin-name-button font-size-2 font-weight-5'
+                    <span
+                        className='plugin-name-link font-size-2 font-weight-5 cursor-pointer'
                         onClick={() => navigate(`/plugins/builder?id=${plugin._id}`)}
-                        aria-label={`Edit plugin ${plugin.modifier!.name}`}
-                        title={`Edit plugin ${plugin.modifier!.name}`}
                     >
                         {plugin.modifier!.name}
-                    </button>
+                    </span>
                 );
             },
             skeleton: { variant: 'text', width: 160 }

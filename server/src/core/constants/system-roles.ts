@@ -51,6 +51,7 @@ export const SystemRoles = Object.freeze({
     [SystemRoleNames.MEMBER]: {
         name: SystemRoleNames.MEMBER,
         permissions: [
+            readOnlyFor(Resource.TEAM),
             ...crudFor(Resource.TRAJECTORY),
             ...crudFor(Resource.ANALYSIS),
             readOnlyFor(Resource.PLUGIN),

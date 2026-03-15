@@ -16,7 +16,7 @@ interface DashboardClusterOnboardingState {
 const TEAM_CLUSTER_QUERY_LIMIT = 50;
 const TEAM_CLUSTER_REFETCH_INTERVAL = 15000;
 
-const hasConnectedCluster = (statuses: TeamClusterStatus[]): boolean => {
+const hasUsableDashboardCluster = (statuses: TeamClusterStatus[]): boolean => {
     return statuses.includes(TeamClusterStatus.Connected);
 };
 
@@ -60,9 +60,9 @@ const useDashboardClusterOnboarding = (): DashboardClusterOnboardingState => {
             statusesByTeamId.set(team._id, statuses);
         });
 
-        const hasAnyConnectedCluster = Array.from(statusesByTeamId.values()).some(hasConnectedCluster);
+        const hasAnyConnectedCluster = Array.from(statusesByTeamId.values()).some(hasUsableDashboardCluster);
         const selectedTeamStatuses = statusesByTeamId.get(selectedTeam._id) ?? [];
-        const hasSelectedTeamConnectedCluster = hasConnectedCluster(selectedTeamStatuses);
+        const hasSelectedTeamConnectedCluster = hasUsableDashboardCluster(selectedTeamStatuses);
 
         return {
             hasAnyConnectedCluster,
