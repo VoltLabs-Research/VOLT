@@ -276,6 +276,10 @@
     line-height: 1.2;
 }
 
+.latex-workspace__theme-toggle {
+    flex-shrink: 0;
+}
+
 /** File rows in the left panel */
 .latex-workspace__file-row {
     padding: 0.4rem 0.75rem;

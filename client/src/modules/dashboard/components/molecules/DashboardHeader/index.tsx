@@ -8,6 +8,7 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
+import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import { IoMenuOutline } from 'react-icons/io5';
 import { GoPersonAdd } from 'react-icons/go';
@@ -57,6 +58,7 @@ const DashboardHeader = ({
             <Container className='dashboard-header-right gap-05 d-flex items-center flex-1 content-end'>
                 {inviteAction}
 
+                <ThemeToggleButton className='dashboard-theme-toggle' />
                 <AIFloatingAssistantPanel />
                 <NotificationsPopover />
             </Container>

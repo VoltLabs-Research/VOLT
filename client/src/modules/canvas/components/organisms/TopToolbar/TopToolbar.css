@@ -79,6 +79,10 @@
     padding: 0 !important;
 }
 
+.canvas-toolbar-theme-toggle {
+    margin-right: 0.25rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .canvas-toolbar-logo,
     .canvas-toolbar-logo-mark,

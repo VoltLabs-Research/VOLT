@@ -8,6 +8,7 @@ import EditableTag from '@/shared/presentation/components/EditableTag';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
 import LatexEditorPanel from './LatexEditorPanel';
 import LatexFilePanel from './LatexFilePanel';
 import LatexPreviewPanel from './LatexPreviewPanel';
@@ -438,6 +439,7 @@ const LatexDocumentWorkspace = () => {
                     {latexDocument?.title ?? 'LaTeX Document'}
                 </EditableTag>
                 <Container className='d-flex items-center gap-075'>
+                    <ThemeToggleButton className='latex-workspace__theme-toggle' />
                     {collaboratorAvatars.length > 0 && (
                         <Container className='latex-workspace__collaborators d-flex items-center'>
                             {collaboratorAvatars}
