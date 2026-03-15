@@ -55,6 +55,7 @@ export default defineConfig(({ mode }) => {
         plugins: [react()],
         server: {
             host: '0.0.0.0',
+            allowedHosts: ['5173--main--volt-development--rodyherrera--frda5i519n648.pit-1.try.coder.app'],
             port: 5173,
             proxy: {
                 '/api': {
@@ -75,7 +76,7 @@ export default defineConfig(({ mode }) => {
             }
         },
         optimizeDeps: {
-            include: ['react-icons/tb', 'zod']
+            include: ['react-icons/tb', 'zod', 'react', 'react-dom']
         },
         build: {
             rollupOptions: {
