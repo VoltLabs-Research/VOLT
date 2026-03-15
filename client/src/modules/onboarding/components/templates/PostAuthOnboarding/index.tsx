@@ -1,26 +1,23 @@
 import './PostAuthOnboarding.css';
-import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
-import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
-import { OnboardingStep, resolveOnboardingStep } from '@/modules/onboarding/utilities/resolve-onboarding-step';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
-import { JoinTeamModal } from '@/modules/team/components/organisms/JoinTeamModal';
-import { openModal } from '@/shared/presentation/components/Modal';
+import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
+import { OnboardingStep, resolveOnboardingStep } from '@/modules/onboarding/utilities/resolve-onboarding-step';
+import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
+import useTeamData from '@/modules/team/hooks/team/use-team-data';
+import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Loader from '@/shared/presentation/components/Loader';
-import NotificationsPopover from '@/modules/notification/components/organisms/NotificationsPopover';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
-import UserMenuPopover from '@/modules/auth/components/molecules/UserMenuPopover';
 import { sileo } from 'sileo';
 import { useState } from 'react';
-import { Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import useTeamData from '@/modules/team/hooks/team/use-team-data';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 interface OnboardingStepState {
     title: string;
@@ -39,9 +36,9 @@ const PostAuthOnboarding = () => {
     const navigate = useNavigate();
     const next = useNextDestination();
     const user = useCurrentUser();
+    const defaultTeamName = user ? `${user.firstName} ${user.lastName} team's` : "My team's";
 
-    const [teamName, setTeamName] = useState(`${user?.firstName} ${user?.lastName} team's`);
-    // TODO: Delete description field in the onboarding, UI/UX noise
+    const [teamName, setTeamName] = useState(defaultTeamName);
     const [teamDescription, _setTeamDescription] = useState('');
     const [nameError, setNameError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,16 +46,14 @@ const PostAuthOnboarding = () => {
 
     const createTeam = useCreateTeamMutation();
     const setSelectedTeamId = useTeamStore((state) => state.setSelectedTeamId);
-
     const { teams, isTeamsLoading, selectedTeamId } = useTeamData();
 
     const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
         enabled: Boolean(selectedTeamId)
     });
     const teamClusters = teamClustersQuery.data?.data ?? [];
-    const hasConnectedCluster = teamClusters.some((c) => c.status === TeamClusterStatus.Connected);
+    const hasConnectedCluster = teamClusters.some((cluster) => cluster.status === TeamClusterStatus.Connected);
     const isClustersLoading = teamClustersQuery.isLoading && Boolean(selectedTeamId);
-
     const hasTeam = teams.length > 0 || Boolean(selectedTeamId);
 
     if (isTeamsLoading || isClustersLoading) {
@@ -89,15 +84,18 @@ const PostAuthOnboarding = () => {
         }
 
         setIsSubmitting(true);
+
         try {
             const newTeam = await createTeam.mutateAsync({
                 name: teamName.trim(),
                 description: teamDescription.trim()
             });
+
             sileo.success({
                 title: 'Team created',
                 description: `"${newTeam.name}" is ready.`
             });
+
             setSelectedTeamId(newTeam._id);
             navigate('/onboarding/cluster/setup', {
                 replace: true,
@@ -129,24 +127,23 @@ const PostAuthOnboarding = () => {
         navigate('/dashboard/settings/general');
     };
 
-    const handleOpenJoinModal = () => openModal('join-team-modal');
-
     return (
-        <Container className='post-auth-onboarding-page d-flex column items-center content-center w-max vh-max'>
+        <OnboardingLayout
+            onSettingsClick={handleSettingsClick}
+            onSignOut={handleSignOut}
+            isSigningOut={isSigningOut}
+        >
             <Container className='post-auth-onboarding-shell d-flex column gap-2'>
-                <Container className='post-auth-onboarding-topbar d-flex items-center content-between gap-1 flex-wrap'>
-                    <Container className='d-flex column gap-025'>
+                <Container className='d-flex column gap-075 items-center'>
+                    <Container className='d-flex column gap-025 items-center'>
                         <span className='font-size-1 font-weight-6 color-secondary'>{stepState.progressLabel}</span>
                         <Container className='post-auth-onboarding-progress' aria-hidden='true'>
                             <span className='post-auth-onboarding-progress-fill' style={{ width: `${stepState.progressValue}%` }} />
                         </Container>
                     </Container>
-                    <Button className='post-auth-onboarding-invite-btn' variant='ghost' intent='neutral' size='sm' onClick={handleOpenJoinModal}>
-                        Have an invite code?
-                    </Button>
                 </Container>
 
-                <Container className='d-flex column gap-2' style={{ width: '30rem', maxWidth: '100%' }}>
+                <Container className='post-auth-onboarding-content d-flex column gap-2'>
                     <Container className='d-flex column gap-1 text-center'>
                         <Title className='font-size-6 font-weight-6'>{stepState.title}</Title>
                         <Paragraph className='color-secondary font-size-3-5'>
@@ -160,12 +157,18 @@ const PostAuthOnboarding = () => {
                             placeholder='e.g., Research Lab'
                             value={teamName}
                             error={nameError}
-                            onChange={(e) => {
-                                setTeamName(e.target.value);
-                                if (nameError) setNameError(undefined);
+                            onChange={(event) => {
+                                setTeamName(event.target.value);
+                                if (nameError) {
+                                    setNameError(undefined);
+                                }
                             }}
                             inputProps={{
-                                onKeyDown: (e) => { if (e.key === 'Enter') handleCreateTeam(); }
+                                onKeyDown: (event) => {
+                                    if (event.key === 'Enter') {
+                                        handleCreateTeam();
+                                    }
+                                }
                             }}
                         />
                     </Container>
@@ -183,24 +186,7 @@ const PostAuthOnboarding = () => {
                     </Button>
                 </Container>
             </Container>
-
-            <JoinTeamModal />
-
-            <Container className='post-auth-onboarding-floating-tools d-flex items-center gap-075'>
-                {user && (
-                    <Container className='post-auth-onboarding-user-info'>
-                        <UserMenuPopover
-                            onSettingsClick={handleSettingsClick}
-                            onSignOut={handleSignOut}
-                            isSigningOut={isSigningOut}
-                        />
-                    </Container>
-                )}
-                <Container className='post-auth-onboarding-notifications'>
-                    <NotificationsPopover />
-                </Container>
-            </Container>
-        </Container>
+        </OnboardingLayout>
     );
 };
 

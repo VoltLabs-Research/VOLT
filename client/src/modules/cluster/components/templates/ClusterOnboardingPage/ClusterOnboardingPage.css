@@ -1,13 +1,6 @@
-.cluster-onboarding-page {
-    background: var(--color-bg);
-    min-height: 100vh;
-    overflow: hidden;
-}
-
 .cluster-onboarding-center {
     position: relative;
-    max-width: 560px;
-    margin: 0 auto;
+    width: min(100%, 560px);
     height: 100vh;
     padding: 4rem 1rem 2rem;
 }
@@ -149,10 +142,8 @@
     50% { opacity: 0.4; }
 }
 
-/* Success screen */
-.cluster-onboarding-success {
+.cluster-onboarding-success-content {
     min-height: 100vh;
-    background: var(--color-bg);
 }
 
 .cluster-onboarding-success-title {
@@ -171,36 +162,8 @@
     }
 }
 
-/* Floating invite code button */
-.cluster-onboarding-invite-btn {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    z-index: 50;
-}
-
-/* Floating notifications */
-.cluster-onboarding-notifications {
-    position: fixed;
-    bottom: 1rem;
-    right: 1rem;
-    z-index: 50;
-}
-
-/* Floating user info */
-.cluster-onboarding-user-info {
-    position: fixed;
-    bottom: 1rem;
-    left: 1rem;
-    z-index: 50;
-}
-
-/* Go back button */
 .cluster-onboarding-go-back {
-    position: fixed;
-    top: 1rem;
-    left: 1rem;
-    z-index: 50;
+    flex-shrink: 0;
 }
 
 .cluster-onboarding-go-back .button-icon-left {
@@ -208,12 +171,7 @@
     align-items: center;
 }
 
-/* Breadcrumb */
 .cluster-onboarding-breadcrumb {
-    position: fixed;
-    top: 1.5rem;
-    left: 1.5rem;
-    z-index: 50;
     display: flex;
     align-items: center;
     gap: 0.25rem;
