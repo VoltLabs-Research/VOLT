@@ -5,8 +5,12 @@ import type { RemoveRunningJobsOutputDTO } from '../../dtos/remove-running-jobs'
 import type { RetryFailedJobsOutputDTO } from '../../dtos/retry-failed-jobs';
 
 const endpoints = {
-    clearHistory: del<EmptyParams, ClearHistoryOutputDTO>('/history'),
-    removeRunningJobs: del<EmptyParams, RemoveRunningJobsOutputDTO>('/running'),
+    clearHistory: del<EmptyParams, ClearHistoryOutputDTO>('/history', {
+        unwrap: 'data'
+    }),
+    removeRunningJobs: del<EmptyParams, RemoveRunningJobsOutputDTO>('/running', {
+        unwrap: 'data'
+    }),
     retryFailedJobs: post<EmptyParams, RetryFailedJobsOutputDTO>('/failed/retries')
 };
 
