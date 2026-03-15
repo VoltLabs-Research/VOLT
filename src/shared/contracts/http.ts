@@ -105,7 +105,7 @@ export interface AnalysisQueueJobPayload {
     updatedAt: string;
 };
 
-export interface RasterQueueJobPayload {
+export interface RasterQueueJobPayload extends Record<string, unknown> {
     jobId: string;
     teamId: string;
     trajectoryId: string;
