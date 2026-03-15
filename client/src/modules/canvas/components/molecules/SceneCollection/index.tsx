@@ -1,5 +1,6 @@
 import AnalysisTreeNode from '../../molecules/AnalysisTreeNode';
 import CanvasSlider from '../../atoms/CanvasSlider';
+import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 
 import { Atom, Box, Eye, Minus, Plus } from 'lucide-react';
@@ -12,6 +13,7 @@ import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { CanvasAnalysisStatusEntry } from '../../../utilities/analysis-status';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
+import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
 
 interface SceneCollectionProps {
     filteredSections: AnalysisSectionData[];
@@ -39,6 +41,9 @@ interface SceneCollectionProps {
     onToggleSimulationCell?: () => void;
     sceneOpacities?: Record<string, number>;
     setSceneOpacity?: (sceneKey: string, opacity: number) => void;
+    selectionMode?: 'default' | 'raster';
+    selectedScene?: RasterSelectableScene | null;
+    onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
 };
 
 const TREE_SCENE_ICON_COLOR = 'var(--accent-blue)';
@@ -62,10 +67,16 @@ const SceneCollection = ({
     showSimulationCell = true,
     onToggleSimulationCell,
     sceneOpacities = {},
-    setSceneOpacity
+    setSceneOpacity,
+    selectionMode = 'default',
+    selectedScene,
+    onSelectRasterScene
 }: SceneCollectionProps) => {
     const defaultScene = { sceneType: 'trajectory', source: 'default' as const };
-    const isDefaultActive = activeScene?.source === 'default';
+    const isRasterSelectionMode = selectionMode === 'raster';
+    const isDefaultActive = isRasterSelectionMode
+        ? isSameScene(selectedScene, defaultScene)
+        : activeScene?.source === 'default';
 
     const defaultSceneKey = getSceneKey(defaultScene);
     const defaultOpacity = sceneOpacities[defaultSceneKey] ?? 1;
@@ -148,32 +159,51 @@ const SceneCollection = ({
     return (
         <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Scene hierarchy">
             {showDefaultScene && (
-                <ContextMenuPopover
-                    id="canvas-ctx-default-scene"
-                    trigger={(
-                        <button
-                            className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none ${isDefaultActive ? 'selected' : ''}`}
-                            style={{ paddingLeft: 16 }}
-                            onClick={() => {
-                                onSelectScene(defaultScene);
-                            }}
-                            role="treeitem"
-                            aria-selected={isDefaultActive}
-                            type="button"
-                        >
-                            <span className="canvas-tree-spacer" />
-                            <Atom style={{ width: 13, height: 13, color: TREE_SCENE_ICON_COLOR }} />
-                            <span className={`${isDefaultActive ? 'color-primary' : 'color-secondary'}`}>
-                                Trajectory
-                            </span>
-                        </button>
-                    )}
-                    options={defaultSceneOptions}
-                    size='sm'
-                />
+                isRasterSelectionMode ? (
+                    <button
+                        className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none ${isDefaultActive ? 'selected' : ''}`}
+                        style={{ paddingLeft: 16 }}
+                        onClick={() => {
+                            onSelectRasterScene?.(defaultScene, 'Trajectory');
+                        }}
+                        role="treeitem"
+                        aria-selected={isDefaultActive}
+                        type="button"
+                    >
+                        <span className="canvas-tree-spacer" />
+                        <Atom style={{ width: 13, height: 13, color: TREE_SCENE_ICON_COLOR }} />
+                        <span className={`${isDefaultActive ? 'color-primary' : 'color-secondary'}`}>
+                            Trajectory
+                        </span>
+                    </button>
+                ) : (
+                    <ContextMenuPopover
+                        id="canvas-ctx-default-scene"
+                        trigger={(
+                            <button
+                                className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none ${isDefaultActive ? 'selected' : ''}`}
+                                style={{ paddingLeft: 16 }}
+                                onClick={() => {
+                                    onSelectScene(defaultScene);
+                                }}
+                                role="treeitem"
+                                aria-selected={isDefaultActive}
+                                type="button"
+                            >
+                                <span className="canvas-tree-spacer" />
+                                <Atom style={{ width: 13, height: 13, color: TREE_SCENE_ICON_COLOR }} />
+                                <span className={`${isDefaultActive ? 'color-primary' : 'color-secondary'}`}>
+                                    Trajectory
+                                </span>
+                            </button>
+                        )}
+                        options={defaultSceneOptions}
+                        size='sm'
+                    />
+                )
             )}
 
-            {showDefaultScene && (
+            {showDefaultScene && !isRasterSelectionMode && (
                 <ContextMenuPopover
                     id="canvas-ctx-simulation-cell"
                     trigger={(
@@ -222,6 +252,9 @@ const SceneCollection = ({
                     onDownloadExposureListing={onDownloadExposureListing}
                     sceneOpacities={sceneOpacities}
                     setSceneOpacity={setSceneOpacity ?? (() => undefined)}
+                    selectionMode={selectionMode}
+                    selectedScene={selectedScene}
+                    onSelectRasterScene={onSelectRasterScene}
                 />
             ))}
 
