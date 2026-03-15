@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronRight, Download, Eye, FlaskConical, Atom, Minus, MousePointerClick, Plus, Trash2 } from 'lucide-react';
+import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import CanvasSlider from '../../atoms/CanvasSlider';
 import Button from '@/shared/presentation/components/Button';
@@ -11,6 +12,7 @@ import type { AnalysisSectionData } from '../../../hooks/use-canvas-sidebar-scen
 import type { CanvasAnalysisStatus } from '../../../utilities/analysis-status';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
+import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 
 interface AnalysisTreeNodeProps {
@@ -33,6 +35,9 @@ interface AnalysisTreeNodeProps {
     }) => void;
     sceneOpacities: Record<string, number>;
     setSceneOpacity: (sceneKey: string, opacity: number) => void;
+    selectionMode?: 'default' | 'raster';
+    selectedScene?: RasterSelectableScene | null;
+    onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
 };
 
 const ANALYSIS_ICON_COLOR = 'var(--color-text-secondary)';
@@ -52,15 +57,22 @@ const AnalysisTreeNode = ({
     onDownloadAnalysis,
     onDownloadExposureListing,
     sceneOpacities,
-    setSceneOpacity
+    setSceneOpacity,
+    selectionMode = 'default',
+    selectedScene,
+    onSelectRasterScene
 }: AnalysisTreeNodeProps) => {
     const { analysis, pluginDisplayName, entry, isCurrentAnalysis } = section;
+    const isRasterSelectionMode = selectionMode === 'raster';
     const hasExposures = entry.state === 'loaded' && entry.exposures.length > 0;
     const isLoading = entry.state === 'loading';
     const fallbackStatus = normalizeCanvasAnalysisStatus(analysis.status);
     const resolvedStatus = effectiveStatus ?? fallbackStatus;
     const isAnalysisInProgress = isCanvasAnalysisInProgress(resolvedStatus);
     const canDownloadAnalysis = resolvedStatus === CanvasAnalysisStatusEnum.Completed;
+    const isSelectedAnalysis = isRasterSelectionMode
+        ? selectedScene?.source === 'plugin' && 'analysisId' in selectedScene && selectedScene.analysisId === analysis._id
+        : isCurrentAnalysis;
 
     const handleSelectAnalysis = () => {
         if (isAnalysisInProgress) {
@@ -68,6 +80,11 @@ const AnalysisTreeNode = ({
         }
 
         onToggle(analysis._id);
+
+        if (isRasterSelectionMode) {
+            return;
+        }
+
         onSelectScene({ sceneType: 'trajectory', source: 'default' as const }, analysis);
     };
 
@@ -94,10 +111,10 @@ const AnalysisTreeNode = ({
 
     const analysisTrigger = (
         <Container
-            className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isCurrentAnalysis ? 'selected' : ''} ${isAnalysisInProgress ? 'is-disabled' : 'cursor-pointer'}`}
+            className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} ${isAnalysisInProgress ? 'is-disabled' : 'cursor-pointer'}`}
             onClick={handleSelectAnalysis}
             role="treeitem"
-            aria-selected={isCurrentAnalysis}
+            aria-selected={isSelectedAnalysis}
             aria-disabled={isAnalysisInProgress}
             tabIndex={isAnalysisInProgress ? -1 : 0}
         >
@@ -120,8 +137,8 @@ const AnalysisTreeNode = ({
                     : <ChevronRight style={{ width: 13, height: 13 }} />
                 }
             </Button>
-            <FlaskConical style={{ width: 13, height: 13, color: isCurrentAnalysis ? ANALYSIS_ICON_ACTIVE_COLOR : ANALYSIS_ICON_COLOR }} />
-            <span className={`${isCurrentAnalysis ? 'color-primary' : 'color-secondary'}`}>
+            <FlaskConical style={{ width: 13, height: 13, color: isSelectedAnalysis ? ANALYSIS_ICON_ACTIVE_COLOR : ANALYSIS_ICON_COLOR }} />
+            <span className={`${isSelectedAnalysis ? 'color-primary' : 'color-secondary'}`}>
                 {pluginDisplayName}
             </span>
             <span className="flex-1" />
@@ -135,14 +152,16 @@ const AnalysisTreeNode = ({
 
     return (
         <>
-            <Tooltip content='Analysis still running. Some options will be disabled until it finishes.' disabled={!isAnalysisInProgress} placement='bottom'>
-                <ContextMenuPopover
-                    id={`canvas-ctx-analysis-${analysis._id}`}
-                    trigger={analysisTrigger}
-                    options={analysisMenuOptions}
-                    size='sm'
-                />
-            </Tooltip>
+            {isRasterSelectionMode ? analysisTrigger : (
+                <Tooltip content='Analysis still running. Some options will be disabled until it finishes.' disabled={!isAnalysisInProgress} placement='bottom'>
+                    <ContextMenuPopover
+                        id={`canvas-ctx-analysis-${analysis._id}`}
+                        trigger={analysisTrigger}
+                        options={analysisMenuOptions}
+                        size='sm'
+                    />
+                </Tooltip>
+            )}
 
             {isExpanded && isLoading && (
                 <Container className="canvas-tree-item d-flex items-center gap-05 color-secondary canvas-tree-item--indent-lg">
@@ -157,7 +176,9 @@ const AnalysisTreeNode = ({
                     analysisId: exposure.analysisId,
                     exposureId: exposure.exposureId
                 };
-                const isActive = isSceneActive(scene);
+                const isActive = isRasterSelectionMode
+                    ? isSameScene(selectedScene, scene)
+                    : isSceneActive(scene);
                 const sceneKey = getSceneKey(scene);
                 const currentOpacity = sceneOpacities[sceneKey] ?? 1;
 
@@ -209,27 +230,42 @@ const AnalysisTreeNode = ({
                     }
                 ];
 
+                const exposureTrigger = (
+                    <button
+                        className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none canvas-tree-item--indent-lg ${isActive ? 'selected' : ''}`}
+                        onClick={() => {
+                            if (isRasterSelectionMode) {
+                                onSelectRasterScene?.(scene, exposure.name);
+                                return;
+                            }
+
+                            onSelectScene(scene, analysis);
+                        }}
+                        role="treeitem"
+                        aria-selected={isActive}
+                        type="button"
+                    >
+                        <span className="canvas-tree-spacer" />
+                        <Atom style={{ width: 12, height: 12, color: SCENE_ICON_COLOR }} />
+                        <span className={`${isActive ? 'color-primary' : 'color-secondary'}`}>
+                            {exposure.name}
+                        </span>
+                    </button>
+                );
+
+                if (isRasterSelectionMode) {
+                    return (
+                        <Container key={exposure.exposureId}>
+                            {exposureTrigger}
+                        </Container>
+                    );
+                }
+
                 return (
                     <ContextMenuPopover
                         key={exposure.exposureId}
                         id={`canvas-ctx-exposure-${exposure.analysisId}-${exposure.exposureId}`}
-                        trigger={(
-                            <button
-                                className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none canvas-tree-item--indent-lg ${isActive ? 'selected' : ''}`}
-                                onClick={() => {
-                                    onSelectScene(scene, analysis);
-                                }}
-                                role="treeitem"
-                                aria-selected={isActive}
-                                type="button"
-                            >
-                                <span className="canvas-tree-spacer" />
-                                <Atom style={{ width: 12, height: 12, color: SCENE_ICON_COLOR }} />
-                                <span className={`${isActive ? 'color-primary' : 'color-secondary'}`}>
-                                    {exposure.name}
-                                </span>
-                            </button>
-                        )}
+                        trigger={exposureTrigger}
                         options={exposureMenuOptions}
                         size='sm'
                     />

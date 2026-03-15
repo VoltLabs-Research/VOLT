@@ -1,4 +1,3 @@
-import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
 import { RasterFrameScope } from '@/modules/raster/api/entities/raster';
 import { useRasterFrame } from '@/modules/raster/hooks/use-raster-frame';
 import { useRasterMetadata } from '@/modules/raster/hooks/use-raster-metadata';
@@ -26,6 +25,8 @@ interface UseRasterWorkspaceParams {
     trajectory: Trajectory | null | undefined;
     analysisId?: string;
     currentTimestep?: number;
+    model?: string;
+    onModelChange?: (model?: string) => void;
 };
 
 interface UseRasterWorkspaceResult {
@@ -33,6 +34,7 @@ interface UseRasterWorkspaceResult {
     modelOptions: RasterModelOption[];
     selectedModel: string | null;
     selectedModelTitle: string | null;
+    displayTimestep?: number;
     sourceTitle: string;
     sourceDescription: string | null;
     isAnalysisSource: boolean;
@@ -81,18 +83,32 @@ const getModelOptions = (analysis: RasterAnalysisMetadata | null): RasterModelOp
         }));
 };
 
+const getAvailableTimesteps = (source: RasterWorkspaceSource | null, metadataTrajectoryTimesteps: number[]): number[] => {
+    if (!source) {
+        return [];
+    }
+
+    if (source.scope === RasterFrameScope.Analysis) {
+        return source.analysis?.availableTimesteps ?? [];
+    }
+
+    return metadataTrajectoryTimesteps;
+};
+
 /** Resolves the raster source for the active canvas analysis and timestep. */
 export const useRasterWorkspace = ({
     trajectoryId,
     trajectory,
     analysisId,
-    currentTimestep
+    currentTimestep,
+    model,
+    onModelChange
 }: UseRasterWorkspaceParams): UseRasterWorkspaceResult => {
-    const { rasterModel, setRasterModel } = useCanvasUrlState();
     const metadataQuery = useRasterMetadata({ trajectoryId, enabled: Boolean(trajectoryId) });
     const [requestKey, setRequestKey] = useState(0);
     const analyses = metadataQuery.metadata?.analyses ?? [];
     const hasTrajectoryRaster = Boolean(metadataQuery.metadata?.trajectory);
+    const trajectoryAvailableTimesteps = metadataQuery.metadata?.trajectory?.availableTimesteps ?? [];
 
     const selectedAnalysis = useMemo(() => {
         if (!analysisId) {
@@ -130,42 +146,54 @@ export const useRasterWorkspace = ({
         return getModelOptions(source?.analysis ?? null);
     }, [source]);
 
+    const availableTimesteps = useMemo(() => {
+        return getAvailableTimesteps(source, trajectoryAvailableTimesteps);
+    }, [source, trajectoryAvailableTimesteps]);
+
+    const displayTimestep = useMemo(() => {
+        if (currentTimestep !== undefined && availableTimesteps.includes(currentTimestep)) {
+            return currentTimestep;
+        }
+
+        return availableTimesteps[0];
+    }, [availableTimesteps, currentTimestep]);
+
     const selectedModel = useMemo(() => {
         if (source?.scope !== RasterFrameScope.Analysis || !modelOptions.length) {
             return null;
         }
 
-        if (rasterModel && modelOptions.some((option) => option.value === rasterModel)) {
-            return rasterModel;
+        if (model && modelOptions.some((option) => option.value === model)) {
+            return model;
         }
 
         return modelOptions[0].value;
-    }, [modelOptions, rasterModel, source]);
+    }, [model, modelOptions, source]);
 
     useEffect(() => {
         if (source?.scope !== RasterFrameScope.Analysis || !selectedModel) {
-            if (rasterModel) {
-                setRasterModel(undefined, { replace: true });
+            if (model) {
+                onModelChange?.(undefined);
             }
 
             return;
         }
 
-        if (selectedModel !== rasterModel) {
-            setRasterModel(selectedModel, { replace: true });
+        if (selectedModel !== model) {
+            onModelChange?.(selectedModel);
         }
-    }, [rasterModel, selectedModel, setRasterModel, source]);
+    }, [model, onModelChange, selectedModel, source]);
 
     const isFrameEnabled = Boolean(
         trajectoryId
         && source
-        && currentTimestep !== undefined
+        && displayTimestep !== undefined
         && (source.scope === RasterFrameScope.Trajectory || (source.analysis?.analysisId && selectedModel))
     );
 
     const frameQuery = useRasterFrame({
         trajectoryId,
-        timestep: currentTimestep,
+        timestep: displayTimestep,
         analysisId: source?.analysis?.analysisId,
         model: selectedModel ?? undefined,
         scope: source?.scope ?? RasterFrameScope.Trajectory,
@@ -182,8 +210,8 @@ export const useRasterWorkspace = ({
     }, [modelOptions, selectedModel]);
 
     const setSelectedModel = useCallback((model: string) => {
-        setRasterModel(model, { replace: true });
-    }, [setRasterModel]);
+        onModelChange?.(model);
+    }, [onModelChange]);
 
     const refetchMetadata = useCallback(async () => {
         setRequestKey((currentValue) => currentValue + 1);
@@ -209,6 +237,7 @@ export const useRasterWorkspace = ({
         modelOptions,
         selectedModel,
         selectedModelTitle,
+        displayTimestep,
         sourceTitle: source?.title ?? 'Raster',
         sourceDescription: source?.description ?? null,
         isAnalysisSource: source?.scope === RasterFrameScope.Analysis,

@@ -13,11 +13,14 @@ import CollapsibleSection from '@/shared/presentation/components/CollapsibleSect
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
+import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { RasterContainerId, RasterContainerSelection, RasterSelectableScene } from '@/modules/raster/types/container-selection';
 
 import './ObjectsPanel.css';
 
@@ -31,15 +34,29 @@ interface ObjectsPanelProps {
         trajectoryId?: string;
         exposureName?: string;
     }) => void;
+    rasterContainerSelections?: RasterContainerSelection[];
+    activeRasterContainerId?: RasterContainerId;
+    onSetActiveRasterContainer?: (containerId: RasterContainerId) => void;
+    onUpdateRasterContainerSelection?: (containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => void;
 };
 
 const PANEL_ICON_COLOR = 'var(--color-text-secondary)';
 
-const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListing }: ObjectsPanelProps) => {
+const ObjectsPanel = ({
+    trajectory,
+    onDownloadAnalysis,
+    onDownloadExposureListing,
+    rasterContainerSelections = [],
+    activeRasterContainerId = 'container-1',
+    onSetActiveRasterContainer,
+    onUpdateRasterContainerSelection
+}: ObjectsPanelProps) => {
     const [sceneCollectionOpen, setSceneCollectionOpen] = useState(true);
     const [selectedTimestepAnalysisOpen, setSelectedTimestepAnalysisOpen] = useState(true);
     const [colorCodingOpen, setColorCodingOpen] = useState(true);
     const [particleFilterOpen, setParticleFilterOpen] = useState(true);
+    const { activeWorkspace } = useCanvasUrlState();
+    const isRasterWorkspace = activeWorkspace === CanvasWorkspace.Raster;
 
     const {
         sceneCollectionSections,
@@ -79,6 +96,101 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
     })));
 
     const handleToggleSimulationCell = () => setShowSimulationCell(!showSimulationCell);
+
+    const handleSelectRasterScene = useCallback((scene: RasterSelectableScene, label: string) => {
+        if (!onUpdateRasterContainerSelection) {
+            return;
+        }
+
+        onUpdateRasterContainerSelection(activeRasterContainerId, {
+            scene,
+            label,
+            model: undefined
+        });
+    }, [activeRasterContainerId, onUpdateRasterContainerSelection]);
+
+    const renderRasterContainerPanel = useCallback((selection: RasterContainerSelection) => {
+        const isActive = selection.id === activeRasterContainerId;
+
+        return (
+            <CollapsibleSection
+                key={selection.id}
+                title={selection.title}
+                icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+                expanded={isActive}
+                onExpandedChange={(next) => {
+                    if (next) {
+                        onSetActiveRasterContainer?.(selection.id);
+                    }
+                }}
+                className={`canvas-right-dropdown ${isActive ? 'canvas-raster-container-panel--active' : ''}`}
+                headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
+                titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
+                iconClassName="canvas-right-dropdown-icon"
+                bodyClassName="canvas-right-dropdown-body"
+                contentClassName="d-flex column"
+                noSpacing
+                useDefaultHeaderStyles={false}
+                useDefaultTitleStyles={false}
+                headerAction={(
+                    <button
+                        type="button"
+                        className={`canvas-raster-container-panel__summary ${isActive ? 'is-active' : ''}`}
+                        onClick={() => onSetActiveRasterContainer?.(selection.id)}
+                    >
+                        {selection.label}
+                    </button>
+                )}
+            >
+                {isActive && (
+                    <SceneCollection
+                        filteredSections={sceneCollectionSections}
+                        expandedSections={expandedSections}
+                        toggleSection={toggleSection}
+                        showSectionsSkeleton={showSectionsSkeleton}
+                        activeScene={activeScene}
+                        onSelectScene={onSelectScene}
+                        isSceneInActiveScenes={isSceneInActiveScenes}
+                        addScene={addScene}
+                        removeScene={removeScene}
+                        totalAnalyses={sceneCollectionTotalAnalyses}
+                        statusMap={statusMap}
+                        onDeleteAnalysis={onDeleteAnalysis}
+                        onDownloadAnalysis={onDownloadAnalysis ?? (() => undefined)}
+                        onDownloadExposureListing={onDownloadExposureListing}
+                        showSimulationCell={showSimulationCell}
+                        onToggleSimulationCell={handleToggleSimulationCell}
+                        sceneOpacities={sceneOpacities}
+                        setSceneOpacity={setSceneOpacity}
+                        selectionMode="raster"
+                        selectedScene={selection.scene}
+                        onSelectRasterScene={handleSelectRasterScene}
+                    />
+                )}
+            </CollapsibleSection>
+        );
+    }, [
+        activeRasterContainerId,
+        activeScene,
+        addScene,
+        expandedSections,
+        handleSelectRasterScene,
+        isSceneInActiveScenes,
+        onDeleteAnalysis,
+        onDownloadAnalysis,
+        onDownloadExposureListing,
+        onSelectScene,
+        onSetActiveRasterContainer,
+        removeScene,
+        sceneCollectionSections,
+        sceneCollectionTotalAnalyses,
+        sceneOpacities,
+        setSceneOpacity,
+        showSectionsSkeleton,
+        showSimulationCell,
+        statusMap,
+        toggleSection
+    ]);
 
     const isArtifactActive = (artifact: SceneArtifact): boolean => isArtifactSceneActive(activeScene, artifact);
 
@@ -154,29 +266,37 @@ const ObjectsPanel = ({ trajectory, onDownloadAnalysis, onDownloadExposureListin
                 useDefaultHeaderStyles={false}
                 useDefaultTitleStyles={false}
             >
-                <SceneCollection
-                    filteredSections={sceneCollectionSections}
-                    expandedSections={expandedSections}
-                    toggleSection={toggleSection}
-                    showSectionsSkeleton={showSectionsSkeleton}
-                    activeScene={activeScene}
-                    onSelectScene={onSelectScene}
-                    isSceneInActiveScenes={isSceneInActiveScenes}
-                    addScene={addScene}
-                    removeScene={removeScene}
-                    totalAnalyses={sceneCollectionTotalAnalyses}
-                    statusMap={statusMap}
-                    onDeleteAnalysis={onDeleteAnalysis}
-                    onDownloadAnalysis={onDownloadAnalysis ?? (() => undefined)}
-                    onDownloadExposureListing={onDownloadExposureListing}
-                    showSimulationCell={showSimulationCell}
-                    onToggleSimulationCell={handleToggleSimulationCell}
-                    sceneOpacities={sceneOpacities}
-                    setSceneOpacity={setSceneOpacity}
-                />
+                {isRasterWorkspace
+                    ? (
+                        <Container className="canvas-raster-container-panels d-flex column gap-05">
+                            {rasterContainerSelections.map(renderRasterContainerPanel)}
+                        </Container>
+                    )
+                    : (
+                        <SceneCollection
+                            filteredSections={sceneCollectionSections}
+                            expandedSections={expandedSections}
+                            toggleSection={toggleSection}
+                            showSectionsSkeleton={showSectionsSkeleton}
+                            activeScene={activeScene}
+                            onSelectScene={onSelectScene}
+                            isSceneInActiveScenes={isSceneInActiveScenes}
+                            addScene={addScene}
+                            removeScene={removeScene}
+                            totalAnalyses={sceneCollectionTotalAnalyses}
+                            statusMap={statusMap}
+                            onDeleteAnalysis={onDeleteAnalysis}
+                            onDownloadAnalysis={onDownloadAnalysis ?? (() => undefined)}
+                            onDownloadExposureListing={onDownloadExposureListing}
+                            showSimulationCell={showSimulationCell}
+                            onToggleSimulationCell={handleToggleSimulationCell}
+                            sceneOpacities={sceneOpacities}
+                            setSceneOpacity={setSceneOpacity}
+                        />
+                    )}
             </CollapsibleSection>
 
-            {hasSelectedTimestepAnalyses && (
+            {!isRasterWorkspace && hasSelectedTimestepAnalyses && (
                 <CollapsibleSection
                     title="Timestep-scoped analyses"
                     icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}

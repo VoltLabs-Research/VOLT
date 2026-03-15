@@ -122,6 +122,32 @@
     font-size: 11px;
 }
 
+.canvas-raster-container-panels {
+    padding: 0.375rem 0.375rem 0.75rem;
+}
+
+.canvas-raster-container-panel--active {
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+}
+
+.canvas-raster-container-panel__summary {
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    line-height: 1;
+    padding: 0.3rem 0.55rem;
+    cursor: pointer;
+}
+
+.canvas-raster-container-panel__summary.is-active {
+    border-color: var(--color-border-soft);
+    background: var(--color-surface-2);
+    color: var(--color-text-primary);
+}
+
 @media (prefers-reduced-motion: reduce) {
     .canvas-tree-group-chevron {
         transition: none;
