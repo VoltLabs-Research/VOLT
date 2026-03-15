@@ -10,20 +10,9 @@ const getConfiguredApiOrigin = (): string | null => {
 };
 
 export const getBackendOrigin = (): string => {
-    if (import.meta.env.DEV) {
-        return window.location.origin;
-    }
-
     return getConfiguredApiOrigin() ?? window.location.origin;
 };
 
 export const buildBackendUrl = (path: string): string => {
     return new URL(path, `${getBackendOrigin()}/`).toString();
-};
-
-export const buildBackendWebSocketUrl = (path: string): string => {
-    const origin = getBackendOrigin();
-    const url = new URL(path, `${origin}/`);
-    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-    return url.toString();
 };

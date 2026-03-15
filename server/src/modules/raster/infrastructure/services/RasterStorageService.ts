@@ -1,65 +1,58 @@
-import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import {
+    getAnalysisRasterFrameObjectName,
+    getAnalysisRasterPreviewsPrefix,
     getRasterFrameObjectName,
-    getTrajectoryModelsPrefix,
     getTrajectoryRasterPreviewsPrefix
 } from '@modules/raster/utilities/raster-storage-paths';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { TeamClusterDaemonStreamError } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { RasterFrameResult } from '@modules/raster/domain/port/IRasterFrameReader';
 import type { IRasterStorage } from '@modules/raster/domain/port/IRasterStorage';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
+
+interface ObjectListResponse {
+    keys: string[];
+};
 
 @injectable()
 export class RasterStorageService implements IRasterStorage {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService
+        private readonly storageService: IStorageService,
+
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
-    listModelFiles(trajectoryId: string): AsyncIterable<string> {
-        return this.storageService.listByPrefix(
-            SYS_BUCKETS.MODELS,
-            getTrajectoryModelsPrefix(trajectoryId)
-        );
+    async *listPreviewFiles(trajectoryId: string, teamClusterId?: string): AsyncIterable<string> {
+        const prefix = getTrajectoryRasterPreviewsPrefix(trajectoryId);
+        yield* this.listObjectKeys(SYS_BUCKETS.RASTERIZER, prefix, teamClusterId);
     }
 
-    listPreviewFiles(trajectoryId: string): AsyncIterable<string> {
-        return this.storageService.listByPrefix(
-            SYS_BUCKETS.RASTERIZER,
-            getTrajectoryRasterPreviewsPrefix(trajectoryId)
-        );
+    async *listAnalysisPreviewFiles(
+        trajectoryId: string,
+        analysisId: string,
+        teamClusterId?: string
+    ): AsyncIterable<string> {
+        const prefix = getAnalysisRasterPreviewsPrefix(trajectoryId, analysisId);
+        yield* this.listObjectKeys(SYS_BUCKETS.RASTERIZER, prefix, teamClusterId);
     }
 
-    async getRasterFramePNG(trajectoryId: string, timestep: number): Promise<RasterFrameResult> {
+    async getRasterFramePNG(trajectoryId: string, timestep: number, teamClusterId?: string): Promise<RasterFrameResult> {
         const objectName = getRasterFrameObjectName(trajectoryId, timestep);
 
         try {
-            const exists = await this.storageService.exists(SYS_BUCKETS.RASTERIZER, objectName);
-
-            if (!exists) {
-                throw ApplicationError.notFound(
-                    ErrorCodes.RASTER_NOT_FOUND,
-                    'Raster frame not found'
-                );
+            if (teamClusterId) {
+                return await this.getRemoteRasterFramePNG(teamClusterId, objectName, `trajectory-${trajectoryId}-timestep-${timestep}.png`);
             }
 
-            const [stream, stat] = await Promise.all([
-                this.storageService.getStream(SYS_BUCKETS.RASTERIZER, objectName),
-                this.storageService.getStat(SYS_BUCKETS.RASTERIZER, objectName)
-            ]);
-
-            return {
-                stream,
-                contentLength: stat.size,
-                contentType: stat.mimetype || 'image/png',
-                cacheControl: 'public, max-age=86400',
-                filename: `trajectory-${trajectoryId}-timestep-${timestep}.png`
-            };
+            return this.getLocalRasterFramePNG(objectName, `trajectory-${trajectoryId}-timestep-${timestep}.png`);
         } catch (error) {
             if (error instanceof ApplicationError) {
                 throw error;
@@ -71,6 +64,131 @@ export class RasterStorageService implements IRasterStorage {
                 'Failed to retrieve raster frame PNG',
                 500
             );
+        }
+    }
+
+    async getAnalysisRasterFramePNG(
+        trajectoryId: string,
+        analysisId: string,
+        timestep: number,
+        model: string,
+        teamClusterId?: string
+    ): Promise<RasterFrameResult> {
+        const objectName = getAnalysisRasterFrameObjectName(trajectoryId, analysisId, timestep, model);
+
+        try {
+            if (teamClusterId) {
+                return await this.getRemoteRasterFramePNG(
+                    teamClusterId,
+                    objectName,
+                    `trajectory-${trajectoryId}-analysis-${analysisId}-timestep-${timestep}-${model}.png`
+                );
+            }
+
+            return this.getLocalRasterFramePNG(
+                objectName,
+                `trajectory-${trajectoryId}-analysis-${analysisId}-timestep-${timestep}-${model}.png`
+            );
+        } catch (error) {
+            if (error instanceof ApplicationError) {
+                throw error;
+            }
+
+            logger.warn(error, `Failed to retrieve analysis raster frame PNG for trajectory ${trajectoryId}, analysis ${analysisId}, timestep ${timestep}, model ${model}`);
+            throw new ApplicationError(
+                ErrorCodes.RASTER_FAILED,
+                'Failed to retrieve raster frame PNG',
+                500
+            );
+        }
+    }
+
+    private async *listObjectKeys(
+        bucket: string,
+        prefix: string,
+        teamClusterId?: string
+    ): AsyncIterable<string> {
+        if (teamClusterId) {
+            try {
+                const result = await this.teamClusterDaemonClient.command<ObjectListResponse>(
+                    teamClusterId,
+                    'object.list',
+                    {
+                        bucket,
+                        prefix
+                    }
+                );
+
+                for (const key of result.keys) {
+                    yield key;
+                }
+
+                return;
+            } catch (error) {
+                logger.warn(error, `Failed to list raster objects from daemon for prefix ${prefix}, falling back to local storage`);
+            }
+        }
+
+        for await (const key of this.storageService.listByPrefix(bucket, prefix)) {
+            yield key;
+        }
+    }
+
+    private async getLocalRasterFramePNG(objectName: string, filename: string): Promise<RasterFrameResult> {
+        const exists = await this.storageService.exists(SYS_BUCKETS.RASTERIZER, objectName);
+
+        if (!exists) {
+            throw ApplicationError.notFound(
+                ErrorCodes.RASTER_NOT_FOUND,
+                'Raster frame not found'
+            );
+        }
+
+        const [stream, stat] = await Promise.all([
+            this.storageService.getStream(SYS_BUCKETS.RASTERIZER, objectName),
+            this.storageService.getStat(SYS_BUCKETS.RASTERIZER, objectName)
+        ]);
+
+        return {
+            stream,
+            contentLength: stat.size,
+            contentType: stat.mimetype || 'image/png',
+            cacheControl: 'public, max-age=86400',
+            filename
+        };
+    }
+
+    private async getRemoteRasterFramePNG(
+        teamClusterId: string,
+        objectName: string,
+        filename: string
+    ): Promise<RasterFrameResult> {
+        try {
+            const response = await this.teamClusterDaemonClient.commandResponseStream(teamClusterId, 'object.get', {
+                bucket: SYS_BUCKETS.RASTERIZER,
+                objectKey: objectName
+            });
+            const contentLengthHeader = response.headers['content-length'];
+            const contentLength = typeof contentLengthHeader === 'string'
+                ? Number(contentLengthHeader)
+                : undefined;
+
+            return {
+                stream: response.stream,
+                contentLength: typeof contentLength === 'number' && Number.isFinite(contentLength)
+                    ? contentLength
+                    : undefined,
+                contentType: response.headers['content-type'] || 'image/png',
+                cacheControl: 'public, max-age=86400',
+                filename
+            };
+        } catch (error) {
+            if (error instanceof TeamClusterDaemonStreamError && error.status === 404) {
+                return this.getLocalRasterFramePNG(objectName, filename);
+            }
+
+            logger.warn(error, `Failed to stream raster frame from daemon for object ${objectName}, falling back to local storage`);
+            return this.getLocalRasterFramePNG(objectName, filename);
         }
     }
 };

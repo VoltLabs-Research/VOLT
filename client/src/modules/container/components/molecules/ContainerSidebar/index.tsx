@@ -18,6 +18,7 @@ import Container from '@/shared/presentation/components/Container';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import Title from '@/shared/presentation/components/Title';
 import usePermission from '@/shared/presentation/hooks/use-permission';
+import { supportsRemoteDesktop } from '@/modules/container/utilities/supports-remote-desktop';
 import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
 import type { LucideIcon } from 'lucide-react';
 
@@ -57,7 +58,7 @@ const BASE_NAV_ITEMS: NavItem[] = [
     }
 ];
 
-const XRDP_NAV_ITEM: NavItem = {
+const REMOTE_DESKTOP_NAV_ITEM: NavItem = {
     path: 'remote-desktop',
     label: 'Remote Desktop',
     icon: Monitor
@@ -73,11 +74,11 @@ const ContainerSidebar = ({
     const { pathname } = useLocation();
     const isRunning = container.status === 'running';
     const canUpdate = usePermission(['container:update']);
-    const supportsXrdp = !!container.capabilities?.xrdp;
+    const hasRemoteDesktop = supportsRemoteDesktop(container.capabilities);
 
     const basePath = `/dashboard/containers/${container._id}`;
-    const navItems = supportsXrdp && isRunning
-        ? [...BASE_NAV_ITEMS, XRDP_NAV_ITEM]
+    const navItems = hasRemoteDesktop && isRunning
+        ? [...BASE_NAV_ITEMS, REMOTE_DESKTOP_NAV_ITEM]
         : BASE_NAV_ITEMS;
     let actionButtons = null;
 

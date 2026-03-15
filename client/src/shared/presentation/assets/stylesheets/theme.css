@@ -47,6 +47,7 @@
     --color-autofill-text: #f0f0f0;
 
     --accent-blue: #0062FF;
+    --color-brand-primary: #0062FF;
     --accent-indigo: #5e5ce6;
     --accent-purple: #bf5af2;
     --accent-green: #2dcc70;
@@ -60,14 +61,10 @@
 
     --button-bg: #171719;
     --button-bg-smooth: #101011;
-    --button-fg: #f0f0f0;
     --button-border: #1D1D20;
 
     --input-bg: #101011;
     --input-fg: var(--color-text-primary);
-    --input-focus-ring: var(--accent-blue);
-
-    --badge-fg: var(--color-text-secondary);
 
     --status-success: #2dcc70;
     --status-success-bg: rgba(45, 204, 112, 0.1);
@@ -137,16 +134,13 @@
 
     --button-bg: rgba(60, 60, 67, 0.032);
     --button-bg-smooth: rgba(60, 60, 67, 0.02);
-    --button-fg: var(--color-text-primary);
     --button-border: rgba(60, 60, 67, 0.1);
 
     --input-bg: #FFFFFF;
     --input-fg: var(--color-text-primary);
-    --input-focus-ring: #007aff;
-
-    --badge-fg: var(--color-text-secondary);
 
     --accent-blue: #007aff;
+    --color-brand-primary: #007aff;
     --accent-indigo: #5856d6;
     --accent-purple: #af52de;
     --accent-green: #34c759;

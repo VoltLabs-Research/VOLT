@@ -1,9 +1,9 @@
 import useContainerRemoteDesktop, { RemoteDesktopConnectionState } from '../../../hooks/use-container-remote-desktop';
-import { Maximize, Minimize, Monitor, PlugZap } from 'lucide-react';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Maximize, Minimize, Monitor, PlugZap } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
 import type { FormEvent } from 'react';
 import './ContainerRemoteDesktop.css';
@@ -21,20 +21,20 @@ const CONNECTION_STATUS_LABELS: Record<RemoteDesktopConnectionState, string> = {
 
 const ContainerRemoteDesktop = ({ container }: ContainerRemoteDesktopProps) => {
     const remoteDesktop = useContainerRemoteDesktop(container);
-    const stageRef = useRef<HTMLDivElement>(null);
     const isBusy = remoteDesktop.connectionState === RemoteDesktopConnectionState.Connecting;
     const isConnected = remoteDesktop.connectionState === RemoteDesktopConnectionState.Connected;
+    const hasActiveSession = remoteDesktop.remoteDesktopUrl !== null;
     const [isFullscreen, setIsFullscreen] = useState(false);
 
     const syncFullscreenState = useCallback((): void => {
-        const nextIsFullscreen = document.fullscreenElement === stageRef.current;
+        const nextIsFullscreen = document.fullscreenElement === remoteDesktop.stageElementRef.current;
         setIsFullscreen(nextIsFullscreen);
         remoteDesktop.refreshViewport();
 
-        if (nextIsFullscreen || isConnected) {
+        if (nextIsFullscreen || hasActiveSession) {
             remoteDesktop.focusDisplay();
         }
-    }, [isConnected, remoteDesktop]);
+    }, [hasActiveSession, remoteDesktop]);
 
     useEffect(() => {
         document.addEventListener('fullscreenchange', syncFullscreenState);
@@ -50,7 +50,7 @@ const ContainerRemoteDesktop = ({ container }: ContainerRemoteDesktopProps) => {
     };
 
     const handleToggleFullscreen = useCallback(async (): Promise<void> => {
-        const stageElement = stageRef.current;
+        const stageElement = remoteDesktop.stageElementRef.current;
 
         if (!stageElement) {
             return;
@@ -62,7 +62,7 @@ const ContainerRemoteDesktop = ({ container }: ContainerRemoteDesktopProps) => {
         }
 
         await stageElement.requestFullscreen();
-    }, []);
+    }, [remoteDesktop.stageElementRef]);
 
     const handleDisplayPointerDown = useCallback((): void => {
         remoteDesktop.focusDisplay();
@@ -75,12 +75,12 @@ const ContainerRemoteDesktop = ({ container }: ContainerRemoteDesktopProps) => {
                     <Container className='d-flex column gap-025'>
                         <Title className='font-size-4 font-weight-6'>Remote Desktop</Title>
                         <p className='font-size-2 color-secondary'>
-                            Stream the container XRDP session through Volt. The curated Ubuntu image defaults to username <strong>ubuntu</strong> and password <strong>ubuntu</strong>.
+                            Open the container VNC desktop in an embedded noVNC session through Volt. The curated Ubuntu image defaults to password <strong>ubuntu</strong>.
                         </p>
                     </Container>
 
                     <Container className='d-flex items-center gap-05 flex-wrap'>
-                        {isConnected && (
+                        {hasActiveSession && (
                             <Button
                                 variant='outline'
                                 intent='neutral'
@@ -93,7 +93,7 @@ const ContainerRemoteDesktop = ({ container }: ContainerRemoteDesktopProps) => {
                             </Button>
                         )}
 
-                        {isConnected && (
+                        {hasActiveSession && (
                             <Button variant='outline' intent='neutral' leftIcon={<PlugZap size={16} />} onClick={remoteDesktop.disconnect}>
                                 Disconnect
                             </Button>
@@ -108,22 +108,12 @@ const ContainerRemoteDesktop = ({ container }: ContainerRemoteDesktopProps) => {
 
                     {remoteDesktop.expiresAt && (
                         <span className='font-size-1 color-secondary'>
-                            Session token expires at {new Date(remoteDesktop.expiresAt).toLocaleTimeString()}
+                            Session expires at {new Date(remoteDesktop.expiresAt).toLocaleTimeString()}
                         </span>
                     )}
                 </Container>
 
                 <form className='container-remote-desktop-form d-flex gap-075 flex-wrap' onSubmit={handleSubmit}>
-                    <label className='container-remote-desktop-field d-flex column gap-025'>
-                        <span className='font-size-1 color-secondary'>Username</span>
-                        <input
-                            value={remoteDesktop.credentials.username}
-                            onChange={(event) => remoteDesktop.setUsername(event.target.value)}
-                            className='container-remote-desktop-input'
-                            autoComplete='username'
-                        />
-                    </label>
-
                     <label className='container-remote-desktop-field d-flex column gap-025'>
                         <span className='font-size-1 color-secondary'>Password</span>
                         <input
@@ -137,7 +127,7 @@ const ContainerRemoteDesktop = ({ container }: ContainerRemoteDesktopProps) => {
 
                     <Container className='d-flex items-end'>
                         <Button type='submit' variant='solid' intent='brand' leftIcon={<Monitor size={16} />} isLoading={isBusy}>
-                            Connect XRDP
+                            Connect VNC
                         </Button>
                     </Container>
                 </form>
@@ -150,23 +140,26 @@ const ContainerRemoteDesktop = ({ container }: ContainerRemoteDesktopProps) => {
 
                 {isConnected && (
                     <p className='container-remote-desktop-hint font-size-1 color-secondary'>
-                        Click the desktop to refocus keyboard input. Use fullscreen for a more reliable XRDP session.
+                        Click inside the embedded desktop to focus keyboard input. Use fullscreen for a more reliable remote desktop session.
                     </p>
                 )}
             </Container>
 
             <Container
-                ref={stageRef}
+                ref={remoteDesktop.stageElementRef}
                 className={`container-remote-desktop-stage ${isFullscreen ? 'container-remote-desktop-stage--fullscreen' : ''}`}
             >
-                <div
-                    ref={remoteDesktop.displayElementRef}
-                    className='container-remote-desktop-display'
-                    tabIndex={0}
-                    aria-live='polite'
-                    aria-label={`Remote desktop display for ${container.name}`}
-                    onMouseDown={handleDisplayPointerDown}
-                />
+                {remoteDesktop.remoteDesktopUrl && (
+                    <iframe
+                        ref={remoteDesktop.frameElementRef}
+                        src={remoteDesktop.remoteDesktopUrl}
+                        title={`Remote desktop display for ${container.name}`}
+                        className='container-remote-desktop-display'
+                        allow='clipboard-read; clipboard-write; fullscreen'
+                        onError={remoteDesktop.handleFrameError}
+                        onMouseDown={handleDisplayPointerDown}
+                    />
+                )}
             </Container>
         </Container>
     );

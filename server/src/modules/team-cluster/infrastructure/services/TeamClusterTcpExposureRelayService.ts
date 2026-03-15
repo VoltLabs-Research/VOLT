@@ -22,7 +22,7 @@ interface PublicExposureBinding {
 const DEFAULT_PUBLIC_PORT_START = 23000;
 const DEFAULT_PUBLIC_PORT_END = 23999;
 const DEFAULT_RELAY_BIND_HOST = '127.0.0.1';
-const XRDP_PRIVATE_PORT = 3389;
+const VNC_PRIVATE_PORT = 5901;
 
 const readPortRangeValue = (name: string, fallback: number): number => {
     const rawValue = process.env[name]?.trim();
@@ -195,7 +195,7 @@ export default class TeamClusterTcpExposureRelayService {
     }
 
     /**
-     * Returns the host that guacd should use when opening the allocated relay port.
+     * Returns the host that external TCP clients should use when opening the allocated relay port.
      */
     getRelayAdvertisedHost(): string {
         return this.advertisedHost;
@@ -269,7 +269,7 @@ export default class TeamClusterTcpExposureRelayService {
             teamClusterId: currentExposure.teamClusterId,
             bindHost: this.bindHost,
             advertisedHost: this.advertisedHost
-        }, '[TcpExposureRelay] Bound local XRDP relay port');
+        }, '[TcpExposureRelay] Bound local VNC relay port');
 
         return publicPort;
     }
@@ -302,7 +302,7 @@ export default class TeamClusterTcpExposureRelayService {
     private isRelayableExposure(exposure: TeamClusterServiceExposure): boolean {
         return exposure.status === TeamClusterServiceExposureStatus.Active
             && exposure.accessModes.includes(TeamClusterServiceExposureAccessMode.Tcp)
-            && exposure.containerPort === XRDP_PRIVATE_PORT;
+            && exposure.containerPort === VNC_PRIVATE_PORT;
     }
 
     private async handleIncomingConnection(teamClusterId: string, exposureId: string, socket: net.Socket): Promise<void> {

@@ -1,5 +1,4 @@
-import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
-
+import useCanvasUrlState, { CanvasWorkspace } from '../../../hooks/use-canvas-url-state';
 import { useNavigate } from 'react-router-dom';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
@@ -7,7 +6,8 @@ import Container from '@/shared/presentation/components/Container';
 const WorkspaceTabs = () => {
     const navigate = useNavigate();
     const { activeWorkspace, setActiveWorkspace } = useCanvasUrlState();
-    const isScripting = activeWorkspace === 'scripting';
+    const isRaster = activeWorkspace === CanvasWorkspace.Raster;
+    const isScripting = activeWorkspace === CanvasWorkspace.Scripting;
 
     return (
         <Container className="d-flex items-center px-1 gap-025">
@@ -23,16 +23,28 @@ const WorkspaceTabs = () => {
             </Button>
             <Container className="d-flex items-center gap-025" role="tablist" aria-label="Canvas workspaces">
                 <Button
-                    variant={isScripting ? 'ghost' : 'solid'}
+                    variant={!isRaster && !isScripting ? 'solid' : 'ghost'}
                     intent="canvas"
                     size="sm"
                     shape="rounded"
                     className="font-size-1 canvas-btn-compact"
                     role="tab"
-                    aria-selected={!isScripting}
-                    onClick={() => setActiveWorkspace('modeling')}
+                    aria-selected={!isRaster && !isScripting}
+                    onClick={() => setActiveWorkspace(CanvasWorkspace.Modeling)}
                 >
                     Scene
+                </Button>
+                <Button
+                    variant={isRaster ? 'solid' : 'ghost'}
+                    intent="canvas"
+                    size="sm"
+                    shape="rounded"
+                    className="font-size-1 canvas-btn-compact"
+                    role="tab"
+                    aria-selected={isRaster}
+                    onClick={() => setActiveWorkspace(CanvasWorkspace.Raster)}
+                >
+                    Raster
                 </Button>
                 <Button
                     variant={isScripting ? 'solid' : 'ghost'}
@@ -42,7 +54,7 @@ const WorkspaceTabs = () => {
                     className="font-size-1 canvas-btn-compact"
                     role="tab"
                     aria-selected={isScripting}
-                    onClick={() => setActiveWorkspace('scripting')}
+                    onClick={() => setActiveWorkspace(CanvasWorkspace.Scripting)}
                 >
                     Scripting
                 </Button>

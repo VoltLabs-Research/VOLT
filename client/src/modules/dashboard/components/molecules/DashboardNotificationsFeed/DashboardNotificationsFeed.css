@@ -47,13 +47,19 @@
 }
 
 .dashboard-notification-item.unread {
-    background: color-mix(in srgb, var(--accent-blue) 5%, transparent);
+    background: color-mix(in srgb, var(--accent-blue) 10%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .dashboard-notification-item.unread:hover {
+        background: color-mix(in srgb, var(--accent-blue) 14%, transparent);
+    }
 }
 
 .dashboard-notification-unread-dot {
     width: 6px;
     height: 6px;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     background: var(--accent-blue);
     flex-shrink: 0;
     margin-top: 5px;

@@ -23,7 +23,7 @@ export class TriggerRasterizationUseCase implements IUseCase<TriggerRasterizatio
             if (!triggered) {
                 return Result.fail(ApplicationError.notFound(
                     ErrorCodes.RASTER_NOT_FOUND,
-                    'No GLB files found for rasterization'
+                    'No rasterizable trajectory models were found in the team cluster storage'
                 ));
             }
 

@@ -1,9 +1,5 @@
 .simulation-card-header {
     padding: 0.75rem;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--glass-bg) 94%, transparent) 0%, color-mix(in srgb, var(--glass-bg) 56%, transparent) 100%);
-    border-bottom: 1px solid color-mix(in srgb, var(--glass-border) 90%, transparent);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
 }
 
 .simulation-card-header-user {
@@ -17,11 +13,6 @@
 .header-user-name {
     max-width: 12rem;
     line-height: 1.2;
-}
-
-.simulation-card-upload-meta {
-    line-height: 1.2;
-    color: var(--color-text-secondary);
 }
 
 .simulation-card-header-label {

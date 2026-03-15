@@ -31,11 +31,11 @@ const requireContainerReadPermission = (
 };
 
 export default createHttpModule({
-    basePath: '/api/container-xrdp/:teamId',
+    basePath: '/api/container-vnc/:teamId',
     protected: true,
     teamScope: HttpModuleTeamScope.BasePath,
     middleware: requireContainerReadPermission,
     routes: (router) => {
-        router.post('/:containerId/session', controllers.createXrdpSession.handle);
+        router.post('/:containerId/session', controllers.createVncSession.handle);
     }
 });
