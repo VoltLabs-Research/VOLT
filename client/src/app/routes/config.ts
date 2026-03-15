@@ -38,6 +38,7 @@ import TeamInvitationTemplate from '@/modules/team/components/templates/TeamInvi
 import TrajectoryArtifactsListing from '@/modules/trajectory/components/templates/TrajectoryArtifactsListing';
 import TrajectoriesListing from '@/modules/trajectory/components/templates/TrajectoriesListing';
 import ErrorPage from '@/shared/presentation/components/ErrorPage';
+import RootDashboardRedirect from './RootDashboardRedirect';
 
 export const routesConfig: RouteGroup = {
     public: [
@@ -48,6 +49,10 @@ export const routesConfig: RouteGroup = {
     ],
 
     protected: [
+        {
+            path: '/',
+            component: RootDashboardRedirect
+        },
         {
             path: '/start',
             component: StartPage

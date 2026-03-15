@@ -89,7 +89,7 @@ const useContainerRemoteDesktop = (container: Container): UseContainerRemoteDesk
     const stageElementRef = useRef<HTMLDivElement>(null);
     const frameElementRef = useRef<HTMLIFrameElement>(null);
     const [credentials, setCredentials] = useState<RemoteDesktopCredentials>({
-        password: 'ubuntu'
+        password: ''
     });
     const [connectionState, setConnectionState] = useState<RemoteDesktopConnectionState>(RemoteDesktopConnectionState.Idle);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -111,6 +111,7 @@ const useContainerRemoteDesktop = (container: Container): UseContainerRemoteDesk
     const disconnect = useCallback(() => {
         activeRemoteDesktopUrlRef.current = null;
         activeRemoteDesktopOriginRef.current = null;
+        frameElementRef.current = null;
         setRemoteDesktopUrl(null);
         setExpiresAt(null);
         setErrorMessage(null);
@@ -126,6 +127,8 @@ const useContainerRemoteDesktop = (container: Container): UseContainerRemoteDesk
     const handleFrameError = useCallback(() => {
         activeRemoteDesktopUrlRef.current = null;
         activeRemoteDesktopOriginRef.current = null;
+        setRemoteDesktopUrl(null);
+        setExpiresAt(null);
         setConnectionState(RemoteDesktopConnectionState.Error);
         setErrorMessage('Failed to load the embedded remote desktop.');
     }, []);
@@ -157,12 +160,20 @@ const useContainerRemoteDesktop = (container: Container): UseContainerRemoteDesk
             }
 
             if (event.data.type === REMOTE_DESKTOP_FRAME_MESSAGE_TYPE_ERROR) {
+                setRemoteDesktopUrl(null);
+                setExpiresAt(null);
+                activeRemoteDesktopUrlRef.current = null;
+                activeRemoteDesktopOriginRef.current = null;
                 setConnectionState(RemoteDesktopConnectionState.Error);
                 setErrorMessage(event.data.message || 'Failed to connect to the remote desktop.');
                 return;
             }
 
             if (event.data.type === REMOTE_DESKTOP_FRAME_MESSAGE_TYPE_DISCONNECTED) {
+                setRemoteDesktopUrl(null);
+                setExpiresAt(null);
+                activeRemoteDesktopUrlRef.current = null;
+                activeRemoteDesktopOriginRef.current = null;
                 setConnectionState(RemoteDesktopConnectionState.Error);
                 setErrorMessage(event.data.message || 'Remote desktop disconnected.');
             }
@@ -210,11 +221,16 @@ const useContainerRemoteDesktop = (container: Container): UseContainerRemoteDesk
     }, [container._id, container.team, credentials.password, disconnect]);
 
     const setPassword = useCallback((password: string) => {
+        setErrorMessage(null);
+        if (connectionState === RemoteDesktopConnectionState.Error) {
+            setConnectionState(RemoteDesktopConnectionState.Idle);
+        }
+
         setCredentials((previousCredentials) => ({
             ...previousCredentials,
             password
         }));
-    }, []);
+    }, [connectionState]);
 
     return {
         credentials,

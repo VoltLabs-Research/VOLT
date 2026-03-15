@@ -165,7 +165,7 @@ const ContainerDetailsLayout = () => {
                 actionLoading={actionLoading}
             />
 
-            <Container className='container-details-content-area y-auto flex-1'>
+            <Container className='container-details-content-area y-auto flex-1 d-flex column'>
                 <Outlet context={outletContext} />
             </Container>
         </Container>
