@@ -24,6 +24,7 @@ const TexturesPanel = ({ trajectory }: TexturesPanelProps) => {
             <PanelHeader
                 icon={<Activity style={{ width: 13, height: 13, color: EVENTS_ICON_COLOR }} />}
                 title="Events"
+                variant="compact"
                 actions={
                     <StatusCounts
                         queued={statusCounts.queued}
@@ -39,6 +40,7 @@ const TexturesPanel = ({ trajectory }: TexturesPanelProps) => {
                     hideAfterComplete={false}
                     variant="embedded"
                     displayMode="children-only"
+                    autoSelectAnalysis={false}
                 />
             </Container>
         </Container>

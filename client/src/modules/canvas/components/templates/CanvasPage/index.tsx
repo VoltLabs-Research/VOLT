@@ -44,6 +44,14 @@ import type { RasterContainerId, RasterContainerSelection } from '@/modules/rast
 import './CanvasPage.css';
 import { createInitialRasterContainerSelections } from '@/modules/raster/types/container-selection';
 
+interface DownloadExposureListingParams {
+    pluginId: string;
+    exposureId: string;
+    analysisId?: string;
+    trajectoryId?: string;
+    exposureName?: string;
+};
+
 const CanvasPage = () => {
     usePageTitle('Canvas');
     const { trajectoryId: rawTrajectoryId } = useParams<{ trajectoryId?: string }>();
@@ -125,15 +133,22 @@ const CanvasPage = () => {
         timeline.setSize(tab === 'timeline' ? 65 : 280);
     }, [timeline.setSize]);
 
-    const handleDownloadExposureListing = useCallback((params: {
-        pluginId: string;
-        exposureId: string;
-        analysisId?: string;
-        trajectoryId?: string;
-        exposureName?: string;
-    }) => {
+    const handleDownloadExposureListing = useCallback((params: DownloadExposureListingParams) => {
         downloadListing(params);
     }, [downloadListing]);
+
+    const handleUpdateRasterContainerSelection = useCallback((containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => {
+        setRasterContainerSelections((currentSelections) => currentSelections.map((selection) => {
+            if (selection.id !== containerId) {
+                return selection;
+            }
+
+            return {
+                ...selection,
+                ...updates
+            };
+        }));
+    }, []);
 
     const selectedAnalysisStatus = useMemo(() => {
         if (!analysisId) {
@@ -158,8 +173,8 @@ const CanvasPage = () => {
 
     const leftSplit = useResizable({
         direction: ResizeDirection.Vertical,
-        initialSize: 56,
-        minSize: 20,
+        initialSize: 34,
+        minSize: 16,
         maxSize: 80
     });
 
@@ -223,18 +238,7 @@ const CanvasPage = () => {
                 trajectory={trajectory}
                 currentTimestep={currentTimestep}
                 containerSelections={rasterContainerSelections}
-                onUpdateContainerSelection={(containerId, updates) => {
-                    setRasterContainerSelections((currentSelections) => currentSelections.map((selection) => {
-                        if (selection.id !== containerId) {
-                            return selection;
-                        }
-
-                        return {
-                            ...selection,
-                            ...updates
-                        };
-                    }));
-                }}
+                onUpdateContainerSelection={handleUpdateRasterContainerSelection}
             />
         );
     }
@@ -255,18 +259,7 @@ const CanvasPage = () => {
                             rasterContainerSelections={rasterContainerSelections}
                             activeRasterContainerId={activeRasterContainerId}
                             onSetActiveRasterContainer={setActiveRasterContainerId}
-                            onUpdateRasterContainerSelection={(containerId, updates) => {
-                                setRasterContainerSelections((currentSelections) => currentSelections.map((selection) => {
-                                    if (selection.id !== containerId) {
-                                        return selection;
-                                    }
-
-                                    return {
-                                        ...selection,
-                                        ...updates
-                                    };
-                                }));
-                            }}
+                            onUpdateRasterContainerSelection={handleUpdateRasterContainerSelection}
                         />
                     </Container>
                     <ResizeHandle
