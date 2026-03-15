@@ -39,8 +39,10 @@ import Container from '@/shared/presentation/components/Container';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
+import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/types/container-selection';
 
 import './CanvasPage.css';
+import { createInitialRasterContainerSelections } from '@/modules/raster/types/container-selection';
 
 const CanvasPage = () => {
     usePageTitle('Canvas');
@@ -82,6 +84,13 @@ const CanvasPage = () => {
     const { downloadListing, downloadAnalysisListings, isDownloading } = useDownloadPluginListing();
     const { statusMap } = useAnalysisStatus({ trajectoryId: trajectory?._id, enabled: !!trajectory?._id });
     const [scriptingJupyterUrl, setScriptingJupyterUrl] = useState<string | null>(null);
+    const [rasterContainerSelections, setRasterContainerSelections] = useState<RasterContainerSelection[]>(() => createInitialRasterContainerSelections());
+    const [activeRasterContainerId, setActiveRasterContainerId] = useState<RasterContainerId>('container-1');
+
+    useEffect(() => {
+        setRasterContainerSelections(createInitialRasterContainerSelections());
+        setActiveRasterContainerId('container-1');
+    }, [trajectoryId]);
 
     const hasFrames = !!(trajectory?.frames && trajectory.frames.length > 0);
     const showLoading = useMemo(() =>
@@ -212,8 +221,20 @@ const CanvasPage = () => {
             <CanvasRasterViewport
                 trajectoryId={trajectoryId}
                 trajectory={trajectory}
-                analysisId={analysisId}
                 currentTimestep={currentTimestep}
+                containerSelections={rasterContainerSelections}
+                onUpdateContainerSelection={(containerId, updates) => {
+                    setRasterContainerSelections((currentSelections) => currentSelections.map((selection) => {
+                        if (selection.id !== containerId) {
+                            return selection;
+                        }
+
+                        return {
+                            ...selection,
+                            ...updates
+                        };
+                    }));
+                }}
             />
         );
     }
@@ -231,6 +252,21 @@ const CanvasPage = () => {
                             trajectory={trajectory}
                             onDownloadAnalysis={handleDownloadAnalysisListing}
                             onDownloadExposureListing={handleDownloadExposureListing}
+                            rasterContainerSelections={rasterContainerSelections}
+                            activeRasterContainerId={activeRasterContainerId}
+                            onSetActiveRasterContainer={setActiveRasterContainerId}
+                            onUpdateRasterContainerSelection={(containerId, updates) => {
+                                setRasterContainerSelections((currentSelections) => currentSelections.map((selection) => {
+                                    if (selection.id !== containerId) {
+                                        return selection;
+                                    }
+
+                                    return {
+                                        ...selection,
+                                        ...updates
+                                    };
+                                }));
+                            }}
                         />
                     </Container>
                     <ResizeHandle

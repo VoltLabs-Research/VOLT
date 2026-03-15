@@ -1,3 +1,8 @@
+.canvas-raster-viewport--split {
+    gap: 0.75rem;
+    padding: 0.125rem;
+}
+
 .canvas-raster-viewport__panel {
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-md);
@@ -36,6 +41,10 @@
 }
 
 @media (max-width: 1024px) {
+    .canvas-raster-viewport--split {
+        flex-direction: column;
+    }
+
     .canvas-raster-viewport__header-actions {
         flex-wrap: wrap;
         justify-content: flex-end;
