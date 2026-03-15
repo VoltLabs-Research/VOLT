@@ -16,7 +16,7 @@ export XDG_SESSION_DESKTOP=xfce
 export XDG_SESSION_TYPE=x11
 
 if command -v dbus-launch >/dev/null 2>&1; then
-    exec dbus-launch --exit-with-session startxfce4
+    exec dbus-launch --exit-with-session xfce4-session
 fi
 
-exec startxfce4
+exec xfce4-session
