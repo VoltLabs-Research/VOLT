@@ -1,11 +1,11 @@
 import Container from '@/shared/presentation/components/Container';
 import ActivityEntry from '@/modules/daily-activity/components/atoms/ActivityEntry';
-import type { ActivityItem } from '@/modules/daily-activity/api/entities/daily-activity';
+import type { DailyActivityHeatmapDetailEntry } from '@/modules/daily-activity/api/entities/daily-activity';
 import { useMemo } from 'react';
 import type { FC } from 'react';
 
 interface ActivityTooltipContentProps {
-    activity: ActivityItem[];
+    activity: DailyActivityHeatmapDetailEntry[];
     dateLabel: string;
     minutesOnline: number;
     score: number;
@@ -42,7 +42,7 @@ const ActivityTooltipContent: FC<ActivityTooltipContentProps> = ({ activity, dat
                     type={item.type}
                 >
                     <span className='font-size-1 color-secondary'>
-                        {timeFormatter.format(new Date(item.createdAt))}
+                        {item.userDisplayName} · {timeFormatter.format(new Date(item.createdAt))}
                     </span>
                     <span className='font-size-2 color-primary'>{item.description}</span>
                 </ActivityEntry>

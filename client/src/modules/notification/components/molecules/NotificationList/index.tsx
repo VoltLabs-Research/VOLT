@@ -57,7 +57,7 @@ const NotificationList = ({
     }
 
     if (notifications.length === 0) {
-        return <EmptyState title='No notifications' description="You're all caught up!" />;
+        return <EmptyState title='No notifications' description="You're all caught up!" className='p-1' />;
     }
 
     return (

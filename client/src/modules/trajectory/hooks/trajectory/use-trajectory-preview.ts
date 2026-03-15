@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 
 interface UseTrajectoryPreviewParams {
     trajectoryId: string;
-    version?: string;
     enabled?: boolean;
 };
 
@@ -15,7 +14,7 @@ interface UseTrajectoryPreviewResult {
 };
 
 export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams): UseTrajectoryPreviewResult {
-    const { trajectoryId, version, enabled = true } = params;
+    const { trajectoryId, enabled = true } = params;
     const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
     const previewBlobUrlRef = useRef<string | null>(null);
 
@@ -25,10 +24,7 @@ export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams)
         isError,
         refetch
     } = trajectoryPreviewQuery(
-        {
-            trajectoryId,
-            version
-        },
+        { trajectoryId },
         {
             enabled: enabled && Boolean(trajectoryId)
         }

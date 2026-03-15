@@ -75,7 +75,7 @@ const buildControllerParams = (
         ...(asRecord(validationState.request) ?? {}),
         ...bodyPayload,
         data: bodyPayload,
-        userId: req.userId,
+        authenticatedUserId: req.userId,
         file: req.file,
         files: req.files,
         ...requestContext

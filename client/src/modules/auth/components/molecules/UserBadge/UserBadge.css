@@ -1,5 +1,4 @@
 .user-badge{
-    background: color-mix(in srgb, var(--color-surface-1) 88%, var(--color-surface-2) 12%);
     border: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
 }
 

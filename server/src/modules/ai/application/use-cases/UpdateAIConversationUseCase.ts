@@ -38,11 +38,6 @@ export default class UpdateAIConversationUseCase implements IUseCase<UpdateAICon
         const updateData: Partial<AIConversationProps> = {};
         if (typeof input.title !== 'undefined') updateData.title = input.title.trim();
         if (typeof input.isArchived !== 'undefined') updateData.isArchived = input.isArchived;
-        if (typeof input.lastProvider !== 'undefined') updateData.lastProvider = input.lastProvider;
-        if (typeof input.lastModel !== 'undefined') updateData.lastModel = input.lastModel;
-        if (typeof input.lastMessageAt !== 'undefined') {
-            updateData.lastMessageAt = input.lastMessageAt ? new Date(input.lastMessageAt) : null;
-        }
 
         const updatedConversation = await this.conversationRepository.updateById(conversation._id, updateData);
 

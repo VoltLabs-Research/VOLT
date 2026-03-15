@@ -10,6 +10,8 @@ import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory
 
 import { injectable, inject } from 'tsyringe';
 
+const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
+
 @injectable()
 export default class JobStatusChangedEventHandler implements IEventHandler<JobStatusChangedEvent> {
     constructor(
@@ -20,10 +22,11 @@ export default class JobStatusChangedEventHandler implements IEventHandler<JobSt
     ){}
 
     async handle(event: JobStatusChangedEvent): Promise<void> {
-        const { status, metadata, teamId } = event.payload;
+        const { status, metadata, queueType, teamId } = event.payload;
         const trajectoryId = metadata?.trajectoryId as string | undefined;
 
         if (!trajectoryId) return;
+        if (queueType === RASTER_QUEUE_TYPE) return;
 
         // When any job starts running, ensure trajectory is in 'processing' state.
         // Only transition from pre-processing states to avoid overwriting terminal

@@ -10,8 +10,6 @@ import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import FileTreeNode from './FileTreeNode';
 import WorkspaceEntryInput from './WorkspaceEntryInput';
-import RootDropZone from './RootDropZone';
-import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { FilePlus, FolderOpen, FolderPlus, Upload } from 'lucide-react';
 import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
@@ -37,8 +35,6 @@ interface LatexFilePanelProps {
     onDeleteAssetDirect: (input: { documentId: string; assetId: string }) => Promise<unknown>;
     onUpdateFileDirect: (input: { documentId: string; fileId: string; path?: string; name?: string; content?: string }) => Promise<unknown>;
     onUpdateAssetDirect: (input: { documentId: string; assetId: string; path: string }) => Promise<unknown>;
-    onMoveFile: (fileId: string, newPath: string) => Promise<void>;
-    onMoveAsset: (assetId: string, newPath: string) => Promise<void>;
     onRenameFile: (fileId: string, name: string) => Promise<void>;
     onRenameAsset: (asset: LatexAsset, name: string) => Promise<void>;
     onInsertRef: (ref: string) => void;
@@ -67,8 +63,6 @@ const LatexFilePanel = ({
     onDeleteAssetDirect,
     onUpdateFileDirect,
     onUpdateAssetDirect,
-    onMoveFile,
-    onMoveAsset,
     onRenameFile,
     onRenameAsset,
     onInsertRef,
@@ -93,13 +87,10 @@ const LatexFilePanel = ({
         startRenameAsset,
         cancelRename,
         handleConfirmRename,
-        handleDeleteFolder,
-        handleDragEnd
+        handleDeleteFolder
     } = useFileTree({
         files,
         assets,
-        onMoveFile,
-        onMoveAsset,
         onCreateFile,
         onCreateFolder,
         onRenameFile,
@@ -110,12 +101,6 @@ const LatexFilePanel = ({
         onUpdateAssetDirect,
         documentId
     });
-
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: { distance: 6 }
-        })
-    );
 
     const newFileAction = (
         <IconButton
@@ -250,31 +235,29 @@ const LatexFilePanel = ({
                 {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
             />
 
-            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-                <FileExplorer isEmpty={isEmpty} emptyMessage='No files'>
-                    <RootDropZone>
-                        {treeNodes.map(renderTreeNode)}
-                        {newFolderTargetFolder === '' && (
-                            <WorkspaceEntryInput
-                                icon={<FolderPlus size={13} />}
-                                label='Create a folder at the project root'
-                                placeholder='Folder name'
-                                onConfirm={handleConfirmNewFolder}
-                                onCancel={closeNewFolder}
-                            />
-                        )}
-                        {newFileTargetFolder === '' && (
-                            <WorkspaceEntryInput
-                                icon={<FilePlus size={13} />}
-                                label='Create a file at the project root'
-                                placeholder='File name'
-                                onConfirm={handleConfirmNewFile}
-                                onCancel={closeNewFile}
-                            />
-                        )}
-                    </RootDropZone>
-                </FileExplorer>
-            </DndContext>
+            <FileExplorer isEmpty={isEmpty} emptyMessage='No files'>
+                <div role='tree' aria-label='Project files and assets'>
+                    {treeNodes.map(renderTreeNode)}
+                    {newFolderTargetFolder === '' && (
+                        <WorkspaceEntryInput
+                            icon={<FolderPlus size={13} />}
+                            label='Create a folder at the project root'
+                            placeholder='Folder name'
+                            onConfirm={handleConfirmNewFolder}
+                            onCancel={closeNewFolder}
+                        />
+                    )}
+                    {newFileTargetFolder === '' && (
+                        <WorkspaceEntryInput
+                            icon={<FilePlus size={13} />}
+                            label='Create a file at the project root'
+                            placeholder='File name'
+                            onConfirm={handleConfirmNewFile}
+                            onCancel={closeNewFile}
+                        />
+                    )}
+                </div>
+            </FileExplorer>
         </Container>
     );
 };

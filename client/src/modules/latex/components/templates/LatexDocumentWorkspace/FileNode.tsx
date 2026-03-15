@@ -1,6 +1,5 @@
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
-import DraggableRow from './DraggableRow';
 import { cn } from '@/shared/utils';
 import { FileText, Star, Trash2 } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
@@ -16,7 +15,7 @@ interface FileNodeProps {
     onFileSetEntrypoint: (fileId: string) => void;
 };
 
-/** Renders a draggable file row inside the file tree with a right-click context menu. */
+/** Renders a file row inside the file tree with a right-click context menu. */
 const FileNode = ({ node, depth, onFileSelect, onFileDelete, onFileSetEntrypoint }: FileNodeProps) => {
     const file = node.data as LatexFileEntry;
     const indent = depth * 12;
@@ -54,12 +53,11 @@ const FileNode = ({ node, depth, onFileSelect, onFileDelete, onFileSetEntrypoint
         return options;
     }, [file.isEntrypoint, handleEntrypoint, handleDelete]);
 
-    const renderContent = (isDragging: boolean) => (
+    const content = (
         <Container
             className={cn(
                 'latex-workspace__file-row d-flex items-center gap-05',
-                file.isSelected && 'is-selected',
-                isDragging && 'is-dragging'
+                file.isSelected && 'is-selected'
             )}
             style={{ paddingLeft: `${0.75 + indent / 16}rem` }}
             onClick={handleSelect}
@@ -79,16 +77,14 @@ const FileNode = ({ node, depth, onFileSelect, onFileDelete, onFileSetEntrypoint
         </Container>
     );
 
-    const renderRow = (isDragging: boolean) => (
+    return (
         <ContextMenuPopover
             id={`file-ctx-${file._id}`}
-            trigger={renderContent(isDragging)}
+            trigger={content}
             options={menuOptions}
             size='sm'
         />
     );
-
-    return <DraggableRow id={node.id}>{renderRow}</DraggableRow>;
 };
 
 export default FileNode;

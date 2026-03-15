@@ -1,6 +1,6 @@
 export interface SaveWhiteboardStateInputDTO {
     teamId: string;
-    userId?: string;
+    userId: string;
     whiteboardId: string;
     stateBuffer: Buffer;
 };

@@ -32,7 +32,8 @@ export interface IContainer extends Document {
 
 const internalIpField = {
     type: String,
-    required: false
+    required: false,
+    default: undefined
 };
 
 const statusField = {
@@ -57,7 +58,11 @@ const environmentVariableField = {
 
 const portMappingField = {
     private: Number,
-    public: Number
+    public: {
+        type: Number,
+        required: false,
+        default: undefined
+    }
 };
 
 const containerCapabilitiesField = {

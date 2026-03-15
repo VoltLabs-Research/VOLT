@@ -4,6 +4,7 @@ import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/que
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import teamSocketRoomService from '@/modules/socket/team/services/team-socket-room-service';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef } from 'react';
 import { JobStatus } from '../api/entities/job';
 import useTeamJobsStore from '../stores/use-team-jobs-store';
 import { applyJobUpdate } from '../utilities/job-group-updates';
@@ -14,10 +15,8 @@ import {
     updateTeamJobsGroupsQueryData,
     teamJobsGroups
 } from './queries';
-import { useCallback, useEffect, useRef } from 'react';
 import type { Job, TrajectoryJobGroup } from '../api/entities/job';
 
-type JobUpdateEvent = Job & { type?: string; sessionId?: string };
 type TeamJobsEventPayload = TrajectoryJobGroup[];
 
 const TEAM_JOBS_INITIAL_LOAD_TIMEOUT_MS = 5000;
@@ -75,7 +74,6 @@ const useTeamJobs = () => {
     const isLoading = useTeamJobsStore((state) => state.isLoading);
     const setConnected = useTeamJobsStore((state) => state.setConnected);
     const setLoading = useTeamJobsStore((state) => state.setLoading);
-    const setExpiredSessions = useTeamJobsStore((state) => state.setExpiredSessions);
     const setCurrentTeamId = useTeamJobsStore((state) => state.setCurrentTeamId);
     const setPendingRasterKeys = useTeamJobsStore((state) => state.setPendingRasterKeys);
     const setInFlightRasterTrajectoryIds = useTeamJobsStore((state) => state.setInFlightRasterTrajectoryIds);
@@ -115,16 +113,10 @@ const useTeamJobs = () => {
         setLoading(false);
     }, [clearJobsLoadingTimeout, setGroups, setLoading]);
 
-    const handleJobUpdate = useCallback((event: JobUpdateEvent) => {
-        if (event.type === 'session_expired' && event.sessionId) {
-            const expiredSessions = useTeamJobsStore.getState().expiredSessions;
-            const nextExpiredSessions = new Set(expiredSessions);
-            nextExpiredSessions.add(event.sessionId);
-            setExpiredSessions(nextExpiredSessions);
-            return;
-        }
-
+    const handleJobUpdate = useCallback((event: Job) => {
         if (!event.trajectoryId) return;
+
+        const isRasterUpdate = event.queueType === RASTER_QUEUE_TYPE;
 
         if (event.queueType === RASTER_QUEUE_TYPE) {
             const currentIds = useTeamJobsStore.getState().inFlightRasterTrajectoryIds;
@@ -138,18 +130,29 @@ const useTeamJobs = () => {
         updateTeamJobsGroupsQueryData((currentGroups) => applyJobUpdate(currentGroups, event), queryClient);
         setPendingRasterKeys(extractRasterPendingKeys(getTeamJobsGroupsQueryData(queryClient)));
 
+        if (isRasterUpdate) {
+            if (event.status === JobStatus.Completed) {
+                queryClient.invalidateQueries({
+                    queryKey: TRAJECTORY_QUERY_KEYS.preview({ trajectoryId: event.trajectoryId }),
+                    exact: true
+                });
+            }
+
+            return;
+        }
+
         clearTimeout(trajectoryInvalidationTimer.current);
         trajectoryInvalidationTimer.current = setTimeout(() => {
             queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.simulationGrid() });
             queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.trajectories() });
         }, 500);
-    }, [queryClient, setExpiredSessions, setInFlightRasterTrajectoryIds, setPendingRasterKeys]);
+    }, [queryClient, setInFlightRasterTrajectoryIds, setPendingRasterKeys]);
 
     const handleInitialJobsEvent = useCallback((payload: TeamJobsEventPayload) => {
         handleTeamJobs(payload);
     }, [handleTeamJobs]);
 
-    const handleJobUpdateEvent = useCallback((payload: JobUpdateEvent) => {
+    const handleJobUpdateEvent = useCallback((payload: Job) => {
         handleJobUpdate(payload);
     }, [handleJobUpdate]);
 
@@ -164,7 +167,6 @@ const useTeamJobs = () => {
         const resolvedPreviousTeamId = previousTeamId ?? currentStoreTeamId ?? roomServiceCurrentTeamId ?? undefined;
         setCurrentTeamId(teamId);
         setGroups([]);
-        setExpiredSessions(new Set());
         setLoading(true);
         startJobsLoadingTimeout();
 
@@ -172,7 +174,7 @@ const useTeamJobs = () => {
             clearJobsLoadingTimeout();
             setLoading(false);
         });
-    }, [clearJobsLoadingTimeout, setCurrentTeamId, setExpiredSessions, setGroups, setLoading, startJobsLoadingTimeout]);
+    }, [clearJobsLoadingTimeout, setCurrentTeamId, setGroups, setLoading, startJobsLoadingTimeout]);
 
     const clearTeamJobs = useCallback(() => {
         clearJobsLoadingTimeout();

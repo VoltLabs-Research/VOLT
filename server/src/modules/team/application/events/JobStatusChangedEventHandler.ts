@@ -14,25 +14,24 @@ export default class TeamJobStatusChangedEventHandler implements IEventHandler<J
     async handle(event: JobStatusChangedEvent): Promise<void> {
         const { teamId, jobId, status, queueType, metadata } = event.payload;
 
-        if (teamId) {
-            await this.socketEmitter.emitToRoom(
-                `team:${teamId}`,
-                'team.job.updated',
-                {
-                    ...metadata,
-                    jobId,
-                    status,
-                    queueType,
-                    timestamp: new Date().toISOString(),
-                    trajectoryId: metadata?.trajectoryId,
-                    trajectoryName: metadata?.trajectoryName,
-                    timestep: metadata?.timestep,
-                    message: metadata?.message,
-                    error: metadata?.error,
-                    analysisId: metadata?.analysisId,
-                    teamId
-                }
-            );
-        }
+        await this.socketEmitter.emitToRoom(
+            `team:${teamId}`,
+            'team.job.updated',
+            {
+                ...metadata,
+                jobId,
+                status,
+                queueType,
+                name: metadata?.name,
+                timestamp: new Date().toISOString(),
+                trajectoryId: metadata?.trajectoryId,
+                trajectoryName: metadata?.trajectoryName,
+                timestep: metadata?.timestep,
+                message: metadata?.message,
+                error: metadata?.error,
+                analysisId: metadata?.analysisId,
+                teamId
+            }
+        );
     }
 };

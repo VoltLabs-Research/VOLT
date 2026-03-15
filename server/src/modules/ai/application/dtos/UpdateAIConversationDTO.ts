@@ -6,9 +6,6 @@ export interface UpdateAIConversationInputDTO {
     conversationId: string;
     title?: string;
     isArchived?: boolean;
-    lastMessageAt?: Date | string | null;
-    lastProvider?: string | null;
-    lastModel?: string | null;
 };
 
 export interface UpdateAIConversationOutputDTO extends AIConversationDTO { }

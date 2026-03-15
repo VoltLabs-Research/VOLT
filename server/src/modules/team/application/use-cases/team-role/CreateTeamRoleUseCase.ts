@@ -31,7 +31,13 @@ export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInp
             ));
         }
 
-        const { teamId, name, permissions, isSystem } = parsed.data;
+        const {
+            teamId,
+            name,
+            permissions,
+            isSystem,
+            userId
+        } = parsed.data;
 
         const newRole = await this.teamRoleRepository.create(TeamRole.create({
             teamId,
@@ -44,7 +50,7 @@ export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInp
             teamRoleId: newRole._id,
             teamId: String(newRole.props.team),
             name: newRole.props.name,
-            userId: parsed.data.userId ?? ''
+            userId
         }));
 
         return Result.ok(toPersistedOutput(newRole));

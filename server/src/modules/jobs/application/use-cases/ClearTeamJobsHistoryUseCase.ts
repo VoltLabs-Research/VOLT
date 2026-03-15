@@ -19,12 +19,6 @@ export default class ClearTeamJobsHistoryUseCase extends BaseTeamJobActionUseCas
     }
 
     protected async run(teamId: string): Promise<ClearTeamJobsHistoryOutputDTO> {
-        const result = await this.teamJobMaintenanceService.clearHistory(teamId);
-
-        return {
-            deletedJobs: result.deletedJobs,
-            deletedAnalyses: result.deletedAnalyses,
-            affectedClusters: result.affectedClusters
-        };
+        return this.teamJobMaintenanceService.clearHistory(teamId);
     }
 };

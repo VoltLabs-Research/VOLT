@@ -55,7 +55,7 @@ export default class DeleteAnalysisByIdUseCase {
             pluginId: analysis.props.plugin ?? '',
             teamId: analysis.props.team ?? '',
             userId: input.userId ?? '',
-            pluginDisplayName: analysis.props.plugin ?? ''
+            pluginDisplayName: analysis.props.pluginDisplayName
         }));
 
         return Result.ok({

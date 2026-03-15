@@ -1,9 +1,9 @@
 import './CopyableField.css';
+import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { MdCheck, MdContentCopy } from 'react-icons/md';
-import { sileo } from 'sileo';
 import { useState } from 'react';
 
 interface CopyableFieldProps {
@@ -15,11 +15,15 @@ interface CopyableFieldProps {
 const CopyableField = ({ value, successMessage = 'Copied to clipboard', className = '' }: CopyableFieldProps) => {
     const [copied, setCopied] = useState(false);
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(value);
+    const handleCopy = async () => {
+        const isCopied = await copyTextToClipboard(value, { successMessage });
+
+        if (!isCopied) {
+            return;
+        }
+
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-        sileo.success({ title: successMessage });
     };
 
     return (

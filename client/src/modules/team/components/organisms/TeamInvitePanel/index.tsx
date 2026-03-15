@@ -58,6 +58,21 @@ export const TeamInvitePanel = ({
         }
     ];
 
+    const footerActions = [
+        {
+            label: 'Copy link',
+            icon: <Copy size={16} />,
+            onClick: handleCopy,
+            disabled: !inviteCode
+        },
+        {
+            label: 'Learn more',
+            icon: <BookOpen size={16} />,
+            onClick: () => {},
+            disabled: true
+        }
+    ];
+
     return (
         <Container className='team-invite-panel d-flex column'>
             <PanelHeader
@@ -86,17 +101,7 @@ export const TeamInvitePanel = ({
                         />
 
                         <PanelFooter
-                            actions={[{
-                                label: 'Copy link',
-                                icon: <Copy size={16} />,
-                                onClick: () => {},
-                                disabled: true
-                            }, {
-                                label: 'Learn more',
-                                icon: <BookOpen size={16} />,
-                                onClick: () => {},
-                                disabled: true
-                            }]}
+                            actions={footerActions}
                         />
                     </>
                 ) : (

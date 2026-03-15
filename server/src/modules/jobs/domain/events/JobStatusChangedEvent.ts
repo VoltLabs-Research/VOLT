@@ -2,6 +2,7 @@ import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 
 export interface JobStatusChangedMetadata {
+    name?: string;
     jobId?: string;
     analysisId?: string;
     status?: JobStatus;

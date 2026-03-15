@@ -6,6 +6,15 @@ import type { CreateContainerParams } from '../../dtos/create-container';
 import type { UpdateContainerParams } from '../../dtos/update-container';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 
+const normalizePorts = (ports: CreateContainerParams['ports']) => ports?.map(({ public: publicPort, ...port }) => (
+    publicPort === 0
+        ? port
+        : {
+            ...port,
+            public: publicPort
+        }
+));
+
 const endpoints = {
     getAll: paginated<GetContainersParams, PaginatedResponse<Container>>('/'),
     getById: get<ContainerRouteParams, Container>('/:containerId', {
@@ -22,7 +31,7 @@ const endpoints = {
             memory,
             cpus,
             env,
-            ports,
+            ports: normalizePorts(ports),
             cmd,
             mountDockerSocket,
             useImageCmd,
@@ -31,6 +40,11 @@ const endpoints = {
         unwrap: { field: 'container' }
     }),
     update: patch<UpdateContainerParams, Container>('/:containerId', {
+        body: ({ action, env, ports }) => ({
+            action,
+            env,
+            ports: normalizePorts(ports)
+        }),
         unwrap: { field: 'container' }
     }),
     delete: del<ContainerRouteParams>('/:containerId'),

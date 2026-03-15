@@ -1,0 +1,1146 @@
+openapi: 3.1.0
+info:
+  title: Volt API
+  version: 1.0.0
+  description: |
+    API REST del servidor Volt.
+
+    ## Autenticación
+
+    La API soporta dos métodos de autenticación:
+
+    - **JWT Bearer Token**: Obtenido al iniciar sesión o mediante OAuth. Enviar como `Authorization: Bearer <token>`.
+    - **Secret API Key**: Claves con prefijo `vsk_` asociadas a un equipo con permisos específicos. Enviar como `Authorization: Bearer vsk_<key>`.
+
+    ## Autorización (RBAC)
+
+    Los endpoints asociados a un equipo (`/:teamId`) requieren:
+    1. Autenticación válida.
+    2. Membresía activa en el equipo.
+    3. Permiso RBAC correspondiente (`recurso:acción`).
+
+    **Roles del sistema**: Owner (`*`), Admin, Member, Viewer.
+
+    ## Formato de respuestas
+
+    Todas las respuestas siguen un formato estandarizado (ver schemas `SuccessResponse`, `PaginatedResponse`, `ErrorResponse`).
+
+  contact:
+    name: Volt Team
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:8000
+    description: Desarrollo local
+  - url: '{protocol}://{host}'
+    description: Custom
+    variables:
+      protocol:
+        default: https
+        enum: [http, https]
+      host:
+        default: localhost:8000
+
+tags:
+  - name: Auth
+    description: Autenticación, registro, OAuth y gestión de cuenta.
+  - name: Auth - OAuth
+    description: Flujos de login con proveedores externos (GitHub, Google, Microsoft).
+  - name: Auth - Account
+    description: Gestión de la cuenta del usuario autenticado.
+  - name: Sessions
+    description: Gestión de sesiones activas del usuario.
+  - name: Teams
+    description: Gestión de equipos.
+  - name: Teams - Self
+    description: Permisos y membresía del usuario autenticado dentro de un equipo.
+  - name: AI Conversations
+    description: Conversaciones con IA dentro de un equipo.
+  - name: Analysis
+    description: Análisis de trayectorias.
+  - name: Containers
+    description: Gestión de contenedores Docker.
+  - name: Trajectories
+    description: Gestión de trayectorias moleculares.
+  - name: Plugins
+    description: Gestión de plugins y ejecuciones.
+  - name: Chat
+    description: Chat directo y grupal entre miembros.
+  - name: Notifications
+    description: Notificaciones del usuario.
+  - name: SSH
+    description: Conexiones SSH remotas.
+  - name: LaTeX
+    description: Documentos LaTeX y compilación.
+  - name: Scripting
+    description: Notebooks y sesiones Jupyter.
+  - name: System
+    description: Estadísticas del sistema y configuración RBAC.
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ─────────────────────────────────────────────
+  #  AUTH - Public
+  # ─────────────────────────────────────────────
+  /api/auth/sessions:
+    post:
+      operationId: signIn
+      tags: [Auth]
+      summary: Iniciar sesión
+      description: Autentica al usuario con email y contraseña. Devuelve un JWT.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+            example:
+              email: usuario@ejemplo.com
+              password: miPassword123
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokenResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /api/auth/users:
+    post:
+      operationId: signUp
+      tags: [Auth]
+      summary: Crear cuenta (registro)
+      description: Registra un nuevo usuario en la plataforma.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+            example:
+              email: nuevo@ejemplo.com
+              firstName: Juan
+              lastName: Pérez
+              password: miPassword123
+      responses:
+        '201':
+          description: Cuenta creada exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: El email ya está registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/emails/{email}/availability:
+    get:
+      operationId: checkEmailAvailability
+      tags: [Auth]
+      summary: Verificar disponibilidad de email
+      security: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+          example: usuario@ejemplo.com
+      responses:
+        '200':
+          description: Resultado de disponibilidad
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          available:
+                            type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/auth/guest-identity:
+    get:
+      operationId: getGuestIdentity
+      tags: [Auth]
+      summary: Obtener identidad de invitado
+      description: Genera un identicon basado en un seed para usuarios no autenticados.
+      security: []
+      parameters:
+        - name: seed
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 256
+      responses:
+        '200':
+          description: Identidad de invitado generada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  # ─────────────────────────────────────────────
+  #  AUTH - OAuth
+  # ─────────────────────────────────────────────
+  /api/auth/github:
+    get:
+      operationId: oauthGitHub
+      tags: [Auth - OAuth]
+      summary: Iniciar login OAuth con GitHub
+      description: Redirige al flujo de autorización de GitHub.
+      security: []
+      responses:
+        '302':
+          description: Redirección a GitHub
+
+  /api/auth/github/callback:
+    get:
+      operationId: oauthGitHubCallback
+      tags: [Auth - OAuth]
+      summary: Callback OAuth de GitHub
+      description: Procesa la respuesta de GitHub y emite un JWT.
+      security: []
+      parameters:
+        - name: code
+          in: query
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirección al cliente con token
+
+  /api/auth/google:
+    get:
+      operationId: oauthGoogle
+      tags: [Auth - OAuth]
+      summary: Iniciar login OAuth con Google
+      security: []
+      responses:
+        '302':
+          description: Redirección a Google
+
+  /api/auth/google/callback:
+    get:
+      operationId: oauthGoogleCallback
+      tags: [Auth - OAuth]
+      summary: Callback OAuth de Google
+      security: []
+      parameters:
+        - name: code
+          in: query
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirección al cliente con token
+
+  /api/auth/microsoft:
+    get:
+      operationId: oauthMicrosoft
+      tags: [Auth - OAuth]
+      summary: Iniciar login OAuth con Microsoft
+      security: []
+      responses:
+        '302':
+          description: Redirección a Microsoft
+
+  /api/auth/microsoft/callback:
+    get:
+      operationId: oauthMicrosoftCallback
+      tags: [Auth - OAuth]
+      summary: Callback OAuth de Microsoft
+      security: []
+      parameters:
+        - name: code
+          in: query
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirección al cliente con token
+
+  # ─────────────────────────────────────────────
+  #  AUTH - Account (Protected)
+  # ─────────────────────────────────────────────
+  /api/auth/password/info:
+    get:
+      operationId: getPasswordInfo
+      tags: [Auth - Account]
+      summary: Obtener información de contraseña
+      description: Indica si el usuario tiene contraseña configurada (relevante para cuentas OAuth).
+      responses:
+        '200':
+          description: Información de contraseña
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          hasPassword:
+                            type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/me/password:
+    patch:
+      operationId: updatePassword
+      tags: [Auth - Account]
+      summary: Actualizar contraseña
+      description: Cambia la contraseña del usuario autenticado. Si ya tiene contraseña, debe enviar `passwordCurrent`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePasswordRequest'
+      responses:
+        '200':
+          description: Contraseña actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /api/auth/me:
+    get:
+      operationId: getMyAccount
+      tags: [Auth - Account]
+      summary: Obtener mi cuenta
+      description: Devuelve los datos del usuario autenticado.
+      responses:
+        '200':
+          description: Datos de la cuenta
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      operationId: updateMyAccount
+      tags: [Auth - Account]
+      summary: Actualizar mi cuenta
+      description: Actualiza los datos del usuario autenticado. Soporta subida de avatar.
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                firstName:
+                  type: string
+                  maxLength: 64
+                lastName:
+                  type: string
+                  maxLength: 64
+                fullName:
+                  type: string
+                  maxLength: 128
+                avatar:
+                  type: string
+                  format: binary
+                  description: Imagen de avatar (procesada con Sharp)
+      responses:
+        '200':
+          description: Cuenta actualizada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      operationId: deleteMyAccount
+      tags: [Auth - Account]
+      summary: Eliminar mi cuenta
+      description: Elimina permanentemente la cuenta del usuario autenticado.
+      responses:
+        '200':
+          description: Cuenta eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─────────────────────────────────────────────
+  #  SESSIONS (Protected)
+  # ─────────────────────────────────────────────
+  /api/sessions:
+    get:
+      operationId: listSessions
+      tags: [Sessions]
+      summary: Obtener sesiones activas
+      description: Lista todas las sesiones activas del usuario autenticado.
+      responses:
+        '200':
+          description: Lista de sesiones
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      operationId: revokeAllSessions
+      tags: [Sessions]
+      summary: Revocar todas las sesiones
+      description: Cierra todas las sesiones activas del usuario autenticado.
+      responses:
+        '200':
+          description: Sesiones revocadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/sessions/{sessionId}:
+    delete:
+      operationId: revokeSession
+      tags: [Sessions]
+      summary: Revocar una sesión
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: Sesión revocada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/sessions/activity:
+    get:
+      operationId: getLoginActivity
+      tags: [Sessions]
+      summary: Obtener actividad de login
+      description: Historial de actividad de inicio de sesión del usuario.
+      responses:
+        '200':
+          description: Actividad de login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─────────────────────────────────────────────
+  #  TEAMS (Protected + RBAC)
+  # ─────────────────────────────────────────────
+  /api/teams:
+    get:
+      operationId: listUserTeams
+      tags: [Teams]
+      summary: Listar equipos del usuario
+      description: Devuelve todos los equipos de los que el usuario autenticado es miembro.
+      responses:
+        '200':
+          description: Lista de equipos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Team'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createTeam
+      tags: [Teams]
+      summary: Crear un equipo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTeamRequest'
+            example:
+              name: Mi Equipo de Investigación
+              description: Equipo para análisis de trayectorias moleculares
+      responses:
+        '201':
+          description: Equipo creado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Team'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/teams/join:
+    post:
+      operationId: joinTeamByCode
+      tags: [Teams]
+      summary: Unirse a un equipo por código
+      description: Permite unirse a un equipo usando un código de invitación de 5 caracteres.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinTeamRequest'
+            example:
+              code: AB1C2
+      responses:
+        '200':
+          description: Unido al equipo exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Team'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/teams/{teamId}:
+    get:
+      operationId: getTeamById
+      tags: [Teams]
+      summary: Obtener equipo por ID
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      responses:
+        '200':
+          description: Datos del equipo
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Team'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateTeam
+      tags: [Teams]
+      summary: Actualizar equipo
+      description: Actualiza nombre y/o descripción del equipo. Requiere permiso `team:update`.
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTeamRequest'
+      responses:
+        '200':
+          description: Equipo actualizado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Team'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteTeam
+      tags: [Teams]
+      summary: Eliminar equipo
+      description: Elimina permanentemente el equipo. Requiere permiso `team:delete`.
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      responses:
+        '200':
+          description: Equipo eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/teams/{teamId}/invite-permission:
+    get:
+      operationId: checkInvitePermission
+      tags: [Teams]
+      summary: Verificar permiso de invitación
+      description: Verifica si el usuario autenticado puede invitar miembros al equipo.
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      responses:
+        '200':
+          description: Resultado del permiso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/teams/{teamId}/invite-code:
+    post:
+      operationId: generateInviteCode
+      tags: [Teams]
+      summary: Generar código de invitación
+      description: Genera un código de 5 caracteres alfanuméricos para unirse al equipo.
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      responses:
+        '201':
+          description: Código generado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          code:
+                            type: string
+                            pattern: '^[A-Z0-9]{5}$'
+                            example: AB1C2
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      operationId: deleteInviteCode
+      tags: [Teams]
+      summary: Eliminar código de invitación
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      responses:
+        '200':
+          description: Código eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ─────────────────────────────────────────────
+  #  TEAMS - Self
+  # ─────────────────────────────────────────────
+  /api/teams/{teamId}/self/permissions:
+    get:
+      operationId: getMyTeamPermissions
+      tags: [Teams - Self]
+      summary: Obtener mis permisos en el equipo
+      description: Devuelve la lista de permisos RBAC del usuario autenticado dentro del equipo.
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      responses:
+        '200':
+          description: Lista de permisos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          permissions:
+                            type: array
+                            items:
+                              type: string
+                            example: ['trajectory:read', 'trajectory:create', 'container:read']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/teams/{teamId}/self/membership:
+    delete:
+      operationId: leaveTeam
+      tags: [Teams - Self]
+      summary: Abandonar equipo
+      description: El usuario autenticado deja de ser miembro del equipo.
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      responses:
+        '200':
+          description: Membresía eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  # ─────────────────────────────────────────────
+  #  Security Schemes
+  # ─────────────────────────────────────────────
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token JWT obtenido al iniciar sesión o mediante OAuth.
+        También acepta Secret API Keys con prefijo `vsk_`.
+
+  # ─────────────────────────────────────────────
+  #  Parameters
+  # ─────────────────────────────────────────────
+  parameters:
+    TeamId:
+      name: teamId
+      in: path
+      required: true
+      description: ID del equipo (MongoDB ObjectId)
+      schema:
+        type: string
+        pattern: '^[a-fA-F0-9]{24}$'
+      example: 507f1f77bcf86cd799439011
+
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      description: ID de la sesión (MongoDB ObjectId)
+      schema:
+        type: string
+        pattern: '^[a-fA-F0-9]{24}$'
+
+    Page:
+      name: page
+      in: query
+      description: Número de página (1-indexed)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    Limit:
+      name: limit
+      in: query
+      description: Elementos por página
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    Search:
+      name: search
+      in: query
+      description: Término de búsqueda
+      schema:
+        type: string
+        minLength: 1
+
+  # ─────────────────────────────────────────────
+  #  Responses
+  # ─────────────────────────────────────────────
+  responses:
+    BadRequest:
+      description: Datos de entrada inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: error
+            code: Validation::Error
+            message: Invalid input data
+            statusCode: 400
+
+    Unauthorized:
+      description: No autenticado o token inválido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: error
+            code: Auth::Token::Invalid
+            message: Auth::Token::Invalid
+            statusCode: 401
+
+    Forbidden:
+      description: Sin permisos suficientes
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: error
+            code: RBAC::InsufficientPermissions
+            message: 'Missing permission: team:update'
+            statusCode: 403
+
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: error
+            code: Resource::NotFound
+            message: Resource not found
+            statusCode: 404
+
+    RateLimited:
+      description: Demasiadas solicitudes
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: error
+            message: Too many requests, please try again later
+            statusCode: 429
+
+  # ─────────────────────────────────────────────
+  #  Schemas
+  # ─────────────────────────────────────────────
+  schemas:
+    # ── Response Wrappers ──
+    SuccessResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [success]
+
+    PaginatedResponse:
+      type: object
+      required: [status, data, pagination]
+      properties:
+        status:
+          type: string
+          enum: [success]
+        data:
+          type: array
+          items: {}
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    Pagination:
+      type: object
+      required: [page, limit, total, totalPages, hasMore]
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 100
+        totalPages:
+          type: integer
+          example: 5
+        hasMore:
+          type: boolean
+          example: true
+
+    ErrorResponse:
+      type: object
+      required: [status, message, statusCode]
+      properties:
+        status:
+          type: string
+          enum: [error]
+        code:
+          type: string
+          description: "Código de error con formato Namespace::Error"
+          example: Auth::Credentials::Invalid
+        message:
+          type: string
+          example: Invalid credentials
+        statusCode:
+          type: integer
+          example: 401
+
+    # ── Auth Schemas ──
+    SignInRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+
+    SignUpRequest:
+      type: object
+      required: [email, firstName, lastName, password]
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 64
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 64
+        password:
+          type: string
+          minLength: 8
+
+    UpdatePasswordRequest:
+      type: object
+      required: [password]
+      properties:
+        passwordCurrent:
+          type: string
+          minLength: 1
+          description: Requerido si el usuario ya tiene contraseña configurada.
+        password:
+          type: string
+          minLength: 8
+          description: Nueva contraseña.
+
+    AuthTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT de autenticación
+          example: eyJhbGciOiJIUzI1NiIs...
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          pattern: '^[a-fA-F0-9]{24}$'
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        fullName:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+          description: URL del avatar del usuario
+        oauthProviders:
+          type: array
+          items:
+            type: string
+            enum: [github, google, microsoft]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ── Session Schemas ──
+    Session:
+      type: object
+      properties:
+        _id:
+          type: string
+        userAgent:
+          type: string
+        ip:
+          type: string
+        lastActivity:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    # ── Team Schemas ──
+    CreateTeamRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+      additionalProperties: false
+
+    UpdateTeamRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+      additionalProperties: false
+
+    JoinTeamRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z0-9]{5}$'
+          description: Código de invitación de 5 caracteres alfanuméricos en mayúsculas.
+      additionalProperties: false
+
+    Team:
+      type: object
+      properties:
+        _id:
+          type: string
+          pattern: '^[a-fA-F0-9]{24}$'
+        name:
+          type: string
+        description:
+          type: string
+        owner:
+          type: string
+          description: ID del usuario propietario
+        memberCount:
+          type: integer
+        inviteCode:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ── ObjectId ──
+    ObjectId:
+      type: string
+      pattern: '^[a-fA-F0-9]{24}$'
+      description: MongoDB ObjectId (24 caracteres hexadecimales)
+      example: 507f1f77bcf86cd799439011

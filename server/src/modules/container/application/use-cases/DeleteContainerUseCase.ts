@@ -1,3 +1,4 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import { DeleteContainerInputDTO, DeleteContainerOutputDTO } from '@modules/container/application/dtos/DeleteContainerDTO';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
@@ -23,6 +24,7 @@ export class DeleteContainerUseCase implements IUseCase<DeleteContainerInputDTO,
     async execute(input: DeleteContainerInputDTO): Promise<Result<DeleteContainerOutputDTO>> {
         const container = await this.ownershipService.getOwnedByTeam(input.containerId, input.teamId);
         const teamClusterId = this.requireTeamClusterId(container.teamCluster);
+        const userId = this.requireUserId(input.userId);
 
         await this.containerRuntimeService.removeContainer(teamClusterId, container.containerId);
         await this.repository.deleteById(input.containerId);
@@ -30,7 +32,7 @@ export class DeleteContainerUseCase implements IUseCase<DeleteContainerInputDTO,
         await this.eventBus.publish(new ContainerDeletedEvent({
             containerId: input.containerId,
             teamId: container.team?.toString() ?? '',
-            userId: input.userId ?? '',
+            userId,
             containerName: container.name ?? ''
         }));
 
@@ -43,5 +45,16 @@ export class DeleteContainerUseCase implements IUseCase<DeleteContainerInputDTO,
         }
 
         return teamClusterId;
+    }
+
+    private requireUserId(userId?: string): string {
+        if (!userId?.trim()) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                'Actor userId is required'
+            );
+        }
+
+        return userId;
     }
 };

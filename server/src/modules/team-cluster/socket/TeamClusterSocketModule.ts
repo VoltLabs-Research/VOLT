@@ -247,7 +247,10 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             return;
         }
 
-        if (payload.command === 'analysis.job-complete') {
+        if (
+            payload.command === 'analysis.job-complete'
+            || payload.command === 'trajectory.raster-job-status'
+        ) {
             const result = await this.processDaemonJobCompletionUseCase.execute(payload.payload as never);
             this.emitUseCaseResult(socketId, payload.requestId, result);
             return;

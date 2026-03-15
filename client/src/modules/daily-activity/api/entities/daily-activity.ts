@@ -28,6 +28,16 @@ export interface PopulatedUser {
     avatar?: string;
 };
 
+/**
+ * Client-side enriched activity entry used by heatmap detail views.
+ */
+export interface DailyActivityHeatmapDetailEntry extends ActivityItem {
+    user: DailyActivity['user'];
+    userId: string;
+    userDisplayName: string;
+    isCurrentUser: boolean;
+};
+
 export interface DailyActivity {
     _id: string;
     team: string;

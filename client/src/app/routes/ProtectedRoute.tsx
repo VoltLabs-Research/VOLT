@@ -1,4 +1,5 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
+import { setPostAuthDestination } from '@/modules/auth/services/post-auth-destination-storage';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { refreshSocketSession } from '@/modules/socket/core/services/socket-auth-session';
 import { setGetTeamId } from '@/app/core/http/utilities/create-client';
@@ -118,6 +119,18 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
     if(mode === RouteMode.Protected){
         if(!isAuthenticated){
+            if (isTeamInvitationRoute) {
+                const destination = location.pathname + location.search;
+                setPostAuthDestination(destination);
+
+                return renderProtectedContent(
+                    <Navigate
+                        to={`/auth/sign-in?next=${encodeURIComponent(destination)}`}
+                        replace
+                    />
+                );
+            }
+
             return renderProtectedContent(<Navigate to='/auth/sign-in' state={{ from: location }} replace />);
         }
 

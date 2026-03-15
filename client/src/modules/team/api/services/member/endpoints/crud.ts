@@ -8,5 +8,5 @@ import type { RemoveTeamMemberInputDTO } from '../../../dtos/member/remove-team-
 export default {
     getAll: paginated<GetTeamMembersInputDTO, PaginatedResponse<TeamMemberStats>>('/:teamId/members'),
     update: patch<UpdateTeamMemberInputDTO, TeamMember>('/:teamId/members/:memberId'),
-    remove: del<RemoveTeamMemberInputDTO>('/:teamId/members/:userId', { unwrap: 'void' })
+    remove: del<RemoveTeamMemberInputDTO>('/:teamId/members/:memberId', { unwrap: 'void' })
 };

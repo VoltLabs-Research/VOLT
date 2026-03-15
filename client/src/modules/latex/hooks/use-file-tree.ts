@@ -1,9 +1,8 @@
 import { buildFileTree } from '@/modules/latex/utilities/file-tree';
-import { getAssetDisplayName, splitWorkspacePath } from '@/modules/latex/utilities/workspace';
+import { getAssetDisplayName } from '@/modules/latex/utilities/workspace';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { DragEndEvent } from '@dnd-kit/core';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
 import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
 import type { FileTreeNode } from '@/modules/latex/utilities/file-tree';
@@ -17,8 +16,6 @@ interface RenameTarget {
 interface UseFileTreeInput {
     files: LatexFileEntry[];
     assets: LatexAsset[];
-    onMoveFile: (fileId: string, newPath: string) => Promise<void>;
-    onMoveAsset: (assetId: string, newPath: string) => Promise<void>;
     onCreateFile: (name: string, path?: string, content?: string) => Promise<unknown>;
     onCreateFolder: (folderPath: string) => Promise<void>;
     onRenameFile: (fileId: string, name: string) => Promise<void>;
@@ -49,7 +46,6 @@ interface UseFileTreeOutput {
     cancelRename: () => void;
     handleConfirmRename: (name: string) => Promise<void>;
     handleDeleteFolder: (folderPath: string) => Promise<void>;
-    handleDragEnd: (event: DragEndEvent) => void;
 }
 
 const normalizeFolderPath = (value: string): string => {
@@ -76,8 +72,6 @@ const getFolderParentPath = (folderPath: string): string => {
 const useFileTree = ({
     files,
     assets,
-    onMoveFile,
-    onMoveAsset,
     onCreateFile,
     onCreateFolder,
     onRenameFile,
@@ -273,39 +267,6 @@ const useFileTree = ({
         await Promise.all([...fileOperations, ...assetOperations]);
     }, [assets, confirm, documentId, files, onDeleteAssetDirect, onDeleteFileDirect]);
 
-    const handleDragEnd = useCallback((event: DragEndEvent): void => {
-        const { active, over } = event;
-        if (!over) return;
-
-        const activeId = String(active.id);
-        const overId = String(over.id);
-        if (!overId.startsWith('folder:')) return;
-
-        const targetFolder = overId.substring('folder:'.length);
-
-        if (activeId.startsWith('file:')) {
-            const fileId = activeId.substring('file:'.length);
-            const file = files.find((item) => item._id === fileId);
-            if (file && file.path !== targetFolder) {
-                void onMoveFile(fileId, targetFolder);
-            }
-            return;
-        }
-
-        if (activeId.startsWith('asset:')) {
-            const assetId = activeId.substring('asset:'.length);
-            const asset = assets.find((item) => item._id === assetId);
-            if (!asset) return;
-
-            const currentPath = asset.path ?? asset.originalName;
-            const { name } = splitWorkspacePath(currentPath);
-            const nextPath = targetFolder ? `${targetFolder}${name}` : name;
-            if (currentPath !== nextPath) {
-                void onMoveAsset(assetId, nextPath);
-            }
-        }
-    }, [assets, files, onMoveAsset, onMoveFile]);
-
     return {
         treeNodes,
         expandedFolders,
@@ -324,8 +285,7 @@ const useFileTree = ({
         startRenameAsset,
         cancelRename,
         handleConfirmRename,
-        handleDeleteFolder,
-        handleDragEnd
+        handleDeleteFolder
     };
 };
 

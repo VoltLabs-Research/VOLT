@@ -25,9 +25,23 @@ import ListTeamSceneArtifactsController from '@modules/trajectory/infrastructure
 import { presentTeamMetrics } from '@modules/trajectory/infrastructure/http/presenters/trajectory';
 import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-const CreateTrajectoryController = createController(CreateTrajectoryUseCase, HttpStatus.Created);
+import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+
+const withAuthenticatedUserId = (
+    req: AuthenticatedRequest,
+    params: Record<string, unknown>
+): Record<string, unknown> => ({
+    ...params,
+    userId: req.userId
+});
+
+const CreateTrajectoryController = createController(CreateTrajectoryUseCase, {
+    statusCode: HttpStatus.Created,
+    extendParams: withAuthenticatedUserId
+});
 const CreateTrajectoryFolderController = createController(CreateTrajectoryFolderUseCase, {
-    statusCode: HttpStatus.Created
+    statusCode: HttpStatus.Created,
+    extendParams: withAuthenticatedUserId
 });
 const DeleteTrajectoryByIdController = createController(DeleteTrajectoryByIdUseCase, HttpStatus.NoContent);
 const DeleteTrajectoryFolderController = createController(DeleteTrajectoryFolderUseCase, {

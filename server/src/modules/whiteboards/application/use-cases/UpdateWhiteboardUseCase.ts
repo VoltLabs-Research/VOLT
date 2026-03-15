@@ -16,6 +16,13 @@ export class UpdateWhiteboardUseCase implements IUseCase<UpdateWhiteboardInputDT
     ) {}
 
     async execute(input: UpdateWhiteboardInputDTO): Promise<Result<UpdateWhiteboardOutputDTO, ApplicationError>> {
+        if (!input.userId) {
+            return Result.fail(ApplicationError.unauthorized(
+                ErrorCodes.AUTHENTICATION_REQUIRED,
+                'Authentication required'
+            ));
+        }
+
         const whiteboard = await this.whiteboardRepository.findByTeamAndWhiteboardId(
             input.teamId,
             input.whiteboardId
@@ -34,9 +41,7 @@ export class UpdateWhiteboardUseCase implements IUseCase<UpdateWhiteboardInputDT
             updates.title = input.title;
         }
 
-        if (input.userId) {
-            updates.lastEditedBy = input.userId;
-        }
+        updates.lastEditedBy = input.userId;
 
         const updated = await this.whiteboardRepository.updateById(input.whiteboardId, updates);
         const finalWhiteboard = updated ?? whiteboard;

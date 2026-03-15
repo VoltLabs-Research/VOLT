@@ -36,6 +36,17 @@ type ParsedFrame = {
     [key: string]: unknown;
 };
 
+type ProjectedTrajectoryJobMetadata = {
+    trajectoryId: string;
+    trajectoryName: string;
+    timestep: number;
+    error?: string;
+    source: 'projected';
+    jobClassification: 'synthetic';
+    daemonBacked: false;
+    retriable: false;
+};
+
 const TRAJECTORY_PREPROCESS_QUEUE_TYPE = 'trajectory_native_preprocess';
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const STATUS_TTL_SECONDS = 86400;
@@ -336,11 +347,11 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         for (const frame of frames) {
             const { cachePath, timestep } = frame;
             const jobId = `${trajectory._id}:${timestep}:native-preprocess`;
-            const metadata = {
+            const metadata = this.createProjectedJobMetadata({
                 trajectoryId: trajectory._id,
                 trajectoryName: trajectory.props.name,
                 timestep
-            };
+            });
 
             await this.emitJobStatus(jobId, teamId, JobStatus.Queued, metadata);
             await this.emitJobStatus(jobId, teamId, JobStatus.Running, metadata);
@@ -356,25 +367,36 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                 await this.emitJobStatus(jobId, teamId, JobStatus.Completed, metadata);
             } catch (error) {
                 const failureMessage = error instanceof Error ? error.message : 'Failed to preprocess trajectory frame';
-                await this.emitJobStatus(jobId, teamId, JobStatus.Failed, {
+                await this.emitJobStatus(jobId, teamId, JobStatus.Failed, this.createProjectedJobMetadata({
                     ...metadata,
                     error: failureMessage
-                });
+                }));
                 throw error;
             }
         }
+    }
+
+    private createProjectedJobMetadata(
+        metadata: Pick<ProjectedTrajectoryJobMetadata, 'trajectoryId' | 'trajectoryName' | 'timestep'>
+            & Partial<Pick<ProjectedTrajectoryJobMetadata, 'error'>>
+    ): ProjectedTrajectoryJobMetadata {
+        return {
+            trajectoryId: metadata.trajectoryId,
+            trajectoryName: metadata.trajectoryName,
+            timestep: metadata.timestep,
+            error: metadata.error,
+            source: 'projected',
+            jobClassification: 'synthetic',
+            daemonBacked: false,
+            retriable: false
+        };
     }
 
     private async emitJobStatus(
         jobId: string,
         teamId: string,
         status: JobStatus,
-        metadata: {
-            trajectoryId: string;
-            trajectoryName: string;
-            timestep: number;
-            error?: string;
-        }
+        metadata: ProjectedTrajectoryJobMetadata
     ): Promise<void> {
         const timestamp = new Date().toISOString();
         const statusData = {
@@ -382,6 +404,10 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
             teamId,
             status,
             queueType: TRAJECTORY_PREPROCESS_QUEUE_TYPE,
+            source: metadata.source,
+            jobClassification: metadata.jobClassification,
+            daemonBacked: metadata.daemonBacked,
+            retriable: metadata.retriable,
             trajectoryId: metadata.trajectoryId,
             trajectoryName: metadata.trajectoryName,
             timestep: metadata.timestep,

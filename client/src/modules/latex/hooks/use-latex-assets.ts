@@ -23,12 +23,6 @@ const DELETE_TOAST = {
     error: { title: 'Failed to delete asset' }
 };
 
-const MOVE_TOAST = {
-    loading: { title: 'Moving asset...' },
-    success: { title: 'Asset moved' },
-    error: { title: 'Failed to move asset' }
-};
-
 export const buildLatexRef = (asset: LatexAsset): string => {
     const isImage = asset.mimetype.startsWith('image/');
     const isPdf = asset.mimetype === 'application/pdf';
@@ -162,19 +156,6 @@ const useLatexAssets = ({ documentId, onInsertRef }: UseLatexAssetsInput) => {
         onInsertRef?.(buildLatexRef(asset));
     }, [onInsertRef]);
 
-    /**
-     * Moves an asset to a new virtual folder by updating its `path`.
-     *
-     * @param assetId     - The ID of the asset to move.
-     * @param folderPath  - Target folder prefix, e.g. `"images/"`. Pass the originalName to keep at root.
-     */
-    const handleMoveAsset = useCallback(async (assetId: string, newPath: string): Promise<void> => {
-        await showPromise(
-            updateAsset({ documentId, assetId, path: newPath }),
-            MOVE_TOAST
-        );
-    }, [documentId, updateAsset]);
-
     const handleRenameAsset = useCallback(async (asset: LatexAsset, name: string): Promise<void> => {
         const currentPath = asset.path ?? asset.originalName;
         const { path } = (() => {
@@ -217,7 +198,6 @@ const useLatexAssets = ({ documentId, onInsertRef }: UseLatexAssetsInput) => {
         handleUploadEntries,
         handleDeleteAsset,
         handleInsertRef,
-        handleMoveAsset,
         handleRenameAsset,
         handleCreateFolder,
         deleteAsset,

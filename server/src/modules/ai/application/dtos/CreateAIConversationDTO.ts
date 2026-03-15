@@ -6,9 +6,6 @@ export interface CreateAIConversationInputDTO {
     userId: string;
     title?: string;
     message?: string;
-    lastMessageAt?: Date | string | null;
-    lastProvider?: string;
-    lastModel?: string;
 };
 
 export interface CreateAIConversationOutputDTO {

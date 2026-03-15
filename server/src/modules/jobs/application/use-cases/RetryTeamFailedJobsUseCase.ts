@@ -19,11 +19,6 @@ export default class RetryTeamFailedJobsUseCase extends BaseTeamJobActionUseCase
     }
 
     protected async run(teamId: string): Promise<RetryTeamFailedJobsOutputDTO> {
-        const result = await this.teamJobMaintenanceService.retryFailedJobs(teamId);
-
-        return {
-            retriedFrames: result.retriedFrames,
-            affectedClusters: result.affectedClusters
-        };
+        return this.teamJobMaintenanceService.retryFailedJobs(teamId);
     }
 };

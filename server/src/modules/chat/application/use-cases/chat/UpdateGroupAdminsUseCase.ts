@@ -52,7 +52,7 @@ export class UpdateGroupAdminsUseCase implements IUseCase<UpdateGroupAdminsInput
         } else {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.CHAT_INVALID_ACTION,
-                'Chat invalid action'
+                'Invalid group admin action'
             ));
         }
 

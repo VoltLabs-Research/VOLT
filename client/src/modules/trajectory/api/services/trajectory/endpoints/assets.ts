@@ -26,7 +26,10 @@ interface AtomsApiResponse {
 
 export default {
     getPreview: get<GetPreviewInputDTO, GetPreviewOutputDTO, string>('/:trajectoryId/preview', {
-        omit: ['version'],
+        query: ({ frame, quality }) => ({
+            ...(frame !== undefined ? { frame } : {}),
+            ...(quality ? { quality } : {})
+        }),
         map: (result) => ({ blob: base64ToBlob(result) })
     }),
     download: download<DownloadTrajectoryInputDTO>('GET', '/:trajectoryId/download', {

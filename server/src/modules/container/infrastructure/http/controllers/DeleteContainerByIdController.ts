@@ -5,5 +5,10 @@ import { containerValidation } from '@modules/container/infrastructure/http/vali
 
 export default createController(DeleteContainerUseCase, {
     statusCode: HttpStatus.NoContent,
-    validationSchema: containerValidation.byId
+    validationSchema: containerValidation.byId,
+    contextProviders: [
+        (request) => ({
+            userId: request.userId ?? ''
+        })
+    ]
 });

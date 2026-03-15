@@ -1,5 +1,4 @@
 import { BaseController } from '@shared/infrastructure/http/controllers/BaseController';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import type { Response } from 'express';
 import type { Readable } from 'node:stream';
@@ -39,7 +38,7 @@ export abstract class BaseStreamController<
             logger.error(error);
 
             if (!res.headersSent) {
-                BaseResponse.fromError(res, error);
+                this.handleResultError(res, error);
                 return;
             }
 

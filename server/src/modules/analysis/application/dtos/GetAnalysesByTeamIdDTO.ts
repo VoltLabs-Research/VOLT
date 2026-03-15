@@ -29,7 +29,7 @@ export interface AnalysisListUser {
 export interface GetAnalysesByTeamIdItemDTO {
     _id: string;
     plugin: string;
-    pluginDisplayName?: string;
+    pluginDisplayName: string;
     teamCluster?: string | AnalysisListTeamCluster;
     config: AnalysisConfig;
     trajectory: string | AnalysisListTrajectory;

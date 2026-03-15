@@ -1,7 +1,7 @@
 import { TRAJECTORY_POPULATE, CLUSTER_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTeamIdDTO';
-import AnalysisPluginDisplayNameService, { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
+import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
@@ -20,17 +20,14 @@ interface AnalysisSort extends Record<string, 1 | -1> {
 interface SearchableAnalysisItem {
     _id: string;
     trajectoryName?: string;
-    pluginDisplayName?: string;
+    pluginDisplayName: string;
 };
 
 @injectable()
 export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO, ApplicationError> {
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private analysisRepo: IAnalysisRepository,
-
-        @inject(AnalysisPluginDisplayNameService)
-        private readonly pluginDisplayNameService: AnalysisPluginDisplayNameService
+        private analysisRepo: IAnalysisRepository
     ) {}
 
     async execute(input: GetAnalysesByTeamIdInputDTO): Promise<Result<GetAnalysesByTeamIdOutputDTO, ApplicationError>> {
@@ -58,11 +55,10 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
             page: search ? undefined : input.page
         });
 
-        const mappedData = await Promise.all(results.data.map(async (analysis) => {
+        const mappedData = results.data.map((analysis) => {
             const props = { ...analysis.props };
             const pluginValue = props.plugin;
             const pluginId = extractPluginId(pluginValue);
-            const pluginDisplayName = await this.pluginDisplayNameService.resolveModifierName(pluginValue);
             const trajectoryValue = props.trajectory as { name?: string } | string;
             const trajectoryName = typeof trajectoryValue === 'string'
                 ? undefined
@@ -72,13 +68,12 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
                 ...props,
                 _id: analysis._id,
                 plugin: pluginId,
-                pluginDisplayName,
                 trajectory: props.trajectory,
                 teamCluster: props.teamCluster,
                 createdBy: props.createdBy,
                 trajectoryName
             };
-        }));
+        });
 
         if (!search) {
             return Result.ok({

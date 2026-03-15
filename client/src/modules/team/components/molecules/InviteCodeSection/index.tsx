@@ -15,7 +15,7 @@ interface InviteCodeSectionProps {
     isDeleting: boolean;
     onGenerate: () => Promise<void>;
     onDelete: () => Promise<void>;
-    onCopy: () => void;
+    onCopy: () => Promise<void>;
 };
 
 export const InviteCodeSection = ({
@@ -65,8 +65,8 @@ export const InviteCodeSection = ({
                             <PopoverMenu>
                                 <PopoverMenuItem
                                     icon={<Copy size={14} />}
-                                    onClick={() => {
-                                        onCopy();
+                                    onClick={async () => {
+                                        await onCopy();
                                         close();
                                     }}
                                 >

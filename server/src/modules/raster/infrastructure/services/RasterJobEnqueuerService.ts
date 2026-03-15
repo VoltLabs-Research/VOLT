@@ -8,11 +8,14 @@ import type { IRasterJobEnqueuer, RasterJobEnqueueResult } from '@modules/raster
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
-interface SerializableConfig {
-    [key: string]: unknown;
+interface RasterizeTrajectoryCommandPayload extends Record<string, unknown> {
+    trajectoryId: string;
+    teamId: string;
+    trajectoryName?: string;
+    config?: Record<string, unknown>;
 };
 
-const isSerializableConfig = (value: unknown): value is SerializableConfig => {
+const isSerializableConfig = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
@@ -41,11 +44,14 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
             );
         }
 
-        const payload: SerializableConfig = {
+        const payload: RasterizeTrajectoryCommandPayload = {
             trajectoryId,
-            teamId,
-            trajectoryName: trajectory.props.name
+            teamId
         };
+
+        if (trajectory.props.name) {
+            payload.trajectoryName = trajectory.props.name;
+        }
 
         if (isSerializableConfig(config)) {
             payload.config = config;

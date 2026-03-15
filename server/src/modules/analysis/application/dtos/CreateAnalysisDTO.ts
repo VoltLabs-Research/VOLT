@@ -4,6 +4,7 @@ interface CreateAnalysisOutputAnalysisDTO {
     _id: string;
     trajectory: string;
     plugin: string;
+    pluginDisplayName: string;
     teamCluster?: string;
     config: AnalysisConfig;
     status: string;

@@ -5,5 +5,10 @@ import { containerValidation } from '@modules/container/infrastructure/http/vali
 
 export default createController(DeleteContainerFolderUseCase, {
     statusCode: HttpStatus.NoContent,
-    validationSchema: containerValidation.deleteFolder
+    validationSchema: containerValidation.deleteFolder,
+    contextProviders: [
+        (request) => ({
+            userId: request.userId ?? ''
+        })
+    ]
 });

@@ -33,7 +33,7 @@ export class ListAnalysesByTrajectoryAITool extends AITool {
             data: result.value.data.map((analysis: GetAnalysesByTrajectoryItemDTO) => ({
                 analysisId: analysis._id,
                 pluginId: analysis.plugin,
-                pluginName: analysis.pluginDisplayName || analysis.plugin,
+                pluginName: analysis.pluginDisplayName,
                 status: analysis.status,
                 totalFrames: analysis.totalFrames ?? null,
                 completedFrames: analysis.completedFrames ?? null,

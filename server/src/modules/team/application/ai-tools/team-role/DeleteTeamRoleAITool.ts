@@ -26,7 +26,8 @@ export class DeleteTeamRoleAITool extends TeamUseCaseAITool<
             useCase,
             (params, scope) => ({
                 teamId: scope.teamId,
-                roleId: params.roleId
+                roleId: params.roleId,
+                userId: scope.userId
             }),
             (output) => output
         );
