@@ -246,6 +246,11 @@
     max-width: min(calc(100vw - 1.5rem), 42rem);
 }
 
+.canvas-toolbar-shell {
+    bottom: 1.25rem;
+    max-width: min(calc(100vw - 1.5rem), 42rem);
+}
+
 .canvas-toolbar-zoom-label {
     min-width: 42px;
     font-variant-numeric: tabular-nums;
@@ -259,7 +264,17 @@
 
 .canvas-toolbar-status {
     padding: 0 0.5rem;
-    white-space: nowrap;
+    max-width: min(14rem, 100%);
+}
+
+.canvas-toolbar-status-label {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.canvas-toolbar-status-copy {
+    white-space: normal;
+    word-break: break-word;
 }
 
 .canvas-toolbar-action {
@@ -279,12 +294,93 @@
     animation: animate-pulse 1.5s ease-in-out infinite;
 }
 
+.canvas-toolbar-status--saving {
+    color: var(--color-text-primary);
+}
+
 .canvas-toolbar-status--saved {
     color: var(--status-success);
 }
 
 .canvas-toolbar-status--error {
     color: var(--status-error);
+}
+
+.canvas-toolbar-issue-toggle {
+    max-width: min(100%, 16rem);
+}
+
+.canvas-toolbar-feedback-panel {
+    width: min(calc(100vw - 1.5rem), 42rem);
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-surface-1);
+    box-shadow: var(--shadow-elevated);
+}
+
+.canvas-toolbar-feedback-content {
+    width: 100%;
+}
+
+.canvas-toolbar-feedback-panel--validation {
+    border-color: var(--status-warning-border);
+    background: color-mix(in srgb, var(--status-warning-bg) 45%, var(--color-surface-1));
+}
+
+.canvas-toolbar-feedback-panel--error {
+    border-color: var(--status-error-border);
+    background: color-mix(in srgb, var(--status-error-bg) 55%, var(--color-surface-1));
+}
+
+.canvas-toolbar-feedback-icon {
+    margin-top: 0.125rem;
+    color: var(--color-text-primary);
+    flex-shrink: 0;
+}
+
+.canvas-toolbar-feedback-title,
+.canvas-toolbar-feedback-copy,
+.canvas-toolbar-issue-copy {
+    margin: 0;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.canvas-toolbar-feedback-dismiss {
+    flex-shrink: 0;
+}
+
+.canvas-toolbar-issue-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.canvas-toolbar-issue-item {
+    padding-top: 0.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-border-soft) 85%, transparent);
+}
+
+.canvas-toolbar-issue-item:first-child {
+    padding-top: 0;
+    border-top: none;
+}
+
+.canvas-toolbar-issue-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 4rem;
+    padding: 0.125rem 0.5rem;
+    border: 1px solid var(--status-warning-border);
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--status-warning-bg) 80%, transparent);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-1);
+    font-weight: 600;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
 }
 
 
@@ -314,8 +410,17 @@
     box-shadow: var(--shadow-elevated);
 }
 
+.floating-node-panel:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-elevated), 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 28%, transparent);
+}
+
 .floating-node-panel-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
     border-bottom: 1px solid var(--color-border-soft);
+    background: color-mix(in srgb, var(--color-surface-1) 92%, transparent);
 }
 
 .floating-node-panel-icon {
@@ -326,6 +431,25 @@
 
 .floating-node-panel-body {
     overflow-x: hidden;
+}
+
+.node-editor-content {
+    min-height: 100%;
+}
+
+.node-editor-danger-zone {
+    margin-top: auto;
+    border-top: 1px solid var(--color-border-soft);
+}
+
+.if-statement-editor-guidance,
+.if-statement-editor-empty-state {
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-surface-2);
+}
+
+.if-statement-editor-empty-state {
+    border-style: dashed;
 }
 
 @media (max-width: 768px) {
@@ -367,6 +491,22 @@
 
     .floating-node-panel {
         max-height: min(75vh, calc(100vh - 4rem));
+    }
+
+    .canvas-toolbar,
+    .canvas-toolbar-feedback-panel,
+    .canvas-toolbar-shell {
+        width: calc(100vw - 1.5rem);
+        max-width: none;
+    }
+
+    .canvas-toolbar-status,
+    .canvas-toolbar-issue-toggle {
+        max-width: 100%;
+    }
+
+    .canvas-toolbar-issue-item {
+        flex-direction: column;
     }
 }
 

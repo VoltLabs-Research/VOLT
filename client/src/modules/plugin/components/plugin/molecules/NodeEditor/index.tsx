@@ -1,13 +1,13 @@
-import type { FC } from 'react';
-import type { Node } from '@xyflow/react';
-import { Trash2 } from 'lucide-react';
+import { buildDeleteNodeConfirmOptions } from '@/modules/plugin/utilities/plugin/destructive-action-options';
 import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import DangerZone from '@/shared/presentation/components/DangerZone';
+import Paragraph from '@/shared/presentation/components/Paragraph';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
-import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { Trash2 } from 'lucide-react';
+import type { Node } from '@xyflow/react';
+import type { FC } from 'react';
 import ModifierEditor from './editors/ModifierEditor';
 import ArgumentsEditor from './editors/ArgumentsEditor';
 import ContextEditor from './editors/ContextEditor';
@@ -22,11 +22,11 @@ interface NodeEditorProps {
     node: Node;
 };
 
-interface NodeDisplayData {
-    label?: string;
+interface NodeEditorComponentProps {
+    node: Node;
 };
 
-const EDITOR_COMPONENTS: Partial<Record<NodeType, FC<{ node: Node }>>> = {
+const EDITOR_COMPONENTS: Partial<Record<NodeType, FC<NodeEditorComponentProps>>> = {
     [NodeType.MODIFIER]: ModifierEditor,
     [NodeType.ARGUMENTS]: ArgumentsEditor,
     [NodeType.CONTEXT]: ContextEditor,
@@ -44,16 +44,9 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
 
     const nodeType = Object.values(NodeType).find((value) => value === node.type);
     const EditorComponent = nodeType ? EDITOR_COMPONENTS[nodeType] : undefined;
-    const nodeData = typeof node.data === 'object' && node.data !== null ? node.data as NodeDisplayData : null;
-    const nodeLabel = nodeData?.label?.trim() || nodeType || 'node';
 
     const handleDelete = async () => {
-        const isConfirmed = await confirm({
-            title: 'Delete node?',
-            description: `Remove ${nodeLabel} and its connections. This action cannot be undone.`,
-            confirmText: 'Delete node',
-            tone: ConfirmActionTone.Danger
-        });
+        const isConfirmed = await confirm(buildDeleteNodeConfirmOptions(node));
 
         if (!isConfirmed) {
             return;
@@ -64,8 +57,8 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
     };
 
     return (
-        <Container className='p-1 y-auto'>
-            <Container>
+        <Container className='node-editor-content d-flex column gap-1 p-1'>
+            <Container className='node-editor-fields d-flex column gap-1'>
                 {EditorComponent ? (
                     <EditorComponent node={node} />
                 ) : (
@@ -75,10 +68,10 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
                 )}
             </Container>
 
-            <Container className='mt-1'>
+            <Container className='node-editor-danger-zone mt-1 pt-1'>
                 <DangerZone
                     title='Delete Node'
-                    description='Remove this node and its connections'
+                    description='Remove this node and all of its connections after confirmation.'
                     actionLabel='Delete'
                     actionIcon={<Trash2 size={14} />}
                     onAction={handleDelete}

@@ -41,10 +41,11 @@ const nodeColor = (node: NodeColorInput) =>
 
 interface PluginBuilderCanvasProps {
     saveStatus: PluginBuilderSaveStatus;
+    onDismissSaveError: () => void;
     onSave: () => void;
 };
 
-const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) => {
+const PluginBuilderCanvas = ({ saveStatus, onDismissSaveError, onSave }: PluginBuilderCanvasProps) => {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [currentZoom, setCurrentZoom] = useState(1);
@@ -129,7 +130,7 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
 
             <DebugContextPanel />
 
-            <CanvasToolbar saveStatus={saveStatus} onSave={onSave} zoom={currentZoom} />
+            <CanvasToolbar saveStatus={saveStatus} onDismissSaveError={onDismissSaveError} onSave={onSave} zoom={currentZoom} />
         </Container>
     );
 };
