@@ -14,7 +14,7 @@ import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
-const XRDP_PRIVATE_PORT = 3389;
+const VNC_PRIVATE_PORT = 5901;
 
 @injectable()
 export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO, CreateContainerOutputDTO> {
@@ -57,20 +57,20 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
     }
 
     private resolveCapabilities(input: CreateContainerInputDTO): ContainerCapabilities | undefined {
-        if (!input.capabilities?.xrdp) {
+        if (!input.capabilities?.vnc) {
             return undefined;
         }
 
-        const exposesXrdpPort = (input.ports || []).some((port) => port.private === XRDP_PRIVATE_PORT);
-        if (!exposesXrdpPort) {
+        const exposesVncPort = (input.ports || []).some((port) => port.private === VNC_PRIVATE_PORT);
+        if (!exposesVncPort) {
             throw ApplicationError.badRequest(
                 ErrorCodes.VALIDATION_INVALID_INPUT,
-                `XRDP-capable containers must expose private port ${XRDP_PRIVATE_PORT}`
+                `VNC-capable containers must expose private port ${VNC_PRIVATE_PORT}`
             );
         }
 
         return {
-            xrdp: true
+            vnc: true
         };
     }
 

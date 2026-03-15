@@ -11,7 +11,13 @@
 
 .notification-item.is-unread {
     border-color: var(--color-brand-primary);
-    background: var(--color-surface-3);
+    background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface-1));
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .notification-item.is-unread:hover {
+        background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-surface-1));
+    }
 }
 
 .notification-item.is-read {
@@ -37,7 +43,7 @@
 
 .notification-item-state.is-unread {
     background: var(--color-brand-primary);
-    color: var(--color-contrast-high);
+    color: #fff;
 }
 
 .notification-item-state.is-read {

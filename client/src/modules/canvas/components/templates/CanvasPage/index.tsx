@@ -1,5 +1,6 @@
 import { useKeyboardShortcutsStore } from '../../../stores/use-keyboard-shortcuts-store';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
 import useAnalysisStatus from '../../../hooks/use-analysis-status';
 import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../../../utilities/analysis-status';
 import useCanvasCleanup from '../../../hooks/use-canvas-cleanup';
@@ -24,6 +25,7 @@ import Timeline from '../../organisms/Timeline';
 import TopToolbar from '../../organisms/TopToolbar';
 import Viewport from '../../organisms/Viewport';
 import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-config';
+import CanvasRasterViewport from '@/modules/raster/components/organisms/CanvasRasterViewport';
 import { ResizeDirection } from '@/modules/canvas/hooks/use-resizable';
 
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
@@ -75,7 +77,8 @@ const CanvasPage = () => {
         selectedNotebookId
     } = useCanvasUrlState({ trajectory });
     const showStatusBar = searchParams.get('statusBar') !== 'false';
-    const isScriptingWorkspace = activeWorkspace === 'scripting';
+    const isRasterWorkspace = activeWorkspace === CanvasWorkspace.Raster;
+    const isScriptingWorkspace = activeWorkspace === CanvasWorkspace.Scripting;
     const { downloadListing, downloadAnalysisListings, isDownloading } = useDownloadPluginListing();
     const { statusMap } = useAnalysisStatus({ trajectoryId: trajectory?._id, enabled: !!trajectory?._id });
     const [scriptingJupyterUrl, setScriptingJupyterUrl] = useState<string | null>(null);
@@ -193,6 +196,28 @@ const CanvasPage = () => {
         )
         : null;
 
+    let viewportBodyContent = undefined;
+    if (isScriptingWorkspace) {
+        viewportBodyContent = (
+            <ScriptingWorkspace
+                trajectoryId={trajectoryId}
+                notebookId={selectedNotebookId}
+                onJupyterUrlChange={setScriptingJupyterUrl}
+            />
+        );
+    }
+
+    if (isRasterWorkspace) {
+        viewportBodyContent = (
+            <CanvasRasterViewport
+                trajectoryId={trajectoryId}
+                trajectory={trajectory}
+                analysisId={analysisId}
+                currentTimestep={currentTimestep}
+            />
+        );
+    }
+
     return (
         <Container className="canvas-editor-root d-flex column vh-max wh-max overflow-hidden p-relative">
             <TopToolbar />
@@ -237,18 +262,12 @@ const CanvasPage = () => {
                             analysisId={analysisId}
                             showGrid={showGrid}
                             showGizmo={showGizmo}
-                            isLoading={showLoading}
+                            isLoading={isRasterWorkspace ? false : showLoading}
                             sceneRef={sceneRef}
-                            bodyContent={isScriptingWorkspace
-                                ? (
-                                    <ScriptingWorkspace
-                                        trajectoryId={trajectoryId}
-                                        notebookId={selectedNotebookId}
-                                        onJupyterUrlChange={setScriptingJupyterUrl}
-                                    />
-                                )
-                                : undefined}
-                            hideGradient={isScriptingWorkspace}
+                            bodyContent={viewportBodyContent}
+                            hideGradient={isScriptingWorkspace || isRasterWorkspace}
+                            renderScene={!isScriptingWorkspace && !isRasterWorkspace}
+                            showSceneActions={!isRasterWorkspace}
                             headerActionsBeforePerformance={viewportHeaderActions}
                         />
                     </Container>

@@ -20,23 +20,27 @@
         background-color 0.25s ease,
         border-color 0.25s ease,
         box-shadow 0.25s ease,
-        transform 0.2s ease;
 }
 
 .simulation-card:hover {
     border-color: var(--color-border-strong);
     box-shadow: var(--shadow-elevated);
-    transform: translateY(-2px);
 }
 
 .simulation-card:focus-visible {
     outline: none;
     border-color: var(--focus-ring);
     box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent), var(--shadow-elevated);
-    transform: translateY(-2px);
 }
 
 .simulation-card .simulation-card-header {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.simulation-card:hover .simulation-card-header,
+.simulation-card:focus-visible .simulation-card-header {
     opacity: 1;
     visibility: visible;
 }
@@ -81,11 +85,6 @@
 @media (prefers-reduced-motion: reduce) {
     .simulation-card {
         transition: none;
-    }
-
-    .simulation-card:hover,
-    .simulation-card:focus-visible {
-        transform: none;
     }
 
     .simulation-card.has-jobs {

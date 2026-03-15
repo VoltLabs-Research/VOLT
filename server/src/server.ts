@@ -7,10 +7,8 @@ import { initializeMinio } from './core/config/minio';
 import { initializeRedis } from './core/config/redis';
 import { registerAllSubscribers } from './core/events/registerAllSubscribers';
 import { SOCKET_TOKENS } from './modules/socket/infrastructure/di/SocketTokens';
-import { TEAM_CLUSTER_TOKENS } from './modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import { ContainerXrdpGatewayService } from './modules/container/infrastructure/services/ContainerXrdpGatewayService';
+import { ContainerVncGatewayService } from './modules/container/infrastructure/services/ContainerVncGatewayService';
 import { ScriptingJupyterProxyService } from './modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
-import type TeamClusterTcpExposureRelayService from './modules/team-cluster/infrastructure/services/TeamClusterTcpExposureRelayService';
 import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
 import logger from './shared/infrastructure/logger';
 import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
@@ -27,10 +25,8 @@ const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
 const SERVER_TIMEOUT = readNumberEnv('SERVER_TIMEOUT', 1800000);
 
 registerAllDependencies();
-const tcpExposureRelayService = container.resolve<TeamClusterTcpExposureRelayService>(TEAM_CLUSTER_TOKENS.TeamClusterTcpExposureRelayService);
 
 const shutdown = async () => {
-    await tcpExposureRelayService.stop();
     process.exit(0);
 };
 
@@ -63,6 +59,15 @@ const startServer = async () => {
     server.on('upgrade', (request, socket, head) => {
         const proxyService = container.resolve(ScriptingJupyterProxyService);
         if (!proxyService.isJupyterUpgradeRequest(request)) {
+            const vncGatewayService = container.resolve(ContainerVncGatewayService);
+            if (!vncGatewayService.isVncUpgradeRequest(request)) {
+                return;
+            }
+
+            vncGatewayService.handleUpgrade(request, socket as Duplex, head).catch((error: unknown) => {
+                logger.error(`@server: vnc upgrade failed: ${error instanceof Error ? error.message : String(error)}`);
+                vncGatewayService.handleUpgradeError(socket as Duplex, error);
+            });
             return;
         }
 
@@ -71,12 +76,6 @@ const startServer = async () => {
             (socket as Duplex).destroy();
         });
     });
-
-    // XRDP gateway uses noServer mode; its upgrade handler is
-    // registered inside attach() and only handles its own path,
-    // so it won't interfere with Socket.IO WebSocket upgrades.
-    const xrdpGatewayService = container.resolve(ContainerXrdpGatewayService);
-    xrdpGatewayService.attach(server);
 
     server.listen(SERVER_PORT, SERVER_HOST, async () => {
         try {
@@ -118,8 +117,6 @@ const startServer = async () => {
 
             await socketGateway.initialize(server);
             logger.info(`@server: SocketGateway ready on :${SERVER_PORT}`);
-
-            tcpExposureRelayService.start();
 
             logger.info(`@server: running at http://${SERVER_HOST}:${SERVER_PORT}/`);
 

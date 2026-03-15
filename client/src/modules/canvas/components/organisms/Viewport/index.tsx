@@ -42,6 +42,8 @@ interface ViewportProps {
     sceneRef: RefObject<FractalSceneRef | null>;
     bodyContent?: ReactNode;
     hideGradient?: boolean;
+    renderScene?: boolean;
+    showSceneActions?: boolean;
     headerActionsBeforePerformance?: ReactNode;
 };
 
@@ -62,6 +64,8 @@ const Viewport = ({
     sceneRef,
     bodyContent,
     hideGradient = false,
+    renderScene = true,
+    showSceneActions = true,
     headerActionsBeforePerformance
 }: ViewportProps) => {
     const navigate = useNavigate();
@@ -140,59 +144,63 @@ const Viewport = ({
 
                 {headerActionsBeforePerformance}
 
-                <Tooltip content="Screenshot (Ctrl+S)">
-                    <Button
-                        variant="ghost"
-                        intent="canvas"
-                        shape="rounded"
-                        size="sm"
-                        className="font-size-05 canvas-btn-compact"
-                        leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Camera size={12} /></span>}
-                        onClick={() => useScreenshotStore.getState().requestCapture()}
-                    >
-                        Screenshot
-                    </Button>
-                </Tooltip>
+                {showSceneActions && (
+                    <>
+                        <Tooltip content="Screenshot (Ctrl+S)">
+                            <Button
+                                variant="ghost"
+                                intent="canvas"
+                                shape="rounded"
+                                size="sm"
+                                className="font-size-05 canvas-btn-compact"
+                                leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Camera size={12} /></span>}
+                                onClick={() => useScreenshotStore.getState().requestCapture()}
+                            >
+                                Screenshot
+                            </Button>
+                        </Tooltip>
 
-                <Popover
-                    id="viewport-performance"
-                    noPadding
-                    trigger={(
-                        <Button
-                            variant="ghost"
-                            intent="canvas"
-                            shape="rounded"
-                            size="sm"
-                            className="font-size-05 canvas-btn-compact"
-                            leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Gauge size={12} /></span>}
-                        >
-                            {getPerformancePresetLabel(performancePreset)}
-                        </Button>
-                    )}
-                >
-                    {(close) => (
-                        <PopoverMenu>
-                            {PERFORMANCE_PRESET_OPTIONS.map((preset) => (
+                        <Popover
+                            id="viewport-performance"
+                            noPadding
+                            trigger={(
                                 <Button
-                                    key={preset.value}
-                                    variant={preset.value === performancePreset ? 'solid' : 'ghost'}
+                                    variant="ghost"
                                     intent="canvas"
                                     shape="rounded"
                                     size="sm"
-                                    className="font-size-05"
-                                    block
-                                    align="start"
-                                    onClick={() => {
-                                        setPerformancePreset(preset.value);
-                                        close();
-                                    }}
+                                    className="font-size-05 canvas-btn-compact"
+                                    leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Gauge size={12} /></span>}
                                 >
-                                    {preset.title}
+                                    {getPerformancePresetLabel(performancePreset)}
                                 </Button>
-                            ))}
-                        </PopoverMenu>
-                    )}
-                </Popover>
+                            )}
+                        >
+                            {(close) => (
+                                <PopoverMenu>
+                                    {PERFORMANCE_PRESET_OPTIONS.map((preset) => (
+                                        <Button
+                                            key={preset.value}
+                                            variant={preset.value === performancePreset ? 'solid' : 'ghost'}
+                                            intent="canvas"
+                                            shape="rounded"
+                                            size="sm"
+                                            className="font-size-05"
+                                            block
+                                            align="start"
+                                            onClick={() => {
+                                                setPerformancePreset(preset.value);
+                                                close();
+                                            }}
+                                        >
+                                            {preset.title}
+                                        </Button>
+                                    ))}
+                                </PopoverMenu>
+                            )}
+                        </Popover>
+                    </>
+                )}
             </Container>
 
             <Container className="canvas-viewport-body flex-1 p-relative min-h-0">
@@ -203,12 +211,12 @@ const Viewport = ({
                 )}
 
                 {bodyContent && (
-                    <Container className="p-relative w-max h-max">
+                    <Container className="canvas-viewport-body-content d-flex flex-1 min-h-0 p-relative w-max h-max">
                         {bodyContent}
                     </Container>
                 )}
 
-                {sceneConfig && (
+                {renderScene && sceneConfig && (
                     <Container
                         className="p-relative w-max h-max"
                         style={bodyContent ? { display: 'none' } : undefined}

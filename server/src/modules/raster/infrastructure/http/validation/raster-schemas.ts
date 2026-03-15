@@ -4,7 +4,9 @@ import { z } from 'zod/v4';
 const teamTrajectoryParamsSchema = createTeamScopedParamsSchema('trajectoryId');
 
 const frameParamsSchema = teamTrajectoryParamsSchema.extend({
-    timestep: z.coerce.number().int().min(0)
+    timestep: z.coerce.number().int().min(0),
+    analysisId: z.string().trim().min(1).optional(),
+    model: z.string().trim().min(1).optional()
 }).strict();
 
 const triggerBodySchema = z.object({

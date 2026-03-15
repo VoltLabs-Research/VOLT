@@ -10,7 +10,7 @@ import { UpdateContainerAITool } from '@modules/container/application/ai-tools/U
 import {
     CreateContainerUseCase,
     CreateContainerFolderUseCase,
-    CreateContainerXrdpSessionUseCase,
+    CreateContainerVncSessionUseCase,
     DeleteContainerUseCase,
     DeleteContainerFolderUseCase,
     GetContainerByIdUseCase,
@@ -18,6 +18,7 @@ import {
     GetContainerFilesUseCase,
     GetContainerProcessesUseCase,
     GetContainerStatsUseCase,
+    GetContainerVncConnectPageUseCase,
     ListContainerFoldersUseCase,
     ListContainersUseCase,
     MoveContainerUseCase,
@@ -33,7 +34,7 @@ import { DockerVolumeRepository } from '@modules/container/infrastructure/persis
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import {
     ContainerOwnershipService,
-    ContainerXrdpGatewayService,
+    ContainerVncGatewayService,
     DaemonContainerRuntimeService,
     DockerContainerService,
     TeamClusterSelectionService,
@@ -65,12 +66,12 @@ export const registerContainerDependencies = (): void => {
     container.register(CONTAINER_TOKENS.ContainerRuntimeService, { useClass: DaemonContainerRuntimeService });
     container.register(CONTAINER_TOKENS.TerminalService, { useClass: TerminalService });
     container.register(ContainerOwnershipService, { useClass: ContainerOwnershipService });
-    container.registerSingleton(ContainerXrdpGatewayService, ContainerXrdpGatewayService);
+    container.registerSingleton(ContainerVncGatewayService, ContainerVncGatewayService);
     container.register(TeamClusterSelectionService, { useClass: TeamClusterSelectionService });
 
     container.register(CreateContainerUseCase, { useClass: CreateContainerUseCase });
     container.register(CreateContainerFolderUseCase, { useClass: CreateContainerFolderUseCase });
-    container.register(CreateContainerXrdpSessionUseCase, { useClass: CreateContainerXrdpSessionUseCase });
+    container.register(CreateContainerVncSessionUseCase, { useClass: CreateContainerVncSessionUseCase });
     container.register(UpdateContainerUseCase, { useClass: UpdateContainerUseCase });
     container.register(UpdateContainerFolderUseCase, { useClass: UpdateContainerFolderUseCase });
     container.register(DeleteContainerUseCase, { useClass: DeleteContainerUseCase });
@@ -78,6 +79,7 @@ export const registerContainerDependencies = (): void => {
     container.register(ListContainersUseCase, { useClass: ListContainersUseCase });
     container.register(ListContainerFoldersUseCase, { useClass: ListContainerFoldersUseCase });
     container.register(GetContainerStatsUseCase, { useClass: GetContainerStatsUseCase });
+    container.register(GetContainerVncConnectPageUseCase, { useClass: GetContainerVncConnectPageUseCase });
     container.register(GetContainerFilesUseCase, { useClass: GetContainerFilesUseCase });
     container.register(ReadContainerFileUseCase, { useClass: ReadContainerFileUseCase });
     container.register(GetContainerProcessesUseCase, { useClass: GetContainerProcessesUseCase });

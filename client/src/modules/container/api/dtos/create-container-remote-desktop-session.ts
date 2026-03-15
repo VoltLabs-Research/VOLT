@@ -1,8 +1,8 @@
-export interface CreateContainerXrdpSessionParams {
+export interface CreateContainerRemoteDesktopSessionParams {
     teamId: string;
     containerId: string;
-    username: string;
     password: string;
+    parentOrigin: string;
     width?: number;
     height?: number;
     dpi?: number;
