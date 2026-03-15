@@ -19,6 +19,7 @@ interface JobsHistoryViewerProps {
     variant?: 'floating' | 'embedded';
     displayMode?: 'full' | 'children-only';
     emptyState?: ReactNode;
+    autoSelectAnalysis?: boolean;
 };
 
 type DisplayMode = 'full' | 'children-only';
@@ -35,7 +36,8 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
         queueFilter,
         variant = 'floating',
         displayMode,
-        emptyState
+        emptyState,
+        autoSelectAnalysis = true
     } = props;
     const prefersReducedMotion = usePrefersReducedMotion();
     const { groups, isConnected, isLoading } = useTeamJobs();
@@ -55,6 +57,7 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
     });
 
     const { resetTracking } = useJobsAutoSelectAnalysis({
+        enabled: autoSelectAnalysis,
         trajectoryId,
         jobs: relevantJobs,
         setCurrentTimestep
@@ -68,9 +71,9 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
     });
 
     useEffect(() => {
-        if (!hasActiveJobs) return;
+        if (!autoSelectAnalysis || !hasActiveJobs) return;
         resetTracking();
-    }, [hasActiveJobs, resetTracking]);
+    }, [autoSelectAnalysis, hasActiveJobs, resetTracking]);
 
     const panelVariants: Variants = {
         hidden: {
