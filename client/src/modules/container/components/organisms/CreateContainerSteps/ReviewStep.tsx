@@ -9,6 +9,8 @@ import type { ContainerConfig } from '../../../hooks/use-create-container-form';
 import type { Team } from '@/modules/team/api/entities/team/team';
 import type { TeamClusterOption } from '@/modules/container/api/entities/team-cluster-option';
 
+const CONTAINER_USERNAME_ENV_KEY = 'CONTAINER_USERNAME';
+
 interface ReviewStepProps {
     config: ContainerConfig;
     teams: Team[];
@@ -36,6 +38,7 @@ const ReviewStep = ({
     const selectedClusterName = teamClusters.find((teamCluster) => teamCluster._id === selectedTeamClusterId)?.name || 'Not selected';
     const selectedImage = image || 'Not selected';
     const mergedEnvironmentVariables = mergeContainerEnvVariables(config.env, config.customFields, config.customFieldValues);
+    const hasUbuntuRemoteDesktopTemplateSettings = config.customFields.some((customField) => customField.env?.key === CONTAINER_USERNAME_ENV_KEY);
     const environmentDisplay = mergedEnvironmentVariables.length > 0
         ? `${mergedEnvironmentVariables.length} variable${mergedEnvironmentVariables.length === 1 ? '' : 's'}`
         : 'None';
@@ -71,6 +74,7 @@ const ReviewStep = ({
                 <ReviewItem label='Memory' value={`${config.memory} MB`} />
                 <ReviewItem label='Ports' value={portsDisplay} />
                 <ReviewItem label='Environment' value={environmentDisplay} />
+                {hasUbuntuRemoteDesktopTemplateSettings && <ReviewItem label='Remote desktop login' value='The Linux user password and VNC password will be the same.' />}
                 {customFieldsDisplay && <ReviewItem label='Template settings' value={customFieldsDisplay} />}
                 <ReviewItem label='Docker access' value={dockerAccessLabel} />
             </Container>

@@ -7,6 +7,7 @@ import SettingsSectionHeader from '@/shared/presentation/components/SettingsSect
 import Slider from '@/shared/presentation/components/Slider';
 import Title from '@/shared/presentation/components/Title';
 import { Cpu, HardDrive } from 'lucide-react';
+import { getCustomFieldValidationError } from '../../../hooks/use-create-container-form';
 import { ContainerTemplateCustomFieldType } from '../../../api/entities/container-template';
 import type { ContainerConfig } from '../../../hooks/use-create-container-form';
 import type { ContainerTemplateCustomField } from '../../../api/entities/container-template';
@@ -27,6 +28,7 @@ interface EnvVariableFormItem extends Record<string, unknown> {
 
 const MAX_CPU = 8;
 const MAX_MEMORY = 8192;
+const CONTAINER_USERNAME_ENV_KEY = 'CONTAINER_USERNAME';
 
 interface ValueChangeTarget {
     value: string | boolean;
@@ -127,18 +129,15 @@ const getCustomFieldValidationMessages = (
     customFieldValues: ContainerConfig['customFieldValues']
 ): CustomFieldValidationMessage[] => {
     return customFields.reduce<CustomFieldValidationMessage[]>((messages, customField) => {
-        if (!customField.required) {
-            return messages;
-        }
-
         const customFieldValue = customFieldValues[customField.id] ?? '';
-        if (customFieldValue.trim()) {
+        const validationError = getCustomFieldValidationError(customField, customFieldValue);
+        if (!validationError) {
             return messages;
         }
 
         messages.push({
             key: customField.id,
-            label: `${customField.label} is required`
+            label: validationError
         });
 
         return messages;
@@ -151,6 +150,19 @@ const getCustomFieldType = (customField: ContainerTemplateCustomField) => {
     }
 
     return 'text';
+};
+
+const getCustomFieldInputProps = (customField: ContainerTemplateCustomField) => {
+    if (customField.env?.key !== CONTAINER_USERNAME_ENV_KEY) {
+        return undefined;
+    }
+
+    return {
+        autoComplete: 'username',
+        autoCapitalize: 'none',
+        spellCheck: false,
+        pattern: customField.pattern
+    };
 };
 
 const renderCustomFieldsSection = (
@@ -171,14 +183,13 @@ const renderCustomFieldsSection = (
 
     const renderCustomField = (customField: ContainerTemplateCustomField) => {
         const fieldValue = customFieldValues[customField.id] ?? '';
-        const fieldError = customField.required && !fieldValue.trim()
-            ? `${customField.label} is required.`
-            : undefined;
+        const fieldError = getCustomFieldValidationError(customField, fieldValue) ?? undefined;
 
         return (
             <Container key={customField.id} className='d-flex column gap-05'>
                 <FormFieldRHF
                     label={customField.label}
+                    name={customField.id}
                     placeholder={customField.placeholder}
                     value={fieldValue}
                     onChange={(event) => handleCustomFieldChange(customField.id, event.target.value)}
@@ -187,7 +198,8 @@ const renderCustomFieldsSection = (
                     inputProps={{
                         autoComplete: customField.type === ContainerTemplateCustomFieldType.Password
                             ? 'new-password'
-                            : 'off'
+                            : 'off',
+                        ...getCustomFieldInputProps(customField)
                     }}
                     className='w-full'
                 />
@@ -198,6 +210,8 @@ const renderCustomFieldsSection = (
         );
     };
 
+    const hasContainerUsernameField = customFields.some((customField) => customField.env?.key === CONTAINER_USERNAME_ENV_KEY);
+
     return (
         <Container className='create-container-config-card full-width radius-md d-flex column gap-1 p-1-5'>
             <SettingsSectionHeader
@@ -205,6 +219,9 @@ const renderCustomFieldsSection = (
                 description='These options come from the selected template.'
                 className='create-container-config-section-header mb-1 pb-075'
             />
+            {hasContainerUsernameField && (
+                <Paragraph className='font-size-2 color-secondary'>The shared password will be used for the Linux user inside the container and for VNC remote desktop access.</Paragraph>
+            )}
             <Container className='d-flex column gap-1'>
                 {customFields.map(renderCustomField)}
             </Container>

@@ -5,12 +5,13 @@ import service from '../api/service';
 import { createSocketQuery } from '@/shared/infrastructure/query';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useMutation } from '@tanstack/react-query';
-import type { ClearHistoryOutputDTO } from '../api/dtos/clear-history';
 import type { FrameJobGroup, Job, TrajectoryJobGroup } from '../api/entities/job';
-import type { RemoveRunningJobsOutputDTO } from '../api/dtos/remove-running-jobs';
 import type { RetryFailedJobsOutputDTO } from '../api/dtos/retry-failed-jobs';
 import type { MutationOptions } from '@/shared/infrastructure/query';
 import type { QueryClient } from '@tanstack/react-query';
+
+type ClearJobHistoryResult = Awaited<ReturnType<typeof service.clearHistory>>;
+type RemoveRunningJobsResult = Awaited<ReturnType<typeof service.removeRunningJobs>>;
 
 export interface TeamJobsMutationContext {
     previousGroups: TrajectoryJobGroup[];
@@ -135,8 +136,8 @@ const markFailedJobsForRetry = (groups: TrajectoryJobGroup[]): TrajectoryJobGrou
     })));
 };
 
-export const useRemoveRunningJobsMutation = (options?: MutationOptions<RemoveRunningJobsOutputDTO, void>) => {
-    return useMutation<RemoveRunningJobsOutputDTO, Error, void, TeamJobsMutationContext>({
+export const useRemoveRunningJobsMutation = (options?: MutationOptions<RemoveRunningJobsResult, void>) => {
+    return useMutation<RemoveRunningJobsResult, Error, void, TeamJobsMutationContext>({
         ...options,
         mutationFn: () => service.removeRunningJobs({}),
         onMutate: async () => {
@@ -181,8 +182,8 @@ export const useRetryFailedJobsMutation = (options?: MutationOptions<RetryFailed
     });
 };
 
-export const useClearJobHistoryMutation = (options?: MutationOptions<ClearHistoryOutputDTO, void>) => {
-    return useMutation<ClearHistoryOutputDTO, Error, void, TeamJobsMutationContext>({
+export const useClearJobHistoryMutation = (options?: MutationOptions<ClearJobHistoryResult, void>) => {
+    return useMutation<ClearJobHistoryResult, Error, void, TeamJobsMutationContext>({
         ...options,
         mutationFn: () => service.clearHistory({}),
         onMutate: async () => {
