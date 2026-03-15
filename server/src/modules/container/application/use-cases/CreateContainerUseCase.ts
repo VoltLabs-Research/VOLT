@@ -15,6 +15,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
 const VNC_PRIVATE_PORT = 5901;
+const VNC_PASSWORD_ENV_KEY = 'VNC_PW';
 
 @injectable()
 export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO, CreateContainerOutputDTO> {
@@ -69,9 +70,36 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             );
         }
 
+        this.validateVncPassword(input);
+
         return {
             vnc: true
         };
+    }
+
+    private validateVncPassword(input: CreateContainerInputDTO): void {
+        const vncPasswordEntries = (input.env || []).filter((environmentVariable) => environmentVariable.key === VNC_PASSWORD_ENV_KEY);
+
+        if (vncPasswordEntries.length === 0) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                `VNC-capable containers must define env var ${VNC_PASSWORD_ENV_KEY}`
+            );
+        }
+
+        if (vncPasswordEntries.length > 1) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                `VNC-capable containers must define env var ${VNC_PASSWORD_ENV_KEY} only once`
+            );
+        }
+
+        if (!vncPasswordEntries[0].value.trim()) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                `VNC-capable containers must define a non-empty ${VNC_PASSWORD_ENV_KEY} env var`
+            );
+        }
     }
 
     async execute(input: CreateContainerInputDTO): Promise<Result<CreateContainerOutputDTO>> {

@@ -72,6 +72,7 @@
 .container-details-content-area {
     background: var(--color-content-bg);
     min-width: 0;
+    min-height: 0;
 }
 
 .container-details-pane {

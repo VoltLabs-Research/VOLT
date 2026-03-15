@@ -7,7 +7,9 @@ import SettingsSectionHeader from '@/shared/presentation/components/SettingsSect
 import Slider from '@/shared/presentation/components/Slider';
 import Title from '@/shared/presentation/components/Title';
 import { Cpu, HardDrive } from 'lucide-react';
+import { ContainerTemplateCustomFieldType } from '../../../api/entities/container-template';
 import type { ContainerConfig } from '../../../hooks/use-create-container-form';
+import type { ContainerTemplateCustomField } from '../../../api/entities/container-template';
 import type { FieldConfig } from '@/shared/presentation/components/EditableKeyValueCard';
 import type { SelectOption } from '@/shared/presentation/components/FormFieldRHF';
 import type { Team } from '@/modules/team/api/entities/team/team';
@@ -55,6 +57,11 @@ interface ResourceSummary {
     minLabel: string;
     maxLabel: string;
     icon: typeof Cpu;
+};
+
+interface CustomFieldValidationMessage {
+    key: string;
+    label: string;
 };
 
 const PORT_FIELDS: FieldConfig[] = [
@@ -115,6 +122,96 @@ const hasValueChangeTarget = (value: unknown): value is ValueChangeTarget => {
     return typeof value === 'object' && value !== null && 'value' in value;
 };
 
+const getCustomFieldValidationMessages = (
+    customFields: ContainerTemplateCustomField[],
+    customFieldValues: ContainerConfig['customFieldValues']
+): CustomFieldValidationMessage[] => {
+    return customFields.reduce<CustomFieldValidationMessage[]>((messages, customField) => {
+        if (!customField.required) {
+            return messages;
+        }
+
+        const customFieldValue = customFieldValues[customField.id] ?? '';
+        if (customFieldValue.trim()) {
+            return messages;
+        }
+
+        messages.push({
+            key: customField.id,
+            label: `${customField.label} is required`
+        });
+
+        return messages;
+    }, []);
+};
+
+const getCustomFieldType = (customField: ContainerTemplateCustomField) => {
+    if (customField.type === ContainerTemplateCustomFieldType.Password) {
+        return 'password';
+    }
+
+    return 'text';
+};
+
+const renderCustomFieldsSection = (
+    customFields: ContainerTemplateCustomField[],
+    customFieldValues: ContainerConfig['customFieldValues'],
+    onConfigChange: <K extends keyof ContainerConfig>(key: K, value: ContainerConfig[K]) => void
+) => {
+    if (customFields.length === 0) {
+        return null;
+    }
+
+    const handleCustomFieldChange = (customFieldId: string, value: string) => {
+        onConfigChange('customFieldValues', {
+            ...customFieldValues,
+            [customFieldId]: value
+        });
+    };
+
+    const renderCustomField = (customField: ContainerTemplateCustomField) => {
+        const fieldValue = customFieldValues[customField.id] ?? '';
+        const fieldError = customField.required && !fieldValue.trim()
+            ? `${customField.label} is required.`
+            : undefined;
+
+        return (
+            <Container key={customField.id} className='d-flex column gap-05'>
+                <FormFieldRHF
+                    label={customField.label}
+                    placeholder={customField.placeholder}
+                    value={fieldValue}
+                    onChange={(event) => handleCustomFieldChange(customField.id, event.target.value)}
+                    type={getCustomFieldType(customField)}
+                    error={fieldError}
+                    inputProps={{
+                        autoComplete: customField.type === ContainerTemplateCustomFieldType.Password
+                            ? 'new-password'
+                            : 'off'
+                    }}
+                    className='w-full'
+                />
+                {customField.description && (
+                    <Paragraph className='font-size-2 color-muted'>{customField.description}</Paragraph>
+                )}
+            </Container>
+        );
+    };
+
+    return (
+        <Container className='create-container-config-card full-width radius-md d-flex column gap-1 p-1-5'>
+            <SettingsSectionHeader
+                title='Template settings'
+                description='These options come from the selected template.'
+                className='create-container-config-section-header mb-1 pb-075'
+            />
+            <Container className='d-flex column gap-1'>
+                {customFields.map(renderCustomField)}
+            </Container>
+        </Container>
+    );
+};
+
 const ConfigurationStep = ({
     config,
     teams,
@@ -161,6 +258,7 @@ const ConfigurationStep = ({
         maxLabel: `${MAX_MEMORY} MB max`,
         icon: HardDrive
     };
+    const customFieldValidationMessages = getCustomFieldValidationMessages(config.customFields, config.customFieldValues);
     const CpuResourceIcon = cpuResourceSummary.icon;
     const MemoryResourceIcon = memoryResourceSummary.icon;
     if (!config.name.trim()) {
@@ -183,6 +281,8 @@ const ConfigurationStep = ({
             label: clusterFieldError
         });
     }
+
+    validationMessages.push(...customFieldValidationMessages);
 
     const remainingItemsLabel = `${validationMessages.length} required item${validationMessages.length === 1 ? '' : 's'} remaining before review.`;
 
@@ -328,6 +428,8 @@ const ConfigurationStep = ({
                         emptyMessage='No environment variables added.'
                     />
                 </Container>
+
+                {renderCustomFieldsSection(config.customFields, config.customFieldValues, onConfigChange)}
 
                 <Container className='create-container-config-card full-width radius-md d-flex column gap-1 p-1-5'>
                     <SettingsSectionHeader

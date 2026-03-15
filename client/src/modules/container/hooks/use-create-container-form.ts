@@ -7,7 +7,10 @@ import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
+import { ContainerTemplateCustomFieldType } from '../api/entities/container-template';
 import type { ContainerTemplate } from '../api/entities/container-template';
+import type { ContainerTemplateCustomField } from '../api/entities/container-template';
+import type { ContainerTemplateCustomFieldValues } from '../api/entities/container-template';
 import type { EnvVariable } from '../api/entities/env-variable';
 import type { PortMapping } from '../api/entities/port-mapping';
 import type { TeamClusterOption } from '../api/entities/team-cluster-option';
@@ -25,7 +28,132 @@ export interface ContainerConfig {
     cpus: number;
     ports: PortMapping[];
     env: EnvVariable[];
+    customFields: ContainerTemplateCustomField[];
+    customFieldValues: ContainerTemplateCustomFieldValues;
     mountDockerSocket: boolean;
+};
+
+interface TemplateConfiguration {
+    ports: PortMapping[];
+    env: EnvVariable[];
+    customFields: ContainerTemplateCustomField[];
+    customFieldValues: ContainerTemplateCustomFieldValues;
+    mountDockerSocket: boolean;
+};
+
+const getContainerTemplateById = (templateId: string) => {
+    return CONTAINER_TEMPLATES.find((containerTemplate) => containerTemplate.id === templateId);
+};
+
+const getTemplatePorts = (template: ContainerTemplate): PortMapping[] => {
+    if (!template.defaultPort) {
+        return [];
+    }
+
+    return [{
+        private: template.defaultPort,
+        public: 0
+    }];
+};
+
+const getTemplateEnv = (template: ContainerTemplate): EnvVariable[] => {
+    if (!template.defaultEnv) {
+        return [];
+    }
+
+    return [...template.defaultEnv];
+};
+
+const getTemplateCustomFields = (template: ContainerTemplate): ContainerTemplateCustomField[] => {
+    if (!template.customFields) {
+        return [];
+    }
+
+    return [...template.customFields];
+};
+
+const getTemplateCustomFieldValues = (template: ContainerTemplate): ContainerTemplateCustomFieldValues => {
+    const customFieldValues: ContainerTemplateCustomFieldValues = {};
+
+    template.customFields?.forEach((customField) => {
+        customFieldValues[customField.id] = customField.defaultValue ?? '';
+    });
+
+    return customFieldValues;
+};
+
+const getTemplateConfiguration = (template: ContainerTemplate): TemplateConfiguration => {
+    return {
+        ports: getTemplatePorts(template),
+        env: getTemplateEnv(template),
+        customFields: getTemplateCustomFields(template),
+        customFieldValues: getTemplateCustomFieldValues(template),
+        mountDockerSocket: template.id === 'coder'
+    };
+};
+
+const getMappedCustomFieldEnv = (
+    customFields: ContainerTemplateCustomField[],
+    customFieldValues: ContainerTemplateCustomFieldValues
+): EnvVariable[] => {
+    return customFields.reduce<EnvVariable[]>((envVariables, customField) => {
+        if (!customField.env) {
+            return envVariables;
+        }
+
+        const value = customFieldValues[customField.id] ?? '';
+        if (!value) {
+            return envVariables;
+        }
+
+        envVariables.push({
+            key: customField.env.key,
+            value
+        });
+
+        return envVariables;
+    }, []);
+};
+
+export const mergeContainerEnvVariables = (
+    envVariables: EnvVariable[],
+    customFields: ContainerTemplateCustomField[],
+    customFieldValues: ContainerTemplateCustomFieldValues
+): EnvVariable[] => {
+    const mergedEnvVariables = new Map<string, EnvVariable>();
+
+    envVariables
+        .filter((envVariable) => envVariable.key && envVariable.value)
+        .forEach((envVariable) => {
+            mergedEnvVariables.set(envVariable.key, envVariable);
+        });
+
+    getMappedCustomFieldEnv(customFields, customFieldValues).forEach((envVariable) => {
+        mergedEnvVariables.set(envVariable.key, envVariable);
+    });
+
+    return Array.from(mergedEnvVariables.values());
+};
+
+const hasMissingRequiredCustomField = (
+    customFields: ContainerTemplateCustomField[],
+    customFieldValues: ContainerTemplateCustomFieldValues
+) => {
+    return customFields.some((customField) => {
+        if (!customField.required) {
+            return false;
+        }
+
+        return !(customFieldValues[customField.id] ?? '').trim();
+    });
+};
+
+export const getMaskedCustomFieldValue = (customField: ContainerTemplateCustomField, value: string) => {
+    if (customField.type === ContainerTemplateCustomFieldType.Password && value) {
+        return '••••••••';
+    }
+
+    return value;
 };
 
 export interface UseCreateContainerFormReturn {
@@ -70,6 +198,8 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
         cpus: DEFAULT_CPU,
         ports: [],
         env: [],
+        customFields: [],
+        customFieldValues: {},
         mountDockerSocket: false
     });
 
@@ -125,32 +255,23 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
     }, []);
 
     const handleTemplateSelect = useCallback((templateId: string) => {
-        const template = CONTAINER_TEMPLATES.find((containerTemplate) => containerTemplate.id === templateId);
+        const template = getContainerTemplateById(templateId);
         if (!template) {
             return;
         }
 
-        let ports: PortMapping[] = [];
-        if (template.defaultPort) {
-            ports = [{
-                private: template.defaultPort,
-                public: 0
-            }];
-        }
-
-        let env: EnvVariable[] = [];
-        if (template.defaultEnv) {
-            env = [...template.defaultEnv];
-        }
+        const templateConfiguration = getTemplateConfiguration(template);
 
         setSelectedTemplate(templateId);
         setCustomImageState('');
         setConfig((previousConfig) => ({
             ...previousConfig,
             name: `${template.id}-${Math.floor(Math.random() * 1000)}`,
-            ports,
-            env,
-            mountDockerSocket: template.id === 'coder'
+            ports: templateConfiguration.ports,
+            env: templateConfiguration.env,
+            customFields: templateConfiguration.customFields,
+            customFieldValues: templateConfiguration.customFieldValues,
+            mountDockerSocket: templateConfiguration.mountDockerSocket
         }));
     }, []);
 
@@ -166,14 +287,17 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
         setSelectedTemplate(null);
         setConfig((previousConfig) => ({
             ...previousConfig,
-            name: `custom-${Math.floor(Math.random() * 1000)}`
+            name: `custom-${Math.floor(Math.random() * 1000)}`,
+            customFields: [],
+            customFieldValues: {},
+            mountDockerSocket: false
         }));
         goToConfigFunction();
     }, []);
 
     const getSelectedImage = useCallback(() => {
         if (selectedTemplate) {
-            return CONTAINER_TEMPLATES.find((containerTemplate) => containerTemplate.id === selectedTemplate)?.image;
+            return getContainerTemplateById(selectedTemplate)?.image;
         }
 
         return customImage || undefined;
@@ -181,7 +305,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
 
     const getSelectedTemplate = useCallback(() => {
         if (selectedTemplate) {
-            return CONTAINER_TEMPLATES.find((containerTemplate) => containerTemplate.id === selectedTemplate);
+            return getContainerTemplateById(selectedTemplate);
         }
 
         return undefined;
@@ -211,6 +335,11 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
             return;
         }
 
+        if (hasMissingRequiredCustomField(config.customFields, config.customFieldValues)) {
+            sileo.error({ title: 'Please complete all required template fields' });
+            return;
+        }
+
         await showPromise(
             createContainerMutation.mutateAsync({
                 teamId: selectedTeamId,
@@ -221,7 +350,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
                 memory: config.memory,
                 cpus: config.cpus,
                 ports: config.ports.filter((port) => port.private > 0),
-                env: config.env.filter((envVariable) => envVariable.key && envVariable.value),
+                env: mergeContainerEnvVariables(config.env, config.customFields, config.customFieldValues),
                 mountDockerSocket: config.mountDockerSocket,
                 useImageCmd: template?.useImageCmd,
                 cmd: template?.defaultCmd,
@@ -257,7 +386,13 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
         getSelectedImage,
         getSelectedTemplate,
         canProceedToConfig: !!(selectedTemplate || customImage),
-        canProceedToReview: Boolean(config.name.trim() && selectedTeamId && selectedTeamClusterId && (selectedTemplate || customImage))
+        canProceedToReview: Boolean(
+            config.name.trim()
+            && selectedTeamId
+            && selectedTeamClusterId
+            && (selectedTemplate || customImage)
+            && !hasMissingRequiredCustomField(config.customFields, config.customFieldValues)
+        )
     };
 };
 
