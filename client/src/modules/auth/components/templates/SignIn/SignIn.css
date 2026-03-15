@@ -21,7 +21,6 @@
     background:
         radial-gradient(circle at top left, color-mix(in srgb, var(--color-surface-3) 88%, transparent), transparent 48%),
         linear-gradient(180deg, var(--color-surface-3) 0%, var(--color-bg) 100%);
-    border-right: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
 }
 
 @media (min-width: 1024px){

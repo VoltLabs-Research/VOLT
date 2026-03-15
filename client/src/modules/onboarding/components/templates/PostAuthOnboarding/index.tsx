@@ -23,7 +23,6 @@ import type { FormEvent, ReactNode } from 'react';
 interface OnboardingStepState {
     title: string;
     description: string;
-    progressValue: number;
 };
 
 const useNextDestination = (): string => {
@@ -70,8 +69,7 @@ const PostAuthOnboarding = () => {
 
     const stepState: OnboardingStepState = {
         title: "Let's create a team for you!",
-        description: "Invite other users to collaborate or join existing teams. You'll have the option to create new teams later.",
-        progressValue: 50
+        description: "Invite other users to collaborate or join existing teams. You'll have the option to create new teams later."
     };
 
     const handleCreateTeam = async () => {
@@ -130,15 +128,7 @@ const PostAuthOnboarding = () => {
     };
 
     let content: ReactNode = (
-            <Container className='post-auth-onboarding-shell d-flex column gap-2'>
-                <Container className='d-flex column gap-075 items-center'>
-                    <Container className='d-flex column items-center'>
-                        <Container className='post-auth-onboarding-progress' aria-hidden='true'>
-                            <span className='post-auth-onboarding-progress-fill' style={{ width: `${stepState.progressValue}%` }} />
-                        </Container>
-                </Container>
-            </Container>
-
+        <Container className='post-auth-onboarding-shell d-flex column gap-2'>
             <form className='post-auth-onboarding-content d-flex column gap-2' onSubmit={handleSubmit}>
                 <Container className='d-flex column gap-1 text-center'>
                     <Title as='h1' className='font-size-6 font-weight-6'>
