@@ -4,6 +4,7 @@ import Button from '@/shared/presentation/components/Button';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
 import { Box } from 'lucide-react';
+import { getMaskedCustomFieldValue, mergeContainerEnvVariables } from '../../../hooks/use-create-container-form';
 import type { ContainerConfig } from '../../../hooks/use-create-container-form';
 import type { Team } from '@/modules/team/api/entities/team/team';
 import type { TeamClusterOption } from '@/modules/container/api/entities/team-cluster-option';
@@ -34,10 +35,19 @@ const ReviewStep = ({
     const selectedTeamName = teams.find((team) => team._id === selectedTeamId)?.name || 'Not selected';
     const selectedClusterName = teamClusters.find((teamCluster) => teamCluster._id === selectedTeamClusterId)?.name || 'Not selected';
     const selectedImage = image || 'Not selected';
-    const environmentDisplay = config.env.length > 0
-        ? `${config.env.length} variable${config.env.length === 1 ? '' : 's'}`
+    const mergedEnvironmentVariables = mergeContainerEnvVariables(config.env, config.customFields, config.customFieldValues);
+    const environmentDisplay = mergedEnvironmentVariables.length > 0
+        ? `${mergedEnvironmentVariables.length} variable${mergedEnvironmentVariables.length === 1 ? '' : 's'}`
         : 'None';
     const dockerAccessLabel = config.mountDockerSocket ? 'Enabled' : 'Disabled';
+    const customFieldsDisplay = config.customFields.length > 0
+        ? config.customFields.map((customField) => {
+            const rawValue = config.customFieldValues[customField.id] ?? '';
+            const value = getMaskedCustomFieldValue(customField, rawValue) || 'Not set';
+
+            return `${customField.label}: ${value}`;
+        }).join(', ')
+        : null;
     let portsDisplay = 'None';
     if (config.ports.length > 0) {
         portsDisplay = config.ports.map((p) => `${p.private}:${p.public || 'Auto'}`).join(', ');
@@ -61,6 +71,7 @@ const ReviewStep = ({
                 <ReviewItem label='Memory' value={`${config.memory} MB`} />
                 <ReviewItem label='Ports' value={portsDisplay} />
                 <ReviewItem label='Environment' value={environmentDisplay} />
+                {customFieldsDisplay && <ReviewItem label='Template settings' value={customFieldsDisplay} />}
                 <ReviewItem label='Docker access' value={dockerAccessLabel} />
             </Container>
 

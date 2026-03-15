@@ -247,28 +247,12 @@ export class ContainerVncGatewayService {
             margin: 0;
             background: #0f1115;
             color: #f5f7fa;
-            display: grid;
-            grid-template-rows: auto 1fr;
             min-height: 100vh;
-        }
-
-        .toolbar {
-            display: flex;
-            gap: 0.75rem;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            background: #171a21;
-        }
-
-        .status {
-            color: #a9b3c1;
-            font-size: 0.95rem;
         }
 
         #screen {
             width: 100%;
-            height: calc(100vh - 58px);
+            height: 100vh;
             overflow: hidden;
         }
 
@@ -278,10 +262,6 @@ export class ContainerVncGatewayService {
     </style>
 </head>
 <body data-vnc-parent-origin="${parentOrigin}" data-vnc-password="${escapeHtml(session.password)}" data-vnc-websocket-path="${escapeHtml(webSocketPath)}">
-    <div class="toolbar">
-        <strong>Volt Remote Desktop</strong>
-        <span class="status" id="status">Connecting…</span>
-    </div>
     <div id="screen"></div>
     <script type="module" src="${this.buildConnectClientScriptPath()}"></script>
 </body>
@@ -296,14 +276,6 @@ const FRAME_MESSAGE_TYPE_DISCONNECTED = 'disconnected';
 const NO_VNC_RFB_MODULE_PATH = '/novnc/rfb.bundle.js';
 
 const screen = document.getElementById('screen');
-const status = document.getElementById('status');
-
-const setStatus = (nextStatus) => {
-    if (status instanceof HTMLElement) {
-        status.textContent = nextStatus;
-    }
-};
-
 const postToParent = (type, message, clean) => {
     if (window.parent === window) {
         return;
@@ -373,7 +345,6 @@ const initializeRemoteDesktop = async () => {
     rfb.background = '#0f1115';
 
     rfb.addEventListener('connect', () => {
-        setStatus('Connected');
         postToParent(FRAME_MESSAGE_TYPE_READY);
     });
     rfb.addEventListener('disconnect', (event) => {
@@ -382,7 +353,6 @@ const initializeRemoteDesktop = async () => {
             ? 'Remote desktop disconnected.'
             : 'Remote desktop connection lost.';
 
-        setStatus(isCleanDisconnect ? 'Disconnected' : 'Connection lost');
         postToParent(FRAME_MESSAGE_TYPE_DISCONNECTED, disconnectMessage, isCleanDisconnect);
     });
     rfb.addEventListener('credentialsrequired', () => {
@@ -391,7 +361,6 @@ const initializeRemoteDesktop = async () => {
         });
     });
     rfb.addEventListener('securityfailure', () => {
-        setStatus('Authentication failed');
         postToParent(FRAME_MESSAGE_TYPE_ERROR, 'Remote desktop authentication failed.');
     });
 };
@@ -401,7 +370,6 @@ initializeRemoteDesktop().catch((error) => {
         ? error.message
         : 'Failed to initialize remote desktop.';
 
-    setStatus('Failed to connect');
     postToParent(FRAME_MESSAGE_TYPE_ERROR, message);
 });`;
     }

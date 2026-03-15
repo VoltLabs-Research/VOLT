@@ -1,55 +1,18 @@
-.container-remote-desktop-panel {
-    padding: 1rem;
-    border: 1px solid var(--color-border-soft);
-    border-radius: 1rem;
-    background: var(--color-surface-1);
-}
-
-.container-remote-desktop {
+.container-remote-desktop-shell {
     min-width: 0;
-}
-
-.container-remote-desktop-form {
-    align-items: flex-end;
-}
-
-.container-remote-desktop-field {
-    flex: 1 1 14rem;
-}
-
-.container-remote-desktop-input {
-    width: 100%;
-    min-height: 2.75rem;
-    padding: 0.75rem 0.9rem;
-    border: 1px solid var(--color-border-soft);
-    border-radius: 0.85rem;
-    background: var(--color-surface-2);
-    color: inherit;
-}
-
-.container-remote-desktop-input:focus {
-    outline: 2px solid color-mix(in srgb, var(--color-brand-primary) 45%, transparent);
-    border-color: var(--color-brand-primary);
+    min-height: 0;
+    height: 100%;
+    flex: 1 1 auto;
 }
 
 .container-remote-desktop-stage {
     position: relative;
+    min-width: 0;
     min-height: 34rem;
-    border: 1px solid var(--color-border-soft);
-    border-radius: 1rem;
-    background: var(--color-surface-1);
-    overflow: hidden;
-}
-
-.container-remote-desktop-stage--fullscreen {
-    width: 100%;
     height: 100%;
-    border-radius: 0;
-    border: none;
-}
-
-.container-remote-desktop-stage--fullscreen::backdrop {
     background: var(--color-bg);
+    overflow: hidden;
+    flex: 1 1 auto;
 }
 
 .container-remote-desktop-display {
@@ -60,13 +23,20 @@
     border: none;
 }
 
-.container-remote-desktop-stage--fullscreen .container-remote-desktop-display {
-    min-height: 100vh;
-}
-
 .container-remote-desktop-display:focus {
     outline: 2px solid color-mix(in srgb, var(--color-brand-primary) 45%, transparent);
     outline-offset: -2px;
+}
+
+.container-remote-desktop-placeholder {
+    width: 100%;
+    height: 100%;
+    min-height: 34rem;
+    color: var(--color-text-secondary);
+}
+
+.container-remote-desktop-modal {
+    width: min(28rem, calc(100vw - 2rem));
 }
 
 .container-remote-desktop-status {
@@ -98,33 +68,10 @@
     color: var(--color-danger);
 }
 
-.container-remote-desktop-error {
-    padding: 0.75rem 0.9rem;
-    border-radius: 0.85rem;
-    background: color-mix(in srgb, var(--color-danger) 14%, transparent);
-    color: var(--color-danger);
-}
-
-.container-remote-desktop-hint {
-    margin: 0;
-}
-
 @media (max-width: 768px) {
-    .container-remote-desktop {
-        padding: 1rem;
-    }
-
     .container-remote-desktop-stage,
-    .container-remote-desktop-display {
+    .container-remote-desktop-display,
+    .container-remote-desktop-placeholder {
         min-height: 22rem;
-    }
-
-    .container-remote-desktop-form {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .container-remote-desktop-form > * {
-        width: 100%;
     }
 }

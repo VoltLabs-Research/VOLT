@@ -1,3 +1,4 @@
+import { ContainerTemplateCustomFieldType } from '../api/entities/container-template';
 import type { ContainerTemplate } from '../api/entities/container-template';
 
 export const CONTAINER_TEMPLATES: ContainerTemplate[] = [
@@ -6,10 +7,23 @@ export const CONTAINER_TEMPLATES: ContainerTemplate[] = [
         name: 'Ubuntu Remote Desktop',
         image: 'ghcr.io/voltlabs-research/volt-ubuntu-remote-desktop:main',
         logo: 'https://assets.ubuntu.com/v1/29985a98-ubuntu-logo32.png',
-        description: 'Ubuntu XFCE desktop with VNC on port 5901. Default desktop password is ubuntu.',
+        description: 'Ubuntu XFCE desktop with VNC on port 5901. Set a VNC password when creating the container.',
         category: 'runtime',
         defaultPort: 5901,
         useImageCmd: true,
+        customFields: [
+            {
+                id: 'vncPassword',
+                label: 'VNC password',
+                description: 'Password required to connect to the Ubuntu desktop over VNC.',
+                placeholder: 'Enter a VNC password',
+                required: true,
+                type: ContainerTemplateCustomFieldType.Password,
+                env: {
+                    key: 'VNC_PW'
+                }
+            }
+        ],
         capabilities: {
             vnc: true
         }
