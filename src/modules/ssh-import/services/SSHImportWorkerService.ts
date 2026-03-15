@@ -3,6 +3,7 @@ import { DAEMON_PATHS } from '@/core/paths';
 import { MinioService } from '@/modules/platform/services';
 import { RedisConnectionService } from '@/modules/platform/services';
 import { QueueService } from '@/modules/platform/services';
+import { SSH_IMPORT_QUEUE_NAME } from '@/modules/platform/services';
 import type { GlbExporterService } from '@/modules/trajectory-native/services';
 import { FileExtractorService } from './FileExtractorService';
 import { SSHConnectionService, type SSHConnectionConfig } from './SSHConnectionService';
@@ -54,7 +55,7 @@ export class SSHImportWorkerService {
             return;
         }
 
-        this.worker = this.queueService.createWorker<SSHImportJobPayload>('ssh_import', async (job) => {
+        this.worker = this.queueService.createWorker<SSHImportJobPayload>(SSH_IMPORT_QUEUE_NAME, async (job) => {
             await this.processJob(job);
         });
         logger.info('SSHImportWorkerService started');
@@ -80,7 +81,7 @@ export class SSHImportWorkerService {
             await this.redisConnectionService.projectJobStatus({
                 jobId,
                 teamId: job.teamId,
-                queueType: 'ssh_import',
+                queueType: SSH_IMPORT_QUEUE_NAME,
                 status: 'running',
                 metadata: {
                     trajectoryId: job.trajectoryId,
@@ -188,7 +189,7 @@ export class SSHImportWorkerService {
             await this.redisConnectionService.projectJobStatus({
                 jobId,
                 teamId: job.teamId,
-                queueType: 'ssh_import',
+                queueType: SSH_IMPORT_QUEUE_NAME,
                 status: 'completed',
                 metadata: {
                     trajectoryId: job.trajectoryId,
@@ -214,7 +215,7 @@ export class SSHImportWorkerService {
             await this.redisConnectionService.projectJobStatus({
                 jobId,
                 teamId: job.teamId,
-                queueType: 'ssh_import',
+                queueType: SSH_IMPORT_QUEUE_NAME,
                 status: 'failed',
                 error: message,
                 metadata: {

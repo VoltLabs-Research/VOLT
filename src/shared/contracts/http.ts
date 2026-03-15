@@ -105,6 +105,22 @@ export interface AnalysisQueueJobPayload {
     updatedAt: string;
 };
 
+export interface RasterQueueJobPayload {
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    timestep: number;
+    modelObjectKey: string;
+    outputObjectKey: string;
+    status: string;
+    queueType: string;
+    metadata?: Record<string, unknown>;
+    error?: string;
+    createdAt: string;
+    updatedAt: string;
+};
+
 export interface AnalysisExposureDefinition {
     nodeId: string;
     name: string;
@@ -204,4 +220,14 @@ export interface JobsActionResponse {
 
 export interface RasterizeTrajectoryRequest {
     trajectoryId: string;
+    teamId: string;
+    trajectoryName?: string;
+    config?: Record<string, unknown>;
+};
+
+export interface RasterizeTrajectoryResponse {
+    queuedJobs: number;
+    duplicateJobs: number;
+    skippedJobs: number;
+    alreadyRasterizedJobs: number;
 };

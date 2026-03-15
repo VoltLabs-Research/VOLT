@@ -60,6 +60,7 @@ export interface DaemonConfig {
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 10_000;
 const DEFAULT_METRICS_INTERVAL_MS = 3_000;
+const DEFAULT_JUPYTER_IMAGE = 'ghcr.io/voltlabs-research/volt-jupyter-scripting:main';
 
 const readRequiredString = (name: string): string => {
     const value = process.env[name]?.trim();
@@ -183,7 +184,7 @@ export const loadConfig = (): DaemonConfig => {
             password: readOptionalString('REDIS_PASSWORD')
         },
         jupyter: {
-            image: process.env.JUPYTER_IMAGE?.trim() || 'quay.io/jupyter/scipy-notebook:latest',
+            image: process.env.JUPYTER_IMAGE?.trim() || DEFAULT_JUPYTER_IMAGE,
             memoryInMegabytes: readNumber('JUPYTER_CONTAINER_MEMORY_MB', 2048),
             cpus: readNumber('JUPYTER_CONTAINER_CPUS', 2),
             execTimeoutMs: readNumber('JUPYTER_EXEC_TIMEOUT_MS', 45_000),

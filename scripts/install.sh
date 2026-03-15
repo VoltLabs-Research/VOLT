@@ -681,6 +681,14 @@ run_stack_shell() {
     sh -lc "$command"
 }
 
+pull_runtime_images() {
+    log 'Pulling Jupyter runtime image'
+    host_docker pull 'ghcr.io/voltlabs-research/volt-jupyter-scripting:main'
+
+    log 'Pulling Ubuntu XRDP runtime image'
+    host_docker pull 'ghcr.io/voltlabs-research/volt-ubuntu-remote-desktop:main'
+}
+
 start_stack() {
     local compose_project_name
     compose_project_name="$(python3 - "$MANIFEST_FILE" <<'PY'
@@ -781,6 +789,7 @@ main() {
     log 'Materializing deployment files'
     materialize_manifest
 
+    pull_runtime_images
     start_stack
     wait_for_daemon_ready
     print_summary

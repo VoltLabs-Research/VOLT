@@ -1,4 +1,4 @@
-import { createTrajectoryRasterService } from '@/modules/trajectory-native/services';
+import { createTrajectoryRasterQueueService } from '@/modules/trajectory-native/services';
 import type {
     FilterEvaluatorService,
     GlbExporterService,
@@ -8,11 +8,10 @@ import type {
     NativePropertyStatsRequest,
     NativeTrajectoryRequest,
     NativeUniqueValuesRequest,
-    RasterizerService,
     TrajectoryParserService,
     TrajectoryPluginParserService
 } from '@/modules/trajectory-native/services';
-import type { MinioService } from '@/modules/platform/services';
+import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { RasterizeTrajectoryRequest } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
 import { 
@@ -32,7 +31,8 @@ import {
 
 interface TrajectoryHandlersDependencies {
     minioService: MinioService;
-    rasterizerService: RasterizerService;
+    queueService: QueueService;
+    redisConnectionService: RedisConnectionService;
     trajectoryParserService: TrajectoryParserService;
     trajectoryPluginParserService: TrajectoryPluginParserService;
     glbExporterService: GlbExporterService;
@@ -157,18 +157,27 @@ const readRasterizeTrajectoryRequest = (payload: unknown): RasterizeTrajectoryRe
     const record = readOptionalPayloadRecord(payload);
 
     return {
-        trajectoryId: readString(record.trajectoryId, 'trajectoryId')
+        trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
+        teamId: readString(record.teamId, 'teamId'),
+        trajectoryName: readOptionalString(record.trajectoryName),
+        config: readOptionalPayloadRecord(record.config)
     };
 };
 
 export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): ReverseChannelCommandHandler[] => {
-    const trajectoryRasterService = createTrajectoryRasterService(deps.minioService, deps.rasterizerService);
+    const trajectoryRasterQueueService = createTrajectoryRasterQueueService(
+        deps.minioService,
+        deps.queueService,
+        deps.redisConnectionService
+    );
 
     return [
         {
             command: 'trajectory.rasterize',
             execute: async (payload) => ({
-                data: await trajectoryRasterService.rasterizeTrajectory(readRasterizeTrajectoryRequest(payload))
+                data: await trajectoryRasterQueueService.queueRasterizationJobs(
+                    readRasterizeTrajectoryRequest(payload)
+                )
             })
         },
         {

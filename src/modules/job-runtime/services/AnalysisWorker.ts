@@ -1,5 +1,6 @@
 import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
+import { ANALYSIS_QUEUE_NAME } from '@/modules/platform/services';
 import { MinioService } from '@/modules/platform/services';
 import { RedisConnectionService } from '@/modules/platform/services';
 import { QueueService } from '@/modules/platform/services';
@@ -14,8 +15,6 @@ import type { AnalysisJobExecutionData } from '@/shared/contracts';
 import type { Job as BullMQJob, Worker } from 'bullmq';
 import type { Readable } from 'node:stream';
 import { isRecord } from '@/shared/utils';
-
-const QUEUE_NAME = 'analysis_processing';
 const DUMPS_BUCKET = 'volt-dumps';
 
 interface QueueJobPayload extends Record<string, unknown> {
@@ -90,7 +89,7 @@ export class AnalysisWorker {
 
         this.running = true;
         this.worker = this.queueService.createWorker<QueueJobPayload>(
-            QUEUE_NAME,
+            ANALYSIS_QUEUE_NAME,
             async (jobPayload, job) => this.processJob(jobPayload, job)
         );
 

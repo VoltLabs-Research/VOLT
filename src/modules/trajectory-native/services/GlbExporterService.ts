@@ -114,6 +114,8 @@ export const createGlbExporterService = (
                     },
                     'Starting native rasterization for generated GLB'
                 );
+                // TODO(cluster-raster-queue): internal preprocessing still rasterizes inline;
+                // migrate this path once preview availability can tolerate queued execution.
                 await rasterizerService.rasterizeLocalGlb(tempGlbPath, tempPngPath);
 
                 const pngBuffer = await fs.readFile(tempPngPath);

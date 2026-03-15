@@ -5,6 +5,18 @@ export interface QueueWorkerOptions {
     concurrency?: number;
 };
 
+interface EnqueueOptions {
+    preserveExistingJob?: boolean;
+};
+
+const isActiveQueueState = (state: string): boolean => {
+    return state === 'active'
+        || state === 'waiting'
+        || state === 'delayed'
+        || state === 'prioritized'
+        || state === 'waiting-children';
+};
+
 export class QueueService {
     private readonly queues = new Map<string, Queue<Record<string, unknown>>>();
 
@@ -21,9 +33,22 @@ export class QueueService {
         this.queues.clear();
     }
 
-    async enqueue(queueName: string, payload: Record<string, unknown>): Promise<void> {
+    async enqueue(queueName: string, payload: Record<string, unknown>, options: EnqueueOptions = {}): Promise<boolean> {
         const queue = this.getQueue(queueName);
         const jobId = typeof payload.jobId === 'string' ? payload.jobId : undefined;
+
+        if (jobId && options.preserveExistingJob) {
+            const existingJob = await queue.getJob(jobId);
+            if (existingJob) {
+                const existingState = await existingJob.getState();
+
+                if (isActiveQueueState(existingState)) {
+                    return false;
+                }
+
+                await existingJob.remove();
+            }
+        }
 
         await queue.add(queueName, payload, {
             jobId,
@@ -31,6 +56,8 @@ export class QueueService {
             removeOnComplete: 1000,
             removeOnFail: 1000
         });
+
+        return true;
     }
 
     createWorker<T extends Record<string, unknown>>(

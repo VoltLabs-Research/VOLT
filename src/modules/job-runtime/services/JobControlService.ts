@@ -2,7 +2,18 @@ import type { JobsActionResponse, RetryJobsRequest, RemoveRunningJobsRequest, Cl
 import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
 import { stopProcess } from './processTracker';
 
-const ANALYSIS_QUEUE_NAME = 'analysis_processing';
+interface RetryableJobRecord extends Record<string, unknown> {
+    jobId: string;
+    teamId: string;
+    queueType: string;
+};
+
+const isRetryableJobRecord = (value: Record<string, unknown> | null): value is RetryableJobRecord => {
+    return value !== null
+        && typeof value.jobId === 'string'
+        && typeof value.teamId === 'string'
+        && typeof value.queueType === 'string';
+};
 
 export interface JobControlService {
     retryJobs(input: RetryJobsRequest): Promise<JobsActionResponse>;
@@ -18,14 +29,17 @@ export const createJobControlService = (
         let affectedJobs = 0;
 
         for (const jobId of input.jobIds) {
-            const payload = await queueService.getJobPayload(ANALYSIS_QUEUE_NAME, jobId);
-            if (!payload) {
+            const projectedJob = await redisConnectionService.getJobRecord(jobId);
+            if (!projectedJob || !isRetryableJobRecord(projectedJob)) {
                 continue;
             }
 
-            const retried = await queueService.retryJob(ANALYSIS_QUEUE_NAME, jobId);
+            const queueName = projectedJob.queueType;
+            const payload = await queueService.getJobPayload(queueName, jobId) || projectedJob;
+
+            const retried = await queueService.retryJob(queueName, jobId);
             if (!retried) {
-                await queueService.enqueue(ANALYSIS_QUEUE_NAME, {
+                await queueService.enqueue(queueName, {
                     ...payload,
                     status: 'queued',
                     updatedAt: new Date().toISOString(),
@@ -36,8 +50,8 @@ export const createJobControlService = (
             await redisConnectionService.projectJobStatus({
                 ...payload,
                 jobId,
-                teamId: String(payload.teamId || ''),
-                queueType: ANALYSIS_QUEUE_NAME,
+                teamId: String(payload.teamId || projectedJob.teamId),
+                queueType: queueName,
                 status: 'queued',
                 error: undefined,
                 updatedAt: new Date().toISOString()
@@ -52,11 +66,19 @@ export const createJobControlService = (
         let affectedJobs = 0;
 
         for (const jobId of input.jobIds) {
+            const projectedJob = await redisConnectionService.getJobRecord(jobId);
+            const queueName = projectedJob?.queueType;
             const stopped = stopProcess(jobId);
-            const removed = await queueService.removeJob(ANALYSIS_QUEUE_NAME, jobId).catch(() => false);
+            const removed = queueName
+                ? await queueService.removeJob(queueName, jobId).catch(() => false)
+                : false;
 
             if (!stopped && !removed) {
                 continue;
+            }
+
+            if (projectedJob?.teamId) {
+                await redisConnectionService.removeJobs(projectedJob.teamId, [jobId]);
             }
 
             affectedJobs += 1;

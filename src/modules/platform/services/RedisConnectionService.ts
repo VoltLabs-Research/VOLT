@@ -124,6 +124,24 @@ export class RedisConnectionService {
         return jobs;
     }
 
+    async getJobRecord(jobId: string): Promise<TeamJobRecord | null> {
+        const record = await this.client.get(`${JOB_STATUS_KEY_PREFIX}${jobId}`);
+        if (!record) {
+            return null;
+        }
+
+        try {
+            const parsedRecord: unknown = JSON.parse(record);
+            if (!isTeamJobRecord(parsedRecord)) {
+                return null;
+            }
+
+            return parsedRecord;
+        } catch {
+            return null;
+        }
+    }
+
     async removeJobs(teamId: string, jobIds: string[]): Promise<number> {
         if (jobIds.length === 0) {
             return 0;

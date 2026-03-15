@@ -4,9 +4,8 @@ import { ProgressStageType } from '@voltstack/daemon-cluster-client';
 import { RuntimeEventBroker } from '@/shared/services';
 import { QueueService } from '@/modules/platform/services';
 import { RedisConnectionService } from '@/modules/platform/services';
+import { ANALYSIS_QUEUE_NAME } from '@/modules/platform/services';
 import { WorkflowEngine } from '@/modules/workflow-runtime/services';
-
-const ANALYSIS_QUEUE_NAME = 'analysis_processing';
 
 export class AnalysisDispatchService {
     constructor(
