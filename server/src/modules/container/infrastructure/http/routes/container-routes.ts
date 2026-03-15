@@ -1,14 +1,13 @@
 import controllers from '@modules/container/infrastructure/http/controllers';
 import { Resource } from '@core/constants/resources';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
-import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 
 export default createHttpModule({
     basePath: '/api/containers/:teamId',
     resource: Resource.CONTAINER,
     routes: (router) => {
         router.route('/')
-            .post(RATE_LIMIT_POLICIES.containerCreate, controllers.create.handle)
+            .post(controllers.create.handle)
             .get(controllers.listByTeamId.handle);
 
         router.get('/folders', controllers.listFolders.handle);
@@ -20,7 +19,7 @@ export default createHttpModule({
         router.route('/:containerId')
             .get(controllers.getById.handle)
             .patch(controllers.updateById.handle)
-            .delete(RATE_LIMIT_POLICIES.containerDelete, controllers.deleteById.handle);
+            .delete(controllers.deleteById.handle);
 
         router.patch('/:containerId/folder', controllers.move.handle);
 

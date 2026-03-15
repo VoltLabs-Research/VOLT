@@ -3,7 +3,6 @@ import { trajectoryValidation } from '@modules/trajectory/infrastructure/http/va
 import { upload } from '@shared/infrastructure/http/middleware/upload';
 import controllers from '@modules/trajectory/infrastructure/http/controllers/trajectory';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
-import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 
 export default createHttpModule({
     basePath: '/api/trajectories/:teamId',
@@ -13,7 +12,7 @@ export default createHttpModule({
         router.get('/samples/:filename', controllers.downloadSamples.handle);
         router.get('/scene-artifacts', trajectoryValidation.listTeamSceneArtifacts, controllers.listTeamSceneArtifacts.handle);
         router.route('/')
-            .post(RATE_LIMIT_POLICIES.trajectoryUpload, upload.array('trajectoryFiles'), controllers.create.handle)
+            .post(upload.array('trajectoryFiles'), controllers.create.handle)
             .get(trajectoryValidation.listByTeamId, controllers.getByTeamId.handle);
         router.get('/folders', trajectoryValidation.listFolders, controllers.listFolders.handle);
         router.get('/folders/:folderId', trajectoryValidation.getFolder, controllers.getFolder.handle);
