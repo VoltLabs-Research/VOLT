@@ -199,12 +199,10 @@ const ClusterOnboardingPage = () => {
     const statusLabel = liveCluster ? getTeamClusterStatusLabel(liveCluster.status) : 'Waiting for connection';
     const targetLabel = clusterType === ClusterType.Computer ? 'Computer' : 'Server';
     const successMessage = connectedClusterName ? `${connectedClusterName} connected!` : 'Cluster connected!';
-    const progressLabel = 'Step 2 of 2 · Cluster setup';
     const goBackIcon = <ArrowLeft size={16} />;
 
     const renderProgress = () => (
-        <Container className='cluster-onboarding-progress-block d-flex column gap-025 items-center'>
-            <span className='font-size-1 font-weight-6 color-secondary'>{progressLabel}</span>
+        <Container className='cluster-onboarding-progress-block d-flex column items-center'>
             <Container className='cluster-onboarding-progress' aria-hidden='true'>
                 <span className='cluster-onboarding-progress-fill' />
             </Container>
