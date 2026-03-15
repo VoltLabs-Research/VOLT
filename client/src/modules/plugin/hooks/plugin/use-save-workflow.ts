@@ -9,6 +9,7 @@ import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 const useSaveWorkflow = () => {
     const { searchParams, updateSearchParams } = useSearchParamsState();
     const getWorkflow = usePluginBuilderStore((state) => state.getWorkflow);
+    const markWorkflowSaved = usePluginBuilderStore((state) => state.markWorkflowSaved);
     const setSaving = usePluginBuilderStore((state) => state.setSaving);
     const setSaveError = usePluginBuilderStore((state) => state.setSaveError);
 
@@ -35,6 +36,8 @@ const useSaveWorkflow = () => {
                 }
             );
 
+            markWorkflowSaved();
+
             if (!currentPluginId) {
                 updateSearchParams({ id: plugin._id }, { replace: true });
             }
@@ -52,6 +55,7 @@ const useSaveWorkflow = () => {
         }
     }, [
         getWorkflow,
+        markWorkflowSaved,
         savePluginMutationResult,
         setSaving,
         setSaveError,

@@ -18,6 +18,8 @@ type BuilderHistoryState = {
     edges: Edge[];
 };
 
+type WorkflowSnapshotState = Pick<PluginBuilderState, 'nodes' | 'edges'>;
+
 const DEFAULT_EDGE_STYLE = { animated: true, style: { stroke: 'var(--color-border-strong)', strokeWidth: 2 } };
 
 const serializeHistoryState = (state: Pick<PluginBuilderState, 'nodes' | 'edges'>): BuilderHistoryState => {
@@ -46,6 +48,8 @@ interface PluginBuilderState {
     isSaving: boolean;
     saveError: string | null;
     validationResult: ValidationResult | null;
+    isDirty: boolean;
+    savedWorkflowSnapshot: string;
 };
 
 interface PluginBuilderActions {
@@ -65,6 +69,7 @@ interface PluginBuilderActions {
     getWorkflow: () => IWorkflow;
     loadWorkflow: (workflow: IWorkflow) => void;
     clearWorkflow: () => void;
+    markWorkflowSaved: () => void;
     setSaving: (value: boolean) => void;
     setSaveError: (error: string | null) => void;
     setValidationResult: (result: ValidationResult | null) => void;
@@ -75,13 +80,47 @@ interface PluginBuilderActions {
 
 type PluginBuilderStore = PluginBuilderState & PluginBuilderActions;
 
+const serializeWorkflowSnapshot = (state: WorkflowSnapshotState): string => {
+    const nodes = [...state.nodes]
+        .map((node) => ({
+            id: node.id,
+            type: node.type,
+            position: {
+                x: node.position.x,
+                y: node.position.y
+            },
+            data: node.data
+        }))
+        .sort((leftNode, rightNode) => leftNode.id.localeCompare(rightNode.id));
+
+    const edges = [...state.edges]
+        .map((edge) => ({
+            id: edge.id,
+            source: edge.source,
+            target: edge.target,
+            sourceHandle: edge.sourceHandle ?? undefined,
+            targetHandle: edge.targetHandle ?? undefined
+        }))
+        .sort((leftEdge, rightEdge) => leftEdge.id.localeCompare(rightEdge.id));
+
+    return JSON.stringify({
+        nodes,
+        edges
+    });
+};
+
 const initialState: PluginBuilderState = {
     nodes: [],
     edges: [],
     selectedNode: null,
     isSaving: false,
     saveError: null,
-    validationResult: null
+    validationResult: null,
+    isDirty: false,
+    savedWorkflowSnapshot: serializeWorkflowSnapshot({
+        nodes: [],
+        edges: []
+    })
 };
 
 const areHistoryStatesEqual = (pastState: BuilderHistoryState, currentState: BuilderHistoryState) => {
@@ -125,7 +164,7 @@ const areHistoryStatesEqual = (pastState: BuilderHistoryState, currentState: Bui
 const usePluginBuilderStore = create<PluginBuilderStore>()(
     temporal<PluginBuilderStore, [], [], BuilderHistoryState>(
         (set, get) => {
-            const _validate = () => {
+            const _syncDerivedState = () => {
                 const { nodes, edges } = get();
                 const errors: string[] = [];
                 const nodeTypes = nodes.map((n) => n.type);
@@ -140,7 +179,13 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
                     if (nodes.length > 1) errors.push('Modifier node has no outgoing connections.');
                 }
 
-                set({ validationResult: { valid: errors.length === 0, errors } });
+                const workflowSnapshot = serializeWorkflowSnapshot({ nodes, edges });
+                const savedWorkflowSnapshot = get().savedWorkflowSnapshot;
+
+                set({
+                    validationResult: { valid: errors.length === 0, errors },
+                    isDirty: workflowSnapshot !== savedWorkflowSnapshot
+                });
             };
 
             const _runWithoutHistory = (callback: () => void) => {
@@ -162,26 +207,26 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
                 set(typeof nodesOrUpdater === 'function'
                     ? (s) => ({ nodes: nodesOrUpdater(s.nodes) })
                     : { nodes: nodesOrUpdater });
-                _validate();
+                _syncDerivedState();
             },
 
             setEdges: (edgesOrUpdater) => {
                 set(typeof edgesOrUpdater === 'function'
                     ? (s) => ({ edges: edgesOrUpdater(s.edges) })
                     : { edges: edgesOrUpdater });
-                _validate();
+                _syncDerivedState();
             },
 
             onNodesChange: (changes) => {
                 set((s) => ({ nodes: applyNodeChanges(changes, s.nodes) as Node<INodeData>[] }));
-                _validate();
+                _syncDerivedState();
             },
 
             onEdgesChange: (changes) => {
                 set((s) => ({
                     edges: applyEdgeChanges(changes, s.edges)
                 }));
-                _validate();
+                _syncDerivedState();
             },
 
             validateConnection(connection) {
@@ -224,7 +269,7 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
                 };
 
                 set((s) => ({ edges: addEdge(edge, s.edges) }));
-                _validate();
+                _syncDerivedState();
             },
 
             onNodeClick: (_, node) => set({ selectedNode: node }),
@@ -235,7 +280,7 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
 
             addNode: (type, position) => {
                 set((s) => ({ nodes: [...s.nodes, createNode(type, position)] }));
-                _validate();
+                _syncDerivedState();
             },
 
             updateNodeData(nodeId, data) {
@@ -248,6 +293,7 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
                         : s.selectedNode;
                     return { nodes, selectedNode };
                 });
+                _syncDerivedState();
             },
 
             deleteNode: (nodeId) => {
@@ -256,12 +302,12 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
                     edges: s.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
                     selectedNode: s.selectedNode?.id === nodeId ? null : s.selectedNode
                 }));
-                _validate();
+                _syncDerivedState();
             },
 
             deleteEdge: (edgeId) => {
                 set((s) => ({ edges: s.edges.filter((e) => e.id !== edgeId) }));
-                _validate();
+                _syncDerivedState();
             },
 
             getWorkflow() {
@@ -289,6 +335,22 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
             },
 
             loadWorkflow(workflow) {
+                const savedWorkflowSnapshot = serializeWorkflowSnapshot({
+                    nodes: workflow.nodes.map((node) => ({
+                        id: node.id,
+                        type: node.type,
+                        position: node.position,
+                        data: node.data
+                    })) as Node<INodeData>[],
+                    edges: workflow.edges.map((edge) => ({
+                        id: edge.id,
+                        source: edge.source,
+                        target: edge.target,
+                        sourceHandle: edge.sourceHandle,
+                        targetHandle: edge.targetHandle
+                    }))
+                });
+
                 _runWithoutHistory(() => {
                     set({
                         nodes: workflow.nodes.map((n) => ({
@@ -305,17 +367,29 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
                             targetHandle: e.targetHandle,
                             ...DEFAULT_EDGE_STYLE
                         })),
-                        selectedNode: null
+                        selectedNode: null,
+                        savedWorkflowSnapshot,
+                        isDirty: false
                     });
                 });
-                _validate();
+                _syncDerivedState();
             },
 
             clearWorkflow: () => {
                 _runWithoutHistory(() => {
                     set(initialState);
                 });
-                _validate();
+                _syncDerivedState();
+            },
+
+            markWorkflowSaved: () => {
+                const { nodes, edges } = get();
+                const savedWorkflowSnapshot = serializeWorkflowSnapshot({ nodes, edges });
+
+                set({
+                    savedWorkflowSnapshot,
+                    isDirty: false
+                });
             },
 
             setSaving: (value) => set({ isSaving: value }),
@@ -327,20 +401,20 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
             undo: () => {
                 usePluginBuilderStore.temporal.getState().undo();
                 set({ selectedNode: null });
-                _validate();
+                _syncDerivedState();
             },
 
             redo: () => {
                 usePluginBuilderStore.temporal.getState().redo();
                 set({ selectedNode: null });
-                _validate();
+                _syncDerivedState();
             },
 
             reset: () => {
                 _runWithoutHistory(() => {
                     set(initialState);
                 });
-                _validate();
+                _syncDerivedState();
             }
             };
         },
