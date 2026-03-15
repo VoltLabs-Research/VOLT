@@ -4,4 +4,6 @@ export interface JoinTeamByInviteCodeInputDTO extends UserScopedInputDTO {
     code: string;
 };
 
-export type JoinTeamByInviteCodeOutputDTO = MessageOutputDTO;
+export interface JoinTeamByInviteCodeOutputDTO extends MessageOutputDTO {
+    teamId: string;
+};

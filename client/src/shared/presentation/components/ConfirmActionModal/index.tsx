@@ -3,7 +3,7 @@ import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { ConfirmActionTone, registerConfirmActionController } from '@/shared/presentation/hooks/use-confirm';
+import { ConfirmActionTone, registerConfirmActionController, setConfirmActionOpenState } from '@/shared/presentation/hooks/use-confirm';
 import './ConfirmActionModal.css';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
@@ -36,6 +36,7 @@ const ConfirmActionModal = () => {
     const handleModalClose = useCallback(() => {
         const result = pendingResultRef.current;
         pendingResultRef.current = false;
+        setConfirmActionOpenState(false);
         setModalState(null);
         setTypedText('');
         resolvePendingRequest(result);
@@ -66,6 +67,7 @@ const ConfirmActionModal = () => {
                         tone: options.tone ?? ConfirmActionTone.Default,
                         ...options
                     });
+                    setConfirmActionOpenState(true);
                     openModal(CONFIRM_ACTION_MODAL_ID);
                 });
             }

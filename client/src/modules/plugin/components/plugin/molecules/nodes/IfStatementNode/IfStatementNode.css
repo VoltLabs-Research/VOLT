@@ -1,8 +1,17 @@
 .react-flow__handle.if-statement-handle {
-    width: 12px !important;
-    height: 12px !important;
+    width: 14px !important;
+    height: 14px !important;
     border: 2px solid var(--color-surface-1) !important;
     box-shadow: 0 0 0 1px var(--color-border-strong);
+    cursor: crosshair;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.react-flow__handle.if-statement-handle::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 999px;
 }
 
 .react-flow__handle.if-statement-handle.if-statement-handle--true {
@@ -13,18 +22,26 @@
     background-color: var(--accent-red) !important;
 }
 
+.react-flow__handle.if-statement-handle:hover,
+.react-flow__handle.if-statement-handle.connectingfrom,
+.react-flow__handle.if-statement-handle.connectingto {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 1px var(--color-border-strong), 0 0 0 6px color-mix(in srgb, currentColor 18%, transparent);
+}
+
 .if-statement-branch-label {
     position: absolute;
-    right: 0.85rem;
+    right: 1rem;
     transform: translateY(-50%);
     font-size: 0.6rem;
     font-weight: 700;
     line-height: 1;
-    padding: 0.15rem 0.35rem;
+    padding: 0.2rem 0.4rem;
     border-radius: 999px;
     border: 1px solid currentColor;
     background: var(--color-surface-1);
     pointer-events: none;
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--color-surface-1) 45%, transparent);
 }
 
 .if-statement-branch-label--true {
@@ -36,4 +53,10 @@
     top: 65%;
     color: var(--accent-red);
     border-style: dashed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .react-flow__handle.if-statement-handle {
+        transition: none;
+    }
 }
