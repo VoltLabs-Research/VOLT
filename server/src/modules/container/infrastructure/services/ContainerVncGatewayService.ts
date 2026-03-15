@@ -294,7 +294,7 @@ export class ContainerVncGatewayService {
 const FRAME_MESSAGE_TYPE_READY = 'ready';
 const FRAME_MESSAGE_TYPE_ERROR = 'error';
 const FRAME_MESSAGE_TYPE_DISCONNECTED = 'disconnected';
-const NO_VNC_RFB_MODULE_PATH = '${VNC_BASE_PATH}/novnc/lib/rfb.js';
+const NO_VNC_RFB_MODULE_PATH = '${VNC_BASE_PATH}/novnc/dist/rfb.bundle.js';
 
 const screen = document.getElementById('screen');
 const status = document.getElementById('status');
