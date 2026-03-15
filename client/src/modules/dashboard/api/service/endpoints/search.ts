@@ -6,6 +6,7 @@ import type { Container } from '@/modules/container/api/entities/container';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 import type { Team } from '@/modules/team/api/entities/team/team';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { GlobalSearchInputDTO, GlobalSearchOutputDTO } from '../../dtos/global-search';
 
 interface ApiResponse<T> {
@@ -22,6 +23,26 @@ interface CollectionClient {
     get: <TResponse>(path: string, query?: Record<string, unknown>) => Promise<TResponse>;
 };
 
+interface DataContainer {
+    data: unknown;
+};
+
+const hasDataProperty = (value: unknown): value is DataContainer => {
+    return typeof value === 'object' && value !== null && 'data' in value;
+};
+
+const extractPluginResults = (value: unknown): Plugin[] => {
+    if (Array.isArray(value)) {
+        return value;
+    }
+
+    if (hasDataProperty(value) && Array.isArray(value.data)) {
+        return value.data;
+    }
+
+    return [];
+};
+
 const fetchCollection = <T>(client: CollectionClient, query: string, limit: number): Promise<T[]> => {
     const params: SearchQueryParams = {
         search: query,
@@ -31,6 +52,20 @@ const fetchCollection = <T>(client: CollectionClient, query: string, limit: numb
     return client
         .get<ApiResponse<T[]>>('/', params)
         .then((response) => response.data)
+        .catch((error: unknown) => {
+            throw error;
+        });
+};
+
+const fetchPluginCollection = (client: CollectionClient, query: string, limit: number): Promise<Plugin[]> => {
+    const params: SearchQueryParams = {
+        search: query,
+        limit
+    };
+
+    return client
+        .get<ApiResponse<Plugin[] | PaginatedResponse<Plugin>>>('/', params)
+        .then((response) => extractPluginResults(response.data))
         .catch((error: unknown) => {
             throw error;
         });
@@ -48,7 +83,7 @@ export default {
                 fetchCollection<Container>(clients.container, query, limit),
                 fetchCollection<Trajectory>(clients.trajectory, query, limit),
                 fetchCollection<Team>(clients.team, query, limit),
-                fetchCollection<Plugin>(clients.plugin, query, limit),
+                fetchPluginCollection(clients.plugin, query, limit),
                 fetchCollection<Chat>(clients.chat, query, limit)
             ]);
 
