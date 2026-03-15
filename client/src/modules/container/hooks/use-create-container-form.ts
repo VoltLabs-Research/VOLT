@@ -22,6 +22,27 @@ export type { PortMapping } from '../api/entities/port-mapping';
 const DEFAULT_CPU = 1;
 const DEFAULT_MEMORY = 512;
 
+/** Validates one template custom field against required and pattern rules. */
+export const getCustomFieldValidationError = (
+    customField: ContainerTemplateCustomField,
+    value: string
+) => {
+    if (customField.required && !value.trim()) {
+        return `${customField.label} is required.`;
+    }
+
+    if (!value.trim() || !customField.pattern) {
+        return null;
+    }
+
+    const validationPattern = new RegExp(customField.pattern);
+    if (!validationPattern.test(value)) {
+        return customField.patternError ?? `${customField.label} is invalid.`;
+    }
+
+    return null;
+};
+
 export interface ContainerConfig {
     name: string;
     memory: number;
@@ -135,16 +156,12 @@ export const mergeContainerEnvVariables = (
     return Array.from(mergedEnvVariables.values());
 };
 
-const hasMissingRequiredCustomField = (
+const hasInvalidCustomField = (
     customFields: ContainerTemplateCustomField[],
     customFieldValues: ContainerTemplateCustomFieldValues
 ) => {
     return customFields.some((customField) => {
-        if (!customField.required) {
-            return false;
-        }
-
-        return !(customFieldValues[customField.id] ?? '').trim();
+        return getCustomFieldValidationError(customField, customFieldValues[customField.id] ?? '') !== null;
     });
 };
 
@@ -335,8 +352,8 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
             return;
         }
 
-        if (hasMissingRequiredCustomField(config.customFields, config.customFieldValues)) {
-            sileo.error({ title: 'Please complete all required template fields' });
+        if (hasInvalidCustomField(config.customFields, config.customFieldValues)) {
+            sileo.error({ title: 'Please correct the template settings before creating the container' });
             return;
         }
 
@@ -391,7 +408,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
             && selectedTeamId
             && selectedTeamClusterId
             && (selectedTemplate || customImage)
-            && !hasMissingRequiredCustomField(config.customFields, config.customFieldValues)
+            && !hasInvalidCustomField(config.customFields, config.customFieldValues)
         )
     };
 };

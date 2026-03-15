@@ -33,7 +33,7 @@ const ContainerRemoteDesktop = ({ container }: ContainerRemoteDesktopProps) => {
             return remoteDesktop.errorMessage;
         }
 
-        return 'Enter the VNC password to open this container remote desktop session.';
+        return 'Enter the same shared password you set for the container Linux user and VNC access. noVNC still connects with the password only.';
     }, [remoteDesktop.connectionState, remoteDesktop.errorMessage]);
 
     useEffect(() => {
@@ -86,7 +86,7 @@ const ContainerRemoteDesktop = ({ container }: ContainerRemoteDesktopProps) => {
                     </Container>
 
                     <FormFieldRHF
-                        label='VNC Password'
+                        label='Shared VNC password'
                         name='container-remote-desktop-password'
                         type='password'
                         autoFocus

@@ -21,6 +21,8 @@ export interface ContainerTemplateCustomField {
     placeholder?: string;
     defaultValue?: string;
     required?: boolean;
+    pattern?: string;
+    patternError?: string;
     type: ContainerTemplateCustomFieldType;
     env?: ContainerTemplateCustomFieldEnvMapping;
 };
