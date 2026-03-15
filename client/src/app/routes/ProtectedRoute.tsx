@@ -2,10 +2,10 @@ import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { refreshSocketSession } from '@/modules/socket/core/services/socket-auth-session';
 import { setGetTeamId } from '@/app/core/http/utilities/create-client';
+import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
 import { resetTeamSessionState, useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
-import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import ConfirmActionModal from '@/shared/presentation/components/ConfirmActionModal';
 import useTeamSocketSubscription from '@/modules/team/hooks/team/use-team-socket-subscription';
 import useSocketConnectionToast from '@/modules/socket/core/hooks/use-socket-connection-toast';
@@ -52,10 +52,9 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
         enabled: Boolean(selectedTeamId)
     });
-    const teamClusters = teamClustersQuery.data?.data ?? [];
-    const hasConnectedCluster = teamClusters.some((c) => c.status === TeamClusterStatus.Connected);
     const isClusterCheckLoading = teamClustersQuery.isLoading;
-    const shouldRedirectToOnboarding = !isClusterCheckLoading && !hasConnectedCluster;
+    const shouldRedirectToOnboarding = teamClustersQuery.isSuccess
+        && !hasUsableTeamCluster(teamClustersQuery.data.data);
 
     const isAuthenticated = !!user;
     const hasTeam = !!selectedTeamId;
@@ -110,7 +109,7 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
         }
 
         refreshedOnboardingTeamIdRef.current = selectedTeamId;
-        refreshSocketSession().catch(() => undefined);
+        refreshSocketSession();
     }, [hasToken, isAuthenticated, isOnboardingRoute, mode, selectedTeamId]);
 
     if(!isInitialized || isLoading){

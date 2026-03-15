@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 export const entrypointEditorSchema = z.object({
     binary: z.string().default(''),

@@ -11,14 +11,17 @@ import { create } from 'zustand';
 
 interface TeamStore {
     selectedTeamId: string | null;
+    pendingSelectedTeamId: string | null;
     hasHydratedSelection: boolean;
     hydrateSelectedTeamId: () => void;
+    confirmSelectedTeamId: (teamId: string) => void;
     setSelectedTeamId: (teamId: string | null) => void;
     reset: () => void;
 };
 
 const initialState = {
     selectedTeamId: null,
+    pendingSelectedTeamId: null,
     hasHydratedSelection: false
 };
 
@@ -35,7 +38,20 @@ export const useTeamStore = create<TeamStore>((set) => ({
 
             return {
                 selectedTeamId: storedTeamId,
+                pendingSelectedTeamId: null,
                 hasHydratedSelection: true
+            };
+        });
+    },
+
+    confirmSelectedTeamId: (teamId) => {
+        set((state) => {
+            if (state.selectedTeamId !== teamId || state.pendingSelectedTeamId !== teamId) {
+                return state;
+            }
+
+            return {
+                pendingSelectedTeamId: null
             };
         });
     },
@@ -47,7 +63,11 @@ export const useTeamStore = create<TeamStore>((set) => ({
             teamStorage.clearSelectedTeamId();
         }
 
-        set({ selectedTeamId: teamId, hasHydratedSelection: true });
+        set({
+            selectedTeamId: teamId,
+            pendingSelectedTeamId: teamId,
+            hasHydratedSelection: true
+        });
     },
 
     reset: () => set(initialState)
@@ -90,6 +110,23 @@ export const resetTeamScopedApplicationState = (): void => {
 
     // 3. Reset team-specific stores and query caches
     resetTeamDependentStores();
+};
+
+/**
+ * Switches the active team while preserving the safe reset flow used across the app.
+ */
+export const switchSelectedTeam = (teamId: string | null): void => {
+    const teamState = useTeamStore.getState();
+
+    if (teamState.selectedTeamId === teamId) {
+        return;
+    }
+
+    if (teamState.selectedTeamId) {
+        resetTeamScopedApplicationState();
+    }
+
+    teamState.setSelectedTeamId(teamId);
 };
 
 const getCurrentPathname = (): string | null => {

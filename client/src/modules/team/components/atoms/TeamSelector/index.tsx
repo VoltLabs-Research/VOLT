@@ -1,8 +1,8 @@
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useLeaveTeamMutation } from '@/modules/team/hooks/team/queries';
-import { resetTeamScopedApplicationState, useTeamStore } from '@/modules/team/stores/team/use-team-store';
-import { runAction } from '@/shared/presentation/actions/run-action';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
+import { resetTeamScopedApplicationState, switchSelectedTeam, useTeamStore } from '@/modules/team/stores/team/use-team-store';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Select from '@/shared/presentation/components/Select';
 import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
@@ -42,8 +42,7 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
     const handleTeamChange = useCallback((teamId: string) => {
         if (selectedTeamId === teamId) return;
 
-        resetTeamScopedApplicationState();
-        useTeamStore.getState().setSelectedTeamId(teamId);
+        switchSelectedTeam(teamId);
     }, [selectedTeamId]);
 
     const handleLeaveTeam = useCallback(async (event: MouseEvent, teamId: string) => {
@@ -87,7 +86,7 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
     }, [confirm, leaveTeamMutation, teams]);
 
     const teamOptions = useMemo(() =>
-        teams.map(team => ({
+        teams.map((team) => ({
             value: team._id,
             title: team.name,
             description: toOptionalDescription(team.description)

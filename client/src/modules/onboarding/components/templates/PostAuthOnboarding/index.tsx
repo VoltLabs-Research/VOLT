@@ -1,13 +1,13 @@
 import './PostAuthOnboarding.css';
-import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
+import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
 import { OnboardingStep, resolveOnboardingStep } from '@/modules/onboarding/utilities/resolve-onboarding-step';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
-import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
+import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
@@ -43,19 +43,23 @@ const PostAuthOnboarding = () => {
     const [isSigningOut, setIsSigningOut] = useState(false);
 
     const createTeam = useCreateTeamMutation();
-    const setSelectedTeamId = useTeamStore((state) => state.setSelectedTeamId);
     const { teams, isTeamsLoading, selectedTeamId } = useTeamData();
 
     const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
         enabled: Boolean(selectedTeamId)
     });
-    const teamClusters = teamClustersQuery.data?.data ?? [];
-    const hasConnectedCluster = teamClusters.some((cluster) => cluster.status === TeamClusterStatus.Connected);
+    const hasConnectedCluster = teamClustersQuery.isSuccess
+        ? hasUsableTeamCluster(teamClustersQuery.data.data)
+        : false;
     const isClustersLoading = teamClustersQuery.isLoading && Boolean(selectedTeamId);
     const isLoading = isTeamsLoading || isClustersLoading;
     const hasTeam = teams.length > 0 || Boolean(selectedTeamId);
 
-    if (!isLoading) {
+    if (teamClustersQuery.isError && selectedTeamId) {
+        throw teamClustersQuery.error;
+    }
+
+    if (!isLoading && (!selectedTeamId || teamClustersQuery.isSuccess)) {
         const step = resolveOnboardingStep({ hasTeam, hasConnectedCluster });
 
         if (step === OnboardingStep.Done) {
@@ -91,7 +95,7 @@ const PostAuthOnboarding = () => {
                 description: `"${newTeam.name}" is ready.`
             });
 
-            setSelectedTeamId(newTeam._id);
+            switchSelectedTeam(newTeam._id);
             navigate('/onboarding/cluster/setup', {
                 replace: true,
                 state: { next }

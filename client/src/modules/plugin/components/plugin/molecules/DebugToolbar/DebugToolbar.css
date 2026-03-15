@@ -1,15 +1,11 @@
 .debug-toolbar-wrapper {
     gap: 0.375rem;
-    max-width: calc(100vw - 1.5rem);
 }
 
 .debug-toolbar {
     padding: 0.375rem 0.75rem;
+    white-space: nowrap;
     background-color: var(--color-surface-1);
-    flex-wrap: wrap;
-    justify-content: center;
-    max-width: min(860px, calc(100vw - 1.5rem));
-    row-gap: 0.5rem;
 }
 
 .debug-toolbar-divider {
@@ -22,32 +18,25 @@
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
     color: inherit;
-    padding: 0.5rem 0.75rem;
+    padding: 0.25rem 0.5rem;
     outline: none;
     max-width: 160px;
     font-size: var(--font-size-1);
     border-radius: var(--radius-sm);
-    min-height: 2.75rem;
 }
 
 .debug-toolbar-select.select-trigger:disabled {
-    opacity: 1;
+    opacity: 0.5;
     cursor: not-allowed;
-    color: var(--color-text-secondary);
-    background: var(--color-surface-3);
-    border-style: dashed;
 }
 
 .debug-toolbar-select.select-trigger:focus,
 .debug-toolbar-select.select-trigger.open {
-    border-color: var(--focus-ring);
-    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
+    border-color: var(--accent-blue);
 }
 
 .debug-toolbar-status {
     white-space: nowrap;
-    flex-wrap: wrap;
-    justify-content: center;
 }
 
 .debug-toolbar-status-dot {
@@ -73,104 +62,6 @@
     color: var(--status-error);
 }
 
-.debug-toolbar-action {
-    min-width: 2.75rem;
-    min-height: 2.75rem;
-}
-
-.debug-toolbar-action--primary {
-    font-weight: 600;
-}
-
-.debug-toolbar-action--continue {
-    font-weight: 600;
-}
-
-.debug-toolbar-state-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 1.5rem;
-    padding: 0.125rem 0.45rem;
-    border-radius: 999px;
-    border: 1px solid var(--color-border-soft);
-    background: var(--color-surface-2);
-    color: var(--color-text-primary);
-    font-size: 0.65rem;
-    font-weight: 700;
-    line-height: 1;
-}
-
-.debug-toolbar-status-panel {
-    width: min(860px, calc(100vw - 1.5rem));
-    border: 1px solid var(--color-border-soft);
-    background: var(--color-surface-1);
-    box-shadow: var(--shadow-card);
-}
-
-.debug-toolbar-status-panel--idle,
-.debug-toolbar-status-panel--ready {
-    background: color-mix(in srgb, var(--color-surface-2) 85%, var(--color-surface-1));
-}
-
-.debug-toolbar-status-panel--running {
-    border-color: color-mix(in srgb, var(--accent-blue) 35%, var(--color-border-soft));
-    background: color-mix(in srgb, var(--accent-blue) 6%, var(--color-surface-1));
-}
-
-.debug-toolbar-status-panel--paused {
-    border-color: var(--status-warning-border);
-    background: color-mix(in srgb, var(--status-warning-bg) 55%, var(--color-surface-1));
-}
-
-.debug-toolbar-status-panel--completed {
-    border-color: var(--status-success-border);
-    background: color-mix(in srgb, var(--status-success-bg) 55%, var(--color-surface-1));
-}
-
-.debug-toolbar-status-panel--error {
-    border-color: var(--status-error-border);
-    background: color-mix(in srgb, var(--status-error-bg) 60%, var(--color-surface-1));
-}
-
-.debug-toolbar-status-icon {
-    margin-top: 0.125rem;
-    color: var(--color-text-primary);
-    flex-shrink: 0;
-}
-
-.debug-toolbar-status-icon--idle {
-    color: var(--color-text-secondary);
-}
-
-.debug-toolbar-inline-copy,
-.debug-toolbar-status-copy {
-    margin: 0;
-    white-space: normal;
-    word-break: break-word;
-}
-
-@media screen and (max-width: 768px) {
-    .debug-toolbar {
-        padding: 0.5rem;
-    }
-
-    .debug-toolbar-divider {
-        display: none;
-    }
-
-    .debug-toolbar-select.select-trigger {
-        max-width: 100%;
-    }
-
-    .debug-toolbar-status-panel {
-        width: calc(100vw - 1.5rem);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .debug-toolbar-status-dot--paused,
-    .debug-toolbar-status-dot--running {
-        animation: none;
-    }
+.debug-toolbar-below-status {
+    white-space: nowrap;
 }

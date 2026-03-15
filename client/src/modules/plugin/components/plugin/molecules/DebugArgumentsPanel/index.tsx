@@ -8,7 +8,7 @@ import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { X, Play, Settings2 } from 'lucide-react';
-import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { TimestepInfo } from '@/modules/trajectory/api/entities/trajectory';
 import './DebugArgumentsPanel.css';
@@ -18,12 +18,10 @@ interface DebugArgumentsPanelProps {
     canStart: boolean;
 };
 
-interface DebugArgumentsDefinition {
-    arguments?: IArgumentDefinition[];
-};
-
 interface ArgumentsNodeData {
-    arguments?: DebugArgumentsDefinition;
+    arguments?: {
+        arguments?: IArgumentDefinition[];
+    };
 };
 
 interface DebugConfigField {
@@ -41,20 +39,18 @@ interface DebugConfigField {
 };
 
 const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) => {
-    const closeButtonRef = useRef<HTMLButtonElement>(null);
-    const panelId = useId();
     const nodes = usePluginBuilderStore((s) => s.nodes);
-    const debugConfig = usePluginDebugStore((state) => state.debugConfig);
-    const showArgumentsPanel = usePluginDebugStore((state) => state.showArgumentsPanel);
-    const setDebugConfigField = usePluginDebugStore((state) => state.setDebugConfigField);
-    const setDebugConfig = usePluginDebugStore((state) => state.setDebugConfig);
-    const setShowArgumentsPanel = usePluginDebugStore((state) => state.setShowArgumentsPanel);
-    const isDebugging = usePluginDebugStore((state) => state.isDebugging);
-    const isStarting = usePluginDebugStore((state) => state.isStarting);
+    const {
+        debugConfig,
+        showArgumentsPanel,
+        setDebugConfigField,
+        setDebugConfig,
+        setShowArgumentsPanel,
+        isDebugging,
+        isStarting
+    } = usePluginDebugStore();
 
     const { selectedTrajectory } = useDebugTrajectorySelector();
-    const titleId = `${panelId}-title`;
-    const descriptionId = `${panelId}-description`;
 
     // Extract configurable arguments from the Arguments node in the workflow
     const configurableArgs = useMemo(() => {
@@ -107,33 +103,6 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
     const handleClose = useCallback(() => {
         setShowArgumentsPanel(false);
     }, [setShowArgumentsPanel]);
-
-    useEffect(() => {
-        if (!showArgumentsPanel) {
-            return;
-        }
-
-        closeButtonRef.current?.focus();
-    }, [showArgumentsPanel]);
-
-    useEffect(() => {
-        if (!showArgumentsPanel) {
-            return;
-        }
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                event.preventDefault();
-                setShowArgumentsPanel(false);
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [setShowArgumentsPanel, showArgumentsPanel]);
 
     const configFields = useMemo(() => {
         return configurableArgs.map((argDef): DebugConfigField => {
@@ -193,37 +162,24 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
     if (!showArgumentsPanel) return null;
 
     return (
-        <Container
-            className='p-absolute z-10 center-x panel-floating radius-md overflow-hidden d-flex column debug-arguments-panel'
-            role='dialog'
-            aria-labelledby={titleId}
-            aria-describedby={descriptionId}
-            aria-modal='false'
-        >
+        <Container className='p-absolute z-10 center-x panel-floating radius-md overflow-hidden d-flex column debug-arguments-panel'>
             <Container className='d-flex content-between items-center f-shrink-0 debug-arguments-panel-header'>
                 <Container className='d-flex items-center gap-05'>
                     <Settings2 size={14} />
-                    <Paragraph id={titleId} className='font-size-2 font-weight-6'>
+                    <Paragraph className='font-size-2 font-weight-6'>
                         Debug Arguments
                     </Paragraph>
                 </Container>
                 <IconButton
-                    ref={closeButtonRef}
                     variant='ghost'
                     size='sm'
-                    className='debug-arguments-panel-close'
                     onClick={handleClose}
-                    aria-label='Close debug arguments'
-                    title='Close debug arguments'
                 >
                     <X size={14} />
                 </IconButton>
             </Container>
 
             <Container className='d-flex column gap-05 y-auto flex-1 min-h-0 scrollbar-thin debug-arguments-panel-body'>
-                <Paragraph id={descriptionId} className='font-size-1 color-secondary debug-arguments-panel-description'>
-                    Provide runtime argument values before starting the debug session.
-                </Paragraph>
                 {configFields.map((field) => (
                     <FormFieldRHF
                         key={field.key}
@@ -234,17 +190,16 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                         inputProps={field.type === 'input' ? field.inputProps : undefined}
                         fieldValue={getPrimitiveFieldValue(debugConfig[field.key])}
                         onFieldChange={handleFieldChange}
-                        variant='inline'
+                        variant='canvas'
                     />
                 ))}
             </Container>
 
             <Container className='f-shrink-0 debug-arguments-panel-footer'>
                 <Button
-                    variant='solid'
-                    intent='brand'
+                    variant='outline'
+                    intent='white'
                     size='sm'
-                    className='debug-arguments-panel-start-action'
                     block
                     onClick={handleStartClick}
                     disabled={!canStart || isDebugging || isStarting}

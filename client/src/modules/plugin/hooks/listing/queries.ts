@@ -1,5 +1,6 @@
 import {
     useInfiniteQuery,
+    useQueries,
     useQuery,
     type QueryKey,
     type UseQueryOptions
@@ -15,7 +16,7 @@ import type { GetSubListingInputDTO, GetSubListingOutputDTO } from '../../api/dt
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
 
 // ---------------------------------------------------------------------------
-// buildKeys - hierarchical keys with prefix support
+// buildKeys — hierarchical keys with prefix support
 // ---------------------------------------------------------------------------
 
 const listingKeys = buildKeys<{
@@ -33,7 +34,7 @@ const subListingInfiniteKeys = buildKeys<{
 }>(['plugins', 'subListing', 'infinite']);
 
 // ---------------------------------------------------------------------------
-// LISTING_QUERY_KEYS - public facade
+// LISTING_QUERY_KEYS — public facade
 // ---------------------------------------------------------------------------
 
 export const LISTING_QUERY_KEYS = {
@@ -57,6 +58,17 @@ export const fetchPluginListing = (params: GetPluginListingInputDTO) => {
     return queryClient.fetchQuery(buildPluginListingQueryOptions(params));
 };
 
+export const usePluginListingSubListingQueries = (paramsList: GetPluginListingInputDTO[]) => {
+    return useQueries({
+        queries: paramsList.map((params) => ({
+            ...buildPluginListingQueryOptions(params),
+            staleTime: 5 * 60 * 1000,
+            enabled: Boolean(params.pluginId) && Boolean(params.trajectoryId),
+            retry: false
+        }))
+    });
+};
+
 export const usePluginListingQuery = (
     params: GetPluginListingInputDTO,
     options?: QueryOptions<GetPluginListingOutputDTO, GetPluginListingOutputDTO>
@@ -75,7 +87,6 @@ export const usePluginListingInfiniteQuery = (
         queryKey: LISTING_QUERY_KEYS.listingInfiniteDetail(params),
         queryFn: ({ pageParam }) => listingService.getListing({
             pluginId: params.pluginId,
-            teamId: params.teamId,
             exposureName: params.exposureName,
             exposureId: params.exposureId,
             trajectoryId: params.trajectoryId,

@@ -1,17 +1,6 @@
 .react-flow__handle.if-statement-handle {
-    width: 14px !important;
-    height: 14px !important;
-    border: 2px solid var(--color-surface-1) !important;
-    box-shadow: 0 0 0 1px var(--color-border-strong);
-    cursor: crosshair;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.react-flow__handle.if-statement-handle::before {
-    content: '';
-    position: absolute;
-    inset: -8px;
-    border-radius: 999px;
+    width: 10px !important;
+    height: 10px !important;
 }
 
 .react-flow__handle.if-statement-handle.if-statement-handle--true {
@@ -20,43 +9,4 @@
 
 .react-flow__handle.if-statement-handle.if-statement-handle--false {
     background-color: var(--accent-red) !important;
-}
-
-.react-flow__handle.if-statement-handle:hover,
-.react-flow__handle.if-statement-handle.connectingfrom,
-.react-flow__handle.if-statement-handle.connectingto {
-    transform: scale(1.08);
-    box-shadow: 0 0 0 1px var(--color-border-strong), 0 0 0 6px color-mix(in srgb, currentColor 18%, transparent);
-}
-
-.if-statement-branch-label {
-    position: absolute;
-    right: 1rem;
-    transform: translateY(-50%);
-    font-size: 0.6rem;
-    font-weight: 700;
-    line-height: 1;
-    padding: 0.2rem 0.4rem;
-    border-radius: 999px;
-    border: 1px solid currentColor;
-    background: var(--color-surface-1);
-    pointer-events: none;
-    box-shadow: 0 1px 0 color-mix(in srgb, var(--color-surface-1) 45%, transparent);
-}
-
-.if-statement-branch-label--true {
-    top: 35%;
-    color: var(--accent-green);
-}
-
-.if-statement-branch-label--false {
-    top: 65%;
-    color: var(--accent-red);
-    border-style: dashed;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .react-flow__handle.if-statement-handle {
-        transition: none;
-    }
 }

@@ -1,5 +1,9 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
+import { SystemRoles } from '@core/constants/system-roles';
+import {
+    getTeamMemberRolePermissions,
+    isPopulatedTeamMemberRole
+} from '@modules/team/domain/entities/team-member/TeamMember';
 import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
@@ -17,7 +21,25 @@ interface TeamMembershipFilter {
 
 interface TeamRolePermissionsPopulate {
     path: 'role';
-    select: ['permissions'];
+    select: ['name', 'permissions', 'isSystem'];
+};
+
+const getRequestTeamPermissions = (role: Parameters<typeof getTeamMemberRolePermissions>[0]): string[] => {
+    if (!isPopulatedTeamMemberRole(role)) {
+        return [];
+    }
+
+    if (!role.isSystem || !role.name) {
+        return getTeamMemberRolePermissions(role);
+    }
+
+    const canonicalSystemRole = Object.values(SystemRoles).find((systemRole) => systemRole.name === role.name);
+
+    if (!canonicalSystemRole) {
+        return getTeamMemberRolePermissions(role);
+    }
+
+    return canonicalSystemRole.permissions;
 };
 
 export const checkTeamMembership = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -66,7 +88,7 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
     };
     const populate: TeamRolePermissionsPopulate = {
         path: 'role',
-        select: ['permissions']
+        select: ['name', 'permissions', 'isSystem']
     };
     const member = await repository.findOne(
         filter,
@@ -82,7 +104,7 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
         );
     }
 
-    req.teamPermissions = getTeamMemberRolePermissions(member.props.role);
+    req.teamPermissions = getRequestTeamPermissions(member.props.role);
 
     next();
 };
