@@ -42,17 +42,20 @@ const SelectedTimestepsField = ({
             <span className='canvas-form-label'>
                 Selected Timesteps
             </span>
-            <Select
-                isMulti
-                options={options}
-                selectedValues={selectedValues}
-                onMultiChange={handleMultiChange}
-                allOption={{ value: '__all__', title: 'All' }}
-                renderTriggerLabel={renderTriggerLabel}
-                hasSearch
-                searchPlaceholder='Search timesteps...'
-                placeholder='All'
-            />
+            <Container className='d-flex items-center render-input-container w-max content-end p-relative'>
+                <Select
+                    isMulti
+                    options={options}
+                    selectedValues={selectedValues}
+                    onMultiChange={handleMultiChange}
+                    allOption={{ value: '__all__', title: 'All' }}
+                    renderTriggerLabel={renderTriggerLabel}
+                    hasSearch
+                    searchPlaceholder='Search timesteps...'
+                    placeholder='All'
+                    className='form-field-canvas-select labeled-input'
+                />
+            </Container>
         </Container>
     );
 };

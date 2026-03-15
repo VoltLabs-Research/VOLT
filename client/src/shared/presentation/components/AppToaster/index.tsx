@@ -13,14 +13,6 @@ const AppToaster = () => {
     const popoverRef = useRef<HTMLDivElement>(null);
     const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
 
-    const toasterFill = useMemo(() => {
-        const styles = getComputedStyle(document.documentElement);
-
-        return styles.getPropertyValue('--color-surface-1').trim()
-            || styles.getPropertyValue('--color-content-bg').trim()
-            || styles.getPropertyValue('--color-bg').trim();
-    }, [theme]);
-
     const popoverStyle = useMemo(() => {
         return {
             padding: 0,
@@ -61,7 +53,6 @@ const AppToaster = () => {
             <Toaster
                 position='bottom-right'
                 theme={theme === Theme.Dark ? 'dark' : 'light'}
-                options={{ fill: toasterFill }}
             />
         </div>
     );

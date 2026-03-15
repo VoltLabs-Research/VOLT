@@ -1,12 +1,12 @@
 import './PostAuthOnboarding.css';
-import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
+import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
 import { OnboardingStep, resolveOnboardingStep } from '@/modules/onboarding/utilities/resolve-onboarding-step';
-import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
+import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import Button from '@/shared/presentation/components/Button';
@@ -18,6 +18,7 @@ import Title from '@/shared/presentation/components/Title';
 import { sileo } from 'sileo';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import type { FormEvent, ReactNode } from 'react';
 
 interface OnboardingStepState {
     title: string;
@@ -39,7 +40,6 @@ const PostAuthOnboarding = () => {
     const defaultTeamName = user ? `${user.firstName} ${user.lastName} team's` : "My team's";
 
     const [teamName, setTeamName] = useState(defaultTeamName);
-    const [teamDescription, _setTeamDescription] = useState('');
     const [nameError, setNameError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSigningOut, setIsSigningOut] = useState(false);
@@ -54,20 +54,19 @@ const PostAuthOnboarding = () => {
     const teamClusters = teamClustersQuery.data?.data ?? [];
     const hasConnectedCluster = teamClusters.some((cluster) => cluster.status === TeamClusterStatus.Connected);
     const isClustersLoading = teamClustersQuery.isLoading && Boolean(selectedTeamId);
+    const isLoading = isTeamsLoading || isClustersLoading;
     const hasTeam = teams.length > 0 || Boolean(selectedTeamId);
 
-    if (isTeamsLoading || isClustersLoading) {
-        return <Loader scale={0.6} />;
-    }
+    if (!isLoading) {
+        const step = resolveOnboardingStep({ hasTeam, hasConnectedCluster });
 
-    const step = resolveOnboardingStep({ hasTeam, hasConnectedCluster });
+        if (step === OnboardingStep.Done) {
+            return <Navigate to={next} replace />;
+        }
 
-    if (step === OnboardingStep.Done) {
-        return <Navigate to={next} replace />;
-    }
-
-    if (step === OnboardingStep.Cluster) {
-        return <Navigate to='/onboarding/cluster/setup' state={{ next }} replace />;
+        if (step === OnboardingStep.Cluster) {
+            return <Navigate to='/onboarding/cluster/setup' state={{ next }} replace />;
+        }
     }
 
     const stepState: OnboardingStepState = {
@@ -88,7 +87,7 @@ const PostAuthOnboarding = () => {
         try {
             const newTeam = await createTeam.mutateAsync({
                 name: teamName.trim(),
-                description: teamDescription.trim()
+                description: ''
             });
 
             sileo.success({
@@ -112,6 +111,11 @@ const PostAuthOnboarding = () => {
         }
     };
 
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        await handleCreateTeam();
+    };
+
     const handleSignOut = () => {
         try {
             setIsSigningOut(true);
@@ -127,65 +131,72 @@ const PostAuthOnboarding = () => {
         navigate('/dashboard/settings/general');
     };
 
+    let content: ReactNode = (
+        <Container className='post-auth-onboarding-shell d-flex column gap-2'>
+            <Container className='d-flex column gap-075 items-center'>
+                <Container className='d-flex column gap-025 items-center'>
+                    <span className='font-size-1 font-weight-6 color-secondary'>{stepState.progressLabel}</span>
+                    <Container className='post-auth-onboarding-progress' aria-hidden='true'>
+                        <span className='post-auth-onboarding-progress-fill' style={{ width: `${stepState.progressValue}%` }} />
+                    </Container>
+                </Container>
+            </Container>
+
+            <form className='post-auth-onboarding-content d-flex column gap-2' onSubmit={handleSubmit}>
+                <Container className='d-flex column gap-1 text-center'>
+                    <Title as='h1' className='font-size-6 font-weight-6'>
+                        {stepState.title}
+                    </Title>
+                    <Paragraph className='post-auth-onboarding-description color-secondary'>
+                        {stepState.description}
+                    </Paragraph>
+                </Container>
+
+                <Container className='d-flex column gap-1'>
+                    <FormFieldRHF
+                        label='Team name'
+                        placeholder='e.g., Research Lab'
+                        value={teamName}
+                        error={nameError}
+                        onChange={(event) => {
+                            setTeamName(event.target.value);
+                            if (nameError) {
+                                setNameError(undefined);
+                            }
+                        }}
+                    />
+                </Container>
+
+                <Button
+                    variant='solid'
+                    intent='brand'
+                    size='lg'
+                    shape='pill'
+                    block
+                    type='submit'
+                    isLoading={isSubmitting}
+                >
+                    Create Team & Continue
+                </Button>
+            </form>
+        </Container>
+    );
+
+    if (isLoading) {
+        content = (
+            <Container className='post-auth-onboarding-loading d-flex column items-center content-center gap-1'>
+                <Loader scale={0.6} isFixed={false} announce label='Loading onboarding' />
+            </Container>
+        );
+    }
+
     return (
         <OnboardingLayout
             onSettingsClick={handleSettingsClick}
             onSignOut={handleSignOut}
             isSigningOut={isSigningOut}
         >
-            <Container className='post-auth-onboarding-shell d-flex column gap-2'>
-                <Container className='d-flex column gap-075 items-center'>
-                    <Container className='d-flex column gap-025 items-center'>
-                        <span className='font-size-1 font-weight-6 color-secondary'>{stepState.progressLabel}</span>
-                        <Container className='post-auth-onboarding-progress' aria-hidden='true'>
-                            <span className='post-auth-onboarding-progress-fill' style={{ width: `${stepState.progressValue}%` }} />
-                        </Container>
-                    </Container>
-                </Container>
-
-                <Container className='post-auth-onboarding-content d-flex column gap-2'>
-                    <Container className='d-flex column gap-1 text-center'>
-                        <Title className='font-size-6 font-weight-6'>{stepState.title}</Title>
-                        <Paragraph className='color-secondary font-size-3-5'>
-                            {stepState.description}
-                        </Paragraph>
-                    </Container>
-
-                    <Container className='d-flex column gap-1'>
-                        <FormFieldRHF
-                            label='Team name'
-                            placeholder='e.g., Research Lab'
-                            value={teamName}
-                            error={nameError}
-                            onChange={(event) => {
-                                setTeamName(event.target.value);
-                                if (nameError) {
-                                    setNameError(undefined);
-                                }
-                            }}
-                            inputProps={{
-                                onKeyDown: (event) => {
-                                    if (event.key === 'Enter') {
-                                        handleCreateTeam();
-                                    }
-                                }
-                            }}
-                        />
-                    </Container>
-
-                    <Button
-                        variant='solid'
-                        intent='brand'
-                        size='lg'
-                        shape='pill'
-                        block
-                        onClick={handleCreateTeam}
-                        isLoading={isSubmitting}
-                    >
-                        Create Team & Continue
-                    </Button>
-                </Container>
-            </Container>
+            {content}
         </OnboardingLayout>
     );
 };

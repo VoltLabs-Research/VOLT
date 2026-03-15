@@ -36,6 +36,16 @@ const OnboardingLayout = ({
 
     return (
         <Container className='onboarding-layout'>
+            <main className={contentClassNames.join(' ')}>
+                {children}
+            </main>
+
+            {overlay && (
+                <Container className='onboarding-layout__overlay'>
+                    {overlay}
+                </Container>
+            )}
+
             {leftSlot && (
                 <Container className='onboarding-layout__left-slot'>
                     {leftSlot}
@@ -51,12 +61,6 @@ const OnboardingLayout = ({
             >
                 Have an invite code?
             </Button>
-
-            <Container className={contentClassNames.join(' ')}>
-                {children}
-            </Container>
-
-            {overlay}
 
             {user && (
                 <Container className='onboarding-layout__user-menu'>

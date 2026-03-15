@@ -100,6 +100,7 @@ export const ErrorCodes = createErrorCodes({
 
     RASTER_NOT_FOUND: 'Raster::NotFound',
     RASTER_FAILED: 'Raster::Failed',
+    RASTER_ALREADY_QUEUED: 'Raster::AlreadyQueued',
 
     COLOR_CODING_MISSING_PARAMS: 'ColorCoding::MissingParams',
     COLOR_CODING_DUMP_NOT_FOUND: 'ColorCoding::DumpNotFound',

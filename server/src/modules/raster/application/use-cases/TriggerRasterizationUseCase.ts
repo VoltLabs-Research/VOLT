@@ -18,18 +18,30 @@ export class TriggerRasterizationUseCase implements IUseCase<TriggerRasterizatio
 
     async execute(input: TriggerRasterizationInputDTO): Promise<Result<TriggerRasterizationOutputDTO, ApplicationError>> {
         try {
-            const triggered = await this.rasterJobEnqueuer.triggerRasterization(input.trajectoryId, input.teamId, input.config);
+            const result = await this.rasterJobEnqueuer.triggerRasterization(input.trajectoryId, input.teamId, input.config);
 
-            if (!triggered) {
+            if (result.queuedJobs === 0 && result.skippedJobs === 0) {
                 return Result.fail(ApplicationError.notFound(
                     ErrorCodes.RASTER_NOT_FOUND,
                     'No rasterizable trajectory models were found in the team cluster storage'
                 ));
             }
 
+            if (result.queuedJobs === 0 && result.duplicateJobs > 0) {
+                return Result.fail(new ApplicationError(
+                    ErrorCodes.RASTER_ALREADY_QUEUED,
+                    'Equivalent rasterization jobs are already queued or running for this trajectory',
+                    409
+                ));
+            }
+
             return Result.ok({
                 trajectoryId: input.trajectoryId,
-                triggered: true
+                triggered: result.queuedJobs > 0,
+                queuedJobs: result.queuedJobs,
+                duplicateJobs: result.duplicateJobs,
+                skippedJobs: result.skippedJobs,
+                alreadyRasterizedJobs: result.alreadyRasterizedJobs
             });
         } catch (error) {
             if (error instanceof ApplicationError) {

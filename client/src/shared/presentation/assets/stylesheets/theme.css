@@ -8,6 +8,10 @@
     --radius-full: 9999px;
 
     --z-floating: 99999;
+
+    --sileo-width: 350px;
+    --sileo-height: 40px;
+    --sileo-duration: 600ms;
 }
 
 :root[data-theme='dark'] {

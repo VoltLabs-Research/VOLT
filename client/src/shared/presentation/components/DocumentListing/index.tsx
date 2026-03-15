@@ -30,7 +30,7 @@ import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers
 import './DocumentListing.css';
 import { Skeleton } from '@mui/material';
 import { motion } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { ExternalLink, Plus } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { RxDotsHorizontal } from 'react-icons/rx';
@@ -76,6 +76,8 @@ interface DocumentListingExportConfig<TContext = Record<string, never>> {
 
 interface DocumentListingProps<T extends { _id: string }, TContext = Record<string, never>> {
     title: string | React.ReactNode;
+    description?: React.ReactNode;
+    docLink?: string;
     queryKey: QueryKey;
     fetchData: (params: PaginationParams & TContext) => Promise<PaginatedResponse<T>>;
     transformData?: (data: T[]) => T[];
@@ -170,6 +172,8 @@ const resolveInitialTabId = (tabs: DocumentListingTab[], preferredTabId?: string
 
 const DocumentListing = <T extends { _id: string }, TContext = Record<string, never>>({
     title,
+    description,
+    docLink,
     queryKey,
     fetchData,
     transformData,
@@ -365,6 +369,25 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         );
     }, [headerMenuOptions.length]);
 
+    const headerDocLink = useMemo(() => {
+        if (!docLink) {
+            return null;
+        }
+
+        return (
+            <a
+                href={docLink}
+                target='_blank'
+                rel='noreferrer'
+                className='document-listing-doc-link d-flex items-center content-center'
+                aria-label='Open documentation'
+                title='Open documentation'
+            >
+                <ExternalLink size={14} aria-hidden='true' />
+            </a>
+        );
+    }, [docLink]);
+
     const resetToLastContentTab = useCallback(() => {
         setActiveTabId(lastContentTabId);
     }, [lastContentTabId]);
@@ -510,35 +533,52 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
             {!hideHeader && (
                 <Container className={`d-flex column ${gap}`}>
                     <Container className='d-flex column gap-1-5 document-listing-header-top-container p-2'>
-                        <Container className='d-flex content-between items-center'>
-                            <Container className='d-flex gap-1-5 items-center'>
+                        <Container className='d-flex content-between items-start gap-1-5'>
+                            <Container className='document-listing-header-main d-flex gap-1 items-start'>
                                 {isLoading && !data.length ? (
-                                    <Skeleton variant='text' width={220} height={32} />
-                                ) : typeof title === 'string' ? (
-                                    <Title className='font-size-6 font-weight-5 sm:font-size-4 color-primary'>{title}</Title>
+                                    <Container className='d-flex column gap-025'>
+                                        <Skeleton variant='text' width={220} height={32} />
+                                        {description ? <Skeleton variant='text' width={224} height={18} /> : null}
+                                    </Container>
                                 ) : (
-                                    title
-                                )}
-                                {headerMenuTrigger && (
-                                    <Popover
-                                        id='document-listing-header-menu'
-                                        trigger={headerMenuTrigger}
-                                        noPadding
-                                        className='context-menu-popover context-menu-popover--md'
-                                    >
-                                        {(close) => (
-                                            <PopoverMenu>
-                                                {headerMenuOptions.map((option, index) => (
-                                                    <AsyncMenuItemWrapper
-                                                        key={`document-listing-header-option-${option.label}-${index}`}
-                                                        option={option}
-                                                        size='md'
-                                                        onSuccess={close}
-                                                    />
-                                                ))}
-                                            </PopoverMenu>
+                                    <Container className='document-listing-header-title-block d-flex column gap-025'>
+                                        {typeof title === 'string' ? (
+                                            <Title className='font-size-6 font-weight-5 sm:font-size-4 color-primary'>{title}</Title>
+                                        ) : (
+                                            title
                                         )}
-                                    </Popover>
+                                        {description ? (
+                                            <Paragraph className='document-listing-header-description font-size-1 color-muted'>
+                                                {description}
+                                            </Paragraph>
+                                        ) : null}
+                                    </Container>
+                                )}
+                                {(headerDocLink || headerMenuTrigger) && (
+                                    <Container className='d-flex gap-05 items-center'>
+                                        {headerDocLink}
+                                        {headerMenuTrigger && (
+                                            <Popover
+                                                id='document-listing-header-menu'
+                                                trigger={headerMenuTrigger}
+                                                noPadding
+                                                className='context-menu-popover context-menu-popover--md'
+                                            >
+                                                {(close) => (
+                                                    <PopoverMenu>
+                                                        {headerMenuOptions.map((option, index) => (
+                                                            <AsyncMenuItemWrapper
+                                                                key={`document-listing-header-option-${option.label}-${index}`}
+                                                                option={option}
+                                                                size='md'
+                                                                onSuccess={close}
+                                                            />
+                                                        ))}
+                                                    </PopoverMenu>
+                                                )}
+                                            </Popover>
+                                        )}
+                                    </Container>
                                 )}
                             </Container>
                             <Container className='d-flex gap-2 items-center'>

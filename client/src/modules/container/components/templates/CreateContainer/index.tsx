@@ -1,18 +1,18 @@
 import useCreateContainerForm from '../../../hooks/use-create-container-form';
+import { ImageSelectionStep, ConfigurationStep, ReviewStep } from '../../organisms/CreateContainerSteps';
+import useStepper from '@/shared/presentation/hooks/use-stepper';
+import Button from '@/shared/presentation/components/Button';
+import Container from '@/shared/presentation/components/Container';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import Modal from '@/shared/presentation/components/Modal';
+import { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Stepper from '@/shared/presentation/components/Stepper';
+import Title from '@/shared/presentation/components/Title';
+import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import useStepper from '@/shared/presentation/hooks/use-stepper';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import Button from '@/shared/presentation/components/Button';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import { closeModal, openModal } from '@/shared/presentation/components/Modal';
-import Modal from '@/shared/presentation/components/Modal';
-import Stepper from '@/shared/presentation/components/Stepper';
 import type { StepIndicator } from '@/shared/presentation/components/Stepper';
-import { ImageSelectionStep, ConfigurationStep, ReviewStep } from '../../organisms/CreateContainerSteps';
 import './CreateContainer.css';
 
 enum StepKey {
@@ -27,19 +27,21 @@ const STEP_INDICATORS: StepIndicator<StepKey>[] = [
     {
         key: StepKey.Image,
         label: 'Image',
-        description: 'Select template'
+        description: 'Choose one'
     },
     {
         key: StepKey.Config,
         label: 'Configuration',
-        description: 'Resources & Network'
+        description: 'Set details'
     },
     {
         key: StepKey.Review,
         label: 'Review',
-        description: 'Deploy container'
+        description: 'Confirm'
     }
 ];
+
+const CUSTOM_IMAGE_MODAL_ID = 'custom-image-modal';
 
 const CreateContainer = () => {
     const navigate = useNavigate();
@@ -62,34 +64,60 @@ const CreateContainer = () => {
         setCustomImage,
         handleCreate,
         getSelectedImage,
-        canProceedToConfig
-    } = useCreateContainerForm(() => goTo(StepKey.Config));
+        canProceedToConfig,
+        canProceedToReview
+    } = useCreateContainerForm();
+
+    const trimmedCustomImage = tempCustomImage.trim();
 
     const confirmCustomImage = () => {
-        setCustomImage(tempCustomImage, () => goTo(StepKey.Config));
-        closeModal('custom-image-modal');
+        if (!trimmedCustomImage) {
+            return;
+        }
+
+        setCustomImage(trimmedCustomImage, () => goTo(StepKey.Config));
+        closeModal(CUSTOM_IMAGE_MODAL_ID);
     };
 
     const canNavigateTo = (key: StepKey): boolean => {
         if(key === StepKey.Image) return true;
         if(key === StepKey.Config) return canProceedToConfig;
-        if(key === StepKey.Review) return canProceedToConfig;
+        if(key === StepKey.Review) return canProceedToReview;
         return false;
+    };
+
+    const handleImageStepContinue = () => {
+        if (!canProceedToConfig) {
+            return;
+        }
+
+        goTo(StepKey.Config);
     };
 
     const steps = [
         {
             key: StepKey.Image,
             content: (
-                <ImageSelectionStep
-                    selectedTemplate={selectedTemplate}
-                    customImage={customImage}
-                    onTemplateSelect={handleTemplateSelect}
-                    onCustomImageClick={() => {
-                        setTempCustomImage(customImage);
-                        openModal('custom-image-modal');
-                    }}
-                />
+                <Container className='d-flex column gap-2'>
+                    <ImageSelectionStep
+                        selectedTemplate={selectedTemplate}
+                        customImage={customImage}
+                        onTemplateSelect={handleTemplateSelect}
+                        onCustomImageClick={() => {
+                            setTempCustomImage(customImage);
+                            openModal(CUSTOM_IMAGE_MODAL_ID);
+                        }}
+                    />
+
+                    <Container className='create-container-step-gate d-flex items-center content-between gap-1 p-1 radius-sm'>
+                        <Paragraph className='font-size-2 color-secondary'>
+                            {canProceedToConfig
+                                ? 'Image selected. Continue when you are ready to configure the deployment.'
+                                : 'Select one template or confirm a custom image before continuing.'}
+                        </Paragraph>
+                        <Button variant='solid' intent='brand' onClick={handleImageStepContinue} disabled={!canProceedToConfig}>Continue to configuration</Button>
+                    </Container>
+                </Container>
             )
         },
         {
@@ -101,6 +129,7 @@ const CreateContainer = () => {
                     teamClusters={teamClusters}
                     selectedTeamId={selectedTeamId}
                     selectedTeamClusterId={selectedTeamClusterId}
+                    canProceed={canProceedToReview}
                     onConfigChange={updateConfig}
                     onTeamChange={setSelectedTeamId}
                     onTeamClusterChange={setSelectedTeamClusterId}
@@ -148,24 +177,27 @@ const CreateContainer = () => {
             />
 
             <Modal
-                id='custom-image-modal'
-                title='Custom Docker Image'
-                description='Enter the name of the Docker image you want to pull from Docker Hub.'
+                id={CUSTOM_IMAGE_MODAL_ID}
+                title='Use a custom image'
+                description='Paste a Docker Hub image reference, then confirm it before continuing.'
                 width='420px'
                 footer={
                     <>
-                        <Button variant='outline' intent='neutral' onClick={() => closeModal('custom-image-modal')}>Cancel</Button>
-                        <Button variant='solid' intent='brand' onClick={confirmCustomImage}>Confirm</Button>
+                        <Button variant='outline' intent='neutral' onClick={() => closeModal(CUSTOM_IMAGE_MODAL_ID)}>Cancel</Button>
+                        <Button variant='solid' intent='brand' onClick={confirmCustomImage} disabled={!trimmedCustomImage}>Save image and continue</Button>
                     </>
                 }
             >
-                <FormFieldRHF
-                    label='Docker image'
-                    placeholder='e.g., nginx:latest, mysql:8.0'
-                    value={tempCustomImage}
-                    onChange={(e) => setTempCustomImage(e.target.value)}
-                    autoFocus
-                />
+                <Container className='d-flex column gap-075 p-1-5'>
+                    <FormFieldRHF
+                        label='Docker image'
+                        placeholder='e.g., nginx:latest, mysql:8.0'
+                        value={tempCustomImage}
+                        onChange={(e) => setTempCustomImage(e.target.value)}
+                        autoFocus
+                    />
+                    <Paragraph className='font-size-2 color-secondary'>A non-empty image reference is required before you can continue.</Paragraph>
+                </Container>
             </Modal>
         </Container>
     );

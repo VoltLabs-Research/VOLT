@@ -36,6 +36,36 @@
     border-top: 1px solid var(--color-border);
 }
 
+.document-listing-header-main {
+    min-width: 0;
+}
+
+.document-listing-header-title-block {
+    min-width: 0;
+}
+
+.document-listing-header-description {
+    max-width: 28rem;
+}
+
+.document-listing-doc-link {
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+}
+
+.document-listing-doc-link:hover,
+.document-listing-doc-link:focus-visible {
+    background: var(--hover-bg);
+    color: var(--color-text-primary);
+}
+
+.document-listing-doc-link:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
+}
+
 .sort-indicator {
     margin-left: 0.25rem;
     opacity: 0.6;
