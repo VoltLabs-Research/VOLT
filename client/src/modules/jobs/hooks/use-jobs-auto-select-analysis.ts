@@ -15,8 +15,15 @@ interface PendingSelection {
     timestep?: number;
 };
 
+const ANALYSIS_QUEUE_TYPE = 'analysis_processing';
+
 const getAnalysisIdFromJob = (job: Job): string | undefined => {
+    if (job.queueType !== ANALYSIS_QUEUE_TYPE) {
+        return undefined;
+    }
+
     if (job.analysisId) return job.analysisId;
+    if (typeof job.metadata?.analysisId === 'string') return job.metadata.analysisId;
     if (!job.jobId || !job.jobId.includes('-')) return undefined;
 
     const parts = job.jobId.split('-');
@@ -86,6 +93,10 @@ const useJobsAutoSelectAnalysis = ({
         if (!trajectoryId) return;
 
         for (const job of jobs) {
+            if (job.queueType !== ANALYSIS_QUEUE_TYPE) {
+                continue;
+            }
+
             if (job.status !== JobStatus.Completed && job.status !== JobStatus.Failed && job.jobId) {
                 trackedJobIdsRef.current.add(job.jobId);
             }

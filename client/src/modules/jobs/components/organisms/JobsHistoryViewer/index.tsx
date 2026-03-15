@@ -62,6 +62,7 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
 
     useJobsCompletionToast({
         trajectoryId,
+        jobs: relevantJobs,
         hasActiveJobs,
         allJobsCompleted
     });
