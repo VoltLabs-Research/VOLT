@@ -685,8 +685,11 @@ pull_runtime_images() {
     log 'Pulling Jupyter runtime image'
     host_docker pull 'ghcr.io/voltlabs-research/volt-jupyter-scripting:main'
 
-    log 'Pulling Ubuntu XRDP runtime image'
+    log 'Pulling Ubuntu Remote Desktop Lite runtime image'
     host_docker pull 'ghcr.io/voltlabs-research/volt-ubuntu-remote-desktop:main'
+
+    log 'Pulling Ubuntu Remote Desktop Full runtime image'
+    host_docker pull 'ghcr.io/voltlabs-research/volt-ubuntu-remote-desktop-full:main'
 }
 
 start_stack() {

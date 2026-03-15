@@ -11,11 +11,11 @@ readonly UPSTREAM_ENTRYPOINT="/usr/local/bin/upstream-entrypoint"
 readonly VNC_PASSWORD_ENV_KEY="VNC_PW"
 
 log_info() {
-    printf '[volt-ubuntu-remote-desktop] %s\n' "$1"
+    printf '[volt-ubuntu-remote-desktop-full] %s\n' "$1"
 }
 
 log_warn() {
-    printf '[volt-ubuntu-remote-desktop] %s\n' "$1" >&2
+    printf '[volt-ubuntu-remote-desktop-full] %s\n' "$1" >&2
 }
 
 resolve_container_username() {
@@ -26,7 +26,7 @@ resolve_container_username() {
     fi
 
     local normalized_username="${requested_username,,}"
-    if [ "${normalized_username}" = "root" ]; then
+    if [ "${normalized_username}" = 'root' ]; then
         log_warn "Ignoring ${CONTAINER_USERNAME_ENV_KEY}=root and falling back to ${DEFAULT_CONTAINER_USER}."
         printf '%s\n' "${DEFAULT_CONTAINER_USER}"
         return
