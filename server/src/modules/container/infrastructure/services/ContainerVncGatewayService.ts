@@ -62,7 +62,6 @@ export interface ContainerVncSessionDescriptor {
 };
 
 const TOKEN_CYPHER = 'aes-256-cbc';
-const VNC_BASE_PATH = '/api/container-vnc';
 const DEFAULT_SESSION_TTL_MS = 120_000;
 const DEFAULT_WIDTH = 1280;
 const DEFAULT_HEIGHT = 720;
@@ -294,7 +293,7 @@ export class ContainerVncGatewayService {
 const FRAME_MESSAGE_TYPE_READY = 'ready';
 const FRAME_MESSAGE_TYPE_ERROR = 'error';
 const FRAME_MESSAGE_TYPE_DISCONNECTED = 'disconnected';
-const NO_VNC_RFB_MODULE_PATH = '${VNC_BASE_PATH}/novnc/dist/rfb.bundle.js';
+const NO_VNC_RFB_MODULE_PATH = '/novnc/rfb.bundle.js';
 
 const screen = document.getElementById('screen');
 const status = document.getElementById('status');
@@ -508,7 +507,7 @@ initializeRemoteDesktop().catch((error) => {
     }
 
     private buildConnectPath(teamId: string, containerId: string, token: string, parentOrigin: string): string {
-        return `${VNC_BASE_PATH}/${encodeURIComponent(teamId)}/${encodeURIComponent(containerId)}/connect?token=${encodeURIComponent(token)}&parentOrigin=${encodeURIComponent(parentOrigin)}`;
+        return `/api/container-vnc/${encodeURIComponent(teamId)}/${encodeURIComponent(containerId)}/connect?token=${encodeURIComponent(token)}&parentOrigin=${encodeURIComponent(parentOrigin)}`;
     }
 
     private requireAllowedParentOrigin(parentOrigin: string): string {
@@ -532,11 +531,11 @@ initializeRemoteDesktop().catch((error) => {
     }
 
     private buildConnectClientScriptPath(): string {
-        return `${VNC_BASE_PATH}/connect-client.js`;
+        return `/api/container-vnc/connect-client.js`;
     }
 
     private buildWebSocketPath(teamId: string, containerId: string, token: string): string {
-        return `${VNC_BASE_PATH}/${encodeURIComponent(teamId)}/${encodeURIComponent(containerId)}/ws?token=${encodeURIComponent(token)}`;
+        return `/api/container-vnc/${encodeURIComponent(teamId)}/${encodeURIComponent(containerId)}/ws?token=${encodeURIComponent(token)}`;
     }
 
     private encrypt(payload: ContainerVncTokenPayload): string {
