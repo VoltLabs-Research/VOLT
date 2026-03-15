@@ -1,0 +1,67 @@
+.onboarding-layout {
+    min-height: 100vh;
+    background: var(--color-bg);
+    overflow: hidden;
+}
+
+.onboarding-layout__content {
+    min-height: 100vh;
+    padding: 1.5rem;
+    display: grid;
+    place-items: center;
+}
+
+.onboarding-layout__invite-btn {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 50;
+}
+
+.onboarding-layout__left-slot {
+    position: fixed;
+    top: 1.5rem;
+    left: 1.5rem;
+    z-index: 50;
+}
+
+.onboarding-layout__user-menu {
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    z-index: 50;
+}
+
+.onboarding-layout__notifications {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 50;
+}
+
+@media (max-width: 768px) {
+    .onboarding-layout__content {
+        padding: 1rem;
+    }
+
+    .onboarding-layout__invite-btn {
+        top: 0.75rem;
+        right: 0.75rem;
+    }
+
+    .onboarding-layout__left-slot {
+        top: 1rem;
+        left: 1rem;
+        max-width: calc(100vw - 8rem);
+    }
+
+    .onboarding-layout__user-menu {
+        bottom: 0.75rem;
+        left: 0.75rem;
+    }
+
+    .onboarding-layout__notifications {
+        right: 0.75rem;
+        bottom: 0.75rem;
+    }
+}
