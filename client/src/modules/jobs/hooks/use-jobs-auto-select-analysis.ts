@@ -2,9 +2,11 @@ import { JobStatus } from '../api/entities/job';
 import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
 import useGetTrajectoryById from '@/modules/trajectory/hooks/trajectory/use-get-trajectory-by-id';
 import { useCallback, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { Job } from '../api/entities/job';
 
 interface UseJobsAutoSelectAnalysisArgs {
+    enabled?: boolean;
     trajectoryId?: string;
     jobs: Job[];
     setCurrentTimestep: (timestep: number) => void;
@@ -32,6 +34,7 @@ const getAnalysisIdFromJob = (job: Job): string | undefined => {
 };
 
 const useJobsAutoSelectAnalysis = ({
+    enabled = true,
     trajectoryId,
     jobs,
     setCurrentTimestep
@@ -40,8 +43,10 @@ const useJobsAutoSelectAnalysis = ({
     const hasAutoSelectedRef = useRef(false);
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
     const refreshInFlightRef = useRef(false);
+    const location = useLocation();
     const { trajectory, refetch: refetchTrajectory } = useGetTrajectoryById({ trajectoryId, enabled: false });
     const { setAnalysisId } = useCanvasUrlState();
+    const isCanvasRoute = location.pathname.startsWith('/canvas/');
 
     const resetTracking = useCallback(() => {
         hasAutoSelectedRef.current = false;
@@ -90,7 +95,7 @@ const useJobsAutoSelectAnalysis = ({
     }, [trajectoryId, resetTracking]);
 
     const trackActiveJobs = useCallback(() => {
-        if (!trajectoryId) return;
+        if (!enabled || !trajectoryId || isCanvasRoute) return;
 
         for (const job of jobs) {
             if (job.queueType !== ANALYSIS_QUEUE_TYPE) {
@@ -101,10 +106,10 @@ const useJobsAutoSelectAnalysis = ({
                 trackedJobIdsRef.current.add(job.jobId);
             }
         }
-    }, [jobs, trajectoryId]);
+    }, [enabled, isCanvasRoute, jobs, trajectoryId]);
 
     const attemptAutoSelect = useCallback(async () => {
-        if (!trajectoryId || hasAutoSelectedRef.current) return;
+        if (!enabled || !trajectoryId || isCanvasRoute || hasAutoSelectedRef.current) return;
 
         for (const job of jobs) {
             const isTracked = job.jobId && trackedJobIdsRef.current.has(job.jobId);
@@ -123,13 +128,22 @@ const useJobsAutoSelectAnalysis = ({
                 break;
             }
         }
-    }, [applySelection, jobs, refreshTrajectory, trajectoryId]);
+    }, [applySelection, enabled, isCanvasRoute, jobs, refreshTrajectory, trajectoryId]);
 
     useEffect(() => {
         trackActiveJobs();
     }, [trackActiveJobs]);
 
     useEffect(() => {
+        if (isCanvasRoute) {
+            resetTracking();
+            return;
+        }
+
+        if (!enabled) {
+            return;
+        }
+
         const pendingSelection = pendingSelectionRef.current;
 
         if (!pendingSelection) {
@@ -137,12 +151,16 @@ const useJobsAutoSelectAnalysis = ({
         }
 
         applySelection(pendingSelection);
-    }, [applySelection, trajectory]);
+    }, [applySelection, enabled, isCanvasRoute, resetTracking, trajectory]);
 
     useEffect(() => {
+        if (!enabled || isCanvasRoute) {
+            return;
+        }
+
         attemptAutoSelect().catch(() => {
         });
-    }, [attemptAutoSelect]);
+    }, [attemptAutoSelect, enabled, isCanvasRoute]);
 
     return { resetTracking };
 };

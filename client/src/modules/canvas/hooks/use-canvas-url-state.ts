@@ -1,6 +1,9 @@
+import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../utilities/analysis-status';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import { useCallback, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 
 export enum CanvasWorkspace {
     Modeling = 'modeling',
@@ -13,7 +16,7 @@ interface UpdateOptions {
 };
 
 interface CanvasUrlStateOptions {
-    trajectory?: { analysis?: Array<{ _id?: string }> } | null;
+    trajectory?: Trajectory | null;
 };
 
 const CANVAS_WORKSPACES = new Set<string>(Object.values(CanvasWorkspace));
@@ -31,6 +34,7 @@ const resolveCanvasWorkspace = (workspace: string | null): CanvasWorkspace => {
 };
 
 const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
+    const location = useLocation();
     const { searchParams, updateSearchParams } = useSearchParamsState();
     const {
         selectedIds: activeModifiers,
@@ -109,13 +113,17 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
     }, [pluginParam]);
 
     const trajectory = options?.trajectory;
+    const isCanvasRoute = location.pathname.startsWith('/canvas/');
 
     useEffect(() => {
-        if (!trajectory?.analysis?.length || analysisId) return;
+        if (isCanvasRoute || !trajectory?.analysis?.length || analysisId) return;
+
         const latest = trajectory.analysis[trajectory.analysis.length - 1];
-        if (!latest?._id) return;
+
+        if (!latest?._id || normalizeCanvasAnalysisStatus(latest.status) !== CanvasAnalysisStatusEnum.Completed) return;
+
         setAnalysisId(latest._id, { replace: true });
-    }, [trajectory, analysisId, setAnalysisId]);
+    }, [trajectory, analysisId, isCanvasRoute, setAnalysisId]);
 
     return {
         searchParams,
