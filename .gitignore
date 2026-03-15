@@ -1,5 +1,4 @@
 .opencode/
-cluster-daemon/dev-tools/
 server/storage/
 client/release
 client/dist-electron
@@ -10,19 +9,13 @@ client/dist-electron
 logs
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 *.env
 
 node_modules/
-package-lock.json
 
 dist
 dist-ssr
 *.local
-*.vtk
 
 # Editor directories and files
 .vscode/*
@@ -37,37 +30,3 @@ dist-ssr
 *.tsbuildinfo
 
 reports/
-fix.md
-
-*dump
-
-bindings/python/build/
-bindings/python/dist/
-bindings/python/*.egg-info/
-__pycache__/
-*.py[cod]
-*$py.class
-
-build/
-builds/
-Build/
-cmake-build-*/
-out/build/
-builds/
-Build/
-cmake-build-*/
-out/
-
-# CMake generated files
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-Makefile
-*.cmake
-!CMakeLists.txt
-install_manifest.txt
-CTestTestfile.cmake
-_deps/
-
-*.o
-*.o.d
