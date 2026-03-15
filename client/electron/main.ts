@@ -19,6 +19,7 @@ const defaultWindowWidth = 1800;
 const defaultWindowHeight = 960;
 const defaultMinWindowWidth = 1180;
 const defaultMinWindowHeight = 720;
+const defaultWindowBackgroundColor = '#070708';
 
 const createDesktopWindowState = (window: BrowserWindow): DesktopWindowState => {
     return {
@@ -69,13 +70,16 @@ const registerWindowStateObservers = (window: BrowserWindow) => {
 
 const createMainWindow = () => {
     const { width: availableWidth, height: availableHeight } = screen.getPrimaryDisplay().workAreaSize;
+    const usesTransparentWindow = process.platform !== DesktopPlatform.Linux;
     const mainWindow = new BrowserWindow({
         width: Math.min(defaultWindowWidth, availableWidth),
         height: Math.min(defaultWindowHeight, availableHeight),
         minWidth: Math.min(defaultMinWindowWidth, availableWidth),
         minHeight: Math.min(defaultMinWindowHeight, availableHeight),
+        show: false,
         frame: false,
-        transparent: true,
+        transparent: usesTransparentWindow,
+        backgroundColor: defaultWindowBackgroundColor,
         titleBarStyle: process.platform === DesktopPlatform.MacOS ? 'hidden' : 'default',
         autoHideMenuBar: true,
         webPreferences: {
@@ -94,6 +98,10 @@ const createMainWindow = () => {
 
     registerWindowSecurity(mainWindow);
     registerWindowStateObservers(mainWindow);
+
+    mainWindow.once('ready-to-show', () => {
+        mainWindow.show();
+    });
 
     if (developmentServerUrl) {
         mainWindow.loadURL(developmentServerUrl);
