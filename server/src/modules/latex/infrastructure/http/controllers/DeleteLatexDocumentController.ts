@@ -5,5 +5,9 @@ import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 
 export default createController(DeleteLatexDocumentUseCase, {
     validationSchema: latexValidation.deleteDocument,
-    statusCode: HttpStatus.NoContent
+    statusCode: HttpStatus.NoContent,
+    extendParams: (request, params) => ({
+        ...params,
+        userId: request.userId
+    })
 });

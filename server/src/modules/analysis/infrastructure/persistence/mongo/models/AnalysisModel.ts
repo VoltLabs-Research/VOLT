@@ -36,6 +36,11 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
         ref: 'Plugin',
         required: true
     },
+    pluginDisplayName: {
+        type: String,
+        required: true,
+        trim: true
+    },
     teamCluster: {
         type: Schema.Types.ObjectId,
         ref: 'TeamCluster',

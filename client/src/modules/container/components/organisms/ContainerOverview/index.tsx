@@ -32,7 +32,7 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
         key: item.key,
         value: item.value
     }));
-    const portItems: PortMappingFormItem[] = (container.ports || []).map((item) => ({
+    const portItems: PortMappingFormItem[] = container.ports.map((item) => ({
         private: item.private,
         public: item.public
     }));
@@ -99,14 +99,24 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                     ]}
                     emptyMessage='No ports exposed'
                     onSave={onUpdatePorts}
-                    createEmpty={() => ({ private: 0, public: 0 })}
-                    renderItem={(item, i) => (
-                        <Container key={i} className='editable-kv-display-row d-flex content-between'>
-                            <span className='color-secondary font-weight-6 font-family-mono'>{item.private}/tcp</span>
-                            <span className='color-muted'>→</span>
-                            <span className='font-family-mono'>localhost:{item.public}</span>
-                        </Container>
-                    )}
+                    createEmpty={() => ({ private: 0 })}
+                    renderItem={(item, i) => {
+                        const resolvedPublicPort = typeof item.public === 'number' && item.public > 0
+                            ? item.public
+                            : null;
+
+                        return (
+                            <Container key={i} className='editable-kv-display-row d-flex content-between'>
+                                <span className='color-secondary font-weight-6 font-family-mono'>{item.private}/tcp</span>
+                                {resolvedPublicPort !== null && (
+                                    <Container className='d-flex gap-05 items-center'>
+                                        <span className='color-muted'>→</span>
+                                        <span className='font-family-mono'>{resolvedPublicPort}</span>
+                                    </Container>
+                                )}
+                            </Container>
+                        );
+                    }}
                 />
             </Container>
         </Container>

@@ -21,12 +21,6 @@ export default createHttpModule({
             .patch(teamValidation.update, controllers.updateById.handle)
             .delete(controllers.deleteById.handle);
 
-        router.delete(
-            '/:teamId/members/:userId',
-            teamValidation.removeMember,
-            controllers.removeUserFromTeam.handle
-        );
-
         router.get('/:teamId/invite-permission', controllers.checkInvitePermission.handle);
 
         router.route('/:teamId/invite-code')

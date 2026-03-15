@@ -12,7 +12,7 @@ const NotFoundState = () => {
     const headingId = useId();
 
     return (
-        <section aria-labelledby={headingId} className='not-found-state d-flex items-center content-center w-max'>
+        <section aria-labelledby={headingId} className='not-found-state d-flex items-center content-center vh-max w-max'>
             <Container className='not-found-state-content d-flex column gap-1-5 items-center text-center'>
                 <Container className='not-found-state-icon d-flex items-center content-center'>
                     <SearchX size={24} />

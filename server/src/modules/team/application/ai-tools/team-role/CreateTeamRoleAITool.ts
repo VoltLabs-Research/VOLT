@@ -29,7 +29,8 @@ export class CreateTeamRoleAITool extends TeamUseCaseAITool<
                 teamId: scope.teamId,
                 name: params.name,
                 permissions: params.permissions,
-                isSystem: false
+                isSystem: false,
+                userId: scope.userId
             }),
             (output) => output
         );

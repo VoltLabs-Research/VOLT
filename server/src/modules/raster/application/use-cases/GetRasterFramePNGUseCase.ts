@@ -19,8 +19,6 @@ export class GetRasterFramePNGUseCase implements IUseCase<GetRasterFramePNGInput
 
     async execute(input: GetRasterFramePNGInputDTO): Promise<Result<GetRasterFramePNGOutputDTO, ApplicationError>> {
         try {
-            const hasAnalysisFrameParams = Boolean(input.analysisId && input.model);
-
             if ((input.analysisId && !input.model) || (!input.analysisId && input.model)) {
                 return Result.fail(ApplicationError.badRequest(
                     ErrorCodes.VALIDATION_INVALID_INPUT,
@@ -28,13 +26,13 @@ export class GetRasterFramePNGUseCase implements IUseCase<GetRasterFramePNGInput
                 ));
             }
 
-            const rasterFrame = hasAnalysisFrameParams
+            const rasterFrame = input.analysisId && input.model
                 ? await this.rasterFrameReader.getAnalysisRasterFramePNG(
                     input.trajectoryId,
                     input.teamId,
-                    input.analysisId || '',
+                    input.analysisId,
                     input.timestep,
-                    input.model || ''
+                    input.model
                 )
                 : await this.rasterFrameReader.getRasterFramePNG(
                     input.trajectoryId,

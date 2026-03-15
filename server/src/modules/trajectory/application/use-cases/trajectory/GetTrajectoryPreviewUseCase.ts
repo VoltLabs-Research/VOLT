@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
@@ -29,9 +31,6 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
 
     async execute(input: GetTrajectoryPreviewInputDTO): Promise<Result<GetTrajectoryPreviewOutputDTO, ApplicationError>> {
         const { trajectoryId } = input;
-        if (!trajectoryId) {
-            return Result.fail(new ApplicationError(ErrorCodes.VALIDATION_ID_REQUIRED, 'Trajectory ID is required', 400));
-        }
 
         const trajectory = await this.trajectoryRepository.findById(trajectoryId);
         if (!trajectory) {
@@ -52,11 +51,8 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
             if (key.endsWith('.png')) {
                 try {
                     const buffer = await this.storageService.getBuffer(SYS_BUCKETS.RASTERIZER, key);
-                    const etag = `"trajectory-preview-${trajectoryId}"`;
-                    const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
-
-                    return Result.ok({ base64, etag });
-                } catch (error) {
+                    return Result.ok(this.createPreviewOutput(buffer));
+                } catch {
                     // Continue to next preview if this one fails
                     continue;
                 }
@@ -83,16 +79,22 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
                 });
                 const buffer = await this.readStream(stream);
 
-                return {
-                    base64: `data:image/png;base64,${buffer.toString('base64')}`,
-                    etag: `"trajectory-preview-${trajectoryId}-${frame.timestep}"`
-                };
+                return this.createPreviewOutput(buffer);
             } catch {
                 continue;
             }
         }
 
         return null;
+    }
+
+    private createPreviewOutput(buffer: Buffer): GetTrajectoryPreviewOutputDTO {
+        const etag = `"${createHash('sha256').update(buffer).digest('hex')}"`;
+
+        return {
+            base64: `data:image/png;base64,${buffer.toString('base64')}`,
+            etag
+        };
     }
 
     private async readStream(stream: NodeJS.ReadableStream): Promise<Buffer> {

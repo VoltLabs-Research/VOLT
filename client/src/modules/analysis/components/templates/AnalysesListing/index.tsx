@@ -26,7 +26,7 @@ const renderTrajectoryName: NonNullable<ColumnConfig<Analysis>['render']> = (_va
 };
 
 const renderPluginName: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
-    return row.pluginDisplayName || row.plugin || '-';
+    return row.pluginDisplayName;
 };
 
 const renderFrameCount: NonNullable<ColumnConfig<Analysis>['render']> = (value) => {

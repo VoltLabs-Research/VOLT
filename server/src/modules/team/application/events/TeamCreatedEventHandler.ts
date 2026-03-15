@@ -27,7 +27,8 @@ export default class TeamCreatedEventHandler implements IEventHandler<TeamCreate
             teamId,
             name: role.name,
             permissions: [...role.permissions],
-            isSystem: true
+            isSystem: true,
+            userId: ownerId
         }));
 
         await Promise.all(roles.map((role) => this.createTeamRoleUseCase.execute(role)));

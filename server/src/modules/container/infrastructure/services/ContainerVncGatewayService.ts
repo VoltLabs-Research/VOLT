@@ -28,7 +28,6 @@ interface ContainerVncTokenPayload {
     type: 'container-vnc';
     teamId: string;
     containerId: string;
-    userId: string;
     teamClusterId: string;
     exposureId: string;
     password: string;
@@ -130,7 +129,6 @@ const isContainerVncTokenPayload = (value: unknown): value is ContainerVncTokenP
     return value.type === 'container-vnc'
         && typeof value.teamId === 'string'
         && typeof value.containerId === 'string'
-        && typeof value.userId === 'string'
         && typeof value.teamClusterId === 'string'
         && typeof value.exposureId === 'string'
         && typeof value.password === 'string'
@@ -193,7 +191,6 @@ export class ContainerVncGatewayService {
             type: 'container-vnc',
             teamId: input.teamId,
             containerId: input.containerId,
-            userId: input.userId,
             teamClusterId: input.teamClusterId,
             exposureId: input.exposureId,
             password: input.password,

@@ -1,11 +1,8 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import { inject, injectable } from 'tsyringe';
+import { injectable } from 'tsyringe';
 import AnalysisModel from '@modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel';
 import Analysis from '@modules/analysis/domain/entities/Analysis';
 import analysisMapper from '@modules/analysis/infrastructure/persistence/mongo/mappers/AnalysisMapper';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 import type { AnalysisDocument } from '@modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel';
@@ -49,27 +46,7 @@ export default class AnalysisRepository
         }, {});
     }
 
-    constructor(
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
-    ) {
+    constructor() {
         super(AnalysisModel, analysisMapper);
-    }
-
-    async deleteById(id: string): Promise<boolean> {
-        const result = await this.model.findByIdAndDelete(id);
-
-        if (result) {
-            await this.eventBus.publish(new AnalysisDeletedEvent({
-                analysisId: id,
-                trajectoryId: result.trajectory?.toString() || '',
-                pluginId: result.plugin?.toString() || '',
-                teamId: result.team?.toString() || '',
-                userId: 'system',
-                pluginDisplayName: 'Unknown Plugin'
-            }));
-        }
-
-        return !!result;
     }
 };

@@ -14,6 +14,7 @@ import logger from './shared/infrastructure/logger';
 import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
 import { readNumberEnv } from './shared/infrastructure/utilities/env';
 import app from './core/config/express';
+import apiDocsRouter from './core/config/api-docs';
 import SocketGateway from './modules/socket/socket/SocketGateway';
 import http from 'http';
 import { container } from 'tsyringe';
@@ -44,6 +45,7 @@ const startServer = async () => {
 
     const server = http.createServer(app);
 
+    app.use('/api-docs', apiDocsRouter);
     app.use(mountHttpRoutes());
     app.use(httpErrorMiddleware);
 

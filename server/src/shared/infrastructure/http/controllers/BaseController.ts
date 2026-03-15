@@ -2,8 +2,6 @@ import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import logger from '@shared/infrastructure/logger';
 import { validateRequest, ValidationTarget } from '@shared/infrastructure/http/middleware/validation';
-import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import type { Response } from 'express';
 import type { Result } from '@shared/domain/port/Result';
 import type { IUseCase, UseCaseError, UseCaseInput, UseCaseInstance, UseCaseOutput } from '@shared/application/IUseCase';
@@ -70,11 +68,7 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
 
     protected handleUnexpectedError(res: Response, error: unknown): void {
         logger.error(error);
-        if (error instanceof ApplicationError && error.isOperational) {
-            BaseResponse.fromError(res, error);
-            return;
-        }
-        BaseResponse.error(res, 'Internal Server Error', HttpStatus.InternalServerError, ErrorCodes.INTERNAL_SERVER_ERROR);
+        BaseResponse.fromError(res, error);
     }
 
     protected executeUseCase(req: AuthenticatedRequest): Promise<Result<UseCaseOutput<TUseCase>, UseCaseError<TUseCase>>> {

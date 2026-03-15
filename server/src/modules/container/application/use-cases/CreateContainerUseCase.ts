@@ -1,6 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { CreateContainerInputDTO, CreateContainerOutputDTO } from '@modules/container/application/dtos/CreateContainerDTO';
 import type { ContainerCapabilities } from '@modules/container/domain/entities/ContainerCapabilities';
+import type { ContainerPortMapping, RuntimeContainerInfo } from '@modules/container/domain/port/IContainerService';
 import type { IContainerFolderRepository } from '@modules/container/domain/port/IContainerFolderRepository';
 import ContainerCreatedEvent from '@modules/container/domain/events/ContainerCreatedEvent';
 import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
@@ -102,8 +103,67 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         }
     }
 
+    private resolveCanonicalPorts(
+        requestedPorts: ContainerPortMapping[] | undefined,
+        runtimeContainer: RuntimeContainerInfo
+    ): ContainerPortMapping[] {
+        if (!requestedPorts || requestedPorts.length === 0) {
+            return [];
+        }
+
+        const runtimeBindings = runtimeContainer.NetworkSettings?.Ports;
+
+        return requestedPorts.map((requestedPort) => {
+            const runtimePortBindings = runtimeBindings?.[`${requestedPort.private}/tcp`];
+            const runtimePortBinding = Array.isArray(runtimePortBindings) ? runtimePortBindings[0] : undefined;
+            const publicPort = Number(runtimePortBinding?.HostPort);
+
+            if (Number.isFinite(publicPort) && publicPort > 0) {
+                return {
+                    private: requestedPort.private,
+                    public: publicPort
+                };
+            }
+
+            return {
+                private: requestedPort.private
+            };
+        });
+    }
+
+    private resolveInternalIp(runtimeContainer: RuntimeContainerInfo): string | undefined {
+        const primaryIp = runtimeContainer.NetworkSettings?.IPAddress;
+
+        if (typeof primaryIp === 'string' && primaryIp.length > 0) {
+            return primaryIp;
+        }
+
+        const networks = runtimeContainer.NetworkSettings?.Networks;
+
+        if (!networks) {
+            return undefined;
+        }
+
+        for (const endpoint of Object.values(networks)) {
+            const address = endpoint?.IPAddress;
+
+            if (typeof address === 'string' && address.length > 0) {
+                return address;
+            }
+        }
+
+        return undefined;
+    }
+
     async execute(input: CreateContainerInputDTO): Promise<Result<CreateContainerOutputDTO>> {
         const { name, image, env, ports, cmd, mountDockerSocket, useImageCmd, memory, cpus } = input;
+
+        if (!input.userId.trim()) {
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                'Actor userId is required'
+            ));
+        }
 
         if (input.folderId) {
             const folder = await this.folderRepository.findByTeamAndFolderId(input.teamId, input.folderId);
@@ -151,22 +211,25 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
 
         const containerInfo = await this.containerRuntimeService.createContainer(teamClusterId, dockerConfig);
         const dockerId = containerInfo.Id;
+        const runtimeContainer = await this.containerRuntimeService.getContainer(teamClusterId, dockerId);
+        const resolvedPorts = this.resolveCanonicalPorts(ports, runtimeContainer);
+        const internalIp = this.resolveInternalIp(runtimeContainer);
 
-            const container = await this.repository.create({
-                name,
-                image,
-                containerId: dockerId,
-                folder: input.folderId ?? null,
-                status: containerInfo.State?.Status || 'running',
-                memory: memoryInMegabytes,
+        const container = await this.repository.create({
+            name,
+            image,
+            containerId: dockerId,
+            folder: input.folderId ?? null,
+            status: runtimeContainer.State?.Status || containerInfo.State?.Status || 'running',
+            memory: memoryInMegabytes,
             cpus: cpuCount,
             env: env || [],
-            ports: ports || [],
+            ports: resolvedPorts,
             createdBy: input.userId,
             team: input.teamId,
             teamCluster: teamClusterId,
             mountDockerSocket: mountDockerSocket || false,
-            internalIp: containerInfo.NetworkSettings?.IPAddress || '0.0.0.0',
+            ...(internalIp ? { internalIp } : {}),
             capabilities
         });
 
@@ -174,7 +237,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             containerId: container._id,
             teamId: input.teamId,
             name,
-            userId: input.userId ?? ''
+            userId: input.userId
         }));
 
         return Result.ok({ container });

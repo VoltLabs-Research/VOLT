@@ -26,6 +26,7 @@ export class DeleteSecretKeyAITool extends TeamUseCaseAITool<
             useCase,
             (params, scope) => ({
                 teamId: scope.teamId,
+                userId: scope.userId,
                 secretKeyId: params.secretKeyId
             }),
             (output) => output

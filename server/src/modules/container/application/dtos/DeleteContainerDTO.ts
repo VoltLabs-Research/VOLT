@@ -1,7 +1,7 @@
 export interface DeleteContainerInputDTO {
     teamId: string;
     containerId: string;
-    userId?: string;
+    userId: string;
 };
 
 export interface DeleteContainerOutputDTO {

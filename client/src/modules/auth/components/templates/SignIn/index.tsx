@@ -1,8 +1,12 @@
 import './SignIn.css';
 import { signInSchema } from './validation-schema';
 import { useCheckEmailMutation, useSignInMutation, useSignUpMutation } from '@/modules/auth/hooks/queries';
+import {
+    clearPostAuthDestination,
+    getPostAuthRedirectPath,
+    resolvePostAuthDestination
+} from '@/modules/auth/services/post-auth-destination-storage';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
-import WireframeBackground from '../../atoms/WireframeBackground';
 import EmailStep from '../../molecules/EmailStep';
 import PasswordStep from '../../molecules/PasswordStep';
 import RegisterStep from '../../molecules/RegisterStep';
@@ -81,18 +85,21 @@ const SignInTemplate = () => {
     const getNextDestination = (): string => {
         const params = new URLSearchParams(location.search);
         const queryNext = params.get('next');
-        if (queryNext) return queryNext;
 
         let stateFrom: SignInLocationState['from'];
         if (isSignInLocationState(location.state)) {
             stateFrom = location.state.from;
         }
 
+        let stateDestination: string | null = null;
         if (stateFrom?.pathname) {
-            return stateFrom.pathname + (stateFrom.search ?? '');
+            stateDestination = stateFrom.pathname + (stateFrom.search ?? '');
         }
 
-        return '/dashboard';
+        return resolvePostAuthDestination({
+            queryNext,
+            stateDestination
+        });
     };
 
     const handleOAuthRedirect = (provider: string) => {
@@ -104,8 +111,10 @@ const SignInTemplate = () => {
 
     const finalizeAuth = () => {
         const next = getNextDestination();
-        const onboardingUrl = next === '/dashboard' ? '/onboarding' : `/onboarding?next=${encodeURIComponent(next)}`;
-        navigate(onboardingUrl);
+        const redirectPath = getPostAuthRedirectPath(next);
+
+        clearPostAuthDestination();
+        navigate(redirectPath);
     };
 
     const handleEmailStep = async () => {
@@ -248,38 +257,23 @@ const SignInTemplate = () => {
 
     return (
         <main className='sign-in-page'>
-            <section className='sign-in-layout'>
-                <section className='sign-in-hero-section p-relative overflow-hidden content-between column p-4' aria-labelledby='sign-in-hero-title'>
-                    <WireframeBackground />
-                    <Container className='sign-in-hero-overlay p-absolute inset-0' />
-                    <Container className='d-flex column content-end p-2 gap-1-5 sign-in-hero-text-container p-relative z-10'>
-                        <Title as='h2' id='sign-in-hero-title' className='sign-in-hero-headline'>
-                            Connect with<br />your VoltID
-                        </Title>
-                        <Paragraph className='sign-in-hero-description'>
-                            Everything your research needs, in one place. Collaborate seamlessly and connect your scientific stack.
-                        </Paragraph>
-                    </Container>
-                </section>
+            <section className='sign-in-form-shell d-flex column content-center p-1-5' aria-labelledby='sign-in-form-title'>
+                <Container className='d-flex column gap-2 sign-in-form-section w-max'>
+                    <header className='d-flex column gap-05'>
+                        <Title as='h1' id='sign-in-form-title' className='sign-in-form-title'>{title}</Title>
+                        <Paragraph>{subtitle}</Paragraph>
+                    </header>
 
-                <section className='sign-in-form-shell d-flex column content-center p-1-5' aria-labelledby='sign-in-form-title'>
-                    <Container className='d-flex column gap-2 sign-in-form-section w-max'>
-                        <header className='d-flex column gap-05'>
-                            <Title as='h1' id='sign-in-form-title' className='sign-in-form-title'>{title}</Title>
-                            <Paragraph>{subtitle}</Paragraph>
-                        </header>
+                    <Stepper
+                        steps={signInSteps}
+                        activeStep={step} />
 
-                        <Stepper
-                            steps={signInSteps}
-                            activeStep={step} />
-
-                        <Paragraph className='sign-in-consent text-center'>
-                            By continuing with email or a social provider, you agree to our{' '}
-                            <span className='sign-in-legal-text'>Terms</span> and{' '}
-                            <span className='sign-in-legal-text'>Privacy Policy</span>.
-                        </Paragraph>
-                    </Container>
-                </section>
+                    <Paragraph className='sign-in-consent text-center'>
+                        By continuing with email or a social provider, you agree to our{' '}
+                        <span className='sign-in-legal-text'>Terms</span> and{' '}
+                        <span className='sign-in-legal-text'>Privacy Policy</span>.
+                    </Paragraph>
+                </Container>
             </section>
         </main>
     );

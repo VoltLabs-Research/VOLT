@@ -4,6 +4,7 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
+import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
 import { injectable, inject } from 'tsyringe';
 
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
@@ -28,7 +29,8 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
 
     async execute(input: GetAtomsInputDTO): Promise<Result<PaginatedResult<AtomRecord>, ApplicationError>> {
         try {
-            const { trajectoryId, analysisId, timestep } = input;
+            const { trajectoryId, timestep } = input;
+            const analysisId = normalizeAnalysisId(input.analysisId);
             const page = input.page ?? 1;
             const limit = input.limit ?? 100;
 
@@ -43,7 +45,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
                 ));
             }
 
-            const teamClusterId = trajectory?.props.teamCluster;
+            const teamClusterId = trajectory.props.teamCluster;
             if (!teamClusterId) {
                 return Result.fail(ApplicationError.notFound(
                     ErrorCodes.TRAJECTORY_TEAM_CLUSTER_REQUIRED,

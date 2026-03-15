@@ -90,8 +90,6 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
                     setTimelineExposureId(undefined, { replace: true });
                 }
             }
-        } else if (activeTab.startsWith('sublisting:')) {
-            setActiveTab('timeline');
         }
     }, [activeTab, hasExposure, isPluginReady, timelineExposureId, setTimelineExposureId]);
 

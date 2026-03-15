@@ -1,7 +1,5 @@
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
-import DraggableRow from './DraggableRow';
-import { cn } from '@/shared/utils';
 import { File, Image, Link, Trash2 } from 'lucide-react';
 import { useCallback } from 'react';
 import type { FileTreeNode as FileTreeNodeType } from '@/modules/latex/utilities/file-tree';
@@ -19,7 +17,7 @@ const getAssetIcon = (mimetype: string) => {
     return <File size={13} />;
 };
 
-/** Renders a draggable asset row inside the file tree. */
+/** Renders an asset row inside the file tree. */
 const AssetNode = ({ node, depth, onAssetDelete, onAssetInsertRef }: AssetNodeProps) => {
     const asset = node.data as LatexAsset;
     const indent = depth * 12;
@@ -38,12 +36,9 @@ const AssetNode = ({ node, depth, onAssetDelete, onAssetInsertRef }: AssetNodePr
         [asset, onAssetInsertRef]
     );
 
-    const renderContent = (isDragging: boolean) => (
+    return (
         <Container
-            className={cn(
-                'latex-workspace__asset-row d-flex items-center content-between gap-05',
-                isDragging && 'is-dragging'
-            )}
+            className='latex-workspace__asset-row d-flex items-center content-between gap-05'
             style={{ paddingLeft: `${0.75 + indent / 16}rem` }}
         >
             <Container className='d-flex items-center gap-05 flex-1 min-w-0'>
@@ -78,8 +73,6 @@ const AssetNode = ({ node, depth, onAssetDelete, onAssetInsertRef }: AssetNodePr
             </Container>
         </Container>
     );
-
-    return <DraggableRow id={node.id}>{renderContent}</DraggableRow>;
 };
 
 export default AssetNode;

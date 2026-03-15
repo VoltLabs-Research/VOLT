@@ -5,5 +5,9 @@ import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 
 export default createController(UpdateLatexDocumentUseCase, {
     validationSchema: latexValidation.updateDocument,
-    statusCode: HttpStatus.OK
+    statusCode: HttpStatus.OK,
+    extendParams: (request, params) => ({
+        ...params,
+        userId: request.userId
+    })
 });

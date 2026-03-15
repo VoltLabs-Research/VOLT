@@ -2,7 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Skeleton } from '@mui/material';
 import { List } from 'react-window';
 import { normalizeError } from '@/shared/errors/core';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 import '@/modules/plugin/components/listing/organisms/PluginExposureTable/PluginExposureTable.css';
 
 export interface ColumnConfig {
@@ -18,11 +20,23 @@ const getColumnKey = (col: ColumnConfig): string => String(col.key ?? col.path ?
 const getColumnTitle = (col: ColumnConfig): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
 const getColumnMinWidth = (col: ColumnConfig): number => Number(col.width ?? 120);
 
-const TableRow = ({ index, style, data: rows, columns }: { index: number; style: React.CSSProperties; data: Record<string, unknown>[]; columns: ColumnConfig[] }) => {
+interface TableRowProps {
+    index: number;
+    style: React.CSSProperties;
+    data: Record<string, unknown>[];
+    columns: ColumnConfig[];
+    getMenuOptions?: (row: Record<string, unknown>) => MenuOption[];
+    rowId?: string;
+};
+
+const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId }: TableRowProps) => {
     const row = rows[index];
     if (!row) return null;
 
-    return (
+    const menuOptions = getMenuOptions ? getMenuOptions(row) : [];
+    const resolvedId = rowId || String(row._id ?? row.id ?? index);
+
+    const content = (
         <div style={style} className='plugin-compact-table-row'>
             {columns.map((col) => (
                 <div
@@ -38,15 +52,26 @@ const TableRow = ({ index, style, data: rows, columns }: { index: number; style:
             ))}
         </div>
     );
+
+    if (menuOptions.length === 0) return content;
+
+    return (
+        <ContextMenuPopover
+            id={`compact-row-menu-${resolvedId}`}
+            trigger={content}
+            options={menuOptions}
+        />
+    );
 };
 
 interface VirtualizedRowExtraProps {
     data: Record<string, unknown>[];
     columns: ColumnConfig[];
+    getMenuOptions?: (row: Record<string, unknown>) => MenuOption[];
 }
 
-const VirtualizedRow = ({ index, style, data, columns }: VirtualizedRowExtraProps & { ariaAttributes: unknown; index: number; style: React.CSSProperties }) => {
-    return <TableRow index={index} style={style} data={data} columns={columns} />;
+const VirtualizedRow = ({ index, style, data, columns, getMenuOptions }: VirtualizedRowExtraProps & { index: number; style: React.CSSProperties }) => {
+    return <TableRow index={index} style={style} data={data} columns={columns} getMenuOptions={getMenuOptions} />;
 };
 
 interface PluginCompactTableProps {
@@ -59,6 +84,7 @@ interface PluginCompactTableProps {
     error?: unknown;
     rowHeight?: number;
     onDataReady?: (columns: ColumnConfig[], data: Record<string, unknown>[]) => void;
+    getMenuOptions?: (row: Record<string, unknown>) => MenuOption[];
 }
 
 const getDisplayErrorMessage = (error: unknown): string => {
@@ -121,7 +147,7 @@ const PluginCompactTable = ({
     onLoadMore,
     error,
     rowHeight = 28,
-    onDataReady
+    getMenuOptions
 }: PluginCompactTableProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const listContainerRef = useRef<HTMLDivElement>(null);
@@ -197,12 +223,6 @@ const PluginCompactTable = ({
     useLayoutEffect(() => {
         scheduleMeasurement();
     }, [scheduleMeasurement, columns.length, data.length]);
-
-    useEffect(() => {
-        if (onDataReady && columns.length > 0 && data.length > 0) {
-            onDataReady(columns, data);
-        }
-    }, [columns, data, onDataReady]);
 
     const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
         if (!hasMore || isLoading || isFetchingMore || !onLoadMore) return;
@@ -292,6 +312,8 @@ const PluginCompactTable = ({
                                 index={index}
                                 data={data}
                                 columns={columns}
+                                getMenuOptions={getMenuOptions}
+                                rowId={String(row._id ?? row.id ?? index)}
                                 style={{
                                     position: 'relative',
                                     height: rowHeight,
@@ -350,14 +372,15 @@ const PluginCompactTable = ({
                         rowComponent={VirtualizedRow}
                         rowProps={{
                             data,
-                            columns
+                            columns,
+                            getMenuOptions
                         }}
                         style={{ height: resolvedHeight, width: '100%', overflowX: 'hidden' }}
                     />
                 </div>
             </div>
             {isFetchingMore && (
-                <div className='plugin-exposure-loading' style={{ padding: '0.25rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <div className='plugin-exposure-loading' style={{ padding: '0.25rem', borderTop: '1px solid var(--color-border-soft)' }}>
                     Loading more...
                 </div>
             )}

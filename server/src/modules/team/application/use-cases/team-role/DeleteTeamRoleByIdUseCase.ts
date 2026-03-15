@@ -25,6 +25,13 @@ export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRol
     async execute(input: DeleteTeamRoleByIdInputDTO): Promise<Result<DeleteTeamRoleByIdOutputDTO, ApplicationError>> {
         const { roleId, teamId } = input;
 
+        if (!input.userId) {
+            return Result.fail(ApplicationError.unauthorized(
+                ErrorCodes.AUTHENTICATION_REQUIRED,
+                'Authentication required'
+            ));
+        }
+
         const roleToDelete = await this.teamRoleRepository.findById(roleId);
         if (!roleToDelete) {
             return Result.fail(ApplicationError.notFound(
@@ -69,7 +76,7 @@ export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRol
         await this.eventBus.publish(new TeamRoleDeletedEvent({
             teamRoleId: roleId,
             teamId,
-            userId: input.userId ?? '',
+            userId: input.userId,
             roleName: roleToDelete.props.name ?? ''
         }));
 

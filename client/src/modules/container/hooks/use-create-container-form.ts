@@ -72,9 +72,23 @@ const getTemplatePorts = (template: ContainerTemplate): PortMapping[] => {
     }
 
     return [{
-        private: template.defaultPort,
-        public: 0
+        private: template.defaultPort
     }];
+};
+
+const getCreatePorts = (ports: PortMapping[]): PortMapping[] => {
+    return ports
+        .filter((port) => port.private > 0)
+        .map((port) => {
+            if (port.public === undefined) {
+                return { private: port.private };
+            }
+
+            return {
+                private: port.private,
+                public: port.public
+            };
+        });
 };
 
 const getTemplateEnv = (template: ContainerTemplate): EnvVariable[] => {
@@ -366,7 +380,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
                 image,
                 memory: config.memory,
                 cpus: config.cpus,
-                ports: config.ports.filter((port) => port.private > 0),
+                ports: getCreatePorts(config.ports),
                 env: mergeContainerEnvVariables(config.env, config.customFields, config.customFieldValues),
                 mountDockerSocket: config.mountDockerSocket,
                 useImageCmd: template?.useImageCmd,

@@ -53,7 +53,7 @@ const ReviewStep = ({
         : null;
     let portsDisplay = 'None';
     if (config.ports.length > 0) {
-        portsDisplay = config.ports.map((p) => `${p.private}:${p.public || 'Auto'}`).join(', ');
+        portsDisplay = config.ports.map((p) => `${p.private}:${p.public === undefined ? 'Auto' : p.public}`).join(', ');
     }
 
     const leftIcon = !isLoading ? <Box size={18} /> : undefined;

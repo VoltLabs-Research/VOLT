@@ -110,6 +110,7 @@ const createTrajectory = (trajectoryId: string): Trajectory => {
 const createAnalysis = (analysisId: string, trajectoryId: string): Analysis => {
     return new Analysis(analysisId, {
         plugin: 'plugin-1',
+        pluginDisplayName: 'Coordination Analysis',
         teamCluster: 'cluster-1',
         config: {},
         trajectory: trajectoryId,

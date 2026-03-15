@@ -9,7 +9,9 @@
     "build:electron-runtime": "tsc -p tsconfig.electron.json",
     "build-electron": "npm run build:electron-renderer && npm run build:electron-runtime && electron-builder --config electron-builder.yml",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:apis": "jest --config ./tests/apis/jest.config.cjs --runInBand",
+    "test:apis:watch": "jest --config ./tests/apis/jest.config.cjs --watch"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.107",
@@ -83,6 +85,8 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "jest": "^30.3.0",
+    "supertest": "^7.2.2",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
     "vite": "^6.3.5",

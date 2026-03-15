@@ -4,13 +4,11 @@ export { TEAM_JOBS_QUERY_KEYS } from '../utilities/query-keys';
 interface TeamJobsStore {
     isConnected: boolean;
     isLoading: boolean;
-    expiredSessions: Set<string>;
     currentTeamId: string | null;
     pendingRasterKeys: Set<string>;
     inFlightRasterTrajectoryIds: Set<string>;
     setConnected: (isConnected: boolean) => void;
     setLoading: (isLoading: boolean) => void;
-    setExpiredSessions: (expiredSessions: Set<string>) => void;
     setCurrentTeamId: (currentTeamId: string | null) => void;
     setPendingRasterKeys: (pendingRasterKeys: Set<string>) => void;
     setInFlightRasterTrajectoryIds: (trajectoryIds: Set<string>) => void;
@@ -20,7 +18,6 @@ interface TeamJobsStore {
 interface TeamJobsState {
     isConnected: boolean;
     isLoading: boolean;
-    expiredSessions: Set<string>;
     currentTeamId: string | null;
     pendingRasterKeys: Set<string>;
     inFlightRasterTrajectoryIds: Set<string>;
@@ -29,7 +26,6 @@ interface TeamJobsState {
 const createInitialState = (): TeamJobsState => ({
     isConnected: false,
     isLoading: false,
-    expiredSessions: new Set<string>(),
     currentTeamId: null,
     pendingRasterKeys: new Set<string>(),
     inFlightRasterTrajectoryIds: new Set<string>()
@@ -39,7 +35,6 @@ const useTeamJobsStore = create<TeamJobsStore>((set) => ({
     ...createInitialState(),
     setConnected: (isConnected) => set({ isConnected }),
     setLoading: (isLoading) => set({ isLoading }),
-    setExpiredSessions: (expiredSessions) => set({ expiredSessions }),
     setCurrentTeamId: (currentTeamId) => set({ currentTeamId }),
     setPendingRasterKeys: (pendingRasterKeys) => set({ pendingRasterKeys }),
     setInFlightRasterTrajectoryIds: (inFlightRasterTrajectoryIds) => set({ inFlightRasterTrajectoryIds }),

@@ -8,9 +8,11 @@ export default createHttpModule({
     resource: Resource.TEAM_MEMBER,
     routes: (router) => {
         router.get('/', controllers.listByTeamId.handle);
+
         router.route('/:teamMemberId')
             .get(controllers.getById.handle)
-            .patch(teamMemberValidation.update, controllers.updateById.handle)
-            .delete(controllers.deleteById.handle);
+            .patch(teamMemberValidation.update, controllers.updateById.handle);
+
+        router.delete('/:memberId', teamMemberValidation.deleteById, controllers.deleteById.handle);
     }
 });

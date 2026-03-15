@@ -36,7 +36,6 @@ export class ListPluginsAITool extends AITool {
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
         const result = await this.useCase.execute({
             teamId: scope.teamId,
-            userId: scope.userId,
             page: 1,
             limit: 500
         });

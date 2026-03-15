@@ -24,7 +24,6 @@ export default function SimulationCard({ trajectory, isSelected, onSelect, onDel
 
     const { previewBlobUrl, isLoading: previewLoading, error: previewError, retry: retryPreview } = useTrajectoryPreview({
         trajectoryId: trajectory._id,
-        version: trajectory.updatedAt,
         enabled: trajectory.status !== 'failed'
     });
 

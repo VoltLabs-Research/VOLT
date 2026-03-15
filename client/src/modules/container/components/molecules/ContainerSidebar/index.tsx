@@ -4,7 +4,6 @@ import {
     Activity,
     ArrowLeft,
     Box,
-    ExternalLink,
     Folder,
     Layers,
     Monitor,
@@ -176,17 +175,6 @@ const ContainerSidebar = ({
 
             <Container className='container-details-actions d-flex column gap-075 p-1-5'>
                 {actionButtons}
-
-                {container.ports?.[0] && (
-                    <a
-                        href={`http://localhost:${container.ports[0].public}`}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                        className='d-flex items-center content-center gap-05 container-details-visit-btn radius-sm font-size-2 font-weight-6'
-                    >
-                        Visit App <ExternalLink size={14} />
-                    </a>
-                )}
             </Container>
         </Container>
     );

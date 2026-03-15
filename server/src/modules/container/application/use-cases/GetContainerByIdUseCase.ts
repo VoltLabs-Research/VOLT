@@ -20,11 +20,6 @@ export class GetContainerByIdUseCase implements IUseCase<GetContainerByIdInputDT
             if (runtimeContainer.State?.Status) {
                 container.status = runtimeContainer.State.Status;
             }
-
-            const runtimeIp = runtimeContainer.NetworkSettings?.IPAddress;
-            if (runtimeIp) {
-                container.internalIp = runtimeIp;
-            }
         }
 
         return Result.ok({ container });

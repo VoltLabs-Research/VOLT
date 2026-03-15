@@ -5,5 +5,9 @@ import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 
 export default createController(CreateWhiteboardFolderUseCase, {
     validationSchema: whiteboardValidation.createFolder,
+    extendParams: (req, params) => ({
+        ...params,
+        userId: req.userId
+    }),
     statusCode: HttpStatus.Created
 });

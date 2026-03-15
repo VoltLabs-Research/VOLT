@@ -5,7 +5,7 @@ export interface AnalysisCreatedEventPayload {
     analysisId: string;
     trajectoryId: string;
     pluginId: string;
-    pluginDisplayName?: string;
+    pluginDisplayName: string;
     teamId: string;
     config: AnalysisConfig;
     status: string;

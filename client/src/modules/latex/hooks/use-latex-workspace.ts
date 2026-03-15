@@ -104,8 +104,6 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const lastTexWorkspaceFingerprintRef = useRef<string | null>(null);
     const compileRequestIdRef = useRef(0);
     const hasBootstrappedSelectionRef = useRef(false);
-    const isBatchUploadingRef = useRef(false);
-    const pendingCompileAfterBatchRef = useRef(false);
 
     /** Stable set of known file IDs — used by handleRemoteContentUpdate without causing re-subscriptions. */
     const latexFileIdsRef = useRef<Set<string>>(new Set());
@@ -186,7 +184,6 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         handleCreateFile,
         handleDeleteFile,
         handleSetEntrypoint,
-        handleMoveFile,
         handleRenameFile,
         deleteFile,
         updateFile
@@ -398,7 +395,6 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         folderInputRef,
         handleUploadEntries,
         handleDeleteAsset,
-        handleMoveAsset,
         handleRenameAsset,
         handleCreateFolder,
         deleteAsset,
@@ -616,11 +612,6 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
         lastTexWorkspaceFingerprintRef.current = texWorkspaceFingerprint;
 
-        if (isBatchUploadingRef.current) {
-            pendingCompileAfterBatchRef.current = true;
-            return;
-        }
-
         compileSilently();
     }, [compileSilently, isLoading, isLoadingFiles, latexDocument, texWorkspaceFingerprint]);
 
@@ -694,35 +685,23 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         const textEntries = entries.filter((entry) => isWorkspaceTextLikeFile(entry.path, entry.file.type));
         const binaryEntries = entries.filter((entry) => !isWorkspaceTextLikeFile(entry.path, entry.file.type));
 
-        isBatchUploadingRef.current = true;
-        pendingCompileAfterBatchRef.current = false;
+        for (const entry of textEntries) {
+            const { path, name } = (() => {
+                const normalized = entry.path.replace(/\\/g, '/').replace(/^\/+/, '');
+                const index = normalized.lastIndexOf('/');
+                return {
+                    path: index >= 0 ? normalized.slice(0, index + 1) : '',
+                    name: index >= 0 ? normalized.slice(index + 1) : normalized
+                };
+            })();
 
-        try {
-            for (const entry of textEntries) {
-                const { path, name } = (() => {
-                    const normalized = entry.path.replace(/\\/g, '/').replace(/^\/+/, '');
-                    const index = normalized.lastIndexOf('/');
-                    return {
-                        path: index >= 0 ? normalized.slice(0, index + 1) : '',
-                        name: index >= 0 ? normalized.slice(index + 1) : normalized
-                    };
-                })();
-
-                await handleCreateFile(name, path || undefined, await entry.file.text());
-            }
-
-            if (binaryEntries.length > 0) {
-                await handleUploadEntries(binaryEntries);
-            }
-        } finally {
-            isBatchUploadingRef.current = false;
-
-            if (pendingCompileAfterBatchRef.current) {
-                pendingCompileAfterBatchRef.current = false;
-                compileSilently();
-            }
+            await handleCreateFile(name, path || undefined, await entry.file.text());
         }
-    }, [compileSilently, handleCreateFile, handleUploadEntries]);
+
+        if (binaryEntries.length > 0) {
+            await handleUploadEntries(binaryEntries);
+        }
+    }, [handleCreateFile, handleUploadEntries]);
 
     const handleWorkspaceFilesSelected = useCallback(async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
         const fileList = event.target.files;
@@ -815,8 +794,6 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         updateFile,
         updateAsset,
         handleSetEntrypoint,
-        handleMoveFile,
-        handleMoveAsset,
         handleRenameFile,
         handleRenameAsset,
         handleInsertAssetRef,

@@ -36,9 +36,14 @@ const environmentVariableSchema = z.object({
     value: z.string()
 }).strict();
 
+const publicPortSchema = z.preprocess(
+    (value) => value === 0 ? undefined : value,
+    z.number().int().min(1).max(65535).optional()
+);
+
 const portMappingSchema = z.object({
     private: z.number().int().min(1).max(65535),
-    public: z.number().int().min(0).max(65535).optional()
+    public: publicPortSchema
 }).strict();
 
 const containerCapabilitiesSchema = z.object({

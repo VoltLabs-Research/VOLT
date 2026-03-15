@@ -43,9 +43,7 @@ export default class CreateAIConversationUseCase implements IUseCase<CreateAICon
             isArchived: false,
             lastMessageAt: normalizedMessage
                 ? now
-                : (input.lastMessageAt ? new Date(input.lastMessageAt) : null),
-            lastProvider: input.lastProvider || null,
-            lastModel: input.lastModel || null
+                : null
         };
         const conversation = await this.conversationRepository.create(conversationData);
 

@@ -4,6 +4,7 @@ import JsonTree from '@/modules/plugin/components/plugin/atoms/JsonTree';
 import { useRemoteExplorer } from '@/shared/api/remote-explorer';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FileExplorer from '@/shared/presentation/components/FileExplorer';
@@ -208,7 +209,9 @@ const ClusterRemoteExplorerContent = ({
             return;
         }
 
-        await navigator.clipboard.writeText(selectedEntry.path);
+        await copyTextToClipboard(selectedEntry.path, {
+            successMessage: 'Path copied to clipboard'
+        });
     };
 
     const handleEntryDoubleClick = (entry: TeamClusterRemoteExplorerEntry) => {

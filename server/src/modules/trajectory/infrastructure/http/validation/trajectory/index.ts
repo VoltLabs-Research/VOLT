@@ -22,20 +22,19 @@ const folderParamsSchema = createTeamScopedParamsSchema('folderId');
 
 const trajectoryGlbParamsSchema = trajectoryParamsSchema.extend({
     timestep: z.string().trim().min(1),
-    analysisId: z.union([objectIdSchema, z.literal('default')])
+    analysisId: trajectoryAnalysisIdSchema
 }).strict();
 
 const getAtomsQuerySchema = z.object({
     timestep: z.coerce.number().int().min(0),
     page: paginationPageSchema,
     limit: createPaginationLimitSchema(100000),
-    analysisId: objectIdSchema.optional()
+    analysisId: trajectoryAnalysisIdSchema.optional()
 }).strict();
 
 const sceneArtifactsQuerySchema = z.object({
     analysisId: trajectoryAnalysisIdSchema.optional(),
     sourceType: z.enum(['color-coding', 'particle-filter', 'plugin-exposure']).optional(),
-    type: z.enum(['color-coding', 'particle-filter', 'plugin-exposure']).optional(),
     projection: z.enum(['raw', 'renderable-exposures']).optional(),
     timestep: z.coerce.number().int().min(0).optional(),
     page: paginationPageSchema,

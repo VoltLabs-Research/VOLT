@@ -21,6 +21,13 @@ export default class DeleteSecretKeyByIdUseCase implements IUseCase<DeleteSecret
     ) {}
 
     async execute(input: DeleteSecretKeyByIdInputDTO): Promise<Result<null, ApplicationError>> {
+        if (!input.userId) {
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.SECRET_KEY_PARAMS_REQUIRED,
+                'User ID is required'
+            ));
+        }
+
         const key = await this.secretKeyRepository.findById(input.secretKeyId);
 
         if (!key || key.props.team !== input.teamId) {
@@ -35,7 +42,7 @@ export default class DeleteSecretKeyByIdUseCase implements IUseCase<DeleteSecret
         await this.eventBus.publish(new SecretKeyDeletedEvent({
             secretKeyId: key._id,
             teamId: input.teamId,
-            userId: input.userId ?? '',
+            userId: input.userId,
             secretKeyName: key.props.name ?? ''
         }));
 

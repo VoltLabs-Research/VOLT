@@ -2,6 +2,7 @@ export type AnalysisConfig = Record<string, unknown>;
 
 export interface AnalysisProps {
     plugin: string;
+    pluginDisplayName: string;
     teamCluster?: string;
     config: AnalysisConfig;
     trajectory: string;
