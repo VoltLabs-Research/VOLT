@@ -1,4 +1,6 @@
 import EditableTrajectoryName from '../EditableTrajectoryName';
+import { useTriggerRasterizationMutation } from '@/modules/raster/hooks/queries';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
@@ -11,25 +13,21 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';
+import { Play, ScanSearch } from 'lucide-react';
 import { HiOutlineViewfinderCircle } from 'react-icons/hi2';
 import { PiDotsThreeVerticalBold } from 'react-icons/pi';
 import { RxTrash } from 'react-icons/rx';
 import { useCallback, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { User } from '@/modules/auth/api/entities/user';
 import './SimulationCardFooter.css';
 
 interface SimulationCardFooterProps {
     trajectoryId: string;
     name: string;
-    createdBy: User | null;
-    createdAt: string;
     updatedAt: string;
     isProcessing: boolean;
     processingMessage?: string;
-    atomCount: string;
-    frameCount: string;
-    totalSize: string;
     onDelete?: (_id: string) => void;
 };
 
@@ -37,44 +35,57 @@ interface ToastState {
     title: string;
 };
 
-interface DeleteTrajectoryToastConfig {
+interface PromiseToastConfig {
     loading: ToastState;
     success: ToastState;
     error: ToastState;
 };
 
-const DELETE_TRAJECTORY_TOAST: DeleteTrajectoryToastConfig = {
+interface SimulationCardActionItem {
+    icon: ReactNode;
+    label: string;
+    onClick: () => void;
+    isDanger?: boolean;
+    isLoading?: boolean;
+    disabled?: boolean;
+};
+
+const DELETE_TRAJECTORY_TOAST: PromiseToastConfig = {
     loading: { title: 'Deleting trajectory...' },
     success: { title: 'Trajectory deleted' },
     error: { title: 'Failed to delete trajectory' }
 };
 
+const RASTERIZE_TRAJECTORY_TOAST: PromiseToastConfig = {
+    loading: { title: 'Rasterizing trajectory...' },
+    success: { title: 'Rasterization started' },
+    error: { title: 'Failed to rasterize trajectory' }
+};
+
 export default function SimulationCardFooter({
     trajectoryId,
     name,
-    createdBy,
-    createdAt,
     updatedAt,
     isProcessing,
     processingMessage,
-    atomCount,
-    frameCount,
-    totalSize,
     onDelete
 }: SimulationCardFooterProps) {
     const navigate = useNavigate();
+    const teamId = useSelectedTeamId();
     const deleteTrajectoryMutation = trajectoryQuery.useDeleteMutation();
+    const triggerRasterizationMutation = useTriggerRasterizationMutation();
     const { confirm } = useConfirm();
     const [isDeleting, setIsDeleting] = useState(false);
-    const creatorLabel = createdBy?.firstName
-        ? `By ${createdBy.firstName} ${createdBy.lastName}`.trim()
-        : 'Uploaded by team member';
-    const uploadedLabel = `Uploaded ${formatDistanceToNow(new Date(createdAt), { addSuffix: true })}`;
     const updatedLabel = `Edited ${formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}`;
-    const activityLabel = `${uploadedLabel} · ${updatedLabel}`;
+    const isRasterizing = triggerRasterizationMutation.isPending;
+    const isRasterizeDisabled = !teamId || isRasterizing || isProcessing;
 
     const handleViewScene = useCallback(() => {
         navigate(`/canvas/${trajectoryId}/`);
+    }, [navigate, trajectoryId]);
+
+    const handleViewRaster = useCallback(() => {
+        navigate(`/canvas/${trajectoryId}?workspace=raster`);
     }, [navigate, trajectoryId]);
 
     const handleDelete = useCallback(async () => {
@@ -103,15 +114,39 @@ export default function SimulationCardFooter({
         }
     }, [deleteTrajectoryMutation, confirm, trajectoryId, name, onDelete]);
 
-    const popoverItems = [{
+    const handleRasterizeTrajectory = useCallback(async () => {
+        if (!teamId || isRasterizing || isProcessing) {
+            return;
+        }
+
+        await showPromise(
+            triggerRasterizationMutation.mutateAsync({
+                teamId,
+                trajectoryId
+            }),
+            RASTERIZE_TRAJECTORY_TOAST
+        );
+    }, [isProcessing, isRasterizing, teamId, trajectoryId, triggerRasterizationMutation]);
+
+    const popoverItems: SimulationCardActionItem[] = [{
         onClick: handleViewScene,
         label: 'View scene',
-        Icon: HiOutlineViewfinderCircle
+        icon: <HiOutlineViewfinderCircle />
+    }, {
+        onClick: handleViewRaster,
+        label: 'Open raster workspace',
+        icon: <ScanSearch />
+    }, {
+        onClick: handleRasterizeTrajectory,
+        label: 'Rasterize trajectory',
+        icon: <Play />,
+        isLoading: isRasterizing,
+        disabled: isRasterizeDisabled
     }, {
         onClick: handleDelete,
         label: 'Delete',
-        Icon: RxTrash,
-        variant: 'danger' as const,
+        icon: <RxTrash />,
+        isDanger: true,
         isLoading: isDeleting
     }];
 
@@ -127,26 +162,12 @@ export default function SimulationCardFooter({
 
     return (
         <Container className='simulation-card-footer z-10 p-1-5 d-flex items-center gap-05 p-absolute bottom-0 left-0 right-0'>
-            <Container className='d-flex column gap-05 flex-1'>
+            <Container className='d-flex column gap-025 flex-1'>
                 <EditableTrajectoryName
                     trajectoryId={trajectoryId}
                     name={name}
                     className='simulation-card-title font-size-3 color-primary font-weight-5 text-truncate'
                 />
-                <Container className='simulation-card-metadata d-flex items-center gap-075 flex-wrap'>
-                    <Paragraph className='simulation-card-status-text' title={creatorLabel}>
-                        {creatorLabel}
-                    </Paragraph>
-                    <Paragraph className='simulation-card-status-text' title={`${frameCount} frames`}>
-                        {frameCount} frames
-                    </Paragraph>
-                    <Paragraph className='simulation-card-status-text' title={`${atomCount} atoms`}>
-                        {atomCount} atoms
-                    </Paragraph>
-                    <Paragraph className='simulation-card-status-text' title={totalSize}>
-                        {totalSize}
-                    </Paragraph>
-                </Container>
                 <Container className='simulation-card-status d-flex items-center gap-075 color-secondary font-size-2'>
                     {isProcessing ? (
                         <>
@@ -156,8 +177,8 @@ export default function SimulationCardFooter({
                             </Paragraph>
                         </>
                     ) : (
-                        <Paragraph className='simulation-card-status-text' title={activityLabel}>
-                            {activityLabel}
+                        <Paragraph className='simulation-card-status-text' title={updatedLabel}>
+                            {updatedLabel}
                         </Paragraph>
                     )}
                 </Container>
@@ -168,12 +189,13 @@ export default function SimulationCardFooter({
                 trigger={popoverTrigger}
             >
                 <PopoverMenu>
-                    {popoverItems.map(({ Icon, onClick, label, ...props }, index) => (
+                    {popoverItems.map(({ icon, onClick, label, isDanger, ...props }, index) => (
                         <PopoverMenuItem
-                            icon={<Icon />}
+                            icon={icon}
                             label={label}
                             onClick={onClick}
                             key={index}
+                            variant={isDanger ? 'danger' : undefined}
                             {...props}
                         />
                     ))}

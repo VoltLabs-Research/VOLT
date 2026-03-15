@@ -1,5 +1,4 @@
 import { cn } from '@/shared/utils';
-import { formatNumber, formatSize } from '@/shared/utils/format';
 import { getStageMessage, isProcessingStatus } from '@/modules/trajectory/api/entities/trajectory';
 import useTrajectoryPreview from '@/modules/trajectory/hooks/trajectory/use-trajectory-preview';
 import Container from '@/shared/presentation/components/Container';
@@ -80,7 +79,6 @@ export default function SimulationCard({ trajectory, isSelected, onSelect, onDel
 
     const showPreview = previewBlobUrl && !previewError;
     const showPlaceholder = !showPreview || previewLoading;
-    const atomCount = trajectory.frames[0]?.natoms ?? 0;
 
     return (
         <article
@@ -110,20 +108,14 @@ export default function SimulationCard({ trajectory, isSelected, onSelect, onDel
 
             <SimulationCardHeader
                 user={createdBy}
-                createdAt={trajectory.createdAt}
             />
 
             <SimulationCardFooter
                 trajectoryId={trajectory._id}
                 name={trajectory.name}
-                createdBy={createdBy}
-                createdAt={trajectory.createdAt}
                 updatedAt={trajectory.updatedAt}
                 isProcessing={isProcessing}
                 processingMessage={processingMessage}
-                atomCount={formatNumber(atomCount)}
-                frameCount={formatNumber(trajectory.frames.length)}
-                totalSize={formatSize(trajectory.stats.totalSize)}
                 onDelete={onDelete}
             />
 

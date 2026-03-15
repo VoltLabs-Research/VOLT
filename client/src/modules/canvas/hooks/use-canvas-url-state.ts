@@ -1,6 +1,12 @@
-import { useCallback, useEffect, useMemo } from 'react';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
+import { useCallback, useEffect, useMemo } from 'react';
+
+export enum CanvasWorkspace {
+    Modeling = 'modeling',
+    Raster = 'raster',
+    Scripting = 'scripting'
+};
 
 interface UpdateOptions {
     replace?: boolean;
@@ -8,6 +14,20 @@ interface UpdateOptions {
 
 interface CanvasUrlStateOptions {
     trajectory?: { analysis?: Array<{ _id?: string }> } | null;
+};
+
+const CANVAS_WORKSPACES = new Set<string>(Object.values(CanvasWorkspace));
+
+const resolveCanvasWorkspace = (workspace: string | null): CanvasWorkspace => {
+    if (workspace === CanvasWorkspace.Raster) {
+        return CanvasWorkspace.Raster;
+    }
+
+    if (workspace === CanvasWorkspace.Scripting) {
+        return CanvasWorkspace.Scripting;
+    }
+
+    return CanvasWorkspace.Modeling;
 };
 
 const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
@@ -24,11 +44,15 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
     const pluginParam = searchParams.get('plugin') || undefined;
     const settingsKey = searchParams.get('settings') || undefined;
     const selectedNotebookId = searchParams.get('notebook') || undefined;
+    const rasterModel = searchParams.get('rasterModel') || undefined;
     const showWidgets = searchParams.get('widgets') !== 'false';
     const showGrid = searchParams.get('grid') !== 'false';
     const showGizmo = searchParams.get('gizmo') !== 'false';
     const renderConfigOpen = searchParams.get('renderConfig') === 'true';
-    const activeWorkspace = searchParams.get('workspace') || 'modeling';
+    const requestedWorkspace = searchParams.get('workspace');
+    const activeWorkspace = CANVAS_WORKSPACES.has(requestedWorkspace ?? '')
+        ? resolveCanvasWorkspace(requestedWorkspace)
+        : CanvasWorkspace.Modeling;
 
     const setAnalysisId = useCallback((id?: string, options?: UpdateOptions) => {
         updateSearchParams({ analysis: id ?? null }, options);
@@ -54,12 +78,16 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
         updateSearchParams({ notebook: value ?? null }, options);
     }, [updateSearchParams]);
 
+    const setRasterModel = useCallback((value?: string | null, options?: UpdateOptions) => {
+        updateSearchParams({ rasterModel: value ?? null }, options);
+    }, [updateSearchParams]);
+
     const setRenderConfigOpen = useCallback((open: boolean, options?: UpdateOptions) => {
         updateSearchParams({ renderConfig: open ? 'true' : null }, options);
     }, [updateSearchParams]);
 
-    const setActiveWorkspace = useCallback((id: string, options?: UpdateOptions) => {
-        updateSearchParams({ workspace: id === 'modeling' ? null : id }, options);
+    const setActiveWorkspace = useCallback((id: CanvasWorkspace, options?: UpdateOptions) => {
+        updateSearchParams({ workspace: id === CanvasWorkspace.Modeling ? null : id }, options);
     }, [updateSearchParams]);
 
     const setModifiers = useCallback((ids: string[], options?: UpdateOptions) => {
@@ -99,6 +127,7 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
         pluginSelection,
         settingsKey,
         selectedNotebookId,
+        rasterModel,
         showWidgets,
         showGrid,
         showGizmo,
@@ -113,6 +142,7 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
         setPluginParam,
         setSettingsKey,
         setSelectedNotebookId,
+        setRasterModel,
         setRenderConfigOpen,
         setActiveWorkspace,
         setModifiers

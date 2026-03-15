@@ -1,3 +1,3 @@
 export interface ContainerCapabilities {
-    xrdp?: boolean;
+    vnc?: boolean;
 };

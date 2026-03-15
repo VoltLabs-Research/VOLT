@@ -18,14 +18,7 @@ export class GetRasterMetadataUseCase implements IUseCase<GetRasterMetadataInput
 
     async execute(input: GetRasterMetadataInputDTO): Promise<Result<GetRasterMetadataOutputDTO, ApplicationError>> {
         try {
-            const metadata = await this.rasterMetadataReader.getRasterMetadata(input.trajectoryId);
-
-            if (!metadata) {
-                return Result.fail(ApplicationError.notFound(
-                    ErrorCodes.RASTER_NOT_FOUND,
-                    'Raster metadata not found'
-                ));
-            }
+            const metadata = await this.rasterMetadataReader.getRasterMetadata(input.trajectoryId, input.teamId);
 
             return Result.ok({ metadata });
         } catch (error) {

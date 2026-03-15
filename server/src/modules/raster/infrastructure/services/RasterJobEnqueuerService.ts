@@ -1,64 +1,62 @@
-import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import type { IRasterJobEnqueuer } from '@modules/raster/domain/port/IRasterJobEnqueuer';
-import type { IRasterStorage } from '@modules/raster/domain/port/IRasterStorage';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+
+interface SerializableConfig {
+    [key: string]: unknown;
+};
+
+const isSerializableConfig = (value: unknown): value is SerializableConfig => {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
 
 @injectable()
 export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
     constructor(
-        @inject(RASTER_TOKENS.RasterStorage)
-        private readonly rasterStorage: IRasterStorage,
-
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
+        private readonly trajectoryRepository: ITrajectoryRepository,
 
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
-    async triggerRasterization(trajectoryId: string, teamId: string, _config?: unknown): Promise<boolean> {
-        const teamCluster = await this.resolveTeamCluster(teamId);
-        if (!teamCluster) {
+    async triggerRasterization(trajectoryId: string, teamId: string, config?: unknown): Promise<boolean> {
+        const trajectory = await this.trajectoryRepository.findById(trajectoryId);
+
+        if (!trajectory || trajectory.props.team !== teamId) {
+            throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found');
+        }
+
+        if (!trajectory.props.teamCluster) {
             throw new ApplicationError(
                 ErrorCodes.RASTER_FAILED,
-                'Rasterization requires a connected team cluster',
+                'Rasterization requires a team cluster associated with the trajectory',
                 409
             );
         }
 
-        const glbFiles: string[] = [];
+        const payload: SerializableConfig = {
+            trajectoryId
+        };
+
+        if (isSerializableConfig(config)) {
+            payload.config = config;
+        }
 
         try {
-            for await (const file of this.rasterStorage.listModelFiles(trajectoryId)) {
-                if (file.endsWith('.glb')) {
-                    glbFiles.push(file);
-                }
-            }
-        } catch (error) {
-            logger.warn(error, `Failed to list GLB files for trajectory ${trajectoryId}`);
-            throw new ApplicationError(
-                ErrorCodes.RASTER_FAILED,
-                'Failed to list GLB files for rasterization',
-                500
+            const response = await this.teamClusterDaemonClient.command<{ triggered: boolean }>(
+                trajectory.props.teamCluster,
+                'trajectory.rasterize',
+                payload
             );
-        }
 
-        if (glbFiles.length === 0) {
-            return false;
-        }
-
-        try {
-            await this.teamClusterDaemonClient.command<{ triggered: boolean }>(teamCluster, 'trajectory.rasterize', {
-                trajectoryId
-            });
-            return true;
+            return response.triggered;
         } catch (error) {
             logger.warn(error, `Failed to queue rasterization jobs for trajectory ${trajectoryId}`);
             throw new ApplicationError(
@@ -67,13 +65,5 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
                 500
             );
         }
-    }
-
-    private async resolveTeamCluster(teamId: string): Promise<string | null> {
-        const teamCluster = await this.teamClusterRepository.findOne({
-            team: teamId
-        } as Record<string, unknown>);
-
-        return teamCluster ? teamCluster.id : null;
     }
 };

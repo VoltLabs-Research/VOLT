@@ -9,5 +9,12 @@ export interface RasterFrameResult {
 };
 
 export interface IRasterFrameReader {
-    getRasterFramePNG(trajectoryId: string, timestep: number): Promise<RasterFrameResult>;
+    getRasterFramePNG(trajectoryId: string, teamId: string, timestep: number): Promise<RasterFrameResult>;
+    getAnalysisRasterFramePNG(
+        trajectoryId: string,
+        teamId: string,
+        analysisId: string,
+        timestep: number,
+        model: string
+    ): Promise<RasterFrameResult>;
 };

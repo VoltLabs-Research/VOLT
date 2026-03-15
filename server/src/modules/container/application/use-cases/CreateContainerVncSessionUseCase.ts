@@ -1,20 +1,19 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { CreateContainerXrdpSessionInputDTO, CreateContainerXrdpSessionOutputDTO } from '@modules/container/application/dtos/CreateContainerXrdpSessionDTO';
+import { CreateContainerVncSessionInputDTO, CreateContainerVncSessionOutputDTO } from '@modules/container/application/dtos/CreateContainerVncSessionDTO';
 import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
-import { ContainerXrdpGatewayService } from '@modules/container/infrastructure/services/ContainerXrdpGatewayService';
+import { ContainerVncGatewayService } from '@modules/container/infrastructure/services/ContainerVncGatewayService';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterExposureRegistryService from '@modules/team-cluster/infrastructure/services/TeamClusterExposureRegistryService';
-import type TeamClusterTcpExposureRelayService from '@modules/team-cluster/infrastructure/services/TeamClusterTcpExposureRelayService';
 import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus } from '@modules/team-cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
-const XRDP_PRIVATE_PORT = 3389;
+const VNC_PRIVATE_PORT = 5901;
 
 @injectable()
-export class CreateContainerXrdpSessionUseCase implements IUseCase<CreateContainerXrdpSessionInputDTO, CreateContainerXrdpSessionOutputDTO> {
+export class CreateContainerVncSessionUseCase implements IUseCase<CreateContainerVncSessionInputDTO, CreateContainerVncSessionOutputDTO> {
     constructor(
         @inject(ContainerOwnershipService)
         private readonly ownershipService: ContainerOwnershipService,
@@ -22,20 +21,17 @@ export class CreateContainerXrdpSessionUseCase implements IUseCase<CreateContain
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterExposureRegistryService)
         private readonly exposureRegistryService: TeamClusterExposureRegistryService,
 
-        @inject(ContainerXrdpGatewayService)
-        private readonly xrdpGatewayService: ContainerXrdpGatewayService,
-
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterTcpExposureRelayService)
-        private readonly tcpExposureRelayService: TeamClusterTcpExposureRelayService
+        @inject(ContainerVncGatewayService)
+        private readonly vncGatewayService: ContainerVncGatewayService
     ) {}
 
-    async execute(input: CreateContainerXrdpSessionInputDTO): Promise<Result<CreateContainerXrdpSessionOutputDTO>> {
+    async execute(input: CreateContainerVncSessionInputDTO): Promise<Result<CreateContainerVncSessionOutputDTO>> {
         const container = await this.ownershipService.getOwnedByTeam(input.containerId, input.teamId);
 
-        if (!container.capabilities?.xrdp) {
+        if (!container.capabilities?.vnc) {
             throw ApplicationError.badRequest(
                 ErrorCodes.VALIDATION_INVALID_INPUT,
-                'This container does not support XRDP sessions'
+                'This container does not support VNC sessions'
             );
         }
 
@@ -45,7 +41,7 @@ export class CreateContainerXrdpSessionUseCase implements IUseCase<CreateContain
 
         const exposure = this.exposureRegistryService.findTeamClusterExposure(container.teamCluster, (currentExposure) => {
             return currentExposure.containerId === container.containerId
-                && currentExposure.containerPort === XRDP_PRIVATE_PORT
+                && currentExposure.containerPort === VNC_PRIVATE_PORT
                 && currentExposure.status === TeamClusterServiceExposureStatus.Active
                 && currentExposure.accessModes.includes(TeamClusterServiceExposureAccessMode.Tcp);
         });
@@ -53,36 +49,18 @@ export class CreateContainerXrdpSessionUseCase implements IUseCase<CreateContain
         if (!exposure) {
             throw ApplicationError.notFound(
                 ErrorCodes.RESOURCE_NOT_FOUND,
-                'XRDP exposure is not available for this container'
+                'VNC exposure is not available for this container'
             );
         }
 
-        const relayPort = await this.tcpExposureRelayService.ensurePublicPort(exposure.id);
-        if (!relayPort) {
-            throw ApplicationError.notFound(
-                ErrorCodes.RESOURCE_NOT_FOUND,
-                'XRDP exposure is no longer available for this container'
-            );
-        }
-
-        try {
-            await this.xrdpGatewayService.ensureGatewayAvailable();
-        } catch {
-            throw new ApplicationError(
-                'temporary-unavailable',
-                'XRDP gateway is temporarily unavailable',
-                503
-            );
-        }
-
-        const session = this.xrdpGatewayService.createSession({
+        const session = this.vncGatewayService.createSession({
             teamId: input.teamId,
             containerId: input.containerId,
             userId: input.userId,
-            host: this.tcpExposureRelayService.getRelayAdvertisedHost(),
-            port: relayPort,
-            username: input.username,
+            teamClusterId: container.teamCluster,
+            exposureId: exposure.id,
             password: input.password,
+            parentOrigin: input.parentOrigin,
             width: input.width,
             height: input.height,
             dpi: input.dpi

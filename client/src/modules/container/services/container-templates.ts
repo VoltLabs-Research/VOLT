@@ -2,16 +2,16 @@ import type { ContainerTemplate } from '../api/entities/container-template';
 
 export const CONTAINER_TEMPLATES: ContainerTemplate[] = [
     {
-        id: 'ubuntu-xrdp',
+        id: 'ubuntu-vnc',
         name: 'Ubuntu Remote Desktop',
         image: 'ghcr.io/voltlabs-research/volt-ubuntu-remote-desktop:main',
         logo: 'https://assets.ubuntu.com/v1/29985a98-ubuntu-logo32.png',
-        description: 'Ubuntu XFCE desktop with XRDP on port 3389. Default image credentials are ubuntu / ubuntu.',
+        description: 'Ubuntu XFCE desktop with VNC on port 5901. Default desktop password is ubuntu.',
         category: 'runtime',
-        defaultPort: 3389,
+        defaultPort: 5901,
         useImageCmd: true,
         capabilities: {
-            xrdp: true
+            vnc: true
         }
     },
     {

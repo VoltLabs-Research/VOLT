@@ -1,26 +1,17 @@
 import Avatar from '@/shared/presentation/components/Avatar';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { formatDistanceToNow } from 'date-fns';
 import type { User } from '@/modules/auth/api/entities/user';
 import './SimulationCardHeader.css';
 
 interface SimulationCardHeaderProps {
     user?: User | null;
-    createdAt: string;
 };
 
-export default function SimulationCardHeader({ user, createdAt }: SimulationCardHeaderProps) {
-    const uploadedAtLabel = `Uploaded ${formatDistanceToNow(new Date(createdAt), { addSuffix: true })}`;
+export default function SimulationCardHeader({ user }: SimulationCardHeaderProps) {
     const userFullName = user?.firstName ? `${user.firstName} ${user.lastName}`.trim() : '';
 
     if (!user?.firstName) {
-        return (
-            <div className='simulation-card-header d-flex column gap-075 p-absolute top-0 left-0 right-0 z-5'>
-                <Paragraph className='font-size-1 simulation-card-upload-meta' title={uploadedAtLabel}>
-                    {uploadedAtLabel}
-                </Paragraph>
-            </div>
-        );
+        return null;
     }
 
     return (
@@ -36,9 +27,6 @@ export default function SimulationCardHeader({ user, createdAt }: SimulationCard
                     </Paragraph>
                 </div>
             </div>
-            <Paragraph className='font-size-1 simulation-card-upload-meta' title={uploadedAtLabel}>
-                {uploadedAtLabel}
-            </Paragraph>
         </div>
     );
 }

@@ -61,7 +61,7 @@ const portMappingField = {
 };
 
 const containerCapabilitiesField = {
-    xrdp: {
+    vnc: {
         type: Boolean,
         required: false
     }

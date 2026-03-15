@@ -1,36 +1,42 @@
 .simulation-card-footer {
     padding: 1rem;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--glass-bg) 12%, transparent) 0%, color-mix(in srgb, var(--glass-bg) 90%, transparent) 32%, color-mix(in srgb, var(--glass-bg) 96%, transparent) 100%);
-    border-top: 1px solid color-mix(in srgb, var(--glass-border) 90%, transparent);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.simulation-card-footer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    top: -3rem;
+    z-index: -1;
+    pointer-events: none;
+    border-radius: inherit;
+    background: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--color-overlay) 100%, transparent) 0%,
+        color-mix(in srgb, var(--color-overlay) 72%, transparent) 40%,
+        transparent 100%
+    );
 }
 
 .footer-options-btn {
-    min-width: 2.75rem;
-    min-height: 2.75rem;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
     font-size: 1.25rem;
     flex-shrink: 0;
     align-self: flex-start;
-    background: color-mix(in srgb, var(--glass-bg) 96%, transparent);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-glass);
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: var(--color-text-secondary);
 }
 
 .footer-options-btn:hover {
-    border-color: var(--color-border-strong);
-}
-
-.simulation-card-metadata {
-    row-gap: 0.25rem;
+    color: var(--color-text-primary);
+    background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
 }
 
 .simulation-card-title {
     line-height: 1.2;
-}
-
-.simulation-card-metadata .simulation-card-status-text {
-    color: var(--color-text-secondary);
 }
 
 .simulation-card-status-loader {

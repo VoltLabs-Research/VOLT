@@ -19,5 +19,6 @@ export default createHttpModule({
         router.post('/:trajectoryId/jobs', RATE_LIMIT_POLICIES.rasterTrigger, triggerController.handle);
         router.get('/:trajectoryId/metadata', metadataController.handle);
         router.get('/:trajectoryId/frames/:timestep', frameController.handle);
+        router.get('/:trajectoryId/frames/:timestep/:analysisId/:model', frameController.handle);
     }
 });

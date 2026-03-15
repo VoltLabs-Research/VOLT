@@ -2,6 +2,9 @@ import { createPaginationQuerySchema } from '@shared/infrastructure/http/validat
 import { z } from 'zod/v4';
 
 const identifierSchema = z.string().min(1);
+const httpOriginSchema = z.string().url().refine((value) => /^https?:\/\//.test(value), {
+    message: 'Expected an HTTP(S) origin'
+});
 
 const paginationQuerySchema = createPaginationQuerySchema({
     maxLimit: 100,
@@ -39,7 +42,7 @@ const portMappingSchema = z.object({
 }).strict();
 
 const containerCapabilitiesSchema = z.object({
-    xrdp: z.boolean().optional()
+    vnc: z.boolean().optional()
 }).strict();
 
 const createContainerSchema = z.object({
@@ -76,12 +79,17 @@ const moveContainerSchema = z.object({
     folderId: identifierSchema.nullable()
 }).strict();
 
-const createContainerXrdpSessionSchema = z.object({
-    username: z.string().min(1),
+const createContainerVncSessionSchema = z.object({
     password: z.string().min(1),
+    parentOrigin: httpOriginSchema,
     width: z.number().int().positive().max(8192).optional(),
     height: z.number().int().positive().max(4320).optional(),
     dpi: z.number().int().positive().max(300).optional()
+}).strict();
+
+const getContainerVncConnectPageQuerySchema = z.object({
+    token: z.string().min(1),
+    parentOrigin: httpOriginSchema
 }).strict();
 
 export const containerValidation = {
@@ -89,9 +97,13 @@ export const containerValidation = {
         params: byTeamParamsSchema,
         body: createContainerSchema
     },
-    createXrdpSession: {
+    createVncSession: {
         params: byContainerParamsSchema,
-        body: createContainerXrdpSessionSchema
+        body: createContainerVncSessionSchema
+    },
+    getVncConnectPage: {
+        params: byContainerParamsSchema,
+        query: getContainerVncConnectPageQuerySchema
     },
     update: {
         params: byContainerParamsSchema,
