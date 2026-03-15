@@ -302,6 +302,10 @@
     box-shadow: inset 0 0 0 1px var(--color-border), inset 0 0 0 3px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }
 
+.latex-workspace__tree-row .volt-icon-button {
+    padding: 0;
+}
+
 .latex-workspace__file-name {
     font-size: 0.8125rem;
     overflow: hidden;
@@ -541,7 +545,7 @@
     background: color-mix(in srgb, var(--color-surface-2) 55%, transparent);
 }
 
-.latex-tree__root-drop-shell.is-over .latex-tree__root-drop-affordance {
+.latex-tree__root-drop-affordance.is-over {
     border-color: var(--accent-blue);
     color: var(--color-text-primary);
     background: color-mix(in srgb, var(--accent-blue) 10%, transparent);

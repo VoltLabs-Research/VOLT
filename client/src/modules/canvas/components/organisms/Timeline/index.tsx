@@ -365,7 +365,6 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
                     <PluginAtomsTable
                         trajectoryId={trajectory._id}
                         analysisId={analysisId}
-                        timestep={currentTimestep}
                     />
                 </Container>
             )}

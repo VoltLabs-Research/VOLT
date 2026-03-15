@@ -4,6 +4,7 @@ import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/c
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import { buildClusterInstallCommand } from '@/modules/cluster/utilities/build-cluster-install-command';
+import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
@@ -86,7 +87,7 @@ const ClusterOnboardingPage = () => {
     const locationState = isClusterOnboardingLocationState(location.state) ? location.state : null;
     const nextDestination = locationState?.next ?? '/dashboard';
     const { clusters, createCluster, deleteCluster } = useClusterManagement();
-    const hasConnectedCluster = clusters.some((cluster) => cluster.status === TeamClusterStatus.Connected);
+    const hasConnectedCluster = hasUsableTeamCluster(clusters);
     const [isSigningOut, setIsSigningOut] = useState(false);
     const [step, setStep] = useState<OnboardingStep>(OnboardingStep.Type);
     const [clusterType, setClusterType] = useState<ClusterType | null>(null);
@@ -98,10 +99,14 @@ const ClusterOnboardingPage = () => {
     const [deleteTarget, setDeleteTarget] = useState<TeamCluster | null>(null);
     const [connectedClusterName, setConnectedClusterName] = useState<string | null>(null);
     const hasRedirected = useRef(false);
+    const hadConnectedCluster = useRef(hasConnectedCluster);
 
     const liveCluster = createdCluster
         ? clusters.find((cluster) => cluster._id === createdCluster._id) ?? createdCluster
         : null;
+    const isCreatedClusterConnected = clusters.some((cluster) => {
+        return cluster._id === createdCluster?._id && cluster.status === TeamClusterStatus.Connected;
+    });
 
     useEffect(() => {
         if (!liveCluster || liveCluster.status !== TeamClusterStatus.Connected) {
@@ -125,6 +130,23 @@ const ClusterOnboardingPage = () => {
 
         return () => clearTimeout(timer);
     }, [navigate, nextDestination, step]);
+
+    useEffect(() => {
+        const alreadyHadConnectedCluster = hadConnectedCluster.current;
+        hadConnectedCluster.current = hasConnectedCluster;
+
+        if (
+            alreadyHadConnectedCluster
+            || !hasConnectedCluster
+            || isCreatedClusterConnected
+            || hasRedirected.current
+        ) {
+            return;
+        }
+
+        hasRedirected.current = true;
+        navigate(nextDestination);
+    }, [hasConnectedCluster, isCreatedClusterConnected, navigate, nextDestination]);
 
     useEffect(() => {
         if (createdCluster && !clusters.find((cluster) => cluster._id === createdCluster._id)) {

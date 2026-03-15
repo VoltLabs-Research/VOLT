@@ -4,7 +4,6 @@ export interface ExecutePluginInputDTO {
     teamClusterId: string;
     config: Record<string, unknown>;
     selectedFrameOnly?: boolean;
-    selectedTimesteps?: number[];
     timestep?: number;
 };
 

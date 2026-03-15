@@ -244,6 +244,10 @@
     min-height: 0;
 }
 
+.min-w-0 {
+    min-width: 0;
+}
+
 .content-center,
 .flex-center {
     justify-content: center;

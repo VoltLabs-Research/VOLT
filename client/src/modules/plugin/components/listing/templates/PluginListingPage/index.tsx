@@ -81,9 +81,6 @@ const PluginListingPage = () => {
                     placeholder='All Trajectories'
                     isLoading={isLoading}
                     onScrollEnd={loadMore}
-                    aria-label='Filter listing by trajectory'
-                    title='Filter listing by trajectory'
-                    className='plugin-listing-trajectory-select'
                 />
             }
         />
