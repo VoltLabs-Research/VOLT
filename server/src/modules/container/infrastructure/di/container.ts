@@ -34,8 +34,9 @@ import { DockerVolumeRepository } from '@modules/container/infrastructure/persis
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import {
     ContainerAccessiblePortResolver,
+    ContainerDeploymentProgressService,
     ContainerOwnershipService,
-    ContainerPortProxyService,
+    ContainerPortProxyRelayService,
     ContainerVncGatewayService,
     DaemonContainerRuntimeService,
     DockerContainerService,
@@ -70,9 +71,10 @@ export const registerContainerDependencies = (): void => {
     container.register(CONTAINER_TOKENS.ContainerRuntimeService, { useClass: DaemonContainerRuntimeService });
     container.register(CONTAINER_TOKENS.TerminalService, { useClass: TerminalService });
     container.register(CONTAINER_TOKENS.ContainerAccessiblePortResolver, { useClass: ContainerAccessiblePortResolver });
+    container.registerSingleton(ContainerDeploymentProgressService, ContainerDeploymentProgressService);
     container.register(ContainerOwnershipService, { useClass: ContainerOwnershipService });
     container.registerSingleton(ContainerVncGatewayService, ContainerVncGatewayService);
-    container.registerSingleton(ContainerPortProxyService, ContainerPortProxyService);
+    container.registerSingleton(ContainerPortProxyRelayService, ContainerPortProxyRelayService);
     container.registerSingleton(ContainerPortProxyAccessTokenService, ContainerPortProxyAccessTokenService);
     container.register(TeamClusterSelectionService, { useClass: TeamClusterSelectionService });
 

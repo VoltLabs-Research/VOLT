@@ -2,43 +2,34 @@ import jwt from 'jsonwebtoken';
 import type { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
 
 interface ContainerPortProxyAccessTokenContext {
-    teamId: string;
-    containerId: string;
-    privatePort: number;
+    sessionId: string;
+    relayPort: number;
     userId: string;
 };
 
-interface BuildContainerPortProxyUrlInput extends ContainerPortProxyAccessTokenContext {
+interface BuildContainerPortProxyRelayUrlInput extends ContainerPortProxyAccessTokenContext {
+    advertisedHost: string;
+    protocol: 'http' | 'https';
     createAccessToken: (input: ContainerPortProxyAccessTokenContext) => string;
-    targetPath?: string;
-};
-
-interface ContainerPortProxyPathMatch {
-    teamId: string;
-    containerId: string;
-    privatePort: number;
 };
 
 interface ContainerPortProxyAccessTokenClaims extends JwtPayload {
     type: 'container-port-proxy';
-    teamId: string;
-    containerId: string;
-    privatePort: number;
+    sessionId: string;
+    relayPort: number;
     userId: string;
 };
 
 export interface VerifiedContainerPortProxyAccessToken {
-    teamId: string;
-    containerId: string;
-    privatePort: number;
+    sessionId: string;
+    relayPort: number;
     userId: string;
 };
 
-export const CONTAINER_PORT_PROXY_BASE_PATH = '/api/container-port-proxy';
 export const CONTAINER_PORT_PROXY_ACCESS_TOKEN_QUERY_PARAM = 'access_token';
 export const CONTAINER_PORT_PROXY_ACCESS_TOKEN_COOKIE_NAME = 'voltContainerPortProxyAccessToken';
 
-const PROXY_URL_ORIGIN = 'http://volt.local';
+const RELAY_URL_ORIGIN = 'http://volt.local';
 
 const getSecretKey = (): Secret => {
     const key = process.env.SECRET_KEY;
@@ -56,68 +47,45 @@ const isClaimsPayload = (value: unknown): value is ContainerPortProxyAccessToken
 
     const payload = value as Record<string, unknown>;
     return payload.type === 'container-port-proxy'
-        && typeof payload.teamId === 'string'
-        && typeof payload.containerId === 'string'
-        && typeof payload.privatePort === 'number'
+        && typeof payload.sessionId === 'string'
+        && typeof payload.relayPort === 'number'
         && typeof payload.userId === 'string';
 };
 
-export const resolveServerBaseUrl = (): string => {
-    const configuredServerUrl = process.env.SERVER_ENDPOINT?.trim();
-    if (configuredServerUrl) {
-        return configuredServerUrl.replace(/\/+$/g, '');
+export const resolveContainerPortProxyRelayProtocol = (): 'http' | 'https' => {
+    const configuredProtocol = process.env.TEAM_CLUSTER_APP_PROXY_PROTOCOL?.trim();
+    if (configuredProtocol === 'http' || configuredProtocol === 'https') {
+        return configuredProtocol;
     }
 
-    const protocol = process.env.SERVER_SCHEMA?.trim() || 'http';
-    const host = process.env.SERVER_HOSTNAME?.trim() || 'localhost';
-    return `${protocol}://${host}`;
+    const configuredServerEndpoint = process.env.SERVER_ENDPOINT?.trim();
+    if (configuredServerEndpoint) {
+        try {
+            const protocol = new URL(configuredServerEndpoint).protocol.replace(':', '');
+            if (protocol === 'http' || protocol === 'https') {
+                return protocol;
+            }
+        } catch {
+        }
+    }
+
+    const schema = process.env.SERVER_SCHEMA?.trim();
+    return schema === 'https' ? 'https' : 'http';
 };
 
-export const buildContainerPortProxyBasePath = (
-    teamId: string,
-    containerId: string,
-    privatePort: number
-): string => {
-    return `${CONTAINER_PORT_PROXY_BASE_PATH}/${encodeURIComponent(teamId)}/${encodeURIComponent(containerId)}/${privatePort}`;
-};
-
-export const buildContainerPortProxyUrl = (input: BuildContainerPortProxyUrlInput): string => {
+export const buildContainerPortProxyRelayUrl = (input: BuildContainerPortProxyRelayUrlInput): string => {
     const accessToken = input.createAccessToken({
-        teamId: input.teamId,
-        containerId: input.containerId,
-        privatePort: input.privatePort,
+        sessionId: input.sessionId,
+        relayPort: input.relayPort,
         userId: input.userId
     });
-    const proxyUrl = new URL(
-        `${buildContainerPortProxyBasePath(input.teamId, input.containerId, input.privatePort)}${input.targetPath || ''}`,
-        resolveServerBaseUrl()
-    );
-
-    proxyUrl.searchParams.set(CONTAINER_PORT_PROXY_ACCESS_TOKEN_QUERY_PARAM, accessToken);
-    return proxyUrl.toString();
-};
-
-export const matchContainerPortProxyPath = (requestUrl: string): ContainerPortProxyPathMatch | null => {
-    const url = new URL(requestUrl, PROXY_URL_ORIGIN);
-    const match = url.pathname.match(/^\/api\/container-port-proxy\/([^/]+)\/([^/]+)\/(\d+)(\/.*)?$/);
-    if (!match) {
-        return null;
-    }
-
-    const privatePort = Number(match[3]);
-    if (!Number.isInteger(privatePort) || privatePort <= 0) {
-        return null;
-    }
-
-    return {
-        teamId: decodeURIComponent(match[1]),
-        containerId: decodeURIComponent(match[2]),
-        privatePort
-    };
+    const relayUrl = new URL(`${input.protocol}://${input.advertisedHost}:${input.relayPort}/`);
+    relayUrl.searchParams.set(CONTAINER_PORT_PROXY_ACCESS_TOKEN_QUERY_PARAM, accessToken);
+    return relayUrl.toString();
 };
 
 export const readContainerPortProxyAccessTokenFromUrl = (requestUrl: string): string | null => {
-    const url = new URL(requestUrl, PROXY_URL_ORIGIN);
+    const url = new URL(requestUrl, RELAY_URL_ORIGIN);
     return url.searchParams.get(CONTAINER_PORT_PROXY_ACCESS_TOKEN_QUERY_PARAM);
 };
 
@@ -130,9 +98,8 @@ export class ContainerPortProxyAccessTokenService {
     create(input: ContainerPortProxyAccessTokenContext): string {
         return jwt.sign({
             type: 'container-port-proxy',
-            teamId: input.teamId,
-            containerId: input.containerId,
-            privatePort: input.privatePort,
+            sessionId: input.sessionId,
+            relayPort: input.relayPort,
             userId: input.userId
         }, this.secret, this.signOptions);
     }
@@ -145,9 +112,8 @@ export class ContainerPortProxyAccessTokenService {
             }
 
             return {
-                teamId: decoded.teamId,
-                containerId: decoded.containerId,
-                privatePort: decoded.privatePort,
+                sessionId: decoded.sessionId,
+                relayPort: decoded.relayPort,
                 userId: decoded.userId
             };
         } catch {

@@ -23,9 +23,10 @@ const endpoints = {
     create: post<CreateContainerParams, Container>('/', {
         client: 'scoped',
         omit: ['teamId'],
-        body: ({ teamClusterId, folderId, name, image, memory, cpus, env, ports, cmd, mountDockerSocket, useImageCmd, capabilities }) => ({
+        body: ({ teamClusterId, folderId, operationId, name, image, memory, cpus, env, ports, cmd, mountDockerSocket, useImageCmd, capabilities }) => ({
             teamClusterId,
             folderId,
+            operationId,
             name,
             image,
             memory,

@@ -5,6 +5,7 @@ import type { ContainerEnvironmentVariable, ContainerPortMapping } from '@module
 export interface CreateContainerInputDTO {
     name: string;
     image: string;
+    operationId?: string;
     teamId: string;
     teamClusterId?: string;
     folderId?: string | null;

@@ -189,6 +189,14 @@ export interface TeamClusterDaemonTunnelHeartbeatPayload {
     occurredAt: string;
 };
 
+export interface TeamClusterDaemonRuntimeProgressPayload {
+    type: 'runtime-progress';
+    action: string;
+    stage: string;
+    timestamp: string;
+    payload?: Record<string, unknown>;
+};
+
 export type TeamClusterDaemonMessage =
     | TeamClusterDaemonCommandMessage
     | TeamClusterDaemonSocketResponsePayload
@@ -206,7 +214,8 @@ export type TeamClusterDaemonMessage =
     | TeamClusterDaemonTunnelStatePayload
     | TeamClusterDaemonTunnelDataPayload
     | TeamClusterDaemonTunnelClosePayload
-    | TeamClusterDaemonTunnelHeartbeatPayload;
+    | TeamClusterDaemonTunnelHeartbeatPayload
+    | TeamClusterDaemonRuntimeProgressPayload;
 
 export {
     TeamClusterServiceExposureAccessMode,

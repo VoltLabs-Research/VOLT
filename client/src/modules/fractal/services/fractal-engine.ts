@@ -430,6 +430,16 @@ export class FractalEngine {
         this.surface.invalidate();
     }
 
+    updateCameraPosition(cameraPosition: THREE.Vector3) {
+        if (!this.state.model) return;
+        this.state.model.traverse((child) => {
+            if (!(child instanceof THREE.Points) || !child.material) return;
+            const mat = child.material;
+            if (!(mat instanceof THREE.ShaderMaterial) || !mat.uniforms?.cameraPosition) return;
+            mat.uniforms.cameraPosition.value.copy(cameraPosition);
+        });
+    }
+
     dispose() {
         this.isDisposed = true;
         this.loadGeneration += 1;

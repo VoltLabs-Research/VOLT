@@ -95,9 +95,12 @@ const FractalScenePipeline = ({
                 </GizmoHelper>
             )}
             <DynamicEffects settings={config.effects} isDefectScene={isDefectScene} darkTheme={darkTheme} />
-            <DynamicLights settings={config.lights} darkTheme={darkTheme} />
+            <DynamicLights
+                settings={config.lights}
+                preset={isDefectScene ? LightingPreset.Defect : LightingPreset.Trajectory}
+                darkTheme={darkTheme}
+            />
             <DynamicEnvironment settings={config.environment} darkTheme={darkTheme} />
-            <DynamicLights preset={isDefectScene ? LightingPreset.Defect : LightingPreset.Trajectory} darkTheme={darkTheme} />
             <OrbitControls
                 ref={(r) => {
                     orbitRef.current = r;

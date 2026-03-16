@@ -4,7 +4,7 @@ import type { BoxBounds } from '@/modules/fractal/types';
 import { getBoxDimensions } from '@/modules/fractal/utilities/box-utils';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useMemo, useRef, useEffect, useState, forwardRef } from 'react';
+import { useMemo, useRef, useEffect, forwardRef } from 'react';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import type { ReactNode, RefObject } from 'react';
 
@@ -27,6 +27,12 @@ interface SimulationCellBoxProps {
     onHoverChange?: (hovered: boolean) => void;
 };
 
+// Reusable scratch vectors to avoid allocations in the hot drag path.
+const _decomposePos = new THREE.Vector3();
+const _decomposeQuat = new THREE.Quaternion();
+const _decomposeScale = new THREE.Vector3();
+const _clampedPos = new THREE.Vector3();
+
 const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     boxBounds,
     children,
@@ -39,7 +45,9 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     const dragRef = useRef<THREE.Group>(null!);
     const contentRef = useRef<THREE.Group>(null!);
     const isDraggingRef = useRef(false);
-    const [dragMatrix, setDragMatrix] = useState(() => new THREE.Matrix4());
+    // Keep drag matrix in a ref — mutated imperatively during drag to avoid
+    // React re-renders of the entire subtree (model with millions of points).
+    const dragMatrixRef = useRef(new THREE.Matrix4());
     const showSimulationCell = useEditorStore((state) => state.showSimulationCell);
 
     useEffect(() => {
@@ -61,8 +69,14 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     }, [transforms]);
 
     useEffect(() => {
-        setDragMatrix(new THREE.Matrix4());
-    }, [boxBounds, transforms]);
+        dragMatrixRef.current.identity();
+        // Apply identity to DragControls' group so it resets visually.
+        if (dragRef.current) {
+            dragRef.current.matrix.identity();
+            dragRef.current.matrixWorldNeedsUpdate = true;
+        }
+        invalidate();
+    }, [boxBounds, transforms, invalidate]);
 
     const geometry = useMemo(() => {
         if (!boxBounds) return null;
@@ -107,7 +121,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
         <DragControls
             ref={dragRef}
             autoTransform={false}
-            matrix={dragMatrix}
+            matrix={dragMatrixRef.current}
             dragLimits={[
                 undefined,
                 undefined,
@@ -122,20 +136,18 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                 }
             }}
             onDrag={(localMatrix: THREE.Matrix4) => {
-                const nextPosition = new THREE.Vector3();
-                const nextQuaternion = new THREE.Quaternion();
-                const nextScale = new THREE.Vector3();
+                // Decompose into scratch vectors — zero allocations.
+                localMatrix.decompose(_decomposePos, _decomposeQuat, _decomposeScale);
+                _clampedPos.set(_decomposePos.x, _decomposePos.y, Math.max(0, _decomposePos.z));
 
-                localMatrix.decompose(nextPosition, nextQuaternion, nextScale);
+                // Mutate the ref matrix in-place and apply directly to the
+                // DragControls group — no React state update, no re-render.
+                dragMatrixRef.current.compose(_clampedPos, _decomposeQuat, _decomposeScale);
 
-                const nextMatrix = new THREE.Matrix4();
-                nextMatrix.compose(
-                    new THREE.Vector3(nextPosition.x, nextPosition.y, Math.max(0, nextPosition.z)),
-                    nextQuaternion,
-                    nextScale
-                );
-
-                setDragMatrix(nextMatrix);
+                if (dragRef.current) {
+                    dragRef.current.matrix.copy(dragMatrixRef.current);
+                    dragRef.current.matrixWorldNeedsUpdate = true;
+                }
                 invalidate();
             }}
             onDragEnd={() => {

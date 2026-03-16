@@ -220,7 +220,7 @@ export const PERFORMANCE_PRESET_REGISTRY: Record<PerformancePreset, PerformanceP
     },
     [PerformancePreset.Battery]: {
         label: 'Battery Saver',
-        powerPreference: PowerPreference.LowPower,
+        powerPreference: PowerPreference.HighPerformance,
         settings: {
             preset: PerformancePreset.Battery,
             dpr: {

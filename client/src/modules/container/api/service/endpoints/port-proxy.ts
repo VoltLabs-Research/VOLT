@@ -6,8 +6,7 @@ const endpoints = {
     createPortProxySession: post<CreateContainerPortProxySessionParams, ContainerPortProxySession>('/:containerId/ports/:privatePort/session', {
         client: 'scoped',
         omit: ['teamId'],
-        body: () => ({}),
-        unwrap: { field: 'session' }
+        body: () => ({})
     })
 };
 
