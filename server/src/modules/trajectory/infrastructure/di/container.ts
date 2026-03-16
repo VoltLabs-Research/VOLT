@@ -17,6 +17,7 @@ import GetTeamMetricsUseCase from '@modules/trajectory/application/use-cases/tra
 import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import CloudUploadProcessor from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadProcessor';
+import CloudUploadQueueService from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadQueueService';
 import AtomPropertiesService from '@modules/trajectory/infrastructure/services/trajectory/AtomPropertiesService';
 import ColorCodingService from '@modules/trajectory/infrastructure/services/color-coding/ColorCodingService';
 import ParticleFilterService from '@modules/trajectory/infrastructure/services/particle-filter/ParticleFilterService';
@@ -47,6 +48,7 @@ export const registerTrajectoryDependencies = (): void => {
             [TRAJECTORY_TOKENS.TeamMetricsQueryService, TeamMetricsQueryService],
             [TRAJECTORY_TOKENS.SceneArtifactRepository, SceneArtifactRepository],
             [TRAJECTORY_TOKENS.CloudUploadProcessor, CloudUploadProcessor],
+            [TRAJECTORY_TOKENS.CloudUploadQueueService, CloudUploadQueueService],
             [TRAJECTORY_TOKENS.TrajectoryNativeDaemonService, TrajectoryNativeDaemonService],
             [TRAJECTORY_TOKENS.TrajectoryDumpStorageService, TrajectoryDumpStorageService],
             [TRAJECTORY_TOKENS.TrajectoryReader, TrajectoryReader],

@@ -15,7 +15,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/trajectory/TrajectoryParserFactory';
-import CloudUploadProcessor from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadProcessor';
+import CloudUploadQueueService from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadQueueService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
 
@@ -46,6 +46,7 @@ const GLB_SESSION_TTL_SECONDS = 86400;
 @injectable()
 export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgroundProcessor {
     private readonly concurrency = getTrajectoryBackgroundProcessorConcurrency();
+    private drainCallbackRegistered = false;
 
     constructor(
         @inject(SHARED_TOKENS.TempFileService)
@@ -57,8 +58,8 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository)
         private readonly simulationCellRepo: ISimulationCellRepository,
 
-        @inject(TRAJECTORY_TOKENS.CloudUploadProcessor)
-        private readonly cloudUploadProcessor: CloudUploadProcessor,
+        @inject(TRAJECTORY_TOKENS.CloudUploadQueueService)
+        private readonly cloudUploadQueueService: CloudUploadQueueService,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
@@ -77,6 +78,50 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
     ){}
 
     /**
+     * Registers the drain callback on CloudUploadQueueService (idempotent).
+     * When all upload jobs for a trajectory settle, this triggers GLB preprocessing.
+     */
+    private registerUploadDrainCallback(): void {
+        if (this.drainCallbackRegistered) return;
+        this.drainCallbackRegistered = true;
+
+        this.cloudUploadQueueService.onSessionDrain(
+            async (trajectoryId, teamId, teamClusterId, _trajectoryName, failedCount) => {
+                const trajectory = await this.trajectoryRepo.findById(trajectoryId);
+                if (!trajectory) {
+                    logger.warn(
+                        { trajectoryId },
+                        '@trajectory-background-processor: drain callback — trajectory not found, skipping GLB enqueue'
+                    );
+                    return;
+                }
+
+                if (failedCount > 0) {
+                    logger.warn(
+                        { trajectoryId, failedCount },
+                        '@trajectory-background-processor: some upload jobs failed, proceeding with GLB enqueue for successful frames'
+                    );
+                }
+
+                const frames = (trajectory.props.frames ?? []).map((f) => ({
+                    timestep: f.timestep,
+                    natoms: f.natoms,
+                    simulationCell: f.simulationCell
+                })) as Array<{ timestep: number; [key: string]: unknown }>;
+                if (frames.length === 0) {
+                    logger.warn(
+                        { trajectoryId },
+                        '@trajectory-background-processor: drain callback — no frames found on trajectory'
+                    );
+                    return;
+                }
+
+                await this.enqueueGlbPreprocessing(frames, trajectory, teamId);
+            }
+        );
+    }
+
+    /**
      * Entry point for trajectory background processing.
      */
     public async process(
@@ -84,6 +129,8 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         files: TrajectoryUploadFile[],
         teamId: string
     ): Promise<void>{
+        this.registerUploadDrainCallback();
+
         const ctx = await this.createContext(trajectoryId);
         let failureCode: ErrorCode | undefined;
         let failureDetails: string | undefined;
@@ -102,11 +149,9 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
             await this.persistTrajectory(trajectoryId, frames);
             await this.dispatchJobs(frames, trajectory, teamId);
-            await this.enqueueGlbPreprocessing(frames, trajectory, teamId);
-            // Status stays at Processing — the daemon will report GLB job completions
-            // via trajectory.glb-job-status, and the session drain logic in
-            // DaemonAnalysisCompletionService will mark the trajectory as Completed
-            // once all GLB conversion jobs have settled.
+            // GLB preprocessing is now triggered automatically when all upload jobs
+            // complete, via the CloudUploadQueueService drain callback. This ensures
+            // dumps are fully uploaded before the daemon starts GLB conversion.
         }catch(error){
             const failure = normalizeTrajectoryWorkerFailure(
                 error,
@@ -343,29 +388,39 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
     }
 
     /**
-     * Dispatches cloud upload jobs.
+     * Dispatches cloud upload jobs via BullMQ queue for crash recovery and per-file visibility.
      */    
     private async dispatchCloudUploadJobs(
         frames: ParsedFrame[],
         trajectory: Trajectory,
         teamId: string
     ): Promise<void>{
-        logger.info(`@trajectory-background-processor: Uploading ${frames.length} trajectory frame(s) directly`);
-        const limit = pLimit(this.concurrency);
+        const teamClusterId = trajectory.props.teamCluster;
+        if (!teamClusterId) {
+            logger.warn(
+                { trajectoryId: trajectory._id },
+                '@trajectory-background-processor: skipping cloud upload — no teamClusterId'
+            );
+            return;
+        }
 
-        await Promise.all(frames.map((frame) => {
-            const { cachePath, timestep } = frame;
-            const cloudUploadTask = {
-                trajectoryId: trajectory._id,
-                teamClusterId: trajectory.props.teamCluster,
-                teamId,
-                trajectoryName: trajectory.props.name,
-                timestep,
-                frameFilePath: cachePath
-            };
+        logger.info(`@trajectory-background-processor: Enqueuing ${frames.length} cloud upload job(s) via BullMQ`);
 
-            return limit(() => this.cloudUploadProcessor.process(cloudUploadTask));
+        const jobs = frames.map((frame) => ({
+            trajectoryId: trajectory._id,
+            teamClusterId,
+            teamId,
+            trajectoryName: trajectory.props.name,
+            timestep: frame.timestep,
+            frameFilePath: frame.cachePath
         }));
+
+        await this.cloudUploadQueueService.enqueueBatch(jobs);
+
+        logger.info(
+            { frameCount: frames.length, trajectoryId: trajectory._id },
+            '@trajectory-background-processor: all cloud upload jobs enqueued'
+        );
     }
 
     /**
@@ -377,7 +432,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
      * have settled (drain logic in DaemonAnalysisCompletionService).
      */
     private async enqueueGlbPreprocessing(
-        frames: ParsedFrame[],
+        frames: Array<{ timestep: number; [key: string]: unknown }>,
         trajectory: Trajectory,
         teamId: string
     ): Promise<void> {

@@ -62,6 +62,18 @@ interface DaemonGlbJobStatusInput {
     error?: string;
 };
 
+interface DaemonAnalysisJobStatusInput {
+    jobId: string;
+    name: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId?: string;
+    trajectoryName?: string;
+    timestep?: number;
+    status: JobStatus;
+    error?: string;
+};
+
 interface QueuedJobNotification {
     jobId: string;
     name: string;
@@ -223,6 +235,44 @@ export default class DaemonAnalysisCompletionService {
 
         // 6. All jobs settled - finalize analysis
         await this.finalizeAnalysis(analysisId, teamId, drainResult.failedJobs);
+    }
+
+    /**
+     * Called when the daemon reports a real-time analysis job status change (e.g. running).
+     * Projects status to Redis and publishes socket events so the frontend sees
+     * the transition immediately. Does NOT affect session drain counters.
+     */
+    async handleAnalysisJobStatus(input: DaemonAnalysisJobStatusInput): Promise<void> {
+        const { jobId, analysisId, teamId, status, error } = input;
+        const trajectoryContext: JobTrajectoryContext = {
+            trajectoryId: input.trajectoryId,
+            trajectoryName: input.trajectoryName,
+            timestep: input.timestep
+        };
+
+        await this.projectJobStatus({
+            jobId,
+            teamId,
+            status,
+            queueType: ANALYSIS_QUEUE_TYPE,
+            cleanupScope: ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE,
+            name: input.name,
+            analysisId,
+            trajectoryContext,
+            error
+        });
+
+        await this.publishJobStatusChanged({
+            jobId,
+            teamId,
+            status,
+            queueType: ANALYSIS_QUEUE_TYPE,
+            cleanupScope: ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE,
+            name: input.name,
+            analysisId,
+            trajectoryContext,
+            error
+        });
     }
 
     async handleRasterJobStatus(input: DaemonRasterJobStatusInput): Promise<void> {

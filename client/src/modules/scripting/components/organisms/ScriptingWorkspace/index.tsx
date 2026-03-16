@@ -8,6 +8,7 @@ import Title from '@/shared/presentation/components/Title';
 import './ScriptingWorkspace.css';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
+import type { NotebookContainerStage } from '@/modules/scripting/api/entities/scripting-session';
 
 interface ScriptingWorkspaceProps {
     trajectoryId: string;
@@ -55,6 +56,28 @@ const renderWorkspaceShell = (content: ReactNode, isBusy = false) => (
     </Container>
 );
 
+const getContainerStagePendingTitle = (stage: NotebookContainerStage | null): string => {
+    switch (stage) {
+        case 'creating':
+            return 'Creating container';
+        case 'starting':
+            return 'Starting container';
+        default:
+            return 'Preparing scripting workspace';
+    }
+};
+
+const getContainerStagePendingDescription = (stage: NotebookContainerStage | null): string => {
+    switch (stage) {
+        case 'creating':
+            return 'Setting up the Jupyter environment for this workspace.';
+        case 'starting':
+            return 'The container is initializing. Jupyter will be available shortly.';
+        default:
+            return 'Preparing the notebook environment. This can take a moment.';
+    }
+};
+
 const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange }: ScriptingWorkspaceProps) => {
     const {
         isLoading,
@@ -64,6 +87,7 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange }: Sc
         accessDenied,
         accessDeniedMessage,
         jupyterUrl,
+        containerStage,
         retryStartJupyter
     } = useScriptingWorkspace({ trajectoryId, notebookId });
 
@@ -117,11 +141,13 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange }: Sc
     }
 
     const pendingTitle = isStartingJupyter
-        ? 'Starting Jupyter session'
+        ? getContainerStagePendingTitle(containerStage)
         : 'Preparing scripting workspace';
-    const pendingDescription = activeNotebook
-        ? 'Opening the selected notebook in Jupyter. This can take a moment.'
-        : 'No notebook is selected yet. Opening the shared Jupyter workspace for this trajectory.';
+    const pendingDescription = isStartingJupyter
+        ? getContainerStagePendingDescription(containerStage)
+        : activeNotebook
+            ? 'Opening the selected notebook in Jupyter. This can take a moment.'
+            : 'No notebook is selected yet. Opening the shared Jupyter workspace for this trajectory.';
 
     return renderWorkspaceShell(renderWorkspaceState({
         title: pendingTitle,

@@ -249,10 +249,12 @@ export default class TeamClusterReverseChannelService {
 
     async command(
         teamClusterId: string,
-        payload: TeamClusterDaemonCommandPayload
+        payload: TeamClusterDaemonCommandPayload,
+        options?: { timeoutMs?: number }
     ): Promise<TeamClusterDaemonSocketResponsePayload> {
         const socketId = await this.requireDaemonSocketId(teamClusterId);
         const requestId = randomUUID();
+        const effectiveTimeoutMs = options?.timeoutMs ?? this.requestTimeoutMs;
 
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
@@ -262,7 +264,7 @@ export default class TeamClusterReverseChannelService {
                 }
 
                 this.rejectPendingEntry(requestId, entry, new Error('Timed out waiting for daemon response'));
-            }, this.requestTimeoutMs);
+            }, effectiveTimeoutMs);
 
             this.pendingEntries.set(requestId, {
                 type: 'response',
