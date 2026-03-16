@@ -174,37 +174,41 @@ export const createFilterEvaluatorService = (
 
     async exportColoredModel(input) {
         await trajectoryParserService.withDumpFile({ trajectoryId: input.trajectoryId, timestep: input.timestep }, async (dumpPath) => {
-            const externalValues = input.externalValuesBase64
-                ? trajectoryParserService.decodeFloat32Array(input.externalValuesBase64)
-                : undefined;
-            const parsed = trajectoryParserService.parseTrajectory(dumpPath, externalValues
-                ? {
-                    includeIds: true,
-                    properties: []
+            let buffer: Buffer;
+            {
+                const externalValues = input.externalValuesBase64
+                    ? trajectoryParserService.decodeFloat32Array(input.externalValuesBase64)
+                    : undefined;
+                const parsed = trajectoryParserService.parseTrajectory(dumpPath, externalValues
+                    ? {
+                        includeIds: true,
+                        properties: []
+                    }
+                    : {
+                        properties: [input.property]
+                    });
+
+                const values = externalValues
+                    ? trajectoryParserService.remapExternalValues(parsed, externalValues)
+                    : trajectoryParserService.getPropertyValues(parsed, input.property);
+                if (values.length === 0) {
+                    throw new Error(`Property '${input.property}' not found in trajectory dump`);
                 }
-                : {
-                    properties: [input.property]
-                });
 
-            const values = externalValues
-                ? trajectoryParserService.remapExternalValues(parsed, externalValues)
-                : trajectoryParserService.getPropertyValues(parsed, input.property);
-            if (values.length === 0) {
-                throw new Error(`Property '${input.property}' not found in trajectory dump`);
+                const colors = nativeModuleLoader.getExporterModule().applyPropertyColors(
+                    values,
+                    input.startValue,
+                    input.endValue,
+                    resolveGradientType(input.gradient)
+                );
+                buffer = nativeModuleLoader.getExporterModule().generatePointCloudGLB(
+                    parsed.positions,
+                    colors,
+                    parsed.min,
+                    parsed.max
+                );
             }
-
-            const colors = nativeModuleLoader.getExporterModule().applyPropertyColors(
-                values,
-                input.startValue,
-                input.endValue,
-                resolveGradientType(input.gradient)
-            );
-            const buffer = nativeModuleLoader.getExporterModule().generatePointCloudGLB(
-                parsed.positions,
-                colors,
-                parsed.min,
-                parsed.max
-            );
+            // parsed, values, colors now out of scope — eligible for GC
 
             await minioService.putObject({
                 bucket: ObjectBucketName.Models,
@@ -223,50 +227,54 @@ export const createFilterEvaluatorService = (
 
     async exportParticleFilterModel(input) {
         return trajectoryParserService.withDumpFile({ trajectoryId: input.trajectoryId, timestep: input.timestep }, async (dumpPath) => {
-            const parsed = trajectoryParserService.parseTrajectory(dumpPath);
-            const mask = trajectoryParserService.decodeUint8Array(input.maskBase64);
             let buffer: Buffer;
             let atomsResult = 0;
 
-            if (input.action === 'delete') {
-                const inverseMask = new Uint8Array(mask.length);
-                for (let index = 0; index < mask.length; index++) {
-                    inverseMask[index] = mask[index] ? 0 : 1;
-                }
+            {
+                const parsed = trajectoryParserService.parseTrajectory(dumpPath);
+                const mask = trajectoryParserService.decodeUint8Array(input.maskBase64);
 
-                const filtered = filterByMask(parsed.positions, parsed.types, inverseMask);
-                if (filtered.count === 0) {
-                    throw new EmptyFilterResultError(mask.length);
-                }
-
-                buffer = nativeModuleLoader.getExporterModule().generateGLB(
-                    filtered.positions,
-                    filtered.types,
-                    parsed.min,
-                    parsed.max
-                );
-                atomsResult = filtered.count;
-            } else {
-                const atomCount = parsed.positions.length / 3;
-                const colors = new Float32Array(atomCount * 3);
-
-                for (let index = 0; index < atomCount; index++) {
-                    const color = mask[index] === 1 ? HIGHLIGHT_COLOR : DEFAULT_COLOR;
-                    colors[index * 3] = color[0];
-                    colors[index * 3 + 1] = color[1];
-                    colors[index * 3 + 2] = color[2];
-                    if (mask[index] === 1) {
-                        atomsResult++;
+                if (input.action === 'delete') {
+                    const inverseMask = new Uint8Array(mask.length);
+                    for (let index = 0; index < mask.length; index++) {
+                        inverseMask[index] = mask[index] ? 0 : 1;
                     }
-                }
 
-                buffer = nativeModuleLoader.getExporterModule().generatePointCloudGLB(
-                    parsed.positions,
-                    colors,
-                    parsed.min,
-                    parsed.max
-                );
+                    const filtered = filterByMask(parsed.positions, parsed.types, inverseMask);
+                    if (filtered.count === 0) {
+                        throw new EmptyFilterResultError(mask.length);
+                    }
+
+                    buffer = nativeModuleLoader.getExporterModule().generateGLB(
+                        filtered.positions,
+                        filtered.types,
+                        parsed.min,
+                        parsed.max
+                    );
+                    atomsResult = filtered.count;
+                } else {
+                    const atomCount = parsed.positions.length / 3;
+                    const colors = new Float32Array(atomCount * 3);
+
+                    for (let index = 0; index < atomCount; index++) {
+                        const color = mask[index] === 1 ? HIGHLIGHT_COLOR : DEFAULT_COLOR;
+                        colors[index * 3] = color[0];
+                        colors[index * 3 + 1] = color[1];
+                        colors[index * 3 + 2] = color[2];
+                        if (mask[index] === 1) {
+                            atomsResult++;
+                        }
+                    }
+
+                    buffer = nativeModuleLoader.getExporterModule().generatePointCloudGLB(
+                        parsed.positions,
+                        colors,
+                        parsed.min,
+                        parsed.max
+                    );
+                }
             }
+            // parsed, mask, colors, filtered now out of scope — eligible for GC
 
             await minioService.putObject({
                 bucket: ObjectBucketName.Models,

@@ -10,6 +10,14 @@ export interface PutObjectInput {
     metadata?: Record<string, string>;
 };
 
+export interface PutStreamInput {
+    bucket: string;
+    objectKey: string;
+    stream: Readable;
+    size: number;
+    metadata?: Record<string, string>;
+};
+
 export class MinioService {
     private readonly client: Client;
 
@@ -50,6 +58,10 @@ export class MinioService {
 
     async putObject(input: PutObjectInput): Promise<void> {
         await this.client.putObject(input.bucket, input.objectKey, input.body, input.body.length, input.metadata);
+    }
+
+    async putObjectStream(input: PutStreamInput): Promise<void> {
+        await this.client.putObject(input.bucket, input.objectKey, input.stream, input.size, input.metadata);
     }
 
     async listObjects(bucket: string, prefix: string): Promise<string[]> {

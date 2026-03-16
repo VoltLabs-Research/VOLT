@@ -5,6 +5,7 @@ import {
 } from './NativeModuleLoader';
 import { createTrajectoryRasterQueueService } from './TrajectoryRasterQueueService';
 import fs from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import type { RasterizeTrajectoryRequest } from '@/shared/contracts';
 import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { NativeModuleLoader, NativeTrajectoryRequest } from './NativeModuleLoader';
@@ -105,40 +106,44 @@ export const createGlbExporterService = (
                 'Starting native trajectory preprocessing'
             );
             await trajectoryParserService.withDumpFile(input, async (dumpPath) => {
-                const parsed = trajectoryParserService.parseTrajectory(dumpPath);
                 const tempGlbPath = `${dumpPath}.glb`;
                 const modelObjectKey = trajectoryParserService.getModelObjectKey(input.trajectoryId, input.timestep);
 
                 try {
-                    logger.info(
-                        {
-                            atomCount: parsed.metadata.natoms,
-                            dumpPath,
-                            headers: parsed.metadata.headers,
-                            tempGlbPath,
-                            timestep: parsed.metadata.timestep,
-                            trajectoryId: input.trajectoryId
-                        },
-                        'Parsed trajectory ready for native GLB export'
-                    );
-                    logger.info(
-                        {
-                            tempGlbPath,
-                            timestep: input.timestep,
-                            trajectoryId: input.trajectoryId
-                        },
-                        'Invoking native GLB exporter'
-                    );
-                    const exported = nativeModuleLoader.getExporterModule().generateGLBToFile(
-                        parsed.positions,
-                        parsed.types,
-                        parsed.min,
-                        parsed.max,
-                        tempGlbPath
-                    );
-                    if (!exported) {
-                        throw new Error('Failed to export trajectory GLB');
+                    // Scope parsed tightly — release typed arrays before upload
+                    {
+                        const parsed = trajectoryParserService.parseTrajectory(dumpPath);
+                        logger.info(
+                            {
+                                atomCount: parsed.metadata.natoms,
+                                dumpPath,
+                                headers: parsed.metadata.headers,
+                                tempGlbPath,
+                                timestep: parsed.metadata.timestep,
+                                trajectoryId: input.trajectoryId
+                            },
+                            'Parsed trajectory ready for native GLB export'
+                        );
+                        logger.info(
+                            {
+                                tempGlbPath,
+                                timestep: input.timestep,
+                                trajectoryId: input.trajectoryId
+                            },
+                            'Invoking native GLB exporter'
+                        );
+                        const exported = nativeModuleLoader.getExporterModule().generateGLBToFile(
+                            parsed.positions,
+                            parsed.types,
+                            parsed.min,
+                            parsed.max,
+                            tempGlbPath
+                        );
+                        if (!exported) {
+                            throw new Error('Failed to export trajectory GLB');
+                        }
                     }
+                    // parsed is now out of scope — typed arrays eligible for GC
 
                     const glbStats = await fs.stat(tempGlbPath);
                     logger.info(
@@ -153,11 +158,11 @@ export const createGlbExporterService = (
                         'Native GLB export completed'
                     );
 
-                    const glbBuffer = await fs.readFile(tempGlbPath);
-                    await minioService.putObject({
+                    await minioService.putObjectStream({
                         bucket: ObjectBucketName.Models,
                         objectKey: modelObjectKey,
-                        body: glbBuffer,
+                        stream: createReadStream(tempGlbPath),
+                        size: glbStats.size,
                         metadata: {
                             'Content-Type': 'model/gltf-binary'
                         }

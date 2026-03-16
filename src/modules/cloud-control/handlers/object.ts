@@ -1,5 +1,9 @@
 import { createObjectSyncService } from '@/modules/platform/services';
 import { Readable } from 'node:stream';
+import { createReadStream } from 'node:fs';
+import fsPromises from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
 import type { MinioService } from '@/modules/platform/services';
 import type { ObjectUploadRequest, PluginSyncRequest, RuntimeEventBroker } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
@@ -38,14 +42,16 @@ interface ObjectGetRequest {
 
 /**
  * In-flight chunked transfer state.
+ * Chunks are spooled to a temp file instead of accumulating in memory.
  */
 interface ChunkedTransfer {
     bucket: ObjectBucketName;
     objectKey: string;
     totalChunks: number;
     metadata?: Record<string, string>;
-    chunks: (Buffer | null)[];
+    tempPath: string;
     receivedCount: number;
+    totalSize: number;
     createdAt: number;
 };
 
@@ -120,15 +126,16 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
     // ── Chunked transfer state ──────────────────────────────────────────
     const chunkedTransfers = new Map<string, ChunkedTransfer>();
 
-    // Periodic sweep for abandoned transfers
+    // Periodic sweep for abandoned transfers (also cleans up temp files)
     const sweepInterval = setInterval(() => {
         const now = Date.now();
         for (const [transferId, transfer] of chunkedTransfers) {
             if (now - transfer.createdAt > TRANSFER_TTL_MS) {
                 chunkedTransfers.delete(transferId);
+                fsPromises.unlink(transfer.tempPath).catch(() => {});
                 logger.warn(
                     { transferId, objectKey: transfer.objectKey },
-                    'Chunked transfer expired — cleaned up stale state'
+                    'Chunked transfer expired — cleaned up stale state and temp file'
                 );
             }
         }
@@ -164,19 +171,24 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                     throw new Error(`Transfer ${transferId} already exists`);
                 }
 
+                const tempPath = path.join(os.tmpdir(), `chunked-upload-${transferId}`);
+                // Create an empty file to append chunks into
+                await fsPromises.writeFile(tempPath, Buffer.alloc(0));
+
                 chunkedTransfers.set(transferId, {
                     bucket,
                     objectKey,
                     totalChunks,
                     metadata,
-                    chunks: new Array(totalChunks).fill(null),
+                    tempPath,
                     receivedCount: 0,
+                    totalSize: 0,
                     createdAt: Date.now()
                 });
 
                 logger.info(
-                    { transferId, objectKey, totalChunks },
-                    'Chunked upload initialized'
+                    { transferId, objectKey, totalChunks, tempPath },
+                    'Chunked upload initialized (disk-spooled)'
                 );
 
                 return { data: { initialized: true } };
@@ -201,13 +213,10 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                     throw new Error(`Chunk index ${index} out of range [0, ${transfer.totalChunks})`);
                 }
 
-                if (transfer.chunks[index] !== null) {
-                    // Idempotent — duplicate chunk is ignored.
-                    return { data: { received: true, index } };
-                }
-
-                transfer.chunks[index] = Buffer.from(data, 'base64');
+                const chunkBuffer = Buffer.from(data, 'base64');
+                await fsPromises.appendFile(transfer.tempPath, chunkBuffer);
                 transfer.receivedCount += 1;
+                transfer.totalSize += chunkBuffer.length;
 
                 return { data: { received: true, index } };
             }
@@ -231,16 +240,19 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                     );
                 }
 
-                // Reassemble the full buffer and store.
-                const fullBuffer = Buffer.concat(transfer.chunks as Buffer[]);
-                chunkedTransfers.delete(transferId);
-
-                await deps.minioService.putObject({
-                    bucket: transfer.bucket,
-                    objectKey: transfer.objectKey,
-                    body: fullBuffer,
-                    metadata: transfer.metadata
-                });
+                try {
+                    // Stream the spooled temp file directly to MinIO — no in-memory concat
+                    await deps.minioService.putObjectStream({
+                        bucket: transfer.bucket,
+                        objectKey: transfer.objectKey,
+                        stream: createReadStream(transfer.tempPath),
+                        size: transfer.totalSize,
+                        metadata: transfer.metadata
+                    });
+                } finally {
+                    chunkedTransfers.delete(transferId);
+                    await fsPromises.unlink(transfer.tempPath).catch(() => {});
+                }
 
                 deps.eventBroker.emitProgress({
                     action: OrchestrationAction.ObjectUpload,
@@ -253,8 +265,8 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                 });
 
                 logger.info(
-                    { transferId, objectKey: transfer.objectKey, totalSize: fullBuffer.length },
-                    'Chunked upload committed to MinIO'
+                    { transferId, objectKey: transfer.objectKey, totalSize: transfer.totalSize },
+                    'Chunked upload committed to MinIO (streamed from disk)'
                 );
 
                 return { data: { uploaded: true } };

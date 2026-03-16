@@ -443,6 +443,77 @@ const buildPointCloudData = (atomsByType: AtomsGroupedByType): {
     return { positions, colors, min, max };
 };
 
+/**
+ * Single-pass version: reads raw decoded payload directly into typed arrays,
+ * skipping the intermediate PrimitiveAtom[] JS objects that normalizeAtomsByType creates.
+ * For 4.5M atoms this saves ~1GB+ of JS heap overhead.
+ */
+const buildPointCloudDataDirect = (exportData: Record<string, unknown>): {
+    positions: Float32Array;
+    colors: Float32Array;
+    min: [number, number, number];
+    max: [number, number, number];
+} => {
+    // First pass: count valid atoms to pre-allocate typed arrays
+    const entries: Array<[string, unknown[]]> = [];
+    let totalAtoms = 0;
+    for (const [typeName, atoms] of Object.entries(exportData)) {
+        if (!Array.isArray(atoms)) continue;
+        entries.push([typeName, atoms]);
+        totalAtoms += atoms.length;
+    }
+    if (totalAtoms === 0) {
+        throw new Error('No atom data available for export');
+    }
+
+    const positions = new Float32Array(totalAtoms * 3);
+    const colors = new Float32Array(totalAtoms * 3);
+    const min: [number, number, number] = [Infinity, Infinity, Infinity];
+    const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+    let offset = 0;
+
+    entries.forEach(([typeName, atoms], typeIndex) => {
+        const color = colorForType(typeName, typeIndex);
+        for (const atom of atoms) {
+            if (!isRecord(atom) || !Array.isArray(atom.pos) || atom.pos.length < 3) {
+                continue;
+            }
+            const x = toFiniteNumber(atom.pos[0]);
+            const y = toFiniteNumber(atom.pos[1]);
+            const z = toFiniteNumber(atom.pos[2]);
+            const base = offset * 3;
+            positions[base] = x;
+            positions[base + 1] = y;
+            positions[base + 2] = z;
+            colors[base] = color[0];
+            colors[base + 1] = color[1];
+            colors[base + 2] = color[2];
+            min[0] = Math.min(min[0], x);
+            min[1] = Math.min(min[1], y);
+            min[2] = Math.min(min[2], z);
+            max[0] = Math.max(max[0], x);
+            max[1] = Math.max(max[1], y);
+            max[2] = Math.max(max[2], z);
+            offset++;
+        }
+    });
+
+    if (offset === 0) {
+        throw new Error('No valid atom data available for export');
+    }
+
+    // Trim if some atoms were invalid and skipped
+    if (offset < totalAtoms) {
+        return {
+            positions: positions.subarray(0, offset * 3),
+            colors: colors.subarray(0, offset * 3),
+            min,
+            max
+        };
+    }
+    return { positions, colors, min, max };
+};
+
 const normalizeMesh = (value: Record<string, unknown>): MeshInput => {
     const vertices = Array.isArray(value.vertices) ? value.vertices : [];
     const facets = Array.isArray(value.facets) ? value.facets : [];
@@ -622,8 +693,7 @@ export const createExportNodeProcessorService = (
             throw new Error('Atomistic export data missing from exposure payload');
         }
 
-        const atomsByType = normalizeAtomsByType(exportData);
-        const { positions, colors, min, max } = buildPointCloudData(atomsByType);
+        const { positions, colors, min, max } = buildPointCloudDataDirect(exportData);
         const buffer = nativeModuleLoader.getExporterModule().generatePointCloudGLB(positions, colors, min, max);
 
         await minioService.putObject({

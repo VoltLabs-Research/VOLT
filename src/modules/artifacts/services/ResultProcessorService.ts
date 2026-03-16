@@ -6,6 +6,7 @@ import type { ExportNodeProcessorService } from './ExportNodeProcessorService';
 import { Decoder } from '@msgpack/msgpack';
 import { isRecord } from '@/shared/utils';
 import fs from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import type { Readable } from 'node:stream';
 
 const PLUGINS_BUCKET = 'volt-plugins';
@@ -144,19 +145,21 @@ export const createResultProcessorService = (
         }
 
         const storageKey = `plugins/trajectory-${executionData.trajectoryId}/analysis-${executionData.analysisId}/${exposure.nodeId}/timestep-${timestep}.msgpack`;
-        const fileBuffer = await fs.readFile(outputFilePath);
+        const fileStat = await fs.stat(outputFilePath);
 
-        await minioService.putObject({
+        await minioService.putObjectStream({
             bucket: PLUGINS_BUCKET,
             objectKey: storageKey,
-            body: fileBuffer,
+            stream: createReadStream(outputFilePath),
+            size: fileStat.size,
             metadata: {
                 'Content-Type': 'application/msgpack'
             }
         });
 
         logger.info({ storageKey }, 'Uploaded exposure .msgpack');
-        const decoded = await readDecodedPayloadFromObject(minioService, storageKey);
+        // Decode directly from the local file — avoids redundant MinIO re-download
+        const decoded = await readDecodedPayload(createReadStream(outputFilePath) as unknown as Readable);
         await precomputeListingRows(pluginListingRepository, executionData, exposure, decoded, storageKey, timestep, teamId);
 
         if (decoded && exposure.export) {

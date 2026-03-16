@@ -263,6 +263,9 @@ export class AnalysisWorker {
             throw new Error(`Missing timestep for analysis job ${job.jobId}`);
         }
 
+        let dumpLocalPath: string | undefined;
+        let outputDir: string | undefined;
+
         try {
             await this.redisConnectionService.projectJobStatus({
                 ...job,
@@ -290,8 +293,8 @@ export class AnalysisWorker {
                 entrypointType: executionData.entrypointType,
                 requirementsFile: executionData.requirementsFile
             });
-            const dumpLocalPath = await this.downloadDump(inputFile);
-            const outputDir = path.join(DAEMON_PATHS.analysisOutput, `${executionData.analysisId}-${forEachIndex}-${Date.now()}`);
+            dumpLocalPath = await this.downloadDump(inputFile);
+            outputDir = path.join(DAEMON_PATHS.analysisOutput, `${executionData.analysisId}-${forEachIndex}-${Date.now()}`);
             await fs.mkdir(outputDir, { recursive: true });
 
             const outputs = this.buildOutputsMap(executionData, forEachItem, forEachIndex, dumpLocalPath, outputDir);
@@ -343,7 +346,6 @@ export class AnalysisWorker {
                 timestamp: completedTimestamp
             });
 
-            await this.cleanup(dumpLocalPath, outputDir);
             await this.daemonJobReporterService.reportJobCompletion({
                 jobId: job.jobId,
                 name: job.name,
@@ -378,6 +380,12 @@ export class AnalysisWorker {
             }).catch(() => {});
 
             throw error instanceof Error ? error : new Error(message);
+        } finally {
+            if (dumpLocalPath && outputDir) {
+                await this.cleanup(dumpLocalPath, outputDir).catch((err) => {
+                    logger.warn({ jobId: job.jobId, err }, 'Post-job cleanup failed');
+                });
+            }
         }
     }
 
@@ -657,21 +665,14 @@ export class AnalysisWorker {
         await Promise.all(tasks);
     }
 
-    private writeStreamToFile(stream: Readable, filePath: string, decompressGzip: boolean): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const chunks: Buffer[] = [];
-            stream.on('data', (chunk: Buffer) => chunks.push(chunk));
-            stream.on('end', async () => {
-                try {
-                    const buffer = Buffer.concat(chunks);
-                    const output = decompressGzip ? zlib.gunzipSync(buffer) : buffer;
-                    await fs.writeFile(filePath, output);
-                    resolve();
-                } catch (error) {
-                    reject(error);
-                }
-            });
-            stream.on('error', reject);
-        });
+    private async writeStreamToFile(stream: Readable, filePath: string, decompressGzip: boolean): Promise<void> {
+        const { pipeline } = await import('node:stream/promises');
+        const { createWriteStream } = await import('node:fs');
+
+        if (decompressGzip) {
+            await pipeline(stream, zlib.createGunzip(), createWriteStream(filePath));
+        } else {
+            await pipeline(stream, createWriteStream(filePath));
+        }
     }
 };
