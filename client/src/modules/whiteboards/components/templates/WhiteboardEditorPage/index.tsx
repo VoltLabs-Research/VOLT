@@ -5,6 +5,7 @@ import { DASHBOARD_LAYOUT_EVENTS } from '@/modules/dashboard/utilities/layout-ev
 import { filterPersistableAppState } from '@/modules/whiteboards/utilities/whiteboards';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
+import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import AIFloatingAssistantPanel from '@/modules/ai/components/organisms/AIFloatingAssistantPanel';
 import { useCallback, useEffect, useRef, lazy, Suspense } from 'react';
 import type { ComponentProps } from 'react';
@@ -37,6 +38,8 @@ const WhiteboardEditorPage = () => {
         handleChange,
         generateIdForFile
     } = useWhiteboardEditor({ whiteboardId: whiteboardId! });
+
+    usePageTitle(whiteboard?.title ?? 'Whiteboard');
 
     const { announcement, users } = useWhiteboardPresence({
         whiteboardId,

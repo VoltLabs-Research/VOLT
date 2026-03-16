@@ -2,6 +2,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
+import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import './NotFoundState.css';
 import { SearchX } from 'lucide-react';
 import { useId } from 'react';
@@ -10,6 +11,8 @@ import { useNavigate } from 'react-router-dom';
 const NotFoundState = () => {
     const navigate = useNavigate();
     const headingId = useId();
+
+    usePageTitle('Page Not Found');
 
     return (
         <section aria-labelledby={headingId} className='not-found-state d-flex items-center content-center vh-max w-max'>

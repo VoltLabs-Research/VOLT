@@ -10,6 +10,7 @@ const workflowNodeSchema = z.object({
         'context',
         'forEach',
         'entrypoint',
+        'plugin-node',
         'exposure',
         'export',
         'if-statement'

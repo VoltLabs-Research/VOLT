@@ -6,6 +6,7 @@ import { ExposureDataSchema } from './nodes/ExposureDataSchema';
 import { ForEachDataSchema } from './nodes/ForEachDataSchema';
 import { IfStatementDataSchema } from './nodes/IfStatementDataSchema';
 import { ModifierDataSchema } from './nodes/ModifierDataSchema';
+import { PluginNodeDataSchema } from './nodes/PluginNodeDataSchema';
 
 import { Schema } from 'mongoose';
 
@@ -15,6 +16,7 @@ export const NodeDataSchema = new Schema({
     context: ContextDataSchema,
     forEach: ForEachDataSchema,
     entrypoint: EntrypointDataSchema,
+    pluginNode: PluginNodeDataSchema,
     exposure: ExposureDataSchema,
     export: ExportDataSchema,
     ifStatement: IfStatementDataSchema

@@ -6,6 +6,7 @@ export enum WorkflowNodeType {
     Context = 'context',
     ForEach = 'forEach',
     Entrypoint = 'entrypoint',
+    Plugin = 'plugin-node',
     Exposure = 'exposure',
     Export = 'export',
     IfStatement = 'if-statement'

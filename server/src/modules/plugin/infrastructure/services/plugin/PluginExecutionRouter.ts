@@ -75,6 +75,11 @@ const serializeAnalysis = (analysis: Analysis, trajectoryName: string): DaemonAn
     };
 };
 
+interface NestedPluginDefinition {
+    pluginId: string;
+    workflow: WorkflowSerializable;
+};
+
 @injectable()
 export default class PluginExecutionRouter implements IPluginExecutionRouter {
     constructor(
@@ -90,6 +95,14 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
 
     async route(input: RoutePluginExecutionInput): Promise<void> {
         await this.syncPluginBinaryIfNeeded(input.teamClusterId, input.plugin);
+        for (const dependency of input.pluginDependencies) {
+            await this.syncPluginBinaryIfNeeded(input.teamClusterId, dependency);
+        }
+
+        const nestedPlugins: NestedPluginDefinition[] = input.pluginDependencies.map((dependency) => ({
+            pluginId: dependency.id,
+            workflow: dependency.props.workflow.props as unknown as WorkflowSerializable
+        }));
 
         const response = await this.teamClusterDaemonClient.command<DaemonAnalysisStartResponse>(input.teamClusterId, 'analysis.start', {
             analysis: serializeAnalysis(input.analysis, input.trajectoryName),
@@ -102,6 +115,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             trajectoryName: input.trajectoryName,
             trajectoryFrames: input.trajectoryFrames,
             workflow: input.plugin.props.workflow.props as unknown as WorkflowSerializable,
+            nestedPlugins,
             config: input.config,
             selectedFrameOnly: input.selectedFrameOnly,
             selectedTimesteps: input.selectedTimesteps,

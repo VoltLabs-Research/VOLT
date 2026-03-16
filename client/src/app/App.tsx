@@ -1,5 +1,7 @@
 import { renderPublicRoutes, renderGuestRoutes, renderProtectedRoutes } from './routes/RouteRenderer';
+import { resolveRouteTitle } from './routes/title-resolver';
 import { useGlobalShortcuts } from '@/shared/presentation/hooks/use-global-shortcuts';
+import { useFallbackPageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { usePageScale } from '@/shared/presentation/hooks/use-page-scale';
 import { usePageTracker } from '@/modules/start/hooks/use-page-tracker';
 import { useRouteCleanup } from '@/shared/presentation/hooks/use-route-cleanup';
@@ -25,8 +27,10 @@ ensureApplicationStoreCleanupsRegistered();
 const AppRoutes = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const routeTitle = resolveRouteTitle(location.pathname) ?? '';
 
     useGlobalShortcuts();
+    useFallbackPageTitle(routeTitle);
     usePageTracker();
     useRouteCleanup({
         shouldCleanup: (previousPathname, nextPathname) => {

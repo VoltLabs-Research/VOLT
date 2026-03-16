@@ -1,7 +1,9 @@
 import { SYS_BUCKETS } from '@core/config/minio';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { isRetryableTeamClusterTransportError } from '@modules/team-cluster/infrastructure/services/TeamClusterTransportError';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { WorkerFailureError, createWorkerFailureEnvelope } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
 import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
 import fs from 'node:fs/promises';
@@ -18,6 +20,26 @@ interface CloudUploadTask {
     frameFilePath: string;
 };
 
+interface TeamClusterCommandClient {
+    command(teamClusterId: string, command: string, payload?: Record<string, unknown>): Promise<unknown>;
+};
+
+interface RetryOptions {
+    maxAttempts: number;
+    baseDelayMs: number;
+};
+
+const RETRY_OPTIONS: RetryOptions = {
+    maxAttempts: 3,
+    baseDelayMs: 500
+};
+
+const wait = async (delayMs: number): Promise<void> => {
+    await new Promise((resolve) => {
+        setTimeout(resolve, delayMs);
+    });
+};
+
 @injectable()
 export default class CloudUploadProcessor {
     constructor(
@@ -25,7 +47,7 @@ export default class CloudUploadProcessor {
         private readonly dumpStorage: ITrajectoryDumpStorageService,
 
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        private readonly teamClusterDaemonClient: TeamClusterCommandClient
     ) {}
 
     async process(task: CloudUploadTask): Promise<void> {
@@ -44,8 +66,16 @@ export default class CloudUploadProcessor {
             throw new Error('Cloud upload requires a team cluster. No local native modules available.');
         }
 
-        await this.uploadDumpToTeamCluster(teamClusterId, trajectoryId, timestep, frameFilePath);
-        await this.requestTeamClusterGlbPreprocess(teamClusterId, trajectoryId, teamId, timestep, trajectoryName);
+        await this.executeWithTransportRetry(
+            task,
+            'object.upload',
+            () => this.uploadDumpToTeamCluster(teamClusterId, trajectoryId, timestep, frameFilePath)
+        );
+        await this.executeWithTransportRetry(
+            task,
+            'trajectory.native.preprocess',
+            () => this.requestTeamClusterGlbPreprocess(teamClusterId, trajectoryId, teamId, timestep, trajectoryName)
+        );
 
         logger.info(`@cloud-upload-processor: uploaded frame and requested GLB preprocess trajectoryId=${trajectoryId} timestep=${timestep}`);
     }
@@ -90,5 +120,49 @@ export default class CloudUploadProcessor {
             objectKey,
             ...(trajectoryName ? { trajectoryName } : {})
         });
+    }
+
+    /** Retries transient daemon transport failures before surfacing a terminal trajectory failure. */
+    private async executeWithTransportRetry(
+        task: CloudUploadTask,
+        commandName: string,
+        operation: () => Promise<void>
+    ): Promise<void> {
+        let lastError: unknown;
+
+        for (let attempt = 1; attempt <= RETRY_OPTIONS.maxAttempts; attempt += 1) {
+            try {
+                await operation();
+                return;
+            } catch (error) {
+                lastError = error;
+
+                if (!isRetryableTeamClusterTransportError(error)) {
+                    throw error;
+                }
+
+                logger.warn({
+                    attempt,
+                    commandName,
+                    maxAttempts: RETRY_OPTIONS.maxAttempts,
+                    teamClusterId: task.teamClusterId,
+                    timestep: task.timestep,
+                    trajectoryId: task.trajectoryId
+                }, `@cloud-upload-processor: transient daemon transport failure during ${commandName}`);
+
+                if (attempt === RETRY_OPTIONS.maxAttempts) {
+                    break;
+                }
+
+                await wait(RETRY_OPTIONS.baseDelayMs * attempt);
+            }
+        }
+
+        throw new WorkerFailureError(createWorkerFailureEnvelope({
+            code: ErrorCodes.TRAJECTORY_DAEMON_TRANSPORT_FAILED,
+            details: lastError instanceof Error
+                ? lastError.message
+                : 'Trajectory daemon transport retries exhausted'
+        }));
     }
 };

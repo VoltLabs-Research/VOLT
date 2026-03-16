@@ -13,6 +13,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import { Plus } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 
 interface ArgumentFieldsRendererProps {
@@ -22,6 +23,7 @@ interface ArgumentFieldsRendererProps {
     frameOptions?: SelectOption[];
     emptyMessage?: string;
     path?: string;
+    autocompleteOptions?: FormFieldAutocompleteOption[];
 };
 
 interface ListItemValue {
@@ -96,7 +98,8 @@ const ArgumentFieldsRenderer = ({
     onChange,
     frameOptions,
     emptyMessage = 'No arguments configured.',
-    path = 'root'
+    path = 'root',
+    autocompleteOptions
 }: ArgumentFieldsRendererProps) => {
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
@@ -168,6 +171,7 @@ const ArgumentFieldsRenderer = ({
                         frameOptions={resolvedFrameOptions}
                         emptyMessage='No nested arguments configured.'
                         path={itemPath}
+                        autocompleteOptions={autocompleteOptions}
                     />
                 </CollapsibleSection>
             );
@@ -216,9 +220,10 @@ const ArgumentFieldsRenderer = ({
                 inputProps={fieldConfig.inputProps}
                 onFieldChange={(_, nextValue) => handlePrimitiveChange(argument, nextValue)}
                 variant='canvas'
+                autocomplete={autocompleteOptions?.length ? { options: autocompleteOptions } : undefined}
             />
         );
-    }, [handleListItemAdd, handlePrimitiveChange, path, renderListItem, resolvedFrameOptions, values]);
+    }, [autocompleteOptions, handleListItemAdd, handlePrimitiveChange, path, renderListItem, resolvedFrameOptions, values]);
 
     if (!argumentDefinitions.length) {
         return (

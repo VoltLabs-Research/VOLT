@@ -119,6 +119,19 @@ export const getTrajectoryIds = (notebook: ScriptingNotebook): string[] => {
     return [getTrajectoryId(primaryTrajectory)].filter((id) => id.trim().length > 0);
 };
 
+/** Returns the notebook team cluster id from either a populated relation or a raw id. */
+export const getNotebookTeamClusterId = (notebook?: ScriptingNotebook | null): string | undefined => {
+    if (!notebook?.teamCluster) {
+        return undefined;
+    }
+
+    if (typeof notebook.teamCluster === 'string') {
+        return notebook.teamCluster;
+    }
+
+    return notebook.teamCluster._id;
+};
+
 export const getDeleteConfirmationMessage = (selectedItems: ScriptingNotebook[]): string => {
     if (selectedItems.length === 1) {
         return `Delete notebook "${selectedItems[0].title || 'Untitled Notebook'}"? This action cannot be undone.`;

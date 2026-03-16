@@ -43,6 +43,9 @@ const TeamInvitationByCodeTemplate = () => {
     const nextDestination = resolvePostAuthDestination({
         queryNext: new URLSearchParams(location.search).get('next')
     });
+    const handleNavigateToNextDestination = () => {
+        navigate(getOnboardingRedirectPath(nextDestination));
+    };
 
     useEffect(() => {
         if (!code) {
@@ -118,7 +121,7 @@ const TeamInvitationByCodeTemplate = () => {
                         variant='solid'
                         intent='brand'
                         leftIcon={<CheckCircle size={18} />}
-                        onClick={() => navigate('/dashboard')}
+                        onClick={handleNavigateToNextDestination}
                     >
                         Go to Dashboard
                     </Button>
@@ -144,7 +147,7 @@ const TeamInvitationByCodeTemplate = () => {
                 <Button
                     variant='solid'
                     intent='brand'
-                    onClick={() => navigate('/dashboard')}
+                    onClick={handleNavigateToNextDestination}
                 >
                     Back to Dashboard
                 </Button>

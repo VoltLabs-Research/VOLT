@@ -1,5 +1,10 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import { setPostAuthDestination } from '@/modules/auth/services/post-auth-destination-storage';
+import {
+    getClusterOnboardingRedirectPath,
+    getOnboardingRedirectPath,
+    resolvePostAuthDestination,
+    setPostAuthDestination
+} from '@/modules/auth/services/post-auth-destination-storage';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { refreshSocketSession } from '@/modules/socket/core/services/socket-auth-session';
 import { setGetTeamId } from '@/app/core/http/utilities/create-client';
@@ -31,6 +36,8 @@ setGetTeamId(() => useTeamStore.getState().selectedTeamId ?? null);
 
 const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     const location = useLocation();
+    const currentDestination = location.pathname + location.search + location.hash;
+    const queryNext = new URLSearchParams(location.search).get('next');
 
     const user = useCurrentUser();
     const isLoading = useAuthStore((state) => state.isLoading);
@@ -119,13 +126,11 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
     if(mode === RouteMode.Protected){
         if(!isAuthenticated){
-            const destination = location.pathname + location.search;
-            setPostAuthDestination(destination);
+            setPostAuthDestination(currentDestination);
 
             return renderProtectedContent(
                 <Navigate
-                    to={`/auth/sign-in?next=${encodeURIComponent(destination)}`}
-                    state={{ from: location }}
+                    to={`/auth/sign-in?next=${encodeURIComponent(currentDestination)}`}
                     replace
                 />
             );
@@ -141,7 +146,9 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
         if(!hasTeam){
             if (teams.length === 0) {
-                return renderProtectedContent(<Navigate to='/onboarding' replace />);
+                return renderProtectedContent(
+                    <Navigate to={getOnboardingRedirectPath(currentDestination)} replace />
+                );
             }
 
             return renderProtectedContent(<Loader scale={0.6} label='Loading teams…' announce />);
@@ -152,21 +159,21 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
         }
 
         if (shouldRedirectToOnboarding) {
-            return renderProtectedContent(<Navigate to='/onboarding/cluster/setup' replace />);
+            return renderProtectedContent(
+                <Navigate to={getClusterOnboardingRedirectPath(currentDestination)} replace />
+            );
         }
 
         return renderProtectedContent(<Outlet />);
     }
 
-    if(mode === RouteMode.Guest){
-        if(isAuthenticated){
-            return renderProtectedContent(<Navigate to='/dashboard' replace />);
-        }
+    if(isAuthenticated){
+        const destination = resolvePostAuthDestination({ queryNext });
 
-        return renderProtectedContent(<Outlet />);
+        return renderProtectedContent(<Navigate to={destination} replace />);
     }
 
-    return renderProtectedContent(<Navigate to='/' replace />);
+    return renderProtectedContent(<Outlet />);
 };
 
 export default ProtectedRoute;

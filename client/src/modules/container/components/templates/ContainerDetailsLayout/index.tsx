@@ -1,17 +1,18 @@
-import ContainerDetailsSkeleton from '../../atoms/ContainerDetailsSkeleton';
-import ContainerSidebar from '../../molecules/ContainerSidebar';
-import { ContainerAction } from '../../../api/dtos/update-container';
-import useContainerStats from '../../../hooks/use-container-stats';
-import { containerQuery, useContainerByIdQuery } from '../../../hooks/queries';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
-import { runAction } from '@/shared/presentation/actions/run-action';
-import { useEffect, useRef } from 'react';
-import { useParams, useNavigate, Outlet } from 'react-router-dom';
 import Container from '@/shared/presentation/components/Container';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { runAction } from '@/shared/presentation/actions/run-action';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { useEffect, useRef } from 'react';
+import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { ContainerAction } from '../../../api/dtos/update-container';
+import ContainerDetailsSkeleton from '../../atoms/ContainerDetailsSkeleton';
+import ContainerSidebar from '../../molecules/ContainerSidebar';
+import { containerQuery, useContainerByIdQuery } from '../../../hooks/queries';
+import useContainerStats from '../../../hooks/use-container-stats';
 import type { EnvVariable } from '@/modules/container/api/entities/env-variable';
 import type { PortMapping } from '@/modules/container/api/entities/port-mapping';
 import type { ContainerDetailsContext } from '../../../hooks/use-container-details-context';
@@ -21,8 +22,42 @@ interface ContainerDetailsRouteParams extends Record<string, string | undefined>
     id: string;
 };
 
+interface ContainerSectionTitleMap {
+    [key: string]: string;
+};
+
+const CONTAINER_SECTION_TITLES: ContainerSectionTitleMap = {
+    overview: 'Overview',
+    processes: 'Processes',
+    terminal: 'Terminal',
+    logs: 'Logs',
+    storage: 'Storage',
+    'remote-desktop': 'Remote Desktop'
+};
+
+const resolveContainerSectionTitle = (pathname: string, containerId?: string): string => {
+    if (!containerId) {
+        return 'Details';
+    }
+
+    const containerDetailsPath = `/dashboard/containers/${containerId}`;
+    if (pathname === containerDetailsPath || pathname === `${containerDetailsPath}/`) {
+        return 'Details';
+    }
+
+    if (!pathname.startsWith(`${containerDetailsPath}/`)) {
+        return 'Details';
+    }
+
+    const nestedPath = pathname.slice(containerDetailsPath.length + 1);
+    const sectionKey = nestedPath.split('/')[0];
+
+    return CONTAINER_SECTION_TITLES[sectionKey] ?? 'Details';
+};
+
 const ContainerDetailsLayout = () => {
     const { id } = useParams<ContainerDetailsRouteParams>();
+    const { pathname } = useLocation();
     const navigate = useNavigate();
     const didCollapseSidebar = useRef(false);
 
@@ -43,6 +78,22 @@ const ContainerDetailsLayout = () => {
     const { data: container, isLoading, isError, error } = useContainerByIdQuery(id!, {
         enabled: !!id
     });
+
+    const fallbackSectionTitle = resolveContainerSectionTitle(pathname, id);
+    const fallbackTitle = fallbackSectionTitle === 'Details'
+        ? 'Container Details'
+        : `Container ${fallbackSectionTitle}`;
+    let pageTitle = fallbackTitle;
+
+    if (container?.name) {
+        pageTitle = container.name;
+
+        if (fallbackSectionTitle !== 'Details') {
+            pageTitle = `${container.name} - ${fallbackSectionTitle}`;
+        }
+    }
+
+    usePageTitle(pageTitle);
 
     const actionLoading = updateContainerMutation.isPending || deleteContainerMutation.isPending;
     const { accessDenied, checkAccessDeniedError } = useAccessDenied();

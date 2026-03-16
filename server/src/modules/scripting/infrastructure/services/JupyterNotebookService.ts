@@ -1,7 +1,6 @@
-import { ErrorCodes } from '@core/constants/error-codes';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { resolveServerBaseUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import { injectable } from 'tsyringe';
 import type {
     DefaultNotebookTemplateContext
@@ -15,26 +14,10 @@ const DEFAULT_NOTEBOOK_TEMPLATE_PATH = path.join(
 
 @injectable()
 export class JupyterNotebookService {
-    private readonly defaultNotebookPath = 'default-scripting-notebook.ipynb';
-
-    getDefaultNotebookPath(): string {
-        return this.defaultNotebookPath;
-    }
-
     async resolveDefaultNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<string> {
-        const serverDomain = process.env.SERVER_ENDPOINT;
-
-        if (!serverDomain) {
-            throw new ApplicationError(
-                ErrorCodes.RESOURCE_LOAD_ERROR,
-                'SERVER_ENDPOINT is required to build the default notebook template',
-                500
-            );
-        }
-
         const templateContent = await fs.readFile(DEFAULT_NOTEBOOK_TEMPLATE_PATH, 'utf8');
         return templateContent
-            .replace(/<BASE_URL>/g, serverDomain.replace(/\/+$/g, ''))
+            .replace(/<BASE_URL>/g, resolveServerBaseUrl())
             .replace(/<TRAJECTORY_ID>/g, context.trajectoryId || '');
     }
 };

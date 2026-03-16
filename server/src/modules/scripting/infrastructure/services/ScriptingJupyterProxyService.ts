@@ -5,6 +5,14 @@ import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import {
+    buildJupyterProxyBasePath,
+    JUPYTER_PROXY_ACCESS_TOKEN_COOKIE_NAME,
+    JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM,
+    JUPYTER_PROXY_BASE_PATH,
+    matchJupyterProxyPath,
+    readJupyterProxyAccessTokenFromUrl
+} from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
+import {
     TeamClusterServiceExposureAccessMode
 } from '@modules/team-cluster/utilities/teamClusterSocket';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
@@ -23,11 +31,6 @@ import type { IncomingHttpHeaders, IncomingMessage, RequestOptions } from 'node:
 import type { Duplex } from 'node:stream';
 import type { RawData } from 'ws';
 
-interface ProxyPathMatch {
-    teamId: string;
-    runtimeNotebookId: string;
-};
-
 interface AuthorizedProxyContext {
     teamId: string;
     runtimeNotebookId: string;
@@ -44,9 +47,6 @@ interface ProxyTarget {
     rawQuery: string;
 };
 
-const JUPYTER_PROXY_BASE_PATH = '/api/jupyter';
-const ACCESS_TOKEN_QUERY_PARAM = 'access_token';
-const ACCESS_TOKEN_COOKIE_NAME = 'voltScriptingJupyterAccessToken';
 const JUPYTER_NATIVE_TOKEN_QUERY_PARAM = 'token';
 const UPGRADE_ACTION = Action.READ;
 const PROXY_URL_ORIGIN = 'http://volt.local';
@@ -285,14 +285,14 @@ export class ScriptingJupyterProxyService {
         cookieHeader: string | undefined,
         action: Action
     ): Promise<AuthorizedProxyContext> {
-        const match = this.matchProxyPath(requestUrl);
+        const match = matchJupyterProxyPath(requestUrl);
         if (!match) {
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Jupyter proxy route not found');
         }
 
         const url = new URL(requestUrl, 'http://volt.local');
-        const cookieToken = readCookies(cookieHeader)[ACCESS_TOKEN_COOKIE_NAME];
-        const accessToken = url.searchParams.get(ACCESS_TOKEN_QUERY_PARAM) || cookieToken;
+        const cookieToken = readCookies(cookieHeader)[JUPYTER_PROXY_ACCESS_TOKEN_COOKIE_NAME];
+        const accessToken = url.searchParams.get(JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM) || cookieToken;
         if (!accessToken) {
             throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_REQUIRED, ErrorCodes.AUTHENTICATION_REQUIRED);
         }
@@ -343,15 +343,15 @@ export class ScriptingJupyterProxyService {
     }
 
     private persistAccessTokenCookie(req: Request, res: Response, context: AuthorizedProxyContext): void {
-        const accessToken = this.readAccessTokenFromUrl(req.originalUrl);
+        const accessToken = readJupyterProxyAccessTokenFromUrl(req.originalUrl);
         if (!accessToken) {
             return;
         }
 
-        res.cookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, {
+        res.cookie(JUPYTER_PROXY_ACCESS_TOKEN_COOKIE_NAME, accessToken, {
             httpOnly: true,
             sameSite: 'lax',
-            path: `${JUPYTER_PROXY_BASE_PATH}/${encodeURIComponent(context.teamId)}/notebooks/${encodeURIComponent(context.runtimeNotebookId)}`
+            path: buildJupyterProxyBasePath(context.teamId, context.runtimeNotebookId)
         });
     }
 
@@ -413,7 +413,15 @@ export class ScriptingJupyterProxyService {
                 continue;
             }
 
-            res.setHeader(headerName, Array.isArray(headerValue) ? headerValue.join(', ') : headerValue);
+            if (normalizedHeaderName === 'set-cookie') {
+                const mergedSetCookies = this.mergeSetCookieHeaders(res.getHeader('set-cookie'), headerValue);
+                if (mergedSetCookies.length > 0) {
+                    res.setHeader(headerName, mergedSetCookies);
+                }
+                continue;
+            }
+
+            res.setHeader(headerName, headerValue);
         }
     }
 
@@ -563,7 +571,7 @@ export class ScriptingJupyterProxyService {
         const url = new URL(requestUrl, PROXY_URL_ORIGIN);
         const proxiedPath = url.pathname;
 
-        url.searchParams.delete(ACCESS_TOKEN_QUERY_PARAM);
+        url.searchParams.delete(JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM);
         url.searchParams.set(JUPYTER_NATIVE_TOKEN_QUERY_PARAM, this.jupyterNativeToken);
 
         const search = url.searchParams.toString();
@@ -589,9 +597,9 @@ export class ScriptingJupyterProxyService {
         rewrittenUrl.hash = resolvedLocation.hash;
         rewrittenUrl.searchParams.delete(JUPYTER_NATIVE_TOKEN_QUERY_PARAM);
 
-        const accessToken = requestUrlObject.searchParams.get(ACCESS_TOKEN_QUERY_PARAM);
-        if (accessToken && !rewrittenUrl.searchParams.has(ACCESS_TOKEN_QUERY_PARAM)) {
-            rewrittenUrl.searchParams.set(ACCESS_TOKEN_QUERY_PARAM, accessToken);
+        const accessToken = requestUrlObject.searchParams.get(JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM);
+        if (accessToken && !rewrittenUrl.searchParams.has(JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM)) {
+            rewrittenUrl.searchParams.set(JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM, accessToken);
         }
 
         return `${rewrittenUrl.pathname}${rewrittenUrl.search}${rewrittenUrl.hash}`;
@@ -611,25 +619,7 @@ export class ScriptingJupyterProxyService {
     }
 
     private buildPublicProxyBasePath(teamId: string, runtimeNotebookId: string): string {
-        return `${JUPYTER_PROXY_BASE_PATH}/${encodeURIComponent(teamId)}/notebooks/${encodeURIComponent(runtimeNotebookId)}`;
-    }
-
-    private matchProxyPath(requestUrl: string): ProxyPathMatch | null {
-        const url = new URL(requestUrl, PROXY_URL_ORIGIN);
-        const match = url.pathname.match(/^\/api\/jupyter\/([^/]+)\/notebooks\/([^/]+)(\/.*)?$/);
-        if (!match) {
-            return null;
-        }
-
-        return {
-            teamId: decodeURIComponent(match[1]),
-            runtimeNotebookId: decodeURIComponent(match[2])
-        };
-    }
-
-    private readAccessTokenFromUrl(requestUrl: string): string | null {
-        const url = new URL(requestUrl, PROXY_URL_ORIGIN);
-        return url.searchParams.get(ACCESS_TOKEN_QUERY_PARAM);
+        return buildJupyterProxyBasePath(teamId, runtimeNotebookId);
     }
 
     private readHeaderValue(value: string | string[] | undefined): string | undefined {
@@ -638,5 +628,27 @@ export class ScriptingJupyterProxyService {
         }
 
         return value;
+    }
+
+    private mergeSetCookieHeaders(
+        existingHeaderValue: number | string | string[] | undefined,
+        upstreamHeaderValue: string | string[]
+    ): string[] {
+        const existingSetCookies = this.normalizeSetCookieHeader(existingHeaderValue);
+        const upstreamSetCookies = this.normalizeSetCookieHeader(upstreamHeaderValue);
+
+        return [...existingSetCookies, ...upstreamSetCookies];
+    }
+
+    private normalizeSetCookieHeader(value: number | string | string[] | undefined): string[] {
+        if (typeof value === 'undefined' || typeof value === 'number') {
+            return [];
+        }
+
+        if (Array.isArray(value)) {
+            return value;
+        }
+
+        return [value];
     }
 };

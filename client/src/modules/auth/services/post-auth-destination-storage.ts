@@ -72,7 +72,7 @@ const buildOnboardingRedirectPath = ({
 }: BuildOnboardingRedirectPathInput): string => {
     const safeDestination = sanitizePostAuthDestination(destination);
 
-    if (!safeDestination || safeDestination === onboardingPath || isOnboardingDestination(safeDestination)) {
+    if (!safeDestination || isOnboardingDestination(safeDestination)) {
         return onboardingPath;
     }
 
@@ -160,7 +160,9 @@ export const getClusterOnboardingRedirectPath = (destination?: string | null): s
 };
 
 export const getPostAuthRedirectPath = (destination: string): string => {
-    const safeDestination = sanitizePostAuthDestination(destination) ?? DEFAULT_POST_AUTH_DESTINATION;
+    const safeDestination = resolvePostAuthDestination({
+        stateDestination: destination
+    });
 
     if (isTeamInvitationDestination(safeDestination) || isOnboardingDestination(safeDestination)) {
         return safeDestination;

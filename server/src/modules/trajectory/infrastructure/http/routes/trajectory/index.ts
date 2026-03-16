@@ -1,6 +1,6 @@
 import { Resource } from '@core/constants/resources';
 import { trajectoryValidation } from '@modules/trajectory/infrastructure/http/validation/trajectory';
-import { uploadTrajectory } from '@shared/infrastructure/http/middleware/upload';
+import { uploadTrajectoryFiles } from '@shared/infrastructure/http/middleware/upload';
 import controllers from '@modules/trajectory/infrastructure/http/controllers/trajectory';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 
@@ -12,7 +12,7 @@ export default createHttpModule({
         router.get('/samples/:filename', controllers.downloadSamples.handle);
         router.get('/scene-artifacts', trajectoryValidation.listTeamSceneArtifacts, controllers.listTeamSceneArtifacts.handle);
         router.route('/')
-            .post(uploadTrajectory.array('trajectoryFiles'), controllers.create.handle)
+            .post(uploadTrajectoryFiles('trajectoryFiles'), controllers.create.handle)
             .get(trajectoryValidation.listByTeamId, controllers.getByTeamId.handle);
         router.get('/folders', trajectoryValidation.listFolders, controllers.listFolders.handle);
         router.get('/folders/:folderId', trajectoryValidation.getFolder, controllers.getFolder.handle);

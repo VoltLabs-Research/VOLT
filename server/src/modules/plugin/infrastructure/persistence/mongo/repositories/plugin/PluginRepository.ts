@@ -25,4 +25,18 @@ export default class PluginRepository
     async update(id: string, updates: Partial<PluginProps>): Promise<Plugin | null> {
         return this.updateById(id, updates);
     }
+
+    async findByIds(ids: string[]): Promise<Plugin[]> {
+        if (!ids.length) {
+            return [];
+        }
+
+        const documents = await this.model.find({
+            _id: {
+                $in: ids
+            }
+        }).exec();
+
+        return documents.map((document) => this.mapper.toDomain(document));
+    }
 };
