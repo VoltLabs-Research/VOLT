@@ -7,6 +7,7 @@ import Container from '@/shared/presentation/components/Container';
 import PageTransition from '@/shared/presentation/components/PageTransition';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useGlobalSocketCacheSync from '@/shared/presentation/hooks/use-global-socket-cache-sync';
+import useTip from '@/shared/tips/use-tip';
 import type { DashboardHeaderContext } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import './DashboardLayout.css';
@@ -37,6 +38,10 @@ const DashboardLayout = () => {
     const [globalSearchBreadcrumb, setGlobalSearchBreadcrumb] = useState<DashboardGlobalSearchBreadcrumb | null>(null);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+    });
+
+    useTip('dashboard-sidebar-collapse', {
+        enabled: !headerHidden
     });
 
     const toggleSidebarCollapsed = useCallback(() => {

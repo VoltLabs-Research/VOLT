@@ -33,6 +33,11 @@ export class TerminalService implements ITerminalService {
     ) {}
 
     async attach(client: ITerminalClient, containerId: string): Promise<void> {
+        // Idempotent: if this client already has handlers registered (e.g.
+        // re-attach without detach), remove them first to avoid leaking
+        // stale event listeners.
+        this.removeClientHandlers(client);
+
         client.joinRoom(containerId);
         let session = this.sessions.get(containerId);
 
@@ -124,14 +129,7 @@ export class TerminalService implements ITerminalService {
     }
 
     detach(client: ITerminalClient, containerId: string): void {
-        const handlers = this.clientHandlers.get(client);
-        if (handlers) {
-            client.offInput(handlers.onInput);
-            client.offResize(handlers.onResize);
-            client.offDetach(handlers.onDisconnect);
-            client.offDisconnect(handlers.onDisconnect);
-            this.clientHandlers.delete(client);
-        }
+        this.removeClientHandlers(client);
         client.leaveRoom(containerId);
 
         const session = this.sessions.get(containerId);
@@ -142,6 +140,21 @@ export class TerminalService implements ITerminalService {
             session.activeConnections = 0;
             session.cleanupTimer = setTimeout(() => this.cleanupSession(containerId), 5000);
         }
+    }
+
+    /**
+     * Removes event listeners for a client and clears its handler entry.
+     * Safe to call even when no handlers are registered.
+     */
+    private removeClientHandlers(client: ITerminalClient): void {
+        const handlers = this.clientHandlers.get(client);
+        if (!handlers) return;
+
+        client.offInput(handlers.onInput);
+        client.offResize(handlers.onResize);
+        client.offDetach(handlers.onDisconnect);
+        client.offDisconnect(handlers.onDisconnect);
+        this.clientHandlers.delete(client);
     }
 
     private cleanupSession(containerId: string) {

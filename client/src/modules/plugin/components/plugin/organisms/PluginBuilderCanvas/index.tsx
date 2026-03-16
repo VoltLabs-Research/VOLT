@@ -9,6 +9,7 @@ import useCanvasHandlers from '@/modules/plugin/hooks/plugin/use-canvas-handlers
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import Container from '@/shared/presentation/components/Container';
+import useTip from '@/shared/tips/use-tip';
 import { Background, MiniMap, ReactFlow } from '@xyflow/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -109,6 +110,10 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
     }, []);
 
     const isEmpty = nodes.length === 0;
+
+    useTip('plugin-builder-get-started', {
+        enabled: isEmpty
+    });
 
     return (
         <Container className='h-max w-max p-relative plugin-builder-canvas' ref={reactFlowWrapper}>

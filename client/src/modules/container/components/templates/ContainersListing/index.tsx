@@ -16,6 +16,7 @@ import RenameFolderModal from '@/shared/presentation/components/RenameFolderModa
 import Title from '@/shared/presentation/components/Title';
 import { openModal } from '@/shared/presentation/components/Modal';
 import { clusterColumn, dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
+import useTip from '@/shared/tips/use-tip';
 import { formatSize } from '@/shared/utils/format';
 import { Box, Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
@@ -46,6 +47,8 @@ const renderName: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (va
 
 const ContainersListing = () => {
     const { openPort, openingPort } = useOpenContainerPort();
+
+    useTip('containers-organization');
 
     const columns: ColumnConfig<ContainerListingRow>[] = [
     {

@@ -7,6 +7,7 @@ import { openModal } from '@/shared/presentation/components/Modal';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import useTip from '@/shared/tips/use-tip';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,6 +15,10 @@ const ClusterTerminalPage = () => {
     const vm = useClusterRemoteAccessPage(TeamClusterRemoteAccessTarget.HostTerminal);
     const navigate = useNavigate();
     const didCollapseSidebar = useRef(false);
+
+    useTip('cluster-terminal-context', {
+        enabled: Boolean(vm.cluster && vm.isAuthenticated && vm.session)
+    });
 
     usePageTitle(vm.cluster ? `${vm.cluster.name} - Terminal` : 'Cluster Terminal');
 

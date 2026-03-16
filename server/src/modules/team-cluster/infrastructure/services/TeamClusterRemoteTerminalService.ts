@@ -63,6 +63,11 @@ export default class TeamClusterRemoteTerminalService {
         }
 
         client.joinRoom(params.sessionId);
+        // Idempotent: if this client already has handlers registered (e.g.
+        // re-attach without detach), remove them first to avoid leaking
+        // stale event listeners.
+        this.removeClientHandlers(client);
+
         let session = this.sessions.get(params.sessionId);
 
         if (!session) {
@@ -155,15 +160,7 @@ export default class TeamClusterRemoteTerminalService {
     }
 
     detach(client: ITerminalClient, sessionId: string): void {
-        const handlers = this.clientHandlers.get(client);
-        if (handlers) {
-            client.offInput(handlers.onInput);
-            client.offResize(handlers.onResize);
-            client.offDetach(handlers.onDisconnect);
-            client.offDisconnect(handlers.onDisconnect);
-            this.clientHandlers.delete(client);
-        }
-
+        this.removeClientHandlers(client);
         client.leaveRoom(sessionId);
 
         const session = this.sessions.get(sessionId);
@@ -177,6 +174,21 @@ export default class TeamClusterRemoteTerminalService {
             session.activeConnections = 0;
             session.cleanupTimer = setTimeout(() => this.cleanupSession(sessionId), 5_000);
         }
+    }
+
+    /**
+     * Removes event listeners for a client and clears its handler entry.
+     * Safe to call even when no handlers are registered.
+     */
+    private removeClientHandlers(client: ITerminalClient): void {
+        const handlers = this.clientHandlers.get(client);
+        if (!handlers) return;
+
+        client.offInput(handlers.onInput);
+        client.offResize(handlers.onResize);
+        client.offDetach(handlers.onDisconnect);
+        client.offDisconnect(handlers.onDisconnect);
+        this.clientHandlers.delete(client);
     }
 
     private cleanupSession(sessionId: string): void {

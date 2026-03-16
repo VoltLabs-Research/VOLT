@@ -200,6 +200,25 @@ export default class TeamClusterReverseChannelService {
     private readonly terminalTimeoutMs = 15_000;
     private readonly daemonConnectionWaitTimeoutMs = 30_000;
 
+    /**
+     * Maximum time (ms) a resolved session (terminal, websocket, tunnel) can
+     * remain idle (no data flowing) before being reaped. Prevents orphaned
+     * entries from accumulating when the daemon silently drops a session.
+     */
+    private readonly sessionIdleTtlMs = 10 * 60 * 1000;
+    private readonly sessionSweepIntervalMs = 60 * 1000;
+
+    /** Tracks last activity timestamp for resolved sessions. */
+    private readonly sessionActivity = new Map<string, number>();
+    private idleSweepTimer: ReturnType<typeof setInterval> | null = null;
+
+    /**
+     * High-water mark for PassThrough streams used in streaming responses,
+     * terminal sessions, etc.  Limits how much data can be buffered in a
+     * single stream before backpressure kicks in.
+     */
+    private readonly streamHighWaterMark = 256 * 1024; // 256 KB
+
     constructor(
         @inject(SOCKET_TOKENS.SocketEventEmitter)
         private readonly socketEmitter: ISocketEmitter,
@@ -209,7 +228,60 @@ export default class TeamClusterReverseChannelService {
 
         @inject(ContainerDeploymentProgressService)
         private readonly containerDeploymentProgressService: ContainerDeploymentProgressService
-    ) {}
+    ) {
+        this.startIdleSweep();
+    }
+
+    /**
+     * Records activity for a resolved session so its idle TTL resets.
+     */
+    private touchSession(sessionId: string): void {
+        this.sessionActivity.set(sessionId, Date.now());
+    }
+
+    /**
+     * Removes activity tracking for a session.
+     */
+    private untouchSession(sessionId: string): void {
+        this.sessionActivity.delete(sessionId);
+    }
+
+    /**
+     * Periodically reaps resolved sessions that have been idle beyond
+     * `sessionIdleTtlMs`.
+     */
+    private startIdleSweep(): void {
+        if (this.idleSweepTimer) return;
+
+        this.idleSweepTimer = setInterval(() => {
+            const now = Date.now();
+            for (const [sessionId, lastActive] of this.sessionActivity) {
+                if (now - lastActive > this.sessionIdleTtlMs) {
+                    const entry = this.pendingEntries.get(sessionId);
+                    if (!entry) {
+                        this.sessionActivity.delete(sessionId);
+                        continue;
+                    }
+
+                    logger.warn({ sessionId, type: entry.type }, '[ReverseChannel] Session idle TTL expired — cleaning up');
+
+                    if (entry.type === 'terminal') {
+                        entry.stream.destroy();
+                    } else if (entry.type === 'websocket') {
+                        entry.stream.destroy();
+                    } else if (entry.type === 'tunnel') {
+                        entry.stream.closeRemote();
+                    } else if (entry.type === 'stream') {
+                        entry.stream.destroy();
+                    }
+
+                    this.pendingEntries.delete(sessionId);
+                    this.sessionActivity.delete(sessionId);
+                }
+            }
+        }, this.sessionSweepIntervalMs);
+        this.idleSweepTimer.unref();
+    }
 
     registerDaemonConnection(socketId: string, teamClusterId: string): void {
         const previousSocketId = this.daemonSocketIdsByTeamClusterId.get(teamClusterId);
@@ -292,7 +364,7 @@ export default class TeamClusterReverseChannelService {
     async openCommandStream(teamClusterId: string, payload: TeamClusterDaemonCommandPayload): Promise<TeamClusterReverseChannelStreamAttachment> {
         const socketId = await this.requireDaemonSocketId(teamClusterId);
         const requestId = randomUUID();
-        const stream = new PassThrough();
+        const stream = new PassThrough({ highWaterMark: this.streamHighWaterMark });
 
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
@@ -372,7 +444,7 @@ export default class TeamClusterReverseChannelService {
     async attachTerminal(teamClusterId: string, containerId: string): Promise<ContainerTerminalAttachment> {
         const socketId = await this.requireDaemonSocketId(teamClusterId);
         const sessionId = randomUUID();
-        const stream = new PassThrough();
+        const stream = new PassThrough({ highWaterMark: this.streamHighWaterMark });
 
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
@@ -466,7 +538,7 @@ export default class TeamClusterReverseChannelService {
     async attachHostTerminal(teamClusterId: string): Promise<ContainerTerminalAttachment> {
         const socketId = await this.requireDaemonSocketId(teamClusterId);
         const sessionId = randomUUID();
-        const stream = new PassThrough();
+        const stream = new PassThrough({ highWaterMark: this.streamHighWaterMark });
 
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
@@ -609,6 +681,7 @@ export default class TeamClusterReverseChannelService {
             entry.stream.destroy();
         }
         this.pendingEntries.delete(sessionId);
+        this.untouchSession(sessionId);
     }
 
     private closeTunnel(sessionId: string): void {
@@ -623,6 +696,7 @@ export default class TeamClusterReverseChannelService {
         };
         this.socketEmitter.emitToSocket(entry.socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, closePayload);
         this.pendingEntries.delete(sessionId);
+        this.untouchSession(sessionId);
     }
 
     private handleResponsePayload(payload: TeamClusterDaemonSocketResponsePayload): void {
@@ -651,6 +725,7 @@ export default class TeamClusterReverseChannelService {
 
         if (!payload.ok) {
             this.pendingEntries.delete(payload.requestId);
+            this.untouchSession(payload.requestId);
             entry.reject(new TeamClusterDaemonStreamError(
                 payload.message || 'Daemon stream request failed',
                 payload.status,
@@ -660,6 +735,7 @@ export default class TeamClusterReverseChannelService {
         }
 
         entry.streamId = payload.streamId || payload.requestId;
+        this.touchSession(payload.requestId);
         entry.resolve({
             status: payload.status,
             headers: payload.headers || {},
@@ -689,10 +765,12 @@ export default class TeamClusterReverseChannelService {
         entry.timeout = null;
 
         if (entry.type === 'terminal') {
+            this.touchSession(payload.requestId);
             entry.resolve(this.createTerminalAttachment(entry, payload.requestId));
             return;
         }
 
+        this.touchSession(payload.requestId);
         entry.resolve(entry.stream);
     }
 
@@ -706,7 +784,15 @@ export default class TeamClusterReverseChannelService {
             return;
         }
 
-        entry.stream.write(Buffer.from(payload.chunkBase64, 'base64'));
+        this.touchSession(payload.requestId);
+        const chunk = Buffer.from(payload.chunkBase64, 'base64');
+        if (!entry.stream.write(chunk)) {
+            // Backpressure: stream buffer is full.  We log once but do not
+            // accumulate — Node's PassThrough will buffer up to highWaterMark
+            // and then start returning false.  The daemon side does not support
+            // pause/resume yet, so we accept the write but note the pressure.
+            logger.debug({ requestId: payload.requestId }, '[ReverseChannel] Stream backpressure hit');
+        }
     }
 
     private handleStreamStatePayload(payload: TeamClusterDaemonSocketStreamStatePayload): void {
@@ -721,6 +807,7 @@ export default class TeamClusterReverseChannelService {
 
         entry.stream.end();
         this.pendingEntries.delete(payload.requestId);
+        this.untouchSession(payload.requestId);
     }
 
     private handleExposureSnapshotPayload(teamClusterId: string, payload: TeamClusterDaemonExposureSnapshotPayload): void {
@@ -732,6 +819,8 @@ export default class TeamClusterReverseChannelService {
         if (!entry) {
             return;
         }
+
+        this.touchSession(payload.sessionId);
 
         if (entry.type === 'terminal') {
             entry.stream.write(Buffer.from(payload.chunkBase64, 'base64'));
@@ -771,6 +860,7 @@ export default class TeamClusterReverseChannelService {
             }
             entry.stream.end();
             this.pendingEntries.delete(payload.sessionId);
+            this.untouchSession(payload.sessionId);
             return;
         }
 
@@ -794,6 +884,7 @@ export default class TeamClusterReverseChannelService {
                 });
             }
             this.pendingEntries.delete(payload.sessionId);
+            this.untouchSession(payload.sessionId);
         }
     }
 
@@ -841,11 +932,13 @@ export default class TeamClusterReverseChannelService {
 
             if (payload.status !== TeamClusterTunnelSessionStatus.Open || error) {
                 this.pendingEntries.delete(payload.sessionId);
+                this.untouchSession(payload.sessionId);
                 entry.reject(error || new Error(payload.message || 'Failed to open daemon tunnel'));
                 return;
             }
 
             entry.resolve(entry.stream);
+            this.touchSession(payload.sessionId);
             return;
         }
 
@@ -856,6 +949,7 @@ export default class TeamClusterReverseChannelService {
         }
 
         this.pendingEntries.delete(payload.sessionId);
+        this.untouchSession(payload.sessionId);
     }
 
     private handleTunnelDataPayload(payload: TeamClusterDaemonTunnelDataPayload): void {
@@ -864,6 +958,7 @@ export default class TeamClusterReverseChannelService {
             return;
         }
 
+        this.touchSession(payload.sessionId);
         entry.stream.pushChunk(Buffer.from(payload.chunkBase64, 'base64'));
     }
 
@@ -875,6 +970,7 @@ export default class TeamClusterReverseChannelService {
 
         entry.stream.closeRemote();
         this.pendingEntries.delete(payload.sessionId);
+        this.untouchSession(payload.sessionId);
     }
 
     private clearTimeout(timeout: NodeJS.Timeout | null): void {
@@ -986,6 +1082,7 @@ export default class TeamClusterReverseChannelService {
 
     private rejectPendingEntry(correlationId: string, entry: PendingEntry, error: Error): void {
         this.pendingEntries.delete(correlationId);
+        this.untouchSession(correlationId);
         this.clearTimeout(entry.timeout);
 
         if (entry.type === 'response') {
