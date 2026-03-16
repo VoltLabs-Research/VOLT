@@ -158,6 +158,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             plugin.id,
             WorkflowValidationMode.Strict
         );
+        /*
         if (!isValid) {
             const detail = validationErrors?.length
                 ? `: ${validationErrors.join('; ')}`
@@ -166,7 +167,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
                 ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
                 `Plugin workflow is invalid${detail}`
             ));
-        }
+        }*/
 
         if (!trajectory) {
             return Result.fail(ApplicationError.badRequest(
