@@ -97,10 +97,14 @@ export const buildCellBoxTransforms = (transforms?: BoxTransforms, groundOffset 
     if (!transforms) return undefined;
     return {
         scale: transforms.scale,
+        // Pass through the centering position so the model is centered at the
+        // origin (matching the old version's behaviour).  The groundOffset was
+        // already computed assuming this centering is applied — zeroing the
+        // position broke the math and caused models to float above the grid.
         position: {
-            x: 0,
-            y: 0,
-            z: 0
+            x: transforms.position.x,
+            y: transforms.position.y,
+            z: transforms.position.z
         },
         groundOffset
     };
