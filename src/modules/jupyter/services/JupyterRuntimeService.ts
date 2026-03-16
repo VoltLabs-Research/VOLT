@@ -441,7 +441,7 @@ export class JupyterRuntimeService {
                 requestTimeoutMs,
                 signal
             );
-            if (response?.status && response.status < 500) {
+            if (response?.ok) {
                 this.setRuntimeState(notebookId, {
                     ...runtimeState,
                     readinessOrigin

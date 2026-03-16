@@ -16,6 +16,9 @@ import type { AnalysisJobExecutionData, AnalysisQueueJobPayload } from '@/shared
 import type { Job as BullMQJob, Worker } from 'bullmq';
 import type { Readable } from 'node:stream';
 import { isRecord } from '@/shared/utils';
+import { WorkflowGraph, WorkflowNodeType } from '@/modules/workflow-runtime/contracts';
+import { createWorkflowNodeRegistry } from '@/modules/workflow-runtime/factories';
+import type { WorkflowNodeRegistry } from '@/modules/workflow-runtime/services';
 const DUMPS_BUCKET = 'volt-dumps';
 
 interface QueueJobPayload extends AnalysisQueueJobPayload {
@@ -66,9 +69,47 @@ const parseArguments = (value: string): string[] => {
     });
 };
 
+const createRuntimeWorkflowRegistry = (): WorkflowNodeRegistry => {
+    return createWorkflowNodeRegistry();
+};
+
+export const collectInlineExposureArtifacts = async (
+    workflow: AnalysisJobExecutionData['workflow'],
+    outputDir: string
+): Promise<Array<{ exposureId: string; name: string; results: string; filePath: string; }>> => {
+    const artifacts: Array<{ exposureId: string; name: string; results: string; filePath: string; }> = [];
+
+    for (const node of workflow.nodes) {
+        if (node.type !== WorkflowNodeType.Exposure) {
+            continue;
+        }
+
+        const exposureData = node.data.exposure as Record<string, unknown> | undefined;
+        const results = typeof exposureData?.results === 'string' ? exposureData.results : '';
+        if (!results) {
+            continue;
+        }
+
+        const filePath = `${outputDir}_${results}`;
+        try {
+            await fs.access(filePath);
+            artifacts.push({
+                exposureId: node.id,
+                name: typeof exposureData?.name === 'string' ? exposureData.name : node.id,
+                results,
+                filePath
+            });
+        } catch {
+        }
+    }
+
+    return artifacts;
+};
+
 export class AnalysisWorker {
     private running = false;
     private worker: Worker<QueueJobPayload> | null = null;
+    private readonly workflowNodeRegistry = createRuntimeWorkflowRegistry();
 
     constructor(
         private readonly queueService: QueueService,
@@ -146,6 +187,7 @@ export class AnalysisWorker {
             await fs.mkdir(outputDir, { recursive: true });
 
             const outputs = this.buildOutputsMap(executionData, forEachItem, forEachIndex, dumpLocalPath, outputDir);
+            await this.executeInlinePluginNodes(executionData, outputs, timestep, dumpLocalPath, outputDir);
             const resolvedArgs = resolveTemplate(executionData.arguments, outputs);
             const args = parseArguments(resolvedArgs);
 
@@ -276,6 +318,181 @@ export class AnalysisWorker {
         outputs.set(executionData.forEachNodeId, forEachOutput);
 
         return outputs;
+    }
+
+    private async executeInlinePluginNodes(
+        executionData: AnalysisJobExecutionData,
+        outputs: Map<string, Record<string, unknown>>,
+        timestep: number,
+        dumpLocalPath: string,
+        outputDir: string
+    ): Promise<void> {
+        const workflowGraph = new WorkflowGraph(executionData.workflow);
+        const pluginNodes = workflowGraph.topologicalSort().filter((node) => node.type === WorkflowNodeType.Plugin);
+        if (!pluginNodes.length) {
+            return;
+        }
+
+        for (const pluginNode of pluginNodes) {
+            const output = await this.executeNestedPluginWorkflow(
+                executionData,
+                pluginNode.data.pluginNode as Record<string, unknown> | undefined,
+                outputs,
+                timestep,
+                dumpLocalPath,
+                outputDir
+            );
+            outputs.set(pluginNode.id, output);
+        }
+    }
+
+    private async executeNestedPluginWorkflow(
+        executionData: AnalysisJobExecutionData,
+        pluginNodeData: Record<string, unknown> | undefined,
+        parentOutputs: Map<string, Record<string, unknown>>,
+        timestep: number,
+        dumpLocalPath: string,
+        parentOutputDir: string
+    ): Promise<Record<string, unknown>> {
+        const pluginId = typeof pluginNodeData?.pluginId === 'string' ? pluginNodeData.pluginId : '';
+        if (!pluginId) {
+            return {
+                execution_result: {
+                    exposures: {
+                        items: [],
+                        str_json: '[]'
+                    }
+                }
+            };
+        }
+
+        const nestedPlugin = executionData.nestedPlugins.find((candidate) => candidate.pluginId === pluginId);
+        if (!nestedPlugin) {
+            throw new Error(`Nested plugin workflow not found for ${pluginId}`);
+        }
+
+        const nestedOutputDir = `${parentOutputDir}_plugin_${pluginId}_${Date.now()}`;
+        await fs.mkdir(nestedOutputDir, { recursive: true });
+        const nestedOutputs = new Map(parentOutputs);
+        const selectedTimesteps = Array.isArray(pluginNodeData?.selectedTimesteps)
+            ? pluginNodeData.selectedTimesteps.filter((value): value is number => typeof value === 'number')
+            : [timestep];
+        const nestedContext = {
+            outputs: nestedOutputs,
+            userConfig: isRecord(pluginNodeData?.config) ? pluginNodeData.config : {},
+            runtimeArguments: {},
+            trajectoryId: executionData.trajectoryId,
+            trajectoryFrames: [{ timestep, natoms: 0, simulationCell: '' }],
+            analysis: { _id: executionData.analysisId, pluginDisplayName: pluginId },
+            analysisId: executionData.analysisId,
+            generatedFiles: [],
+            pluginId,
+            teamId: '',
+            selectedTimestep: timestep,
+            selectedTimesteps,
+            workflow: new WorkflowGraph(nestedPlugin.workflow),
+            nestedWorkflows: new Map(executionData.nestedPlugins.map((candidate) => [candidate.pluginId, candidate.workflow]))
+        };
+
+        for (const node of nestedContext.workflow.topologicalSort()) {
+            if (node.type === WorkflowNodeType.Plugin) {
+                const nestedOutput = await this.executeNestedPluginWorkflow(
+                    executionData,
+                    node.data.pluginNode as Record<string, unknown> | undefined,
+                    nestedOutputs,
+                    timestep,
+                    dumpLocalPath,
+                    nestedOutputDir
+                );
+                nestedOutputs.set(node.id, nestedOutput);
+                continue;
+            }
+
+            if (node.type === WorkflowNodeType.Entrypoint) {
+                await this.executeNestedEntrypoint(node.data.entrypoint as Record<string, unknown> | undefined, nestedOutputs, nestedContext, nestedOutputDir);
+                continue;
+            }
+
+            if (node.type === WorkflowNodeType.Exposure || node.type === WorkflowNodeType.Export) {
+                continue;
+            }
+
+            await this.workflowNodeRegistry.execute(node as never, nestedContext as never);
+
+            if (node.type === WorkflowNodeType.ForEach) {
+                const forEachOutput = nestedOutputs.get(node.id) || {};
+                const items = Array.isArray(forEachOutput.items) ? forEachOutput.items : [];
+                if (!items.length) {
+                    return {
+                        execution_result: {
+                            exposures: {
+                                items: [],
+                                str_json: '[]'
+                            }
+                        }
+                    };
+                }
+
+                forEachOutput.currentValue = {
+                    ...(isRecord(items[0]) ? items[0] : {}),
+                    path: dumpLocalPath
+                };
+                forEachOutput.currentIndex = 0;
+                forEachOutput.outputPath = nestedOutputDir;
+                nestedOutputs.set(node.id, forEachOutput);
+            }
+        }
+
+        const exposures = await collectInlineExposureArtifacts(nestedPlugin.workflow, nestedOutputDir);
+        return {
+            execution_result: {
+                exposures: {
+                    items: exposures,
+                    str_json: JSON.stringify(exposures)
+                }
+            }
+        };
+    }
+
+    private async executeNestedEntrypoint(
+        entrypointData: Record<string, unknown> | undefined,
+        outputs: Map<string, Record<string, unknown>>,
+        context: {
+            pluginId: string;
+            analysisId: string;
+        },
+        outputDir: string
+    ): Promise<void> {
+        const binaryObjectPath = typeof entrypointData?.binaryObjectPath === 'string'
+            ? entrypointData.binaryObjectPath
+            : '';
+        const argumentsTemplate = typeof entrypointData?.arguments === 'string'
+            ? entrypointData.arguments
+            : '';
+        if (!binaryObjectPath || !argumentsTemplate) {
+            throw new Error(`Nested plugin ${context.pluginId} has invalid entrypoint configuration`);
+        }
+
+        const executionRuntime = await this.pluginBinaryCacheService.getExecutionRuntime({
+            binaryObjectPath,
+            entrypointType: entrypointData?.type as never,
+            requirementsFile: typeof entrypointData?.requirementsFile === 'string'
+                ? entrypointData.requirementsFile
+                : undefined
+        });
+        const resolvedArgs = resolveTemplate(argumentsTemplate, outputs);
+        const args = parseArguments(resolvedArgs);
+        const result = await this.binaryExecutorService.executeProcess({
+            jobId: `${context.analysisId}:${context.pluginId}:inline`,
+            commandPath: executionRuntime.commandPath,
+            args: [...executionRuntime.argsPrefix, ...args],
+            cwd: outputDir,
+            env: executionRuntime.env
+        });
+
+        if (result.code !== 0) {
+            throw new Error(`Nested plugin ${context.pluginId} failed with code ${result.code}: ${result.stderr || result.stdout}`);
+        }
     }
 
     private async downloadDump(objectKey: string): Promise<string> {

@@ -1,4 +1,4 @@
-import type { DaemonAnalysisDocument, WorkflowDefinition } from '@/shared/contracts';
+import type { DaemonAnalysisDocument, NestedPluginDefinition, WorkflowDefinition } from '@/shared/contracts';
 
 export enum WorkflowNodeType {
     Modifier = 'modifier',
@@ -6,6 +6,7 @@ export enum WorkflowNodeType {
     Context = 'context',
     ForEach = 'forEach',
     Entrypoint = 'entrypoint',
+    Plugin = 'plugin-node',
     Exposure = 'exposure',
     Export = 'export',
     IfStatement = 'if-statement'
@@ -43,6 +44,7 @@ export interface WorkflowExecutionContext {
     selectedTimesteps?: number[];
     selectedTimestep?: number;
     workflow: WorkflowGraph;
+    nestedWorkflows: Map<string, WorkflowDefinition>;
 }
 
 export class WorkflowGraph {

@@ -1,6 +1,7 @@
 import type {
     AnalysisStartRequest,
     DaemonAnalysisDocument,
+    NestedPluginDefinition,
     WorkflowDefinition,
     WorkflowEdgeDefinition,
     WorkflowNodeDefinition
@@ -166,6 +167,15 @@ const readAnalysisTrajectoryFrames = (value: unknown): AnalysisTrajectoryFrame[]
     });
 };
 
+const readNestedPluginDefinition = (value: unknown): NestedPluginDefinition => {
+    const record = readRecord(value, 'nestedPlugins');
+
+    return {
+        pluginId: readString(record.pluginId, 'nestedPlugins.pluginId'),
+        workflow: readWorkflowDefinition(record.workflow)
+    };
+};
+
 const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
     const record = readPayloadRecord(payload);
     const pluginDisplayName = readString(record.pluginDisplayName, 'pluginDisplayName');
@@ -179,6 +189,9 @@ const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
         trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
         trajectoryFrames: readAnalysisTrajectoryFrames(record.trajectoryFrames),
         workflow: readWorkflowDefinition(record.workflow),
+        nestedPlugins: Array.isArray(record.nestedPlugins)
+            ? record.nestedPlugins.map(readNestedPluginDefinition)
+            : [],
         config: readRecord(record.config, 'config')
     };
     const selectedFrameOnly = typeof record.selectedFrameOnly === 'undefined'

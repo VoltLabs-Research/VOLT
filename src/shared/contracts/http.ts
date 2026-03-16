@@ -179,6 +179,11 @@ export interface WorkflowDefinition {
     edges: WorkflowEdgeDefinition[];
 };
 
+export interface NestedPluginDefinition {
+    pluginId: string;
+    workflow: WorkflowDefinition;
+};
+
 export interface AnalysisJobExecutionData {
     binaryObjectPath: string;
     entrypointType?: EntrypointType;
@@ -191,6 +196,8 @@ export interface AnalysisJobExecutionData {
     exposures: AnalysisExposureDefinition[];
     forEachNodeId: string;
     nodeOutputSnapshots: Record<string, Record<string, unknown>>;
+    workflow: WorkflowDefinition;
+    nestedPlugins: NestedPluginDefinition[];
 };
 
 export interface AnalysisStartRequest {
@@ -203,6 +210,7 @@ export interface AnalysisStartRequest {
     trajectoryId: string;
     trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
     workflow: WorkflowDefinition;
+    nestedPlugins: NestedPluginDefinition[];
     config: Record<string, unknown>;
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];

@@ -1,7 +1,7 @@
 import { logger } from '@/core/logger';
 import { WorkflowNodeRegistry } from './NodeRegistry';
 import { WorkflowGraph, WorkflowNodeType, type WorkflowExecutionContext } from '../contracts';
-import type { DaemonAnalysisDocument, WorkflowDefinition } from '@/shared/contracts';
+import type { DaemonAnalysisDocument, NestedPluginDefinition, WorkflowDefinition } from '@/shared/contracts';
 
 export interface WorkflowPlanResult {
     items: Record<string, unknown>[];
@@ -11,6 +11,7 @@ export interface WorkflowPlanResult {
 
 export interface WorkflowExecutionRequest {
     workflow: WorkflowDefinition;
+    nestedPlugins?: NestedPluginDefinition[];
     trajectoryId: string;
     trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
     analysis: DaemonAnalysisDocument;
@@ -82,7 +83,8 @@ export class WorkflowEngine {
             selectedFrameOnly: request.options?.selectedFrameOnly,
             selectedTimesteps: request.options?.selectedTimesteps,
             selectedTimestep: request.options?.timestep,
-            workflow: new WorkflowGraph(request.workflow)
+            workflow: new WorkflowGraph(request.workflow),
+            nestedWorkflows: new Map((request.nestedPlugins ?? []).map((nestedPlugin) => [nestedPlugin.pluginId, nestedPlugin.workflow]))
         };
     }
 }

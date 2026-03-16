@@ -28,6 +28,7 @@ export class AnalysisDispatchService {
 
         const plan = await this.workflowEngine.planExecutionStrategy({
             workflow: input.workflow,
+            nestedPlugins: input.nestedPlugins,
             trajectoryId: input.trajectoryId,
             trajectoryFrames: input.trajectoryFrames,
             analysis: input.analysis,
@@ -58,7 +59,9 @@ export class AnalysisDispatchService {
                     teamClusterId: input.teamClusterId,
                     exposures: this.collectExposures(input.workflow),
                     forEachNodeId: plan.forEachNodeId,
-                    nodeOutputSnapshots: plan.nodeOutputSnapshots
+                    nodeOutputSnapshots: plan.nodeOutputSnapshots,
+                    workflow: input.workflow,
+                    nestedPlugins: input.nestedPlugins
                 }
             });
 
