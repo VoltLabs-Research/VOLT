@@ -69,6 +69,10 @@ const TrajectorySchema: Schema<TrajectoryDocument> = new Schema({
         type: Number,
         default: 0
     },
+    hasPreview: {
+        type: Boolean,
+        default: false
+    },
     stats: {
         totalFiles: { type: Number, default: 0 },
         totalSize: { type: Number, default: 0 }

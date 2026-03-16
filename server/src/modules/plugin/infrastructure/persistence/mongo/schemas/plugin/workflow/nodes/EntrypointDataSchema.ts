@@ -1,4 +1,5 @@
 import { Schema } from 'mongoose';
+import { EntrypointNodeType } from '@modules/plugin/domain/entities/plugin/workflow/nodes/EntrypointNode';
 
 export const EntrypointDataSchema = new Schema({
     binary: {
@@ -12,7 +13,14 @@ export const EntrypointDataSchema = new Schema({
     binaryFileName: {
         type: String
     },
+    type: {
+        type: String,
+        enum: Object.values(EntrypointNodeType)
+    },
     arguments: {
+        type: String
+    },
+    requirementsFile: {
         type: String
     },
     timeout: {

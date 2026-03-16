@@ -3,7 +3,8 @@ export enum ArgumentType{
     Number = 'number',
     Frame = 'frame',
     Boolean = 'boolean',
-    String = 'string'
+    String = 'string',
+    List = 'list'
 };
 
 export interface ArgumentOption{
@@ -18,6 +19,7 @@ export interface ArgumentDefinition{
     default?: unknown;
     value?: unknown;
     options?: ArgumentOption[];
+    listArguments?: ArgumentDefinition[];
     min?: number;
     max?: number;
     step?: number;

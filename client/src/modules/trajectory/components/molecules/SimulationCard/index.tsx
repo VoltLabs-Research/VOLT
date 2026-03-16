@@ -1,5 +1,6 @@
 import { cn } from '@/shared/utils';
 import { getStageMessage, isProcessingStatus } from '@/modules/trajectory/api/entities/trajectory';
+import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
 import useTrajectoryPreview from '@/modules/trajectory/hooks/trajectory/use-trajectory-preview';
 import Container from '@/shared/presentation/components/Container';
 import SimulationCardFooter from '../../atoms/SimulationCardFooter';
@@ -21,12 +22,17 @@ interface SimulationCardProps {
 export default function SimulationCard({ trajectory, isSelected, onSelect, onDelete }: SimulationCardProps) {
     const navigate = useNavigate();
     const createdBy = typeof trajectory.createdBy === 'object' ? trajectory.createdBy : null;
+    const completedRasterTrajectoryIds = useTeamJobsStore((state) => state.completedRasterTrajectoryIds);
+    const hasRasterPreviewReadySignal = completedRasterTrajectoryIds.has(trajectory._id);
+    const isProcessing = isProcessingStatus(trajectory.status);
+    const hasPersistedPreview = trajectory.hasPreview === true;
 
     const { previewBlobUrl } = useTrajectoryPreview({
-        trajectoryId: trajectory._id
+        trajectoryId: trajectory._id,
+        isRasterReady: hasRasterPreviewReadySignal,
+        allowPersistedPreviewFallback: hasPersistedPreview
     });
 
-    const isProcessing = isProcessingStatus(trajectory.status);
     const processingMessage = getStageMessage(trajectory.status);
     const cardAriaLabel = isSelected
         ? `Open selected trajectory ${trajectory.name}`
@@ -75,9 +81,6 @@ export default function SimulationCard({ trajectory, isSelected, onSelect, onDel
         navigate(`/canvas/${trajectory._id}/`);
     }, [navigate, onSelect, trajectory._id]);
 
-    const showPreview = Boolean(previewBlobUrl);
-    const showPlaceholder = !showPreview;
-
     return (
         <article
             className={containerClass}
@@ -89,17 +92,16 @@ export default function SimulationCard({ trajectory, isSelected, onSelect, onDel
             aria-busy={isProcessing}
         >
             <Container className='d-flex flex-center overflow-hidden p-relative w-max cover-container radius-md'>
-                {showPlaceholder && (
-                    <Container className='d-flex flex-center w-max h-max color-muted font-size-5-5'>
-                        <PiAtomThin />
-                    </Container>
-                )}
-                {showPreview && (
+                {previewBlobUrl ? (
                     <img
                         className='w-max h-max cover-image'
                         src={previewBlobUrl}
                         alt={`Preview of ${trajectory.name}`}
                     />
+                ) : (
+                    <Container className='d-flex flex-center w-max h-max color-muted font-size-5-5'>
+                        <PiAtomThin />
+                    </Container>
                 )}
             </Container>
 

@@ -13,7 +13,7 @@ interface NodeReferenceOption {
 // TODO: Get from server
 const BASE_OUTPUT_PROPERTIES: Partial<Record<NodeType, string[]>> = {
     [NodeType.MODIFIER]: ['pluginId', 'trajectory', 'analysis'],
-    [NodeType.ARGUMENTS]: ['as_str', 'as_array'],
+    [NodeType.ARGUMENTS]: ['as_str', 'as_array', 'selectedTimesteps'],
     [NodeType.CONTEXT]: ['trajectory_dumps', 'count', 'trajectory'],
     [NodeType.FOREACH]: ['items', 'count', 'currentValue', 'currentValue.path', 'currentValue.frame', 'currentIndex', 'outputPath'],
     [NodeType.ENTRYPOINT]: ['results', 'successCount', 'failCount', 'stdout', 'stderr', 'exitCode'],

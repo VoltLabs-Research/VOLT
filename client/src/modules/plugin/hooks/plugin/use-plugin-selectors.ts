@@ -49,7 +49,7 @@ const usePluginSelectors = () => {
 
     const getPluginArguments = useCallback((pluginId: string): IArgumentDefinition[] => {
         const plugin = pluginsById[pluginId];
-        return (plugin?.arguments as IArgumentDefinition[]) ?? [];
+        return plugin?.arguments ?? [];
     }, [pluginsById]);
 
     return {

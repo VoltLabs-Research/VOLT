@@ -1,9 +1,17 @@
 const POST_AUTH_DESTINATION_STORAGE_KEY = 'volt:auth:post-auth-destination';
+export const DEFAULT_POST_AUTH_DESTINATION = '/dashboard';
 const TEAM_INVITATION_PATH_PREFIX = '/team-invitation/';
+const ONBOARDING_PATH = '/onboarding';
+const CLUSTER_ONBOARDING_PATH = '/onboarding/cluster/setup';
 
 interface ResolvePostAuthDestinationInput {
     queryNext?: string | null;
     stateDestination?: string | null;
+};
+
+interface BuildOnboardingRedirectPathInput {
+    destination?: string | null;
+    onboardingPath: string;
 };
 
 const getSessionStorage = (): Storage | null => {
@@ -12,6 +20,63 @@ const getSessionStorage = (): Storage | null => {
     }
 
     return window.sessionStorage;
+};
+
+export const sanitizePostAuthDestination = (destination: string | null | undefined): string | null => {
+    if (!destination) {
+        return null;
+    }
+
+    if (!destination.startsWith('/') || destination.startsWith('//')) {
+        return null;
+    }
+
+    try {
+        if (typeof window === 'undefined') {
+            return destination;
+        }
+
+        const url = new URL(destination, window.location.origin);
+
+        if (url.origin !== window.location.origin) {
+            return null;
+        }
+
+        return `${url.pathname}${url.search}${url.hash}`;
+    } catch {
+        return null;
+    }
+};
+
+const isOnboardingDestination = (destination: string): boolean => {
+    const safeDestination = sanitizePostAuthDestination(destination);
+    if (!safeDestination) {
+        return false;
+    }
+
+    try {
+        if (typeof window === 'undefined') {
+            return safeDestination === ONBOARDING_PATH || safeDestination.startsWith(`${ONBOARDING_PATH}/`) || safeDestination.startsWith(`${ONBOARDING_PATH}?`);
+        }
+
+        const url = new URL(safeDestination, window.location.origin);
+        return url.pathname === ONBOARDING_PATH || url.pathname.startsWith(`${ONBOARDING_PATH}/`);
+    } catch {
+        return false;
+    }
+};
+
+const buildOnboardingRedirectPath = ({
+    destination,
+    onboardingPath
+}: BuildOnboardingRedirectPathInput): string => {
+    const safeDestination = sanitizePostAuthDestination(destination);
+
+    if (!safeDestination || safeDestination === onboardingPath || isOnboardingDestination(safeDestination)) {
+        return onboardingPath;
+    }
+
+    return `${onboardingPath}?next=${encodeURIComponent(safeDestination)}`;
 };
 
 export const isTeamInvitationDestination = (destination: string | null | undefined): destination is string => {
@@ -24,7 +89,14 @@ export const setPostAuthDestination = (destination: string): void => {
         return;
     }
 
-    storage.setItem(POST_AUTH_DESTINATION_STORAGE_KEY, destination);
+    const safeDestination = sanitizePostAuthDestination(destination);
+
+    if (!safeDestination) {
+        storage.removeItem(POST_AUTH_DESTINATION_STORAGE_KEY);
+        return;
+    }
+
+    storage.setItem(POST_AUTH_DESTINATION_STORAGE_KEY, safeDestination);
 };
 
 export const getPostAuthDestination = (): string | null => {
@@ -33,7 +105,13 @@ export const getPostAuthDestination = (): string | null => {
         return null;
     }
 
-    return storage.getItem(POST_AUTH_DESTINATION_STORAGE_KEY);
+    const destination = sanitizePostAuthDestination(storage.getItem(POST_AUTH_DESTINATION_STORAGE_KEY));
+
+    if (!destination) {
+        storage.removeItem(POST_AUTH_DESTINATION_STORAGE_KEY);
+    }
+
+    return destination;
 };
 
 export const clearPostAuthDestination = (): void => {
@@ -49,12 +127,14 @@ export const resolvePostAuthDestination = ({
     queryNext,
     stateDestination
 }: ResolvePostAuthDestinationInput): string => {
-    if (queryNext) {
-        return queryNext;
+    const safeQueryNext = sanitizePostAuthDestination(queryNext);
+    if (safeQueryNext) {
+        return safeQueryNext;
     }
 
-    if (stateDestination) {
-        return stateDestination;
+    const safeStateDestination = sanitizePostAuthDestination(stateDestination);
+    if (safeStateDestination) {
+        return safeStateDestination;
     }
 
     const storedDestination = getPostAuthDestination();
@@ -62,17 +142,29 @@ export const resolvePostAuthDestination = ({
         return storedDestination;
     }
 
-    return '/dashboard';
+    return DEFAULT_POST_AUTH_DESTINATION;
+};
+
+export const getOnboardingRedirectPath = (destination?: string | null): string => {
+    return buildOnboardingRedirectPath({
+        destination,
+        onboardingPath: ONBOARDING_PATH
+    });
+};
+
+export const getClusterOnboardingRedirectPath = (destination?: string | null): string => {
+    return buildOnboardingRedirectPath({
+        destination,
+        onboardingPath: CLUSTER_ONBOARDING_PATH
+    });
 };
 
 export const getPostAuthRedirectPath = (destination: string): string => {
-    if (isTeamInvitationDestination(destination)) {
-        return destination;
+    const safeDestination = sanitizePostAuthDestination(destination) ?? DEFAULT_POST_AUTH_DESTINATION;
+
+    if (isTeamInvitationDestination(safeDestination) || isOnboardingDestination(safeDestination)) {
+        return safeDestination;
     }
 
-    if (destination === '/dashboard') {
-        return '/onboarding';
-    }
-
-    return `/onboarding?next=${encodeURIComponent(destination)}`;
+    return getOnboardingRedirectPath(safeDestination);
 };

@@ -1,15 +1,27 @@
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Button from '@/shared/presentation/components/Button';
+import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import Container from '@/shared/presentation/components/Container';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { TbUpload, TbFile, TbTrash, TbCheck } from 'react-icons/tb';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
+import { EntrypointType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { createNodeEditorForm } from '@/shared/forms';
-import type { EditorProps } from '../types';
+import { applyMonacoTheme, getActiveAppTheme, getMonacoThemeName, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
+import Editor from '@monaco-editor/react';
+import { useEffect, useMemo, useState } from 'react';
+import { TbUpload, TbFile, TbTrash, TbCheck } from 'react-icons/tb';
 import { ENTRYPOINT_EDITOR_DEFAULT_VALUES, entrypointEditorSchema, type EntrypointEditorFormValues } from './schema';
 import useEntrypointBinaryActions from './use-entrypoint-binary-actions';
+import type { EditorProps } from '../types';
 import './EntrypointEditor.css';
+
+const ENTRYPOINT_TYPE_OPTIONS = [{
+    value: EntrypointType.EXECUTABLE,
+    title: 'Executable'
+}, {
+    value: EntrypointType.PYTHON_SCRIPT,
+    title: 'Python Script'
+}];
 
 const useEntrypointEditorForm = createNodeEditorForm<EntrypointEditorFormValues, 'entrypoint'>({
     schema: entrypointEditorSchema,
@@ -20,6 +32,7 @@ const useEntrypointEditorForm = createNodeEditorForm<EntrypointEditorFormValues,
 const EntrypointEditor = ({ node }: EditorProps) => {
     const form = useEntrypointEditorForm(node);
     const nodeReferenceOptions = useNodeReferenceAutocomplete(node.id);
+    const [monacoTheme, setMonacoTheme] = useState(() => getMonacoThemeName(getActiveAppTheme()));
     const {
         currentPluginId,
         fileInputRef,
@@ -34,10 +47,49 @@ const EntrypointEditor = ({ node }: EditorProps) => {
     const watchedBinaryObjectPath = form.watch('binaryObjectPath');
     const watchedBinaryFileName = form.watch('binaryFileName');
     const watchedBinary = form.watch('binary');
+    const watchedEntrypointType = form.watch('type') ?? EntrypointType.EXECUTABLE;
+    const watchedRequirementsFile = form.watch('requirementsFile') ?? '';
+    const binarySectionTitle = watchedEntrypointType === EntrypointType.PYTHON_SCRIPT ? 'Script' : 'Binary';
+    const uploadButtonLabel = watchedEntrypointType === EntrypointType.PYTHON_SCRIPT ? 'Upload Script' : 'Upload Binary';
+
+    useEffect(() => {
+        if (!form.getValues('type')) {
+            form.setValue('type', EntrypointType.EXECUTABLE, { shouldDirty: false });
+        }
+
+        if (typeof form.getValues('requirementsFile') !== 'string') {
+            form.setValue('requirementsFile', '', { shouldDirty: false });
+        }
+    }, [form]);
+
+    useEffect(() => {
+        applyMonacoTheme();
+
+        return subscribeToAppTheme((theme) => {
+            setMonacoTheme(getMonacoThemeName(theme));
+            applyMonacoTheme(theme);
+        });
+    }, []);
+
+    const monacoOptions = useMemo(() => ({
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        lineNumbers: 'off' as const,
+        wordWrap: 'off' as const,
+        folding: false,
+        glyphMargin: false,
+        lineDecorationsWidth: 8,
+        overviewRulerLanes: 0,
+        padding: {
+            top: 12,
+            bottom: 12
+        }
+    }), []);
 
     return (
         <>
-            <CollapsibleSection title='Binary' defaultExpanded>
+            <CollapsibleSection title={binarySectionTitle} defaultExpanded>
                 <Container className='d-flex column gap-05 binary-upload-container'>
                     <input
                         ref={fileInputRef}
@@ -73,7 +125,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                             onClick={triggerFileSelect}
                             disabled={isUploading || !currentPluginId}
                         >
-                            {isUploading ? `Uploading... ${uploadProgress}%` : 'Upload Binary'}
+                            {isUploading ? `Uploading... ${uploadProgress}%` : uploadButtonLabel}
                         </Button>
                     )}
 
@@ -101,6 +153,14 @@ const EntrypointEditor = ({ node }: EditorProps) => {
             <CollapsibleSection title='Execution' defaultExpanded>
                 <FormFieldRHF<EntrypointEditorFormValues>
                     variant='inline'
+                    label='Type'
+                    fieldType='select'
+                    name='type'
+                    control={form.control}
+                    options={ENTRYPOINT_TYPE_OPTIONS}
+                />
+                <FormFieldRHF<EntrypointEditorFormValues>
+                    variant='inline'
                     label='Arguments'
                     fieldType='textarea'
                     name='arguments'
@@ -110,6 +170,29 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     autocomplete={{ options: nodeReferenceOptions }}
                 />
             </CollapsibleSection>
+
+            {watchedEntrypointType === EntrypointType.PYTHON_SCRIPT && (
+                <CollapsibleSection title='Requirements File' defaultExpanded>
+                    <Container className='d-flex column gap-05'>
+                        <Paragraph className='entrypoint-requirements-hint font-size-1 color-secondary'>
+                            Define the Python dependencies to install into the cached virtual environment.
+                        </Paragraph>
+                        <Container className='entrypoint-requirements-editor'>
+                            <Editor
+                                height='180px'
+                                language='plaintext'
+                                value={watchedRequirementsFile}
+                                theme={monacoTheme}
+                                loading={<Container className='p-1 color-secondary'>Loading editor...</Container>}
+                                options={monacoOptions}
+                                onChange={(value) => {
+                                    form.setValue('requirementsFile', value ?? '', { shouldDirty: true });
+                                }}
+                            />
+                        </Container>
+                    </Container>
+                </CollapsibleSection>
+            )}
 
             <CollapsibleSection title='Options'>
                 <FormFieldRHF<EntrypointEditorFormValues>

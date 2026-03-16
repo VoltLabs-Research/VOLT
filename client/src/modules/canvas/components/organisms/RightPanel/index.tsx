@@ -1,5 +1,4 @@
 import { buildCanvasModifierOptions, LEGACY_MODIFIERS } from '../../../utilities/modifier-registry';
-import { ArgumentField } from '../../molecules/ModifierConfig';
 import PluginClusterField from '../../molecules/PluginClusterField';
 import SelectedTimestepsField from '../../molecules/SelectedTimestepsField';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
@@ -9,6 +8,7 @@ import ModifierConfig from '../../molecules/ModifierConfig';
 import ModifiersSection from '../../molecules/ModifiersSection';
 import CanvasRenderSections from '../CanvasRenderSections';
 
+import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/molecules/ArgumentFieldsRenderer';
 import { useExecutePluginMutation, usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -77,7 +77,7 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
 
     const hasTeamClusterOptions = teamClusterOptions.length > 0;
 
-    const handlePluginConfigChange = useCallback((pluginId: string, key: string, value: string | number | boolean) => {
+    const handlePluginConfigChange = useCallback((pluginId: string, key: string, value: unknown) => {
         setPluginConfigs((prev) => ({
             ...prev,
             [pluginId]: {
@@ -238,6 +238,10 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
         if(option.isPlugin && option.pluginModifierId){
             const args = getPluginArguments(option.pluginModifierId).filter((a) => a.value === undefined);
             const selectedClusterId = getSelectedClusterId(option.pluginModifierId, option.plugin?.teamCluster);
+            const frameOptions: SelectOption[] = availableTimesteps.map((timestep) => ({
+                value: String(timestep),
+                title: `t=${timestep}`
+            }));
             const selectedTimestepsField = (
                 <SelectedTimestepsField
                     availableTimesteps={availableTimesteps}
@@ -262,22 +266,14 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
 
             if(args.length > 0){
                 content = (
-                    <Container className="d-flex column gap-05">
-                        {args.map((arg, i) => {
-                            const rawValue = pluginConfigs[option.pluginModifierId!]?.[arg.argument];
-                            const val = typeof rawValue === 'string' || typeof rawValue === 'number' || typeof rawValue === 'boolean'
-                                ? rawValue
-                                : undefined;
-                            return (
-                                <ArgumentField 
-                                    key={`${arg.argument}-${i}`} 
-                                    arg={arg} 
-                                    index={i} 
-                                    value={val}
-                                    onChange={(key, v) => handlePluginConfigChange(option.pluginModifierId!, key, v)}
-                                />
-                            );
-                        })}
+                    <Container className='d-flex column gap-05'>
+                        <ArgumentFieldsRenderer
+                            arguments={args}
+                            values={pluginConfigs[option.pluginModifierId!] ?? {}}
+                            onChange={(key, value) => handlePluginConfigChange(option.pluginModifierId!, key, value)}
+                            frameOptions={frameOptions}
+                            emptyMessage='No arguments configured.'
+                        />
                         {clusterField}
                         {selectedTimestepsField}
                     </Container>

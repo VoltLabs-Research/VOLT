@@ -8,8 +8,9 @@ import type { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/sec
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { NextFunction, Request, Response } from 'express';
 import { container } from 'tsyringe';
+
+import type { NextFunction, Request, Response } from 'express';
 
 export enum AuthenticationType {
     User = 'user',
@@ -28,100 +29,165 @@ export interface AuthenticatedRequest extends Request {
     teamPermissions?: string[];
 };
 
-export const protect = async (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    if (
-        (req.authType === AuthenticationType.SecretKey && req.token && req.secretKeyId && req.secretKeyTeamId)
-        || (req.authType === AuthenticationType.User && req.token && req.userId && req.user)
-    ) {
-        next();
-        return;
-    }
+const isAuthenticatedRequest = (req: AuthenticatedRequest): boolean => {
+    return (
+        (req.authType === AuthenticationType.SecretKey && req.token !== undefined && req.secretKeyId !== undefined && req.secretKeyTeamId !== undefined)
+        || (req.authType === AuthenticationType.User && req.token !== undefined && req.userId !== undefined && req.user !== undefined)
+    );
+};
 
+const getBearerToken = (req: AuthenticatedRequest): string | undefined => {
     const authorizationHeader = req.headers.authorization;
-    const token = authorizationHeader?.startsWith('Bearer ')
+
+    return authorizationHeader?.startsWith('Bearer ')
         ? authorizationHeader.split(' ')[1]
         : undefined;
+};
 
-    if (!token) {
-        BaseResponse.error(res, ErrorCodes.AUTHENTICATION_REQUIRED, 401, ErrorCodes.AUTHENTICATION_REQUIRED);
-        return;
+const authenticateWithSecretKey = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    token: string
+): Promise<boolean> => {
+    const startTime = Date.now();
+    const secretKeyRepository = container.resolve<ISecretKeyRepository>(TEAM_TOKENS.SecretKeyRepository);
+    const secretKey = await secretKeyRepository.findActiveByRawKey(token);
+
+    if (!secretKey) {
+        BaseResponse.error(res, ErrorCodes.SECRET_KEY_INVALID, 401, ErrorCodes.SECRET_KEY_INVALID);
+        return false;
     }
 
-    if (token.startsWith('vsk_')) {
-        const startTime = Date.now();
-        const secretKeyRepository = container.resolve<ISecretKeyRepository>(TEAM_TOKENS.SecretKeyRepository);
-        const secretKey = await secretKeyRepository.findActiveByRawKey(token);
+    const role = isPopulatedSecretKeyRole(secretKey.props.role)
+        ? secretKey.props.role
+        : undefined;
+    const createdById = secretKey.getCreatedById();
 
-        if (!secretKey) {
-            BaseResponse.error(res, ErrorCodes.SECRET_KEY_INVALID, 401, ErrorCodes.SECRET_KEY_INVALID);
-            return;
-        }
+    req.authType = AuthenticationType.SecretKey;
+    req.token = token;
+    req.secretKeyId = secretKey.id;
+    req.secretKeyTeamId = String(secretKey.props.team);
+    req.secretKeyRoleId = role?._id?.toString?.() || secretKey.getRoleId();
+    req.teamPermissions = Array.isArray(role?.permissions)
+        ? role.permissions
+        : [];
+    req.userId = createdById;
 
-        const role = isPopulatedSecretKeyRole(secretKey.props.role)
-            ? secretKey.props.role
-            : undefined;
-        const createdById = secretKey.getCreatedById();
+    await secretKeyRepository.touchLastUsed(secretKey.id);
 
-        req.authType = AuthenticationType.SecretKey;
-        req.token = token;
-        req.secretKeyId = secretKey.id;
-        req.secretKeyTeamId = String(secretKey.props.team);
-        req.secretKeyRoleId = role?._id?.toString?.() || secretKey.getRoleId();
-        req.teamPermissions = Array.isArray(role?.permissions)
-            ? role.permissions
-            : [];
-        req.userId = createdById;
-
-        await secretKeyRepository.touchLastUsed(secretKey.id);
-
-        res.on('finish', () => {
-            const usageLogRepository = container.resolve<ISecretKeyUsageLogRepository>(TEAM_TOKENS.SecretKeyUsageLogRepository);
-            const userAgentHeader = req.headers['user-agent'];
-            usageLogRepository.logRequest({
-                secretKey: secretKey.id,
-                team: String(secretKey.props.team),
-                method: req.method,
-                path: req.route?.path || req.originalUrl || req.path,
-                statusCode: res.statusCode,
-                responseTime: Date.now() - startTime,
-                ip: req.ip || req.socket.remoteAddress || 'unknown',
-                userAgent: (Array.isArray(userAgentHeader) ? userAgentHeader[0] : userAgentHeader) || 'unknown'
-            }).catch((err) => {
-                logger.warn(err, '@authentication: failed to log secret key usage');
-            });
+    res.on('finish', () => {
+        const usageLogRepository = container.resolve<ISecretKeyUsageLogRepository>(TEAM_TOKENS.SecretKeyUsageLogRepository);
+        const userAgentHeader = req.headers['user-agent'];
+        usageLogRepository.logRequest({
+            secretKey: secretKey.id,
+            team: String(secretKey.props.team),
+            method: req.method,
+            path: req.route?.path || req.originalUrl || req.path,
+            statusCode: res.statusCode,
+            responseTime: Date.now() - startTime,
+            ip: req.ip || req.socket.remoteAddress || 'unknown',
+            userAgent: (Array.isArray(userAgentHeader) ? userAgentHeader[0] : userAgentHeader) || 'unknown'
+        }).catch((err) => {
+            logger.warn(err, '@authentication: failed to log secret key usage');
         });
+    });
 
-        next();
-        return;
-    }
+    return true;
+};
 
+const authenticateWithUserToken = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    token: string
+): Promise<boolean> => {
     const tokenService = container.resolve<ITokenService>(AUTH_TOKENS.TokenService);
     const decoded = tokenService.verify(token);
     if (!decoded) {
         BaseResponse.error(res, ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 401, ErrorCodes.AUTHENTICATION_UNAUTHORIZED);
-        return;
+        return false;
     }
 
     const userRepository = container.resolve<IUserRepository>(AUTH_TOKENS.UserRepository);
     const user = await userRepository.findById(decoded.id);
     if (!user) {
         BaseResponse.error(res, ErrorCodes.USER_NOT_FOUND, 401, ErrorCodes.USER_NOT_FOUND);
-        return;
+        return false;
     }
 
     if (user.isPasswordChangedAfterTokenIssued(decoded.iat ?? 0)) {
         BaseResponse.error(res, ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 401, ErrorCodes.AUTHENTICATION_UNAUTHORIZED);
-        return;
+        return false;
     }
 
     req.authType = AuthenticationType.User;
     req.user = user;
     req.userId = user.id;
     req.token = token;
+
+    return true;
+};
+
+const authenticateFromToken = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    token: string
+): Promise<boolean> => {
+    if (token.startsWith('vsk_')) {
+        return authenticateWithSecretKey(req, res, token);
+    }
+
+    return authenticateWithUserToken(req, res, token);
+};
+
+export const protect = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    if (isAuthenticatedRequest(req)) {
+        next();
+        return;
+    }
+
+    const token = getBearerToken(req);
+
+    if (!token) {
+        BaseResponse.error(res, ErrorCodes.AUTHENTICATION_REQUIRED, 401, ErrorCodes.AUTHENTICATION_REQUIRED);
+        return;
+    }
+
+    const isAuthenticated = await authenticateFromToken(req, res, token);
+    if (!isAuthenticated) {
+        return;
+    }
+
+    next();
+};
+
+/**
+ * Authenticates the request when a bearer token is present, but allows guests when omitted.
+ */
+export const authenticateOptional = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    if (isAuthenticatedRequest(req)) {
+        next();
+        return;
+    }
+
+    const token = getBearerToken(req);
+
+    if (!token) {
+        next();
+        return;
+    }
+
+    const isAuthenticated = await authenticateFromToken(req, res, token);
+    if (!isAuthenticated) {
+        return;
+    }
 
     next();
 };

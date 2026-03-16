@@ -46,6 +46,10 @@ export const ArgumentDefinitionSchema = new Schema({
     }
 }, { _id: false });
 
+ArgumentDefinitionSchema.add({
+    listArguments: [ArgumentDefinitionSchema]
+});
+
 export const ArgumentsDataSchema = new Schema({
     arguments: [ArgumentDefinitionSchema]
 }, { _id: false });

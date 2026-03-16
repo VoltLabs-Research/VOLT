@@ -1,4 +1,5 @@
 import { useAcceptInvitationMutation, useInvitationDetailsQuery, useRejectInvitationMutation } from '@/modules/team/hooks/invitation/queries';
+import { getOnboardingRedirectPath } from '@/modules/auth/services/post-auth-destination-storage';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { ErrorSurface, isAccessDeniedError, normalizeError, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
@@ -73,7 +74,7 @@ export default function TeamInvitationTemplate() {
                 afterSuccess: () => {
                     setSelectedTeamId(invitation.team._id);
                     setError(null);
-                    navigate('/onboarding');
+                    navigate(getOnboardingRedirectPath('/dashboard'));
                 }
             });
         } catch (actionError: unknown) {
@@ -90,7 +91,7 @@ export default function TeamInvitationTemplate() {
                 toast: REJECT_INVITATION_TOAST_OPTIONS,
                 afterSuccess: () => {
                     setError(null);
-                    navigate('/onboarding');
+                    navigate(getOnboardingRedirectPath('/dashboard'));
                 }
             });
         } catch (actionError: unknown) {

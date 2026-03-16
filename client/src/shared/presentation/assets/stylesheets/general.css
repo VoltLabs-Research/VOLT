@@ -144,6 +144,18 @@
     height: 100%;
 }
 
+.mw-max {
+    max-width: 100%;
+}
+
+.mh-max {
+    max-height: 100%;
+}
+
+.object-contain {
+    object-fit: contain;
+}
+
 .wh-max {
     width: 100vw;
 }

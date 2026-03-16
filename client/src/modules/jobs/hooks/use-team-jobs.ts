@@ -30,8 +30,14 @@ const buildRasterJobKey = (trajectoryId: string, timestep?: number): string | nu
     return `${trajectoryId}:${timestep}`;
 };
 
-const extractRasterPendingKeys = (groups: TrajectoryJobGroup[]): Set<string> => {
+interface RasterJobState {
+    pendingKeys: Set<string>;
+    completedTrajectoryIds: Set<string>;
+};
+
+const extractRasterJobState = (groups: TrajectoryJobGroup[]): RasterJobState => {
     const pendingKeys = new Set<string>();
+    const completedTrajectoryIds = new Set<string>();
 
     for (const group of groups) {
         for (const frameGroup of group.frameGroups) {
@@ -41,25 +47,32 @@ const extractRasterPendingKeys = (groups: TrajectoryJobGroup[]): Set<string> => 
                 }
 
                 const isPending = job.status !== JobStatus.Completed && job.status !== JobStatus.Failed;
-                if (!isPending) {
+                if (isPending) {
+                    const timestep = typeof job.timestep === 'number'
+                        ? job.timestep
+                        : typeof job.metadata?.timestep === 'number'
+                            ? job.metadata.timestep
+                            : undefined;
+                    const pendingKey = buildRasterJobKey(job.trajectoryId, timestep);
+
+                    if (pendingKey) {
+                        pendingKeys.add(pendingKey);
+                    }
+
                     continue;
                 }
 
-                const timestep = typeof job.timestep === 'number'
-                    ? job.timestep
-                    : typeof job.metadata?.timestep === 'number'
-                        ? job.metadata.timestep
-                        : undefined;
-                const pendingKey = buildRasterJobKey(job.trajectoryId, timestep);
-
-                if (pendingKey) {
-                    pendingKeys.add(pendingKey);
+                if (job.status === JobStatus.Completed) {
+                    completedTrajectoryIds.add(job.trajectoryId);
                 }
             }
         }
     }
 
-    return pendingKeys;
+    return {
+        pendingKeys,
+        completedTrajectoryIds
+    };
 };
 
 const useTeamJobs = () => {
@@ -77,6 +90,7 @@ const useTeamJobs = () => {
     const setCurrentTeamId = useTeamJobsStore((state) => state.setCurrentTeamId);
     const setPendingRasterKeys = useTeamJobsStore((state) => state.setPendingRasterKeys);
     const setInFlightRasterTrajectoryIds = useTeamJobsStore((state) => state.setInFlightRasterTrajectoryIds);
+    const setCompletedRasterTrajectoryIds = useTeamJobsStore((state) => state.setCompletedRasterTrajectoryIds);
     const reset = useTeamJobsStore((state) => state.reset);
 
     const { data: groups = [] } = teamJobsGroups();
@@ -94,9 +108,12 @@ const useTeamJobs = () => {
     }, [clearJobsLoadingTimeout, setLoading]);
 
     const setGroups = useCallback((newGroups: TrajectoryJobGroup[]) => {
+        const rasterJobState = extractRasterJobState(newGroups);
+
         setTeamJobsGroupsQueryData(newGroups, queryClient);
-        setPendingRasterKeys(extractRasterPendingKeys(newGroups));
-    }, [queryClient, setPendingRasterKeys]);
+        setPendingRasterKeys(rasterJobState.pendingKeys);
+        setCompletedRasterTrajectoryIds(rasterJobState.completedTrajectoryIds);
+    }, [queryClient, setCompletedRasterTrajectoryIds, setPendingRasterKeys]);
 
     const handleConnect = useCallback((connected: boolean) => {
         setConnected(connected);
@@ -128,7 +145,10 @@ const useTeamJobs = () => {
         }
 
         updateTeamJobsGroupsQueryData((currentGroups) => applyJobUpdate(currentGroups, event), queryClient);
-        setPendingRasterKeys(extractRasterPendingKeys(getTeamJobsGroupsQueryData(queryClient)));
+        const rasterJobState = extractRasterJobState(getTeamJobsGroupsQueryData(queryClient));
+
+        setPendingRasterKeys(rasterJobState.pendingKeys);
+        setCompletedRasterTrajectoryIds(rasterJobState.completedTrajectoryIds);
 
         if (isRasterUpdate) {
             if (event.status === JobStatus.Completed) {
@@ -146,7 +166,7 @@ const useTeamJobs = () => {
             queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.simulationGrid() });
             queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.trajectories() });
         }, 500);
-    }, [queryClient, setInFlightRasterTrajectoryIds, setPendingRasterKeys]);
+    }, [queryClient, setCompletedRasterTrajectoryIds, setInFlightRasterTrajectoryIds, setPendingRasterKeys]);
 
     const handleInitialJobsEvent = useCallback((payload: TeamJobsEventPayload) => {
         handleTeamJobs(payload);
@@ -182,8 +202,9 @@ const useTeamJobs = () => {
         resetTeamJobsGroupsQueryData(queryClient);
         setPendingRasterKeys(new Set<string>());
         setInFlightRasterTrajectoryIds(new Set<string>());
+        setCompletedRasterTrajectoryIds(new Set<string>());
         reset();
-    }, [clearJobsLoadingTimeout, queryClient, reset, setInFlightRasterTrajectoryIds, setPendingRasterKeys]);
+    }, [clearJobsLoadingTimeout, queryClient, reset, setCompletedRasterTrajectoryIds, setInFlightRasterTrajectoryIds, setPendingRasterKeys]);
 
     useEffect(() => {
         const unsubscribeFromConnectionChanges = socketService.onConnectionChange(handleConnect);

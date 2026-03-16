@@ -18,13 +18,13 @@ import { useEffect, useRef } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
+interface ProtectedRouteProps{
+    mode: RouteMode;
+};
+
 export enum RouteMode {
     Protected = 'protected',
     Guest = 'guest'
-};
-
-interface ProtectedRouteProps{
-    mode: RouteMode;
 };
 
 setGetTeamId(() => useTeamStore.getState().selectedTeamId ?? null);
@@ -60,8 +60,8 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     const isAuthenticated = !!user;
     const hasTeam = !!selectedTeamId;
     const isStartRoute = location.pathname === '/start';
-    const isTeamInvitationRoute = location.pathname.startsWith('/team-invitation/');
     const isOnboardingRoute = location.pathname === '/onboarding' || location.pathname.startsWith('/onboarding/');
+    const isTeamInvitationRoute = location.pathname.startsWith('/team-invitation/');
     const canAccessWithoutSelectedTeam = isStartRoute || isTeamInvitationRoute || isOnboardingRoute;
 
     const renderProtectedContent = (content: ReactNode) => {
@@ -119,19 +119,16 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
     if(mode === RouteMode.Protected){
         if(!isAuthenticated){
-            if (isTeamInvitationRoute) {
-                const destination = location.pathname + location.search;
-                setPostAuthDestination(destination);
+            const destination = location.pathname + location.search;
+            setPostAuthDestination(destination);
 
-                return renderProtectedContent(
-                    <Navigate
-                        to={`/auth/sign-in?next=${encodeURIComponent(destination)}`}
-                        replace
-                    />
-                );
-            }
-
-            return renderProtectedContent(<Navigate to='/auth/sign-in' state={{ from: location }} replace />);
+            return renderProtectedContent(
+                <Navigate
+                    to={`/auth/sign-in?next=${encodeURIComponent(destination)}`}
+                    state={{ from: location }}
+                    replace
+                />
+            );
         }
 
         if (canAccessWithoutSelectedTeam) {

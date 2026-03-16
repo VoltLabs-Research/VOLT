@@ -31,6 +31,7 @@ export interface IComputedArgumentDefinition {
     default?: unknown;
     value?: unknown;
     options?: IComputedArgumentOption[];
+    listArguments?: IComputedArgumentDefinition[];
     min?: number;
     max?: number;
     step?: number;

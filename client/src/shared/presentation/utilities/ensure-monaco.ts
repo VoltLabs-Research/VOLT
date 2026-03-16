@@ -35,8 +35,8 @@ const MONACO_THEME_TOKENS: Record<Theme, MonacoThemeTokens> = {
     [Theme.Dark]: {
         background: '#101011',
         surface: '#171719',
-        lineHighlight: 'rgba(255, 255, 255, 0.04)',
-        selection: 'rgba(255, 255, 255, 0.06)',
+        lineHighlight: '#ffffff0a',
+        selection: '#ffffff0f',
         borderSoft: '#1D1D20',
         borderStrong: '#2B2B2E',
         foreground: '#f0f0f0',
@@ -50,9 +50,9 @@ const MONACO_THEME_TOKENS: Record<Theme, MonacoThemeTokens> = {
     [Theme.Light]: {
         background: '#ffffff',
         surface: '#f5f5f7',
-        lineHighlight: 'rgba(0, 0, 0, 0.04)',
-        selection: 'rgba(0, 0, 0, 0.08)',
-        borderSoft: 'rgb(0 0 0 / 8%)',
+        lineHighlight: '#0000000a',
+        selection: '#00000014',
+        borderSoft: '#00000014',
         borderStrong: '#c7c7cc',
         foreground: '#1d1d1f',
         secondaryForeground: '#4f4f4f',

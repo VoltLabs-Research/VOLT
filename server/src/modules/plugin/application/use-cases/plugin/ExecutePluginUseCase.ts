@@ -22,6 +22,8 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
 
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
+import type { WorkflowNode } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 
 interface ExecutePluginOutputDTO {
     analysisId: string;
@@ -36,6 +38,26 @@ interface AnalysisExecutionMetadata {
 };
 
 const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
+const SELECTED_TIMESTEPS_RUNTIME_ARGUMENT_KEY = 'selectedTimesteps';
+
+const hasArgumentDefinition = (definitions: ArgumentDefinition[], argumentKey: string): boolean => {
+    return definitions.some((definition) => {
+        if (definition.argument === argumentKey) {
+            return true;
+        }
+
+        return definition.listArguments
+            ? hasArgumentDefinition(definition.listArguments, argumentKey)
+            : false;
+    });
+};
+
+const hasPersistedArgumentCollision = (nodes: WorkflowNode[], argumentKey: string): boolean => {
+    const argumentsNode = nodes.find((node) => node.type === 'arguments');
+    const definitions = argumentsNode?.data.arguments?.arguments ?? [];
+
+    return hasArgumentDefinition(definitions, argumentKey);
+};
 
 const sanitizeSelectedTimesteps = (
     selectedTimesteps: number[] | undefined,
@@ -59,10 +81,18 @@ const sanitizeSelectedTimesteps = (
 
 const createAnalysisConfig = (
     config: Record<string, unknown>,
-    selectedTimesteps: number[] | undefined
+    selectedTimesteps: number[] | undefined,
+    shouldInjectRuntimeMetadata: boolean
 ): Record<string, unknown> => {
+    if (!shouldInjectRuntimeMetadata) {
+        return { ...config };
+    }
+
+    const sanitizedConfig = { ...config };
+    delete sanitizedConfig[SELECTED_TIMESTEPS_RUNTIME_ARGUMENT_KEY];
+
     if (!selectedTimesteps?.length) {
-        return config;
+        return sanitizedConfig;
     }
 
     const metadata: AnalysisExecutionMetadata = {
@@ -70,7 +100,7 @@ const createAnalysisConfig = (
     };
 
     return {
-        ...config,
+        ...sanitizedConfig,
         [ANALYSIS_EXECUTION_METADATA_KEY]: metadata
     };
 };
@@ -169,7 +199,15 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         }
 
         const selectedTimesteps = sanitizeSelectedTimesteps(input.selectedTimesteps, trajectory.props.frames);
-        const analysisConfig = createAnalysisConfig(input.config, selectedTimesteps);
+        const hasSelectedTimestepsCollision = hasPersistedArgumentCollision(
+            plugin.props.workflow.props.nodes,
+            SELECTED_TIMESTEPS_RUNTIME_ARGUMENT_KEY
+        );
+        const analysisConfig = createAnalysisConfig(
+            input.config,
+            selectedTimesteps,
+            !hasSelectedTimestepsCollision
+        );
 
         await this.eventBus.publish(new PluginExecutionRequestEvent({
             pluginId: plugin._id,
@@ -212,7 +250,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             trajectoryFrames: trajectory.props.frames,
             teamId: input.teamId,
             plugin,
-            config: input.config,
+            config: analysisConfig,
             selectedFrameOnly: input.selectedFrameOnly,
             selectedTimesteps,
             timestep: input.timestep

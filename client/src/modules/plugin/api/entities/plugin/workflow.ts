@@ -2,6 +2,7 @@ import type {
     NodeType,
     ArgumentType,
     ModifierContext,
+    EntrypointType,
     Exporter,
     ExportType_,
     ConditionType,
@@ -52,6 +53,7 @@ export interface IArgumentDefinition {
     default?: unknown;
     value?: unknown;
     options?: IArgumentOption[];
+    listArguments?: IArgumentDefinition[];
     min?: number;
     max?: number;
     step?: number;
@@ -86,7 +88,9 @@ export interface IEntrypointData {
     binaryObjectPath?: string;
     binaryFileName?: string;
     binaryHash?: string;
+    type?: EntrypointType;
     arguments: string;
+    requirementsFile?: string;
     timeout?: number;
 };
 
