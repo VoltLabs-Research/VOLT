@@ -1,6 +1,4 @@
 import { resolveSSAOSettings } from '@/shared/domain/rendering/effects';
-import { Theme } from '@/shared/presentation/hooks/use-theme';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
 import {
     Bloom,
     ChromaticAberration,
@@ -11,7 +9,7 @@ import {
     Sepia,
     Vignette
 } from '@react-three/postprocessing';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Vector2 } from 'three';
 
 import type { EffectsConfigState } from '@/modules/fractal/stores/contracts/editor/visual-types';
@@ -19,10 +17,10 @@ import type { EffectsConfigState } from '@/modules/fractal/stores/contracts/edit
 interface DynamicEffectsProps {
     settings: EffectsConfigState;
     isDefectScene?: boolean;
+    darkTheme: boolean;
 };
 
-const DynamicEffects = ({ settings, isDefectScene }: DynamicEffectsProps) => {
-    const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
+const DynamicEffects = ({ settings, isDefectScene, darkTheme }: DynamicEffectsProps) => {
     const {
         bloom,
         chromaticAberration,
@@ -32,11 +30,6 @@ const DynamicEffects = ({ settings, isDefectScene }: DynamicEffectsProps) => {
         noise
     } = settings;
 
-    useEffect(() => {
-        return subscribeToAppTheme(setTheme);
-    }, []);
-
-    const darkTheme = theme === Theme.Dark;
     const ssao = useMemo(() => {
         return resolveSSAOSettings(settings.ssao, { isDefectScene });
     }, [isDefectScene, settings.ssao]);

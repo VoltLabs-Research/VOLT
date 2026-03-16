@@ -320,7 +320,7 @@ export const resolveCanvasRuntimeProps = (
     options: CanvasRuntimeResolutionOptions
 ): ResolvedCanvasRuntimeProps => ({
     dpr: resolveCanvasDpr(settings, options),
-    performance: { ...settings.performance }
+    performance: settings.performance
 });
 
 /** Resolves the AdaptiveDpr component props from a performance state snapshot. */

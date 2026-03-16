@@ -15,6 +15,7 @@ import DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructur
 import CompleteTeamClusterDeletionUseCase from '@modules/team-cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
 import CreateTeamClusterRemoteAccessSessionUseCase from '@modules/team-cluster/application/use-cases/CreateTeamClusterRemoteAccessSessionUseCase';
 import FetchAvailableClusterVersionsUseCase from '@modules/team-cluster/application/use-cases/FetchAvailableClusterVersionsUseCase';
+import GetClusterResourceLimitsUseCase from '@modules/team-cluster/application/use-cases/GetClusterResourceLimitsUseCase';
 import ProcessDaemonJobCompletionUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonJobCompletionUseCase';
 import ProcessDaemonSceneArtifactUpsertUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
 import ProcessDaemonTrajectoryImportUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonTrajectoryImportUseCase';
@@ -44,6 +45,7 @@ export const registerTeamClusterDependencies = () => {
             CompleteTeamClusterDeletionUseCase,
             CreateTeamClusterRemoteAccessSessionUseCase,
             FetchAvailableClusterVersionsUseCase,
+            GetClusterResourceLimitsUseCase,
             GetTeamClusterRemoteExplorerNodeUseCase,
             ListTeamClusterRemoteExplorerEntriesUseCase,
             ProcessDaemonJobCompletionUseCase,

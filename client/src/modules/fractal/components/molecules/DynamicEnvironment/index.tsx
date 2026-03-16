@@ -1,7 +1,5 @@
 import { resolveEnvironmentColor, EnvironmentColorField } from '@/shared/domain/rendering/environment';
-import { Theme } from '@/shared/presentation/hooks/use-theme';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Color, Fog } from 'three';
 
@@ -9,17 +7,12 @@ import type { EnvironmentConfigState } from '@/modules/fractal/stores/contracts/
 
 interface DynamicEnvironmentProps {
     settings: EnvironmentConfigState;
+    darkTheme: boolean;
 };
 
-const DynamicEnvironment = ({ settings }: DynamicEnvironmentProps) => {
+const DynamicEnvironment = ({ settings, darkTheme }: DynamicEnvironmentProps) => {
     const { scene } = useThree();
-    const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
 
-    useEffect(() => {
-        return subscribeToAppTheme(setTheme);
-    }, []);
-
-    const darkTheme = theme === Theme.Dark;
     const backgroundColor = resolveEnvironmentColor(
         settings.backgroundColor,
         settings.backgroundColorFollowsTheme,

@@ -60,6 +60,8 @@ const FractalScenePipeline = ({
         return subscribeToAppTheme(setTheme);
     }, []);
 
+    const darkTheme = theme === Theme.Dark;
+
     const gizmoColors = useMemo<GizmoColors>(() => {
         if (theme === Theme.Light) {
             return {
@@ -92,10 +94,10 @@ const FractalScenePipeline = ({
                     />
                 </GizmoHelper>
             )}
-            <DynamicEffects settings={config.effects} isDefectScene={isDefectScene} />
-            <DynamicLights settings={config.lights} />
-            <DynamicEnvironment settings={config.environment} />
-            <DynamicLights preset={isDefectScene ? LightingPreset.Defect : LightingPreset.Trajectory} />
+            <DynamicEffects settings={config.effects} isDefectScene={isDefectScene} darkTheme={darkTheme} />
+            <DynamicLights settings={config.lights} darkTheme={darkTheme} />
+            <DynamicEnvironment settings={config.environment} darkTheme={darkTheme} />
+            <DynamicLights preset={isDefectScene ? LightingPreset.Defect : LightingPreset.Trajectory} darkTheme={darkTheme} />
             <OrbitControls
                 ref={(r) => {
                     orbitRef.current = r;
@@ -106,7 +108,7 @@ const FractalScenePipeline = ({
                 onEnd={() => markInteracting(false)}
             />
             {gridEnabled && (
-                <CanvasGrid settings={{ ...config.grid, enabled: gridEnabled }} />
+                <CanvasGrid settings={{ ...config.grid, enabled: gridEnabled }} darkTheme={darkTheme} />
             )}
             <SlicePlaneHelper config={config.slicePlaneConfig} modelWorldBounds={modelWorldBounds} />
             <Bvh firstHitOnly>
