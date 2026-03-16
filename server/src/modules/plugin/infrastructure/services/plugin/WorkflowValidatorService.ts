@@ -27,6 +27,7 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
     ): Promise<WorkflowValidationResult> {
         const errors: string[] = [];
         let modifier: WorkflowNode | undefined;
+        const pluginNodes = workflow?.nodes?.filter((node) => node.type === WorkflowNodeType.Plugin) ?? [];
 
         if (!workflow || !workflow.nodes || !Array.isArray(workflow.nodes)) {
             errors.push('Workflow must have a nodes array');
@@ -41,10 +42,6 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
             }))
             .filter((reference) => Boolean(reference.pluginId));
 
-        if (pluginReferences.length > 0) {
-            this.validatePluginNodeTopology(workflow, errors);
-        }
-
         const modifierNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Modifier);
         if (!modifierNode) {
             errors.push('Workflow must have a modifier node');
@@ -54,6 +51,10 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
 
         if (!workflow.edges || !Array.isArray(workflow.edges)) {
             errors.push('Workflow must have edges array');
+        }
+
+        if (pluginNodes.length > 0 && Array.isArray(workflow.edges)) {
+            this.validatePluginNodeTopology(workflow, errors);
         }
 
         const nodeIds = new Set(workflow.nodes.map((node) => node.id));
@@ -167,20 +168,33 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
                 continue;
             }
 
-            const parents = parentMap.get(node.id) ?? [];
-            const invalidParents = parents.filter((parent) => !this.isAllowedRuntimeParent(parent.type));
-            if (invalidParents.length > 0) {
-                errors.push(`Plugin node ${node.id} has unsupported upstream placement`);
+            const pluginId = node.data.pluginNode?.pluginId?.trim() ?? '';
+            if (!pluginId) {
+                errors.push(`Plugin node ${node.id} must reference a published plugin`);
             }
 
-            if (!this.hasAncestorOfType(node.id, workflow, new Set([WorkflowNodeType.Entrypoint]))) {
-                errors.push(`Plugin node ${node.id} is only supported after the top-level planning segment`);
+            const parents = parentMap.get(node.id) ?? [];
+            const invalidParents = parents.filter((parent) => !this.isAllowedRuntimeParent(parent.type));
+            if (parents.length !== 1 || invalidParents.length > 0) {
+                errors.push(`Plugin node ${node.id} must be connected directly after a forEach node or another plugin node`);
+            }
+
+            if (!this.hasAncestorOfType(node.id, workflow, new Set([WorkflowNodeType.ForEach]))) {
+                errors.push(`Plugin node ${node.id} must run after the top-level planning segment`);
+            }
+
+            if (this.hasAncestorOfType(node.id, workflow, new Set([WorkflowNodeType.Entrypoint]))) {
+                errors.push(`Plugin node ${node.id} must run before the top-level entrypoint`);
             }
 
             const children = childMap.get(node.id) ?? [];
-            const invalidChildren = children.filter((child) => child.type !== WorkflowNodeType.Plugin);
-            if (invalidChildren.length > 0) {
-                errors.push(`Plugin node ${node.id} may only connect to downstream plugin nodes`);
+            const invalidChildren = children.filter((child) => !this.isAllowedRuntimeChild(child.type));
+            if (children.length !== 1 || invalidChildren.length > 0) {
+                errors.push(`Plugin node ${node.id} must connect only to a downstream plugin node or the top-level entrypoint`);
+            }
+
+            if (!this.hasDescendantOfType(node.id, workflow, new Set([WorkflowNodeType.Entrypoint]))) {
+                errors.push(`Plugin node ${node.id} must eventually connect to the top-level entrypoint`);
             }
         }
     }
@@ -214,9 +228,42 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         return false;
     }
 
+    private hasDescendantOfType(nodeId: string, workflow: WorkflowProps, allowedTypes: Set<WorkflowNodeType>): boolean {
+        const visited = new Set<string>();
+        const queue = [nodeId];
+
+        while (queue.length > 0) {
+            const currentNodeId = queue.shift() as string;
+            if (visited.has(currentNodeId)) {
+                continue;
+            }
+
+            visited.add(currentNodeId);
+            const childEdges = workflow.edges.filter((edge) => edge.source === currentNodeId);
+            for (const edge of childEdges) {
+                const childNode = workflow.nodes.find((candidate) => candidate.id === edge.target);
+                if (!childNode) {
+                    continue;
+                }
+
+                if (allowedTypes.has(childNode.type)) {
+                    return true;
+                }
+
+                queue.push(childNode.id);
+            }
+        }
+
+        return false;
+    }
+
     private isAllowedRuntimeParent(nodeType: WorkflowNodeType): boolean {
+        return nodeType === WorkflowNodeType.ForEach
+            || nodeType === WorkflowNodeType.Plugin;
+    }
+
+    private isAllowedRuntimeChild(nodeType: WorkflowNodeType): boolean {
         return nodeType === WorkflowNodeType.Entrypoint
-            || nodeType === WorkflowNodeType.IfStatement
             || nodeType === WorkflowNodeType.Plugin;
     }
 };
