@@ -31,6 +31,7 @@ export interface WorkflowEdge {
 export interface WorkflowExecutionContext {
     outputs: Map<string, Record<string, unknown>>;
     userConfig: Record<string, unknown>;
+    runtimeArguments: Record<string, unknown>;
     trajectoryId: string;
     trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
     analysis: DaemonAnalysisDocument;

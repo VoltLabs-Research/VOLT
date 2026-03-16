@@ -134,7 +134,11 @@ const parseTrajectoryModel = (trajectoryId: string, objectKey: string): ParsedTr
     };
 };
 
-const buildRasterJobPayload = (input: RasterizeTrajectoryRequest, model: ParsedTrajectoryModel): RasterQueueJobPayload => {
+const buildRasterJobPayload = (
+    input: RasterizeTrajectoryRequest,
+    model: ParsedTrajectoryModel,
+    autoPreview = false
+): RasterQueueJobPayload => {
     const timestamp = new Date().toISOString();
 
     return {
@@ -150,7 +154,8 @@ const buildRasterJobPayload = (input: RasterizeTrajectoryRequest, model: ParsedT
         metadata: {
             trajectoryId: input.trajectoryId,
             trajectoryName: input.trajectoryName,
-            timestep: model.timestep
+            timestep: model.timestep,
+            autoPreview
         },
         createdAt: timestamp,
         updatedAt: timestamp
@@ -189,7 +194,11 @@ const queueAutoPreviewRasterizationJob = async (
         return result;
     }
 
-    const job = buildRasterJobPayload(input, createParsedTrajectoryModel(input.trajectoryId, config.timestep));
+    const job = buildRasterJobPayload(
+        input,
+        createParsedTrajectoryModel(input.trajectoryId, config.timestep),
+        true
+    );
     let wasEnqueued = false;
 
     try {

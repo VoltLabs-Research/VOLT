@@ -1,4 +1,5 @@
 import { logger } from '@/core/logger';
+import { stringifyUnknown } from '@/shared/utils';
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeType } from '../contracts';
 
 export interface NodeOutputSchema {
@@ -59,7 +60,7 @@ export class WorkflowNodeRegistry {
     resolveTemplate(template: string, context: WorkflowExecutionContext): string {
         return template.replace(/\{\{\s*([^}]+)\s*\}\}/g, (_, ref) => {
             const value = this.resolveReference(String(ref).trim(), context);
-            return value !== undefined ? String(value) : '';
+            return value !== undefined ? stringifyUnknown(value) : '';
         });
     }
 }

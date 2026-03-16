@@ -4,8 +4,17 @@ import { ObjectBucketName } from '@/shared/contracts';
 import type { DaemonJobReporterService, RasterJobStatus } from '@/modules/cloud-control/services/DaemonJobReporterService';
 import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { RasterQueueJobPayload } from '@/shared/contracts';
+import { isRecord } from '@/shared/utilities/type-guards';
 import type { Job, Worker } from 'bullmq';
 import type { RasterizerService } from './RasterizerService';
+
+const isAutoPreviewRasterJob = (job: RasterQueueJobPayload): boolean => {
+    if (!isRecord(job.metadata)) {
+        return false;
+    }
+
+    return job.metadata.autoPreview === true;
+};
 
 export class TrajectoryRasterWorkerService {
     private worker: Worker<RasterQueueJobPayload> | null = null;
@@ -27,7 +36,22 @@ export class TrajectoryRasterWorkerService {
             async (jobPayload, job) => this.processJob(jobPayload, job)
         );
 
-        this.worker.on('failed', (job, error) => {
+        this.worker.on('failed', async (job, error) => {
+            if (job?.data && isAutoPreviewRasterJob(job.data)) {
+                try {
+                    await this.redisConnectionService.releaseTrajectoryAutoPreviewRasterClaim(job.data.trajectoryId);
+                } catch (releaseError) {
+                    logger.error(
+                        {
+                            err: releaseError,
+                            jobId: job.data.jobId,
+                            trajectoryId: job.data.trajectoryId
+                        },
+                        'Failed to release trajectory auto-preview claim after raster job failure'
+                    );
+                }
+            }
+
             logger.error(
                 {
                     jobId: job?.data?.jobId,
@@ -90,6 +114,26 @@ export class TrajectoryRasterWorkerService {
         });
     }
 
+    private async reportJobStatusBestEffort(
+        job: RasterQueueJobPayload,
+        status: RasterJobStatus,
+        error?: string
+    ): Promise<void> {
+        try {
+            await this.reportJobStatus(job, status, error);
+        } catch (reportError) {
+            logger.error(
+                {
+                    err: reportError,
+                    jobId: job.jobId,
+                    status,
+                    trajectoryId: job.trajectoryId
+                },
+                'Failed to report trajectory raster job status to cloud control'
+            );
+        }
+    }
+
     private async processJob(job: RasterQueueJobPayload, bullJob: Job<RasterQueueJobPayload>): Promise<void> {
         const runningTimestamp = new Date().toISOString();
 
@@ -97,7 +141,7 @@ export class TrajectoryRasterWorkerService {
             await this.redisConnectionService.projectJobStatus(
                 this.buildJobStatusProjection(job, 'running', runningTimestamp)
             );
-            await this.reportJobStatus(job, 'running');
+            await this.reportJobStatusBestEffort(job, 'running');
 
             await bullJob.updateProgress(10);
             await this.rasterizerService.rasterizePreview({
@@ -111,7 +155,7 @@ export class TrajectoryRasterWorkerService {
             await this.redisConnectionService.projectJobStatus(
                 this.buildJobStatusProjection(job, 'completed', completedTimestamp)
             );
-            await this.reportJobStatus(job, 'completed');
+            await this.reportJobStatusBestEffort(job, 'completed');
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : String(error);
             const failedTimestamp = new Date().toISOString();
@@ -119,7 +163,7 @@ export class TrajectoryRasterWorkerService {
             await this.redisConnectionService.projectJobStatus(
                 this.buildJobStatusProjection(job, 'failed', failedTimestamp, message)
             );
-            await this.reportJobStatus(job, 'failed', message);
+            await this.reportJobStatusBestEffort(job, 'failed', message);
 
             throw error instanceof Error ? error : new Error(message);
         }

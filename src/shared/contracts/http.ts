@@ -16,6 +16,11 @@ export enum ContainerAction {
     Restart = 'restart'
 };
 
+export enum EntrypointType {
+    Executable = 'executable',
+    PythonScript = 'python-script'
+};
+
 export enum OrchestrationAction {
     AnalysisStart = 'analysis-start',
     TrajectoryPreprocess = 'trajectory-preprocess',
@@ -176,7 +181,9 @@ export interface WorkflowDefinition {
 
 export interface AnalysisJobExecutionData {
     binaryObjectPath: string;
+    entrypointType?: EntrypointType;
     arguments: string;
+    requirementsFile?: string;
     pluginId: string;
     trajectoryId: string;
     analysisId: string;

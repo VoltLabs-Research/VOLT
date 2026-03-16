@@ -7,17 +7,25 @@ export interface ProcessResult {
     stderr: string;
 };
 
+export interface ProcessExecutionInput {
+    jobId: string;
+    commandPath: string;
+    args: string[];
+    cwd: string;
+    env?: NodeJS.ProcessEnv;
+};
+
 export interface BinaryExecutorService {
-    executeProcess(jobId: string, binaryPath: string, args: string[], cwd: string): Promise<ProcessResult>;
+    executeProcess(input: ProcessExecutionInput): Promise<ProcessResult>;
 };
 
 export const createBinaryExecutorService = (): BinaryExecutorService => ({
-    executeProcess(jobId, binaryPath, args, cwd) {
+    executeProcess({ jobId, commandPath, args, cwd, env }) {
         return new Promise((resolve, reject) => {
-            const child = spawn(binaryPath, args, {
+            const child = spawn(commandPath, args, {
                 cwd,
                 stdio: ['ignore', 'pipe', 'pipe'],
-                env: { ...process.env }
+                env: { ...process.env, ...env }
             });
             registerProcess(jobId, child);
 

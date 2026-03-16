@@ -25,6 +25,16 @@ export interface WorkflowExecutionRequest {
     };
 };
 
+const buildRuntimeArguments = (request: WorkflowExecutionRequest): Record<string, unknown> => {
+    if (!request.options?.selectedTimesteps?.length) {
+        return {};
+    }
+
+    return {
+        selectedTimesteps: request.options.selectedTimesteps.map((timestep) => ({ value: timestep }))
+    };
+};
+
 export class WorkflowEngine {
     constructor(
         private readonly registry: WorkflowNodeRegistry
@@ -61,6 +71,7 @@ export class WorkflowEngine {
         return {
             outputs: new Map(),
             userConfig: request.userConfig,
+            runtimeArguments: buildRuntimeArguments(request),
             trajectoryId: request.trajectoryId,
             trajectoryFrames: request.trajectoryFrames,
             analysis: request.analysis,

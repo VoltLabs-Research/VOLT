@@ -115,6 +115,10 @@ export class RedisConnectionService {
         return this.client.del(key);
     }
 
+    async releaseTrajectoryAutoPreviewRasterClaim(trajectoryId: string): Promise<number> {
+        return this.deleteKey(`trajectory:${trajectoryId}:auto-preview-raster`);
+    }
+
     async projectJobStatus(payload: TeamJobRecord): Promise<void> {
         const timestamp = typeof payload.timestamp === 'string'
             ? payload.timestamp

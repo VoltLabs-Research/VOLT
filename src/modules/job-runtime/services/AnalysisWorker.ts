@@ -8,6 +8,7 @@ import type { BinaryExecutorService } from './BinaryExecutorService';
 import type { DaemonJobReporterService } from '@/modules/cloud-control/services';
 import type { PluginBinaryCacheService } from './PluginBinaryCacheService';
 import type { ResultProcessorService } from '@/modules/artifacts/services';
+import { decodeCliArgumentsToken, stringifyUnknown } from '@/shared/utils';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';
@@ -36,7 +37,7 @@ const resolveTemplate = (template: string, outputs: Map<string, Record<string, u
         }
 
         if (propertyPath.length === 0) {
-            return String(nodeOutput);
+            return stringifyUnknown(nodeOutput);
         }
 
         let current: unknown = nodeOutput;
@@ -47,7 +48,7 @@ const resolveTemplate = (template: string, outputs: Map<string, Record<string, u
             current = current[key];
         }
 
-        return current !== undefined ? String(current) : '';
+        return current !== undefined ? stringifyUnknown(current) : '';
     });
 };
 
@@ -57,7 +58,12 @@ const parseArguments = (value: string): string[] => {
     }
 
     const regex = /"([^"]*)"|'([^']*)'|(\S+)/g;
-    return [...value.matchAll(regex)].map((match) => match[1] ?? match[2] ?? match[3]);
+    const tokens = [...value.matchAll(regex)].map((match) => match[1] ?? match[2] ?? match[3]);
+
+    return tokens.flatMap((token) => {
+        const encodedArguments = decodeCliArgumentsToken(token);
+        return encodedArguments ?? [token];
+    });
 };
 
 export class AnalysisWorker {
@@ -130,7 +136,11 @@ export class AnalysisWorker {
                 timestamp: runningTimestamp
             });
 
-            const binaryPath = await this.pluginBinaryCacheService.getBinaryPath(executionData.binaryObjectPath);
+            const executionRuntime = await this.pluginBinaryCacheService.getExecutionRuntime({
+                binaryObjectPath: executionData.binaryObjectPath,
+                entrypointType: executionData.entrypointType,
+                requirementsFile: executionData.requirementsFile
+            });
             const dumpLocalPath = await this.downloadDump(inputFile);
             const outputDir = path.join(DAEMON_PATHS.analysisOutput, `${executionData.analysisId}-${forEachIndex}-${Date.now()}`);
             await fs.mkdir(outputDir, { recursive: true });
@@ -142,14 +152,20 @@ export class AnalysisWorker {
             logger.info(
                 {
                     jobId: job.jobId,
-                    binary: path.basename(binaryPath),
+                    binary: path.basename(executionRuntime.artifactPath),
                     args
                 },
                 'Executing plugin binary'
             );
 
             await bullJob.updateProgress(10);
-            const result = await this.binaryExecutorService.executeProcess(job.jobId, binaryPath, args, outputDir);
+            const result = await this.binaryExecutorService.executeProcess({
+                jobId: job.jobId,
+                commandPath: executionRuntime.commandPath,
+                args: [...executionRuntime.argsPrefix, ...args],
+                cwd: outputDir,
+                env: executionRuntime.env
+            });
             if (result.code !== 0) {
                 throw new Error(`Binary exited with code ${result.code}: ${result.stderr || result.stdout}`);
             }

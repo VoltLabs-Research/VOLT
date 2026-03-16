@@ -1,3 +1,4 @@
+import { EntrypointType } from '@/shared/contracts';
 import type { AnalysisStartRequest, AnalysisQueueJobPayload } from '@/shared/contracts';
 import { OrchestrationAction } from '@/shared/contracts';
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
@@ -50,8 +51,7 @@ export class AnalysisDispatchService {
             await this.queueService.enqueue(ANALYSIS_QUEUE_NAME, {
                 ...job,
                 executionData: {
-                    binaryObjectPath: this.resolveEntrypoint(input.workflow).binaryObjectPath,
-                    arguments: this.resolveEntrypoint(input.workflow).arguments,
+                    ...this.resolveEntrypoint(input.workflow),
                     pluginId: input.pluginId,
                     trajectoryId: input.trajectoryId,
                     analysisId: input.analysisId,
@@ -138,7 +138,9 @@ export class AnalysisDispatchService {
 
     private resolveEntrypoint(workflow: AnalysisStartRequest['workflow']): {
         binaryObjectPath: string;
+        entrypointType: EntrypointType;
         arguments: string;
+        requirementsFile?: string;
     } {
         const entrypoint = workflow.nodes.find((node) => node.type === 'entrypoint');
         const entrypointData = entrypoint?.data?.entrypoint as Record<string, unknown> | undefined;
@@ -148,7 +150,13 @@ export class AnalysisDispatchService {
 
         return {
             binaryObjectPath: String(entrypointData.binaryObjectPath),
-            arguments: String(entrypointData.arguments)
+            entrypointType: entrypointData.type === EntrypointType.PythonScript
+                ? EntrypointType.PythonScript
+                : EntrypointType.Executable,
+            arguments: String(entrypointData.arguments),
+            requirementsFile: typeof entrypointData.requirementsFile === 'string'
+                ? entrypointData.requirementsFile
+                : undefined
         };
     }
 
