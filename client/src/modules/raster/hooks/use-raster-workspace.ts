@@ -48,7 +48,7 @@ interface UseRasterWorkspaceResult {
 };
 
 const getAnalysisTitle = (analysis: RasterAnalysisMetadata, trajectory: Trajectory | null | undefined): string => {
-    const matchingAnalysis = trajectory?.analysis.find((entry) => entry._id === analysis.analysisId);
+    const matchingAnalysis = trajectory?.analysis?.find((entry) => entry._id === analysis.analysisId);
     if (matchingAnalysis?.plugin) {
         return matchingAnalysis.plugin;
     }
