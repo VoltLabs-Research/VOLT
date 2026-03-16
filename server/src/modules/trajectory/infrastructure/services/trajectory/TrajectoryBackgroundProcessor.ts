@@ -5,6 +5,7 @@ import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { ITrajectoryBackgroundProcessor, ProcessorContext, TrajectoryUploadFile } from '@modules/trajectory/domain/port/trajectory/ITrajectoryBackgroundProcessor';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { normalizeTrajectoryWorkerFailure } from '@modules/trajectory/utilities/trajectory/trajectory-worker-failure';
 import { IEventBus } from '@shared/application/events/IEventBus';
@@ -19,6 +20,7 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
 
 import { injectable, inject } from 'tsyringe';
+import IORedis from 'ioredis';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import pLimit from 'p-limit';
@@ -34,6 +36,12 @@ type ParsedFrame = {
     cachePath: string;
     [key: string]: unknown;
 };
+
+interface TeamClusterCommandClient {
+    command(teamClusterId: string, command: string, payload?: Record<string, unknown>): Promise<unknown>;
+};
+
+const GLB_SESSION_TTL_SECONDS = 86400;
 
 @injectable()
 export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgroundProcessor {
@@ -56,7 +64,16 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         private readonly eventBus: IEventBus,
 
         @inject(SHARED_TOKENS.FileExtractorService)
-        private readonly extractor: IFileExtractorService
+        private readonly extractor: IFileExtractorService,
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
+        private readonly dumpStorage: ITrajectoryDumpStorageService,
+
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        private readonly teamClusterDaemonClient: TeamClusterCommandClient,
+
+        @inject(SHARED_TOKENS.RedisClient)
+        private readonly redis: IORedis
     ){}
 
     /**
@@ -85,11 +102,11 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
             await this.persistTrajectory(trajectoryId, frames);
             await this.dispatchJobs(frames, trajectory, teamId);
-            await this.updateStatus(
-                trajectoryId,
-                teamId,
-                TrajectoryStatus.Completed
-            );
+            await this.enqueueGlbPreprocessing(frames, trajectory, teamId);
+            // Status stays at Processing — the daemon will report GLB job completions
+            // via trajectory.glb-job-status, and the session drain logic in
+            // DaemonAnalysisCompletionService will mark the trajectory as Completed
+            // once all GLB conversion jobs have settled.
         }catch(error){
             const failure = normalizeTrajectoryWorkerFailure(
                 error,
@@ -349,5 +366,79 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
             return limit(() => this.cloudUploadProcessor.process(cloudUploadTask));
         }));
+    }
+
+    /**
+     * After all dumps have been uploaded, sends a single `trajectory.enqueue-preprocessing`
+     * command to the ClusterDaemon with all frame descriptors. The daemon will autonomously
+     * enqueue BullMQ GLB conversion jobs.
+     *
+     * Initializes a Redis session counter so that the server can track when all GLB jobs
+     * have settled (drain logic in DaemonAnalysisCompletionService).
+     */
+    private async enqueueGlbPreprocessing(
+        frames: ParsedFrame[],
+        trajectory: Trajectory,
+        teamId: string
+    ): Promise<void> {
+        const teamClusterId = trajectory.props.teamCluster;
+        if (!teamClusterId) {
+            logger.warn(
+                { trajectoryId: trajectory._id },
+                '@trajectory-background-processor: skipping GLB enqueue — no teamClusterId'
+            );
+            return;
+        }
+
+        const frameDescriptors = frames.map((frame) => ({
+            timestep: frame.timestep,
+            objectKey: this.dumpStorage.getObjectName(trajectory._id, String(frame.timestep))
+        }));
+
+        logger.info(
+            {
+                frameCount: frameDescriptors.length,
+                trajectoryId: trajectory._id,
+                teamClusterId
+            },
+            '@trajectory-background-processor: sending trajectory.enqueue-preprocessing to daemon'
+        );
+
+        await this.teamClusterDaemonClient.command(teamClusterId, 'trajectory.enqueue-preprocessing', {
+            trajectoryId: trajectory._id,
+            teamId,
+            trajectoryName: trajectory.props.name,
+            frames: frameDescriptors
+        });
+
+        // Initialize GLB session counter for drain tracking
+        await this.initializeGlbSession(trajectory._id, frameDescriptors.length);
+
+        logger.info(
+            {
+                frameCount: frameDescriptors.length,
+                trajectoryId: trajectory._id
+            },
+            '@trajectory-background-processor: GLB preprocessing enqueued and session initialized'
+        );
+    }
+
+    /**
+     * Sets up a Redis counter to track how many GLB conversion jobs remain for this trajectory.
+     * When all jobs report back (via trajectory.glb-job-status), the drain logic in
+     * DaemonAnalysisCompletionService will decrement this counter and finalize the trajectory.
+     */
+    private async initializeGlbSession(trajectoryId: string, totalJobs: number): Promise<void> {
+        const remainingKey = `daemon-glb:${trajectoryId}:remaining`;
+        const failedKey = `daemon-glb:${trajectoryId}:failed`;
+
+        const pipeline = this.redis.pipeline();
+        pipeline.set(remainingKey, totalJobs.toString(), 'EX', GLB_SESSION_TTL_SECONDS);
+        pipeline.del(failedKey);
+        await pipeline.exec();
+
+        logger.info(
+            `@trajectory-background-processor: initialized GLB session for trajectory ${trajectoryId} with ${totalJobs} jobs`
+        );
     }
 };
