@@ -1,0 +1,46 @@
+get:
+  tags:
+  - Scripting
+  summary: List notebooks by trajectory
+  description: Returns paginated notebooks scoped to a specific trajectory.
+  operationId: listNotebooksByTrajectory
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/TrajectoryId
+  - $ref: ../../components/parameters/common.yaml#/Page
+  - name: limit
+    in: query
+    required: false
+    description: Maximum number of items per page (1-500)
+    schema:
+      type: integer
+      minimum: 1
+      maximum: 500
+  - name: scope
+    in: query
+    required: false
+    description: Filter notebooks by scope
+    schema:
+      type: string
+      enum:
+      - all
+      - general
+      - trajectory
+  responses:
+    '200':
+      description: Paginated list of notebooks
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/scripting.yaml#/PaginatedNotebooks
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden

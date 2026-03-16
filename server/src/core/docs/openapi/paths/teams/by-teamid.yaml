@@ -1,0 +1,80 @@
+get:
+  operationId: getTeamById
+  tags:
+  - Teams
+  summary: Get team by ID
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  responses:
+    '200':
+      description: Team data
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/teams.yaml#/Team
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+patch:
+  operationId: updateTeam
+  tags:
+  - Teams
+  summary: Update team
+  description: Updates the team name and/or description. Requires `team:update` permission.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/teams.yaml#/UpdateTeamRequest
+  responses:
+    '200':
+      description: Team updated
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/teams.yaml#/Team
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+delete:
+  operationId: deleteTeam
+  tags:
+  - Teams
+  summary: Delete team
+  description: Permanently deletes the team. Requires `team:delete` permission.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  responses:
+    '200':
+      description: Team deleted
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

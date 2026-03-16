@@ -1,0 +1,79 @@
+post:
+  operationId: createWhiteboard
+  tags:
+  - Whiteboards
+  summary: Create whiteboard
+  description: Creates a new whiteboard for the specified team.
+  parameters:
+  - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+          - name
+          properties:
+            name:
+              type: string
+            folderId:
+              type:
+              - string
+              - 'null'
+  responses:
+    '201':
+      description: Successfully created
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/whiteboards.yaml#/Whiteboard
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+get:
+  operationId: listWhiteboards
+  tags:
+  - Whiteboards
+  summary: List whiteboards
+  description: Returns all whiteboards belonging to the specified team.
+  parameters:
+  - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../../components/schemas/whiteboards.yaml#/Whiteboard
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

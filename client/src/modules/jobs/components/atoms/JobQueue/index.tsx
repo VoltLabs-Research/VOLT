@@ -35,7 +35,6 @@ const statusConfig: Partial<Record<JobStatus, StatusConfigEntry>> = {
 };
 
 const queueTypeNames: Record<string, string> = {
-    'trajectory_native_preprocess': 'Processing Frame',
     'analysis_processing': 'Analysis',
     'trajectory_rasterization': 'Rasterization',
     'ssh_import': 'SSH Import'

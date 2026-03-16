@@ -1,0 +1,11 @@
+apis:
+  volt:
+    root: ./src/core/docs/openapi/root.yaml
+
+rules:
+  no-identical-paths: off
+  no-ambiguous-paths: off
+  operation-2xx-response: off
+  operation-4xx-response: off
+  info-license-strict: off
+  no-server-example.com: off

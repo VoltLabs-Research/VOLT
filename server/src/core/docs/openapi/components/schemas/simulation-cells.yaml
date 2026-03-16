@@ -1,0 +1,35 @@
+SimulationCell:
+  type: object
+  required:
+  - _id
+  - teamId
+  - trajectoryId
+  - vectors
+  - origin
+  - createdAt
+  properties:
+    _id:
+      type: string
+      description: Unique identifier of the simulation cell.
+    teamId:
+      type: string
+      description: ID of the team that owns this simulation cell.
+    trajectoryId:
+      type: string
+      description: ID of the trajectory associated with this simulation cell.
+    vectors:
+      type: array
+      items:
+        type: array
+        items:
+          type: number
+      description: Cell vectors defining the simulation box dimensions.
+    origin:
+      type: array
+      items:
+        type: number
+      description: Origin coordinates of the simulation cell.
+    createdAt:
+      type: string
+      format: date-time
+      description: Timestamp when the simulation cell was created.

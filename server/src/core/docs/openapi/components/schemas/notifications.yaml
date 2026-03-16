@@ -1,0 +1,39 @@
+Notification:
+  type: object
+  required:
+  - _id
+  - userId
+  - type
+  - title
+  - message
+  - isRead
+  - createdAt
+  properties:
+    _id:
+      type: string
+      description: Unique identifier of the notification.
+    userId:
+      type: string
+      description: ID of the user this notification belongs to.
+    type:
+      type: string
+      description: Notification type identifier.
+    title:
+      type: string
+      description: Short title of the notification.
+    message:
+      type: string
+      description: Full notification message body.
+    isRead:
+      type: boolean
+      description: Whether the notification has been read.
+    data:
+      type:
+      - object
+      - 'null'
+      additionalProperties: true
+      description: Optional additional data associated with the notification.
+    createdAt:
+      type: string
+      format: date-time
+      description: Timestamp when the notification was created.

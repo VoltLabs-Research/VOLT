@@ -19,7 +19,6 @@ export enum AuthenticationType {
 export interface AuthenticatedRequest extends Request {
     user?: Request['user'];
     userId?: string;
-    sessionId?: string;
     token?: string;
     authType?: AuthenticationType;
     secretKeyId?: string;

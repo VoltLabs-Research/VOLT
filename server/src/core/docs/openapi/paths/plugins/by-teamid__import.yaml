@@ -1,0 +1,39 @@
+post:
+  tags:
+  - Plugins
+  summary: Import a plugin
+  description: Imports a plugin from an uploaded file (max 200 MB).
+  operationId: importPlugin
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required:
+          - file
+          properties:
+            file:
+              type: string
+              format: binary
+              description: Plugin archive file to import
+  responses:
+    '201':
+      description: Plugin imported successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/plugins.yaml#/Plugin
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden

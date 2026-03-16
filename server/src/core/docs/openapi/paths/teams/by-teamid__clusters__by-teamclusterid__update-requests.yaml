@@ -1,0 +1,40 @@
+post:
+  operationId: requestTeamClusterUpdate
+  tags:
+  - Team Clusters
+  summary: Request cluster update
+  description: Requests an update of the cluster runtime.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/TeamClusterId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/teams.yaml#/RequestTeamClusterUpdateRequest
+  responses:
+    '200':
+      description: Update requested
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                    teamCluster:
+                      $ref: ../../components/schemas/common.yaml#/TeamCluster
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

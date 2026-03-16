@@ -1,0 +1,173 @@
+AIConversation:
+  type: object
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    userId:
+      $ref: common.yaml#/ObjectId
+    teamId:
+      $ref: common.yaml#/ObjectId
+    title:
+      type: string
+    lastMessageAt:
+      type:
+      - string
+      - 'null'
+      format: date-time
+    lastProvider:
+      type:
+      - string
+      - 'null'
+    lastModel:
+      type:
+      - string
+      - 'null'
+    isArchived:
+      type: boolean
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+AIConversationMessagePart:
+  type: object
+  required:
+  - type
+  properties:
+    type:
+      type: string
+      minLength: 1
+  additionalProperties: true
+AIConversationInputMessage:
+  type: object
+  required:
+  - id
+  - role
+  - parts
+  properties:
+    id:
+      type: string
+      minLength: 1
+    role:
+      type: string
+      enum:
+      - user
+      - assistant
+      - system
+    parts:
+      type: array
+      items:
+        $ref: ai.yaml#/AIConversationMessagePart
+      minItems: 1
+  additionalProperties: false
+AIConversationMessage:
+  type: object
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    conversationId:
+      $ref: common.yaml#/ObjectId
+    role:
+      type: string
+      enum:
+      - user
+      - assistant
+    parts:
+      type: array
+      items:
+        $ref: ai.yaml#/AIConversationMessagePart
+    content:
+      type: string
+    artifacts:
+      type:
+      - object
+      - 'null'
+      additionalProperties: true
+    modelInfo:
+      type:
+      - object
+      - 'null'
+      additionalProperties: true
+    tokenUsage:
+      type:
+      - object
+      - 'null'
+      additionalProperties: true
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+CreateAIConversationRequest:
+  type: object
+  properties:
+    title:
+      type: string
+      minLength: 1
+      maxLength: 200
+    message:
+      type: string
+      minLength: 1
+  additionalProperties: false
+SendAIConversationMessageRequest:
+  type: object
+  properties:
+    message:
+      type: string
+      minLength: 1
+    messages:
+      type: array
+      items:
+        $ref: ai.yaml#/AIConversationInputMessage
+      minItems: 1
+    provider:
+      $ref: common.yaml#/AIProvider
+    model:
+      type: string
+      minLength: 1
+  additionalProperties: true
+StreamAIConversationMessageRequest:
+  type: object
+  required:
+  - messages
+  properties:
+    messages:
+      type: array
+      items:
+        $ref: ai.yaml#/AIConversationInputMessage
+      minItems: 1
+    provider:
+      $ref: common.yaml#/AIProvider
+    model:
+      type: string
+      minLength: 1
+    title:
+      type: string
+      minLength: 1
+      maxLength: 200
+  additionalProperties: false
+UpdateAIConversationRequest:
+  type: object
+  properties:
+    title:
+      type: string
+      minLength: 1
+      maxLength: 200
+    isArchived:
+      type: boolean
+  additionalProperties: false
+SendAIConversationMessageResponse:
+  type: object
+  properties:
+    text:
+      type: string
+    userMessage:
+      anyOf:
+      - $ref: ai.yaml#/AIConversationMessage
+      - type: 'null'
+    assistantMessage:
+      anyOf:
+      - $ref: ai.yaml#/AIConversationMessage
+      - type: 'null'

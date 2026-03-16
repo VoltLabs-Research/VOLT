@@ -1,0 +1,117 @@
+CreateGroupChatRequest:
+  type: object
+  required:
+  - teamId
+  - groupName
+  - participantIds
+  properties:
+    teamId:
+      type: string
+      minLength: 1
+      description: The ID of the team
+    groupName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      description: The name of the group chat
+    groupDescription:
+      type: string
+      maxLength: 500
+      description: An optional description for the group chat
+    participantIds:
+      type: array
+      items:
+        type: string
+        minLength: 1
+      minItems: 1
+      description: List of user IDs to add as participants
+  additionalProperties: false
+AddUsersRequest:
+  type: object
+  required:
+  - userIds
+  properties:
+    userIds:
+      type: array
+      items:
+        type: string
+        minLength: 1
+      minItems: 1
+      description: List of user IDs to add to the group
+  additionalProperties: false
+RemoveUsersRequest:
+  type: object
+  required:
+  - userIds
+  properties:
+    userIds:
+      type: array
+      items:
+        type: string
+        minLength: 1
+      minItems: 1
+      description: List of user IDs to remove from the group
+  additionalProperties: false
+UpdateGroupInfoRequest:
+  type: object
+  properties:
+    groupName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      description: The new name of the group chat
+    groupDescription:
+      type: string
+      maxLength: 500
+      description: The new description of the group chat
+  additionalProperties: false
+UpdateGroupAdminsRequest:
+  type: object
+  required:
+  - targetUserIds
+  - action
+  properties:
+    targetUserIds:
+      type: array
+      items:
+        type: string
+        minLength: 1
+      minItems: 1
+      description: List of user IDs to grant or revoke admin privileges
+    action:
+      type: string
+      enum:
+      - add
+      - remove
+      description: Whether to add or remove admin privileges
+  additionalProperties: false
+Chat:
+  type: object
+  description: A chat object representing either a direct or group conversation
+  properties:
+    id:
+      type: string
+    type:
+      type: string
+      enum:
+      - direct
+      - group
+    groupName:
+      type: string
+    groupDescription:
+      type: string
+    participants:
+      type: array
+      items:
+        type: object
+        properties:
+          userId:
+            type: string
+          role:
+            type: string
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time

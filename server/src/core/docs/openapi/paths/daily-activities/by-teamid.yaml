@@ -1,0 +1,32 @@
+get:
+  operationId: getDailyActivityByTeamId
+  tags:
+  - DailyActivity
+  summary: Get daily activity summary
+  description: Returns the daily activity summary for the specified team.
+  parameters:
+  - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/daily-activities.yaml#/DailyActivity
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

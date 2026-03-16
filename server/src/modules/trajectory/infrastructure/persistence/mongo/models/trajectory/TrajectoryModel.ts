@@ -31,7 +31,7 @@ const TrajectorySchema: Schema<TrajectoryDocument> = new Schema({
     name: {
         type: String,
         required: [true, ValidationCodes.TRAJECTORY_NAME_REQUIRED],
-        minlength: [4, ValidationCodes.TRAJECTORY_NAME_MINLEN],
+        minlength: [1, ValidationCodes.TRAJECTORY_NAME_MINLEN],
         maxlength: [64, ValidationCodes.TRAJECTORY_NAME_MAXLEN],
         trim: true
     },

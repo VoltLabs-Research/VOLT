@@ -1,0 +1,64 @@
+patch:
+  tags:
+  - Plugins
+  summary: Upload a plugin binary
+  description: Uploads or replaces the binary attachment for a plugin (max 200 MB).
+  operationId: uploadPluginBinary
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/PluginId
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required:
+          - file
+          properties:
+            file:
+              type: string
+              format: binary
+              description: Binary file to attach to the plugin
+  responses:
+    '200':
+      description: Binary uploaded successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/plugins.yaml#/Plugin
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+delete:
+  tags:
+  - Plugins
+  summary: Delete a plugin binary
+  description: Removes the binary attachment from a plugin.
+  operationId: deletePluginBinary
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/PluginId
+  responses:
+    '200':
+      description: Binary deleted successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

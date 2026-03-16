@@ -1,6 +1,4 @@
 import { defineServiceModule } from '@/shared/api/service-module';
-import client from './client';
-import endpoints from './endpoints';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { CreateScriptingNotebookParams } from '../dtos/create-scripting-notebook';
 import type { CreateScriptingNotebookSessionParams, CreateScriptingSessionParams } from '../dtos/create-scripting-session';
@@ -9,6 +7,9 @@ import type { ListScriptingNotebooksParams } from '../dtos/list-scripting-notebo
 import type { UpdateScriptingNotebookParams } from '../dtos/update-scripting-notebook';
 import type { ScriptingNotebook } from '../entities/scripting-notebook';
 import type { ScriptingSession } from '../entities/scripting-session';
+import type { ReadNotebookSessionStatusParams } from './endpoints/sessions';
+import client from './client';
+import endpoints from './endpoints';
 
 type ScriptingService = {
     listNotebooks: (params: ListScriptingNotebooksParams) => Promise<PaginatedResponse<ScriptingNotebook>>;
@@ -17,6 +18,7 @@ type ScriptingService = {
     deleteNotebook: (params: DeleteScriptingNotebookParams) => Promise<void>;
     createSession: (params: CreateScriptingSessionParams) => Promise<ScriptingSession>;
     createNotebookSession: (params: CreateScriptingNotebookSessionParams) => Promise<ScriptingSession>;
+    readNotebookSessionStatus: (params: ReadNotebookSessionStatusParams) => Promise<ScriptingSession>;
 };
 
 const baseService = defineServiceModule({
@@ -30,7 +32,8 @@ const service: ScriptingService = {
     updateNotebook: baseService.updateNotebook,
     deleteNotebook: baseService.deleteNotebook,
     createSession: baseService.createSession,
-    createNotebookSession: baseService.createNotebookSession
+    createNotebookSession: baseService.createNotebookSession,
+    readNotebookSessionStatus: baseService.readNotebookSessionStatus
 };
 
 export default service;

@@ -1,0 +1,231 @@
+Trajectory:
+  type: object
+  required:
+  - _id
+  - teamId
+  - name
+  - originalFilename
+  - format
+  - atomCount
+  - frameCount
+  - fileSize
+  - status
+  - uploadedBy
+  - createdAt
+  - updatedAt
+  properties:
+    _id:
+      type: string
+      description: Unique identifier of the trajectory
+    teamId:
+      type: string
+      description: ID of the team that owns this trajectory
+    name:
+      type: string
+      description: Display name of the trajectory
+    originalFilename:
+      type: string
+      description: Original filename as uploaded
+    format:
+      type: string
+      description: File format of the trajectory (e.g., pdb, xyz, gro, xtc)
+    atomCount:
+      type: integer
+      description: Total number of atoms in the trajectory
+    frameCount:
+      type: integer
+      description: Total number of frames (timesteps) in the trajectory
+    folderId:
+      type:
+      - string
+      - 'null'
+      description: ID of the folder containing this trajectory, or null if at root level
+    fileSize:
+      type: integer
+      format: int64
+      description: Size of the trajectory file in bytes
+    status:
+      type: string
+      enum:
+      - uploading
+      - processing
+      - ready
+      - error
+      description: Current processing status of the trajectory
+    uploadedBy:
+      type: string
+      description: ID of the user who uploaded the trajectory
+    createdAt:
+      type: string
+      format: date-time
+      description: Timestamp when the trajectory was created
+    updatedAt:
+      type: string
+      format: date-time
+      description: Timestamp when the trajectory was last updated
+TrajectoryPreview:
+  type: object
+  required:
+  - atoms
+  - bonds
+  - metadata
+  properties:
+    atoms:
+      type: array
+      description: Array of atom data for the preview frame
+      items:
+        type: object
+        properties:
+          index:
+            type: integer
+            description: Atom index
+          element:
+            type: string
+            description: Chemical element symbol
+          x:
+            type: number
+            format: float
+            description: X coordinate
+          y:
+            type: number
+            format: float
+            description: Y coordinate
+          z:
+            type: number
+            format: float
+            description: Z coordinate
+    bonds:
+      type: array
+      description: Array of bond connections between atoms
+      items:
+        type: object
+        properties:
+          atomIndex1:
+            type: integer
+            description: Index of the first atom in the bond
+          atomIndex2:
+            type: integer
+            description: Index of the second atom in the bond
+          order:
+            type: integer
+            description: Bond order (1 = single, 2 = double, 3 = triple)
+    metadata:
+      type: object
+      description: Additional metadata about the preview
+      properties:
+        frameIndex:
+          type: integer
+          description: Frame index used for the preview
+        boundingBox:
+          type: object
+          description: Bounding box of the molecular structure
+          properties:
+            min:
+              type: object
+              properties:
+                x:
+                  type: number
+                y:
+                  type: number
+                z:
+                  type: number
+            max:
+              type: object
+              properties:
+                x:
+                  type: number
+                y:
+                  type: number
+                z:
+                  type: number
+TrajectoryMetrics:
+  type: object
+  required:
+  - totalTrajectories
+  - totalAtoms
+  - totalFrames
+  - storageUsed
+  properties:
+    totalTrajectories:
+      type: integer
+      description: Total number of trajectories in the team
+    totalAtoms:
+      type: integer
+      format: int64
+      description: Sum of atom counts across all trajectories
+    totalFrames:
+      type: integer
+      format: int64
+      description: Sum of frame counts across all trajectories
+    storageUsed:
+      type: integer
+      format: int64
+      description: Total storage used in bytes
+TrajectoryAtoms:
+  type: object
+  required:
+  - frames
+  properties:
+    frames:
+      type: array
+      description: Array of frames, each containing atom positions for that timestep
+      items:
+        type: object
+        properties:
+          frameIndex:
+            type: integer
+            description: Index of this frame in the trajectory
+          atoms:
+            type: array
+            description: Atom positions for this frame
+            items:
+              type: object
+              properties:
+                index:
+                  type: integer
+                  description: Atom index
+                element:
+                  type: string
+                  description: Chemical element symbol
+                x:
+                  type: number
+                  format: float
+                  description: X coordinate
+                y:
+                  type: number
+                  format: float
+                  description: Y coordinate
+                z:
+                  type: number
+                  format: float
+                  description: Z coordinate
+SceneArtifact:
+  type: object
+  required:
+  - _id
+  - trajectoryId
+  - type
+  - url
+  properties:
+    _id:
+      type: string
+      description: Unique identifier of the scene artifact
+    trajectoryId:
+      type: string
+      description: ID of the trajectory this artifact belongs to
+    type:
+      type: string
+      description: Type of the scene artifact (e.g., glb, texture, environment)
+    url:
+      type: string
+      description: URL to access the artifact resource
+    timestep:
+      type:
+      - integer
+      - 'null'
+      description: Timestep this artifact corresponds to, if applicable
+    analysisId:
+      type:
+      - string
+      - 'null'
+      description: Analysis ID this artifact is associated with, if applicable

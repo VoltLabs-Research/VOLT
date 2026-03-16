@@ -1,0 +1,27 @@
+post:
+  tags:
+  - Plugins
+  summary: Clone a plugin
+  description: Creates a copy of an existing plugin.
+  operationId: clonePlugin
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/PluginId
+  responses:
+    '201':
+      description: Plugin cloned successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/plugins.yaml#/Plugin
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

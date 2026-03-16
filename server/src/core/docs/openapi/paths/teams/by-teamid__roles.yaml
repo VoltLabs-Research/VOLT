@@ -1,0 +1,62 @@
+get:
+  operationId: listTeamRoles
+  tags:
+  - Team Roles
+  summary: List team roles
+  description: Returns paginated roles configured for the team, including system and custom roles.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/Page
+  - $ref: ../../components/parameters/common.yaml#/Limit
+  responses:
+    '200':
+      description: Team roles
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../../components/schemas/teams.yaml#/TeamRole
+                pagination:
+                  $ref: ../../components/schemas/common.yaml#/Pagination
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+post:
+  operationId: createTeamRole
+  tags:
+  - Team Roles
+  summary: Create team role
+  description: Creates a custom role for the team.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/teams.yaml#/CreateTeamRoleRequest
+  responses:
+    '201':
+      description: Role created
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/teams.yaml#/TeamRole
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden

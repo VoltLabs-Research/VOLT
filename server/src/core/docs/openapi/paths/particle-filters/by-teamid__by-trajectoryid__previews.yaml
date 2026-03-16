@@ -1,0 +1,49 @@
+get:
+  operationId: previewParticleFilter
+  tags:
+  - ParticleFilter
+  summary: Preview filter result
+  description: Returns a preview of how many particles would match the specified filter criteria without actually applying the filter.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: trajectoryId
+    in: path
+    required: true
+    description: Unique identifier of the trajectory
+    schema:
+      type: string
+  - name: property
+    in: query
+    description: Property name to filter on
+    schema:
+      type: string
+  - name: operator
+    in: query
+    description: Comparison operator
+    schema:
+      type: string
+  - name: value
+    in: query
+    description: Value to compare against
+    schema:
+      type: string
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/particle-filters.yaml#/ParticleFilterPreview
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

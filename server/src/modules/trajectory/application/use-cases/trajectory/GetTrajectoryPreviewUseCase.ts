@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
-import { getRasterFrameObjectName } from '@modules/raster/utilities/raster-storage-paths';
+import { getTrajectoryRasterPreviewsPrefix } from '@modules/raster/utilities/raster-storage-paths';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Result } from '@shared/domain/port/Result';
@@ -15,6 +15,10 @@ import { injectable, inject } from 'tsyringe';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+
+interface ObjectListResponse {
+    keys: string[];
+};
 
 @injectable()
 export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO, ApplicationError> {
@@ -38,13 +42,15 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
         }
 
         if (trajectory.props.teamCluster) {
-            const preview = await this.getRemotePreview(trajectory.props.teamCluster, trajectoryId, trajectory.props.frames);
+            const preview = await this.getRemotePreview(trajectory.props.teamCluster, trajectoryId);
             if (preview) {
                 return Result.ok(preview);
             }
+
+            return Result.fail(new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'No preview available for this trajectory', 404));
         }
 
-        const prefix = `trajectory-${trajectoryId}/previews/`;
+        const prefix = getTrajectoryRasterPreviewsPrefix(trajectoryId);
 
         // Find the first available preview PNG
         for await (const key of this.storageService.listByPrefix(SYS_BUCKETS.RASTERIZER, prefix)) {
@@ -64,28 +70,29 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
 
     private async getRemotePreview(
         teamClusterId: string,
-        trajectoryId: string,
-        frames: Array<{ timestep: number; }>
+        trajectoryId: string
     ): Promise<GetTrajectoryPreviewOutputDTO | null> {
-        const sortedFrames = [...frames].sort((left, right) => left.timestep - right.timestep);
+        const prefix = getTrajectoryRasterPreviewsPrefix(trajectoryId);
+        const result = await this.teamClusterDaemonClient.command<ObjectListResponse>(teamClusterId, 'object.list', {
+            bucket: SYS_BUCKETS.RASTERIZER,
+            prefix
+        });
 
-        for (const frame of sortedFrames) {
-            const objectKey = getRasterFrameObjectName(trajectoryId, frame.timestep);
+        const previewKey = result.keys
+            .filter((key) => key.endsWith('.png'))
+            .sort((leftKey, rightKey) => leftKey.localeCompare(rightKey))[0];
 
-            try {
-                const stream = await this.teamClusterDaemonClient.commandStream(teamClusterId, 'object.get', {
-                    bucket: 'volt-rasterizer',
-                    objectKey
-                });
-                const buffer = await this.readStream(stream);
-
-                return this.createPreviewOutput(buffer);
-            } catch {
-                continue;
-            }
+        if (!previewKey) {
+            return null;
         }
 
-        return null;
+        const stream = await this.teamClusterDaemonClient.commandStream(teamClusterId, 'object.get', {
+            bucket: SYS_BUCKETS.RASTERIZER,
+            objectKey: previewKey
+        });
+        const buffer = await this.readStream(stream);
+
+        return this.createPreviewOutput(buffer);
     }
 
     private createPreviewOutput(buffer: Buffer): GetTrajectoryPreviewOutputDTO {

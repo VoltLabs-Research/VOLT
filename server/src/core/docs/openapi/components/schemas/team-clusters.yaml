@@ -1,0 +1,176 @@
+TeamClusterHealthcheckRequest:
+  type: object
+  required:
+  - enrollmentToken
+  properties:
+    enrollmentToken:
+      type: string
+      minLength: 1
+    installedVersion:
+      type: string
+      minLength: 1
+      maxLength: 64
+  additionalProperties: false
+TeamClusterInstallManifestPorts:
+  type: object
+  required:
+  - minio
+  - redis
+  - mongodb
+  - daemon
+  properties:
+    minio:
+      type: integer
+      minimum: 1
+      maximum: 65535
+    redis:
+      type: integer
+      minimum: 1
+      maximum: 65535
+    mongodb:
+      type: integer
+      minimum: 1
+      maximum: 65535
+    daemon:
+      type: integer
+      minimum: 1
+      maximum: 65535
+  additionalProperties: false
+TeamClusterInstallManifestRequest:
+  type: object
+  required:
+  - daemonPassword
+  - installRoot
+  - ports
+  properties:
+    daemonPassword:
+      type: string
+      minLength: 1
+    installRoot:
+      type: string
+      minLength: 1
+      maxLength: 512
+    ports:
+      $ref: team-clusters.yaml#/TeamClusterInstallManifestPorts
+  additionalProperties: false
+TeamClusterInstallManifestFile:
+  type: object
+  properties:
+    path:
+      type: string
+    contents:
+      type: string
+    mode:
+      type: string
+TeamClusterInstallManifestImages:
+  type: object
+  properties:
+    minio:
+      type: string
+    redis:
+      type: string
+    mongodb:
+      type: string
+    daemon:
+      type: string
+TeamClusterInstallManifest:
+  type: object
+  properties:
+    manifestVersion:
+      type: string
+    composeProjectName:
+      type: string
+    buildContextArchiveBase64:
+      type:
+      - string
+      - 'null'
+    files:
+      type: array
+      items:
+        $ref: team-clusters.yaml#/TeamClusterInstallManifestFile
+    images:
+      $ref: team-clusters.yaml#/TeamClusterInstallManifestImages
+TeamClusterLifecycleRequest:
+  type: object
+  required:
+  - daemonPassword
+  - status
+  properties:
+    daemonPassword:
+      type: string
+      minLength: 1
+    status:
+      type: string
+      enum:
+      - preparing-environment
+      - dependency-installation-failed
+      - operating-system-not-supported
+      - deleting
+      - delete-failed
+      - disconnected
+    installedVersion:
+      type: string
+      minLength: 1
+      maxLength: 64
+  additionalProperties: false
+TeamClusterMetricsSnapshot:
+  type: object
+  properties:
+    timestamp:
+      type: string
+    hostname:
+      type: string
+    uptimeSeconds:
+      type: number
+    cpuUsagePercent:
+      type: number
+    cpuLoadAverage:
+      type: array
+      items:
+        type: number
+    cpuPerCoreUsagePercent:
+      type: array
+      items:
+        type: number
+    memory:
+      type: object
+      additionalProperties: true
+    disk:
+      type: object
+      additionalProperties: true
+    diskOperations:
+      type: object
+      additionalProperties: true
+    network:
+      type: object
+      additionalProperties: true
+    cloudLatencyMs:
+      type:
+      - number
+      - 'null'
+    connectedToCloud:
+      type: boolean
+TeamClusterHeartbeatRequest:
+  type: object
+  required:
+  - daemonPassword
+  properties:
+    daemonPassword:
+      type: string
+      minLength: 1
+    installedVersion:
+      type: string
+      minLength: 1
+      maxLength: 64
+    metrics:
+      $ref: team-clusters.yaml#/TeamClusterMetricsSnapshot
+  additionalProperties: false
+TeamClusterDeleteCompletionRequest:
+  type: object
+  required:
+  - daemonPassword
+  properties:
+    daemonPassword:
+      type: string
+      minLength: 1
+  additionalProperties: false

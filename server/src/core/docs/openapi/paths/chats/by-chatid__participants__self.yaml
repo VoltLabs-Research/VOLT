@@ -1,0 +1,29 @@
+delete:
+  tags:
+  - Chat
+  summary: Leave a group chat
+  description: Remove the authenticated user from a group chat.
+  operationId: leaveGroupChat
+  security:
+  - BearerAuth: []
+  parameters:
+  - name: chatId
+    in: path
+    required: true
+    description: The ID of the group chat to leave
+    schema:
+      type: string
+      minLength: 1
+  responses:
+    '200':
+      description: Successfully left the group chat
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

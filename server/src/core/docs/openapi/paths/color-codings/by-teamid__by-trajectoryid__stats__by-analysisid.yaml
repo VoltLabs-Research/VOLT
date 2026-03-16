@@ -1,0 +1,40 @@
+get:
+  operationId: getColorCodingStatsByAnalysis
+  tags:
+  - ColorCoding
+  summary: Get color coding statistics for an analysis
+  description: Returns statistical information for color coding within the context of a specific analysis.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: trajectoryId
+    in: path
+    required: true
+    description: Unique identifier of the trajectory
+    schema:
+      type: string
+  - name: analysisId
+    in: path
+    required: true
+    description: Unique identifier of the analysis
+    schema:
+      type: string
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/color-codings.yaml#/ColorCodingStats
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
