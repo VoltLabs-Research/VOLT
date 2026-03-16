@@ -56,6 +56,8 @@ const CreateContainer = () => {
         selectedTeamClusterId,
         teams,
         teamClusters,
+        clusterResourceLimits,
+        isLoadingResourceLimits,
         isLoading,
         setSelectedTeamId,
         setSelectedTeamClusterId,
@@ -129,6 +131,8 @@ const CreateContainer = () => {
                     teamClusters={teamClusters}
                     selectedTeamId={selectedTeamId}
                     selectedTeamClusterId={selectedTeamClusterId}
+                    clusterResourceLimits={clusterResourceLimits}
+                    isLoadingResourceLimits={isLoadingResourceLimits}
                     canProceed={canProceedToReview}
                     onConfigChange={updateConfig}
                     onTeamChange={setSelectedTeamId}

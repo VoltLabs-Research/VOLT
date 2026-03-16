@@ -3,10 +3,12 @@ import { containerQuery } from './queries';
 import { teamClusterService } from '../api/service/team-cluster-service';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import queryClient from '@/shared/infrastructure/query/query-client';
 import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
+import type { ClusterResourceLimits } from '../api/entities/cluster-resource-limits';
 import { ContainerTemplateCustomFieldType } from '../api/entities/container-template';
 import type { ContainerTemplate } from '../api/entities/container-template';
 import type { ContainerTemplateCustomField } from '../api/entities/container-template';
@@ -21,6 +23,16 @@ export type { PortMapping } from '../api/entities/port-mapping';
 
 const DEFAULT_CPU = 1;
 const DEFAULT_MEMORY = 512;
+const MIN_CPU = 0.5;
+const MIN_MEMORY = 128;
+
+const clampResourceValue = (value: number, min: number, max: number | null | undefined) => {
+    if (typeof max !== 'number' || !Number.isFinite(max)) {
+        return Math.max(value, min);
+    }
+
+    return Math.min(Math.max(value, min), Math.max(min, max));
+};
 
 /** Validates one template custom field against required and pattern rules. */
 export const getCustomFieldValidationError = (
@@ -195,6 +207,8 @@ export interface UseCreateContainerFormReturn {
     selectedTeamClusterId: string | null;
     teams: Team[];
     teamClusters: TeamClusterOption[];
+    clusterResourceLimits: ClusterResourceLimits | null;
+    isLoadingResourceLimits: boolean;
     isLoading: boolean;
     setSelectedTeamId: (id: string | null) => void;
     setSelectedTeamClusterId: (id: string | null) => void;
@@ -222,6 +236,10 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
     const [selectedTeamId, setSelectedTeamId] = useState<string | null>(selectedTeam?._id || null);
     const [selectedTeamClusterId, setSelectedTeamClusterId] = useState<string | null>(null);
     const [teamClusters, setTeamClusters] = useState<TeamClusterOption[]>([]);
+    const [clusterResourceLimits, setClusterResourceLimits] = useState<ClusterResourceLimits | null>(null);
+    const [isLoadingResourceLimits, setIsLoadingResourceLimits] = useState(false);
+    const hasResolvedResourceLimits = typeof clusterResourceLimits?.maxCpus === 'number'
+        && typeof clusterResourceLimits?.maxMemoryMB === 'number';
 
     const [config, setConfig] = useState<ContainerConfig>({
         name: '',
@@ -244,6 +262,8 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
         if (!selectedTeamId) {
             setTeamClusters([]);
             setSelectedTeamClusterId(null);
+            setClusterResourceLimits(null);
+            setIsLoadingResourceLimits(false);
             return;
         }
 
@@ -271,12 +291,56 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
 
                 setTeamClusters([]);
                 setSelectedTeamClusterId(null);
+                setClusterResourceLimits(null);
             });
 
         return () => {
             cancelled = true;
         };
     }, [selectedTeamId]);
+
+    useEffect(() => {
+        if (!selectedTeamId || !selectedTeamClusterId) {
+            setClusterResourceLimits(null);
+            setIsLoadingResourceLimits(false);
+            return;
+        }
+
+        let cancelled = false;
+        setIsLoadingResourceLimits(true);
+
+        teamClusterService.getResourceLimits(selectedTeamId, selectedTeamClusterId)
+            .then((resourceLimits) => {
+                if (cancelled) {
+                    return;
+                }
+
+                setClusterResourceLimits(resourceLimits);
+                setConfig((previousConfig) => ({
+                    ...previousConfig,
+                    cpus: clampResourceValue(previousConfig.cpus, MIN_CPU, resourceLimits.maxCpus),
+                    memory: clampResourceValue(previousConfig.memory, MIN_MEMORY, resourceLimits.maxMemoryMB)
+                }));
+            })
+            .catch(() => {
+                if (cancelled) {
+                    return;
+                }
+
+                setClusterResourceLimits(null);
+            })
+            .finally(() => {
+                if (cancelled) {
+                    return;
+                }
+
+                setIsLoadingResourceLimits(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedTeamId, selectedTeamClusterId]);
 
     const updateConfig = useCallback(<K extends keyof ContainerConfig>(key: K, value: ContainerConfig[K]) => {
         setConfig((previousConfig) => ({
@@ -393,6 +457,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
                 error: { title: 'Failed to create container' }
             }
         );
+        await queryClient.invalidateQueries({ queryKey: containerQuery.QUERY_KEYS.lists() });
         const nextPath = currentFolderId
             ? `/dashboard/containers?folderId=${encodeURIComponent(currentFolderId)}`
             : '/dashboard/containers';
@@ -407,6 +472,8 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
         selectedTeamClusterId,
         teams,
         teamClusters,
+        clusterResourceLimits,
+        isLoadingResourceLimits,
         isLoading: createContainerMutation.isPending,
         setSelectedTeamId,
         setSelectedTeamClusterId,
@@ -421,6 +488,8 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
             config.name.trim()
             && selectedTeamId
             && selectedTeamClusterId
+            && !isLoadingResourceLimits
+            && hasResolvedResourceLimits
             && (selectedTemplate || customImage)
             && !hasInvalidCustomField(config.customFields, config.customFieldValues)
         )
