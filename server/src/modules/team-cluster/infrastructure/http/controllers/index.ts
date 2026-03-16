@@ -6,6 +6,7 @@ import DeleteTeamClusterByIdController from '@modules/team-cluster/infrastructur
 import DownloadTeamClusterRemoteExplorerObjectController from '@modules/team-cluster/infrastructure/http/controllers/DownloadTeamClusterRemoteExplorerObjectController';
 import GenerateTeamClusterInstallManifestController from '@modules/team-cluster/infrastructure/http/controllers/GenerateTeamClusterInstallManifestController';
 import GetTeamClusterRemoteExplorerNodeController from '@modules/team-cluster/infrastructure/http/controllers/GetTeamClusterRemoteExplorerNodeController';
+import GetClusterResourceLimitsController from '@modules/team-cluster/infrastructure/http/controllers/GetClusterResourceLimitsController';
 import GetTeamClusterByIdController from '@modules/team-cluster/infrastructure/http/controllers/GetTeamClusterByIdController';
 import ListTeamClusterRemoteExplorerEntriesController from '@modules/team-cluster/infrastructure/http/controllers/ListTeamClusterRemoteExplorerEntriesController';
 import ListTeamClustersByTeamIdController from '@modules/team-cluster/infrastructure/http/controllers/ListTeamClustersByTeamIdController';
@@ -26,6 +27,7 @@ export default createControllerRegistry({
     fetchAvailableVersions: FetchAvailableClusterVersionsController,
     generateInstallManifest: GenerateTeamClusterInstallManifestController,
     getById: GetTeamClusterByIdController,
+    getResourceLimits: GetClusterResourceLimitsController,
     getRemoteExplorerNode: GetTeamClusterRemoteExplorerNodeController,
     listByTeamId: ListTeamClustersByTeamIdController,
     listRemoteExplorerEntries: ListTeamClusterRemoteExplorerEntriesController,

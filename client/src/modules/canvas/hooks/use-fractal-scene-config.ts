@@ -5,9 +5,15 @@ import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
+import type { PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 
 const useFractalSceneConfig = (): FractalSceneConfig => {
     const selected = useEditorStore(useShallow(selectFractalSceneConfig));
+
+    const pointCloudSettings = useMemo<PointCloudSceneSettings>(() => ({
+        ...selected.pointCloudSettings,
+        pointSizeMultiplier: selected.pointSizeMultiplier
+    }), [selected.pointCloudSettings, selected.pointSizeMultiplier]);
 
     return useMemo<FractalSceneConfig>(() => ({
         rendererCreate: selected.rendererCreate,
@@ -18,17 +24,14 @@ const useFractalSceneConfig = (): FractalSceneConfig => {
         environment: selected.environment,
         effects: selected.effects,
         lights: selected.lights,
-        pointCloudSettings: {
-            ...selected.pointCloudSettings,
-            pointSizeMultiplier: selected.pointSizeMultiplier
-        },
+        pointCloudSettings,
         slicePlaneConfig: selected.slicePlaneConfig,
         dpr: selected.dpr,
         performance: selected.performance,
         adaptiveEventsEnabled: selected.adaptiveEventsEnabled,
         interactionDegradeEnabled: selected.interactionDegradeEnabled,
         activeScene: selected.activeScene
-    }), [selected]);
+    }), [selected, pointCloudSettings]);
 };
 
 export default useFractalSceneConfig;

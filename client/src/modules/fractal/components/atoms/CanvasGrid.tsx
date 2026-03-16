@@ -1,11 +1,10 @@
-import { Theme } from '@/shared/presentation/hooks/use-theme';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
 import { Grid } from '@react-three/drei';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { CanvasGridSettingsState } from '@/modules/fractal/stores/contracts/editor/visual-types';
 
 interface CanvasGridProps {
     settings: CanvasGridSettingsState;
+    darkTheme: boolean;
 };
 
 interface GridThemeDefaults {
@@ -31,14 +30,7 @@ const getGridThemeDefaults = (darkTheme: boolean): GridThemeDefaults => {
     return LIGHT_GRID_DEFAULTS;
 };
 
-const CanvasGrid = ({ settings }: CanvasGridProps) => {
-    const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
-
-    useEffect(() => {
-        return subscribeToAppTheme(setTheme);
-    }, []);
-
-    const darkTheme = theme === Theme.Dark;
+const CanvasGrid = ({ settings, darkTheme }: CanvasGridProps) => {
     const themeDefaults = useMemo(() => getGridThemeDefaults(darkTheme), [darkTheme]);
     const sectionColor = useMemo(() => {
         if (settings.sectionColorFollowsTheme) {

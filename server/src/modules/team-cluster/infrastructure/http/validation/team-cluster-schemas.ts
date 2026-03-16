@@ -155,6 +155,9 @@ export const teamClusterValidation = createResourceValidation({
     fetchAvailableVersions: {
         params: teamClusterParamsSchema
     },
+    getResourceLimits: {
+        params: teamClusterParamsSchema
+    },
     deleteById: {
         params: teamClusterParamsSchema,
         body: passwordConfirmationSchema
