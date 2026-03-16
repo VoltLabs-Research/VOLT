@@ -16,7 +16,7 @@ export class TrajectoryGlbWorkerService {
         private readonly daemonJobReporterService: DaemonJobReporterService
     ) {}
 
-    start(): void {
+    start(concurrency?: number): void {
         if (this.worker) {
             return;
         }
@@ -24,7 +24,7 @@ export class TrajectoryGlbWorkerService {
         this.worker = this.queueService.createWorker<GlbConversionQueueJobPayload>(
             TRAJECTORY_GLB_QUEUE_NAME,
             async (jobPayload, job) => this.processJob(jobPayload, job),
-            { concurrency: 2 }
+            { concurrency: concurrency ?? 3 }
         );
 
         this.worker.on('failed', (job, error) => {

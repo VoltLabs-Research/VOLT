@@ -215,7 +215,7 @@ export class AnalysisWorker {
     ) {
     }
 
-    start(): void {
+    start(concurrency?: number): void {
         if (this.running) {
             return;
         }
@@ -223,7 +223,8 @@ export class AnalysisWorker {
         this.running = true;
         this.worker = this.queueService.createWorker<QueueJobPayload>(
             ANALYSIS_QUEUE_NAME,
-            async (jobPayload, job) => this.processJob(jobPayload, job)
+            async (jobPayload, job) => this.processJob(jobPayload, job),
+            { concurrency: concurrency ?? 1 }
         );
 
         this.worker.on('failed', (job, error) => {
@@ -268,6 +269,20 @@ export class AnalysisWorker {
                 status: 'running',
                 updatedAt: runningTimestamp,
                 timestamp: runningTimestamp
+            });
+
+            // Report running status to the Volt server for real-time client visibility
+            await this.daemonJobReporterService.reportAnalysisJobStatus({
+                jobId: job.jobId,
+                name: job.name,
+                analysisId: executionData.analysisId,
+                teamId: job.teamId,
+                trajectoryId: typeof metadata.trajectoryId === 'string' ? metadata.trajectoryId : undefined,
+                trajectoryName: typeof metadata.trajectoryName === 'string' ? metadata.trajectoryName : undefined,
+                timestep,
+                status: 'running'
+            }).catch((err) => {
+                logger.warn({ jobId: job.jobId, err }, 'Failed to report running status to server');
             });
 
             const executionRuntime = await this.pluginBinaryCacheService.getExecutionRuntime({

@@ -95,9 +95,9 @@ export const bootstrap = async (): Promise<void> => {
 
     await cloudControl.voltCloudConnection.start();
     cloudControl.daemonExposureRegistryService.start();
-    analysisWorker.start();
-    trajectoryRasterWorkerService.start();
-    trajectoryGlbWorkerService.start();
+    analysisWorker.start(config.queueConcurrency.analysis);
+    trajectoryRasterWorkerService.start(config.queueConcurrency.rasterizer);
+    trajectoryGlbWorkerService.start(config.queueConcurrency.glbPreprocessing);
     sshImport.sshImportWorkerService.start();
     logger.info(`cluster-daemon started for team cluster ${config.teamClusterId}`);
 

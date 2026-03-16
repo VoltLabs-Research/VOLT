@@ -1,7 +1,7 @@
 import { DockerRuntimeService } from '@/modules/platform/services';
 import { logger } from '@/core/logger';
 import path from 'node:path';
-import type { CreateNotebookSessionResponse, NotebookSessionSnapshot } from '@/shared/contracts';
+import type { CreateNotebookSessionResponse, NotebookContainerStage, NotebookSessionSnapshot } from '@/shared/contracts';
 import type { DaemonConfig } from '@/core/config';
 
 interface EnsureNotebookSessionInput {
@@ -14,6 +14,11 @@ interface EnsureJupyterServerInput {
     notebookId: string;
     containerId: string;
     publicBasePath: string;
+};
+
+interface ContainerResolutionResult {
+    state: NotebookRuntimeState;
+    containerStage: NotebookContainerStage;
 };
 
 interface NotebookRuntimeState {
@@ -92,7 +97,7 @@ export class JupyterRuntimeService {
 
     async ensureSession(input: EnsureNotebookSessionInput): Promise<CreateNotebookSessionResponse> {
         const publicBasePath = this.normalizePublicBasePath(input.publicBasePath);
-        const runtimeState = await this.ensureContainer({
+        const { state: runtimeState, containerStage } = await this.ensureContainer({
             ...input,
             publicBasePath
         });
@@ -112,11 +117,13 @@ export class JupyterRuntimeService {
             containerId: runtimeState.containerId,
             publicBasePath
         });
+        const resolvedStage: NotebookContainerStage = ready ? 'ready' : containerStage;
         return {
             jupyter: {
                 internalPath,
                 url: internalPath,
-                ready
+                ready,
+                containerStage: resolvedStage
             }
         };
     }
@@ -152,7 +159,7 @@ export class JupyterRuntimeService {
         return this.buildRuntimeTunnelTarget(notebookId);
     }
 
-    private async ensureContainer(input: EnsureNotebookSessionInput): Promise<NotebookRuntimeState> {
+    private async ensureContainer(input: EnsureNotebookSessionInput): Promise<ContainerResolutionResult> {
         const publicBasePath = this.normalizePublicBasePath(input.publicBasePath);
         const existingContainer = await this.findRuntimeContainerCandidate(input.notebook._id);
         if (existingContainer) {
@@ -162,6 +169,7 @@ export class JupyterRuntimeService {
                 this.runtimeStates.delete(input.notebook._id);
             } else {
                 const currentRuntimeState = this.runtimeStates.get(input.notebook._id);
+                const wasRunning = existingContainer.isRunning;
                 await this.startContainerIfNeeded(existingContainer.containerId);
                 const publishedBinding = await this.getPublishedPortBinding(existingContainer.containerId);
                 const hostPort = publishedBinding?.hostPort ?? existingContainer.hostPort;
@@ -170,13 +178,16 @@ export class JupyterRuntimeService {
                 }
 
                 return {
-                    containerId: existingContainer.containerId,
-                    hostPort,
-                    publishedHost: publishedBinding?.host,
-                    publicBasePath,
-                    readinessOrigin: existingContainer.isRunning && currentRuntimeState?.containerId === existingContainer.containerId
-                        ? currentRuntimeState.readinessOrigin
-                        : undefined
+                    state: {
+                        containerId: existingContainer.containerId,
+                        hostPort,
+                        publishedHost: publishedBinding?.host,
+                        publicBasePath,
+                        readinessOrigin: existingContainer.isRunning && currentRuntimeState?.containerId === existingContainer.containerId
+                            ? currentRuntimeState.readinessOrigin
+                            : undefined
+                    },
+                    containerStage: wasRunning ? 'starting' : 'starting'
                 };
             }
         }
@@ -250,10 +261,13 @@ export class JupyterRuntimeService {
         }
 
         return {
-            containerId: container.Id,
-            hostPort: publishedBinding.hostPort,
-            publishedHost: publishedBinding.host,
-            publicBasePath
+            state: {
+                containerId: container.Id,
+                hostPort: publishedBinding.hostPort,
+                publishedHost: publishedBinding.host,
+                publicBasePath
+            },
+            containerStage: 'creating'
         };
     }
 

@@ -34,6 +34,12 @@ interface JupyterConfig {
     publicBasePath: string;
 };
 
+export interface QueueConcurrencyConfig {
+    analysis: number;
+    glbPreprocessing: number;
+    rasterizer: number;
+};
+
 export interface DaemonConfig {
     port: number;
     host: string;
@@ -56,6 +62,7 @@ export interface DaemonConfig {
     redis: RedisConfig;
     jupyter: JupyterConfig;
     allowedBuckets: ObjectBucketName[];
+    queueConcurrency: QueueConcurrencyConfig;
 };
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 10_000;
@@ -202,6 +209,11 @@ export const loadConfig = (): DaemonConfig => {
             ObjectBucketName.Models,
             ObjectBucketName.Plugins,
             ObjectBucketName.Rasterizer
-        ]
+        ],
+        queueConcurrency: {
+            analysis: readNumber('ANALYSIS_CONCURRENCY', 1),
+            glbPreprocessing: readNumber('GLB_CONCURRENCY', 3),
+            rasterizer: readNumber('RASTER_CONCURRENCY', 2)
+        }
     };
 };

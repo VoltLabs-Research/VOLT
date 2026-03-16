@@ -69,11 +69,14 @@ export interface CreateNotebookSessionRequest {
     notebook: NotebookSessionSnapshot;
 };
 
+export type NotebookContainerStage = 'creating' | 'starting' | 'ready';
+
 export interface CreateNotebookSessionResponse {
     jupyter: {
         internalPath: string;
         url: string;
         ready: boolean;
+        containerStage: NotebookContainerStage;
     };
 };
 

@@ -26,14 +26,15 @@ export class TrajectoryRasterWorkerService {
         private readonly daemonJobReporterService: DaemonJobReporterService
     ) {}
 
-    start(): void {
+    start(concurrency?: number): void {
         if (this.worker) {
             return;
         }
 
         this.worker = this.queueService.createWorker<RasterQueueJobPayload>(
             TRAJECTORY_RASTER_QUEUE_NAME,
-            async (jobPayload, job) => this.processJob(jobPayload, job)
+            async (jobPayload, job) => this.processJob(jobPayload, job),
+            { concurrency: concurrency ?? 2 }
         );
 
         this.worker.on('failed', async (job, error) => {
