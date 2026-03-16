@@ -85,7 +85,12 @@ const TEST_CONFIG: DaemonConfig = {
     },
     allowedBuckets: [
         ObjectBucketName.Plugins
-    ]
+    ],
+    queueConcurrency: {
+        analysis: 1,
+        glbPreprocessing: 3,
+        rasterizer: 2
+    }
 };
 
 class TestMinioService extends MinioService {
