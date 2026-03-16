@@ -139,16 +139,20 @@ export class RedisConnectionService {
     }
 
     async getTeamJobs(teamId: string): Promise<TeamJobRecord[]> {
-        const jobIds = await this.client.smembers(`team:${teamId}:jobs`);
+        const setKey = `team:${teamId}:jobs`;
+        const jobIds = await this.client.smembers(setKey);
         if (jobIds.length === 0) {
             return [];
         }
 
         const records = await this.client.mget(jobIds.map((jobId) => `${JOB_STATUS_KEY_PREFIX}${jobId}`));
         const jobs: TeamJobRecord[] = [];
+        const staleJobIds: string[] = [];
 
-        for (const record of records) {
+        for (let i = 0; i < records.length; i++) {
+            const record = records[i];
             if (!record) {
+                staleJobIds.push(jobIds[i]);
                 continue;
             }
 
@@ -160,6 +164,10 @@ export class RedisConnectionService {
             } catch {
                 continue;
             }
+        }
+
+        if (staleJobIds.length > 0) {
+            this.client.srem(setKey, ...staleJobIds).catch(() => {});
         }
 
         return jobs;
