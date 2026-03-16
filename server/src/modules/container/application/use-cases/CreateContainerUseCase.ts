@@ -8,6 +8,8 @@ import type { IContainerRepository } from '@modules/container/domain/port/IConta
 import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
+import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -17,6 +19,7 @@ import { inject, injectable } from 'tsyringe';
 
 const VNC_PRIVATE_PORT = 5901;
 const VNC_PASSWORD_ENV_KEY = 'VNC_PW';
+const MB_PER_GB = 1024;
 
 @injectable()
 export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO, CreateContainerOutputDTO> {
@@ -25,6 +28,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         @inject(CONTAINER_TOKENS.ContainerFolderRepository) private readonly folderRepository: IContainerFolderRepository,
         @inject(CONTAINER_TOKENS.ContainerRuntimeService) private containerRuntimeService: ITeamClusterContainerRuntimeService,
         @inject(TeamClusterSelectionService) private readonly teamClusterSelectionService: TeamClusterSelectionService,
+        @inject(SYSTEM_TOKENS.SystemMetricsRepository) private readonly systemMetricsRepository: ISystemMetricsRepository,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 
@@ -155,6 +159,30 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         return undefined;
     }
 
+    private async validateClusterResourceLimits(teamClusterId: string, memoryInMegabytes: number, cpuCount: number): Promise<void> {
+        const metrics = await this.systemMetricsRepository.getLatestByClusterId(teamClusterId);
+        if (!metrics) {
+            return;
+        }
+
+        const maxCpus = metrics.cpu.cores;
+        const maxMemoryInMegabytes = Math.floor(metrics.memory.total * MB_PER_GB);
+
+        if (cpuCount > maxCpus) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                `Requested CPU allocation exceeds cluster capacity (${maxCpus} vCPU max)`
+            );
+        }
+
+        if (memoryInMegabytes > maxMemoryInMegabytes) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                `Requested memory allocation exceeds cluster capacity (${maxMemoryInMegabytes} MB max)`
+            );
+        }
+    }
+
     async execute(input: CreateContainerInputDTO): Promise<Result<CreateContainerOutputDTO>> {
         const { name, image, env, ports, cmd, mountDockerSocket, useImageCmd, memory, cpus } = input;
 
@@ -185,6 +213,8 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         const memoryInMegabytes = memory || 512;
         const cpuCount = cpus || 1;
         const capabilities = this.resolveCapabilities(input);
+
+        await this.validateClusterResourceLimits(teamClusterId, memoryInMegabytes, cpuCount);
 
         const sanitizedName = name.replace(/\s+/g, '-').toLowerCase();
         const binds: string[] = [`Volt-${sanitizedName}-data:/data`];
