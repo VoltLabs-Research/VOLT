@@ -4,6 +4,7 @@ export enum NodeType {
     CONTEXT = 'context',
     FOREACH = 'forEach',
     ENTRYPOINT = 'entrypoint',
+    PLUGIN = 'plugin-node',
     EXPOSURE = 'exposure',
     EXPORT = 'export',
     IF_STATEMENT = 'if-statement'

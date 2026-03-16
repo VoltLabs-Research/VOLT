@@ -21,19 +21,9 @@ type ScriptingService = {
     readNotebookSessionStatus: (params: ReadNotebookSessionStatusParams) => Promise<ScriptingSession>;
 };
 
-const baseService = defineServiceModule({
+const service: ScriptingService = defineServiceModule({
     clients: client,
     endpoints
 });
-
-const service: ScriptingService = {
-    listNotebooks: baseService.listNotebooks,
-    createNotebook: baseService.createNotebook,
-    updateNotebook: baseService.updateNotebook,
-    deleteNotebook: baseService.deleteNotebook,
-    createSession: baseService.createSession,
-    createNotebookSession: baseService.createNotebookSession,
-    readNotebookSessionStatus: baseService.readNotebookSessionStatus
-};
 
 export default service;

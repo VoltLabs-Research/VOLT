@@ -6,31 +6,32 @@ import { TeamClusterRemoteAccessTarget } from '@/modules/cluster/api/entities/te
 import { openModal } from '@/shared/presentation/components/Modal';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
+import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface SegmentTargetMapping {
     segment: string;
     target: TeamClusterRemoteAccessTarget;
+    title: string;
 };
 
 const SEGMENT_TARGET_MAP: SegmentTargetMapping[] = [
-    { segment: 'mongo', target: TeamClusterRemoteAccessTarget.MongoDocuments },
-    { segment: 'redis', target: TeamClusterRemoteAccessTarget.RedisData },
-    { segment: 'minio', target: TeamClusterRemoteAccessTarget.Minio }
+    { segment: 'mongo', target: TeamClusterRemoteAccessTarget.MongoDocuments, title: 'Mongo Explorer' },
+    { segment: 'redis', target: TeamClusterRemoteAccessTarget.RedisData, title: 'Redis Explorer' },
+    { segment: 'minio', target: TeamClusterRemoteAccessTarget.Minio, title: 'MinIO Explorer' }
 ];
 
 /** Fallback used to satisfy hook call order when the URL segment is invalid. */
 const DEFAULT_TARGET = TeamClusterRemoteAccessTarget.MongoDocuments;
 
 /**
- * Resolves the remote access target from the last segment of the current URL.
+ * Resolves the remote explorer mapping from the last segment of the current URL.
  * Returns `null` when the segment does not map to any known explorer target.
  */
-const resolveTargetFromPathname = (pathname: string): TeamClusterRemoteAccessTarget | null => {
+const resolveTargetMappingFromPathname = (pathname: string): SegmentTargetMapping | null => {
     const lastSegment = pathname.split('/').filter(Boolean).pop();
-    const match = SEGMENT_TARGET_MAP.find((mapping) => mapping.segment === lastSegment);
-    return match?.target ?? null;
+    return SEGMENT_TARGET_MAP.find((mapping) => mapping.segment === lastSegment) ?? null;
 };
 
 /**
@@ -43,8 +44,11 @@ const ClusterRemoteExplorerPage = () => {
     const navigate = useNavigate();
     const clusterManagement = useClusterManagement();
 
-    const target = useMemo(() => resolveTargetFromPathname(pathname), [pathname]);
+    const targetMapping = useMemo(() => resolveTargetMappingFromPathname(pathname), [pathname]);
+    const target = targetMapping?.target ?? null;
     const vm = useClusterRemoteAccessPage(target ?? DEFAULT_TARGET);
+
+    usePageTitle(vm.cluster && targetMapping ? `${vm.cluster.name} - ${targetMapping.title}` : targetMapping?.title ?? 'Cluster Explorer');
 
     useEffect(() => {
         if (!target) {

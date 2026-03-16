@@ -11,6 +11,7 @@ import ArgumentsEditor from './editors/ArgumentsEditor';
 import ContextEditor from './editors/ContextEditor';
 import ForEachEditor from './editors/ForEachEditor';
 import EntrypointEditor from './editors/EntrypointEditor';
+import PluginNodeEditor from './editors/PluginNodeEditor';
 import ExposureEditor from './editors/ExposureEditor';
 import ExportEditor from './editors/ExportEditor';
 import IfStatementEditor from './editors/IfStatementEditor';
@@ -26,6 +27,7 @@ const EDITOR_COMPONENTS: Partial<Record<NodeType, FC<{ node: Node }>>> = {
     [NodeType.CONTEXT]: ContextEditor,
     [NodeType.FOREACH]: ForEachEditor,
     [NodeType.ENTRYPOINT]: EntrypointEditor,
+    [NodeType.PLUGIN]: PluginNodeEditor,
     [NodeType.EXPOSURE]: ExposureEditor,
     [NodeType.EXPORT]: ExportEditor,
     [NodeType.IF_STATEMENT]: IfStatementEditor

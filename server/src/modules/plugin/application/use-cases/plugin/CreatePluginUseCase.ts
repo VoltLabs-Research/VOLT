@@ -3,6 +3,7 @@ import { CreatePluginInputDTO, CreatePluginOutputDTO } from '@modules/plugin/app
 import { mapPluginToPersistedDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
+import { IWorkflowValidatorService, WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import PluginCreatedEvent from '@modules/plugin/domain/events/PluginCreatedEvent';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
@@ -13,6 +14,8 @@ import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { injectable, inject } from 'tsyringe';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 
@@ -21,6 +24,9 @@ export class CreatePluginUseCase implements IUseCase<CreatePluginInputDTO, Creat
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
 
+        @inject(PLUGIN_TOKENS.WorkflowValidatorService)
+        private readonly workflowValidator: IWorkflowValidatorService,
+
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
         private readonly teamClusterRepository: ITeamClusterRepository,
 
@@ -28,6 +34,14 @@ export class CreatePluginUseCase implements IUseCase<CreatePluginInputDTO, Creat
     ){}
 
     async execute(input: CreatePluginInputDTO): Promise<Result<CreatePluginOutputDTO>> {
+        const validation = await this.workflowValidator.validate(input.workflow, undefined, WorkflowValidationMode.Strict);
+        if (!validation.isValid) {
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
+                `Plugin workflow is invalid: ${(validation.errors ?? []).join(', ')}`
+            ));
+        }
+
         const workflow = new Workflow('', input.workflow);
         const projection = WorkflowProjectionService.project(workflow, '');
         const defaultTeamClusterId = await this.resolveDefaultTeamClusterId(input.teamId);

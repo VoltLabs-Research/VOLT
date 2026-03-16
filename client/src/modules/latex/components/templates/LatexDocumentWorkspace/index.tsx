@@ -9,6 +9,7 @@ import EmptyState from '@/shared/presentation/components/EmptyState';
 import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
+import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import LatexEditorPanel from './LatexEditorPanel';
 import LatexFilePanel from './LatexFilePanel';
 import LatexPreviewPanel from './LatexPreviewPanel';
@@ -137,6 +138,8 @@ const LatexDocumentWorkspace = () => {
         handleWorkspaceFilesSelected,
         handleWorkspaceFoldersSelected
     } = useLatexWorkspace({ documentId });
+
+    usePageTitle(latexDocument?.title ?? 'LaTeX Workspace');
 
     /** Collapse the dashboard sidebar while the editor is mounted. */
     useEffect(() => {

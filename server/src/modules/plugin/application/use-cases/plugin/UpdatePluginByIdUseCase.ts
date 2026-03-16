@@ -4,7 +4,7 @@ import { mapPluginToPersistedDTO } from '@modules/plugin/utilities/mappers/plugi
 import { PluginProps, PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
-import { IWorkflowValidatorService } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
+import { IWorkflowValidatorService, WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 
@@ -39,7 +39,7 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
 
         if(input.workflow){
             // Validate the provided workflow.
-            const { isValid, errors } = this.workflowValidator.validate(input.workflow);
+            const { isValid, errors } = await this.workflowValidator.validate(input.workflow, plugin.id, WorkflowValidationMode.Strict);
             if(input.status === PluginStatus.Published && !isValid){
                 return Result.fail(ApplicationError.badRequest(
                     ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
@@ -79,7 +79,7 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
 
         if(input.status === PluginStatus.Published && !input.workflow){
             // No workflow provided with publish request - validate the existing workflow.
-            const { isValid, errors } = this.workflowValidator.validate(plugin.props.workflow.props);
+            const { isValid, errors } = await this.workflowValidator.validate(plugin.props.workflow.props, plugin.id, WorkflowValidationMode.Strict);
             if(!isValid){
                 return Result.fail(ApplicationError.badRequest(
                     ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,

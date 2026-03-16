@@ -1,9 +1,7 @@
 import './PostAuthOnboarding.css';
 import {
-    DEFAULT_POST_AUTH_DESTINATION,
     getClusterOnboardingRedirectPath,
-    resolvePostAuthDestination,
-    setPostAuthDestination
+    resolvePostAuthDestination
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
@@ -22,7 +20,7 @@ import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
 import { sileo } from 'sileo';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import type { FormEvent, ReactNode } from 'react';
 
@@ -35,8 +33,7 @@ const useNextDestination = (): string => {
     const location = useLocation();
     const params = new URLSearchParams(location.search);
     return resolvePostAuthDestination({
-        queryNext: params.get('next'),
-        stateDestination: DEFAULT_POST_AUTH_DESTINATION
+        queryNext: params.get('next')
     });
 };
 
@@ -63,10 +60,6 @@ const PostAuthOnboarding = () => {
     const isClustersLoading = teamClustersQuery.isLoading && Boolean(selectedTeamId);
     const isLoading = isTeamsLoading || isClustersLoading;
     const hasTeam = teams.length > 0 || Boolean(selectedTeamId);
-
-    useEffect(() => {
-        setPostAuthDestination(next);
-    }, [next]);
 
     if (teamClustersQuery.isError && selectedTeamId) {
         throw teamClustersQuery.error;

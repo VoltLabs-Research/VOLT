@@ -66,6 +66,8 @@ export const ErrorCodes = createErrorCodes({
     SIMULATION_CELL_NOT_FOUND: 'SimulationCell::NotFound',
 
     TRAJECTORY_CREATION_NO_VALID_FILES: 'Trajectory::Creation::NoValidFiles',
+    TRAJECTORY_UPLOAD_FILE_LIMIT_EXCEEDED: 'Trajectory::Upload::FileLimitExceeded',
+    TRAJECTORY_DAEMON_TRANSPORT_FAILED: 'Trajectory::Daemon::TransportFailed',
 
     ANALYSIS_NOT_FOUND: 'Analysis::NotFound',
 

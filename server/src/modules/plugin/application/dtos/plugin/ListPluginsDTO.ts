@@ -6,6 +6,7 @@ export interface ListPluginsInputDTO {
     teamId: string;
     page?: number;
     limit?: number;
+    status?: string;
 };
 
 export interface ListedPluginDTO extends PersistedPluginDTO { };

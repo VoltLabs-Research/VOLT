@@ -11,10 +11,14 @@ import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import NetworkChart from '@/shared/presentation/components/NetworkChart';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { useMemo } from 'react';
 
 const ClusterMonitoringPage = () => {
     const vm = useClusterMonitoringPage();
+    const pageTitle = vm.selectedCluster ? `${vm.selectedCluster.name} - Monitoring` : 'Cluster Monitoring';
+
+    usePageTitle(pageTitle);
 
     const networkData = useMemo(() => {
         if (!vm.metrics?.network) {

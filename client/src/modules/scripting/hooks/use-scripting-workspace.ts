@@ -1,15 +1,21 @@
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import service from '../api/service';
 import { useCreateScriptingSessionMutation, scriptingNotebooksQuery } from './queries';
-import { JUPYTER_SESSION_TIMEOUT_MESSAGE } from '../utilities/jupyter-session';
+import {
+    JUPYTER_SESSION_TIMEOUT_MESSAGE,
+    normalizeScriptingJupyterUrl,
+    startAndWaitForReadyScriptingSession
+} from '../utilities/jupyter-session';
+import { getNotebookTeamClusterId } from '../utilities/notebooks';
 import {
     getJupyterStartErrorMessage,
     pickActiveNotebook
 } from '../utilities/workspace';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ScriptingNotebook } from '../api/entities/scripting-notebook';
+import type { ScriptingSession } from '../api/entities/scripting-session';
 
 interface UseScriptingWorkspaceInput {
     trajectoryId: string;
@@ -17,26 +23,8 @@ interface UseScriptingWorkspaceInput {
 };
 
 const WORKSPACE_NOTEBOOKS_FETCH_LIMIT = 500;
-const JUPYTER_SESSION_STATUS_POLL_INTERVAL_MS = 2_000;
-const JUPYTER_SESSION_STATUS_TIMEOUT_MS = 120_000;
 
-const sleep = async (delayMs: number): Promise<void> => {
-    await new Promise((resolve) => setTimeout(resolve, delayMs));
-};
-
-const getTeamClusterId = (notebook?: ScriptingNotebook | null): string | undefined => {
-    if (!notebook?.teamCluster) {
-        return undefined;
-    }
-
-    if (typeof notebook.teamCluster === 'string') {
-        return notebook.teamCluster;
-    }
-
-    return notebook.teamCluster._id;
-};
-
-const getSessionNotebookId = (session: { notebookId?: unknown }, notebook?: ScriptingNotebook | null): string | undefined => {
+const getSessionNotebookId = (session: ScriptingSession, notebook?: ScriptingNotebook | null): string | undefined => {
     if (typeof session.notebookId === 'string' && session.notebookId.length > 0) {
         return session.notebookId;
     }
@@ -104,52 +92,32 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
             const isRequestCancelled = (): boolean => {
                 return !isMountedRef.current || activeStartRequestRef.current !== requestId;
             };
-            const session = await createScriptingSession({
-                trajectoryId,
-                notebookId: activeNotebook?._id,
-                teamClusterId: getTeamClusterId(activeNotebook)
+            const result = await startAndWaitForReadyScriptingSession({
+                createSession: () => createScriptingSession({
+                    trajectoryId,
+                    notebookId: activeNotebook?._id,
+                    teamClusterId: getNotebookTeamClusterId(activeNotebook)
+                }),
+                readSession: (session) => {
+                    const sessionNotebookId = getSessionNotebookId(session, activeNotebook);
+                    if (!sessionNotebookId) {
+                        throw new Error('Unable to determine notebook session status because no notebook id was returned.');
+                    }
+
+                    return service.readNotebookSessionStatus({ notebookId: sessionNotebookId });
+                }
+            }, {
+                isCancelled: isRequestCancelled
             });
 
             if (isRequestCancelled()) {
                 return;
             }
 
-            const sessionNotebookId = getSessionNotebookId(session, activeNotebook);
-            if (!sessionNotebookId) {
-                throw new Error('Unable to determine notebook session status because no notebook id was returned.');
-            }
-
-            if (session.jupyter.ready) {
-                setJupyterUrl(session.jupyter.url);
+            if (!result.timedOut && result.session.jupyter.ready) {
+                setJupyterUrl(normalizeScriptingJupyterUrl(result.session.jupyter.url));
                 sileo.success({ title: 'Jupyter session ready' });
                 return;
-            }
-
-            const deadlineMs = Date.now() + JUPYTER_SESSION_STATUS_TIMEOUT_MS;
-
-            while (Date.now() < deadlineMs) {
-                if (isRequestCancelled()) {
-                    return;
-                }
-
-                const status = await service.readNotebookSessionStatus({ notebookId: sessionNotebookId });
-
-                if (isRequestCancelled()) {
-                    return;
-                }
-
-                if (status.jupyter.ready) {
-                    setJupyterUrl(status.jupyter.url ?? session.jupyter.url ?? null);
-                    sileo.success({ title: 'Jupyter session ready' });
-                    return;
-                }
-
-                const remainingTimeMs = deadlineMs - Date.now();
-                if (remainingTimeMs <= 0) {
-                    break;
-                }
-
-                await sleep(Math.min(JUPYTER_SESSION_STATUS_POLL_INTERVAL_MS, remainingTimeMs));
             }
 
             setJupyterError(JUPYTER_SESSION_TIMEOUT_MESSAGE);

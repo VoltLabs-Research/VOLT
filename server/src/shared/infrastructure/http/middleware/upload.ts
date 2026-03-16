@@ -10,6 +10,21 @@ import path from 'node:path';
 const storage = multer.memoryStorage();
 const trajectoryUploadTempDir = path.join(os.tmpdir(), 'volt-trajectory-uploads');
 const CHAT_MAX_FILE_SIZE = 25 * 1024 * 1024;
+const DEFAULT_TRAJECTORY_MAX_FILES = 200;
+
+const parsePositiveInteger = (value: string | undefined, fallbackValue: number): number => {
+    const parsedValue = Number.parseInt(value || '', 10);
+    if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+        return fallbackValue;
+    }
+
+    return parsedValue;
+};
+
+const TRAJECTORY_MAX_FILES = parsePositiveInteger(
+    process.env.TRAJECTORY_UPLOAD_MAX_FILES,
+    DEFAULT_TRAJECTORY_MAX_FILES
+);
 
 const ensureDirectoryExists = (directoryPath: string): void => {
     fs.mkdirSync(directoryPath, { recursive: true });
@@ -69,10 +84,33 @@ export const uploadTrajectory = multer({
     storage: trajectoryUploadStorage,
     limits: {
         fields: 50,
-        files: 20,
+        files: TRAJECTORY_MAX_FILES,
         fieldSize: 1024 * 1024
     }
 });
+
+export const uploadTrajectoryFiles = (fieldName: string) => (
+    req: Request,
+    response: Response,
+    next: NextFunction
+) => {
+    uploadTrajectory.array(fieldName)(req, response, (error: unknown) => {
+        if (!error) {
+            return next();
+        }
+
+        if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_COUNT') {
+            return BaseResponse.error(
+                response,
+                `Trajectory upload supports up to ${TRAJECTORY_MAX_FILES} files per request.`,
+                HttpStatus.BadRequest,
+                ErrorCodes.TRAJECTORY_UPLOAD_FILE_LIMIT_EXCEEDED
+            );
+        }
+
+        return createUploadErrorResponse(response, error);
+    });
+};
 
 const chatUpload = multer({
     storage,

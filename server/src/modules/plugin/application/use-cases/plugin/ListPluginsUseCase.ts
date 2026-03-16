@@ -1,6 +1,7 @@
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ListPluginsInputDTO, ListPluginsOutputDTO } from '@modules/plugin/application/dtos/plugin/ListPluginsDTO';
 import { mapPluginToPersistedDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
+import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 
 import { IUseCase } from '@shared/application/IUseCase';
@@ -15,7 +16,10 @@ export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPlu
 
     async execute(input: ListPluginsInputDTO): Promise<Result<ListPluginsOutputDTO>> {
         const result = await this.pluginRepository.findAll({
-            filter: { team: input.teamId },
+            filter: {
+                team: input.teamId,
+                ...(input.status ? { status: input.status as PluginStatus } : {})
+            },
             page: input.page,
             limit: input.limit
         });

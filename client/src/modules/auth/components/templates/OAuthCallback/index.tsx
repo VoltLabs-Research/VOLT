@@ -35,8 +35,16 @@ const OAuthCallbackTemplate = () => {
         };
 
         const handleOAuthCallback = async () => {
+            const params = new URLSearchParams(window.location.search);
+            const next = resolvePostAuthDestination({
+                queryNext: params.get('next')
+            });
+            const signInRedirectPath = `/auth/sign-in?${new URLSearchParams({
+                error: 'oauth_failed',
+                next
+            }).toString()}`;
+
             try{
-                const params = new URLSearchParams(window.location.search);
                 const token = params.get('token');
 
                 if(!token){
@@ -51,9 +59,6 @@ const OAuthCallbackTemplate = () => {
 
                 setStatus('success');
 
-                const next = resolvePostAuthDestination({
-                    queryNext: params.get('next')
-                });
                 const redirectPath = getPostAuthRedirectPath(next);
 
                 redirectTimeoutReference.current = window.setTimeout(() => {
@@ -70,7 +75,7 @@ const OAuthCallbackTemplate = () => {
                 setStatus('error');
                 redirectTimeoutReference.current = window.setTimeout(() => {
                     redirectTimeoutReference.current = null;
-                    navigate('/auth/sign-in?error=oauth_failed');
+                    navigate(signInRedirectPath);
                 }, 2000);
             }
         };

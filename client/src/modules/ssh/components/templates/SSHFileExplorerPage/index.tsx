@@ -2,6 +2,7 @@ import { sshConnectionByIdQuery, sshFilesQuery } from '@/modules/ssh/hooks/queri
 import { useRemoteExplorer } from '@/shared/api/remote-explorer';
 import { isAccessDeniedError, mapErrorToUserMessage, normalizeError } from '@/shared/errors/core';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { FileEntryType } from '@/modules/ssh/api/entities/ssh-connection';
 import { formatSize } from '@/shared/utils/format';
 import SSHBreadcrumbs from '@/modules/ssh/components/atoms/SSHBreadcrumbs';
@@ -44,6 +45,8 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
         { enabled: !!connectionId }
     );
     const connection = connectionQuery.data || null;
+
+    usePageTitle(connection?.name ? `${connection.name} - File Explorer` : 'SSH File Explorer');
 
     useEffect(() => {
         if (connectionQuery.isLoading || !connectionId) {

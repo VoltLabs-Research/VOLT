@@ -26,6 +26,7 @@ const resolveThemeColors = () => ({
         [NodeType.CONTEXT]: getCSSVar('--accent-teal'),
         [NodeType.FOREACH]: getCSSVar('--accent-purple'),
         [NodeType.ENTRYPOINT]: getCSSVar('--accent-green'),
+        [NodeType.PLUGIN]: getCSSVar('--accent-blue'),
         [NodeType.EXPOSURE]: getCSSVar('--accent-orange'),
         [NodeType.EXPORT]: getCSSVar('--accent-red'),
         [NodeType.IF_STATEMENT]: getCSSVar('--accent-purple')

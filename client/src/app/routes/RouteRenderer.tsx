@@ -11,6 +11,7 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import type { ComponentType, ElementType, LazyExoticComponent, ReactNode } from 'react';
+import { RoutePermissionMode } from './types';
 import type { RouteConfig, RouteLoader } from './types';
 
 interface RoutePermissionGuardProps {
@@ -51,7 +52,7 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
     const hasHydratedSelection = useTeamStore((state) => state.hasHydratedSelection);
     const { scopedPermissions, isScopeReady, isLoading: isPermissionsLoading } = useTeamPermissions();
     const permissions = route.requiredPermissions ?? [];
-    const mode = route.permissionMode ?? 'any';
+    const mode = route.permissionMode ?? RoutePermissionMode.Any;
 
     if (permissions.length === 0) {
         return <>{children}</>;

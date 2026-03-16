@@ -1,6 +1,7 @@
 import { useMemo, useCallback } from 'react';
 import { useAllPluginsQuery } from './queries';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
+import { PluginStatus } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
 
 export interface RenderableExposure {
@@ -36,8 +37,14 @@ const usePluginSelectors = () => {
 
     const pluginsById = useMemo(() => buildPluginsById(plugins), [plugins]);
 
+    const publishedPlugins = useMemo(() => {
+        return plugins.filter((plugin) => plugin.status === PluginStatus.PUBLISHED);
+    }, [plugins]);
+
+    const publishedPluginsById = useMemo(() => buildPluginsById(publishedPlugins), [publishedPlugins]);
+
     const modifiers = useMemo((): ResolvedModifier[] => {
-        return plugins
+        return publishedPlugins
             .filter((plugin) => plugin.modifier)
             .map((plugin) => ({
                 plugin,
@@ -45,7 +52,7 @@ const usePluginSelectors = () => {
                 name: plugin.modifier?.name || plugin._id,
                 icon: plugin.modifier?.icon
             }));
-    }, [plugins]);
+    }, [publishedPlugins]);
 
     const getPluginArguments = useCallback((pluginId: string): IArgumentDefinition[] => {
         const plugin = pluginsById[pluginId];
@@ -55,6 +62,8 @@ const usePluginSelectors = () => {
     return {
         plugins,
         pluginsById,
+        publishedPlugins,
+        publishedPluginsById,
         modifiers,
         getPluginArguments,
         isLoading
