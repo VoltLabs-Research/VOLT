@@ -39,9 +39,15 @@ interface TeamMemberRolePopulate {
     select: ['permissions'];
 };
 
+interface ProxyTarget {
+    proxiedPath: string;
+    rawQuery: string;
+};
+
 const JUPYTER_PROXY_BASE_PATH = '/api/jupyter';
 const ACCESS_TOKEN_QUERY_PARAM = 'access_token';
 const ACCESS_TOKEN_COOKIE_NAME = 'voltScriptingJupyterAccessToken';
+const JUPYTER_NATIVE_TOKEN_QUERY_PARAM = 'token';
 const UPGRADE_ACTION = Action.READ;
 const PROXY_URL_ORIGIN = 'http://volt.local';
 const UPSTREAM_URL_ORIGIN = 'http://upstream.local';
@@ -133,11 +139,17 @@ const rewriteFrameAncestorsDirective = (contentSecurityPolicy?: string): string 
     return directives.join('; ');
 };
 
+const readJupyterNativeToken = (): string => {
+    const token = process.env.JUPYTER_TOKEN?.trim();
+    return token || 'volt-scripting';
+};
+
 @injectable()
 export class ScriptingJupyterProxyService {
     private readonly webSocketServer = new WebSocketServer({
         noServer: true
     });
+    private readonly jupyterNativeToken = readJupyterNativeToken();
 
     constructor(
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
@@ -495,7 +507,7 @@ export class ScriptingJupyterProxyService {
     private buildUpstreamHttpRequestOptions(
         req: Request,
         runtime: TeamClusterDaemonNotebookRuntime,
-        target: { proxiedPath: string; rawQuery: string; },
+        target: ProxyTarget,
         agent: http.Agent
     ): RequestOptions {
         const headers = this.readProxyRequestHeaders(req.headers);
@@ -547,11 +559,12 @@ export class ScriptingJupyterProxyService {
 
     private extractProxyTarget(
         requestUrl: string
-    ): { proxiedPath: string; rawQuery: string; } {
+    ): ProxyTarget {
         const url = new URL(requestUrl, PROXY_URL_ORIGIN);
         const proxiedPath = url.pathname;
 
         url.searchParams.delete(ACCESS_TOKEN_QUERY_PARAM);
+        url.searchParams.set(JUPYTER_NATIVE_TOKEN_QUERY_PARAM, this.jupyterNativeToken);
 
         const search = url.searchParams.toString();
         return {
@@ -574,6 +587,7 @@ export class ScriptingJupyterProxyService {
             : `${publicProxyBasePath}${normalizedPathname === '/' ? '' : normalizedPathname}`;
         rewrittenUrl.search = resolvedLocation.search;
         rewrittenUrl.hash = resolvedLocation.hash;
+        rewrittenUrl.searchParams.delete(JUPYTER_NATIVE_TOKEN_QUERY_PARAM);
 
         const accessToken = requestUrlObject.searchParams.get(ACCESS_TOKEN_QUERY_PARAM);
         if (accessToken && !rewrittenUrl.searchParams.has(ACCESS_TOKEN_QUERY_PARAM)) {

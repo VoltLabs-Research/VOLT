@@ -1,6 +1,7 @@
 import type { RouteGroup } from './types';
 import AnalysesListing from '@/modules/analysis/components/templates/AnalysesListing';
 import AuthenticationSettings from '@/modules/auth/components/templates/AuthenticationSettings';
+import AIPage from '@/modules/ai/components/templates/AIPage';
 import GeneralSettings from '@/modules/auth/components/templates/GeneralSettings';
 import OAuthCallbackPage from '@/modules/auth/components/templates/OAuthCallback';
 import SignInPage from '@/modules/auth/components/templates/SignIn';
@@ -28,6 +29,7 @@ import StartPage from '@/modules/start/components/templates/StartPage';
 import PostAuthOnboarding from '@/modules/onboarding/components/templates/PostAuthOnboarding';
 import PluginListingPage from '@/modules/plugin/components/listing/templates/PluginListingPage';
 import PluginsListing from '@/modules/plugin/components/listing/templates/PluginsListing';
+import PluginBuilderPage from '@/modules/plugin/components/plugin/templates/PluginBuilderPage';
 import SessionSettings from '@/modules/session/components/templates/SessionSettings';
 import IntegrationsSettings from '@/modules/team/components/templates/IntegrationsSettings';
 import ManageRolesTemplate from '@/modules/team/components/templates/ManageRoles';
@@ -150,7 +152,7 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/plugins/builder',
-            loader: () => import('@/modules/plugin/components/plugin/templates/PluginBuilderPage'),
+            component: PluginBuilderPage,
             requiredPermissions: ['plugin:create']
         },
         {
@@ -235,7 +237,7 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/dashboard/ai/:conversationId?',
-            loader: () => import('@/modules/ai/components/templates/AIPage'),
+            component: AIPage,
             requiredPermissions: ['ai-conversation:read']
         },
         {
