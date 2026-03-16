@@ -1,5 +1,5 @@
 import { EntrypointType } from '@/shared/contracts';
-import type { AnalysisStartRequest, AnalysisQueueJobPayload } from '@/shared/contracts';
+import type { AnalysisStartRequest, AnalysisQueueJobPayload, AnalysisStartResponse, QueuedJobNotification } from '@/shared/contracts';
 import { OrchestrationAction } from '@/shared/contracts';
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
 import { RuntimeEventBroker } from '@/shared/services';
@@ -16,7 +16,7 @@ export class AnalysisDispatchService {
         private readonly eventBroker: RuntimeEventBroker
     ) {}
 
-    async startAnalysis(input: AnalysisStartRequest): Promise<{ queued: boolean; totalJobs: number; }> {
+    async startAnalysis(input: AnalysisStartRequest): Promise<AnalysisStartResponse> {
         this.eventBroker.emitProgress({
             action: OrchestrationAction.AnalysisStart,
             stage: ProgressStageType.Accepted,
@@ -84,9 +84,21 @@ export class AnalysisDispatchService {
             }
         });
 
+        const queuedJobNotifications: QueuedJobNotification[] = jobs.map((job) => ({
+            jobId: job.jobId,
+            name: job.name,
+            teamId: job.teamId,
+            timestep: job.timestep!,
+            trajectoryId: input.trajectoryId,
+            trajectoryName: input.trajectoryName,
+            analysisId: input.analysisId,
+            queueType: ANALYSIS_QUEUE_NAME
+        }));
+
         return {
             queued: true,
-            totalJobs: jobs.length
+            totalJobs: jobs.length,
+            jobs: queuedJobNotifications
         };
     }
 

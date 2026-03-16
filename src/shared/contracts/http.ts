@@ -208,6 +208,7 @@ export interface AnalysisStartRequest {
     teamId: string;
     teamClusterId: string;
     trajectoryId: string;
+    trajectoryName?: string;
     trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
     workflow: WorkflowDefinition;
     nestedPlugins: NestedPluginDefinition[];
@@ -273,6 +274,23 @@ export interface EnqueuePreprocessingRequest {
     teamId: string;
     trajectoryName?: string;
     frames: EnqueuePreprocessingFrameDescriptor[];
+};
+
+export interface QueuedJobNotification {
+    jobId: string;
+    name: string;
+    teamId: string;
+    timestep: number;
+    trajectoryId: string;
+    trajectoryName?: string;
+    analysisId: string;
+    queueType: string;
+};
+
+export interface AnalysisStartResponse {
+    queued: boolean;
+    totalJobs: number;
+    jobs: QueuedJobNotification[];
 };
 
 export interface EnqueuePreprocessingResponse {
