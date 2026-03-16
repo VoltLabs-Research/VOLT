@@ -17,6 +17,16 @@ interface DaemonPluginSyncResponse {
 interface DaemonAnalysisStartResponse {
     queued: boolean;
     totalJobs: number;
+    jobs: Array<{
+        jobId: string;
+        name: string;
+        teamId: string;
+        timestep: number;
+        trajectoryId: string;
+        trajectoryName?: string;
+        analysisId: string;
+        queueType: string;
+    }>;
 };
 
 interface WorkflowSerializable {
@@ -126,6 +136,13 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             input.analysisId,
             response.totalJobs
         );
+
+        if (response.jobs?.length > 0) {
+            await this.daemonAnalysisCompletionService.handleJobsQueued(
+                response.jobs,
+                input.teamId
+            );
+        }
     }
 
     private async syncPluginBinaryIfNeeded(teamClusterId: string, plugin: Plugin): Promise<void> {

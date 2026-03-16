@@ -62,6 +62,17 @@ interface DaemonGlbJobStatusInput {
     error?: string;
 };
 
+interface QueuedJobNotification {
+    jobId: string;
+    name: string;
+    teamId: string;
+    timestep: number;
+    trajectoryId: string;
+    trajectoryName?: string;
+    analysisId: string;
+    queueType: string;
+};
+
 interface ProjectedJobStatusInput {
     jobId: string;
     teamId: string;
@@ -105,6 +116,47 @@ export default class DaemonAnalysisCompletionService {
 
         logger.info(
             `[DaemonAnalysisCompletion] Initialized session for analysis ${analysisId} with ${totalJobs} jobs`
+        );
+    }
+
+    /**
+     * Called by the PluginExecutionRouter after dispatching jobs to the daemon.
+     * Projects each queued job to Redis and emits socket events so the frontend
+     * sees jobs immediately with "Queued" status.
+     */
+    async handleJobsQueued(jobs: QueuedJobNotification[], teamId: string): Promise<void> {
+        for (const job of jobs) {
+            const trajectoryContext: JobTrajectoryContext = {
+                trajectoryId: job.trajectoryId,
+                trajectoryName: job.trajectoryName,
+                timestep: job.timestep
+            };
+
+            await this.projectJobStatus({
+                jobId: job.jobId,
+                teamId,
+                status: JobStatus.Queued,
+                queueType: ANALYSIS_QUEUE_TYPE,
+                cleanupScope: ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE,
+                name: job.name,
+                analysisId: job.analysisId,
+                trajectoryContext
+            });
+
+            await this.publishJobStatusChanged({
+                jobId: job.jobId,
+                teamId,
+                status: JobStatus.Queued,
+                queueType: ANALYSIS_QUEUE_TYPE,
+                cleanupScope: ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE,
+                name: job.name,
+                analysisId: job.analysisId,
+                trajectoryContext
+            });
+        }
+
+        logger.info(
+            `[DaemonAnalysisCompletion] Projected and emitted ${jobs.length} queued jobs for team ${teamId}`
         );
     }
 
