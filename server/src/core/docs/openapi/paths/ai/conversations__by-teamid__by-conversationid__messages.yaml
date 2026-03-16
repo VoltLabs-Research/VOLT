@@ -1,0 +1,68 @@
+get:
+  operationId: listAIConversationMessages
+  tags:
+  - AI Conversations
+  summary: List AI conversation messages
+  description: Returns paginated persisted messages for one AI conversation.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/ConversationId
+  - $ref: ../../components/parameters/common.yaml#/Page
+  - $ref: ../../components/parameters/common.yaml#/Limit
+  responses:
+    '200':
+      description: Conversation messages
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../../components/schemas/ai.yaml#/AIConversationMessage
+                pagination:
+                  $ref: ../../components/schemas/common.yaml#/Pagination
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+post:
+  operationId: sendAIConversationMessage
+  tags:
+  - AI Conversations
+  summary: Send AI conversation message
+  description: Sends a message to an AI conversation and returns the generated text with persisted messages.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/ConversationId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/ai.yaml#/SendAIConversationMessageRequest
+  responses:
+    '201':
+      description: Message sent
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/ai.yaml#/SendAIConversationMessageResponse
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

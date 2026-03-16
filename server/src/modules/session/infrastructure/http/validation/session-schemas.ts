@@ -9,8 +9,7 @@ const tokenSchema = z.string().trim().min(1);
 
 const userRequestContextSchema = z.object({
     userId: objectIdSchema,
-    token: tokenSchema.optional(),
-    sessionId: objectIdSchema.optional()
+    token: tokenSchema.optional()
 }).strict();
 
 const revokeAllRequestContextSchema = userRequestContextSchema.extend({

@@ -1,0 +1,88 @@
+delete:
+  operationId: deleteLatexAsset
+  tags:
+  - LaTeX
+  summary: Delete LaTeX asset
+  description: Permanently deletes the specified asset from the LaTeX document.
+  parameters:
+  - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: documentId
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: assetId
+    in: path
+    required: true
+    schema:
+      type: string
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+patch:
+  operationId: updateLatexAsset
+  tags:
+  - LaTeX
+  summary: Update LaTeX asset
+  description: Updates metadata of the specified asset in the LaTeX document.
+  parameters:
+  - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: documentId
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: assetId
+    in: path
+    required: true
+    schema:
+      type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/latex.yaml#/LatexAsset
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

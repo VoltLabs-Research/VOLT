@@ -1,0 +1,220 @@
+ExportType:
+  type: string
+  enum:
+  - json
+  - csv
+  description: Supported export formats
+WorkflowNodeType:
+  type: string
+  enum:
+  - modifier
+  - arguments
+  - context
+  - forEach
+  - entrypoint
+  - exposure
+  - export
+  - if-statement
+  description: Type of workflow node
+WorkflowNodePosition:
+  type: object
+  required:
+  - x
+  - y
+  properties:
+    x:
+      type: number
+    y:
+      type: number
+  additionalProperties: false
+WorkflowNode:
+  type: object
+  required:
+  - id
+  - type
+  - position
+  - data
+  properties:
+    id:
+      type: string
+      minLength: 1
+    type:
+      $ref: plugins.yaml#/WorkflowNodeType
+    position:
+      $ref: plugins.yaml#/WorkflowNodePosition
+    data:
+      type: object
+      additionalProperties: true
+  additionalProperties: false
+WorkflowEdge:
+  type: object
+  required:
+  - id
+  - source
+  - target
+  properties:
+    id:
+      type: string
+      minLength: 1
+    source:
+      type: string
+      minLength: 1
+    sourceHandle:
+      type: string
+    target:
+      type: string
+      minLength: 1
+    targetHandle:
+      type: string
+  additionalProperties: false
+WorkflowViewport:
+  type: object
+  required:
+  - x
+  - y
+  - zoom
+  properties:
+    x:
+      type: number
+    y:
+      type: number
+    zoom:
+      type: number
+  additionalProperties: false
+Workflow:
+  type: object
+  required:
+  - nodes
+  - edges
+  properties:
+    nodes:
+      type: array
+      items:
+        $ref: plugins.yaml#/WorkflowNode
+    edges:
+      type: array
+      items:
+        $ref: plugins.yaml#/WorkflowEdge
+    viewport:
+      $ref: plugins.yaml#/WorkflowViewport
+  additionalProperties: false
+PluginStatus:
+  type: string
+  enum:
+  - draft
+  - published
+  - disabled
+CreatePluginRequest:
+  type: object
+  required:
+  - workflow
+  properties:
+    workflow:
+      $ref: plugins.yaml#/Workflow
+  additionalProperties: false
+UpdatePluginRequest:
+  type: object
+  properties:
+    workflow:
+      $ref: plugins.yaml#/Workflow
+    status:
+      $ref: plugins.yaml#/PluginStatus
+  additionalProperties: false
+ValidateWorkflowRequest:
+  type: object
+  required:
+  - workflow
+  properties:
+    workflow:
+      $ref: plugins.yaml#/Workflow
+  additionalProperties: false
+ExecutePluginRequest:
+  type: object
+  required:
+  - teamClusterId
+  - config
+  properties:
+    teamClusterId:
+      $ref: common.yaml#/ObjectId
+    selectedFrameOnly:
+      type: boolean
+      description: Whether to execute on the selected frame only
+    selectedTimesteps:
+      type: array
+      items:
+        type: number
+      description: Specific timesteps to execute on
+    timestep:
+      type: number
+      description: Single timestep to execute on
+    config:
+      type: object
+      additionalProperties: true
+      description: Plugin execution configuration
+  additionalProperties: false
+Plugin:
+  type: object
+  description: A plugin resource
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    workflow:
+      $ref: plugins.yaml#/Workflow
+    status:
+      $ref: plugins.yaml#/PluginStatus
+    teamId:
+      $ref: common.yaml#/ObjectId
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+PluginExecution:
+  type: object
+  description: A plugin execution result
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    pluginId:
+      $ref: common.yaml#/ObjectId
+    trajectoryId:
+      $ref: common.yaml#/ObjectId
+    status:
+      type: string
+    createdAt:
+      type: string
+      format: date-time
+WorkflowValidationResult:
+  type: object
+  description: Result of a workflow validation
+  properties:
+    valid:
+      type: boolean
+    errors:
+      type: array
+      items:
+        type: object
+        properties:
+          message:
+            type: string
+          nodeId:
+            type: string
+PaginatedListingRows:
+  type: object
+  description: Paginated listing row response
+  properties:
+    rows:
+      type: array
+      items:
+        type: object
+        additionalProperties: true
+    total:
+      type: integer
+      description: Total number of rows
+    page:
+      type: integer
+      description: Current page number
+    limit:
+      type: integer
+      description: Number of rows per page

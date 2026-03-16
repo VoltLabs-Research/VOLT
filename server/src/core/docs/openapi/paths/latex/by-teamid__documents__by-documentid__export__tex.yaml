@@ -1,0 +1,33 @@
+get:
+  operationId: exportLatexDocumentTex
+  tags:
+  - LaTeX
+  summary: Export LaTeX document as .tex
+  description: Exports the LaTeX document as a downloadable .tex file.
+  parameters:
+  - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: documentId
+    in: path
+    required: true
+    schema:
+      type: string
+  responses:
+    '200':
+      description: The .tex file
+      content:
+        application/x-tex:
+          schema:
+            type: string
+            format: binary
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

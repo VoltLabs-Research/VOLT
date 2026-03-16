@@ -15,13 +15,13 @@ export interface ScriptingSessionJupyterInfo {
 export interface ScriptingSessionStartInput {
     teamId: string;
     teamClusterId: string;
-    trajectoryId?: string;
     userId: string;
     notebook?: ScriptingSessionNotebookInput;
     notebookId?: string;
 };
 
 export interface ScriptingSessionStartResult {
+    notebookId: string;
     jupyter: ScriptingSessionJupyterInfo;
 };
 

@@ -1,0 +1,49 @@
+get:
+  operationId: getAnalysisById
+  tags:
+  - Analysis
+  summary: Get analysis
+  description: Returns one analysis by identifier.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/AnalysisId
+  responses:
+    '200':
+      description: Analysis
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/analyses.yaml#/Analysis
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+delete:
+  operationId: deleteAnalysisById
+  tags:
+  - Analysis
+  summary: Delete analysis
+  description: Deletes an analysis and related derived artifacts.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/AnalysisId
+  responses:
+    '200':
+      description: Analysis deleted
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

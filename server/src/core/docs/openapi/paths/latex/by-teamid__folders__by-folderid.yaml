@@ -1,0 +1,115 @@
+get:
+  operationId: getLatexFolder
+  tags:
+  - LaTeX
+  summary: Get LaTeX folder
+  description: Returns a single LaTeX folder by its unique identifier.
+  parameters:
+  - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: folderId
+    in: path
+    required: true
+    schema:
+      type: string
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/common.yaml#/Folder
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+patch:
+  operationId: updateLatexFolder
+  tags:
+  - LaTeX
+  summary: Update LaTeX folder
+  description: Updates the specified LaTeX folder.
+  parameters:
+  - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: folderId
+    in: path
+    required: true
+    schema:
+      type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/common.yaml#/Folder
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+delete:
+  operationId: deleteLatexFolder
+  tags:
+  - LaTeX
+  summary: Delete LaTeX folder
+  description: Permanently deletes the specified LaTeX folder and moves its contents to root.
+  parameters:
+  - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: folderId
+    in: path
+    required: true
+    schema:
+      type: string
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

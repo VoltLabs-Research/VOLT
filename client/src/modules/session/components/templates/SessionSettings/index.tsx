@@ -275,7 +275,7 @@ const SessionSettings: FC = () => {
                 }
             >
                 {revokeTarget && (
-                    <Paragraph className="font-size-2 color-muted">
+                    <Paragraph className="font-size-2 color-muted p-1-5">
                         Are you sure you want to revoke the session from{' '}
                         <strong>{parseSessionUserAgent(revokeTarget.userAgent).browser}</strong> on{' '}
                         <strong>{parseSessionUserAgent(revokeTarget.userAgent).os}</strong> ({revokeTarget.ip})?

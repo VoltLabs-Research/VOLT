@@ -1,0 +1,105 @@
+Notebook:
+  type: object
+  description: A scripting notebook
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    title:
+      type: string
+    teamId:
+      $ref: common.yaml#/ObjectId
+    trajectoryId:
+      $ref: common.yaml#/ObjectId
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+PaginatedNotebooks:
+  type: object
+  description: Paginated notebook response
+  properties:
+    items:
+      type: array
+      items:
+        $ref: scripting.yaml#/Notebook
+    total:
+      type: integer
+    page:
+      type: integer
+    limit:
+      type: integer
+CreateNotebookRequest:
+  type: object
+  properties:
+    title:
+      type: string
+      minLength: 1
+      maxLength: 255
+      description: Optional notebook title
+  additionalProperties: false
+UpdateNotebookRequest:
+  type: object
+  required:
+  - title
+  properties:
+    title:
+      type: string
+      minLength: 1
+      maxLength: 255
+      description: New notebook title
+  additionalProperties: false
+CreateJupyterSessionRequest:
+  type: object
+  properties:
+    notebookId:
+      $ref: common.yaml#/ObjectId
+    teamClusterId:
+      $ref: common.yaml#/ObjectId
+  additionalProperties: false
+CreateNotebookJupyterSessionRequest:
+  type: object
+  required:
+  - notebookId
+  properties:
+    notebookId:
+      $ref: common.yaml#/ObjectId
+    teamClusterId:
+      $ref: common.yaml#/ObjectId
+  additionalProperties: false
+JupyterSession:
+  type: object
+  description: A Jupyter session
+  properties:
+    notebookId:
+      $ref: common.yaml#/ObjectId
+    jupyter:
+      type: object
+      properties:
+        ready:
+          type: boolean
+        url:
+          type: string
+          format: uri
+ScriptingSessionStatus:
+  type: object
+  description: Status of a scripting Jupyter session
+  required:
+  - notebookId
+  - jupyter
+  properties:
+    notebookId:
+      $ref: common.yaml#/ObjectId
+    jupyter:
+      type: object
+      required:
+      - ready
+      - url
+      properties:
+        ready:
+          type: boolean
+          description: Whether the Jupyter runtime is ready
+        url:
+          type: string
+          description: Proxy URL for accessing the Jupyter session

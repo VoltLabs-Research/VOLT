@@ -1,4 +1,5 @@
 import { trajectoryPreviewQuery } from './queries';
+import { isApiError } from '@/shared/errors/core';
 import { useEffect, useRef, useState } from 'react';
 
 interface UseTrajectoryPreviewParams {
@@ -20,6 +21,7 @@ export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams)
 
     const {
         data,
+        error,
         isLoading,
         isError,
         refetch
@@ -61,10 +63,12 @@ export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams)
         };
     }, []);
 
+    const hasNoPreviewYet = isApiError(error) && error.status === 404;
+
     return {
         previewBlobUrl,
         isLoading,
-        error: isError,
+        error: isError && !hasNoPreviewYet,
         retry: refetch
     };
 }

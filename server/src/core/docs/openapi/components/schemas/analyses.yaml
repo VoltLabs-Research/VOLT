@@ -1,0 +1,52 @@
+Analysis:
+  type: object
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    plugin:
+      $ref: common.yaml#/ObjectId
+    pluginDisplayName:
+      type: string
+    teamCluster:
+      anyOf:
+      - $ref: common.yaml#/ObjectId
+      - type: 'null'
+    config:
+      type: object
+      additionalProperties: true
+    trajectory:
+      $ref: common.yaml#/ObjectId
+    createdBy:
+      $ref: common.yaml#/ObjectId
+    totalFrames:
+      type:
+      - integer
+      - 'null'
+    completedFrames:
+      type:
+      - integer
+      - 'null'
+    startedAt:
+      type:
+      - string
+      - 'null'
+      format: date-time
+    finishedAt:
+      type:
+      - string
+      - 'null'
+      format: date-time
+    team:
+      $ref: common.yaml#/ObjectId
+    status:
+      type: string
+    createdAt:
+      type:
+      - string
+      - 'null'
+      format: date-time
+    updatedAt:
+      type:
+      - string
+      - 'null'
+      format: date-time

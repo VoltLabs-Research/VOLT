@@ -1,0 +1,17 @@
+patch:
+  operationId: markAllNotificationsAsRead
+  tags:
+  - Notifications
+  summary: Mark all notifications as read
+  description: Marks all unread notifications as read for the currently authenticated user.
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized

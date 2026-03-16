@@ -1,0 +1,26 @@
+post:
+  operationId: completeTeamClusterDeletion
+  tags:
+  - Cluster Lifecycle
+  summary: Complete cluster deletion
+  description: Marks a cluster deletion as completed after daemon-side cleanup.
+  security: []
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamClusterId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/team-clusters.yaml#/TeamClusterDeleteCompletionRequest
+  responses:
+    '200':
+      description: Deletion completed
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

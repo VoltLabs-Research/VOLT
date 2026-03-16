@@ -1,5 +1,5 @@
-import { createApiClient } from '@/app/core/http/utilities/create-client';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import service from '../api/service';
 import { useCreateScriptingSessionMutation, scriptingNotebooksQuery } from './queries';
 import { JUPYTER_SESSION_TIMEOUT_MESSAGE } from '../utilities/jupyter-session';
 import {
@@ -16,18 +16,9 @@ interface UseScriptingWorkspaceInput {
     notebookId?: string;
 };
 
-interface ScriptingSessionStatus {
-    notebookId?: string;
-    jupyter: {
-        ready: boolean;
-        url?: string | null;
-    };
-};
-
 const WORKSPACE_NOTEBOOKS_FETCH_LIMIT = 500;
 const JUPYTER_SESSION_STATUS_POLL_INTERVAL_MS = 2_000;
 const JUPYTER_SESSION_STATUS_TIMEOUT_MS = 120_000;
-const scriptingSessionStatusClient = createApiClient('/scripting', { useRBAC: true });
 
 const sleep = async (delayMs: number): Promise<void> => {
     await new Promise((resolve) => setTimeout(resolve, delayMs));
@@ -43,6 +34,14 @@ const getTeamClusterId = (notebook?: ScriptingNotebook | null): string | undefin
     }
 
     return notebook.teamCluster._id;
+};
+
+const getSessionNotebookId = (session: { notebookId?: unknown }, notebook?: ScriptingNotebook | null): string | undefined => {
+    if (typeof session.notebookId === 'string' && session.notebookId.length > 0) {
+        return session.notebookId;
+    }
+
+    return notebook?._id;
 };
 
 const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspaceInput) => {
@@ -115,6 +114,11 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                 return;
             }
 
+            const sessionNotebookId = getSessionNotebookId(session, activeNotebook);
+            if (!sessionNotebookId) {
+                throw new Error('Unable to determine notebook session status because no notebook id was returned.');
+            }
+
             if (session.jupyter.ready) {
                 setJupyterUrl(session.jupyter.url);
                 sileo.success({ title: 'Jupyter session ready' });
@@ -128,9 +132,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                     return;
                 }
 
-                const status = await scriptingSessionStatusClient.get<ScriptingSessionStatus>(
-                    `/${trajectoryId}/sessions/status`
-                );
+                const status = await service.readNotebookSessionStatus({ notebookId: sessionNotebookId });
 
                 if (isRequestCancelled()) {
                     return;

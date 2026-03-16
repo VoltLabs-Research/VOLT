@@ -25,6 +25,7 @@ interface DaemonRasterJobStatusPayload {
     jobId: string;
     teamId: string;
     trajectoryId: string;
+    trajectoryName?: string;
     timestep?: number;
     status: RasterJobStatus;
     error?: string;
@@ -55,6 +56,7 @@ interface ProcessDaemonRasterJobStatusInputDTO {
     jobId: string;
     teamId: string;
     trajectoryId: string;
+    trajectoryName?: string;
     timestep?: number;
     status: JobStatus;
     error?: string;
@@ -116,6 +118,7 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                     jobId: input.jobId,
                     teamId: input.teamId,
                     trajectoryId: input.trajectoryId,
+                    trajectoryName: input.trajectoryName,
                     timestep: input.timestep,
                     status: input.status,
                     error: input.error

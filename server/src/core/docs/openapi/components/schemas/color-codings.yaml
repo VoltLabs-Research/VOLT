@@ -1,0 +1,64 @@
+ColorCodingProperty:
+  type: object
+  required:
+  - name
+  - type
+  properties:
+    name:
+      type: string
+      description: Name of the property available for color coding
+    type:
+      type: string
+      description: Data type of the property (e.g., numeric, categorical)
+    description:
+      type: string
+      description: Human-readable description of the property
+ColorCodingModel:
+  type: object
+  required:
+  - property
+  - colorMap
+  properties:
+    property:
+      type: string
+      description: The property currently used for color coding
+    colorMap:
+      type: string
+      description: Name of the color map being applied
+    min:
+      type:
+      - number
+      - 'null'
+      description: Minimum value of the color scale
+    max:
+      type:
+      - number
+      - 'null'
+      description: Maximum value of the color scale
+    perAtomValues:
+      type:
+      - array
+      - 'null'
+      description: Per-atom computed values for the selected property
+      items:
+        type: number
+ColorCodingStats:
+  type: object
+  required:
+  - min
+  - max
+  - mean
+  - median
+  properties:
+    min:
+      type: number
+      description: Minimum value across all atoms
+    max:
+      type: number
+      description: Maximum value across all atoms
+    mean:
+      type: number
+      description: Mean value across all atoms
+    median:
+      type: number
+      description: Median value across all atoms

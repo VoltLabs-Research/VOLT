@@ -1,0 +1,742 @@
+CreateTeamRequest:
+  type: object
+  required:
+  - name
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 100
+    description:
+      type: string
+      maxLength: 500
+  additionalProperties: false
+UpdateTeamRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 100
+    description:
+      type: string
+      maxLength: 500
+  additionalProperties: false
+JoinTeamRequest:
+  type: object
+  required:
+  - code
+  properties:
+    code:
+      type: string
+      pattern: ^[A-Z0-9]{5}$
+      description: 5-character uppercase alphanumeric invite code.
+  additionalProperties: false
+Team:
+  type: object
+  properties:
+    _id:
+      type: string
+      pattern: ^[a-fA-F0-9]{24}$
+    name:
+      type: string
+    description:
+      type: string
+    owner:
+      type: string
+      description: Owner user ID
+    memberCount:
+      type: integer
+    inviteCode:
+      type:
+      - string
+      - 'null'
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+TeamMemberUser:
+  type: object
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    firstName:
+      type: string
+    lastName:
+      type: string
+    email:
+      type: string
+      format: email
+    avatar:
+      type:
+      - string
+      - 'null'
+    lastSeenAt:
+      type:
+      - string
+      - 'null'
+      format: date-time
+    createdAt:
+      type:
+      - string
+      - 'null'
+      format: date-time
+    isOnline:
+      type:
+      - boolean
+      - 'null'
+TeamMemberRoleSummary:
+  type: object
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    name:
+      type: string
+    permissions:
+      type: array
+      items:
+        type: string
+    isSystem:
+      type: boolean
+TeamMember:
+  type: object
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    team:
+      oneOf:
+      - $ref: common.yaml#/ObjectId
+      - type: object
+        properties:
+          _id:
+            $ref: common.yaml#/ObjectId
+    user:
+      oneOf:
+      - $ref: common.yaml#/ObjectId
+      - $ref: teams.yaml#/TeamMemberUser
+    role:
+      oneOf:
+      - $ref: common.yaml#/ObjectId
+      - $ref: teams.yaml#/TeamMemberRoleSummary
+    joinedAt:
+      type: string
+      format: date-time
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+    timeSpentLast7Days:
+      type: number
+    trajectoriesCount:
+      type: integer
+    analysesCount:
+      type: integer
+    latexCount:
+      type: integer
+    whiteboardsCount:
+      type: integer
+UpdateTeamMemberRequest:
+  type: object
+  properties:
+    role:
+      $ref: common.yaml#/ObjectId
+  additionalProperties: false
+TeamRole:
+  type: object
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    team:
+      $ref: common.yaml#/ObjectId
+    name:
+      type: string
+    permissions:
+      type: array
+      items:
+        type: string
+    isSystem:
+      type: boolean
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+CreateTeamRoleRequest:
+  type: object
+  required:
+  - name
+  - permissions
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 100
+    permissions:
+      type: array
+      items:
+        type: string
+        minLength: 1
+      minItems: 1
+  additionalProperties: false
+UpdateTeamRoleRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 100
+    permissions:
+      type: array
+      items:
+        type: string
+        minLength: 1
+      minItems: 1
+  additionalProperties: false
+TeamInvitationStatus:
+  type: string
+  enum:
+  - pending
+  - accepted
+  - rejected
+TeamInvitation:
+  type: object
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    team:
+      $ref: common.yaml#/ObjectId
+    invitedBy:
+      $ref: common.yaml#/ObjectId
+    invitedUser:
+      $ref: common.yaml#/ObjectId
+    email:
+      type: string
+      format: email
+    token:
+      type: string
+    role:
+      $ref: common.yaml#/ObjectId
+    expiresAt:
+      type: string
+      format: date-time
+    acceptedAt:
+      type:
+      - string
+      - 'null'
+      format: date-time
+    status:
+      $ref: teams.yaml#/TeamInvitationStatus
+SendTeamInvitationRequest:
+  type: object
+  required:
+  - email
+  properties:
+    email:
+      type: string
+      format: email
+    roleId:
+      $ref: common.yaml#/ObjectId
+  additionalProperties: false
+UpdateTeamInvitationRequest:
+  type: object
+  required:
+  - status
+  properties:
+    status:
+      $ref: teams.yaml#/TeamInvitationStatus
+  additionalProperties: false
+TeamInvitationActionRequest:
+  type: object
+  required:
+  - status
+  properties:
+    status:
+      type: string
+      enum:
+      - accepted
+      - rejected
+  additionalProperties: false
+SecretKeyListItem:
+  type: object
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    teamId:
+      $ref: common.yaml#/ObjectId
+    roleId:
+      $ref: common.yaml#/ObjectId
+    roleName:
+      type: string
+    name:
+      type: string
+    keyPrefix:
+      type: string
+    createdBy:
+      oneOf:
+      - $ref: common.yaml#/ObjectId
+      - $ref: common.yaml#/User
+    isActive:
+      type: boolean
+    lastUsedAt:
+      type:
+      - string
+      - 'null'
+      format: date-time
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+CreatedSecretKey:
+  type: object
+  properties:
+    secretKeyId:
+      $ref: common.yaml#/ObjectId
+    teamId:
+      $ref: common.yaml#/ObjectId
+    roleId:
+      $ref: common.yaml#/ObjectId
+    name:
+      type: string
+    keyPrefix:
+      type: string
+    secretKey:
+      type: string
+      description: Returned only once at creation time.
+    isActive:
+      type: boolean
+    createdAt:
+      type: string
+      format: date-time
+CreateSecretKeyRequest:
+  type: object
+  required:
+  - name
+  - roleId
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 100
+    roleId:
+      $ref: common.yaml#/ObjectId
+  additionalProperties: false
+SecretKeyUsage:
+  type: object
+  properties:
+    key:
+      type: object
+      properties:
+        _id:
+          $ref: common.yaml#/ObjectId
+        name:
+          type: string
+        keyPrefix:
+          type: string
+        roleName:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+  additionalProperties: true
+SecretKeyTeamMetrics:
+  type: object
+  properties:
+    totalKeys:
+      type: integer
+    activeKeys:
+      type: integer
+    revokedKeys:
+      type: integer
+    perKey:
+      type: array
+      items:
+        type: object
+        additionalProperties: true
+  additionalProperties: true
+CurrentSecretKey:
+  type: object
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    team:
+      $ref: common.yaml#/ObjectId
+    role:
+      $ref: common.yaml#/ObjectId
+    createdBy:
+      $ref: common.yaml#/ObjectId
+    name:
+      type: string
+    keyPrefix:
+      type: string
+    isActive:
+      type: boolean
+    lastUsedAt:
+      type:
+      - string
+      - 'null'
+      format: date-time
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+EnabledModel:
+  type: object
+  required:
+  - id
+  - name
+  properties:
+    id:
+      type: string
+      minLength: 1
+    name:
+      type: string
+      minLength: 1
+  additionalProperties: false
+TeamAIIntegration:
+  type: object
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    teamId:
+      $ref: common.yaml#/ObjectId
+    provider:
+      $ref: common.yaml#/AIProvider
+    providerName:
+      type: string
+    isEnabled:
+      type: boolean
+    defaultModel:
+      type:
+      - string
+      - 'null'
+    enabledModels:
+      type: array
+      items:
+        $ref: teams.yaml#/EnabledModel
+    metadata:
+      type:
+      - object
+      - 'null'
+      additionalProperties: true
+    hasApiKey:
+      type: boolean
+    createdBy:
+      type:
+      - string
+      - 'null'
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+TeamAIProviderCatalogItem:
+  type: object
+  properties:
+    id:
+      $ref: common.yaml#/AIProvider
+    name:
+      type: string
+    description:
+      type: string
+TeamAIIntegrationsResponse:
+  type: object
+  properties:
+    teamId:
+      $ref: common.yaml#/ObjectId
+    integrations:
+      type: array
+      items:
+        $ref: teams.yaml#/TeamAIIntegration
+    providers:
+      type: array
+      items:
+        $ref: teams.yaml#/TeamAIProviderCatalogItem
+TeamAIModelMetadata:
+  type: object
+  properties:
+    id:
+      type: string
+    name:
+      type: string
+TeamAIProviderModels:
+  type: object
+  properties:
+    provider:
+      $ref: common.yaml#/AIProvider
+    providerName:
+      type: string
+    defaultModel:
+      type:
+      - string
+      - 'null'
+    metadata:
+      type:
+      - object
+      - 'null'
+      additionalProperties: true
+    models:
+      type: array
+      items:
+        $ref: teams.yaml#/TeamAIModelMetadata
+TeamAIModelListItem:
+  allOf:
+  - $ref: teams.yaml#/TeamAIModelMetadata
+  - type: object
+    properties:
+      provider:
+        $ref: common.yaml#/AIProvider
+      providerName:
+        type: string
+      isDefault:
+        type: boolean
+TeamAIIntegrationModelsResponse:
+  type: object
+  properties:
+    teamId:
+      $ref: common.yaml#/ObjectId
+    providers:
+      type: array
+      items:
+        $ref: teams.yaml#/TeamAIProviderModels
+    models:
+      type: array
+      items:
+        $ref: teams.yaml#/TeamAIModelListItem
+TeamAIIntegrationMutationRequest:
+  type: object
+  properties:
+    apiKey:
+      type: string
+      minLength: 1
+    isEnabled:
+      type: boolean
+    defaultModel:
+      type: string
+      minLength: 1
+    enabledModels:
+      type: array
+      items:
+        $ref: teams.yaml#/EnabledModel
+    metadata:
+      type: object
+      additionalProperties: true
+  additionalProperties: false
+TeamClusterCredentialService:
+  type: object
+  properties:
+    port:
+      type:
+      - integer
+      - 'null'
+    username:
+      type: string
+    password:
+      type: string
+TeamClusterDaemonCredentialService:
+  type: object
+  properties:
+    port:
+      type:
+      - integer
+      - 'null'
+    password:
+      type: string
+TeamClusterCredentialServices:
+  type: object
+  properties:
+    minio:
+      $ref: teams.yaml#/TeamClusterCredentialService
+    redis:
+      $ref: teams.yaml#/TeamClusterCredentialService
+    mongodb:
+      $ref: teams.yaml#/TeamClusterCredentialService
+    daemon:
+      $ref: teams.yaml#/TeamClusterDaemonCredentialService
+AvailableClusterVersion:
+  type: object
+  properties:
+    tag:
+      type: string
+    publishedAt:
+      type:
+      - string
+      - 'null'
+    isLatest:
+      type: boolean
+    isEdge:
+      type: boolean
+PasswordConfirmationRequest:
+  type: object
+  required:
+  - password
+  properties:
+    password:
+      type: string
+      minLength: 1
+  additionalProperties: false
+CreateTeamClusterRequest:
+  type: object
+  required:
+  - name
+  properties:
+    name:
+      type: string
+      minLength: 2
+      maxLength: 64
+  additionalProperties: false
+TeamClusterRemoteAccessTarget:
+  type: string
+  enum:
+  - host-terminal
+  - mongo-documents
+  - redis-data
+  - minio
+CreateTeamClusterRemoteAccessSessionRequest:
+  type: object
+  required:
+  - password
+  - target
+  properties:
+    password:
+      type: string
+      minLength: 1
+    target:
+      $ref: teams.yaml#/TeamClusterRemoteAccessTarget
+  additionalProperties: false
+TeamClusterRemoteAccessSession:
+  type: object
+  properties:
+    sessionId:
+      type: string
+    teamClusterId:
+      $ref: common.yaml#/ObjectId
+    target:
+      $ref: teams.yaml#/TeamClusterRemoteAccessTarget
+    createdAt:
+      type: string
+      format: date-time
+    expiresAt:
+      type: string
+      format: date-time
+TeamClusterRemoteExplorerRequest:
+  type: object
+  required:
+  - sessionId
+  - target
+  - path
+  properties:
+    sessionId:
+      type: string
+      minLength: 1
+    target:
+      $ref: teams.yaml#/TeamClusterRemoteAccessTarget
+    path:
+      type: string
+  additionalProperties: false
+TeamClusterRemoteExplorerEntry:
+  type: object
+  properties:
+    id:
+      type: string
+    name:
+      type: string
+    path:
+      type: string
+    type:
+      type: string
+      enum:
+      - directory
+      - collection
+      - redis-database
+      - redis-key
+      - bucket
+      - object
+    size:
+      type:
+      - number
+      - 'null'
+    updatedAt:
+      type:
+      - string
+      - 'null'
+      format: date-time
+    description:
+      type:
+      - string
+      - 'null'
+TeamClusterMongoDocument:
+  type: object
+  properties:
+    id:
+      type: string
+    value:
+      type: object
+      additionalProperties: true
+TeamClusterRemoteExplorerNode:
+  type: object
+  properties:
+    path:
+      type: string
+    title:
+      type: string
+    type:
+      type: string
+      enum:
+      - collection
+      - redis-value
+      - object
+    contentType:
+      type: string
+      enum:
+      - empty
+      - text
+      - mongo-documents
+    textContent:
+      type:
+      - string
+      - 'null'
+    mongoDocuments:
+      type: array
+      items:
+        $ref: teams.yaml#/TeamClusterMongoDocument
+RequestTeamClusterUpdateRequest:
+  type: object
+  required:
+  - targetVersion
+  - password
+  properties:
+    targetVersion:
+      type: string
+      minLength: 1
+      maxLength: 128
+    isEdge:
+      type: boolean
+      default: false
+    password:
+      type: string
+      minLength: 1
+  additionalProperties: false
+TeamClusterCredentialsResponse:
+  type: object
+  properties:
+    teamClusterId:
+      $ref: common.yaml#/ObjectId
+    services:
+      $ref: teams.yaml#/TeamClusterCredentialServices

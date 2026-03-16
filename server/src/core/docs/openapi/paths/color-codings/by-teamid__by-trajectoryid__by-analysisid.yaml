@@ -1,0 +1,106 @@
+get:
+  operationId: getColorCodingByAnalysis
+  tags:
+  - ColorCoding
+  summary: Get color coding model for an analysis
+  description: Returns the current color coding configuration for a trajectory within the context of a specific analysis.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: trajectoryId
+    in: path
+    required: true
+    description: Unique identifier of the trajectory
+    schema:
+      type: string
+  - name: analysisId
+    in: path
+    required: true
+    description: Unique identifier of the analysis
+    schema:
+      type: string
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/color-codings.yaml#/ColorCodingModel
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+post:
+  operationId: createColorCodingByAnalysis
+  tags:
+  - ColorCoding
+  summary: Apply color coding for an analysis
+  description: Applies a color coding configuration to a trajectory within the context of a specific analysis.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: trajectoryId
+    in: path
+    required: true
+    description: Unique identifier of the trajectory
+    schema:
+      type: string
+  - name: analysisId
+    in: path
+    required: true
+    description: Unique identifier of the analysis
+    schema:
+      type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+          - property
+          - colorMap
+          properties:
+            property:
+              type: string
+              description: The property to use for color coding
+            colorMap:
+              type: string
+              description: Name of the color map to apply
+            min:
+              type:
+              - number
+              - 'null'
+              description: Minimum value for the color scale
+            max:
+              type:
+              - number
+              - 'null'
+              description: Maximum value for the color scale
+  responses:
+    '201':
+      description: Color coding applied successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/color-codings.yaml#/ColorCodingModel
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

@@ -1,0 +1,19 @@
+get:
+  operationId: checkInvitePermission
+  tags:
+  - Teams
+  summary: Check invite permission
+  description: Checks whether the authenticated user can invite members to the team.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  responses:
+    '200':
+      description: Permission result
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden

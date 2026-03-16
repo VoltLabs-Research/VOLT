@@ -1,0 +1,32 @@
+post:
+  operationId: joinTeamByCode
+  tags:
+  - Teams
+  summary: Join a team by code
+  description: Join a team using a 5-character invite code.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/teams.yaml#/JoinTeamRequest
+        example:
+          code: AB1C2
+  responses:
+    '200':
+      description: Successfully joined the team
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/teams.yaml#/Team
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

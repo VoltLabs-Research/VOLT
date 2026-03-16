@@ -1,0 +1,75 @@
+EditMessageRequest:
+  type: object
+  required:
+  - content
+  properties:
+    content:
+      type: string
+      minLength: 1
+      description: The updated message content
+  additionalProperties: false
+ToggleReactionRequest:
+  type: object
+  required:
+  - emoji
+  properties:
+    emoji:
+      type: string
+      minLength: 1
+      description: The emoji to toggle as a reaction
+  additionalProperties: false
+ChatMessage:
+  type: object
+  description: A message within a chat conversation
+  properties:
+    id:
+      type: string
+    chatId:
+      type: string
+    senderId:
+      type: string
+    content:
+      type: string
+    messageType:
+      type: string
+      enum:
+      - text
+      - file
+      - system
+    reactions:
+      type: array
+      items:
+        type: object
+        properties:
+          emoji:
+            type: string
+          userIds:
+            type: array
+            items:
+              type: string
+    isEdited:
+      type: boolean
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+ChatSendMessageRequest:
+  type: object
+  required:
+  - content
+  - messageType
+  properties:
+    content:
+      type: string
+      minLength: 1
+      description: The message content
+    messageType:
+      type: string
+      enum:
+      - text
+      - file
+      - system
+      description: The type of message
+  additionalProperties: false

@@ -1,0 +1,52 @@
+get:
+  tags:
+  - Plugin Listings
+  summary: Get a sub-listing
+  description: Returns paginated rows for a specific sub-listing within an analysis exposure at a given timestep.
+  operationId: getSubListing
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/AnalysisId
+  - name: exposureId
+    in: path
+    required: true
+    description: Domain exposure identifier
+    schema:
+      type: string
+      minLength: 1
+  - name: timestep
+    in: path
+    required: true
+    description: Timestep index (zero-based integer)
+    schema:
+      type: integer
+      minimum: 0
+  - name: subListingName
+    in: path
+    required: true
+    description: Name of the sub-listing
+    schema:
+      type: string
+      minLength: 1
+  - $ref: ../../components/parameters/common.yaml#/Page
+  - $ref: ../../components/parameters/common.yaml#/ListingLimit
+  responses:
+    '200':
+      description: Paginated sub-listing rows
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/plugins.yaml#/PaginatedListingRows
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

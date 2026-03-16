@@ -1,0 +1,24 @@
+get:
+  operationId: getSystemStats
+  tags:
+  - System
+  summary: Get system statistics
+  description: Returns platform-wide statistics including user, team, and storage metrics.
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/system.yaml#/SystemStats
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden

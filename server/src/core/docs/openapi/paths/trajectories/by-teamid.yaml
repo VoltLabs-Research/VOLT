@@ -1,0 +1,135 @@
+post:
+  operationId: createTrajectory
+  tags:
+  - Trajectories
+  summary: Upload trajectories
+  description: Uploads one or more trajectory files to the specified team. Accepts multipart form data with multiple trajectory files.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required:
+          - trajectoryFiles
+          properties:
+            trajectoryFiles:
+              type: array
+              items:
+                type: string
+                format: binary
+              description: One or more trajectory files to upload
+            folderId:
+              type: string
+              description: Optional folder ID to place the uploaded trajectories into
+  responses:
+    '201':
+      description: Trajectories created successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../../components/schemas/trajectories.yaml#/Trajectory
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+get:
+  operationId: getTrajectoriesByTeamId
+  tags:
+  - Trajectories
+  summary: List trajectories
+  description: Returns a paginated list of trajectories for the specified team. Supports search filtering and pagination.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: page
+    in: query
+    description: Page number for pagination
+    schema:
+      type: integer
+      minimum: 1
+      default: 1
+  - name: limit
+    in: query
+    description: Number of items per page
+    schema:
+      type: integer
+      minimum: 1
+      maximum: 100
+      default: 20
+  - name: search
+    in: query
+    description: Search term to filter trajectories by name
+    schema:
+      type: string
+  - name: folderId
+    in: query
+    description: Filter by folder ID
+    schema:
+      type: string
+  - name: sortBy
+    in: query
+    description: Field to sort by
+    schema:
+      type: string
+      enum:
+      - name
+      - createdAt
+      - updatedAt
+      - fileSize
+      - atomCount
+      default: createdAt
+  - name: sortOrder
+    in: query
+    description: Sort direction
+    schema:
+      type: string
+      enum:
+      - asc
+      - desc
+      default: desc
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        $ref: ../../components/schemas/trajectories.yaml#/Trajectory
+                    total:
+                      type: integer
+                      description: Total number of matching trajectories
+                    page:
+                      type: integer
+                      description: Current page number
+                    limit:
+                      type: integer
+                      description: Items per page
+                    totalPages:
+                      type: integer
+                      description: Total number of pages
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden

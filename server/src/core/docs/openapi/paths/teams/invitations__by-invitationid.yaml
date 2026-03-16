@@ -1,0 +1,24 @@
+get:
+  operationId: getTeamInvitationById
+  tags:
+  - Team Invitations
+  summary: Get invitation
+  description: Returns invitation details for the authenticated user.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/InvitationId
+  responses:
+    '200':
+      description: Invitation
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/teams.yaml#/TeamInvitation
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

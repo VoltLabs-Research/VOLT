@@ -1,0 +1,27 @@
+get:
+  operationId: getTeamClusterById
+  tags:
+  - Team Clusters
+  summary: Get team cluster
+  description: Returns one team cluster by identifier.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/TeamClusterId
+  responses:
+    '200':
+      description: Cluster
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/common.yaml#/TeamCluster
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

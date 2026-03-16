@@ -1,0 +1,23 @@
+get:
+  tags:
+  - Plugins
+  summary: Export a plugin
+  description: Exports a plugin definition as a downloadable file.
+  operationId: exportPlugin
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/PluginId
+  responses:
+    '200':
+      description: Plugin export file
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

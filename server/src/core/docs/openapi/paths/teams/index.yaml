@@ -1,0 +1,52 @@
+get:
+  operationId: listUserTeams
+  tags:
+  - Teams
+  summary: List user teams
+  description: Returns all teams the authenticated user is a member of.
+  responses:
+    '200':
+      description: Team list
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../../components/schemas/teams.yaml#/Team
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+post:
+  operationId: createTeam
+  tags:
+  - Teams
+  summary: Create a team
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/teams.yaml#/CreateTeamRequest
+        example:
+          name: My Research Team
+          description: Team for molecular trajectory analysis
+  responses:
+    '201':
+      description: Team created
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/teams.yaml#/Team
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized

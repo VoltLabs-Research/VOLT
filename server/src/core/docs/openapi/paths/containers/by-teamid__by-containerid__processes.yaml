@@ -1,0 +1,37 @@
+get:
+  tags:
+  - Containers
+  summary: List container processes
+  description: Retrieve the list of running processes inside a container.
+  operationId: getContainerProcesses
+  security:
+  - BearerAuth: []
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: containerId
+    in: path
+    required: true
+    description: The ID of the container
+    schema:
+      type: string
+      minLength: 1
+  responses:
+    '200':
+      description: Container processes retrieved successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../../components/schemas/containers.yaml#/ContainerProcess
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

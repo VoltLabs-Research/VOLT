@@ -1,0 +1,108 @@
+get:
+  tags:
+  - Containers
+  summary: Get a folder
+  description: Retrieve a specific container folder by its ID.
+  operationId: getContainerFolder
+  security:
+  - BearerAuth: []
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: folderId
+    in: path
+    required: true
+    description: The ID of the folder
+    schema:
+      type: string
+      minLength: 1
+  responses:
+    '200':
+      description: Folder retrieved successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/containers.yaml#/ContainerFolder
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+patch:
+  tags:
+  - Containers
+  summary: Update a folder
+  description: Update the title of an existing container folder.
+  operationId: updateContainerFolder
+  security:
+  - BearerAuth: []
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: folderId
+    in: path
+    required: true
+    description: The ID of the folder
+    schema:
+      type: string
+      minLength: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/containers.yaml#/UpdateFolderRequest
+  responses:
+    '200':
+      description: Folder updated successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/containers.yaml#/ContainerFolder
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+delete:
+  tags:
+  - Containers
+  summary: Delete a folder
+  description: Delete an existing container folder.
+  operationId: deleteContainerFolder
+  security:
+  - BearerAuth: []
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: folderId
+    in: path
+    required: true
+    description: The ID of the folder
+    schema:
+      type: string
+      minLength: 1
+  responses:
+    '200':
+      description: Folder deleted successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

@@ -79,7 +79,7 @@ const PasswordChangeForm = ({
     };
 
     return (
-        <form className='password-form d-flex column gap-3 p-4 b-soft radius-md' onSubmit={onFormSubmit} noValidate>
+        <form className='password-form d-flex column gap-3 p-4 b-soft radius-md p-1-5' onSubmit={onFormSubmit} noValidate>
             {passwordInfo?.hasPassword && (
                 <FormFieldRHF
                     name='currentPassword'

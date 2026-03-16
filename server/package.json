@@ -1,7 +1,11 @@
 {
   "scripts": {
     "start": "export NODE_OPTIONS='--max-old-space-size=8192' && npx tsx src/server.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "npm run openapi:bundle && tsc -p tsconfig.json && tsx tools/copy-openapi-artifact.ts",
+    "openapi:lint": "redocly lint src/core/docs/openapi/root.yaml",
+    "openapi:bundle": "redocly bundle src/core/docs/openapi/root.yaml --output src/core/docs/openapi.yaml",
+    "openapi:validate": "npm run openapi:lint && npm run openapi:bundle",
+    "openapi:watch": "redocly bundle src/core/docs/openapi/root.yaml --output src/core/docs/openapi.yaml --watch",
     "dev:docker-nuke": "docker stop $(docker ps -aq) 2>/dev/null; docker rm $(docker ps -aq) 2>/dev/null; docker rmi -f $(docker images -aq) 2>/dev/null; docker volume rm $(docker volume ls -q) 2>/dev/null; docker network prune -f; docker builder prune -a -f",
     "dev:drop:all": "npm run dev:drop:db && npm run dev:drop:redis && npm run dev:drop:minio",
     "dev:drop:db": "tsx tools/drop-db.ts",
@@ -23,6 +27,7 @@
     "@types/passport-microsoft": "^2.1.1",
     "@types/socket.io": "^3.0.1",
     "@types/validator": "^13.15.2",
+    "@redocly/cli": "^1.34.5",
     "eslint": "^9.39.2",
     "pino-pretty": "^13.1.2",
     "ts-node": "^10.9.2",

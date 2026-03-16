@@ -1,0 +1,24 @@
+get:
+  tags:
+  - Chat
+  summary: Get user chats
+  description: Retrieve all chats for the authenticated user.
+  operationId: getUserChats
+  security:
+  - BearerAuth: []
+  responses:
+    '200':
+      description: List of user chats retrieved successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../../components/schemas/chats.yaml#/Chat
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized

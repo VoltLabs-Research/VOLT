@@ -1,0 +1,37 @@
+get:
+  operationId: listSessions
+  tags:
+  - Sessions
+  summary: List active sessions
+  description: Lists all active sessions for the authenticated user.
+  responses:
+    '200':
+      description: Session list
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../../components/schemas/sessions.yaml#/Session
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+delete:
+  operationId: revokeAllSessions
+  tags:
+  - Sessions
+  summary: Revoke all sessions
+  description: Closes all active sessions for the authenticated user.
+  responses:
+    '200':
+      description: Sessions revoked
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized

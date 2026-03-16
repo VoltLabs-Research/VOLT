@@ -1,0 +1,21 @@
+get:
+  operationId: getGuestIdentity
+  tags:
+  - Auth
+  summary: Get guest identity
+  description: Generates an identicon based on a seed for unauthenticated users.
+  security: []
+  parameters:
+  - name: seed
+    in: query
+    required: true
+    schema:
+      type: string
+      maxLength: 256
+  responses:
+    '200':
+      description: Guest identity generated
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse

@@ -1,0 +1,31 @@
+get:
+  tags:
+  - Plugin Listings
+  summary: Export listing rows by analysis ID
+  description: Exports all listing rows for a given analysis in the specified format.
+  operationId: exportListingRowsByAnalysisId
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/AnalysisId
+  - name: format
+    in: query
+    required: false
+    description: Export format
+    schema:
+      $ref: ../../components/schemas/plugins.yaml#/ExportType
+  responses:
+    '200':
+      description: Exported listing data file
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

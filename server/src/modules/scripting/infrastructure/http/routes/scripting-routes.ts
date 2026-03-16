@@ -18,13 +18,11 @@ const teamClusterDaemonClient = container.resolve(TeamClusterDaemonClient);
 
 interface ScriptingSessionStatusInput {
     teamId: string;
-    trajectoryId?: string;
-    notebookId?: string;
+    notebookId: string;
 };
 
 interface ScriptingSessionStatusRouteParams {
     teamId?: string | string[];
-    trajectoryId?: string | string[];
     notebookId?: string | string[];
 };
 
@@ -129,20 +127,14 @@ const getScriptingSessionStatusInput = (
     params: ScriptingSessionStatusRouteParams
 ): ScriptingSessionStatusInput => ({
     teamId: requireRouteParam(params.teamId, 'teamId'),
-    trajectoryId: normalizeRouteParam(params.trajectoryId, 'trajectoryId'),
-    notebookId: normalizeRouteParam(params.notebookId, 'notebookId')
+    notebookId: requireRouteParam(params.notebookId, 'notebookId')
 });
 
 const readScriptingSessionStatus = async (
     input: ScriptingSessionStatusInput,
     userId: string
 ): Promise<ScriptingSessionStatusResponse> => {
-    const notebook = input.notebookId
-        ? await scriptingNotebookRepository.findByTeamAndNotebookId(input.teamId, input.notebookId)
-        : await scriptingNotebookRepository.findByTeamAndTrajectory(
-            input.teamId,
-            requireRouteParam(input.trajectoryId, 'trajectoryId')
-        );
+    const notebook = await scriptingNotebookRepository.findByTeamAndNotebookId(input.teamId, input.notebookId);
 
     if (!notebook) {
         throw ApplicationError.notFound(
@@ -220,7 +212,6 @@ export default createHttpModule({
         router.patch('/notebooks/:notebookId', scriptingControllers.updateNotebook.handle);
         router.get('/:trajectoryId/notebooks', scriptingControllers.listNotebooks.handle);
         router.get('/sessions/:notebookId/status', handleScriptingSessionStatus);
-        router.get('/:trajectoryId/sessions/status', handleScriptingSessionStatus);
         router.post('/sessions', scriptingControllers.createNotebookJupyterSession.handle);
         router.post('/:trajectoryId/sessions', scriptingControllers.createJupyterSession.handle);
         router.delete('/notebooks/:notebookId', scriptingControllers.deleteNotebook.handle);

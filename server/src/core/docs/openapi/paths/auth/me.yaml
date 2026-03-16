@@ -1,0 +1,79 @@
+get:
+  operationId: getMyAccount
+  tags:
+  - Auth - Account
+  summary: Get my account
+  description: Returns the authenticated user's account data.
+  responses:
+    '200':
+      description: Account data
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/common.yaml#/User
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+patch:
+  operationId: updateMyAccount
+  tags:
+  - Auth - Account
+  summary: Update my account
+  description: Updates the authenticated user's account data. Supports avatar upload.
+  requestBody:
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          properties:
+            email:
+              type: string
+              format: email
+            firstName:
+              type: string
+              maxLength: 64
+            lastName:
+              type: string
+              maxLength: 64
+            fullName:
+              type: string
+              maxLength: 128
+            avatar:
+              type: string
+              format: binary
+              description: Avatar image (processed with Sharp)
+  responses:
+    '200':
+      description: Account updated
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/common.yaml#/User
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+delete:
+  operationId: deleteMyAccount
+  tags:
+  - Auth - Account
+  summary: Delete my account
+  description: Permanently deletes the authenticated user's account.
+  responses:
+    '200':
+      description: Account deleted
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized

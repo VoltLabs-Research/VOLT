@@ -1,0 +1,32 @@
+post:
+  tags:
+  - Plugins
+  summary: Validate a plugin workflow
+  description: Validates a plugin workflow definition without persisting it.
+  operationId: validatePluginWorkflow
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/plugins.yaml#/ValidateWorkflowRequest
+  responses:
+    '200':
+      description: Workflow validation result
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/plugins.yaml#/WorkflowValidationResult
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden

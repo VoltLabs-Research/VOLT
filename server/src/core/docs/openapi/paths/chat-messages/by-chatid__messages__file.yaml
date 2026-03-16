@@ -1,0 +1,47 @@
+post:
+  tags:
+  - Chat Messages
+  summary: Send a file message
+  description: Upload and send a file as a chat message.
+  operationId: sendFileMessage
+  security:
+  - BearerAuth: []
+  parameters:
+  - name: chatId
+    in: path
+    required: true
+    description: The ID of the chat
+    schema:
+      type: string
+      minLength: 1
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required:
+          - file
+          properties:
+            file:
+              type: string
+              format: binary
+              description: The file to upload
+  responses:
+    '201':
+      description: File message sent successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/chat-messages.yaml#/ChatMessage
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

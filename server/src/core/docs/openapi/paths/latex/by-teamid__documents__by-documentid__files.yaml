@@ -1,0 +1,90 @@
+get:
+  operationId: listLatexFiles
+  tags:
+  - LaTeX
+  summary: List LaTeX document files
+  description: Returns all files associated with the specified LaTeX document.
+  parameters:
+  - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: documentId
+    in: path
+    required: true
+    schema:
+      type: string
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../../components/schemas/latex.yaml#/LatexFile
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+post:
+  operationId: createLatexFile
+  tags:
+  - LaTeX
+  summary: Create LaTeX file
+  description: Creates a new file within the specified LaTeX document.
+  parameters:
+  - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: documentId
+    in: path
+    required: true
+    schema:
+      type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+          - name
+          properties:
+            name:
+              type: string
+            content:
+              type: string
+              default: ''
+  responses:
+    '201':
+      description: Successfully created
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/latex.yaml#/LatexFile
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

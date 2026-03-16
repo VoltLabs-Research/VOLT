@@ -66,9 +66,8 @@ const UserSchema: Schema<UserDocument> = new Schema({
     },
     lastName: {
         type: String,
-        minlength: [1, ErrorCodes.VALIDATION_INVALID_INPUT],
         maxlength: [64, ErrorCodes.VALIDATION_INVALID_INPUT],
-        required: [true, ErrorCodes.VALIDATION_INVALID_INPUT],
+        default: '',
         lowercase: true,
         trim: true
     },

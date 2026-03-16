@@ -1,0 +1,31 @@
+post:
+  operationId: downloadTeamClusterRemoteExplorerObject
+  tags:
+  - Team Clusters
+  summary: Download remote explorer object
+  description: Downloads the selected remote explorer object.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/TeamClusterId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/teams.yaml#/TeamClusterRemoteExplorerRequest
+  responses:
+    '200':
+      description: Remote object download
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

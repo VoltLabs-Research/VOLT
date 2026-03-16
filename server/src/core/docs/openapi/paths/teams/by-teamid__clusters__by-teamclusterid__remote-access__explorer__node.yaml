@@ -1,0 +1,42 @@
+post:
+  operationId: getTeamClusterRemoteExplorerNode
+  tags:
+  - Team Clusters
+  summary: Get remote explorer node
+  description: Returns rendered content for a selected remote explorer node.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/TeamClusterId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/teams.yaml#/TeamClusterRemoteExplorerRequest
+  responses:
+    '200':
+      description: Explorer node
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    teamClusterId:
+                      $ref: ../../components/schemas/common.yaml#/ObjectId
+                    target:
+                      $ref: ../../components/schemas/teams.yaml#/TeamClusterRemoteAccessTarget
+                    node:
+                      $ref: ../../components/schemas/teams.yaml#/TeamClusterRemoteExplorerNode
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
