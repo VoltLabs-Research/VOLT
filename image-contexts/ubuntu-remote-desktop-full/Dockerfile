@@ -4,6 +4,8 @@ ARG TARGETARCH
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+USER root
+
 COPY --chmod=755 entrypoint.sh /usr/local/bin/voltlabs-entrypoint
 COPY --chmod=755 startwm.sh /tmp/voltlabs-startwm.sh
 COPY --chmod=755 xsession /tmp/voltlabs-xsession
@@ -53,5 +55,7 @@ RUN apt-get update \
         && chown -R headless:headless /home/headless/.vnc /home/headless/.xsession; \
     fi \
     && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/google-chrome.list /tmp/voltlabs-startwm.sh /tmp/voltlabs-xsession
+
+USER headless
 
 ENTRYPOINT ["/usr/local/bin/voltlabs-entrypoint"]
