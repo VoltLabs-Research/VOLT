@@ -250,6 +250,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         if (
             payload.command === 'analysis.job-complete'
             || payload.command === 'trajectory.raster-job-status'
+            || payload.command === 'trajectory.glb-job-status'
         ) {
             const result = await this.processDaemonJobCompletionUseCase.execute(payload.payload as never);
             this.emitUseCaseResult(socketId, payload.requestId, result);

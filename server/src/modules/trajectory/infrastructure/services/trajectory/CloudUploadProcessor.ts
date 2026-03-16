@@ -87,13 +87,8 @@ export default class CloudUploadProcessor {
             'object.upload',
             () => this.uploadDumpToTeamCluster(teamClusterId, trajectoryId, timestep, frameFilePath)
         );
-        await this.executeWithTransportRetry(
-            task,
-            'trajectory.native.preprocess',
-            () => this.requestTeamClusterGlbPreprocess(teamClusterId, trajectoryId, teamId, timestep, trajectoryName)
-        );
 
-        logger.info(`@cloud-upload-processor: uploaded frame and requested GLB preprocess trajectoryId=${trajectoryId} timestep=${timestep}`);
+        logger.info(`@cloud-upload-processor: uploaded dump for trajectoryId=${trajectoryId} timestep=${timestep}`);
     }
 
     private async uploadDumpToTeamCluster(
@@ -182,24 +177,6 @@ export default class CloudUploadProcessor {
         });
 
         logger.info(`@cloud-upload-processor: chunked upload committed transferId=${transferId}`);
-    }
-
-    private async requestTeamClusterGlbPreprocess(
-        teamClusterId: string,
-        trajectoryId: string,
-        teamId: string,
-        timestep: number,
-        trajectoryName?: string
-    ): Promise<void> {
-        const objectKey = this.dumpStorage.getObjectName(trajectoryId, String(timestep));
-
-        await this.teamClusterDaemonClient.command(teamClusterId, 'trajectory.native.preprocess', {
-            trajectoryId,
-            teamId,
-            timestep,
-            objectKey,
-            ...(trajectoryName ? { trajectoryName } : {})
-        });
     }
 
     /** Retries transient daemon transport failures before surfacing a terminal trajectory failure. */

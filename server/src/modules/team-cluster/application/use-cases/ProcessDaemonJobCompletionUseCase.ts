@@ -8,6 +8,7 @@ import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 type RasterJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
+type GlbJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
 
 interface DaemonAnalysisJobCompletionPayload {
     jobId: string;
@@ -31,9 +32,20 @@ interface DaemonRasterJobStatusPayload {
     error?: string;
 };
 
+interface DaemonGlbJobStatusPayload {
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    timestep?: number;
+    status: GlbJobStatus;
+    error?: string;
+};
+
 interface DaemonJobCompletionService {
     handleJobCompletion(input: DaemonAnalysisJobCompletionPayload): Promise<void>;
     handleRasterJobStatus(input: DaemonRasterJobStatusPayload): Promise<void>;
+    handleGlbJobStatus(input: DaemonGlbJobStatusPayload): Promise<void>;
 };
 
 interface ProcessDaemonAnalysisJobCompletionInputDTO {
@@ -66,9 +78,26 @@ interface ValidProcessDaemonRasterJobStatusInputDTO extends ProcessDaemonRasterJ
     status: RasterJobStatus;
 };
 
+interface ProcessDaemonGlbJobStatusInputDTO {
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    timestep?: number;
+    status: JobStatus;
+    error?: string;
+};
+
+interface ValidProcessDaemonGlbJobStatusInputDTO extends ProcessDaemonGlbJobStatusInputDTO {
+    status: GlbJobStatus;
+};
+
 export type ProcessDaemonJobCompletionInputDTO =
     | ProcessDaemonAnalysisJobCompletionInputDTO
-    | ProcessDaemonRasterJobStatusInputDTO;
+    | ProcessDaemonRasterJobStatusInputDTO
+    | ProcessDaemonGlbJobStatusInputDTO;
 
 interface ProcessDaemonJobCompletionOutputDTO {
     acknowledged: boolean;
@@ -113,6 +142,20 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                 return Result.ok({ acknowledged: true });
             }
 
+            if (this.isGlbJobStatusInput(input)) {
+                await this.daemonAnalysisCompletionService.handleGlbJobStatus({
+                    jobId: input.jobId,
+                    teamId: input.teamId,
+                    trajectoryId: input.trajectoryId,
+                    trajectoryName: input.trajectoryName,
+                    timestep: input.timestep,
+                    status: input.status,
+                    error: input.error
+                });
+
+                return Result.ok({ acknowledged: true });
+            }
+
             if (this.isRasterJobStatusInput(input)) {
                 await this.daemonAnalysisCompletionService.handleRasterJobStatus({
                     jobId: input.jobId,
@@ -147,28 +190,42 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
     private isAnalysisJobCompletionInput(
         input: ProcessDaemonJobCompletionInputDTO
     ): input is ProcessDaemonAnalysisJobCompletionInputDTO {
-        return 'analysisId' in input && !this.hasRasterJobStatusFields(input);
+        return 'analysisId' in input && !this.hasJobStatusFields(input);
+    }
+
+    private isGlbJobStatusInput(
+        input: ProcessDaemonJobCompletionInputDTO
+    ): input is ValidProcessDaemonGlbJobStatusInputDTO {
+        return this.hasJobStatusFields(input)
+            && !this.hasAnalysisJobCompletionFields(input)
+            && this.isGlbJobId(input.jobId)
+            && this.isValidJobStatus(input.status);
     }
 
     private isRasterJobStatusInput(
         input: ProcessDaemonJobCompletionInputDTO
     ): input is ValidProcessDaemonRasterJobStatusInputDTO {
-        return this.hasRasterJobStatusFields(input)
+        return this.hasJobStatusFields(input)
             && !this.hasAnalysisJobCompletionFields(input)
-            && this.isRasterJobStatus(input.status);
+            && !this.isGlbJobId(input.jobId)
+            && this.isValidJobStatus(input.status);
     }
 
     private hasAnalysisJobCompletionFields(input: ProcessDaemonJobCompletionInputDTO): boolean {
         return 'analysisId' in input || 'name' in input || 'success' in input;
     }
 
-    private hasRasterJobStatusFields(
+    private hasJobStatusFields(
         input: ProcessDaemonJobCompletionInputDTO
     ): input is ProcessDaemonRasterJobStatusInputDTO {
         return 'jobId' in input && 'trajectoryId' in input && 'status' in input;
     }
 
-    private isRasterJobStatus(status: JobStatus): status is RasterJobStatus {
+    private isGlbJobId(jobId: string): boolean {
+        return jobId.startsWith('trajectory-glb:');
+    }
+
+    private isValidJobStatus(status: JobStatus): status is RasterJobStatus {
         return status === JobStatus.Running
             || status === JobStatus.Completed
             || status === JobStatus.Failed;

@@ -14,6 +14,7 @@ import { injectable, inject } from 'tsyringe';
 
 const ANALYSIS_QUEUE_TYPE = 'analysis_processing';
 const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
+const GLB_QUEUE_TYPE = 'trajectory_glb_conversion';
 const SESSION_TTL_SECONDS = 86400;
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const STATUS_TTL_SECONDS = 86400;
@@ -21,6 +22,7 @@ const PROJECTED_JOB_SOURCE = 'projected';
 const PROJECTED_JOB_BACKING_SOURCE = 'daemon';
 const ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE = 'analysis';
 const RASTER_PROJECTED_JOB_CLEANUP_SCOPE = 'raster';
+const GLB_PROJECTED_JOB_CLEANUP_SCOPE = 'glb';
 
 interface JobTrajectoryContext {
     trajectoryId?: string;
@@ -41,6 +43,16 @@ interface DaemonJobCompletionInput {
 };
 
 interface DaemonRasterJobStatusInput {
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    timestep?: number;
+    status: JobStatus;
+    error?: string;
+};
+
+interface DaemonGlbJobStatusInput {
     jobId: string;
     teamId: string;
     trajectoryId: string;
@@ -188,6 +200,61 @@ export default class DaemonAnalysisCompletionService {
             trajectoryContext,
             error: input.error
         });
+    }
+
+    /**
+     * Called when the daemon reports a GLB conversion job status change.
+     * Projects status to Redis, publishes socket events, and handles GLB session drain.
+     */
+    async handleGlbJobStatus(input: DaemonGlbJobStatusInput): Promise<void> {
+        const { jobId, teamId, trajectoryId, status, error } = input;
+        const trajectoryContext: JobTrajectoryContext = {
+            trajectoryId: input.trajectoryId,
+            trajectoryName: input.trajectoryName,
+            timestep: input.timestep
+        };
+
+        // 1. Project job status to Redis for dashboard/socket consumers
+        await this.projectJobStatus({
+            jobId,
+            teamId,
+            status,
+            queueType: GLB_QUEUE_TYPE,
+            cleanupScope: GLB_PROJECTED_JOB_CLEANUP_SCOPE,
+            trajectoryContext,
+            error
+        });
+
+        // 2. Publish socket event to frontend
+        await this.publishJobStatusChanged({
+            jobId,
+            teamId,
+            status,
+            queueType: GLB_QUEUE_TYPE,
+            cleanupScope: GLB_PROJECTED_JOB_CLEANUP_SCOPE,
+            trajectoryContext,
+            error
+        });
+
+        // 3. Only process drain logic for terminal statuses
+        const isTerminal = status === JobStatus.Completed || status === JobStatus.Failed;
+        if (!isTerminal) {
+            return;
+        }
+
+        // 4. Record failure if applicable
+        if (status === JobStatus.Failed) {
+            await this.recordGlbFailure(trajectoryId);
+        }
+
+        // 5. Atomically decrement remaining counter
+        const drainResult = await this.decrementAndCheckGlbDrain(trajectoryId);
+        if (!drainResult.drained) {
+            return;
+        }
+
+        // 6. All GLB jobs settled - finalize trajectory
+        await this.finalizeGlbSession(trajectoryId, teamId, drainResult.failedJobs);
     }
 
     private async projectJobStatus(input: ProjectedJobStatusInput): Promise<void> {
@@ -426,6 +493,91 @@ export default class DaemonAnalysisCompletionService {
                 updatedAt: new Date()
             }));
         }
+    }
+
+    private async recordGlbFailure(trajectoryId: string): Promise<void> {
+        const failedKey = this.glbFailedKey(trajectoryId);
+        await this.redis.incr(failedKey);
+        await this.redis.expire(failedKey, SESSION_TTL_SECONDS);
+    }
+
+    private async decrementAndCheckGlbDrain(trajectoryId: string): Promise<{ drained: boolean; failedJobs: number }> {
+        const luaScript = `
+            local ttl = tonumber(ARGV[1])
+            redis.call('EXPIRE', KEYS[1], ttl)
+
+            local remaining = redis.call('DECR', KEYS[1])
+            if remaining <= 0 then
+                local failedJobs = tonumber(redis.call('GET', KEYS[2]) or '0')
+                redis.call('DEL', KEYS[1])
+                redis.call('DEL', KEYS[2])
+                return {1, failedJobs}
+            end
+            return {0, 0}
+        `;
+
+        const result = await this.redis.eval(
+            luaScript,
+            2,
+            this.glbRemainingKey(trajectoryId),
+            this.glbFailedKey(trajectoryId),
+            SESSION_TTL_SECONDS
+        );
+
+        if (!Array.isArray(result) || result.length !== 2) {
+            return { drained: false, failedJobs: 0 };
+        }
+
+        return {
+            drained: result[0] === 1,
+            failedJobs: typeof result[1] === 'number' ? result[1] : 0
+        };
+    }
+
+    private async finalizeGlbSession(trajectoryId: string, teamId: string, failedJobs: number): Promise<void> {
+        const hasFailures = failedJobs > 0;
+
+        if (hasFailures) {
+            logger.error(
+                `[DaemonAnalysisCompletion] GLB session for trajectory ${trajectoryId} completed with ${failedJobs} failed jobs`
+            );
+
+            await this.trajectoryRepo.updateById(trajectoryId, {
+                status: TrajectoryStatus.Failed
+            });
+
+            await this.eventBus.publish(new TrajectoryUpdatedEvent({
+                trajectoryId,
+                teamId,
+                updates: { status: TrajectoryStatus.Failed },
+                updatedAt: new Date()
+            }));
+
+            return;
+        }
+
+        logger.info(
+            `[DaemonAnalysisCompletion] GLB session for trajectory ${trajectoryId} completed successfully`
+        );
+
+        await this.trajectoryRepo.updateById(trajectoryId, {
+            status: TrajectoryStatus.Completed
+        });
+
+        await this.eventBus.publish(new TrajectoryUpdatedEvent({
+            trajectoryId,
+            teamId,
+            updates: { status: TrajectoryStatus.Completed },
+            updatedAt: new Date()
+        }));
+    }
+
+    private glbRemainingKey(trajectoryId: string): string {
+        return `daemon-glb:${trajectoryId}:remaining`;
+    }
+
+    private glbFailedKey(trajectoryId: string): string {
+        return `daemon-glb:${trajectoryId}:failed`;
     }
 
     private remainingKey(analysisId: string): string {
