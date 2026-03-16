@@ -12,6 +12,7 @@ import Sidebar from '@/shared/presentation/components/Sidebar';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
+import useTip from '@/shared/tips/use-tip';
 import { ArrowLeft } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -29,6 +30,7 @@ interface PluginBuilderProps {
 const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => {
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [shortcutsTipTrigger, setShortcutsTipTrigger] = useState(0);
     const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { confirm } = useConfirm();
 
@@ -47,6 +49,11 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
 
     const saveWorkflow = useSaveWorkflow();
     const isSaving = usePluginBuilderStore((state) => state.isSaving);
+
+    useTip('plugin-builder-shortcuts', {
+        enabled: shortcutsTipTrigger > 0,
+        triggerKey: shortcutsTipTrigger
+    });
 
     const clearSaveStatusTimeout = useCallback(() => {
         if (!saveStatusTimeoutRef.current) {
@@ -133,6 +140,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
     const handleAddNode = useCallback((nodeType: NodeType) => {
         const offset = nodes.length * 20;
         addNode(nodeType, { x: 150 + offset, y: 150 + offset });
+        setShortcutsTipTrigger((current) => current + 1);
     }, [addNode, nodes.length]);
 
     const modifierNode = useMemo(() => {

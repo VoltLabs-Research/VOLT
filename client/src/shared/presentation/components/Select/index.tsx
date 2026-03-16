@@ -31,6 +31,7 @@ export interface SelectProps {
     isEditable?: boolean;
     inputClassName?: string;
     title?: string;
+    onFocusCapture?: React.FocusEventHandler<HTMLElement>;
     /** Multi-select mode */
     isMulti?: boolean;
     /** Currently selected values in multi-select mode */
@@ -70,6 +71,7 @@ const Select = ({
     isEditable = false,
     inputClassName = '',
     title,
+    onFocusCapture,
     isMulti = false,
     selectedValues,
     onMultiChange,
@@ -357,6 +359,7 @@ const Select = ({
                     aria-describedby={ariaDescribedBy}
                     aria-invalid={ariaInvalid}
                     aria-errormessage={ariaErrorMessage}
+                    onFocusCapture={onFocusCapture}
                     {...getReferenceProps()}
                 />
             );
@@ -384,6 +387,7 @@ const Select = ({
                 aria-describedby={ariaDescribedBy}
                 aria-invalid={ariaInvalid}
                 aria-errormessage={ariaErrorMessage}
+                onFocusCapture={onFocusCapture}
                 {...getReferenceProps()}
             >
                 <span className='select-value overflow-hidden'>

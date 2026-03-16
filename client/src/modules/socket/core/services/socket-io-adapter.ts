@@ -150,6 +150,8 @@ class SocketIOAdapter implements ISocketService {
         }
     }
 
+    private static readonly ACK_TIMEOUT_MS = 30_000;
+
     emit<T = unknown>(event: string, data?: unknown): Promise<T> {
         if (!event) {
             return Promise.reject(new Error('Event name is required'));
@@ -160,12 +162,28 @@ class SocketIOAdapter implements ISocketService {
         }
 
         return new Promise((resolve, reject) => {
+            let settled = false;
+            const timer = setTimeout(() => {
+                if (!settled) {
+                    settled = true;
+                    reject(new Error(`Ack timeout for event "${event}" after ${SocketIOAdapter.ACK_TIMEOUT_MS}ms`));
+                }
+            }, SocketIOAdapter.ACK_TIMEOUT_MS);
+
             try {
                 this.socket!.emit(event, data, (response: T) => {
-                    resolve(response);
+                    if (!settled) {
+                        settled = true;
+                        clearTimeout(timer);
+                        resolve(response);
+                    }
                 });
             } catch (error) {
-                reject(error);
+                if (!settled) {
+                    settled = true;
+                    clearTimeout(timer);
+                    reject(error);
+                }
             }
         });
     }

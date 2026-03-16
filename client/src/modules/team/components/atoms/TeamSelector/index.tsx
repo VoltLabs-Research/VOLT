@@ -8,8 +8,9 @@ import Select from '@/shared/presentation/components/Select';
 import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import useTip from '@/shared/tips/use-tip';
 import { IoExitOutline } from 'react-icons/io5';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 import type { MouseEvent } from 'react';
 import './TeamSelector.css';
@@ -38,6 +39,12 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
     const selectedTeamId = useSelectedTeamId();
     const leaveTeamMutation = useLeaveTeamMutation();
     const { confirm } = useConfirm();
+    const [tipTrigger, setTipTrigger] = useState(0);
+
+    useTip('team-selector-context', {
+        enabled: tipTrigger > 0,
+        triggerKey: tipTrigger
+    });
 
     const handleTeamChange = useCallback((teamId: string) => {
         if (selectedTeamId === teamId) return;
@@ -113,6 +120,8 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
             onChange={handleTeamChange}
             renderOptionAction={renderLeaveAction}
             className={`team-selector ${className}`}
+            title='Switch team'
+            onFocusCapture={() => setTipTrigger((current) => current + 1)}
         />
     );
 };

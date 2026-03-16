@@ -8,7 +8,9 @@ import type IFractalAssetLoader from '@/modules/fractal/api/entities/asset-loade
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export class FractalAssetLoader implements IFractalAssetLoader {
+    private static readonly MAX_CACHE_ENTRIES = 50;
     private static cache = new Map<string, ArrayBuffer>();
+    private static sharedDracoLoader: DRACOLoader | null = null;
 
     private static createAbortError() {
         const error = new Error('Asset loading was aborted');
@@ -16,13 +18,30 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         return error;
     }
 
+    private static getDracoLoader(): DRACOLoader {
+        if (!FractalAssetLoader.sharedDracoLoader) {
+            FractalAssetLoader.sharedDracoLoader = new DRACOLoader();
+            FractalAssetLoader.sharedDracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+        }
+        return FractalAssetLoader.sharedDracoLoader;
+    }
+
+    private static evictIfNeeded(): void {
+        while (FractalAssetLoader.cache.size >= FractalAssetLoader.MAX_CACHE_ENTRIES) {
+            const oldestKey = FractalAssetLoader.cache.keys().next().value;
+            if (oldestKey !== undefined) {
+                FractalAssetLoader.cache.delete(oldestKey);
+            } else {
+                break;
+            }
+        }
+    }
+
     private static createGlbLoader() {
         const gltfLoader = new GLTFLoader();
 
         try {
-            const dracoLoader = new DRACOLoader();
-            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
-            gltfLoader.setDRACOLoader(dracoLoader);
+            gltfLoader.setDRACOLoader(FractalAssetLoader.getDracoLoader());
             gltfLoader.setMeshoptDecoder(MeshoptDecoder);
         } catch {
         }
@@ -50,6 +69,7 @@ export class FractalAssetLoader implements IFractalAssetLoader {
 
         if (signal?.aborted) return;
 
+        FractalAssetLoader.evictIfNeeded();
         FractalAssetLoader.cache.set(url, arrayBuffer);
     }
 
@@ -100,6 +120,7 @@ export class FractalAssetLoader implements IFractalAssetLoader {
             throw FractalAssetLoader.createAbortError();
         }
 
+        FractalAssetLoader.evictIfNeeded();
         FractalAssetLoader.cache.set(url, arrayBuffer);
         return arrayBuffer;
     }

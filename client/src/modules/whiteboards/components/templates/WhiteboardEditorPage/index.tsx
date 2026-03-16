@@ -6,6 +6,7 @@ import { filterPersistableAppState } from '@/modules/whiteboards/utilities/white
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import useTip from '@/shared/tips/use-tip';
 import AIFloatingAssistantPanel from '@/modules/ai/components/organisms/AIFloatingAssistantPanel';
 import { useCallback, useEffect, useRef, lazy, Suspense } from 'react';
 import type { ComponentProps } from 'react';
@@ -44,6 +45,10 @@ const WhiteboardEditorPage = () => {
     const { announcement, users } = useWhiteboardPresence({
         whiteboardId,
         enabled: Boolean(whiteboardId)
+    });
+
+    useTip('whiteboard-collaboration', {
+        enabled: Boolean(whiteboardId) && !isLoading
     });
 
     const handleRemoteDelta = useCallback(

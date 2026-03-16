@@ -6,6 +6,7 @@ import { runAction } from '@/shared/presentation/actions/run-action';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import useTip from '@/shared/tips/use-tip';
 import { useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ContainerAction } from '../../../api/dtos/update-container';
@@ -99,6 +100,10 @@ const ContainerDetailsLayout = () => {
     const { accessDenied, checkAccessDeniedError } = useAccessDenied();
 
     const isRunning = container?.status === 'running';
+
+    useTip('container-details-tabs', {
+        enabled: Boolean(container)
+    });
 
     const stats = useContainerStats({
         containerId: id,

@@ -3,7 +3,7 @@ import useSocket from '@/modules/socket/core/hooks/use-socket';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useCallback, useEffect, useRef } from 'react';
 
-const HEARTBEAT_INTERVAL_MS = 100;
+const HEARTBEAT_INTERVAL_MS = 10_000;
 
 export default function useTeamActivityHeartbeat(): void {
     const socketService = useSocket();
@@ -11,7 +11,7 @@ export default function useTeamActivityHeartbeat(): void {
     const isConnectedRef = useRef(socketService.isConnected());
 
     const sendHeartbeat = useCallback(() => {
-        if (!teamId || !isConnectedRef.current) {
+        if (!teamId || !isConnectedRef.current || document.hidden) {
             return;
         }
 
@@ -38,9 +38,17 @@ export default function useTeamActivityHeartbeat(): void {
             sendHeartbeat();
         }, HEARTBEAT_INTERVAL_MS);
 
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                sendHeartbeat();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
         return () => {
             unsubscribeConnection();
             window.clearInterval(interval);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, [sendHeartbeat, socketService, teamId]);
 }

@@ -66,6 +66,96 @@ export const CONTEXTUAL_TIPS = {
         title: 'Ctrl+S takes screenshots',
         duration: 5500,
         position: 'bottom-center'
+    },
+    'dashboard-sidebar-collapse': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Maximize your workspace',
+        description: 'Collapse the sidebar to give dashboards, tables, and editors more space without leaving the page.',
+        buttonLabel: 'Got it',
+        delay: 1800,
+        position: 'top-center'
+    },
+    'team-selector-context': {
+        surface: 'feature',
+        dismissMode: 'auto',
+        title: 'Teams change your context',
+        description: 'Switch teams here to update the dashboards, chats, containers, and resources you are working with.',
+        delay: 250,
+        duration: 6500,
+        position: 'top-center'
+    },
+    'containers-organization': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Organize containers with folders',
+        description: 'Create folders, move containers, and keep large container lists easier to navigate over time.',
+        buttonLabel: 'Got it',
+        delay: 1600,
+        position: 'top-center'
+    },
+    'container-details-tabs': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Terminal and files work together',
+        description: 'Use the Terminal and Storage sections together when you need to inspect, debug, or verify changes inside a container.',
+        buttonLabel: 'Got it',
+        delay: 1500,
+        position: 'top-center'
+    },
+    'ssh-file-explorer-navigation': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Browse remote files quickly',
+        description: 'Open folders to navigate, use the breadcrumb to jump back, and refresh the current path whenever the remote state changes.',
+        buttonLabel: 'Got it',
+        delay: 1400,
+        position: 'top-center'
+    },
+    'plugin-builder-get-started': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Start by placing a node',
+        description: 'Drag a node from the palette into the canvas, then connect outputs and inputs to build your workflow.',
+        buttonLabel: 'Got it',
+        delay: 1200,
+        position: 'top-center'
+    },
+    'plugin-builder-shortcuts': {
+        surface: 'feature',
+        dismissMode: 'auto',
+        title: 'Builder shortcuts help',
+        description: 'Use Ctrl+S to save, Delete to remove the selected node, and Ctrl+Z to undo changes.',
+        delay: 250,
+        duration: 6500,
+        position: 'top-center'
+    },
+    'cluster-terminal-context': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'You are on the cluster host',
+        description: 'This terminal connects to the selected cluster host directly, so commands here affect the remote environment.',
+        buttonLabel: 'Got it',
+        delay: 1200,
+        position: 'top-center'
+    },
+    'whiteboard-collaboration': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Whiteboards are collaborative',
+        description: 'Changes sync live, and the presence indicator shows how many collaborators are active on this board right now.',
+        buttonLabel: 'Got it',
+        delay: 1400,
+        position: 'top-center'
+    },
+    'messages-details-panel': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Open chat details for more',
+        description: 'Use the details panel to review members, activity, and group settings without leaving the conversation.',
+        buttonLabel: 'Got it',
+        delay: 1600,
+        position: 'top-center'
     }
 } as const satisfies Record<string, ContextualTipDefinition>;
 
