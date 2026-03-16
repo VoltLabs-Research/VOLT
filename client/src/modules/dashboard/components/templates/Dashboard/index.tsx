@@ -21,6 +21,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import useTip from '@/shared/tips/use-tip';
 import './Dashboard.css';
 import { useMemo } from 'react';
 import { FlaskConical, Puzzle } from 'lucide-react';
@@ -51,6 +52,10 @@ const DashboardPage = () => {
     const selectedTeam = useSelectedTeam();
     const user = useCurrentUser();
     const { loading, error, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam?._id);
+
+    useTip('dashboard-drag-upload', {
+        enabled: Boolean(selectedTeam)
+    });
 
     const firstName = useMemo(() => {
         const name = user?.firstName || '';

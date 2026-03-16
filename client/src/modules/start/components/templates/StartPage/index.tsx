@@ -8,12 +8,15 @@ import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import UserInfo from '@/modules/auth/components/atoms/UserInfo';
 import Button from '@/shared/presentation/components/Button';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import useTip from '@/shared/tips/use-tip';
 
 export default function StartPage() {
     const user = useCurrentUser();
     const pages = useStartAccessedPagesStore((state) => state.pages);
     const clearAll = useStartAccessedPagesStore((state) => state.clearAll);
     const wrapperRef = useRef<HTMLDivElement>(null);
+
+    useTip('start-page-history');
 
     useStartPageEntrance(wrapperRef, pages.length);
 
