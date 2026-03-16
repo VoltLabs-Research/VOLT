@@ -18,19 +18,32 @@ interface UseTrajectoryPresenceResult {
 export default function useTrajectoryPresence(trajectoryId: string | undefined): UseTrajectoryPresenceResult {
     const [users, setUsers] = useState<PresenceUser[]>([]);
     const socket = useSocket();
+    const isConnectedRef = useRef(socket.isConnected());
     const joinedRef = useRef(false);
+
+    const emitJoin = useCallback(() => {
+        if (!trajectoryId || !isConnectedRef.current || joinedRef.current) return;
+        joinedRef.current = true;
+        socket.emit(SOCKET_TRAJECTORY_PRESENCE_EVENTS.JOIN, { trajectoryId }).catch(() => {
+            joinedRef.current = false;
+        });
+    }, [trajectoryId, socket]);
+
+    const emitLeave = useCallback(() => {
+        if (!trajectoryId || !isConnectedRef.current || !joinedRef.current) return;
+        joinedRef.current = false;
+        socket.emit(SOCKET_TRAJECTORY_PRESENCE_EVENTS.LEAVE, { trajectoryId }).catch(() => {});
+    }, [trajectoryId, socket]);
 
     const join = useCallback(() => {
         if (!trajectoryId || joinedRef.current) return;
-        socket.emit(SOCKET_TRAJECTORY_PRESENCE_EVENTS.JOIN, { trajectoryId });
-        joinedRef.current = true;
-    }, [trajectoryId, socket]);
+        emitJoin();
+    }, [trajectoryId, emitJoin]);
 
     const leave = useCallback(() => {
         if (!trajectoryId || !joinedRef.current) return;
-        socket.emit(SOCKET_TRAJECTORY_PRESENCE_EVENTS.LEAVE, { trajectoryId });
-        joinedRef.current = false;
-    }, [trajectoryId, socket]);
+        emitLeave();
+    }, [trajectoryId, emitLeave]);
 
     useSocketEvent<TrajectoryPresencePayload>(SOCKET_TRAJECTORY_PRESENCE_EVENTS.UPDATE, (data) => {
         if (data.trajectoryId === trajectoryId) {
@@ -38,27 +51,40 @@ export default function useTrajectoryPresence(trajectoryId: string | undefined):
         }
     }, { enabled: !!trajectoryId });
 
+    // Re-join on reconnection
+    useEffect(() => {
+        const unsubscribe = socket.onConnectionChange((connected) => {
+            isConnectedRef.current = connected;
+            if (connected && trajectoryId && !joinedRef.current) {
+                emitJoin();
+            }
+        });
+        return unsubscribe;
+    }, [trajectoryId, socket, emitJoin]);
+
+    // Reset users when trajectoryId changes
     useEffect(() => {
         setUsers([]);
-
         if (!trajectoryId) {
             joinedRef.current = false;
         }
     }, [trajectoryId]);
 
+    // Join on mount / leave on unmount or trajectoryId change
     useEffect(() => {
         if (!trajectoryId) {
             return;
         }
 
-        socket.emit(SOCKET_TRAJECTORY_PRESENCE_EVENTS.JOIN, { trajectoryId });
-        joinedRef.current = true;
+        if (isConnectedRef.current) {
+            emitJoin();
+        }
 
         return () => {
-            socket.emit(SOCKET_TRAJECTORY_PRESENCE_EVENTS.LEAVE, { trajectoryId });
-            joinedRef.current = false;
+            emitLeave();
+            setUsers([]);
         };
-    }, [trajectoryId, socket]);
+    }, [trajectoryId, emitJoin, emitLeave]);
 
     return { users, join, leave };
 }

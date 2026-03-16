@@ -34,6 +34,8 @@ import ListTrajectoryFoldersUseCase from '@modules/trajectory/application/use-ca
 import MoveTrajectoryUseCase from '@modules/trajectory/application/use-cases/trajectory/MoveTrajectoryUseCase';
 import UpdateTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/UpdateTrajectoryFolderUseCase';
 import TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
+import TrajectoryPresenceSocketModule from '@modules/trajectory/infrastructure/socket/TrajectoryPresenceSocketModule';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 
 import type { ClassProvider } from 'tsyringe';
 import { container } from 'tsyringe';
@@ -56,6 +58,7 @@ export const registerTrajectoryDependencies = (): void => {
             [TRAJECTORY_TOKENS.AtomPropertiesService, AtomPropertiesService],
             [TRAJECTORY_TOKENS.ColorCodingService, ColorCodingService],
             [TRAJECTORY_TOKENS.ParticleFilterService, ParticleFilterService],
+            [TRAJECTORY_TOKENS.TrajectoryPresenceSocketModule, TrajectoryPresenceSocketModule],
             GetColorCodingPropertiesUseCase,
             GetColorCodingStatsUseCase,
             CreateTrajectoryFolderUseCase,
@@ -82,4 +85,9 @@ export const registerTrajectoryDependencies = (): void => {
     for (const toolClassProvider of TRAJECTORY_AI_TOOL_CLASSES) {
         container.register(AI_TOKENS.AITool, toolClassProvider);
     }
+
+    // Register socket module for gateway discovery
+    container.register(SOCKET_TOKENS.SocketModule, {
+        useToken: TRAJECTORY_TOKENS.TrajectoryPresenceSocketModule
+    });
 };

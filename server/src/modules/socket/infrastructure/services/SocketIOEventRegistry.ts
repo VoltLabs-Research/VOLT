@@ -48,9 +48,18 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
         const socket = this.sockets.get(socketId);
         if(!socket) return;
 
-        socket.on(event, async (payload: T) => {
-            const connection = this.socketMapper.toDomain(socket);
-            await handler(connection, payload);
+        socket.on(event, async (payload: T, ack?: (...args: unknown[]) => void) => {
+            try {
+                const connection = this.socketMapper.toDomain(socket);
+                await handler(connection, payload);
+                if(typeof ack === 'function'){
+                    ack({ ok: true });
+                }
+            } catch(error) {
+                if(typeof ack === 'function'){
+                    ack({ ok: false, error: error instanceof Error ? error.message : 'Internal error' });
+                }
+            }
         });
     }
 
