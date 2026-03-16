@@ -15,6 +15,7 @@ import Avatar from '@/shared/presentation/components/Avatar';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
+import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
 
 import './TopToolbar.css';
 
@@ -24,6 +25,7 @@ const TopToolbar = () => {
     const navigate = useNavigate();
     const user = useCurrentUser();
     const { searchParams, updateSearchParams } = useCanvasUrlState();
+    const { recordSlowAction: recordScreenshotShortcutTip } = useShortcutDiscovery('canvas-screenshot-shortcut');
     const showStatusBar = searchParams.get('statusBar') !== 'false';
     const setShowStatusBar = (value: boolean) => updateSearchParams({ statusBar: value ? 'true' : 'false' });
 
@@ -54,8 +56,9 @@ const TopToolbar = () => {
     }, []);
 
     const handleScreenshot = useCallback(() => {
+        recordScreenshotShortcutTip();
         useScreenshotStore.getState().requestCapture();
-    }, []);
+    }, [recordScreenshotShortcutTip]);
 
     const menus = buildMenus({
         showStatusBar,

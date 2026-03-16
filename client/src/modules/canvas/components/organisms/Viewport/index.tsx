@@ -19,6 +19,7 @@ import Loader from '@/shared/presentation/components/Loader';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import Tooltip from '@/shared/presentation/components/Tooltip';
+import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
 import { Box, Camera, Gauge } from 'lucide-react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -71,6 +72,7 @@ const Viewport = ({
     const navigate = useNavigate();
     const teamId = useSelectedTeamId() ?? undefined;
     const captureRequested = useScreenshotStore((s) => s.captureRequested);
+    const { recordSlowAction: recordScreenshotShortcutTip } = useShortcutDiscovery('canvas-screenshot-shortcut');
     useEnsurePluginCatalogLoaded();
     const { plugins } = usePluginSelectors();
     const {
@@ -154,7 +156,10 @@ const Viewport = ({
                                 size="sm"
                                 className="font-size-05 canvas-btn-compact"
                                 leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Camera size={12} /></span>}
-                                onClick={() => useScreenshotStore.getState().requestCapture()}
+                                onClick={() => {
+                                    recordScreenshotShortcutTip();
+                                    useScreenshotStore.getState().requestCapture();
+                                }}
                             >
                                 Screenshot
                             </Button>

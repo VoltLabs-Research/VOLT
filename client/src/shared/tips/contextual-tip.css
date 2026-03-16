@@ -1,0 +1,46 @@
+.contextual-tip__badge {
+    color: var(--accent-blue);
+}
+
+.contextual-tip__title {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-transform: none;
+    white-space: nowrap;
+}
+
+.contextual-tip__description {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    color: var(--color-text-muted);
+    line-height: 1.45;
+    text-wrap: pretty;
+}
+
+.contextual-tip__button {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
+    color: var(--accent-blue);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 150ms ease, color 150ms ease;
+}
+
+.contextual-tip__button:hover,
+.contextual-tip__button:focus-visible {
+    background: color-mix(in srgb, var(--accent-blue) 18%, transparent);
+    color: var(--accent-blue);
+}
+
+.contextual-tip__button:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--focus-ring) 55%, transparent);
+    outline-offset: 2px;
+}

@@ -7,6 +7,7 @@ import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import SearchInput from '@/shared/presentation/components/SearchInput';
+import useTip from '@/shared/tips/use-tip';
 import { FloatingPortal } from '@floating-ui/react';
 import { CiChat1 } from 'react-icons/ci';
 import { GoWorkflow } from 'react-icons/go';
@@ -78,7 +79,13 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
     } = useDashboardGlobalSearch();
     const floatingRoot = useFloatingRoot();
     const [isFocused, setIsFocused] = useState(false);
+    const [focusTipTrigger, setFocusTipTrigger] = useState(0);
     let itemIndex = -1;
+
+    useTip('dashboard-global-search', {
+        enabled: isFocused && focusTipTrigger > 0,
+        triggerKey: focusTipTrigger
+    });
 
     const showContextBreadcrumb = !isFocused && query.length === 0 && !!contextBreadcrumb?.items.length;
 
@@ -155,6 +162,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => {
                     setIsFocused(true);
+                    setFocusTipTrigger((current) => current + 1);
                     handleFocus();
                 }}
                 onBlur={() => setIsFocused(false)}

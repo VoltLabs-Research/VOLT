@@ -10,6 +10,7 @@ import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import useTip from '@/shared/tips/use-tip';
 import LatexEditorPanel from './LatexEditorPanel';
 import LatexFilePanel from './LatexFilePanel';
 import LatexPreviewPanel from './LatexPreviewPanel';
@@ -276,6 +277,10 @@ const LatexDocumentWorkspace = () => {
     }, [handleWorkspaceFoldersSelected]);
 
     const shouldShowWorkspaceOnboarding = !hasWorkspaceContent && !hasEnteredWorkspace;
+
+    useTip('latex-workspace-layout', {
+        enabled: !isLoading && !accessDenied && !shouldShowWorkspaceOnboarding
+    });
 
     const toggleAIPanel = useCallback(() => {
         setIsAIPanelOpen((current) => !current);
