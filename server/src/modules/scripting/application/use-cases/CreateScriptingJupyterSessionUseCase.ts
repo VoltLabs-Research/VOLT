@@ -22,43 +22,43 @@ import type { IUseCase } from '@shared/application/IUseCase';
 const LOCK_TTL_MS = 90_000;
 
 const PENDING_JUPYTER_SESSION: CreateScriptingJupyterSessionOutputDTO = {
+    notebookId: '',
     jupyter: {
         url: '',
         ready: false
     }
 };
 
-const toPropsRecord = (notebook: ScriptingNotebook): Record<string, unknown> => {
-    return notebook.props as unknown as Record<string, unknown>;
-};
-
 const getPrimaryTrajectoryId = (notebook: ScriptingNotebook): string | null => {
-    const trajectory = toPropsRecord(notebook).trajectory;
-    if (typeof trajectory === 'string') {
-        return trajectory;
-    }
-
-    if (typeof trajectory === 'object' && trajectory !== null && '_id' in trajectory && typeof trajectory._id === 'string') {
-        return trajectory._id;
-    }
-
-    return null;
+    return notebook.props.trajectory ?? null;
 };
 
-const getNotebookTeamClusterId = (teamCluster: unknown): string | undefined => {
-    if (!teamCluster) {
-        return undefined;
+const getNotebookTeamClusterId = (teamCluster: string | null | undefined): string | undefined => {
+    return teamCluster || undefined;
+};
+
+const getNotebookSortTimestamp = (notebook: ScriptingNotebook): number => {
+    return notebook.props.lastOpenedAt?.getTime() ?? notebook.props.updatedAt.getTime();
+};
+
+const selectExistingTrajectoryNotebook = (
+    notebooks: ScriptingNotebook[],
+    teamId: string
+): ScriptingNotebook | null => {
+    const teamNotebooks = notebooks.filter((notebook) => notebook.props.team === teamId);
+
+    if (!teamNotebooks.length) {
+        return null;
     }
 
-    if (typeof teamCluster === 'string') {
-        return teamCluster;
-    }
+    return [...teamNotebooks].sort((left, right) => {
+        const timestampDelta = getNotebookSortTimestamp(right) - getNotebookSortTimestamp(left);
+        if (timestampDelta !== 0) {
+            return timestampDelta;
+        }
 
-    if (typeof teamCluster === 'object' && teamCluster !== null && '_id' in teamCluster && typeof teamCluster._id === 'string') {
-        return teamCluster._id;
-    }
-
-    return undefined;
+        return right.id.localeCompare(left.id);
+    })[0] || null;
 };
 
 @injectable()
@@ -99,14 +99,16 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         try {
             lease = await this.scriptingSessionLock.acquire(lockKey, LOCK_TTL_MS);
             if (!lease) {
-                return Result.ok(PENDING_JUPYTER_SESSION);
+                return Result.ok({
+                    ...PENDING_JUPYTER_SESSION,
+                    notebookId: input.notebookId || ''
+                });
             }
 
             const notebook = await this.resolveNotebookForSession(input, userId);
             const sessionInput: ScriptingSessionStartInput = {
                 teamId: input.teamId,
                 teamClusterId: await this.resolveNotebookTeamClusterId(notebook, input),
-                trajectoryId: input.trajectoryId,
                 userId,
                 notebookId: notebook.id,
                 notebook: {
@@ -117,6 +119,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             const session = await this.scriptingSessionOrchestrator.startSession(sessionInput);
 
             return Result.ok({
+                notebookId: notebook.id,
                 jupyter: session.jupyter
             });
         } catch (error) {
@@ -166,7 +169,8 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             );
         }
 
-        const existing = await this.scriptingNotebookRepository.findByTeamAndTrajectory(input.teamId, input.trajectoryId);
+        const existingNotebooks = await this.scriptingNotebookRepository.findAllWithTrajectory(input.trajectoryId);
+        const existing = selectExistingTrajectoryNotebook(existingNotebooks, input.teamId);
 
         if (existing) {
             const now = new Date();
@@ -208,7 +212,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         notebook: ScriptingNotebook,
         input: CreateScriptingJupyterSessionInputDTO
     ): Promise<string> {
-        const notebookTeamClusterId = getNotebookTeamClusterId(toPropsRecord(notebook).teamCluster);
+        const notebookTeamClusterId = getNotebookTeamClusterId(notebook.props.teamCluster);
         const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(
             input.teamId,
             input.teamClusterId || notebookTeamClusterId

@@ -1,0 +1,34 @@
+TriggerRasterizationRequest:
+  type: object
+  properties:
+    config:
+      description: Optional rasterization configuration
+  additionalProperties: false
+RasterJob:
+  type: object
+  description: A rasterization job
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    trajectoryId:
+      $ref: common.yaml#/ObjectId
+    status:
+      type: string
+    createdAt:
+      type: string
+      format: date-time
+RasterMetadata:
+  type: object
+  description: Metadata for a rasterized trajectory
+  properties:
+    trajectoryId:
+      $ref: common.yaml#/ObjectId
+    frameCount:
+      type: integer
+    resolution:
+      type: object
+      properties:
+        width:
+          type: integer
+        height:
+          type: integer

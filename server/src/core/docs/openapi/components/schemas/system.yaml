@@ -1,0 +1,66 @@
+SystemStats:
+  type: object
+  required:
+  - userCount
+  - teamCount
+  - trajectoryCount
+  - storageUsed
+  properties:
+    userCount:
+      type: integer
+      description: Total number of registered users.
+    teamCount:
+      type: integer
+      description: Total number of teams.
+    trajectoryCount:
+      type: integer
+      description: Total number of trajectories stored.
+    storageUsed:
+      type: integer
+      format: int64
+      description: Total storage used in bytes.
+RbacConfig:
+  type: object
+  required:
+  - resources
+  - actions
+  - systemRoles
+  properties:
+    resources:
+      type: array
+      items:
+        type: string
+      description: List of resource identifiers managed by the RBAC system.
+    actions:
+      type: array
+      items:
+        type: string
+      description: List of action identifiers that can be performed on resources.
+    systemRoles:
+      type: array
+      items:
+        type: object
+        required:
+        - name
+        - permissions
+        properties:
+          name:
+            type: string
+            description: Name of the system role.
+          permissions:
+            type: array
+            items:
+              type: object
+              required:
+              - resource
+              - actions
+              properties:
+                resource:
+                  type: string
+                  description: Resource this permission applies to.
+                actions:
+                  type: array
+                  items:
+                    type: string
+                  description: Actions allowed on the resource.
+      description: Predefined system roles with their permission sets.

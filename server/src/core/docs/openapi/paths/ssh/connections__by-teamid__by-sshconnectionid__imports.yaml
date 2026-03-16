@@ -1,0 +1,43 @@
+post:
+  operationId: importTrajectoryFromSSH
+  tags:
+  - SSH
+  summary: Import trajectory from SSH
+  description: Imports a trajectory file from the remote SSH server into the platform.
+  parameters:
+  - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: sshConnectionId
+    in: path
+    required: true
+    schema:
+      type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/ssh.yaml#/ImportTrajectoryFromSSHRequest
+  responses:
+    '201':
+      description: Successfully initiated import
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/ssh.yaml#/Job
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

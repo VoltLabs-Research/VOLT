@@ -1,0 +1,44 @@
+get:
+  tags:
+  - Containers
+  summary: Read a file from a container
+  description: Read the content of a specific file inside a container.
+  operationId: readContainerFile
+  security:
+  - BearerAuth: []
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: containerId
+    in: path
+    required: true
+    description: The ID of the container
+    schema:
+      type: string
+      minLength: 1
+  - name: path
+    in: query
+    required: true
+    description: Absolute path of the file to read
+    schema:
+      type: string
+      minLength: 1
+  responses:
+    '200':
+      description: File content retrieved successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/containers.yaml#/ContainerFileContent
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

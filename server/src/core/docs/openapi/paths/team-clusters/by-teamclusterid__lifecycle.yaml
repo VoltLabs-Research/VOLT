@@ -1,0 +1,34 @@
+post:
+  operationId: updateTeamClusterLifecycle
+  tags:
+  - Cluster Lifecycle
+  summary: Update cluster lifecycle status
+  description: Updates daemon-reported lifecycle status for a cluster.
+  security: []
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamClusterId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/team-clusters.yaml#/TeamClusterLifecycleRequest
+  responses:
+    '200':
+      description: Lifecycle updated
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    teamCluster:
+                      $ref: ../../components/schemas/common.yaml#/TeamCluster
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

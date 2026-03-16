@@ -22,9 +22,8 @@ export default function SimulationCard({ trajectory, isSelected, onSelect, onDel
     const navigate = useNavigate();
     const createdBy = typeof trajectory.createdBy === 'object' ? trajectory.createdBy : null;
 
-    const { previewBlobUrl, isLoading: previewLoading, error: previewError, retry: retryPreview } = useTrajectoryPreview({
-        trajectoryId: trajectory._id,
-        enabled: trajectory.status !== 'failed'
+    const { previewBlobUrl } = useTrajectoryPreview({
+        trajectoryId: trajectory._id
     });
 
     const isProcessing = isProcessingStatus(trajectory.status);
@@ -76,8 +75,8 @@ export default function SimulationCard({ trajectory, isSelected, onSelect, onDel
         navigate(`/canvas/${trajectory._id}/`);
     }, [navigate, onSelect, trajectory._id]);
 
-    const showPreview = previewBlobUrl && !previewError;
-    const showPlaceholder = !showPreview || previewLoading;
+    const showPreview = Boolean(previewBlobUrl);
+    const showPlaceholder = !showPreview;
 
     return (
         <article
@@ -100,7 +99,6 @@ export default function SimulationCard({ trajectory, isSelected, onSelect, onDel
                         className='w-max h-max cover-image'
                         src={previewBlobUrl}
                         alt={`Preview of ${trajectory.name}`}
-                        onError={retryPreview}
                     />
                 )}
             </Container>

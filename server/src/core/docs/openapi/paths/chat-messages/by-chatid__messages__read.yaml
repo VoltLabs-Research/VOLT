@@ -1,0 +1,27 @@
+patch:
+  tags:
+  - Chat Messages
+  summary: Mark messages as read
+  description: Mark all messages in a chat as read for the authenticated user.
+  operationId: markMessagesAsRead
+  security:
+  - BearerAuth: []
+  parameters:
+  - name: chatId
+    in: path
+    required: true
+    description: The ID of the chat
+    schema:
+      type: string
+      minLength: 1
+  responses:
+    '200':
+      description: Messages marked as read successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

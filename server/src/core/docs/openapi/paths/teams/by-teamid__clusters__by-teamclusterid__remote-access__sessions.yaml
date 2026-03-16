@@ -1,0 +1,35 @@
+post:
+  operationId: createTeamClusterRemoteAccessSession
+  tags:
+  - Team Clusters
+  summary: Create remote access session
+  description: Creates a password-confirmed temporary remote access session for a cluster resource.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/TeamClusterId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/teams.yaml#/CreateTeamClusterRemoteAccessSessionRequest
+  responses:
+    '200':
+      description: Remote access session
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/teams.yaml#/TeamClusterRemoteAccessSession
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

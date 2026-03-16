@@ -1,0 +1,107 @@
+get:
+  operationId: getTrajectoryById
+  tags:
+  - Trajectories
+  summary: Get a trajectory
+  description: Returns the full details of a specific trajectory by its ID.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: trajectoryId
+    in: path
+    required: true
+    description: Unique identifier of the trajectory
+    schema:
+      type: string
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/trajectories.yaml#/Trajectory
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+patch:
+  operationId: updateTrajectoryById
+  tags:
+  - Trajectories
+  summary: Update a trajectory
+  description: Updates the mutable properties of a trajectory, such as its name.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: trajectoryId
+    in: path
+    required: true
+    description: Unique identifier of the trajectory
+    schema:
+      type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: Updated trajectory name
+  responses:
+    '200':
+      description: Trajectory updated successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/trajectories.yaml#/Trajectory
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+delete:
+  operationId: deleteTrajectoryById
+  tags:
+  - Trajectories
+  summary: Delete a trajectory
+  description: Permanently deletes a trajectory and all associated data including scene artifacts and analysis results.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: trajectoryId
+    in: path
+    required: true
+    description: Unique identifier of the trajectory
+    schema:
+      type: string
+  responses:
+    '200':
+      description: Trajectory deleted successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

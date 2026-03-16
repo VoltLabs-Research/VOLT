@@ -1,0 +1,9 @@
+get:
+  operationId: oauthGoogle
+  tags:
+  - Auth - OAuth
+  summary: Initiate Google OAuth login
+  security: []
+  responses:
+    '302':
+      description: Redirect to Google

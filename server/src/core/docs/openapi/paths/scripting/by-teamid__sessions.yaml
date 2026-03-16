@@ -1,0 +1,32 @@
+post:
+  tags:
+  - Scripting
+  summary: Create a notebook Jupyter session
+  description: Creates a new Jupyter session for an existing notebook (team-scoped, not trajectory-specific).
+  operationId: createNotebookJupyterSession
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/scripting.yaml#/CreateNotebookJupyterSessionRequest
+  responses:
+    '201':
+      description: Jupyter session created
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/scripting.yaml#/JupyterSession
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden

@@ -1,0 +1,35 @@
+get:
+  tags:
+  - Containers
+  summary: Get container stats
+  description: Retrieve resource usage statistics for a container.
+  operationId: getContainerStats
+  security:
+  - BearerAuth: []
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: containerId
+    in: path
+    required: true
+    description: The ID of the container
+    schema:
+      type: string
+      minLength: 1
+  responses:
+    '200':
+      description: Container stats retrieved successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/containers.yaml#/ContainerStats
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

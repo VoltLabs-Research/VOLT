@@ -1,0 +1,186 @@
+SSHConnection:
+  type: object
+  required:
+  - _id
+  - teamId
+  - name
+  - host
+  - port
+  - username
+  - createdAt
+  - updatedAt
+  properties:
+    _id:
+      type: string
+      description: Unique identifier of the SSH connection.
+    teamId:
+      type: string
+      description: ID of the team that owns this SSH connection.
+    name:
+      type: string
+      maxLength: 100
+      description: Display name for the SSH connection.
+    host:
+      type: string
+      description: Hostname or IP address of the SSH server.
+    port:
+      type: integer
+      minimum: 1
+      maximum: 65535
+      description: Port number of the SSH server.
+    username:
+      type: string
+      description: Username used to authenticate with the SSH server.
+    createdAt:
+      type: string
+      format: date-time
+      description: Timestamp when the SSH connection was created.
+    updatedAt:
+      type: string
+      format: date-time
+      description: Timestamp when the SSH connection was last updated.
+CreateSSHConnectionRequest:
+  type: object
+  required:
+  - name
+  - host
+  - port
+  - username
+  - password
+  properties:
+    name:
+      type: string
+      maxLength: 100
+      description: Display name for the SSH connection.
+    host:
+      type: string
+      description: Hostname or IP address of the SSH server.
+    port:
+      type: integer
+      minimum: 1
+      maximum: 65535
+      description: Port number of the SSH server.
+    username:
+      type: string
+      description: Username used to authenticate with the SSH server.
+    password:
+      type: string
+      description: Password used to authenticate with the SSH server.
+UpdateSSHConnectionRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      maxLength: 100
+      description: Display name for the SSH connection.
+    host:
+      type: string
+      description: Hostname or IP address of the SSH server.
+    port:
+      type: integer
+      minimum: 1
+      maximum: 65535
+      description: Port number of the SSH server.
+    username:
+      type: string
+      description: Username used to authenticate with the SSH server.
+    password:
+      type: string
+      description: Password used to authenticate with the SSH server.
+ImportTrajectoryFromSSHRequest:
+  type: object
+  required:
+  - remotePath
+  properties:
+    remotePath:
+      type: string
+      description: Path to the trajectory file on the remote SSH server.
+SSHFile:
+  type: object
+  required:
+  - name
+  - path
+  - size
+  - isDirectory
+  - modifiedAt
+  properties:
+    name:
+      type: string
+      description: Name of the file or directory.
+    path:
+      type: string
+      description: Full path of the file or directory on the remote server.
+    size:
+      type: integer
+      format: int64
+      description: Size of the file in bytes. Zero for directories.
+    isDirectory:
+      type: boolean
+      description: Whether the entry is a directory.
+    modifiedAt:
+      type: string
+      format: date-time
+      description: Timestamp when the file was last modified.
+SSHConnectionTestResult:
+  type: object
+  required:
+  - success
+  - message
+  properties:
+    success:
+      type: boolean
+      description: Whether the connection test was successful.
+    message:
+      type: string
+      description: Human-readable result message.
+    latencyMs:
+      type: number
+      description: Round-trip latency in milliseconds.
+Job:
+  type: object
+  required:
+  - _id
+  - teamId
+  - type
+  - status
+  - createdAt
+  properties:
+    _id:
+      type: string
+      description: Unique identifier of the job.
+    teamId:
+      type: string
+      description: ID of the team that owns this job.
+    type:
+      type: string
+      description: Type of job being performed.
+    status:
+      type: string
+      enum:
+      - pending
+      - running
+      - completed
+      - failed
+      description: Current status of the job.
+    progress:
+      type:
+      - number
+      - 'null'
+      minimum: 0
+      maximum: 100
+      description: Job progress as a percentage (0-100).
+    error:
+      type:
+      - string
+      - 'null'
+      description: Error message if the job failed.
+    createdAt:
+      type: string
+      format: date-time
+      description: Timestamp when the job was created.
+    completedAt:
+      type:
+      - string
+      - 'null'
+      format: date-time
+      description: Timestamp when the job completed or failed.

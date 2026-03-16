@@ -9,5 +9,6 @@ export interface CreateScriptingJupyterSessionInputDTO {
 };
 
 export interface CreateScriptingJupyterSessionOutputDTO {
+    notebookId: string;
     jupyter: ScriptingSessionJupyterInfo;
 };

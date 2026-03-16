@@ -1,0 +1,62 @@
+get:
+  operationId: getTeamMemberById
+  tags:
+  - Team Members
+  summary: Get team member
+  description: Returns one team member by identifier.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/TeamMemberId
+  responses:
+    '200':
+      description: Team member
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/teams.yaml#/TeamMember
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+patch:
+  operationId: updateTeamMemberById
+  tags:
+  - Team Members
+  summary: Update team member role
+  description: Updates a member role assignment within the team.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/TeamMemberId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/teams.yaml#/UpdateTeamMemberRequest
+  responses:
+    '200':
+      description: Team member updated
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/teams.yaml#/TeamMember
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

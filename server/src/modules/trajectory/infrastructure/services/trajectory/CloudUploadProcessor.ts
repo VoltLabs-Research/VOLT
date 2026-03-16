@@ -11,7 +11,9 @@ import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/p
 
 interface CloudUploadTask {
     trajectoryId: string;
+    teamId: string;
     teamClusterId?: string;
+    trajectoryName?: string;
     timestep: number;
     frameFilePath: string;
 };
@@ -27,18 +29,25 @@ export default class CloudUploadProcessor {
     ) {}
 
     async process(task: CloudUploadTask): Promise<void> {
-        const { trajectoryId, teamClusterId, timestep, frameFilePath } = task;
+        const {
+            trajectoryId,
+            teamId,
+            teamClusterId,
+            trajectoryName,
+            timestep,
+            frameFilePath
+        } = task;
 
-        logger.info(`@cloud-upload-processor: processing trajectoryId=${trajectoryId} timestep=${timestep} teamClusterId=${teamClusterId || 'none'} localPath=${frameFilePath}`);
+        logger.info(`@cloud-upload-processor: uploading frame for GLB preprocess trajectoryId=${trajectoryId} timestep=${timestep} teamClusterId=${teamClusterId || 'none'} localPath=${frameFilePath}`);
 
         if (!teamClusterId) {
             throw new Error('Cloud upload requires a team cluster. No local native modules available.');
         }
 
         await this.uploadDumpToTeamCluster(teamClusterId, trajectoryId, timestep, frameFilePath);
-        await this.notifyTeamClusterPreprocess(teamClusterId, trajectoryId, timestep);
+        await this.requestTeamClusterGlbPreprocess(teamClusterId, trajectoryId, teamId, timestep, trajectoryName);
 
-        logger.info(`@cloud-upload-processor: completed trajectoryId=${trajectoryId} timestep=${timestep}`);
+        logger.info(`@cloud-upload-processor: uploaded frame and requested GLB preprocess trajectoryId=${trajectoryId} timestep=${timestep}`);
     }
 
     private async uploadDumpToTeamCluster(
@@ -65,17 +74,21 @@ export default class CloudUploadProcessor {
         });
     }
 
-    private async notifyTeamClusterPreprocess(
+    private async requestTeamClusterGlbPreprocess(
         teamClusterId: string,
         trajectoryId: string,
-        timestep: number
+        teamId: string,
+        timestep: number,
+        trajectoryName?: string
     ): Promise<void> {
         const objectKey = this.dumpStorage.getObjectName(trajectoryId, String(timestep));
 
         await this.teamClusterDaemonClient.command(teamClusterId, 'trajectory.native.preprocess', {
             trajectoryId,
+            teamId,
             timestep,
-            objectKey
+            objectKey,
+            ...(trajectoryName ? { trajectoryName } : {})
         });
     }
 };

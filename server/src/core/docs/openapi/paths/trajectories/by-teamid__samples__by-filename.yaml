@@ -1,0 +1,30 @@
+get:
+  operationId: downloadSamples
+  tags:
+  - Trajectories
+  summary: Download a sample trajectory file
+  description: Downloads a specific sample trajectory file by filename. Returns the raw binary content of the file.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: filename
+    in: path
+    required: true
+    description: Name of the sample file to download
+    schema:
+      type: string
+  responses:
+    '200':
+      description: Sample file binary content
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

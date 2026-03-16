@@ -1,0 +1,30 @@
+get:
+  operationId: downloadTrajectory
+  tags:
+  - Trajectories
+  summary: Download original trajectory file
+  description: Downloads the original uploaded trajectory file in its native format.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: trajectoryId
+    in: path
+    required: true
+    description: Unique identifier of the trajectory
+    schema:
+      type: string
+  responses:
+    '200':
+      description: Trajectory file binary content
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

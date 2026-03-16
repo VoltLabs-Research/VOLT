@@ -4,5 +4,6 @@ export interface ScriptingSessionJupyter {
 };
 
 export interface ScriptingSession {
+    notebookId?: string;
     jupyter: ScriptingSessionJupyter;
 };

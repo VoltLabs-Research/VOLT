@@ -41,6 +41,8 @@ servers:
           - https
       host:
         default: localhost:8000
+security:
+  - BearerAuth: []
 tags:
   - name: Auth
     description: Authentication, registration, OAuth and account management.
@@ -114,8 +116,6 @@ tags:
     description: Team cluster management, remote access and update requests.
   - name: Cluster Lifecycle
     description: Cluster daemon enrollment, lifecycle reporting and install manifests.
-security:
-  - BearerAuth: []
 paths:
   /api/auth/sessions:
     post:
@@ -2405,8 +2405,9 @@ paths:
                   type: string
                   description: Name of the folder
                 parentId:
-                  type: string
-                  nullable: true
+                  type:
+                    - string
+                    - 'null'
                   description: ID of the parent folder, or null for root-level
       responses:
         '201':
@@ -2486,8 +2487,9 @@ paths:
                   type: string
                   description: Updated folder name
                 parentId:
-                  type: string
-                  nullable: true
+                  type:
+                    - string
+                    - 'null'
                   description: Updated parent folder ID, or null to move to root
       responses:
         '200':
@@ -2770,8 +2772,9 @@ paths:
               type: object
               properties:
                 folderId:
-                  type: string
-                  nullable: true
+                  type:
+                    - string
+                    - 'null'
                   description: Target folder ID, or null to move to root
       responses:
         '200':
@@ -3039,12 +3042,14 @@ paths:
                   type: string
                   description: Name of the color map to apply
                 min:
-                  type: number
-                  nullable: true
+                  type:
+                    - number
+                    - 'null'
                   description: Minimum value for the color scale
                 max:
-                  type: number
-                  nullable: true
+                  type:
+                    - number
+                    - 'null'
                   description: Maximum value for the color scale
       responses:
         '201':
@@ -3228,12 +3233,14 @@ paths:
                   type: string
                   description: Name of the color map to apply
                 min:
-                  type: number
-                  nullable: true
+                  type:
+                    - number
+                    - 'null'
                   description: Minimum value for the color scale
                 max:
-                  type: number
-                  nullable: true
+                  type:
+                    - number
+                    - 'null'
                   description: Maximum value for the color scale
       responses:
         '201':
@@ -5556,8 +5563,9 @@ paths:
                 name:
                   type: string
                 folderId:
-                  type: string
-                  nullable: true
+                  type:
+                    - string
+                    - 'null'
       responses:
         '201':
           description: Successfully created
@@ -5764,8 +5772,9 @@ paths:
                 - folderId
               properties:
                 folderId:
-                  type: string
-                  nullable: true
+                  type:
+                    - string
+                    - 'null'
                   description: Target folder ID, or null to move to root.
       responses:
         '200':
@@ -6370,8 +6379,9 @@ paths:
                 name:
                   type: string
                 parentId:
-                  type: string
-                  nullable: true
+                  type:
+                    - string
+                    - 'null'
       responses:
         '201':
           description: Successfully created
@@ -6531,8 +6541,9 @@ paths:
                 name:
                   type: string
                 folderId:
-                  type: string
-                  nullable: true
+                  type:
+                    - string
+                    - 'null'
       responses:
         '201':
           description: Successfully created
@@ -6644,8 +6655,9 @@ paths:
                 name:
                   type: string
                 parentId:
-                  type: string
-                  nullable: true
+                  type:
+                    - string
+                    - 'null'
       responses:
         '201':
           description: Successfully created
@@ -6924,8 +6936,9 @@ paths:
                 - folderId
               properties:
                 folderId:
-                  type: string
-                  nullable: true
+                  type:
+                    - string
+                    - 'null'
                   description: Target folder ID, or null to move to root.
       responses:
         '200':
@@ -9502,8 +9515,9 @@ components:
         fullName:
           type: string
         avatar:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           description: User avatar URL
         oauthProviders:
           type: array
@@ -9584,8 +9598,9 @@ components:
         memberCount:
           type: integer
         inviteCode:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         createdAt:
           type: string
           format: date-time
@@ -9718,8 +9733,9 @@ components:
           minLength: 1
           description: The ID of the team cluster to deploy to
         folderId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           minLength: 1
           description: The ID of the folder to place the container in, or null for root
         env:
@@ -9781,8 +9797,9 @@ components:
         - folderId
       properties:
         folderId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           description: The ID of the destination folder, or null to move to root
       additionalProperties: false
     CreateFolderRequest:
@@ -9796,8 +9813,9 @@ components:
           maxLength: 255
           description: The title of the folder
         parentId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           minLength: 1
           description: The ID of the parent folder, or null for root level
       additionalProperties: false
@@ -9961,8 +9979,9 @@ components:
         status:
           type: string
         folderId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         env:
           type: array
           items:
@@ -9990,8 +10009,9 @@ components:
         title:
           type: string
         parentId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         createdAt:
           type: string
           format: date-time
@@ -10099,8 +10119,9 @@ components:
           type: integer
           description: Total number of frames (timesteps) in the trajectory
         folderId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           description: ID of the folder containing this trajectory, or null if at root level
         fileSize:
           type: integer
@@ -10282,12 +10303,14 @@ components:
           type: string
           description: URL to access the artifact resource
         timestep:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - 'null'
           description: Timestep this artifact corresponds to, if applicable
         analysisId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           description: Analysis ID this artifact is associated with, if applicable
     ColorCodingProperty:
       type: object
@@ -10317,16 +10340,19 @@ components:
           type: string
           description: Name of the color map being applied
         min:
-          type: number
-          nullable: true
+          type:
+            - number
+            - 'null'
           description: Minimum value of the color scale
         max:
-          type: number
-          nullable: true
+          type:
+            - number
+            - 'null'
           description: Maximum value of the color scale
         perAtomValues:
-          type: array
-          nullable: true
+          type:
+            - array
+            - 'null'
           description: Per-atom computed values for the selected property
           items:
             type: number
@@ -10363,8 +10389,9 @@ components:
           type: string
           description: Data type of the property (e.g., numeric, categorical)
         values:
-          type: array
-          nullable: true
+          type:
+            - array
+            - 'null'
           description: Possible values for categorical properties
           items:
             oneOf:
@@ -10437,8 +10464,9 @@ components:
           type: string
           description: ID of the team that owns this folder
         parentId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           description: ID of the parent folder, or null for root-level folders
         createdAt:
           type: string
@@ -10999,17 +11027,20 @@ components:
           type: string
           description: Display name of the document.
         folderId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           description: ID of the folder containing this document, or null if at root.
         entrypoint:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           description: ID of the file designated as the compilation entrypoint.
         compiledPdfUrl:
-          type: string
+          type:
+            - string
+            - 'null'
           format: uri
-          nullable: true
           description: URL of the most recently compiled PDF, or null if not yet compiled.
         createdAt:
           type: string
@@ -11093,8 +11124,9 @@ components:
           type: string
           description: Display name of the whiteboard.
         folderId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           description: ID of the folder containing this whiteboard, or null if at root.
         createdBy:
           type: string
@@ -11168,23 +11200,26 @@ components:
             - failed
           description: Current status of the job.
         progress:
-          type: number
+          type:
+            - number
+            - 'null'
           minimum: 0
           maximum: 100
-          nullable: true
           description: Job progress as a percentage (0-100).
         error:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           description: Error message if the job failed.
         createdAt:
           type: string
           format: date-time
           description: Timestamp when the job was created.
         completedAt:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
           description: Timestamp when the job completed or failed.
     Notification:
       type: object
@@ -11216,8 +11251,9 @@ components:
           type: boolean
           description: Whether the notification has been read.
         data:
-          type: object
-          nullable: true
+          type:
+            - object
+            - 'null'
           additionalProperties: true
           description: Optional additional data associated with the notification.
         createdAt:
@@ -11326,19 +11362,23 @@ components:
           type: string
           format: email
         avatar:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         lastSeenAt:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
         createdAt:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
         isOnline:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - 'null'
     TeamMemberRoleSummary:
       type: object
       properties:
@@ -11477,9 +11517,10 @@ components:
           type: string
           format: date-time
         acceptedAt:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
         status:
           $ref: '#/components/schemas/TeamInvitationStatus'
     SendTeamInvitationRequest:
@@ -11534,9 +11575,10 @@ components:
         isActive:
           type: boolean
         lastUsedAt:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -11597,9 +11639,10 @@ components:
               type: string
               format: date-time
             lastUsedAt:
-              type: string
+              type:
+                - string
+                - 'null'
               format: date-time
-              nullable: true
       additionalProperties: true
     SecretKeyTeamMetrics:
       type: object
@@ -11634,9 +11677,10 @@ components:
         isActive:
           type: boolean
         lastUsedAt:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -11686,21 +11730,24 @@ components:
         isEnabled:
           type: boolean
         defaultModel:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         enabledModels:
           type: array
           items:
             $ref: '#/components/schemas/EnabledModel'
         metadata:
-          type: object
+          type:
+            - object
+            - 'null'
           additionalProperties: true
-          nullable: true
         hasApiKey:
           type: boolean
         createdBy:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         createdAt:
           type: string
           format: date-time
@@ -11744,12 +11791,14 @@ components:
         providerName:
           type: string
         defaultModel:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         metadata:
-          type: object
+          type:
+            - object
+            - 'null'
           additionalProperties: true
-          nullable: true
         models:
           type: array
           items:
@@ -11815,14 +11864,16 @@ components:
       type: object
       properties:
         port:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - 'null'
     TeamClusterCredentialService:
       type: object
       properties:
         port:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - 'null'
         username:
           type: string
         password:
@@ -11831,8 +11882,9 @@ components:
       type: object
       properties:
         port:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - 'null'
         password:
           type: string
     TeamClusterServices:
@@ -11871,16 +11923,19 @@ components:
         status:
           $ref: '#/components/schemas/TeamClusterStatus'
         installedVersion:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         lastHeartbeatAt:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
         lastDisconnectAt:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
         services:
           $ref: '#/components/schemas/TeamClusterServices'
         createdAt:
@@ -11895,8 +11950,9 @@ components:
         tag:
           type: string
         publishedAt:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         isLatest:
           type: boolean
         isEdge:
@@ -11988,15 +12044,18 @@ components:
             - bucket
             - object
         size:
-          type: number
-          nullable: true
+          type:
+            - number
+            - 'null'
         updatedAt:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
         description:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
     TeamClusterMongoDocument:
       type: object
       properties:
@@ -12025,8 +12084,9 @@ components:
             - text
             - mongo-documents
         textContent:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         mongoDocuments:
           type: array
           items:
@@ -12138,8 +12198,9 @@ components:
         composeProjectName:
           type: string
         buildContextArchiveBase64:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         files:
           type: array
           items:
@@ -12201,8 +12262,9 @@ components:
           type: object
           additionalProperties: true
         cloudLatencyMs:
-          type: number
-          nullable: true
+          type:
+            - number
+            - 'null'
         connectedToCloud:
           type: boolean
     TeamClusterHeartbeatRequest:
@@ -12241,15 +12303,18 @@ components:
         title:
           type: string
         lastMessageAt:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
         lastProvider:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         lastModel:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         isArchived:
           type: boolean
         createdAt:
@@ -12308,16 +12373,19 @@ components:
         content:
           type: string
         artifacts:
-          type: object
-          nullable: true
+          type:
+            - object
+            - 'null'
           additionalProperties: true
         modelInfo:
-          type: object
-          nullable: true
+          type:
+            - object
+            - 'null'
           additionalProperties: true
         tokenUsage:
-          type: object
-          nullable: true
+          type:
+            - object
+            - 'null'
           additionalProperties: true
         createdAt:
           type: string
@@ -12389,11 +12457,13 @@ components:
         text:
           type: string
         userMessage:
-          $ref: '#/components/schemas/AIConversationMessage'
-          nullable: true
+          anyOf:
+            - $ref: '#/components/schemas/AIConversationMessage'
+            - type: 'null'
         assistantMessage:
-          $ref: '#/components/schemas/AIConversationMessage'
-          nullable: true
+          anyOf:
+            - $ref: '#/components/schemas/AIConversationMessage'
+            - type: 'null'
     Analysis:
       type: object
       properties:
@@ -12404,8 +12474,9 @@ components:
         pluginDisplayName:
           type: string
         teamCluster:
-          $ref: '#/components/schemas/ObjectId'
-          nullable: true
+          anyOf:
+            - $ref: '#/components/schemas/ObjectId'
+            - type: 'null'
         config:
           type: object
           additionalProperties: true
@@ -12414,28 +12485,48 @@ components:
         createdBy:
           $ref: '#/components/schemas/ObjectId'
         totalFrames:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - 'null'
         completedFrames:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - 'null'
         startedAt:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
         finishedAt:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
         team:
           $ref: '#/components/schemas/ObjectId'
         status:
           type: string
         createdAt:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
         updatedAt:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
+    SuccessResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+        message:
+          type:
+            - string
+            - 'null'
+        data: {}

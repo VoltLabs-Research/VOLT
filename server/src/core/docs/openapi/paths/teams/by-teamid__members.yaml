@@ -1,0 +1,30 @@
+get:
+  operationId: listTeamMembers
+  tags:
+  - Team Members
+  summary: List team members
+  description: Returns paginated members of the selected team including role, user profile and activity statistics.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/Page
+  - $ref: ../../components/parameters/common.yaml#/Limit
+  responses:
+    '200':
+      description: Team members
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../../components/schemas/teams.yaml#/TeamMember
+                pagination:
+                  $ref: ../../components/schemas/common.yaml#/Pagination
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden

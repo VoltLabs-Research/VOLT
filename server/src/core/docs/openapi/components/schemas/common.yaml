@@ -1,0 +1,228 @@
+PaginatedResponse:
+  type: object
+  required:
+  - status
+  - data
+  - pagination
+  properties:
+    status:
+      type: string
+      enum:
+      - success
+    data:
+      type: array
+      items: {}
+    pagination:
+      $ref: common.yaml#/Pagination
+Pagination:
+  type: object
+  required:
+  - page
+  - limit
+  - total
+  - totalPages
+  - hasMore
+  properties:
+    page:
+      type: integer
+      example: 1
+    limit:
+      type: integer
+      example: 20
+    total:
+      type: integer
+      example: 100
+    totalPages:
+      type: integer
+      example: 5
+    hasMore:
+      type: boolean
+      example: true
+ErrorResponse:
+  type: object
+  required:
+  - status
+  - message
+  - statusCode
+  properties:
+    status:
+      type: string
+      enum:
+      - error
+    code:
+      type: string
+      description: Error code in Namespace::Error format
+      example: Auth::Credentials::Invalid
+    message:
+      type: string
+      example: Invalid credentials
+    statusCode:
+      type: integer
+      example: 401
+User:
+  type: object
+  properties:
+    _id:
+      type: string
+      pattern: ^[a-fA-F0-9]{24}$
+    email:
+      type: string
+      format: email
+    firstName:
+      type: string
+    lastName:
+      type: string
+    fullName:
+      type: string
+    avatar:
+      type:
+      - string
+      - 'null'
+      description: User avatar URL
+    oauthProviders:
+      type: array
+      items:
+        type: string
+        enum:
+        - github
+        - google
+        - microsoft
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+Folder:
+  type: object
+  required:
+  - _id
+  - name
+  - teamId
+  - createdAt
+  - updatedAt
+  properties:
+    _id:
+      type: string
+      description: Unique identifier of the folder
+    name:
+      type: string
+      description: Display name of the folder
+    teamId:
+      type: string
+      description: ID of the team that owns this folder
+    parentId:
+      type:
+      - string
+      - 'null'
+      description: ID of the parent folder, or null for root-level folders
+    createdAt:
+      type: string
+      format: date-time
+      description: Timestamp when the folder was created
+    updatedAt:
+      type: string
+      format: date-time
+      description: Timestamp when the folder was last updated
+ObjectId:
+  type: string
+  pattern: ^[a-fA-F0-9]{24}$
+  description: MongoDB ObjectId (24 hexadecimal characters)
+  example: 507f1f77bcf86cd799439011
+AIProvider:
+  type: string
+  enum:
+  - openai
+  - anthropic
+  - google
+  - groq
+  - xai
+  - mistral
+  - cohere
+  - deepseek
+  - deepinfra
+  - cerebras
+  - togetherai
+  - fireworks
+  - ollama
+TeamClusterStatus:
+  type: string
+  enum:
+  - waiting-for-connection
+  - healthcheck-received
+  - preparing-environment
+  - dependency-installation-failed
+  - operating-system-not-supported
+  - connected
+  - disconnected
+  - deleting
+  - delete-failed
+  - updating
+  - update-failed
+TeamClusterService:
+  type: object
+  properties:
+    port:
+      type:
+      - integer
+      - 'null'
+TeamClusterServices:
+  type: object
+  properties:
+    minio:
+      $ref: common.yaml#/TeamClusterService
+    redis:
+      $ref: common.yaml#/TeamClusterService
+    mongodb:
+      $ref: common.yaml#/TeamClusterService
+    daemon:
+      $ref: common.yaml#/TeamClusterService
+TeamCluster:
+  type: object
+  properties:
+    _id:
+      $ref: common.yaml#/ObjectId
+    name:
+      type: string
+    team:
+      $ref: common.yaml#/ObjectId
+    createdBy:
+      $ref: common.yaml#/ObjectId
+    status:
+      $ref: common.yaml#/TeamClusterStatus
+    installedVersion:
+      type:
+      - string
+      - 'null'
+    lastHeartbeatAt:
+      type:
+      - string
+      - 'null'
+      format: date-time
+    lastDisconnectAt:
+      type:
+      - string
+      - 'null'
+      format: date-time
+    services:
+      $ref: common.yaml#/TeamClusterServices
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+SuccessResponse:
+  type: object
+  required:
+  - status
+  properties:
+    status:
+      type: string
+      enum:
+      - success
+    message:
+      type:
+      - string
+      - 'null'
+    data: {}

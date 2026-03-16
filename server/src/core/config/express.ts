@@ -44,7 +44,13 @@ const corsBaseOptions = {
     optionsSuccessStatus: 200
 };
 
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            upgradeInsecureRequests: null
+        }
+    }
+}));
 app.use((req, res, next) => {
     const allowedOrigins = new Set<string>();
     const requestOrigin = normalizeOrigin(`${req.protocol}://${req.get('host') || ''}`);

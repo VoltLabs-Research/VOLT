@@ -1,0 +1,40 @@
+get:
+  tags:
+  - Container VNC
+  summary: Get VNC connect page
+  description: Retrieve the HTML page used to establish a VNC connection to a container.
+  operationId: getVncConnectPage
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: containerId
+    in: path
+    required: true
+    description: The ID of the container
+    schema:
+      type: string
+      minLength: 1
+  - name: token
+    in: query
+    required: true
+    description: VNC session token
+    schema:
+      type: string
+      minLength: 1
+  - name: parentOrigin
+    in: query
+    required: true
+    description: HTTP(S) origin of the parent window for postMessage communication
+    schema:
+      type: string
+      format: uri
+  responses:
+    '200':
+      description: VNC connect page returned successfully
+      content:
+        text/html:
+          schema:
+            type: string
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

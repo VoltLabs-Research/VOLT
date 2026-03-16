@@ -1,0 +1,15 @@
+get:
+  operationId: oauthGitHubCallback
+  tags:
+  - Auth - OAuth
+  summary: GitHub OAuth callback
+  description: Processes the GitHub response and issues a JWT.
+  security: []
+  parameters:
+  - name: code
+    in: query
+    schema:
+      type: string
+  responses:
+    '302':
+      description: Redirect to client with token

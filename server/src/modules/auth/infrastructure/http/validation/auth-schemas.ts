@@ -3,6 +3,8 @@ import type { ValidationSchemaInput } from '@shared/infrastructure/http/middlewa
 
 const emailSchema = z.string().trim().email();
 const requiredStringSchema = z.string().trim().min(1);
+const firstNameSchema = z.string().trim().min(1).max(64);
+const nameSchema = z.string().trim().max(64);
 
 const signInSchema = z.object({
     email: emailSchema,
@@ -11,8 +13,8 @@ const signInSchema = z.object({
 
 const signUpSchema = z.object({
     email: emailSchema,
-    firstName: requiredStringSchema.max(64),
-    lastName: requiredStringSchema.max(64),
+    firstName: firstNameSchema,
+    lastName: nameSchema.optional(),
     password: z.string().min(8)
 });
 
@@ -27,8 +29,8 @@ const updatePasswordSchema = z.object({
 
 const updateAccountSchema = z.object({
     email: emailSchema.optional(),
-    firstName: requiredStringSchema.max(64).optional(),
-    lastName: requiredStringSchema.max(64).optional(),
+    firstName: firstNameSchema.optional(),
+    lastName: nameSchema.optional(),
     fullName: requiredStringSchema.max(128).optional()
 });
 

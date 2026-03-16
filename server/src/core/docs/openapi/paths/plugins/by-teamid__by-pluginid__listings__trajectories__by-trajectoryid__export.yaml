@@ -1,0 +1,51 @@
+get:
+  tags:
+  - Plugin Listings
+  summary: Export plugin trajectory listing documents
+  description: Exports listing documents for a specific plugin and trajectory in the specified format.
+  operationId: exportPluginTrajectoryListingDocuments
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/PluginId
+  - $ref: ../../components/parameters/common.yaml#/TrajectoryId
+  - name: analysisId
+    in: query
+    required: false
+    description: Filter by analysis identifier
+    schema:
+      $ref: ../../components/schemas/common.yaml#/ObjectId
+  - name: exposureId
+    in: query
+    required: false
+    description: Filter by domain exposure identifier
+    schema:
+      type: string
+      minLength: 1
+  - name: exposureName
+    in: query
+    required: false
+    description: Filter by exposure name
+    schema:
+      type: string
+  - name: format
+    in: query
+    required: false
+    description: Export format
+    schema:
+      $ref: ../../components/schemas/plugins.yaml#/ExportType
+  responses:
+    '200':
+      description: Exported listing data file
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

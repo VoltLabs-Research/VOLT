@@ -14,7 +14,6 @@ import type {
     ScriptingSessionStartResult
 } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
-import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
 
 interface DaemonNotebookJupyterResponse {
     internalPath: string;
@@ -41,24 +40,8 @@ interface DaemonNotebookSessionRequest {
     notebook: DaemonNotebookSessionSnapshot;
 };
 
-const getNotebookTeamClusterId = (teamCluster: unknown): string | null => {
-    if (!teamCluster) {
-        return null;
-    }
-
-    if (typeof teamCluster === 'string') {
-        return teamCluster;
-    }
-
-    if (typeof teamCluster === 'object' && teamCluster !== null && '_id' in teamCluster && typeof teamCluster._id === 'string') {
-        return teamCluster._id;
-    }
-
-    return null;
-};
-
-const getNotebookTrajectoryCount = (notebook: { props: ScriptingNotebookProps }): number => {
-    return notebook.props.trajectory ? 1 : 0;
+const getNotebookTeamClusterId = (teamCluster: string | null | undefined): string | null => {
+    return teamCluster ?? null;
 };
 
 const buildServerBaseUrl = (): string => {
@@ -125,6 +108,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         const daemonPath = this.resolveDaemonJupyterPath(response.jupyter);
         const jupyterUrl = this.buildProxyJupyterUrl(input.teamId, runtimeNotebookId, daemonPath, input.userId);
         return {
+            notebookId: input.notebookId,
             jupyter: {
                 ...response.jupyter,
                 url: jupyterUrl
@@ -136,9 +120,8 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         const notebooks = await this.scriptingNotebookRepository.findAllWithTrajectory(trajectoryId);
 
         for (const notebook of notebooks) {
-            const isOrphaned = getNotebookTrajectoryCount(notebook) <= 1;
-            const notebookTeamClusterId = getNotebookTeamClusterId((notebook.props as unknown as Record<string, unknown>).teamCluster);
-            if (!isOrphaned || !notebook.props.runtimeNotebookId || !notebookTeamClusterId) {
+            const notebookTeamClusterId = getNotebookTeamClusterId(notebook.props.teamCluster);
+            if (!notebook.props.runtimeNotebookId || !notebookTeamClusterId) {
                 continue;
             }
 
@@ -153,7 +136,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
             } catch (error: unknown) {
                 logger.warn(
                     { err: error, notebookId: notebook.id, runtimeNotebookId: notebook.props.runtimeNotebookId, trajectoryId },
-                    '[Scripting] Failed to delete orphaned Jupyter session on daemon'
+                    '[Scripting] Failed to delete Jupyter session on daemon'
                 );
             }
         }

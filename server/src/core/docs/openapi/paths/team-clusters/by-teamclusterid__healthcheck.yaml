@@ -1,0 +1,36 @@
+post:
+  operationId: processTeamClusterHealthcheck
+  tags:
+  - Cluster Lifecycle
+  summary: Process cluster healthcheck
+  description: Processes the first healthcheck sent by a cluster daemon.
+  security: []
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamClusterId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/team-clusters.yaml#/TeamClusterHealthcheckRequest
+  responses:
+    '200':
+      description: Healthcheck processed
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    teamCluster:
+                      $ref: ../../components/schemas/common.yaml#/TeamCluster
+                    daemonPassword:
+                      type: string
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

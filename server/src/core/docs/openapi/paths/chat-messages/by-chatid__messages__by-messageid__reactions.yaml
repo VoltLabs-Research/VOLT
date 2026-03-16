@@ -1,0 +1,47 @@
+patch:
+  tags:
+  - Chat Messages
+  summary: Toggle a message reaction
+  description: Add or remove an emoji reaction on a chat message.
+  operationId: toggleMessageReaction
+  security:
+  - BearerAuth: []
+  parameters:
+  - name: chatId
+    in: path
+    required: true
+    description: The ID of the chat
+    schema:
+      type: string
+      minLength: 1
+  - name: messageId
+    in: path
+    required: true
+    description: The ID of the message
+    schema:
+      type: string
+      minLength: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/chat-messages.yaml#/ToggleReactionRequest
+  responses:
+    '200':
+      description: Reaction toggled successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/chat-messages.yaml#/ChatMessage
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

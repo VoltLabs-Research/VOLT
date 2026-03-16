@@ -1,14 +1,20 @@
 import { Router } from 'express';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import helmet from 'helmet';
 
 const router = Router();
 
-const OPENAPI_SPEC_PATH = join(__dirname, '../docs/openapi.yaml');
+const OPENAPI_SPEC_CANDIDATES = [
+    join(__dirname, '../docs/openapi.yaml'),
+    join(__dirname, '../../../core/docs/openapi.yaml'),
+    join(process.cwd(), 'dist/core/docs/openapi.yaml'),
+    join(process.cwd(), 'server/dist/core/docs/openapi.yaml'),
+    join(process.cwd(), 'src/core/docs/openapi.yaml'),
+    join(process.cwd(), 'server/src/core/docs/openapi.yaml')
+];
 
 const REDOC_CDN = 'https://cdn.redoc.ly';
-
 const docsHelmet = helmet({
     contentSecurityPolicy: {
         directives: {
@@ -18,9 +24,11 @@ const docsHelmet = helmet({
             imgSrc: ["'self'", 'data:', 'blob:'],
             workerSrc: ["'self'", 'blob:'],
             fontSrc: ["'self'", 'data:', REDOC_CDN],
-            connectSrc: ["'self'"]
+            connectSrc: ["'self'"],
+            upgradeInsecureRequests: null
         }
-    }
+    },
+    crossOriginResourcePolicy: false
 });
 
 const REDOC_HTML = `<!DOCTYPE html>
@@ -48,17 +56,28 @@ const REDOC_HTML = `<!DOCTYPE html>
 
 let specCache: string | null = null;
 
+const resolveSpecPath = (): string => {
+    const existingPath = OPENAPI_SPEC_CANDIDATES.find((candidate) => existsSync(candidate));
+
+    if (!existingPath) {
+        throw new Error(`OpenAPI spec not found. Checked: ${OPENAPI_SPEC_CANDIDATES.join(', ')}`);
+    }
+
+    return existingPath;
+};
+
 const loadSpec = (): string => {
     if (process.env.NODE_ENV === 'production' && specCache) {
         return specCache;
     }
 
-    specCache = readFileSync(OPENAPI_SPEC_PATH, 'utf-8');
+    specCache = readFileSync(resolveSpecPath(), 'utf-8');
     return specCache;
 };
 
 router.get('/openapi.yaml', (_req, res) => {
     res.setHeader('Content-Type', 'text/yaml; charset=utf-8');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.send(loadSpec());
 });
 

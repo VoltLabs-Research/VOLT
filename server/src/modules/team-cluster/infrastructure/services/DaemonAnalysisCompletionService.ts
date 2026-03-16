@@ -13,7 +13,7 @@ import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
 
 const ANALYSIS_QUEUE_TYPE = 'analysis_processing';
-const DEFAULT_RASTER_QUEUE_TYPE = 'trajectory_rasterization';
+const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
 const SESSION_TTL_SECONDS = 86400;
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const STATUS_TTL_SECONDS = 86400;
@@ -48,8 +48,6 @@ interface DaemonRasterJobStatusInput {
     timestep?: number;
     status: JobStatus;
     error?: string;
-    name?: string;
-    queueType?: string;
 };
 
 interface ProjectedJobStatusInput {
@@ -164,10 +162,7 @@ export default class DaemonAnalysisCompletionService {
     }
 
     async handleRasterJobStatus(input: DaemonRasterJobStatusInput): Promise<void> {
-        this.assertRasterJobStatus(input.status);
-
         const jobId = this.requireRasterJobId(input.jobId);
-        const queueType = input.queueType || DEFAULT_RASTER_QUEUE_TYPE;
         const trajectoryContext: JobTrajectoryContext = {
             trajectoryId: input.trajectoryId,
             trajectoryName: input.trajectoryName,
@@ -178,9 +173,8 @@ export default class DaemonAnalysisCompletionService {
             jobId,
             teamId: input.teamId,
             status: input.status,
-            queueType,
+            queueType: RASTER_QUEUE_TYPE,
             cleanupScope: RASTER_PROJECTED_JOB_CLEANUP_SCOPE,
-            name: input.name,
             trajectoryContext,
             error: input.error
         });
@@ -189,9 +183,8 @@ export default class DaemonAnalysisCompletionService {
             jobId,
             teamId: input.teamId,
             status: input.status,
-            queueType,
+            queueType: RASTER_QUEUE_TYPE,
             cleanupScope: RASTER_PROJECTED_JOB_CLEANUP_SCOPE,
-            name: input.name,
             trajectoryContext,
             error: input.error
         });
@@ -313,12 +306,6 @@ export default class DaemonAnalysisCompletionService {
         });
 
         await this.eventBus.publish(event);
-    }
-
-    private assertRasterJobStatus(status: JobStatus): void {
-        if (status === JobStatus.Queued) {
-            throw new Error('Raster daemon status updates do not support queued status');
-        }
     }
 
     private requireRasterJobId(jobId: string): string {

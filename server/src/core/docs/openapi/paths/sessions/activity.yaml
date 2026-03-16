@@ -1,0 +1,15 @@
+get:
+  operationId: getLoginActivity
+  tags:
+  - Sessions
+  summary: Get login activity
+  description: Login activity history for the authenticated user.
+  responses:
+    '200':
+      description: Login activity
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized

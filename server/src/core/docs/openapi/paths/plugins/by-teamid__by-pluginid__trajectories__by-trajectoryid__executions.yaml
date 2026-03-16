@@ -1,0 +1,36 @@
+post:
+  tags:
+  - Plugins
+  summary: Execute a plugin
+  description: Triggers execution of a plugin against a specific trajectory.
+  operationId: executePlugin
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/PluginId
+  - $ref: ../../components/parameters/common.yaml#/TrajectoryId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/plugins.yaml#/ExecutePluginRequest
+  responses:
+    '201':
+      description: Plugin execution started
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/plugins.yaml#/PluginExecution
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

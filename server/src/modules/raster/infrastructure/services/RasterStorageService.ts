@@ -109,24 +109,20 @@ export class RasterStorageService implements IRasterStorage {
         teamClusterId?: string
     ): AsyncIterable<string> {
         if (teamClusterId) {
-            try {
-                const result = await this.teamClusterDaemonClient.command<ObjectListResponse>(
-                    teamClusterId,
-                    'object.list',
-                    {
-                        bucket,
-                        prefix
-                    }
-                );
-
-                for (const key of result.keys) {
-                    yield key;
+            const result = await this.teamClusterDaemonClient.command<ObjectListResponse>(
+                teamClusterId,
+                'object.list',
+                {
+                    bucket,
+                    prefix
                 }
+            );
 
-                return;
-            } catch (error) {
-                logger.warn(error, `Failed to list raster objects from daemon for prefix ${prefix}, falling back to local storage`);
+            for (const key of result.keys) {
+                yield key;
             }
+
+            return;
         }
 
         for await (const key of this.storageService.listByPrefix(bucket, prefix)) {
@@ -184,11 +180,14 @@ export class RasterStorageService implements IRasterStorage {
             };
         } catch (error) {
             if (error instanceof TeamClusterDaemonStreamError && error.status === 404) {
-                return this.getLocalRasterFramePNG(objectName, filename);
+                throw ApplicationError.notFound(
+                    ErrorCodes.RASTER_NOT_FOUND,
+                    'Raster frame not found'
+                );
             }
 
-            logger.warn(error, `Failed to stream raster frame from daemon for object ${objectName}, falling back to local storage`);
-            return this.getLocalRasterFramePNG(objectName, filename);
+            logger.warn(error, `Failed to stream raster frame from daemon for object ${objectName}`);
+            throw error;
         }
     }
 };

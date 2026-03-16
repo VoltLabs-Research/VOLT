@@ -1,6 +1,4 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
@@ -17,7 +15,6 @@ import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/trajectory/TrajectoryParserFactory';
 import CloudUploadProcessor from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadProcessor';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import IORedis from 'ioredis';
 import logger from '@shared/infrastructure/logger';
 
 import { injectable, inject } from 'tsyringe';
@@ -36,21 +33,6 @@ type ParsedFrame = {
     [key: string]: unknown;
 };
 
-type ProjectedTrajectoryJobMetadata = {
-    trajectoryId: string;
-    trajectoryName: string;
-    timestep: number;
-    error?: string;
-    source: 'projected';
-    jobClassification: 'synthetic';
-    daemonBacked: false;
-    retriable: false;
-};
-
-const TRAJECTORY_PREPROCESS_QUEUE_TYPE = 'trajectory_native_preprocess';
-const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
-const STATUS_TTL_SECONDS = 86400;
-
 @injectable()
 export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgroundProcessor {
     constructor(
@@ -68,9 +50,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
-
-        @inject(SHARED_TOKENS.RedisClient)
-        private readonly redis: IORedis,
 
         @inject(SHARED_TOKENS.FileExtractorService)
         private readonly extractor: IFileExtractorService
@@ -346,93 +325,16 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
         for (const frame of frames) {
             const { cachePath, timestep } = frame;
-            const jobId = `${trajectory._id}:${timestep}:native-preprocess`;
-            const metadata = this.createProjectedJobMetadata({
+            const cloudUploadTask = {
                 trajectoryId: trajectory._id,
+                teamClusterId: trajectory.props.teamCluster,
+                teamId,
                 trajectoryName: trajectory.props.name,
-                timestep
-            });
+                timestep,
+                frameFilePath: cachePath
+            };
 
-            await this.emitJobStatus(jobId, teamId, JobStatus.Queued, metadata);
-            await this.emitJobStatus(jobId, teamId, JobStatus.Running, metadata);
-
-            try {
-                await this.cloudUploadProcessor.process({
-                    trajectoryId: trajectory._id,
-                    teamClusterId: trajectory.props.teamCluster,
-                    timestep,
-                    frameFilePath: cachePath
-                });
-
-                await this.emitJobStatus(jobId, teamId, JobStatus.Completed, metadata);
-            } catch (error) {
-                const failureMessage = error instanceof Error ? error.message : 'Failed to preprocess trajectory frame';
-                await this.emitJobStatus(jobId, teamId, JobStatus.Failed, this.createProjectedJobMetadata({
-                    ...metadata,
-                    error: failureMessage
-                }));
-                throw error;
-            }
+            await this.cloudUploadProcessor.process(cloudUploadTask);
         }
-    }
-
-    private createProjectedJobMetadata(
-        metadata: Pick<ProjectedTrajectoryJobMetadata, 'trajectoryId' | 'trajectoryName' | 'timestep'>
-            & Partial<Pick<ProjectedTrajectoryJobMetadata, 'error'>>
-    ): ProjectedTrajectoryJobMetadata {
-        return {
-            trajectoryId: metadata.trajectoryId,
-            trajectoryName: metadata.trajectoryName,
-            timestep: metadata.timestep,
-            error: metadata.error,
-            source: 'projected',
-            jobClassification: 'synthetic',
-            daemonBacked: false,
-            retriable: false
-        };
-    }
-
-    private async emitJobStatus(
-        jobId: string,
-        teamId: string,
-        status: JobStatus,
-        metadata: ProjectedTrajectoryJobMetadata
-    ): Promise<void> {
-        const timestamp = new Date().toISOString();
-        const statusData = {
-            jobId,
-            teamId,
-            status,
-            queueType: TRAJECTORY_PREPROCESS_QUEUE_TYPE,
-            source: metadata.source,
-            jobClassification: metadata.jobClassification,
-            daemonBacked: metadata.daemonBacked,
-            retriable: metadata.retriable,
-            trajectoryId: metadata.trajectoryId,
-            trajectoryName: metadata.trajectoryName,
-            timestep: metadata.timestep,
-            error: metadata.error,
-            metadata,
-            timestamp,
-            updatedAt: timestamp
-        };
-
-        const pipeline = this.redis.pipeline();
-        pipeline.set(
-            `${JOB_STATUS_KEY_PREFIX}${jobId}`,
-            JSON.stringify(statusData),
-            'EX',
-            STATUS_TTL_SECONDS
-        );
-        pipeline.sadd(`team:${teamId}:jobs`, jobId);
-        await pipeline.exec();
-
-        await this.eventBus.publish(new JobStatusChangedEvent({
-            jobId,
-            teamId,
-            status,
-            queueType: TRAJECTORY_PREPROCESS_QUEUE_TYPE,
-            metadata
-        }));
     }
 };

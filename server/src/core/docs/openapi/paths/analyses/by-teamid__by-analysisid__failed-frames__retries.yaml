@@ -1,0 +1,22 @@
+post:
+  operationId: retryAnalysisFailedFrames
+  tags:
+  - Analysis
+  summary: Retry failed frames
+  description: Retries failed jobs for an analysis.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/AnalysisId
+  responses:
+    '200':
+      description: Retry requested
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

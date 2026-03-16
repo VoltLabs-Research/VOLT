@@ -1,5 +1,4 @@
 import service from '@/modules/scripting/api/service';
-import { http } from '@/app/core/http/utilities/create-client';
 import {
     scriptingNotebooksQueryKey,
     useCreateScriptingNotebookMutation,
@@ -33,7 +32,6 @@ import { useNavigate } from 'react-router-dom';
 import { sileo } from 'sileo';
 import type { DocumentListingExportParams, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { ScriptingNotebook } from '@/modules/scripting/api/entities/scripting-notebook';
-import type { ScriptingSession } from '@/modules/scripting/api/entities/scripting-session';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 
@@ -91,16 +89,6 @@ const getTeamClusterId = (notebook: ScriptingNotebook): string | undefined => {
     }
 
     return notebook.teamCluster._id;
-};
-
-const getNotebookSessionStatus = async (
-    teamId: string,
-    notebookId: string
-): Promise<ScriptingSession> => {
-    return http.request<ScriptingSession>({
-        method: 'GET',
-        url: `/scripting/${encodeURIComponent(teamId)}/sessions/${encodeURIComponent(notebookId)}/status`
-    });
 };
 
 const renderNotebookStartupTab = (notebookTab: Window, state: NotebookStartupWindowState): void => {
@@ -266,7 +254,7 @@ const useNotebooksListing = () => {
 
             const result = await waitForReadyScriptingSession({
                 initialSession: session,
-                readSession: () => getNotebookSessionStatus(teamId, notebook._id)
+                readSession: () => service.readNotebookSessionStatus({ notebookId: notebook._id })
             }, {
                 isCancelled: () => notebookTab.closed
             });

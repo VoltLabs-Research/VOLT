@@ -1,0 +1,91 @@
+get:
+  tags:
+  - Chat Messages
+  summary: Get chat messages
+  description: Retrieve paginated messages for a specific chat.
+  operationId: getChatMessages
+  security:
+  - BearerAuth: []
+  parameters:
+  - name: chatId
+    in: path
+    required: true
+    description: The ID of the chat
+    schema:
+      type: string
+      minLength: 1
+  - name: page
+    in: query
+    required: false
+    description: Page number for pagination
+    schema:
+      type: integer
+      minimum: 1
+  - name: limit
+    in: query
+    required: false
+    description: Number of messages per page (max 100)
+    schema:
+      type: integer
+      minimum: 1
+      maximum: 100
+  responses:
+    '200':
+      description: Chat messages retrieved successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../../components/schemas/chat-messages.yaml#/ChatMessage
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+post:
+  tags:
+  - Chat Messages
+  summary: Send a chat message
+  description: Send a new message to a specific chat.
+  operationId: sendChatMessage
+  security:
+  - BearerAuth: []
+  parameters:
+  - name: chatId
+    in: path
+    required: true
+    description: The ID of the chat
+    schema:
+      type: string
+      minLength: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/chat-messages.yaml#/ChatSendMessageRequest
+  responses:
+    '201':
+      description: Message sent successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/chat-messages.yaml#/ChatMessage
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

@@ -1,0 +1,27 @@
+delete:
+  operationId: clearJobHistory
+  tags:
+  - Jobs
+  summary: Clear job history
+  description: Clears all completed job records from the team's history.
+  parameters:
+  - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/SuccessResponse
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
