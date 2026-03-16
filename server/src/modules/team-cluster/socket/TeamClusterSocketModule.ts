@@ -249,6 +249,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
         if (
             payload.command === 'analysis.job-complete'
+            || payload.command === 'analysis.job-status'
             || payload.command === 'trajectory.raster-job-status'
             || payload.command === 'trajectory.glb-job-status'
         ) {

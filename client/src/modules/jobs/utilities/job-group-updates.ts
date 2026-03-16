@@ -40,21 +40,16 @@ const normalizeJobTimestep = (job: Job, timestep: number): Job => {
     };
 };
 
+const UNGROUPED_TIMESTEP = -1;
+
 const buildTrajectoryGroup = (updatedJob: Job): TrajectoryJobGroup | null => {
-    if (!updatedJob.trajectoryName) {
-        return null;
-    }
-
-    const timestep = resolveJobTimestep(updatedJob);
-    if (typeof timestep === 'undefined') {
-        return null;
-    }
-
+    const trajectoryName = updatedJob.trajectoryName || 'General';
+    const timestep = resolveJobTimestep(updatedJob) ?? UNGROUPED_TIMESTEP;
     const normalizedJob = normalizeJobTimestep(updatedJob, timestep);
 
     return {
         trajectoryId: updatedJob.trajectoryId,
-        trajectoryName: updatedJob.trajectoryName,
+        trajectoryName,
         frameGroups: [{
             timestep,
             jobs: [normalizedJob],
@@ -71,10 +66,7 @@ export const applyJobUpdate = (
     groups: TrajectoryJobGroup[],
     updatedJob: Job
 ): TrajectoryJobGroup[] => {
-    const timestep = resolveJobTimestep(updatedJob);
-    if (typeof timestep === 'undefined') {
-        return groups;
-    }
+    const timestep = resolveJobTimestep(updatedJob) ?? UNGROUPED_TIMESTEP;
 
     const normalizedJob = normalizeJobTimestep(updatedJob, timestep);
     const trajIndex = groups.findIndex((group) => group.trajectoryId === updatedJob.trajectoryId);

@@ -27,7 +27,8 @@ const PENDING_JUPYTER_SESSION: CreateScriptingJupyterSessionOutputDTO = {
     notebookId: '',
     jupyter: {
         url: '',
-        ready: false
+        ready: false,
+        containerStage: 'creating'
     }
 };
 

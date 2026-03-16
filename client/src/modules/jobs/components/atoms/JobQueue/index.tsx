@@ -37,6 +37,8 @@ const statusConfig: Partial<Record<JobStatus, StatusConfigEntry>> = {
 const queueTypeNames: Record<string, string> = {
     'analysis_processing': 'Analysis',
     'trajectory_rasterization': 'Rasterization',
+    'trajectory_glb_conversion': 'GLB Conversion',
+    'cloud_upload': 'Cloud Upload',
     'ssh_import': 'SSH Import'
 };
 

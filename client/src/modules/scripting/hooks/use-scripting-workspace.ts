@@ -15,7 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ScriptingNotebook } from '../api/entities/scripting-notebook';
-import type { ScriptingSession } from '../api/entities/scripting-session';
+import type { ScriptingSession, NotebookContainerStage } from '../api/entities/scripting-session';
 
 interface UseScriptingWorkspaceInput {
     trajectoryId: string;
@@ -36,6 +36,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
     const [jupyterUrl, setJupyterUrl] = useState<string | null>(null);
     const [jupyterError, setJupyterError] = useState<string | null>(null);
     const [isWaitingForJupyter, setIsWaitingForJupyter] = useState(false);
+    const [containerStage, setContainerStage] = useState<NotebookContainerStage | null>(null);
     const [startAttempt, setStartAttempt] = useState(0);
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
     const hasAutoStartedRef = useRef(false);
@@ -85,6 +86,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         setJupyterUrl(null);
         setJupyterError(null);
         setIsWaitingForJupyter(true);
+        setContainerStage(null);
 
         sileo.info({ title: 'Starting Jupyter session...' });
 
@@ -93,11 +95,17 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                 return !isMountedRef.current || activeStartRequestRef.current !== requestId;
             };
             const result = await startAndWaitForReadyScriptingSession({
-                createSession: () => createScriptingSession({
-                    trajectoryId,
-                    notebookId: activeNotebook?._id,
-                    teamClusterId: getNotebookTeamClusterId(activeNotebook)
-                }),
+                createSession: async () => {
+                    const session = await createScriptingSession({
+                        trajectoryId,
+                        notebookId: activeNotebook?._id,
+                        teamClusterId: getNotebookTeamClusterId(activeNotebook)
+                    });
+                    if (!isRequestCancelled()) {
+                        setContainerStage(session.jupyter.containerStage ?? 'creating');
+                    }
+                    return session;
+                },
                 readSession: (session) => {
                     const sessionNotebookId = getSessionNotebookId(session, activeNotebook);
                     if (!sessionNotebookId) {
@@ -107,7 +115,12 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                     return service.readNotebookSessionStatus({ notebookId: sessionNotebookId });
                 }
             }, {
-                isCancelled: isRequestCancelled
+                isCancelled: isRequestCancelled,
+                onPending: (session) => {
+                    if (!isRequestCancelled()) {
+                        setContainerStage(session.jupyter.containerStage ?? null);
+                    }
+                }
             });
 
             if (isRequestCancelled()) {
@@ -115,6 +128,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
             }
 
             if (!result.timedOut && result.session.jupyter.ready) {
+                setContainerStage('ready');
                 setJupyterUrl(normalizeScriptingJupyterUrl(result.session.jupyter.url));
                 sileo.success({ title: 'Jupyter session ready' });
                 return;
@@ -170,6 +184,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         accessDenied,
         accessDeniedMessage,
         jupyterUrl,
+        containerStage,
         retryStartJupyter
     };
 };
