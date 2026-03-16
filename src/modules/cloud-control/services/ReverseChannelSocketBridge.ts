@@ -71,6 +71,17 @@ interface ReverseChannelTunnelState {
 type NonCommandMessage = Exclude<TeamClusterDaemonMessage, { type: 'command' }>;
 
 /**
+ * How long a session can remain idle (no data sent/received) before it is
+ * automatically cleaned up.  Prevents orphaned sessions from leaking memory.
+ */
+const SESSION_IDLE_TTL_MS = 10 * 60 * 1000;
+
+/**
+ * How often to sweep for idle sessions.
+ */
+const SESSION_SWEEP_INTERVAL_MS = 60 * 1000;
+
+/**
  * Manages interactive session (terminal, WebSocket, tunnel) lifecycle for the
  * reverse channel. Command dispatch is delegated to the SDK's `ReverseChannelBridge`
  * via `ClusterDaemonClient`; this class registers its handlers and subscribes to
@@ -82,6 +93,10 @@ export class ReverseChannelSocketBridge {
     private readonly terminalStates = new Map<string, ReverseChannelTerminalState>();
     private readonly webSocketStates = new Map<string, ReverseChannelWebSocketState>();
     private readonly tunnelStates = new Map<string, ReverseChannelTunnelState>();
+
+    /** Tracks last activity timestamp per session for idle TTL. */
+    private readonly sessionActivity = new Map<string, number>();
+    private idleSweepTimer: ReturnType<typeof setInterval> | null = null;
 
     /** Buffered handlers registered before `bindToClient` is called. */
     private readonly pendingHandlers: ReverseChannelCommandHandler[] = [];
@@ -144,6 +159,36 @@ export class ReverseChannelSocketBridge {
             .onDisconnected(() => {
                 this.cleanup();
             });
+
+        this.startIdleSweep();
+    }
+
+    /**
+     * Records activity for a session so the idle TTL resets.
+     */
+    private touchSession(sessionId: string): void {
+        this.sessionActivity.set(sessionId, Date.now());
+    }
+
+    /**
+     * Starts a periodic sweep that cleans up sessions idle beyond SESSION_IDLE_TTL_MS.
+     */
+    private startIdleSweep(): void {
+        if (this.idleSweepTimer) return;
+
+        this.idleSweepTimer = setInterval(() => {
+            const now = Date.now();
+            for (const [sessionId, lastActive] of this.sessionActivity) {
+                if (now - lastActive > SESSION_IDLE_TTL_MS) {
+                    logger.warn({ sessionId }, 'Session idle TTL expired — cleaning up');
+                    this.cleanupTerminalSession(sessionId);
+                    this.cleanupWebSocketSession(sessionId);
+                    this.cleanupTunnelSession(sessionId);
+                    // sessionActivity is cleaned up in the individual cleanup methods
+                }
+            }
+        }, SESSION_SWEEP_INTERVAL_MS);
+        this.idleSweepTimer.unref();
     }
 
     cleanup(): void {
@@ -157,6 +202,13 @@ export class ReverseChannelSocketBridge {
 
         for (const sessionId of Array.from(this.tunnelStates.keys())) {
             this.cleanupTunnelSession(sessionId);
+        }
+
+        this.sessionActivity.clear();
+
+        if (this.idleSweepTimer) {
+            clearInterval(this.idleSweepTimer);
+            this.idleSweepTimer = null;
         }
     }
 
@@ -304,6 +356,7 @@ export class ReverseChannelSocketBridge {
             }
 
             const onData = (chunk: Buffer) => {
+                this.touchSession(payload.sessionId);
                 const dataPayload: TeamClusterDaemonSessionDataPayload = {
                     type: 'session-data',
                     sessionId: payload.sessionId,
@@ -336,6 +389,7 @@ export class ReverseChannelSocketBridge {
                 onEnd,
                 onError
             });
+            this.touchSession(payload.sessionId);
 
             return { status: 200, data: { status: 'success', data: { attached: true } } };
         } catch (error: unknown) {
@@ -375,6 +429,7 @@ export class ReverseChannelSocketBridge {
                     sessionId: payload.sessionId,
                     error: 'Reverse channel websocket failed'
                 });
+                this.cleanupWebSocketSession(payload.sessionId);
             };
             const onClose = (event: CloseEvent) => {
                 this.emitSessionEnd({
@@ -398,6 +453,7 @@ export class ReverseChannelSocketBridge {
                 onError,
                 onClose
             });
+            this.touchSession(payload.sessionId);
 
             return { status: 200, data: { status: 'success', data: { attached: true } } };
         } catch (error: unknown) {
@@ -411,6 +467,8 @@ export class ReverseChannelSocketBridge {
     }
 
     private handleSessionInput(payload: TeamClusterDaemonSessionInputPayload): void {
+        this.touchSession(payload.sessionId);
+
         const terminalState = this.terminalStates.get(payload.sessionId);
         if (terminalState) {
             terminalState.attachment.stream.write(Buffer.from(payload.chunkBase64, 'base64').toString('utf8'));
@@ -539,6 +597,7 @@ export class ReverseChannelSocketBridge {
             });
         };
         const onData = (chunk: Buffer) => {
+            this.touchSession(payload.sessionId);
             const dataPayload: TeamClusterDaemonTunnelDataPayload = {
                 type: 'tunnel-data',
                 sessionId: payload.sessionId,
@@ -578,6 +637,7 @@ export class ReverseChannelSocketBridge {
             onError,
             onClose
         });
+        this.touchSession(payload.sessionId);
 
         this.emitTunnelState({
             type: 'tunnel-state',
@@ -587,6 +647,8 @@ export class ReverseChannelSocketBridge {
     }
 
     private handleTunnelData(payload: TeamClusterDaemonTunnelDataPayload): void {
+        this.touchSession(payload.sessionId);
+
         const tunnelState = this.tunnelStates.get(payload.sessionId);
         if (!tunnelState) {
             return;
@@ -656,6 +718,7 @@ export class ReverseChannelSocketBridge {
         terminalState.attachment.stream.removeListener('error', terminalState.onError);
         terminalState.attachment.stream.destroy();
         this.terminalStates.delete(sessionId);
+        this.sessionActivity.delete(sessionId);
     }
 
     private cleanupWebSocketSession(sessionId: string): void {
@@ -676,6 +739,7 @@ export class ReverseChannelSocketBridge {
         }
 
         this.webSocketStates.delete(sessionId);
+        this.sessionActivity.delete(sessionId);
     }
 
     private cleanupTunnelSession(sessionId: string): void {
@@ -694,5 +758,6 @@ export class ReverseChannelSocketBridge {
         }
 
         this.tunnelStates.delete(sessionId);
+        this.sessionActivity.delete(sessionId);
     }
 };

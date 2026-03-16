@@ -83,13 +83,24 @@ const getRemainingTimeMs = (deadlineMs: number): number => {
 };
 
 export class JupyterRuntimeService {
+    private static readonly RUNTIME_STATE_TTL_MS = 30 * 60 * 1000;
+    private static readonly RUNTIME_STATE_SWEEP_INTERVAL_MS = 60 * 1000;
+
     private readonly startupOperations = new Map<string, JupyterStartupOperation>();
     private readonly runtimeStates = new Map<string, NotebookRuntimeState>();
+    private readonly runtimeStateActivity = new Map<string, number>();
+    private readonly runtimeStateSweepTimer: ReturnType<typeof setInterval>;
 
     constructor(
         private readonly config: DaemonConfig,
         private readonly dockerRuntimeService: DockerRuntimeService
     ) {
+        this.runtimeStateSweepTimer = setInterval(() => {
+            this.sweepIdleRuntimeStates();
+        }, JupyterRuntimeService.RUNTIME_STATE_SWEEP_INTERVAL_MS);
+        if (this.runtimeStateSweepTimer.unref) {
+            this.runtimeStateSweepTimer.unref();
+        }
     }
 
     async initialize(): Promise<void> {
@@ -132,12 +143,12 @@ export class JupyterRuntimeService {
         await this.cancelStartupOperation(notebookId);
         const runtimeContainer = await this.findRuntimeContainerCandidate(notebookId);
         if (!runtimeContainer) {
-            this.runtimeStates.delete(notebookId);
+            this.deleteRuntimeState(notebookId);
             return false;
         }
 
         await this.dockerRuntimeService.deleteContainer(runtimeContainer.containerId);
-        this.runtimeStates.delete(notebookId);
+        this.deleteRuntimeState(notebookId);
         return true;
     }
 
@@ -166,7 +177,7 @@ export class JupyterRuntimeService {
             if (await this.shouldRecreateContainer(existingContainer.containerId, publicBasePath)) {
                 await this.cancelStartupOperation(input.notebook._id);
                 await this.dockerRuntimeService.deleteContainer(existingContainer.containerId);
-                this.runtimeStates.delete(input.notebook._id);
+                this.deleteRuntimeState(input.notebook._id);
             } else {
                 const currentRuntimeState = this.runtimeStates.get(input.notebook._id);
                 const wasRunning = existingContainer.isRunning;
@@ -274,7 +285,7 @@ export class JupyterRuntimeService {
     private async findRuntimeContainer(notebookId: string): Promise<NotebookRuntimeState | null> {
         const runtimeContainer = await this.findRuntimeContainerCandidate(notebookId);
         if (!runtimeContainer?.isRunning || typeof runtimeContainer.hostPort !== 'number') {
-            this.runtimeStates.delete(notebookId);
+            this.deleteRuntimeState(notebookId);
             return null;
         }
 
@@ -283,7 +294,7 @@ export class JupyterRuntimeService {
             ? currentRuntimeState.publicBasePath
             : await this.resolvePublicBasePath(runtimeContainer.containerId);
         if (!publicBasePath) {
-            this.runtimeStates.delete(notebookId);
+            this.deleteRuntimeState(notebookId);
             return null;
         }
 
@@ -534,10 +545,31 @@ export class JupyterRuntimeService {
 
     private setRuntimeState(notebookId: string, runtimeState: NotebookRuntimeState): void {
         this.runtimeStates.set(notebookId, runtimeState);
+        this.runtimeStateActivity.set(notebookId, Date.now());
     }
 
     private async getRuntimeState(notebookId: string): Promise<NotebookRuntimeState | null> {
-        return this.runtimeStates.get(notebookId) ?? await this.findRuntimeContainer(notebookId);
+        const cached = this.runtimeStates.get(notebookId);
+        if (cached) {
+            this.runtimeStateActivity.set(notebookId, Date.now());
+            return cached;
+        }
+        return this.findRuntimeContainer(notebookId);
+    }
+
+    private sweepIdleRuntimeStates(): void {
+        const now = Date.now();
+        for (const [notebookId, lastActive] of this.runtimeStateActivity) {
+            if (now - lastActive > JupyterRuntimeService.RUNTIME_STATE_TTL_MS) {
+                this.runtimeStates.delete(notebookId);
+                this.runtimeStateActivity.delete(notebookId);
+            }
+        }
+    }
+
+    private deleteRuntimeState(notebookId: string): void {
+        this.runtimeStates.delete(notebookId);
+        this.runtimeStateActivity.delete(notebookId);
     }
 
     private async getReadyRuntimeState(notebookId: string): Promise<NotebookRuntimeState | null> {
