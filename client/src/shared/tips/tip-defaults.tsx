@@ -40,7 +40,7 @@ export const buildContextualTipOptions = (
         title: tip.title,
         description: tip.description,
         type: 'info',
-        position: tip.position ?? 'top-center',
+        position: 'bottom-right',
         duration: tip.dismissMode === 'manual'
             ? MANUAL_CONTEXTUAL_TIP_DURATION_MS
             : tip.duration ?? AUTO_CONTEXTUAL_TIP_DURATION_MS,
