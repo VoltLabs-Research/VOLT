@@ -1,4 +1,4 @@
-import type { Container } from '@modules/container/domain/entities/Container';
+import type { Container, ContainerAccessiblePort } from '@modules/container/domain/entities/Container';
 
 export interface GetContainerByIdInputDTO {
     teamId: string;
@@ -7,4 +7,17 @@ export interface GetContainerByIdInputDTO {
 
 export interface GetContainerByIdOutputDTO {
     container: Container;
+};
+
+export interface CreateContainerPortProxySessionInputDTO {
+    teamId: string;
+    containerId: string;
+    privatePort: number;
+    userId: string;
+};
+
+export interface CreateContainerPortProxySessionOutputDTO {
+    url: string;
+    expiresAt: string;
+    port: ContainerAccessiblePort;
 };

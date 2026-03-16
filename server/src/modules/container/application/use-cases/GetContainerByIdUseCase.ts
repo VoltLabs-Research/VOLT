@@ -1,5 +1,6 @@
 import { GetContainerByIdInputDTO, GetContainerByIdOutputDTO } from '@modules/container/application/dtos/GetContainerByIdDTO';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { ContainerAccessiblePortResolver } from '@modules/container/infrastructure/services/ContainerAccessiblePortResolver';
 import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -10,7 +11,8 @@ import type { ITeamClusterContainerRuntimeService } from '@modules/container/dom
 export class GetContainerByIdUseCase implements IUseCase<GetContainerByIdInputDTO, GetContainerByIdOutputDTO> {
     constructor(
         @inject(ContainerOwnershipService) private ownershipService: ContainerOwnershipService,
-        @inject(CONTAINER_TOKENS.ContainerRuntimeService) private containerRuntimeService: ITeamClusterContainerRuntimeService
+        @inject(CONTAINER_TOKENS.ContainerRuntimeService) private containerRuntimeService: ITeamClusterContainerRuntimeService,
+        @inject(ContainerAccessiblePortResolver) private accessiblePortResolver: ContainerAccessiblePortResolver
     ) {}
 
     async execute(input: GetContainerByIdInputDTO): Promise<Result<GetContainerByIdOutputDTO>> {
@@ -21,6 +23,13 @@ export class GetContainerByIdUseCase implements IUseCase<GetContainerByIdInputDT
                 container.status = runtimeContainer.State.Status;
             }
         }
+
+        container.accessiblePorts = this.accessiblePortResolver.resolve(
+            input.teamId,
+            container._id,
+            container.ports,
+            container.status
+        );
 
         return Result.ok({ container });
     }

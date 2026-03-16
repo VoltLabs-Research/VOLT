@@ -1,6 +1,15 @@
 import type { ContainerCapabilities } from './ContainerCapabilities';
 import type { ContainerEnvironmentVariable, ContainerPortMapping } from '@modules/container/domain/port/IContainerService';
 
+export interface ContainerAccessiblePort {
+    private: number;
+    public?: number;
+    protocol: 'tcp';
+    browserAccessible: boolean;
+    status: 'available' | 'unavailable';
+    label?: string;
+};
+
 export interface IContainerProps {
     name: string;
     image: string;
@@ -19,6 +28,7 @@ export interface IContainerProps {
     volume?: string;
     mountDockerSocket?: boolean;
     capabilities?: ContainerCapabilities;
+    accessiblePorts?: ContainerAccessiblePort[];
     createdAt?: Date;
     updatedAt?: Date;
 };
@@ -41,6 +51,7 @@ export class Container implements IContainerProps {
     public volume?: string;
     public mountDockerSocket?: boolean;
     public capabilities?: ContainerCapabilities;
+    public accessiblePorts?: ContainerAccessiblePort[];
     public createdAt?: Date;
     public updatedAt?: Date;
 

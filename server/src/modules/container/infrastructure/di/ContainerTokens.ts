@@ -7,6 +7,7 @@ interface ContainerTokens {
     readonly ContainerRuntimeService: symbol;
     readonly TerminalService: symbol;
     readonly ContainerSocketModule: symbol;
+    readonly ContainerAccessiblePortResolver: symbol;
 };
 
 export const CONTAINER_TOKENS: ContainerTokens = {
@@ -17,5 +18,6 @@ export const CONTAINER_TOKENS: ContainerTokens = {
     ContainerService: Symbol.for('ContainerService'),
     ContainerRuntimeService: Symbol.for('ContainerRuntimeService'),
     TerminalService: Symbol.for('TerminalService'),
-    ContainerSocketModule: Symbol.for('ContainerSocketModule')
+    ContainerSocketModule: Symbol.for('ContainerSocketModule'),
+    ContainerAccessiblePortResolver: Symbol.for('ContainerAccessiblePortResolver')
 };
