@@ -82,6 +82,23 @@ const FractalScenePipeline = ({
             <CameraRig orbitRef={orbitRef} camera={config.camera} />
             <Preload all />
             {config.dpr.mode === DprMode.Adaptive && <AdaptiveDpr pixelated={config.dpr.pixelated} />}
+            <OrbitControls
+                makeDefault
+                ref={(r) => {
+                    orbitRef.current = r;
+                    onControlsRef?.(r);
+                }}
+                {...orbitProps}
+                onStart={() => markInteracting(true)}
+                onEnd={() => markInteracting(false)}
+            />
+            <DynamicEffects settings={config.effects} isDefectScene={isDefectScene} darkTheme={darkTheme} />
+            <DynamicLights
+                settings={config.lights}
+                preset={isDefectScene ? LightingPreset.Defect : LightingPreset.Trajectory}
+                darkTheme={darkTheme}
+            />
+            <DynamicEnvironment settings={config.environment} darkTheme={darkTheme} />
             {showGizmo && (
                 <GizmoHelper alignment='top-left' renderPriority={1} margin={[80, 70]}>
                     <directionalLight position={[5, 5, 5]} intensity={1} />
@@ -94,22 +111,6 @@ const FractalScenePipeline = ({
                     />
                 </GizmoHelper>
             )}
-            <DynamicEffects settings={config.effects} isDefectScene={isDefectScene} darkTheme={darkTheme} />
-            <DynamicLights
-                settings={config.lights}
-                preset={isDefectScene ? LightingPreset.Defect : LightingPreset.Trajectory}
-                darkTheme={darkTheme}
-            />
-            <DynamicEnvironment settings={config.environment} darkTheme={darkTheme} />
-            <OrbitControls
-                ref={(r) => {
-                    orbitRef.current = r;
-                    onControlsRef?.(r);
-                }}
-                {...orbitProps}
-                onStart={() => markInteracting(true)}
-                onEnd={() => markInteracting(false)}
-            />
             {gridEnabled && (
                 <CanvasGrid settings={{ ...config.grid, enabled: gridEnabled }} darkTheme={darkTheme} />
             )}

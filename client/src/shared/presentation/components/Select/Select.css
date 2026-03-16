@@ -1,6 +1,5 @@
 .select-trigger {
     padding: 0.4375rem 0.75rem;
-    min-height: 2.5rem;
     border-radius: var(--radius-lg);
     background-color: transparent;
     transition: border-color .15s ease;
