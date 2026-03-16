@@ -14,7 +14,7 @@ export class TrajectoryRasterWorkerService {
         private readonly queueService: QueueService,
         private readonly redisConnectionService: RedisConnectionService,
         private readonly rasterizerService: RasterizerService,
-        private readonly daemonJobReporterService?: DaemonJobReporterService
+        private readonly daemonJobReporterService: DaemonJobReporterService
     ) {}
 
     start(): void {
@@ -79,10 +79,6 @@ export class TrajectoryRasterWorkerService {
         status: RasterJobStatus,
         error?: string
     ): Promise<void> {
-        if (!this.daemonJobReporterService) {
-            return;
-        }
-
         await this.daemonJobReporterService.reportRasterJobStatus({
             jobId: job.jobId,
             teamId: job.teamId,
@@ -90,17 +86,7 @@ export class TrajectoryRasterWorkerService {
             trajectoryName: job.trajectoryName,
             timestep: job.timestep,
             status,
-            error,
-            queueType: job.queueType
-        }).catch((reportError: unknown) => {
-            logger.error(
-                {
-                    jobId: job.jobId,
-                    status,
-                    err: reportError
-                },
-                'Failed to report trajectory raster job status'
-            );
+            error
         });
     }
 

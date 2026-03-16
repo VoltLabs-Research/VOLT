@@ -153,7 +153,9 @@ export class SSHImportWorkerService {
                 );
 
                 await this.glbExporterService.preprocessTrajectory({
+                    teamId: job.teamId,
                     trajectoryId: job.trajectoryId,
+                    trajectoryName: job.trajectoryName,
                     timestep: metadata.timestep,
                     objectKey
                 });

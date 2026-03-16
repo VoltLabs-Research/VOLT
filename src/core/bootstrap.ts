@@ -15,7 +15,11 @@ export const bootstrap = async (): Promise<void> => {
     const config = loadConfig();
     const platform = createPlatformModule(config);
     const metrics = createMetricsModule();
-    const trajectoryNative = createTrajectoryNativeModule(platform.minioService);
+    const trajectoryNative = createTrajectoryNativeModule(
+        platform.minioService,
+        platform.queueService,
+        platform.redisConnectionService
+    );
     const workflowRuntime = createWorkflowRuntimeModule();
     const jupyter = createJupyterModule(config, platform.dockerRuntimeService);
     const pluginListingRepository = createPluginListingRepository();

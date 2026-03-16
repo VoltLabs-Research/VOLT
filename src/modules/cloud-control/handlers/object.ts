@@ -118,9 +118,12 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                     nodeStream = await deps.minioService.getObjectStream(request.bucket, request.objectKey);
                 } catch (error) {
                     if (isMinioNotFoundError(error)) {
-                        throw Object.assign(new Error(`Object not found: ${request.bucket}/${request.objectKey}`), {
-                            statusCode: 404
-                        });
+                        return {
+                            status: 404,
+                            data: {
+                                message: `Object not found: ${request.bucket}/${request.objectKey}`
+                            }
+                        };
                     }
 
                     throw error;

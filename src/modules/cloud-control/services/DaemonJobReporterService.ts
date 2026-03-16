@@ -1,7 +1,5 @@
 import type { VoltCloudConnection } from './VoltCloudConnection';
 
-const DEFAULT_RASTER_QUEUE_TYPE = 'trajectory_rasterization';
-
 export type RasterJobStatus = 'running' | 'completed' | 'failed';
 
 export interface ReportJobCompletionInput {
@@ -22,8 +20,6 @@ export interface ReportRasterJobStatusInput {
     timestep?: number;
     status: RasterJobStatus;
     error?: string;
-    name?: string;
-    queueType?: string;
 };
 
 export interface DaemonJobReporterService {
@@ -44,8 +40,7 @@ export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudCon
         await voltCloudConnection.sendServerCommand('trajectory.raster-job-status', {
             teamClusterId: voltCloudConnection.getTeamClusterId(),
             daemonPassword: voltCloudConnection.getDaemonPassword(),
-            ...input,
-            queueType: input.queueType ?? DEFAULT_RASTER_QUEUE_TYPE
+            ...input
         });
     }
 });

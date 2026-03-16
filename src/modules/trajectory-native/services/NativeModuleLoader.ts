@@ -78,6 +78,8 @@ export interface NativeTrajectoryRequest {
     trajectoryId: string;
     timestep: number;
     objectKey?: string;
+    teamId?: string;
+    trajectoryName?: string;
 };
 
 export interface NativePropertyStatsRequest extends NativeTrajectoryRequest {

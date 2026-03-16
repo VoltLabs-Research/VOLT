@@ -14,11 +14,12 @@ import type {
 import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { RasterizeTrajectoryRequest } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
-import { 
-    readNumber, 
-    readOptionalNumber, 
-    readOptionalPayloadRecord, 
-    readOptionalString, 
+import {
+    readNumber,
+    readOptionalNumber,
+    readOptionalPayloadRecord,
+    readOptionalString,
+    readOptionalUnknownRecord,
     readString,
     readPluginPropertyNamesRequest,
     readPluginModifierAnalysisRequest,
@@ -49,9 +50,19 @@ const readNativeTrajectoryRequest = (payload: unknown): NativeTrajectoryRequest 
         trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
         timestep: readNumber(record.timestep, 'timestep')
     };
+    const teamId = readOptionalString(record.teamId);
+    const trajectoryName = readOptionalString(record.trajectoryName);
 
     if (typeof record.objectKey !== 'undefined') {
         request.objectKey = readString(record.objectKey, 'objectKey');
+    }
+
+    if (teamId) {
+        request.teamId = teamId;
+    }
+
+    if (trajectoryName) {
+        request.trajectoryName = trajectoryName;
     }
 
     return request;
@@ -155,11 +166,13 @@ const readNativeParticleFilterModelRequest = (payload: unknown): NativeParticleF
 
 const readRasterizeTrajectoryRequest = (payload: unknown): RasterizeTrajectoryRequest => {
     const record = readOptionalPayloadRecord(payload);
+    const config = readOptionalUnknownRecord(record.config, 'config');
 
     return {
         trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
         teamId: readString(record.teamId, 'teamId'),
-        trajectoryName: readOptionalString(record.trajectoryName)
+        trajectoryName: readOptionalString(record.trajectoryName),
+        ...(config ? { config } : {})
     };
 };
 
@@ -183,7 +196,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
             command: 'trajectory.native.preprocess',
             execute: async (payload) => {
                 await deps.glbExporterService.preprocessTrajectory(readNativeTrajectoryRequest(payload));
-                return { data: { processed: true } };
+                return { data: { glbExported: true } };
             }
         },
         {

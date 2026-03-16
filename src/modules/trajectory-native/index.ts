@@ -10,7 +10,7 @@ import {
     type RasterizerService,
     type TrajectoryParserService
 } from './services';
-import type { MinioService } from '@/modules/platform/services';
+import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
 
 export interface TrajectoryNativeModule {
     nativeModuleLoader: NativeModuleLoader;
@@ -21,7 +21,11 @@ export interface TrajectoryNativeModule {
     filterEvaluatorService: FilterEvaluatorService;
 }
 
-export const createTrajectoryNativeModule = (minioService: MinioService): TrajectoryNativeModule => {
+export const createTrajectoryNativeModule = (
+    minioService: MinioService,
+    queueService: QueueService,
+    redisConnectionService: RedisConnectionService
+): TrajectoryNativeModule => {
     const nativeModuleLoader = new NativeModuleLoader();
     const trajectoryParserService = createTrajectoryParserService(minioService, nativeModuleLoader);
     const trajectoryPluginParserService = new TrajectoryPluginParserService(minioService);
@@ -30,7 +34,8 @@ export const createTrajectoryNativeModule = (minioService: MinioService): Trajec
         minioService,
         nativeModuleLoader,
         trajectoryParserService,
-        rasterizerService
+        queueService,
+        redisConnectionService
     );
     const filterEvaluatorService = createFilterEvaluatorService(minioService, nativeModuleLoader, trajectoryParserService);
 

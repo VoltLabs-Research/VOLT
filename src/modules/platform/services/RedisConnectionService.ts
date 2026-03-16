@@ -101,6 +101,20 @@ export class RedisConnectionService {
         await this.client.quit();
     }
 
+    async setKeyIfAbsent(key: string, value: string): Promise<boolean> {
+        await this.connect();
+
+        const result = await this.client.set(key, value, 'NX');
+
+        return result === 'OK';
+    }
+
+    async deleteKey(key: string): Promise<number> {
+        await this.connect();
+
+        return this.client.del(key);
+    }
+
     async projectJobStatus(payload: TeamJobRecord): Promise<void> {
         const timestamp = typeof payload.timestamp === 'string'
             ? payload.timestamp
