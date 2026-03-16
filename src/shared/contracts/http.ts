@@ -85,7 +85,7 @@ export interface PluginSyncRequest {
     objectKey: string;
 };
 
-export interface AnalysisQueueJobPayload {
+export interface AnalysisQueueJobPayload extends Record<string, unknown> {
     jobId: string;
     teamId: string;
     timestep?: number;

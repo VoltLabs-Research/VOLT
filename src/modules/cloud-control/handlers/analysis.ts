@@ -168,10 +168,12 @@ const readAnalysisTrajectoryFrames = (value: unknown): AnalysisTrajectoryFrame[]
 
 const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
     const record = readPayloadRecord(payload);
+    const pluginDisplayName = readString(record.pluginDisplayName, 'pluginDisplayName');
     const request: AnalysisStartRequest = {
         analysis: readAnalysisDocument(record.analysis),
         analysisId: readString(record.analysisId, 'analysisId'),
         pluginId: readString(record.pluginId, 'pluginId'),
+        pluginDisplayName,
         teamId: readString(record.teamId, 'teamId'),
         teamClusterId: readString(record.teamClusterId, 'teamClusterId'),
         trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
@@ -184,7 +186,6 @@ const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
         : readOptionalBoolean(record.selectedFrameOnly, false);
     const selectedTimesteps = readOptionalNumberArray(record.selectedTimesteps, 'selectedTimesteps');
     const timestep = readOptionalNumber(record.timestep);
-    const pluginDisplayName = readString(record.pluginDisplayName, 'pluginDisplayName');
 
     if (typeof selectedFrameOnly !== 'undefined') {
         request.selectedFrameOnly = selectedFrameOnly;
@@ -197,8 +198,6 @@ const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
     if (typeof timestep !== 'undefined') {
         request.timestep = timestep;
     }
-
-    request.pluginDisplayName = pluginDisplayName;
 
     return request;
 };
