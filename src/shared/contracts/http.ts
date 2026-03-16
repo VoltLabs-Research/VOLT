@@ -23,6 +23,7 @@ export enum EntrypointType {
 
 export enum OrchestrationAction {
     AnalysisStart = 'analysis-start',
+    ContainerCreate = 'container-create',
     TrajectoryPreprocess = 'trajectory-preprocess',
     NativeTrajectoryPreprocess = 'native-trajectory-preprocess',
     QueueDispatch = 'queue-dispatch',
@@ -46,6 +47,7 @@ export interface ContainerPortMapping {
 export interface CreateContainerRequest {
     image: string;
     name: string;
+    operationId?: string;
     env?: ContainerEnvironmentVariable[];
     ports?: ContainerPortMapping[];
     memoryInMegabytes: number;

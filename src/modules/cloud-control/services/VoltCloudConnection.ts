@@ -1,4 +1,5 @@
 import { logger } from '@/core/logger';
+import { OrchestrationAction } from '@/shared/contracts';
 import { MetricsService } from '@/modules/metrics/services';
 import { RuntimeEventBroker } from '@/shared/services';
 import {
@@ -93,6 +94,20 @@ export class VoltCloudConnection {
 
                 logger.error({ err }, 'VoltCloudConnection error');
             });
+
+        this.eventBroker.onProgress((event) => {
+            if (event.action !== OrchestrationAction.ContainerCreate) {
+                return;
+            }
+
+            this.emitMessage({
+                type: 'runtime-progress',
+                action: event.action,
+                stage: event.stage,
+                timestamp: event.timestamp,
+                payload: event.payload
+            } as unknown as NonCommandMessage);
+        });
     }
 
     async start(): Promise<void> {

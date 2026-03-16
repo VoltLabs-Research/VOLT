@@ -1,5 +1,6 @@
 import { logger } from '@/core/logger';
 import { ContainerAction } from '@/shared/contracts';
+import { OrchestrationAction } from '@/shared/contracts';
 import Docker from 'dockerode';
 import net from 'node:net';
 import path from 'node:path';
@@ -7,6 +8,8 @@ import { Writable } from 'node:stream';
 import type { ContainerEnvironmentVariable, ContainerPortMapping, CreateContainerRequest } from '@/shared/contracts';
 import type { ContainerInfo } from 'dockerode';
 import type { Duplex, Readable } from 'node:stream';
+import { ProgressStageType } from '@voltstack/daemon-cluster-client';
+import type { RuntimeEventBroker } from '@/shared/services';
 
 interface DockerContainerFilter {
     label?: string[];
@@ -70,7 +73,7 @@ const toPortBindings = (ports: ContainerPortMapping[] = []): Record<string, Host
 export class DockerRuntimeService {
     private readonly docker: Docker;
 
-    constructor() {
+    constructor(private readonly eventBroker?: RuntimeEventBroker) {
         this.docker = new Docker({
             socketPath: '/var/run/docker.sock',
             timeout: 60_000
@@ -89,7 +92,26 @@ export class DockerRuntimeService {
     }
 
     async createContainer(input: CreateContainerRequest): Promise<Docker.ContainerInspectInfo> {
+        this.emitContainerCreateProgress(input, ProgressStageType.Accepted, {
+            image: input.image,
+            containerName: input.name,
+            step: 'accepted'
+        });
+
+        this.emitContainerCreateProgress(input, ProgressStageType.Running, {
+            image: input.image,
+            containerName: input.name,
+            step: 'pulling-image'
+        });
+
         await this.ensureImage(input.image);
+
+        this.emitContainerCreateProgress(input, ProgressStageType.Running, {
+            image: input.image,
+            containerName: input.name,
+            step: 'creating-container'
+        });
+
         const container = await this.docker.createContainer({
             Image: input.image,
             name: input.name,
@@ -109,8 +131,24 @@ export class DockerRuntimeService {
             }
         });
 
+        this.emitContainerCreateProgress(input, ProgressStageType.Running, {
+            image: input.image,
+            containerName: input.name,
+            containerId: container.id,
+            step: 'starting-container'
+        });
+
         await container.start();
-        return container.inspect();
+        const inspectedContainer = await container.inspect();
+
+        this.emitContainerCreateProgress(input, ProgressStageType.Completed, {
+            image: input.image,
+            containerName: input.name,
+            containerId: inspectedContainer.Id,
+            step: 'container-ready'
+        });
+
+        return inspectedContainer;
     }
 
     async getContainer(containerId: string): Promise<Docker.ContainerInspectInfo> {
@@ -312,6 +350,16 @@ done`, '--', normalizedDirectoryPath]);
             provisioningAction: 'pull'
         }, 'Provisioning Docker image from registry');
 
+        this.eventBroker?.emitProgress({
+            action: OrchestrationAction.ContainerCreate,
+            stage: ProgressStageType.Running,
+            timestamp: new Date().toISOString(),
+            payload: {
+                image: imageName,
+                step: 'pulling-image'
+            }
+        });
+
         try {
             await this.pullImage(imageName);
             logger.info({
@@ -383,6 +431,7 @@ done`, '--', normalizedDirectoryPath]);
                     return;
                 }
 
+                let lastStatus = '';
                 this.docker.modem.followProgress(stream, (progressError) => {
                     if (progressError) {
                         reject(progressError);
@@ -390,8 +439,36 @@ done`, '--', normalizedDirectoryPath]);
                     }
 
                     resolve();
+                }, (event) => {
+                    const status = typeof event?.status === 'string' ? event.status : '';
+                    if (!status || status === lastStatus) {
+                        return;
+                    }
+
+                    lastStatus = status;
+                    logger.info({ imageName, status, id: event?.id, progress: event?.progress }, 'Docker image pull progress');
                 });
             });
+        });
+    }
+
+    private emitContainerCreateProgress(
+        input: CreateContainerRequest,
+        stage: ProgressStageType,
+        payload: Record<string, unknown>
+    ): void {
+        if (!this.eventBroker || !input.operationId) {
+            return;
+        }
+
+        this.eventBroker.emitProgress({
+            action: OrchestrationAction.ContainerCreate,
+            stage,
+            timestamp: new Date().toISOString(),
+            payload: {
+                operationId: input.operationId,
+                ...payload
+            }
         });
     }
 

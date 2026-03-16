@@ -103,6 +103,7 @@ const readCreateContainerRequest = (payload: unknown): CreateContainerRequest =>
     const binds = readOptionalStringArray(record.binds, 'binds');
     const labels = readOptionalStringRecord(record.labels, 'labels');
     const cmd = readOptionalStringArray(record.cmd, 'cmd');
+    const operationId = readOptionalString(record.operationId).trim();
     const networkMode = readOptionalString(record.networkMode).trim();
 
     if (env) {
@@ -123,6 +124,10 @@ const readCreateContainerRequest = (payload: unknown): CreateContainerRequest =>
 
     if (cmd) {
         request.cmd = cmd;
+    }
+
+    if (operationId) {
+        request.operationId = operationId;
     }
 
     if (networkMode) {
