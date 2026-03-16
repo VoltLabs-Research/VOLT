@@ -95,6 +95,11 @@ export class MaterialPipeline {
         this.pointCloudMaterials.add(mat);
 
         points.material = mat;
+        // Disable raycasting on point clouds — THREE.Points.raycast() is brute-force O(n)
+        // and causes massive frame drops when R3F synthetic events trigger recursive raycasting
+        // against millions of vertices. The invisible BoxGeometry proxy mesh in SimulationCellBox
+        // handles all hit-testing instead.
+        points.raycast = () => {};
         return points;
     }
 
