@@ -53,6 +53,10 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
             errors.push('Workflow must have edges array');
         }
 
+        if (Array.isArray(workflow.edges)) {
+            this.validateEntrypointTopology(workflow, errors);
+        }
+
         if (pluginNodes.length > 0 && Array.isArray(workflow.edges)) {
             this.validatePluginNodeTopology(workflow, errors);
         }
@@ -196,6 +200,29 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
             if (!this.hasDescendantOfType(node.id, workflow, new Set([WorkflowNodeType.Entrypoint]))) {
                 errors.push(`Plugin node ${node.id} must eventually connect to the top-level entrypoint`);
             }
+        }
+    }
+
+    private validateEntrypointTopology(workflow: WorkflowProps, errors: string[]): void {
+        const entrypointNodes = workflow.nodes.filter((node) => node.type === WorkflowNodeType.Entrypoint);
+        if (entrypointNodes.length !== 1) {
+            errors.push('Workflow must have exactly one top-level entrypoint');
+            return;
+        }
+
+        const entrypointNode = entrypointNodes[0];
+        const parentNodes = workflow.edges
+            .filter((edge) => edge.target === entrypointNode.id)
+            .map((edge) => workflow.nodes.find((node) => node.id === edge.source))
+            .filter((node): node is WorkflowNode => Boolean(node));
+        const invalidParents = parentNodes.filter((node) => !this.isAllowedRuntimeParent(node.type));
+
+        if (parentNodes.length !== 1 || invalidParents.length > 0) {
+            errors.push(`Top-level entrypoint ${entrypointNode.id} must be connected to exactly one runtime chain`);
+        }
+
+        if (!this.hasAncestorOfType(entrypointNode.id, workflow, new Set([WorkflowNodeType.ForEach]))) {
+            errors.push(`Top-level entrypoint ${entrypointNode.id} must run after the top-level planning segment`);
         }
     }
 
