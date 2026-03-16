@@ -31,7 +31,7 @@ const ErrorPage = () => {
                         {description}
                     </p>
                     <p className='font-size-2 color-muted error-page-description'>
-                        You can reload this page or head back to the dashboard.
+                        Head back to the dashboard to continue.
                     </p>
                 </Container>
 
@@ -71,24 +71,14 @@ const ErrorPage = () => {
                     </section>
                 )}
 
-                <Container className='d-flex gap-075 items-center mt-05'>
-                    <Button
-                        variant='ghost'
-                        intent='neutral'
-                        size='sm'
-                        onClick={() => window.location.reload()}
-                    >
-                        Reload page
-                    </Button>
-                    <Button
-                        variant='solid'
-                        intent='brand'
-                        size='sm'
-                        to='/dashboard'
-                    >
-                        Back to dashboard
-                    </Button>
-                </Container>
+                <Button
+                    variant='solid'
+                    intent='brand'
+                    size='sm'
+                    to='/dashboard'
+                >
+                    Back to dashboard
+                </Button>
             </Container>
         </main>
     );
