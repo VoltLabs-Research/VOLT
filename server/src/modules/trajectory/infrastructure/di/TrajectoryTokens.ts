@@ -11,5 +11,6 @@ export const TRAJECTORY_TOKENS = {
     AtomPropertiesService: Symbol.for('AtomPropertiesService'),
     ColorCodingService: Symbol.for('ColorCodingService'),
     ParticleFilterService: Symbol.for('ParticleFilterService'),
-    CloudUploadQueueService: Symbol.for('CloudUploadQueueService')
+    CloudUploadQueueService: Symbol.for('CloudUploadQueueService'),
+    TrajectoryPresenceSocketModule: Symbol.for('TrajectoryPresenceSocketModule')
 } as const;
