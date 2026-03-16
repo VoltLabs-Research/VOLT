@@ -42,10 +42,23 @@ interface DaemonGlbJobStatusPayload {
     error?: string;
 };
 
+interface DaemonAnalysisJobStatusPayload {
+    jobId: string;
+    name: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId?: string;
+    trajectoryName?: string;
+    timestep?: number;
+    status: JobStatus;
+    error?: string;
+};
+
 interface DaemonJobCompletionService {
     handleJobCompletion(input: DaemonAnalysisJobCompletionPayload): Promise<void>;
     handleRasterJobStatus(input: DaemonRasterJobStatusPayload): Promise<void>;
     handleGlbJobStatus(input: DaemonGlbJobStatusPayload): Promise<void>;
+    handleAnalysisJobStatus(input: DaemonAnalysisJobStatusPayload): Promise<void>;
 };
 
 interface ProcessDaemonAnalysisJobCompletionInputDTO {
@@ -59,6 +72,20 @@ interface ProcessDaemonAnalysisJobCompletionInputDTO {
     trajectoryName?: string;
     timestep?: number;
     success: boolean;
+    error?: string;
+};
+
+interface ProcessDaemonAnalysisJobStatusInputDTO {
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    name: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId?: string;
+    trajectoryName?: string;
+    timestep?: number;
+    status: JobStatus;
     error?: string;
 };
 
@@ -96,6 +123,7 @@ interface ValidProcessDaemonGlbJobStatusInputDTO extends ProcessDaemonGlbJobStat
 
 export type ProcessDaemonJobCompletionInputDTO =
     | ProcessDaemonAnalysisJobCompletionInputDTO
+    | ProcessDaemonAnalysisJobStatusInputDTO
     | ProcessDaemonRasterJobStatusInputDTO
     | ProcessDaemonGlbJobStatusInputDTO;
 
@@ -125,6 +153,22 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                 input.teamClusterId,
                 input.daemonPassword
             );
+
+            if (this.isAnalysisJobStatusInput(input)) {
+                await this.daemonAnalysisCompletionService.handleAnalysisJobStatus({
+                    jobId: input.jobId,
+                    name: input.name,
+                    analysisId: input.analysisId,
+                    teamId: input.teamId,
+                    trajectoryId: input.trajectoryId,
+                    trajectoryName: input.trajectoryName,
+                    timestep: input.timestep,
+                    status: input.status,
+                    error: input.error
+                });
+
+                return Result.ok({ acknowledged: true });
+            }
 
             if (this.isAnalysisJobCompletionInput(input)) {
                 await this.daemonAnalysisCompletionService.handleJobCompletion({
@@ -185,6 +229,12 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                 ApplicationError.internalServerError('Failed to process daemon job completion')
             );
         }
+    }
+
+    private isAnalysisJobStatusInput(
+        input: ProcessDaemonJobCompletionInputDTO
+    ): input is ProcessDaemonAnalysisJobStatusInputDTO {
+        return 'analysisId' in input && 'status' in input && !('success' in input);
     }
 
     private isAnalysisJobCompletionInput(

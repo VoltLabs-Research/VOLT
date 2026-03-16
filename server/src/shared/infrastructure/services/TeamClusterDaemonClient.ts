@@ -105,12 +105,12 @@ export default class TeamClusterDaemonClient {
         throw mapDaemonStatusToApplicationError(response.status, errorCode, errorMessage);
     }
 
-    async command<T>(teamClusterId: string, command: string, payload?: Record<string, unknown>): Promise<T> {
+    async command<T>(teamClusterId: string, command: string, payload?: Record<string, unknown>, options?: { timeoutMs?: number }): Promise<T> {
         const response = await this.teamClusterReverseChannelService.command(teamClusterId, {
             command,
             payload,
             responseType: TeamClusterDaemonResponseType.Json
-        });
+        }, options);
 
         if (!response.ok || !isResponseEnvelope<T>(response.data)) {
             this.throwDaemonError(command, response, 'Daemon command returned a failure response');

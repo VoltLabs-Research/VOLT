@@ -7,9 +7,12 @@ export interface ScriptingSessionNotebookInput {
     content?: Record<string, unknown>;
 };
 
+export type NotebookContainerStage = 'creating' | 'starting' | 'ready';
+
 export interface ScriptingSessionJupyterInfo {
     url: string;
     ready: boolean;
+    containerStage?: NotebookContainerStage;
 };
 
 export interface ScriptingSessionStartInput {

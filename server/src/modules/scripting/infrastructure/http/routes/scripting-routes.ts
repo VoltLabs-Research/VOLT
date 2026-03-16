@@ -31,6 +31,7 @@ interface ScriptingSessionStatusResponse {
     jupyter: {
         ready: boolean;
         url: string;
+        containerStage?: 'creating' | 'starting' | 'ready';
     };
 };
 
@@ -116,7 +117,8 @@ const readScriptingSessionStatus = async (
             notebookId: notebook.id,
             jupyter: {
                 ready: false,
-                url: ''
+                url: '',
+                containerStage: 'creating'
             }
         };
     }
@@ -134,7 +136,8 @@ const readScriptingSessionStatus = async (
             notebookId: notebook.id,
             jupyter: {
                 ready: false,
-                url: jupyterUrl
+                url: jupyterUrl,
+                containerStage: 'creating'
             }
         };
     }
@@ -148,7 +151,8 @@ const readScriptingSessionStatus = async (
         notebookId: notebook.id,
         jupyter: {
             ready: Boolean(runtime),
-            url: jupyterUrl
+            url: jupyterUrl,
+            containerStage: runtime ? 'ready' : 'starting'
         }
     };
 };

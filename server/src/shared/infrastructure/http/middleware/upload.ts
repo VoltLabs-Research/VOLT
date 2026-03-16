@@ -10,7 +10,7 @@ import path from 'node:path';
 const storage = multer.memoryStorage();
 const trajectoryUploadTempDir = path.join(os.tmpdir(), 'volt-trajectory-uploads');
 const CHAT_MAX_FILE_SIZE = 25 * 1024 * 1024;
-const DEFAULT_TRAJECTORY_MAX_FILES = 200;
+const DEFAULT_TRAJECTORY_MAX_FILES = 10_000;
 
 const parsePositiveInteger = (value: string | undefined, fallbackValue: number): number => {
     const parsedValue = Number.parseInt(value || '', 10);

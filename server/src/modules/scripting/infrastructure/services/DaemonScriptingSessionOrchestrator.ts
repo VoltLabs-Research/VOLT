@@ -16,10 +16,13 @@ import type {
 } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 
+type NotebookContainerStage = 'creating' | 'starting' | 'ready';
+
 interface DaemonNotebookJupyterResponse {
     internalPath: string;
     url?: string;
     ready: boolean;
+    containerStage?: NotebookContainerStage;
 };
 
 interface DaemonNotebookSessionResponse {
@@ -88,7 +91,8 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         const response = await this.teamClusterDaemonClient.command<DaemonNotebookSessionResponse>(
             teamClusterId,
             'notebook.session.create',
-            request
+            request,
+            { timeoutMs: 600_000 }
         );
         await this.scriptingNotebookRepository.updateById(input.notebookId, {
             runtimeNotebookId,
@@ -107,7 +111,8 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
             notebookId: input.notebookId,
             jupyter: {
                 ...response.jupyter,
-                url: jupyterUrl
+                url: jupyterUrl,
+                containerStage: response.jupyter.containerStage
             }
         };
     }
