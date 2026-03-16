@@ -1,6 +1,7 @@
 import type { VoltCloudConnection } from './VoltCloudConnection';
 
 export type RasterJobStatus = 'running' | 'completed' | 'failed';
+export type GlbJobStatus = 'running' | 'completed' | 'failed';
 
 export interface ReportJobCompletionInput {
     jobId: string;
@@ -22,9 +23,20 @@ export interface ReportRasterJobStatusInput {
     error?: string;
 };
 
+export interface ReportGlbJobStatusInput {
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    timestep?: number;
+    status: GlbJobStatus;
+    error?: string;
+};
+
 export interface DaemonJobReporterService {
     reportJobCompletion(input: ReportJobCompletionInput): Promise<void>;
     reportRasterJobStatus(input: ReportRasterJobStatusInput): Promise<void>;
+    reportGlbJobStatus(input: ReportGlbJobStatusInput): Promise<void>;
 };
 
 export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudConnection): DaemonJobReporterService => ({
@@ -38,6 +50,14 @@ export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudCon
 
     async reportRasterJobStatus(input) {
         await voltCloudConnection.sendServerCommand('trajectory.raster-job-status', {
+            teamClusterId: voltCloudConnection.getTeamClusterId(),
+            daemonPassword: voltCloudConnection.getDaemonPassword(),
+            ...input
+        });
+    },
+
+    async reportGlbJobStatus(input) {
+        await voltCloudConnection.sendServerCommand('trajectory.glb-job-status', {
             teamClusterId: voltCloudConnection.getTeamClusterId(),
             daemonPassword: voltCloudConnection.getDaemonPassword(),
             ...input

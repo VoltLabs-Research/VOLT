@@ -1,4 +1,5 @@
 import { createTrajectoryRasterQueueService } from '@/modules/trajectory-native/services';
+import { createTrajectoryGlbQueueService } from '@/modules/trajectory-native/services';
 import type {
     FilterEvaluatorService,
     GlbExporterService,
@@ -12,7 +13,7 @@ import type {
     TrajectoryPluginParserService
 } from '@/modules/trajectory-native/services';
 import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
-import type { RasterizeTrajectoryRequest } from '@/shared/contracts';
+import type { EnqueuePreprocessingRequest, EnqueuePreprocessingFrameDescriptor, RasterizeTrajectoryRequest } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
 import {
     readNumber,
@@ -176,9 +177,39 @@ const readRasterizeTrajectoryRequest = (payload: unknown): RasterizeTrajectoryRe
     };
 };
 
+const readEnqueuePreprocessingFrameDescriptor = (value: unknown, index: number): EnqueuePreprocessingFrameDescriptor => {
+    const record = readOptionalPayloadRecord(value);
+
+    return {
+        timestep: readNumber(record.timestep, `frames[${index}].timestep`),
+        objectKey: readString(record.objectKey, `frames[${index}].objectKey`)
+    };
+};
+
+const readEnqueuePreprocessingRequest = (payload: unknown): EnqueuePreprocessingRequest => {
+    const record = readOptionalPayloadRecord(payload);
+
+    if (!Array.isArray(record.frames) || record.frames.length === 0) {
+        throw new Error('frames must be a non-empty array');
+    }
+
+    return {
+        trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
+        teamId: readString(record.teamId, 'teamId'),
+        trajectoryName: readOptionalString(record.trajectoryName),
+        frames: record.frames.map((frame: unknown, index: number) =>
+            readEnqueuePreprocessingFrameDescriptor(frame, index)
+        )
+    };
+};
+
 export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): ReverseChannelCommandHandler[] => {
     const trajectoryRasterQueueService = createTrajectoryRasterQueueService(
         deps.minioService,
+        deps.queueService,
+        deps.redisConnectionService
+    );
+    const trajectoryGlbQueueService = createTrajectoryGlbQueueService(
         deps.queueService,
         deps.redisConnectionService
     );
@@ -189,6 +220,14 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
             execute: async (payload) => ({
                 data: await trajectoryRasterQueueService.queueRasterizationJobs(
                     readRasterizeTrajectoryRequest(payload)
+                )
+            })
+        },
+        {
+            command: 'trajectory.enqueue-preprocessing',
+            execute: async (payload) => ({
+                data: await trajectoryGlbQueueService.enqueueGlbConversionJobs(
+                    readEnqueuePreprocessingRequest(payload)
                 )
             })
         },

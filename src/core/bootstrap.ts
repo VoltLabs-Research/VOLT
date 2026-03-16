@@ -6,6 +6,7 @@ import { createSSHImportModule } from '@/modules/ssh-import';
 import { createPlatformModule } from '@/modules/platform';
 import { createTrajectoryNativeModule } from '@/modules/trajectory-native';
 import { TrajectoryRasterWorkerService } from '@/modules/trajectory-native/services';
+import { TrajectoryGlbWorkerService } from '@/modules/trajectory-native/services';
 import { createArtifactsModule, createPluginListingRepository } from '@/modules/artifacts';
 import { createWorkflowRuntimeModule } from '@/modules/workflow-runtime';
 import { createCloudControlModule } from '@/modules/cloud-control';
@@ -75,6 +76,12 @@ export const bootstrap = async (): Promise<void> => {
         trajectoryNative.rasterizerService,
         cloudControl.daemonJobReporterService
     );
+    const trajectoryGlbWorkerService = new TrajectoryGlbWorkerService(
+        platform.queueService,
+        platform.redisConnectionService,
+        trajectoryNative.glbExporterService,
+        cloudControl.daemonJobReporterService
+    );
 
     await platform.connect();
 
@@ -90,6 +97,7 @@ export const bootstrap = async (): Promise<void> => {
     cloudControl.daemonExposureRegistryService.start();
     analysisWorker.start();
     trajectoryRasterWorkerService.start();
+    trajectoryGlbWorkerService.start();
     sshImport.sshImportWorkerService.start();
     logger.info(`cluster-daemon started for team cluster ${config.teamClusterId}`);
 
@@ -100,6 +108,7 @@ export const bootstrap = async (): Promise<void> => {
     const shutdown = async () => {
         await analysisWorker.stop();
         await trajectoryRasterWorkerService.stop();
+        await trajectoryGlbWorkerService.stop();
         await sshImport.sshImportWorkerService.stop();
         cloudControl.daemonExposureRegistryService.stop();
         await cloudControl.voltCloudConnection.stop();
