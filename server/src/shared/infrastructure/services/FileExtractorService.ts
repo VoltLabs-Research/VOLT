@@ -4,8 +4,17 @@ import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { injectable } from 'tsyringe';
 import unzipper from 'unzipper';
+import pLimit from 'p-limit';
 import logger from '@shared/infrastructure/logger';
 import type { ExtractedFile, IFileExtractorService, UploadedFile } from '@shared/domain/port/IFileExtractorService';
+
+/**
+ * How many ZIP entries to decompress in parallel.
+ * Each inflating entry holds ~256 KB of zlib buffers plus the write stream,
+ * so 4 concurrent entries keeps peak memory around 1 MB of zlib overhead
+ * while overlapping CPU decompression with disk I/O.
+ */
+const ZIP_EXTRACTION_CONCURRENCY = 4;
 
 /**
  * Filters out OS-generated junk entries and hidden files that should never
@@ -38,6 +47,9 @@ export default class FileExtractorService implements IFileExtractorService {
      * `Open.file()` reads the **central directory** at the end of the ZIP first, which
      * always contains the correct `compressed_size`.  It then seeks to exact byte offsets
      * for each entry, guaranteeing correct decompression regardless of file size.
+     *
+     * Entries are decompressed with bounded concurrency (default 4) to overlap
+     * CPU-bound inflate work with disk I/O, without exhausting memory.
      */
     public async extractFiles(files: UploadedFile[], workingDir: string): Promise<ExtractedFile[]> {
         const finalFiles: ExtractedFile[] = [];
@@ -56,22 +68,8 @@ export default class FileExtractorService implements IFileExtractorService {
                 }
 
                 if (zipPath) {
-                    await this.extractZipViaOpenFile(zipPath, workingDir);
-
-                    const extracted = await this.getFilesRecursive(workingDir);
-                    for (const fullPath of extracted) {
-                        const filename = path.basename(fullPath);
-                        if (filename.endsWith('.zip') || isJunkEntry(fullPath)) {
-                            continue;
-                        }
-                        const stats = await fs.stat(fullPath);
-                        if (stats.size === 0) continue;
-                        finalFiles.push({
-                            path: fullPath,
-                            originalname: filename,
-                            size: stats.size
-                        });
-                    }
+                    const extracted = await this.extractZipViaOpenFile(zipPath, workingDir);
+                    finalFiles.push(...extracted);
 
                     if (tempZipCreated) {
                         await fs.unlink(zipPath).catch(() => {});
@@ -101,53 +99,78 @@ export default class FileExtractorService implements IFileExtractorService {
     }
 
     /**
-     * Extracts a ZIP archive using the central-directory-based approach.
+     * Extracts a ZIP archive using the central-directory-based approach with
+     * bounded parallel decompression.
      *
-     * Each entry is extracted sequentially to keep memory usage bounded —
-     * only one entry is decompressed at a time.  The entry stream is piped
-     * through Node's stream pipeline which handles backpressure correctly
-     * and ensures the write stream is closed before moving to the next entry.
+     * `Open.file()` gives each entry an independent read stream positioned at
+     * the exact byte offset from the central directory, so multiple entries can
+     * be inflated concurrently without interfering with each other.
+     *
+     * Returns the list of extracted files directly, avoiding a costly
+     * recursive directory scan + stat pass after extraction.
      */
-    private async extractZipViaOpenFile(zipPath: string, outputDir: string): Promise<void> {
+    private async extractZipViaOpenFile(zipPath: string, outputDir: string): Promise<ExtractedFile[]> {
         const directory = await unzipper.Open.file(zipPath);
+        const limit = pLimit(ZIP_EXTRACTION_CONCURRENCY);
 
         logger.info(
             { zipPath, entryCount: directory.files.length },
             '@file-extractor: opened ZIP via central directory'
         );
 
+        const resolvedBase = path.resolve(outputDir);
+
+        // Pre-collect the unique parent directories so concurrent entries
+        // don't race on mkdir for the same path.
+        const dirsToCreate = new Set<string>();
         for (const entry of directory.files) {
-            if (entry.type === 'Directory') continue;
-            if (isJunkEntry(entry.path)) {
-                continue;
-            }
-
+            if (entry.type === 'Directory' || isJunkEntry(entry.path)) continue;
             const outputPath = path.join(outputDir, entry.path);
-            const outputDirForEntry = path.dirname(outputPath);
-
-            // Guard against zip-slip (path traversal)
-            const resolvedOutput = path.resolve(outputPath);
-            const resolvedBase = path.resolve(outputDir);
-            if (!resolvedOutput.startsWith(resolvedBase + path.sep) && resolvedOutput !== resolvedBase) {
-                logger.warn(
-                    { entry: entry.path },
-                    '@file-extractor: skipping entry with path traversal'
-                );
-                continue;
-            }
-
-            await fs.mkdir(outputDirForEntry, { recursive: true });
-
-            const readStream = entry.stream();
-            const writeStream = createWriteStream(outputPath);
-
-            await pipeline(readStream, writeStream);
+            dirsToCreate.add(path.dirname(path.resolve(outputPath)));
         }
+        await Promise.all(
+            [...dirsToCreate].map((dir) => fs.mkdir(dir, { recursive: true }))
+        );
+
+        const tasks = directory.files.map((entry) =>
+            limit(async (): Promise<ExtractedFile | null> => {
+                if (entry.type === 'Directory') return null;
+                if (isJunkEntry(entry.path)) return null;
+
+                const outputPath = path.join(outputDir, entry.path);
+
+                // Guard against zip-slip (path traversal)
+                const resolvedOutput = path.resolve(outputPath);
+                if (!resolvedOutput.startsWith(resolvedBase + path.sep) && resolvedOutput !== resolvedBase) {
+                    logger.warn(
+                        { entry: entry.path },
+                        '@file-extractor: skipping entry with path traversal'
+                    );
+                    return null;
+                }
+
+                await pipeline(entry.stream(), createWriteStream(outputPath));
+
+                const stats = await fs.stat(outputPath);
+                if (stats.size === 0) return null;
+
+                return {
+                    path: outputPath,
+                    originalname: path.basename(entry.path),
+                    size: stats.size
+                };
+            })
+        );
+
+        const results = await Promise.all(tasks);
+        const extracted = results.filter((r): r is ExtractedFile => r !== null);
 
         logger.info(
-            { zipPath, entryCount: directory.files.length },
+            { zipPath, extractedCount: extracted.length },
             '@file-extractor: ZIP extraction complete'
         );
+
+        return extracted;
     }
 
     public async getFilesRecursive(dir: string): Promise<string[]> {
