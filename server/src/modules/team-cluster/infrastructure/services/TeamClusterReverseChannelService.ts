@@ -1,4 +1,5 @@
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ContainerDeploymentProgressService } from '@modules/container/infrastructure/services/ContainerDeploymentProgressService';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import logger from '@shared/infrastructure/logger';
 import {
@@ -16,6 +17,7 @@ import {
     type TeamClusterDaemonSessionInputPayload,
     type TeamClusterDaemonSessionResizePayload,
     type TeamClusterDaemonSocketHeaders,
+    type TeamClusterDaemonRuntimeProgressPayload,
     type TeamClusterDaemonSocketResponsePayload,
     type TeamClusterDaemonSocketStreamPayload,
     type TeamClusterDaemonSocketStreamStatePayload,
@@ -203,7 +205,10 @@ export default class TeamClusterReverseChannelService {
         private readonly socketEmitter: ISocketEmitter,
 
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterExposureRegistryService)
-        private readonly exposureRegistryService: TeamClusterExposureRegistryService
+        private readonly exposureRegistryService: TeamClusterExposureRegistryService,
+
+        @inject(ContainerDeploymentProgressService)
+        private readonly containerDeploymentProgressService: ContainerDeploymentProgressService
     ) {}
 
     registerDaemonConnection(socketId: string, teamClusterId: string): void {
@@ -547,7 +552,45 @@ export default class TeamClusterReverseChannelService {
 
         if (payload.type === 'tunnel-close') {
             this.handleTunnelClosePayload(payload);
+            return;
         }
+
+        if (payload.type === 'runtime-progress') {
+            void this.handleRuntimeProgressPayload(socketId, payload);
+        }
+    }
+
+    private async handleRuntimeProgressPayload(
+        socketId: string,
+        payload: TeamClusterDaemonRuntimeProgressPayload
+    ): Promise<void> {
+        const teamClusterId = this.teamClusterIdsBySocketId.get(socketId);
+        if (!teamClusterId) {
+            return;
+        }
+
+        if (payload.action !== 'container-create') {
+            return;
+        }
+
+        const operationId = typeof payload.payload?.operationId === 'string'
+            ? payload.payload.operationId
+            : null;
+
+        if (!operationId) {
+            return;
+        }
+
+        await this.containerDeploymentProgressService.emitToTeam({
+            operationId,
+            teamClusterId,
+            stage: payload.stage,
+            step: typeof payload.payload?.step === 'string' ? payload.payload.step : undefined,
+            image: typeof payload.payload?.image === 'string' ? payload.payload.image : undefined,
+            containerName: typeof payload.payload?.containerName === 'string' ? payload.payload.containerName : undefined,
+            containerId: typeof payload.payload?.containerId === 'string' ? payload.payload.containerId : undefined,
+            timestamp: payload.timestamp
+        });
     }
 
     detachSession(sessionId: string): void {

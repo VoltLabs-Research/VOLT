@@ -6,7 +6,8 @@ import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset } from 
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import { computeGlbUrl } from '@/modules/fractal/api/service/compute-glb-url';
 import './SingleModelViewer.css';
-import { useMemo, useEffect, useCallback, createElement, useRef } from 'react';
+import * as THREE from 'three';
+import { useMemo, useEffect, useCallback, useRef } from 'react';
 import type { BoxBounds, ModelLoadingState, OrbitControlsHandle } from '@/modules/fractal/types';
 import type { SlicePlaneConfig, ModelWorldBounds } from '@/modules/fractal/types/configuration';
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
@@ -82,6 +83,10 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     isSelected = false
 }) => {
     const lastEmittedModelWorldBoundsReference = useRef<ModelWorldBounds | null>(null);
+    // Imperative container for the 3D model — keeps the heavy Object3D out of
+    // React's reconciliation tree entirely (matches old fast architecture).
+    const modelContainerRef = useRef<THREE.Group>(null!);
+
     const boxTransforms = useMemo(() => {
         return calculateBoxTransforms(boxBounds);
     }, [boxBounds]);
@@ -145,7 +150,6 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     const {
         modelBounds,
         deselect,
-        model,
         setSelectedObject,
         onHoverChange
     } = useGlbScene({
@@ -175,7 +179,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         activeModelBounds,
         onModelBoundsChanged,
         onLoadingStateChanged
-    });
+    }, modelContainerRef);
 
     useEffect(() => {
         if (!isSelected) {
@@ -197,7 +201,9 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             onSelect={setSelectedObject}
             onHoverChange={onHoverChange}
         >
-            {model && createElement('primitive', { object: model })}
+            {/* Imperative model container — the loaded 3D model is attached via
+                scene.add() in useGlbScene, never through React reconciliation. */}
+            <group ref={modelContainerRef} />
         </SimulationCellBox>
     );
 };

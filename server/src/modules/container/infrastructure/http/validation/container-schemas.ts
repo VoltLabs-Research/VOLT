@@ -57,6 +57,7 @@ const containerCapabilitiesSchema = z.object({
 const createContainerSchema = z.object({
     name: z.string().min(1),
     image: z.string().min(1),
+    operationId: z.string().min(1).optional(),
     teamClusterId: identifierSchema.optional(),
     folderId: identifierSchema.nullable().optional(),
     env: z.array(environmentVariableSchema).optional(),

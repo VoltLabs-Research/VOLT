@@ -1,7 +1,8 @@
 import { CONTAINER_TEMPLATES } from '../services/container-templates';
 import { containerQuery } from './queries';
 import { teamClusterService } from '../api/service/team-cluster-service';
-import { useCallback, useEffect, useState } from 'react';
+import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
@@ -25,6 +26,18 @@ const DEFAULT_CPU = 1;
 const DEFAULT_MEMORY = 512;
 const MIN_CPU = 0.5;
 const MIN_MEMORY = 128;
+
+interface ContainerDeployProgressEvent {
+    operationId: string;
+    teamClusterId: string;
+    teamId: string;
+    stage: string;
+    step?: string;
+    image?: string;
+    containerName?: string;
+    containerId?: string;
+    timestamp: string;
+};
 
 const clampResourceValue = (value: number, min: number, max: number | null | undefined) => {
     if (typeof max !== 'number' || !Number.isFinite(max)) {
@@ -210,6 +223,7 @@ export interface UseCreateContainerFormReturn {
     clusterResourceLimits: ClusterResourceLimits | null;
     isLoadingResourceLimits: boolean;
     isLoading: boolean;
+    deployProgressMessage: string | null;
     setSelectedTeamId: (id: string | null) => void;
     setSelectedTeamClusterId: (id: string | null) => void;
     updateConfig: <K extends keyof ContainerConfig>(key: K, value: ContainerConfig[K]) => void;
@@ -238,8 +252,32 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
     const [teamClusters, setTeamClusters] = useState<TeamClusterOption[]>([]);
     const [clusterResourceLimits, setClusterResourceLimits] = useState<ClusterResourceLimits | null>(null);
     const [isLoadingResourceLimits, setIsLoadingResourceLimits] = useState(false);
+    const [activeCreateOperationId, setActiveCreateOperationId] = useState<string | null>(null);
+    const [deployProgressMessage, setDeployProgressMessage] = useState<string | null>(null);
     const hasResolvedResourceLimits = typeof clusterResourceLimits?.maxCpus === 'number'
         && typeof clusterResourceLimits?.maxMemoryMB === 'number';
+
+    const deployStepMessageMap = useMemo<Record<string, string>>(() => ({
+        accepted: 'Deployment request accepted.',
+        'pulling-image': 'Pulling image. This can take a while the first time.',
+        'creating-container': 'Creating container...',
+        'starting-container': 'Starting container...',
+        'container-ready': 'Container is ready.'
+    }), []);
+
+    useSocketEvent<ContainerDeployProgressEvent>('container.deploy.progress', (event) => {
+        if (!activeCreateOperationId || event.operationId !== activeCreateOperationId) {
+            return;
+        }
+
+        const nextMessage = event.step
+            ? deployStepMessageMap[event.step] ?? `Deploying container: ${event.step}`
+            : 'Deploying container...';
+
+        setDeployProgressMessage(nextMessage);
+    }, {
+        enabled: !!activeCreateOperationId
+    });
 
     const [config, setConfig] = useState<ContainerConfig>({
         name: '',
@@ -436,23 +474,35 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
         }
 
         await showPromise(
-            createContainerMutation.mutateAsync({
-                teamId: selectedTeamId,
-                teamClusterId: selectedTeamClusterId,
-                folderId: currentFolderId,
-                name: config.name,
-                image,
-                memory: config.memory,
-                cpus: config.cpus,
-                ports: getCreatePorts(config.ports),
-                env: mergeContainerEnvVariables(config.env, config.customFields, config.customFieldValues),
-                mountDockerSocket: config.mountDockerSocket,
-                useImageCmd: template?.useImageCmd,
-                cmd: template?.defaultCmd,
-                capabilities: template?.capabilities
-            }),
+            (() => {
+                const operationId = crypto.randomUUID();
+                setActiveCreateOperationId(operationId);
+                setDeployProgressMessage('Preparing deployment...');
+
+                return createContainerMutation.mutateAsync({
+                    teamId: selectedTeamId,
+                    teamClusterId: selectedTeamClusterId,
+                    folderId: currentFolderId,
+                    operationId,
+                    name: config.name,
+                    image,
+                    memory: config.memory,
+                    cpus: config.cpus,
+                    ports: getCreatePorts(config.ports),
+                    env: mergeContainerEnvVariables(config.env, config.customFields, config.customFieldValues),
+                    mountDockerSocket: config.mountDockerSocket,
+                    useImageCmd: template?.useImageCmd,
+                    cmd: template?.defaultCmd,
+                    capabilities: template?.capabilities
+                }).finally(() => {
+                    setActiveCreateOperationId(null);
+                });
+            })(),
             {
-                loading: { title: 'Creating container...' },
+                loading: {
+                    title: 'Deploying container...',
+                    description: 'Waiting for real-time deployment updates from the cluster.'
+                },
                 success: { title: 'Container created successfully' },
                 error: { title: 'Failed to create container' }
             }
@@ -475,6 +525,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
         clusterResourceLimits,
         isLoadingResourceLimits,
         isLoading: createContainerMutation.isPending,
+        deployProgressMessage,
         setSelectedTeamId,
         setSelectedTeamClusterId,
         updateConfig,

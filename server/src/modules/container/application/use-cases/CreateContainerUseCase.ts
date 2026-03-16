@@ -33,7 +33,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
     ) {}
 
     private buildContainerRuntimeConfig(
-        input: Pick<CreateContainerInputDTO, 'image' | 'name' | 'env' | 'ports' | 'teamId'> & {
+        input: Pick<CreateContainerInputDTO, 'image' | 'name' | 'env' | 'ports' | 'teamId' | 'operationId'> & {
             teamClusterId: string;
         },
         options: {
@@ -48,6 +48,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         return {
             image: input.image,
             name: `${sanitizedName}-${Date.now()}`,
+            operationId: input.operationId,
             env: input.env,
             ports: input.ports,
             labels: {

@@ -4,10 +4,7 @@ import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
 import { ContainerAccessiblePortResolver } from '@modules/container/infrastructure/services/ContainerAccessiblePortResolver';
-import {
-    buildContainerPortProxyUrl,
-    ContainerPortProxyAccessTokenService
-} from '@modules/container/infrastructure/utilities/container-port-proxy';
+import { ContainerPortProxyRelayService } from '@modules/container/infrastructure/services/ContainerPortProxyRelayService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 
@@ -23,8 +20,8 @@ export class CreateContainerPortProxySessionUseCase implements IUseCase<
         @inject(ContainerAccessiblePortResolver)
         private readonly accessiblePortResolver: ContainerAccessiblePortResolver,
 
-        @inject(ContainerPortProxyAccessTokenService)
-        private readonly accessTokenService: ContainerPortProxyAccessTokenService
+        @inject(ContainerPortProxyRelayService)
+        private readonly relayService: ContainerPortProxyRelayService
     ) {}
 
     async execute(input: CreateContainerPortProxySessionInputDTO): Promise<Result<CreateContainerPortProxySessionOutputDTO>> {
@@ -58,17 +55,25 @@ export class CreateContainerPortProxySessionUseCase implements IUseCase<
             ));
         }
 
-        const url = buildContainerPortProxyUrl({
+        if (!container.teamCluster || !container.internalIp) {
+            return Result.fail(ApplicationError.conflict(
+                'Container::PortUnavailable',
+                'Container networking is not ready yet'
+            ));
+        }
+
+        const session = await this.relayService.createSession({
             teamId: input.teamId,
             containerId: container._id,
-            privatePort: input.privatePort,
             userId: input.userId,
-            createAccessToken: this.accessTokenService.create.bind(this.accessTokenService)
+            teamClusterId: container.teamCluster,
+            internalIp: container.internalIp,
+            privatePort: input.privatePort
         });
 
         return Result.ok({
-            url,
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+            url: session.url,
+            expiresAt: session.expiresAt,
             port
         });
     }

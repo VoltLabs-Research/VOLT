@@ -6,6 +6,7 @@ export interface CreateContainerParams {
     teamId: string;
     teamClusterId?: string;
     folderId?: string | null;
+    operationId?: string;
     name: string;
     image: string;
     memory?: number;
