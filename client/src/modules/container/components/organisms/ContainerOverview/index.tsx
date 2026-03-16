@@ -10,6 +10,7 @@ import type { EnvVariable } from '@/modules/container/api/entities/env-variable'
 import type { PortMapping } from '@/modules/container/api/entities/port-mapping';
 import type { ContainerStatsViewData } from '@/modules/container/services/container-stats-view';
 import { useOpenContainerPort } from '@/modules/container/hooks/use-open-container-port';
+import useTip from '@/shared/tips/use-tip';
 
 interface EnvVariableFormItem extends Record<string, unknown> {
     key: string;
@@ -29,6 +30,8 @@ interface ContainerOverviewProps {
 };
 
 const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: ContainerOverviewProps) => {
+    useTip('container-env-vars');
+
     const isRunning = container.status === 'running';
     const { openPort, openingPort } = useOpenContainerPort();
     const envItems: EnvVariableFormItem[] = (container.env || []).map((item) => ({

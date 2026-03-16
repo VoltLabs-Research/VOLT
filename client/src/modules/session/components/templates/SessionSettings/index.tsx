@@ -15,6 +15,7 @@ import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import useSessionData from '@/modules/session/hooks/use-session-data';
+import useTip from '@/shared/tips/use-tip';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
@@ -44,6 +45,8 @@ const getSessionRowMeta = (session: ActiveSession): SessionRowMeta => {
 };
 
 const SessionSettings: FC = () => {
+    useTip('session-management');
+
     const {
         activities,
         closeRevokeAllSessionsModal,

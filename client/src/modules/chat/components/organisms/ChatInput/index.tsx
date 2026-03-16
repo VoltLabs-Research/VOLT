@@ -4,6 +4,7 @@ import { formatSize } from '@/shared/utils/format';
 import Button from '@/shared/presentation/components/Button';
 import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
 import useFilePreview from '@/shared/presentation/hooks/use-file-preview';
+import useTip from '@/shared/tips/use-tip';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import IconButton from '@/shared/presentation/components/IconButton';
@@ -21,6 +22,8 @@ interface ChatInputProps {
 };
 
 const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFiles }: ChatInputProps) => {
+    useTip('chat-file-attachments');
+
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { files, previews, inputRef, removeFile, clear, handleInputChange: handleFileInput, openFilePicker, hasFiles } = useFilePreview();

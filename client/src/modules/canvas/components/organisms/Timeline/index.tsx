@@ -5,6 +5,7 @@ import TimelineHeader from '../../molecules/TimelineHeader';
 import TimelineRuler from '../../molecules/TimelineRuler';
 import useCanvasTimelineTabs from '@/modules/canvas/hooks/use-canvas-timeline-tabs';
 import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
+import useTip from '@/shared/tips/use-tip';
 
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
@@ -36,6 +37,8 @@ interface TimelineProps {
 
 
 const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExposureListing }: TimelineProps) => {
+    useTip('canvas-timeline-scrub');
+
     const [activeTab, setActiveTab] = useState<string>('timeline');
     const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();
     const selectedTeamId = useSelectedTeamId();
