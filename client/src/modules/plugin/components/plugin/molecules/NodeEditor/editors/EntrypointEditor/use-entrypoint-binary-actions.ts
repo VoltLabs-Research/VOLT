@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState, type ChangeEvent } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { sileo } from 'sileo';
-import type { IEntrypointData } from '@/modules/plugin/api/entities/plugin/workflow';
 import { useDeleteBinaryMutation, useUploadBinaryMutation } from '@/modules/plugin/hooks/plugin/queries';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -31,7 +30,7 @@ export const useEntrypointBinaryActions = (
 
     const updateEntrypointData = useCallback((data: EntrypointEditorFormValues) => {
         form.reset(data);
-        updateNodeData(nodeId, { entrypoint: data as IEntrypointData });
+        updateNodeData(nodeId, { entrypoint: data });
     }, [form, nodeId, updateNodeData]);
 
     const setAccessDeniedError = useCallback((error: unknown, fallbackMessage: string) => {

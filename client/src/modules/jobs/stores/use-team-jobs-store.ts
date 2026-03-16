@@ -7,11 +7,13 @@ interface TeamJobsStore {
     currentTeamId: string | null;
     pendingRasterKeys: Set<string>;
     inFlightRasterTrajectoryIds: Set<string>;
+    completedRasterTrajectoryIds: Set<string>;
     setConnected: (isConnected: boolean) => void;
     setLoading: (isLoading: boolean) => void;
     setCurrentTeamId: (currentTeamId: string | null) => void;
     setPendingRasterKeys: (pendingRasterKeys: Set<string>) => void;
     setInFlightRasterTrajectoryIds: (trajectoryIds: Set<string>) => void;
+    setCompletedRasterTrajectoryIds: (trajectoryIds: Set<string>) => void;
     reset: () => void;
 };
 
@@ -21,6 +23,7 @@ interface TeamJobsState {
     currentTeamId: string | null;
     pendingRasterKeys: Set<string>;
     inFlightRasterTrajectoryIds: Set<string>;
+    completedRasterTrajectoryIds: Set<string>;
 };
 
 const createInitialState = (): TeamJobsState => ({
@@ -28,7 +31,8 @@ const createInitialState = (): TeamJobsState => ({
     isLoading: false,
     currentTeamId: null,
     pendingRasterKeys: new Set<string>(),
-    inFlightRasterTrajectoryIds: new Set<string>()
+    inFlightRasterTrajectoryIds: new Set<string>(),
+    completedRasterTrajectoryIds: new Set<string>()
 });
 
 const useTeamJobsStore = create<TeamJobsStore>((set) => ({
@@ -38,6 +42,7 @@ const useTeamJobsStore = create<TeamJobsStore>((set) => ({
     setCurrentTeamId: (currentTeamId) => set({ currentTeamId }),
     setPendingRasterKeys: (pendingRasterKeys) => set({ pendingRasterKeys }),
     setInFlightRasterTrajectoryIds: (inFlightRasterTrajectoryIds) => set({ inFlightRasterTrajectoryIds }),
+    setCompletedRasterTrajectoryIds: (completedRasterTrajectoryIds) => set({ completedRasterTrajectoryIds }),
     reset: () => set(createInitialState())
 }));
 

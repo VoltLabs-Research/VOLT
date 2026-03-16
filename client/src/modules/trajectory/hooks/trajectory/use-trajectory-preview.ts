@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 interface UseTrajectoryPreviewParams {
     trajectoryId: string;
     enabled?: boolean;
+    isRasterReady?: boolean;
+    allowPersistedPreviewFallback?: boolean;
 };
 
 interface UseTrajectoryPreviewResult {
@@ -15,9 +17,16 @@ interface UseTrajectoryPreviewResult {
 };
 
 export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams): UseTrajectoryPreviewResult {
-    const { trajectoryId, enabled = true } = params;
+    const {
+        trajectoryId,
+        enabled = true,
+        isRasterReady = false,
+        allowPersistedPreviewFallback = false
+    } = params;
     const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
     const previewBlobUrlRef = useRef<string | null>(null);
+    const hasPreviewReadinessSignal = isRasterReady || allowPersistedPreviewFallback;
+    const isPreviewQueryEnabled = enabled && hasPreviewReadinessSignal && Boolean(trajectoryId);
 
     const {
         data,
@@ -28,7 +37,7 @@ export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams)
     } = trajectoryPreviewQuery(
         { trajectoryId },
         {
-            enabled: enabled && Boolean(trajectoryId)
+            enabled: isPreviewQueryEnabled
         }
     );
 

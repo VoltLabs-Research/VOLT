@@ -1,4 +1,10 @@
 import './PostAuthOnboarding.css';
+import {
+    DEFAULT_POST_AUTH_DESTINATION,
+    getClusterOnboardingRedirectPath,
+    resolvePostAuthDestination,
+    setPostAuthDestination
+} from '@/modules/auth/services/post-auth-destination-storage';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
@@ -16,7 +22,7 @@ import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
 import { sileo } from 'sileo';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import type { FormEvent, ReactNode } from 'react';
 
@@ -28,7 +34,10 @@ interface OnboardingStepState {
 const useNextDestination = (): string => {
     const location = useLocation();
     const params = new URLSearchParams(location.search);
-    return params.get('next') ?? '/dashboard';
+    return resolvePostAuthDestination({
+        queryNext: params.get('next'),
+        stateDestination: DEFAULT_POST_AUTH_DESTINATION
+    });
 };
 
 const PostAuthOnboarding = () => {
@@ -55,6 +64,10 @@ const PostAuthOnboarding = () => {
     const isLoading = isTeamsLoading || isClustersLoading;
     const hasTeam = teams.length > 0 || Boolean(selectedTeamId);
 
+    useEffect(() => {
+        setPostAuthDestination(next);
+    }, [next]);
+
     if (teamClustersQuery.isError && selectedTeamId) {
         throw teamClustersQuery.error;
     }
@@ -67,7 +80,7 @@ const PostAuthOnboarding = () => {
         }
 
         if (step === OnboardingStep.Cluster) {
-            return <Navigate to='/onboarding/cluster/setup' state={{ next }} replace />;
+            return <Navigate to={getClusterOnboardingRedirectPath(next)} replace />;
         }
     }
 
@@ -96,10 +109,7 @@ const PostAuthOnboarding = () => {
             });
 
             switchSelectedTeam(newTeam._id);
-            navigate('/onboarding/cluster/setup', {
-                replace: true,
-                state: { next }
-            });
+            navigate(getClusterOnboardingRedirectPath(next), { replace: true });
         } catch (err: unknown) {
             reportError(err, {
                 surface: ErrorSurface.Toast,

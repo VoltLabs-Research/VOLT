@@ -20,11 +20,17 @@ export enum ArgumentType {
     NUMBER = 'number',
     FRAME = 'frame',
     BOOLEAN = 'boolean',
-    STRING = 'string'
+    STRING = 'string',
+    LIST = 'list'
 };
 
 export enum ModifierContext {
     TRAJECTORY_DUMPS = 'trajectory_dumps'
+};
+
+export enum EntrypointType {
+    EXECUTABLE = 'executable',
+    PYTHON_SCRIPT = 'python-script'
 };
 
 export enum Exporter {

@@ -1,3 +1,4 @@
+import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -9,6 +10,39 @@ export enum ExecState {
     Loading = 'loading',
     Success = 'success',
     Error = 'error'
+};
+
+const RESERVED_RUNTIME_ARGUMENTS = {
+    selectedTimesteps: 'selectedTimesteps'
+} as const;
+
+const injectSelectedTimestepsRuntimeArgument = (
+    args: IArgumentDefinition[],
+    selectedTimesteps: number[] | undefined
+): IArgumentDefinition[] => {
+    if (!selectedTimesteps?.length) {
+        return args;
+    }
+
+    const hasReservedArgument = args.some((argument) => argument.argument === RESERVED_RUNTIME_ARGUMENTS.selectedTimesteps);
+    if (hasReservedArgument) {
+        return args;
+    }
+
+    return [
+        ...args,
+        {
+            argument: RESERVED_RUNTIME_ARGUMENTS.selectedTimesteps,
+            type: ArgumentType.LIST,
+            label: 'Selected Timesteps',
+            value: selectedTimesteps.map((timestep) => ({ value: timestep })),
+            listArguments: [{
+                argument: 'value',
+                type: ArgumentType.NUMBER,
+                label: 'Timestep'
+            }]
+        }
+    ];
 };
 
 interface ExecutePluginArgs {
@@ -70,10 +104,13 @@ const usePluginExecution = ({
         }
 
         try {
-            const args = getPluginArguments(option.pluginModifierId);
             const userConfig = pluginConfigs?.[option.pluginModifierId] || {};
             const selectedTeamClusterId = getSelectedTeamClusterId(option);
             const selectedTimesteps = getSelectedTimesteps(option.pluginModifierId);
+            const args = injectSelectedTimestepsRuntimeArgument(
+                getPluginArguments(option.pluginModifierId),
+                selectedTimesteps
+            );
             const config: Record<string, unknown> = {};
 
             if (!selectedTeamClusterId) {

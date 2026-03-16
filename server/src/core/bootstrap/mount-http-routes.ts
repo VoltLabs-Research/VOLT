@@ -39,6 +39,7 @@ import TeamHttpModule from '@modules/team/infrastructure/http/routes/team';
 import TeamClusterHttpModule from '@modules/team-cluster/infrastructure/http/routes/team-cluster-routes';
 import TeamClusterLifecycleHttpModule from '@modules/team-cluster/infrastructure/http/routes/team-cluster-lifecycle-routes';
 import ColorCodingHttpModule from '@modules/trajectory/infrastructure/http/routes/color-coding';
+import CanvasHttpModule from '@modules/trajectory/infrastructure/http/routes/canvas';
 import ParticleFilterHttpModule from '@modules/trajectory/infrastructure/http/routes/particle-filter';
 import TrajectoryHttpModule from '@modules/trajectory/infrastructure/http/routes/trajectory';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
@@ -94,6 +95,7 @@ const HTTP_MODULES: HttpModule[] = [
     SimulationCellHttpModule,
     DailyActivityHttpModule,
     SystemHttpModule,
+    CanvasHttpModule,
     ColorCodingHttpModule,
     ParticleFilterHttpModule,
     AIConversationHttpModule,

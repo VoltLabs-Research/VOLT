@@ -11,6 +11,7 @@ import { GetParticleFilterPropertiesUseCase } from '@modules/trajectory/applicat
 import { GetParticleFilterUniqueValuesUseCase } from '@modules/trajectory/application/use-cases/particle-filter/GetParticleFilterUniqueValuesUseCase';
 import { PreviewParticleFilterUseCase } from '@modules/trajectory/application/use-cases/particle-filter/PreviewParticleFilterUseCase';
 import { ListTrajectorySceneArtifactsUseCase } from '@modules/trajectory/application/use-cases/scene-artifacts/ListTrajectorySceneArtifactsUseCase';
+import { GetPublicCanvasBootstrapUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasBootstrapUseCase';
 import JobStatusChangedEventHandler from '@modules/trajectory/application/events/JobStatusChangedEventHandler';
 import GetTeamMetricsUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTeamMetricsUseCase';
 import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
@@ -67,6 +68,7 @@ export const registerTrajectoryDependencies = (): void => {
             GetParticleFilterUniqueValuesUseCase,
             ListTrajectoryFoldersUseCase,
             ListTrajectorySceneArtifactsUseCase,
+            GetPublicCanvasBootstrapUseCase,
             MoveTrajectoryUseCase,
             GetTeamMetricsUseCase,
             UpdateTrajectoryFolderUseCase,

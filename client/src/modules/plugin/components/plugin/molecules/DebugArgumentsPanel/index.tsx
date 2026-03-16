@@ -1,16 +1,17 @@
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/molecules/ArgumentFieldsRenderer';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
+import { collectDefaultArgumentValues } from '@/modules/plugin/utilities/plugin/argument-values';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { X, Play, Settings2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { TimestepInfo } from '@/modules/trajectory/api/entities/trajectory';
+import type { SelectOption } from '@/shared/presentation/components/Select';
 import './DebugArgumentsPanel.css';
 
 interface DebugArgumentsPanelProps {
@@ -21,20 +22,6 @@ interface DebugArgumentsPanelProps {
 interface ArgumentsNodeData {
     arguments?: {
         arguments?: IArgumentDefinition[];
-    };
-};
-
-interface DebugConfigField {
-    key: string;
-    label: string;
-    fieldKey: string;
-    type: 'input' | 'select' | 'checkbox';
-    options?: Array<{ value: string; title: string }>;
-    inputProps?: {
-        type: 'number' | 'text';
-        step?: number;
-        min?: number;
-        max?: number;
     };
 };
 
@@ -67,13 +54,13 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
     useEffect(() => {
         if (configurableArgs.length === 0) return;
 
+        const defaultConfig = collectDefaultArgumentValues(configurableArgs);
         const newConfig: Record<string, unknown> = { ...debugConfig };
         let hasChanges = false;
 
-        for (const argDef of configurableArgs) {
-            const key = argDef.argument;
-            if (newConfig[key] === undefined && argDef.default !== undefined) {
-                newConfig[key] = argDef.default;
+        for (const [key, value] of Object.entries(defaultConfig)) {
+            if (newConfig[key] === undefined) {
+                newConfig[key] = value;
                 hasChanges = true;
             }
         }
@@ -83,17 +70,9 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
         }
     }, [configurableArgs, debugConfig, setDebugConfig]);
 
-    const handleFieldChange = useCallback((key: string, value: string | number | boolean) => {
+    const handleFieldChange = useCallback((key: string, value: unknown) => {
         setDebugConfigField(key, value);
     }, [setDebugConfigField]);
-
-    const getPrimitiveFieldValue = useCallback((value: unknown): string | number | boolean => {
-        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-            return value;
-        }
-
-        return '';
-    }, []);
 
     const handleStartClick = useCallback(() => {
         setShowArgumentsPanel(false);
@@ -104,58 +83,12 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
         setShowArgumentsPanel(false);
     }, [setShowArgumentsPanel]);
 
-    const configFields = useMemo(() => {
-        return configurableArgs.map((argDef): DebugConfigField => {
-            const key = argDef.argument;
-            const field: DebugConfigField = {
-                key,
-                label: argDef.label || key,
-                fieldKey: key,
-                type: 'input'
-            };
-
-            switch (argDef.type) {
-                case 'select':
-                    field.type = 'select';
-                    field.options = (argDef.options || []).map((opt) => ({
-                        value: opt.key,
-                        title: opt.label
-                    }));
-                    break;
-
-                case 'frame':
-                    field.type = 'select';
-                    field.options = (selectedTrajectory?.frames || []).map((frame: TimestepInfo, index: number) => ({
-                        value: String(frame.timestep),
-                        title: `Frame ${index + 1} (t=${frame.timestep})`
-                    }));
-                    if (field.options.length === 0) {
-                        field.options = [{ value: '0', title: 'Default (First Frame)' }];
-                    }
-                    break;
-
-                case 'number':
-                    field.type = 'input';
-                    field.inputProps = {
-                        type: 'number',
-                        step: argDef.step || 0.1,
-                        min: argDef.min,
-                        max: argDef.max
-                    };
-                    break;
-
-                case 'boolean':
-                    field.type = 'checkbox';
-                    break;
-
-                default:
-                    field.type = 'input';
-                    field.inputProps = { type: 'text' };
-            }
-
-            return field;
-        });
-    }, [configurableArgs, selectedTrajectory]);
+    const frameOptions = useMemo<SelectOption[]>(() => {
+        return (selectedTrajectory?.frames ?? []).map((frame, index) => ({
+            value: String(frame.timestep),
+            title: `Frame ${index + 1} (t=${frame.timestep})`
+        }));
+    }, [selectedTrajectory]);
 
     if (configurableArgs.length === 0) return null;
 
@@ -180,19 +113,13 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
             </Container>
 
             <Container className='d-flex column gap-05 y-auto flex-1 min-h-0 scrollbar-thin debug-arguments-panel-body'>
-                {configFields.map((field) => (
-                    <FormFieldRHF
-                        key={field.key}
-                        label={field.label}
-                        fieldKey={field.fieldKey}
-                        fieldType={field.type}
-                        options={field.options}
-                        inputProps={field.type === 'input' ? field.inputProps : undefined}
-                        fieldValue={getPrimitiveFieldValue(debugConfig[field.key])}
-                        onFieldChange={handleFieldChange}
-                        variant='canvas'
-                    />
-                ))}
+                <ArgumentFieldsRenderer
+                    arguments={configurableArgs}
+                    values={debugConfig}
+                    onChange={handleFieldChange}
+                    frameOptions={frameOptions}
+                    emptyMessage='No arguments configured.'
+                />
             </Container>
 
             <Container className='f-shrink-0 debug-arguments-panel-footer'>

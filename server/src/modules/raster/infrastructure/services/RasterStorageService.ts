@@ -30,6 +30,18 @@ export class RasterStorageService implements IRasterStorage {
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
+    async hasTrajectoryPreview(trajectoryId: string, teamClusterId?: string): Promise<boolean> {
+        const prefix = getTrajectoryRasterPreviewsPrefix(trajectoryId);
+
+        for await (const key of this.listObjectKeys(SYS_BUCKETS.RASTERIZER, prefix, teamClusterId)) {
+            if (key.endsWith('.png')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     async *listPreviewFiles(trajectoryId: string, teamClusterId?: string): AsyncIterable<string> {
         const prefix = getTrajectoryRasterPreviewsPrefix(trajectoryId);
         yield* this.listObjectKeys(SYS_BUCKETS.RASTERIZER, prefix, teamClusterId);

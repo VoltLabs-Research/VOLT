@@ -27,6 +27,7 @@ interface WorkflowSerializable {
         data: Record<string, unknown>;
     }>;
     edges: Array<{
+        id?: string;
         source: string;
         target: string;
         sourceHandle?: string;
