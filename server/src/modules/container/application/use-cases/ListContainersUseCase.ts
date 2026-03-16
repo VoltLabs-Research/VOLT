@@ -9,6 +9,7 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
+import { ContainerAccessiblePortResolver } from '@modules/container/infrastructure/services/ContainerAccessiblePortResolver';
 
 interface ListContainersFilter extends Record<string, unknown> {
     team: string;
@@ -43,7 +44,8 @@ const getTeamClusterId = (teamCluster: unknown): string | null => {
 export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, ListContainersOutputDTO> {
     constructor(
         @inject(CONTAINER_TOKENS.ContainerRepository) private repository: IContainerRepository,
-        @inject(CONTAINER_TOKENS.ContainerRuntimeService) private containerRuntimeService: ITeamClusterContainerRuntimeService
+        @inject(CONTAINER_TOKENS.ContainerRuntimeService) private containerRuntimeService: ITeamClusterContainerRuntimeService,
+        @inject(ContainerAccessiblePortResolver) private accessiblePortResolver: ContainerAccessiblePortResolver
     ) {}
 
     async execute(input: ListContainersInputDTO): Promise<Result<ListContainersOutputDTO>> {
@@ -73,6 +75,15 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
         });
 
         await this.syncRuntimeStatus(result.data);
+
+        result.data.forEach((container) => {
+            container.accessiblePorts = this.accessiblePortResolver.resolve(
+                String(container.team || input.teamId),
+                container._id,
+                container.ports,
+                container.status
+            );
+        });
 
         return Result.ok(result);
     }

@@ -20,6 +20,8 @@ import usePermission from '@/shared/presentation/hooks/use-permission';
 import { supportsRemoteDesktop } from '@/modules/container/utilities/supports-remote-desktop';
 import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
 import type { LucideIcon } from 'lucide-react';
+import { getPrimaryAccessiblePort } from '@/modules/container/utilities/get-primary-accessible-port';
+import { useOpenContainerPort } from '@/modules/container/hooks/use-open-container-port';
 
 interface ContainerSidebarProps {
     container: ContainerEntity;
@@ -74,6 +76,8 @@ const ContainerSidebar = ({
     const isRunning = container.status === 'running';
     const canUpdate = usePermission(['container:update']);
     const hasRemoteDesktop = supportsRemoteDesktop(container.capabilities);
+    const { openPort, openingPort } = useOpenContainerPort();
+    const primaryAccessiblePort = getPrimaryAccessiblePort(container.accessiblePorts);
 
     const basePath = `/dashboard/containers/${container._id}`;
     const navItems = hasRemoteDesktop && isRunning
@@ -174,6 +178,17 @@ const ContainerSidebar = ({
             </nav>
 
             <Container className='container-details-actions d-flex column gap-075 p-1-5'>
+                {primaryAccessiblePort && (
+                    <Button
+                        variant='solid'
+                        intent='brand'
+                        block
+                        onClick={() => openPort(container._id, primaryAccessiblePort.private)}
+                        isLoading={openingPort === primaryAccessiblePort.private}
+                    >
+                        Open App
+                    </Button>
+                )}
                 {actionButtons}
             </Container>
         </Container>

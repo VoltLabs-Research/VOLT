@@ -1,5 +1,6 @@
 import CreateContainerController from './CreateContainerController';
 import CreateContainerFolderController from './CreateContainerFolderController';
+import CreateContainerPortProxySessionController from './CreateContainerPortProxySessionController';
 import CreateContainerVncSessionController from './CreateContainerVncSessionController';
 import DeleteContainerByIdController from './DeleteContainerByIdController';
 import DeleteContainerFolderController from './DeleteContainerFolderController';
@@ -20,6 +21,7 @@ import { createControllerRegistry } from '@shared/infrastructure/di/create-contr
 export default createControllerRegistry({
     create: CreateContainerController,
     createFolder: CreateContainerFolderController,
+    createPortProxySession: CreateContainerPortProxySessionController,
     createVncSession: CreateContainerVncSessionController,
     deleteById: DeleteContainerByIdController,
     deleteFolder: DeleteContainerFolderController,

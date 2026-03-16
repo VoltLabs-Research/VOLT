@@ -33,13 +33,17 @@ import { DockerNetworkRepository } from '@modules/container/infrastructure/persi
 import { DockerVolumeRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/DockerVolumeRepository';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import {
+    ContainerAccessiblePortResolver,
     ContainerOwnershipService,
+    ContainerPortProxyService,
     ContainerVncGatewayService,
     DaemonContainerRuntimeService,
     DockerContainerService,
     TeamClusterSelectionService,
     TerminalService
 } from '@modules/container/infrastructure/services';
+import { CreateContainerPortProxySessionUseCase } from '@modules/container/application/use-cases/CreateContainerPortProxySessionUseCase';
+import { ContainerPortProxyAccessTokenService } from '@modules/container/infrastructure/utilities/container-port-proxy';
 import { ContainerSocketModule } from '@modules/container/socket';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import type { ClassProvider } from 'tsyringe';
@@ -65,8 +69,11 @@ export const registerContainerDependencies = (): void => {
     container.register(CONTAINER_TOKENS.ContainerService, { useClass: DockerContainerService });
     container.register(CONTAINER_TOKENS.ContainerRuntimeService, { useClass: DaemonContainerRuntimeService });
     container.register(CONTAINER_TOKENS.TerminalService, { useClass: TerminalService });
+    container.register(CONTAINER_TOKENS.ContainerAccessiblePortResolver, { useClass: ContainerAccessiblePortResolver });
     container.register(ContainerOwnershipService, { useClass: ContainerOwnershipService });
     container.registerSingleton(ContainerVncGatewayService, ContainerVncGatewayService);
+    container.registerSingleton(ContainerPortProxyService, ContainerPortProxyService);
+    container.registerSingleton(ContainerPortProxyAccessTokenService, ContainerPortProxyAccessTokenService);
     container.register(TeamClusterSelectionService, { useClass: TeamClusterSelectionService });
 
     container.register(CreateContainerUseCase, { useClass: CreateContainerUseCase });
@@ -84,6 +91,7 @@ export const registerContainerDependencies = (): void => {
     container.register(ReadContainerFileUseCase, { useClass: ReadContainerFileUseCase });
     container.register(GetContainerProcessesUseCase, { useClass: GetContainerProcessesUseCase });
     container.register(GetContainerByIdUseCase, { useClass: GetContainerByIdUseCase });
+    container.register(CreateContainerPortProxySessionUseCase, { useClass: CreateContainerPortProxySessionUseCase });
     container.register(GetContainerFolderUseCase, { useClass: GetContainerFolderUseCase });
     container.register(MoveContainerUseCase, { useClass: MoveContainerUseCase });
 
