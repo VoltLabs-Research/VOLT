@@ -12,10 +12,6 @@
     max-width: min(100%, 34rem);
 }
 
-.canvas-raster-viewport__select {
-    min-width: 10rem;
-}
-
 .canvas-raster-viewport__hint {
     padding: 0 0.25rem;
 }

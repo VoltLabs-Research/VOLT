@@ -33,7 +33,6 @@ interface UseRasterWorkspaceResult {
     frame: RasterSceneFrame | null;
     modelOptions: RasterModelOption[];
     selectedModel: string | null;
-    selectedModelTitle: string | null;
     displayTimestep?: number;
     sourceTitle: string;
     sourceDescription: string | null;
@@ -43,7 +42,6 @@ interface UseRasterWorkspaceResult {
     hasRasterData: boolean;
     isFrameMissing: boolean;
     isSelectionUnavailable: boolean;
-    setSelectedModel: (model: string) => void;
     refetchMetadata: () => Promise<unknown>;
 };
 
@@ -201,18 +199,6 @@ export const useRasterWorkspace = ({
         requestKey
     });
 
-    const selectedModelTitle = useMemo(() => {
-        if (!selectedModel) {
-            return null;
-        }
-
-        return modelOptions.find((option) => option.value === selectedModel)?.title ?? null;
-    }, [modelOptions, selectedModel]);
-
-    const setSelectedModel = useCallback((model: string) => {
-        onModelChange?.(model);
-    }, [onModelChange]);
-
     const refetchMetadata = useCallback(async () => {
         setRequestKey((currentValue) => currentValue + 1);
         return metadataQuery.refetch();
@@ -236,7 +222,6 @@ export const useRasterWorkspace = ({
         frame: frameQuery.frame,
         modelOptions,
         selectedModel,
-        selectedModelTitle,
         displayTimestep,
         sourceTitle: source?.title ?? 'Raster',
         sourceDescription: source?.description ?? null,
@@ -246,7 +231,6 @@ export const useRasterWorkspace = ({
         hasRasterData,
         isFrameMissing: frameQuery.isMissing,
         isSelectionUnavailable,
-        setSelectedModel,
         refetchMetadata
     };
 };
