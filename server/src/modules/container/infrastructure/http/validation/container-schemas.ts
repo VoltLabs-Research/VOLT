@@ -19,6 +19,10 @@ const byContainerParamsSchema = byTeamParamsSchema.extend({
     containerId: identifierSchema
 }).strict();
 
+const byContainerPortParamsSchema = byContainerParamsSchema.extend({
+    privatePort: z.coerce.number().int().min(1).max(65535)
+}).strict();
+
 const byFolderParamsSchema = byTeamParamsSchema.extend({
     folderId: identifierSchema
 }).strict();
@@ -105,6 +109,9 @@ export const containerValidation = {
     createVncSession: {
         params: byContainerParamsSchema,
         body: createContainerVncSessionSchema
+    },
+    createPortProxySession: {
+        params: byContainerPortParamsSchema
     },
     getVncConnectPage: {
         params: byContainerParamsSchema,

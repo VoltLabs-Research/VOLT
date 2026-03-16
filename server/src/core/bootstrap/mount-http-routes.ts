@@ -12,6 +12,7 @@ import AuthHttpModule from '@modules/auth/infrastructure/http/routes/auth-routes
 import ChatMessageHttpModule from '@modules/chat/infrastructure/http/routes/chat-message/chat-message-routes';
 import ChatHttpModule from '@modules/chat/infrastructure/http/routes/chat/chat-routes';
 import ContainerHttpModule from '@modules/container/infrastructure/http/routes/container-routes';
+import ContainerPortProxyHttpModule from '@modules/container/infrastructure/http/routes/container-port-proxy-routes';
 import ContainerVncConnectHttpModule from '@modules/container/infrastructure/http/routes/container-vnc-connect-routes';
 import ContainerVncHttpModule from '@modules/container/infrastructure/http/routes/container-vnc-routes';
 import DailyActivityHttpModule from '@modules/daily-activity/infrastructure/http/routes/daily-activity-routes';
@@ -85,6 +86,7 @@ const HTTP_MODULES: HttpModule[] = [
     ScriptingJupyterHttpModule,
     SshConnectionHttpModule,
     ContainerHttpModule,
+    ContainerPortProxyHttpModule,
     ContainerVncConnectHttpModule,
     ContainerVncHttpModule,
     TrajectoryHttpModule,

@@ -20,6 +20,8 @@ import { formatSize } from '@/shared/utils/format';
 import { Box, Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
+import { useOpenContainerPort } from '@/modules/container/hooks/use-open-container-port';
+import { getPrimaryAccessiblePort } from '@/modules/container/utilities/get-primary-accessible-port';
 
 const renderName: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (value, row) => {
     const icon = isContainerFolderRow(row)
@@ -42,7 +44,10 @@ const renderName: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (va
     );
 };
 
-const COLUMNS: ColumnConfig<ContainerListingRow>[] = [
+const ContainersListing = () => {
+    const { openPort, openingPort } = useOpenContainerPort();
+
+    const columns: ColumnConfig<ContainerListingRow>[] = [
     {
         key: 'name',
         title: 'Name',
@@ -93,7 +98,34 @@ const COLUMNS: ColumnConfig<ContainerListingRow>[] = [
                 return <span className='font-size-2 color-muted'>-</span>;
             }
 
-            return <span className='font-size-2 color-secondary'>{row.ports.length}</span>;
+            const primaryPort = getPrimaryAccessiblePort(row.accessiblePorts);
+
+            return (
+                <Container className='d-flex items-center gap-05 wrap'>
+                    {row.ports.slice(0, 3).map((port) => (
+                        <span key={port.private} className='font-size-1 color-secondary font-family-mono'>
+                            {port.private}
+                        </span>
+                    ))}
+                    {primaryPort && (
+                        <Button
+                            variant='ghost'
+                            intent='brand'
+                            size='sm'
+                            onClick={() => openPort(row._id, primaryPort.private)}
+                            isLoading={openingPort === primaryPort.private}
+                        >
+                            Open
+                        </Button>
+                    )}
+                    {!primaryPort && row.ports.length > 0 && (
+                        <span className='font-size-1 color-muted'>TCP only</span>
+                    )}
+                    {row.ports.length === 0 && (
+                        <span className='font-size-2 color-secondary'>0</span>
+                    )}
+                </Container>
+            );
         },
         skeleton: { variant: 'text', width: 90 }
     },
@@ -106,9 +138,8 @@ const COLUMNS: ColumnConfig<ContainerListingRow>[] = [
         width: 110,
         withTitle: true
     })
-];
+    ];
 
-const ContainersListing = () => {
     const {
         breadcrumbs,
         canCreate,
@@ -180,7 +211,7 @@ const ContainersListing = () => {
             <DocumentListing<ContainerListingRow, { folderId: string | null }>
                 title={<Title className='font-size-6 font-weight-5 sm:font-size-4 color-primary'>Containers</Title>}
                 queryKey={queryKey}
-                columns={COLUMNS}
+                columns={columns}
                 context={context}
                 fetchData={fetchData}
                 getMenuOptions={getMenuOptions}

@@ -4,10 +4,12 @@ import Container from '@/shared/presentation/components/Container';
 import NetworkChart from '@/shared/presentation/components/NetworkChart';
 import Title from '@/shared/presentation/components/Title';
 import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
+import Button from '@/shared/presentation/components/Button';
 import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
 import type { EnvVariable } from '@/modules/container/api/entities/env-variable';
 import type { PortMapping } from '@/modules/container/api/entities/port-mapping';
 import type { ContainerStatsViewData } from '@/modules/container/services/container-stats-view';
+import { useOpenContainerPort } from '@/modules/container/hooks/use-open-container-port';
 
 interface EnvVariableFormItem extends Record<string, unknown> {
     key: string;
@@ -28,6 +30,7 @@ interface ContainerOverviewProps {
 
 const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: ContainerOverviewProps) => {
     const isRunning = container.status === 'running';
+    const { openPort, openingPort } = useOpenContainerPort();
     const envItems: EnvVariableFormItem[] = (container.env || []).map((item) => ({
         key: item.key,
         value: item.value
@@ -104,16 +107,39 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                         const resolvedPublicPort = typeof item.public === 'number' && item.public > 0
                             ? item.public
                             : null;
+                        const accessiblePort = container.accessiblePorts?.find((port) => port.private === item.private);
+                        const canOpen = accessiblePort?.browserAccessible && accessiblePort.status === 'available';
 
                         return (
                             <Container key={i} className='editable-kv-display-row d-flex content-between'>
-                                <span className='color-secondary font-weight-6 font-family-mono'>{item.private}/tcp</span>
-                                {resolvedPublicPort !== null && (
-                                    <Container className='d-flex gap-05 items-center'>
-                                        <span className='color-muted'>→</span>
-                                        <span className='font-family-mono'>{resolvedPublicPort}</span>
-                                    </Container>
-                                )}
+                                <Container className='d-flex gap-075 items-center'>
+                                    <span className='color-secondary font-weight-6 font-family-mono'>{item.private}/tcp</span>
+                                    {resolvedPublicPort !== null && (
+                                        <Container className='d-flex gap-05 items-center'>
+                                            <span className='color-muted'>→</span>
+                                            <span className='font-family-mono'>{resolvedPublicPort}</span>
+                                        </Container>
+                                    )}
+                                </Container>
+                                <Container className='d-flex gap-05 items-center'>
+                                    {canOpen && (
+                                        <Button
+                                            variant='ghost'
+                                            intent='brand'
+                                            size='sm'
+                                            onClick={() => openPort(container._id, item.private)}
+                                            isLoading={openingPort === item.private}
+                                        >
+                                            Open
+                                        </Button>
+                                    )}
+                                    {!canOpen && accessiblePort?.status === 'unavailable' && (
+                                        <span className='font-size-1 color-muted'>Unavailable</span>
+                                    )}
+                                    {!canOpen && accessiblePort?.status !== 'unavailable' && (
+                                        <span className='font-size-1 color-muted'>TCP only</span>
+                                    )}
+                                </Container>
                             </Container>
                         );
                     }}
