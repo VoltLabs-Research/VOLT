@@ -7,6 +7,7 @@ import { openModal } from '@/shared/presentation/components/Modal';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import useTip from '@/shared/tips/use-tip';
 import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -40,6 +41,8 @@ const resolveTargetMappingFromPathname = (pathname: string): SegmentTargetMappin
  * and delegates to the password-confirmation → explorer-content two-phase flow.
  */
 const ClusterRemoteExplorerPage = () => {
+    useTip('cluster-remote-explorer');
+
     const { pathname } = useLocation();
     const navigate = useNavigate();
     const clusterManagement = useClusterManagement();

@@ -1,4 +1,5 @@
 import useScriptingWorkspace from '@/modules/scripting/hooks/use-scripting-workspace';
+import useTip from '@/shared/tips/use-tip';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
@@ -79,6 +80,8 @@ const getContainerStagePendingDescription = (stage: NotebookContainerStage | nul
 };
 
 const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange }: ScriptingWorkspaceProps) => {
+    useTip('notebook-workspace');
+
     const {
         isLoading,
         activeNotebook,

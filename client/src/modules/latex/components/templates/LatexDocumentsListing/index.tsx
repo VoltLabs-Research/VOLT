@@ -15,6 +15,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import Title from '@/shared/presentation/components/Title';
+import useTip from '@/shared/tips/use-tip';
 import './LatexDocumentsListing.css';
 import { FileText, Folder, Pencil, Trash2, Upload } from 'lucide-react';
 import { useMemo } from 'react';
@@ -74,6 +75,8 @@ const COLUMNS: ColumnConfig<LatexListingRow>[] = [
 ];
 
 const LatexDocumentsListing = () => {
+    useTip('latex-documents-organization');
+
     const {
         breadcrumbs,
         context,

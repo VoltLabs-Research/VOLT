@@ -94,6 +94,33 @@ export const CONTEXTUAL_TIPS = {
         delay: 1600,
         position: 'top-center'
     },
+    'whiteboards-organization': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Organize whiteboards with folders',
+        description: 'Create folders, move whiteboards, and keep large board collections easier to navigate over time.',
+        buttonLabel: 'Got it',
+        delay: 1600,
+        position: 'top-center'
+    },
+    'trajectories-organization': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Organize trajectories with folders',
+        description: 'Create folders, move trajectories, and keep large trajectory lists easier to navigate over time.',
+        buttonLabel: 'Got it',
+        delay: 1600,
+        position: 'top-center'
+    },
+    'latex-documents-organization': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Organize documents with folders',
+        description: 'Create folders, move documents, and keep large document collections easier to navigate over time.',
+        buttonLabel: 'Got it',
+        delay: 1600,
+        position: 'top-center'
+    },
     'container-details-tabs': {
         surface: 'page',
         dismissMode: 'manual',
@@ -155,6 +182,159 @@ export const CONTEXTUAL_TIPS = {
         description: 'Use the details panel to review members, activity, and group settings without leaving the conversation.',
         buttonLabel: 'Got it',
         delay: 1600,
+        position: 'top-center'
+    },
+    'ai-spreadsheet-panel': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Resize the artifact panel',
+        description: 'Drag the panel divider to adjust the spreadsheet area, or collapse it to focus on the conversation.',
+        buttonLabel: 'Got it',
+        delay: 1600,
+        position: 'top-center'
+    },
+    'container-remote-desktop': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Stream your container desktop',
+        description: 'This panel connects via VNC to the container graphical environment in real time.',
+        buttonLabel: 'Got it',
+        delay: 1400,
+        position: 'top-center'
+    },
+    'secret-keys-quick-create': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Press N to create a key',
+        description: 'Use the keyboard shortcut N to start creating a new secret key without reaching for the button.',
+        buttonLabel: 'Got it',
+        delay: 1600,
+        position: 'top-center'
+    },
+    'canvas-timeline-scrub': {
+        surface: 'feature',
+        dismissMode: 'auto',
+        title: 'Scrub the timeline to navigate',
+        description: 'Drag the ruler to jump between timesteps, use Arrow keys to step frame by frame, or mouse wheel to scroll.',
+        delay: 350,
+        duration: 6500,
+        position: 'bottom-center'
+    },
+    'cluster-remote-explorer': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Explore cluster databases',
+        description: 'Browse MongoDB collections, Redis keys, and MinIO buckets directly from this panel.',
+        buttonLabel: 'Got it',
+        delay: 1400,
+        position: 'top-center'
+    },
+    'plugins-import-export': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Import and export plugins',
+        description: 'Export plugins as .zip to share them, or import .zip files to install plugins from others.',
+        buttonLabel: 'Got it',
+        delay: 1600,
+        position: 'top-center'
+    },
+    'chat-file-attachments': {
+        surface: 'feature',
+        dismissMode: 'auto',
+        title: 'Attach files to messages',
+        description: 'Drag files or use the attachment button to share files in the conversation. Press Enter to send, Shift+Enter for a new line.',
+        delay: 350,
+        duration: 6500,
+        position: 'bottom-center'
+    },
+    'container-create-stepper': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Follow the steps to deploy',
+        description: 'Walk through Image, Configuration, and Review before creating the container.',
+        buttonLabel: 'Got it',
+        delay: 1200,
+        position: 'top-center'
+    },
+    'cluster-monitoring-live': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Metrics update in real time',
+        description: 'CPU, memory, network, and disk charts refresh automatically to reflect the current cluster state.',
+        buttonLabel: 'Got it',
+        delay: 1400,
+        position: 'top-center'
+    },
+    'notebook-workspace': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Jupyter runs inside a container',
+        description: 'The notebook starts with its own container. Wait for it to be ready before interacting with cells.',
+        buttonLabel: 'Got it',
+        delay: 1600,
+        position: 'top-center'
+    },
+    'canvas-render-settings': {
+        surface: 'feature',
+        dismissMode: 'auto',
+        title: 'Fine-tune the 3D rendering',
+        description: 'Expand Render sections to adjust lights, effects, camera, point clouds, and environment settings.',
+        delay: 350,
+        duration: 6500,
+        position: 'top-center'
+    },
+    'container-env-vars': {
+        surface: 'feature',
+        dismissMode: 'auto',
+        title: 'Edit environment variables live',
+        description: 'Update environment variables and port bindings directly from the overview without redeploying.',
+        delay: 350,
+        duration: 6500,
+        position: 'top-center'
+    },
+    'team-roles-permissions': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Roles control access granularly',
+        description: 'Assign permissions per resource type to control what each team member can see and do.',
+        buttonLabel: 'Got it',
+        delay: 1600,
+        position: 'top-center'
+    },
+    'team-integrations': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Connect AI providers here',
+        description: 'Add API keys for AI models, configure Ollama endpoints, and manage which models are available.',
+        buttonLabel: 'Got it',
+        delay: 1600,
+        position: 'top-center'
+    },
+    'general-settings-tips-toggle': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Toggle contextual tips',
+        description: 'Enable or disable these onboarding tips from the general settings page at any time.',
+        buttonLabel: 'Got it',
+        delay: 1800,
+        position: 'top-center'
+    },
+    'session-management': {
+        surface: 'page',
+        dismissMode: 'manual',
+        title: 'Review active sessions',
+        description: 'See all devices with active sessions and revoke any you do not recognize.',
+        buttonLabel: 'Got it',
+        delay: 1400,
+        position: 'top-center'
+    },
+    'notifications-mark-read': {
+        surface: 'feature',
+        dismissMode: 'auto',
+        title: 'Mark all notifications as read',
+        description: 'Use the header action to clear all unread notifications at once.',
+        delay: 350,
+        duration: 5500,
         position: 'top-center'
     }
 } as const satisfies Record<string, ContextualTipDefinition>;

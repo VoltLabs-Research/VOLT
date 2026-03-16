@@ -9,6 +9,7 @@ import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import usePermission from '@/shared/presentation/hooks/use-permission';
+import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
@@ -22,6 +23,8 @@ interface AIPageRouteParams extends Params {
 };
 
 const AIPage = () => {
+    useTip('ai-spreadsheet-panel');
+
     const navigate = useNavigate();
     const { conversationId } = useParams<AIPageRouteParams>();
     const [messageDraft, setMessageDraft] = useState('');

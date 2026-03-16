@@ -13,6 +13,7 @@ import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
+import useTip from '@/shared/tips/use-tip';
 import useTeamRolesListing from '@/modules/team/hooks/role/use-team-roles-listing';
 import { IoShieldCheckmarkOutline } from 'react-icons/io5';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
@@ -86,6 +87,8 @@ const COLUMNS: ColumnConfig<TeamRole>[] = [
 ];
 
 export default function ManageRolesTemplate() {
+    useTip('team-roles-permissions');
+
     const [editingRole, setEditingRole] = useState<TeamRole | null>(null);
     const { confirm } = useConfirm();
 

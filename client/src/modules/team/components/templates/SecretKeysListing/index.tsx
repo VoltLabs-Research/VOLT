@@ -10,6 +10,7 @@ import useSecretKeysListing from '@/modules/team/hooks/secret-key/use-secret-key
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
+import useTip from '@/shared/tips/use-tip';
 import Button from '@/shared/presentation/components/Button';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import { PiKeyLight } from 'react-icons/pi';
@@ -77,6 +78,8 @@ const COLUMNS: ColumnConfig<SecretKey>[] = [
 ];
 
 export default function SecretKeysListing() {
+    useTip('secret-keys-quick-create');
+
     const navigate = useNavigate();
     const canCreate = usePermission(['team-secret-key:create']);
     const selectedTeam = useSelectedTeam();

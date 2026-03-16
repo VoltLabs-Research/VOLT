@@ -15,6 +15,7 @@ import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import { openModal } from '@/shared/presentation/components/Modal';
 import { clusterColumn, dateColumn } from '@/shared/presentation/utilities/column-presets';
+import useTip from '@/shared/tips/use-tip';
 import { formatNumber, formatSize } from '@/shared/utils/format';
 import { Folder, Pencil, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
@@ -80,6 +81,8 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
 ];
 
 export default function TrajectoriesListing() {
+    useTip('trajectories-organization');
+
     const {
         breadcrumbs,
         canCreate,

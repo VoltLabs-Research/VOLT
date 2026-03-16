@@ -25,6 +25,7 @@ import { Settings2, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { IoAddOutline } from 'react-icons/io5';
 import { sileo } from 'sileo';
+import useTip from '@/shared/tips/use-tip';
 import { AIProvider } from '@/modules/ai/api/entities/ai-provider';
 import type { CreateTeamAIIntegrationParams } from '@/modules/team/api/dtos/ai-integration/create-team-ai-integration';
 import type { UpdateTeamAIIntegrationParams } from '@/modules/team/api/dtos/ai-integration/update-team-ai-integration';
@@ -93,6 +94,8 @@ const getDefaultModelPlaceholder = (options: SelectOption[]): string => {
 };
 
 export default function IntegrationsSettings() {
+    useTip('team-integrations');
+
     const teamId = useSelectedTeamId() ?? '';
 
     const {

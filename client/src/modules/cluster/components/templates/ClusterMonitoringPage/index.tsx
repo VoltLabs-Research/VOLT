@@ -11,10 +11,13 @@ import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import NetworkChart from '@/shared/presentation/components/NetworkChart';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import useTip from '@/shared/tips/use-tip';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { useMemo } from 'react';
 
 const ClusterMonitoringPage = () => {
+    useTip('cluster-monitoring-live');
+
     const vm = useClusterMonitoringPage();
     const pageTitle = vm.selectedCluster ? `${vm.selectedCluster.name} - Monitoring` : 'Cluster Monitoring';
 

@@ -5,11 +5,14 @@ import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Popover from '@/shared/presentation/components/Popover';
 import Title from '@/shared/presentation/components/Title';
+import useTip from '@/shared/tips/use-tip';
 import { IoCloseOutline, IoNotificationsOutline } from 'react-icons/io5';
 import type { MouseEvent } from 'react';
 import './NotificationsPopover.css';
 
 const NotificationsPopover = () => {
+    useTip('notifications-mark-read');
+
     const {
         notifications,
         unreadCount,
