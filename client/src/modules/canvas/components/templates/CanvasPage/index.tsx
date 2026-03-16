@@ -37,6 +37,7 @@ import ScriptingWorkspace from '@/modules/scripting/components/organisms/Scripti
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Tooltip from '@/shared/presentation/components/Tooltip';
+import useTip from '@/shared/tips/use-tip';
 
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
 import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/types/container-selection';
@@ -60,6 +61,10 @@ const CanvasPage = () => {
     useCanvasCleanup();
     const { trajectory, currentTimestep, isLoading: trajectoryLoading } = useCanvasCoordinator({ trajectoryId });
     const { canvasUsers } = useCanvasPresence({ trajectoryId, enabled: !!trajectoryId });
+
+    useTip('canvas-shortcuts', {
+        enabled: Boolean(trajectoryId) && !trajectoryLoading
+    });
 
     useKeyboardShortcuts();
     const setCurrentScope = useKeyboardShortcutsStore((s) => s.setCurrentScope);
