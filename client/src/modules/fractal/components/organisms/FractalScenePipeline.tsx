@@ -65,14 +65,14 @@ const FractalScenePipeline = ({
     const gizmoColors = useMemo<GizmoColors>(() => {
         if (theme === Theme.Light) {
             return {
-                axisColors: ['#4f4f4f', '#4f4f4f', '#4f4f4f'],
-                labelColor: '#8e8e93'
+                axisColors: ['#f0f0f0', '#f0f0f0', '#f0f0f0'],
+                labelColor: '#6F717B'
             };
         }
 
         return {
-            axisColors: ['#f0f0f0', '#f0f0f0', '#f0f0f0'],
-            labelColor: '#6F717B'
+            axisColors: ['#4f4f4f', '#4f4f4f', '#4f4f4f'],
+            labelColor: '#8e8e93'
         };
     }, [theme]);
 
