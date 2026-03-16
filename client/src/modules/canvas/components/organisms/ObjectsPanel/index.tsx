@@ -102,10 +102,12 @@ const ObjectsPanel = ({
             return;
         }
 
+        const model = scene.source === 'plugin' ? scene.exposureId : undefined;
+
         onUpdateRasterContainerSelection(activeRasterContainerId, {
             scene,
             label,
-            model: undefined
+            model
         });
     }, [activeRasterContainerId, onUpdateRasterContainerSelection]);
 

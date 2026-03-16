@@ -4,7 +4,6 @@ import EmptyState from '@/shared/presentation/components/EmptyState';
 import Loader from '@/shared/presentation/components/Loader';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import Select from '@/shared/presentation/components/Select';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { ImageOff } from 'lucide-react';
@@ -53,28 +52,11 @@ const RasterViewportPanel = ({
         onModelChange: (model) => onUpdateContainerSelection?.(selection.id, { model: model ?? undefined })
     });
 
-    const shouldRenderModelSelect = vm.isAnalysisSource && vm.modelOptions.length > 1;
-
-    let headerDescription = selection.label;
-    if (vm.selectedModelTitle) {
-        headerDescription = `${headerDescription} · ${vm.selectedModelTitle}`;
-    }
-
     const headerActions = (
         <Container className='canvas-raster-viewport__header-actions d-flex items-center gap-075'>
             <Paragraph className='font-size-05 color-secondary text-truncate'>
-                {headerDescription}
+                {selection.label}
             </Paragraph>
-            {shouldRenderModelSelect && (
-                <Select
-                    options={vm.modelOptions}
-                    value={vm.selectedModel}
-                    onChange={(value) => vm.setSelectedModel(value)}
-                    placeholder='Model'
-                    className='canvas-raster-viewport__select'
-                    aria-label={`${selection.title} raster model selector`}
-                />
-            )}
         </Container>
     );
 
