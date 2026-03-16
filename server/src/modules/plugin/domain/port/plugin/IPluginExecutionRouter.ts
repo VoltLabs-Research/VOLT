@@ -11,6 +11,7 @@ export interface RoutePluginExecutionInput {
     trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
     teamId: string;
     plugin: Plugin;
+    pluginDependencies: Plugin[];
     config: Record<string, unknown>;
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];

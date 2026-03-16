@@ -3,9 +3,10 @@ import { ExecutePluginInputDTO } from '@modules/plugin/application/dtos/plugin/E
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { IPluginExecutionRouter } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
-import { IWorkflowValidatorService } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
+import { IWorkflowValidatorService, WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
 import PluginDisplayNameResolver from '@modules/plugin/utilities/plugin/PluginDisplayNameResolver';
+import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/services/plugin/PluginDependencyResolverService';
 
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
@@ -127,7 +128,10 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         private readonly pluginExecutionRouter: IPluginExecutionRouter,
 
         @inject(PLUGIN_TOKENS.WorkflowValidatorService)
-        private readonly workflowValidator: IWorkflowValidatorService
+        private readonly workflowValidator: IWorkflowValidatorService,
+
+        @inject(PLUGIN_TOKENS.PluginDependencyResolverService)
+        private readonly pluginDependencyResolverService: PluginDependencyResolverService
     ){}
 
     async execute(input: ExecutePluginInputDTO): Promise<Result<ExecutePluginOutputDTO, ApplicationError>> {
@@ -149,17 +153,20 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             ));
         }
 
-        // TODO: REVIEW 
-        // const { isValid, errors: validationErrors } = this.workflowValidator.validate(plugin.props.workflow.props);
-        // if (!isValid) {
-        //    const detail = validationErrors?.length
-        //        ? `: ${validationErrors.join('; ')}`
-        //        : '';
-        //    return Result.fail(ApplicationError.badRequest(
-        //        ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
-        //        `Plugin workflow is invalid${detail}`
-        //    ));
-        // }
+        const { isValid, errors: validationErrors } = await this.workflowValidator.validate(
+            plugin.props.workflow.props,
+            plugin.id,
+            WorkflowValidationMode.Strict
+        );
+        if (!isValid) {
+            const detail = validationErrors?.length
+                ? `: ${validationErrors.join('; ')}`
+                : '';
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
+                `Plugin workflow is invalid${detail}`
+            ));
+        }
 
         if (!trajectory) {
             return Result.fail(ApplicationError.badRequest(
@@ -208,6 +215,13 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             selectedTimesteps,
             !hasSelectedTimestepsCollision
         );
+        const dependencyResolution = await this.pluginDependencyResolverService.collectTransitivePublishedDependencies(plugin);
+        if (dependencyResolution.errors.length) {
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
+                dependencyResolution.errors.join('; ')
+            ));
+        }
 
         await this.eventBus.publish(new PluginExecutionRequestEvent({
             pluginId: plugin._id,
@@ -250,6 +264,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             trajectoryFrames: trajectory.props.frames,
             teamId: input.teamId,
             plugin,
+            pluginDependencies: dependencyResolution.dependencies,
             config: analysisConfig,
             selectedFrameOnly: input.selectedFrameOnly,
             selectedTimesteps,

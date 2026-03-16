@@ -94,6 +94,13 @@ export interface IEntrypointData {
     timeout?: number;
 };
 
+export interface IPluginNodeData {
+    pluginId?: string;
+    selectedTeamClusterId?: string;
+    selectedTimesteps?: number[];
+    config?: Record<string, unknown>;
+};
+
 export interface IExposureData {
     name: string;
     icon?: string;
@@ -128,6 +135,7 @@ export interface INodeData {
     context?: IContextData;
     forEach?: IForEachData;
     entrypoint?: IEntrypointData;
+    pluginNode?: IPluginNodeData;
     exposure?: IExposureData;
     export?: IExportData;
     ifStatement?: IIfStatementData;

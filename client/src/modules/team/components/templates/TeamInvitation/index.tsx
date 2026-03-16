@@ -1,5 +1,9 @@
 import { useAcceptInvitationMutation, useInvitationDetailsQuery, useRejectInvitationMutation } from '@/modules/team/hooks/invitation/queries';
-import { getOnboardingRedirectPath } from '@/modules/auth/services/post-auth-destination-storage';
+import {
+    getOnboardingRedirectPath,
+    getPostAuthRedirectPath,
+    resolvePostAuthDestination
+} from '@/modules/auth/services/post-auth-destination-storage';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { ErrorSurface, isAccessDeniedError, normalizeError, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
@@ -10,7 +14,7 @@ import Title from '@/shared/presentation/components/Title';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { AlertCircle, CheckCircle, Clock, Mail, XCircle } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { Params } from 'react-router-dom';
 import './TeamInvitation.css';
 
@@ -32,11 +36,16 @@ const REJECT_INVITATION_TOAST_OPTIONS = createPromiseToastOptions({
 
 export default function TeamInvitationTemplate() {
     const { invitationId } = useParams<TeamInvitationRouteParams>();
+    const location = useLocation();
     const navigate = useNavigate();
     const [error, setError] = useState<string | null>(null);
     const setSelectedTeamId = useTeamStore((state) => state.setSelectedTeamId);
+    const nextDestination = resolvePostAuthDestination({
+        queryNext: new URLSearchParams(location.search).get('next')
+    });
+
     const handleBackToDashboard = () => {
-        navigate('/dashboard');
+        navigate(getPostAuthRedirectPath(nextDestination));
     };
 
     const acceptMutation = useAcceptInvitationMutation();
@@ -74,7 +83,7 @@ export default function TeamInvitationTemplate() {
                 afterSuccess: () => {
                     setSelectedTeamId(invitation.team._id);
                     setError(null);
-                    navigate(getOnboardingRedirectPath('/dashboard'));
+                    navigate(getOnboardingRedirectPath(nextDestination));
                 }
             });
         } catch (actionError: unknown) {
@@ -91,7 +100,7 @@ export default function TeamInvitationTemplate() {
                 toast: REJECT_INVITATION_TOAST_OPTIONS,
                 afterSuccess: () => {
                     setError(null);
-                    navigate(getOnboardingRedirectPath('/dashboard'));
+                    navigate(getOnboardingRedirectPath(nextDestination));
                 }
             });
         } catch (actionError: unknown) {

@@ -163,7 +163,7 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         outputs: -1,
         allowedConnections: {
             from: [NodeType.FOREACH],
-            to: [NodeType.EXPOSURE, NodeType.IF_STATEMENT]
+            to: [NodeType.EXPOSURE, NodeType.IF_STATEMENT, NodeType.PLUGIN]
         },
         createDefaultData: () => ({
             entrypoint: {
@@ -172,6 +172,26 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
                 arguments: '{{ forEach.currentValue }} {{ forEach.outputPath }} {{ arguments.as_str }}',
                 requirementsFile: '',
                 timeout: -1
+            }
+        })
+    },
+    [NodeType.PLUGIN]: {
+        type: NodeType.PLUGIN,
+        label: 'Plugin Node',
+        icon: 'TbPlugConnectedX',
+        description: 'Execute a published plugin inline',
+        inputs: 1,
+        outputs: -1,
+        allowedConnections: {
+            from: [NodeType.ENTRYPOINT, NodeType.PLUGIN, NodeType.IF_STATEMENT],
+            to: [NodeType.PLUGIN]
+        },
+        createDefaultData: () => ({
+            pluginNode: {
+                pluginId: '',
+                selectedTeamClusterId: '',
+                selectedTimesteps: undefined,
+                config: {}
             }
         })
     },
@@ -224,7 +244,7 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         outputs: 2,
         allowedConnections: {
             from: [NodeType.ENTRYPOINT, NodeType.FOREACH, NodeType.CONTEXT],
-            to: [NodeType.ENTRYPOINT, NodeType.EXPOSURE, NodeType.EXPORT]
+            to: [NodeType.ENTRYPOINT, NodeType.EXPOSURE, NodeType.EXPORT, NodeType.PLUGIN]
         },
         createDefaultData: () => ({
             ifStatement: {

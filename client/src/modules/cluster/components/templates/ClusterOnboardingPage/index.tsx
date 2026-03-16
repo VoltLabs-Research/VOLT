@@ -2,11 +2,7 @@ import './ClusterOnboardingPage.css';
 import ClusterListPanel from '@/modules/cluster/components/molecules/ClusterListPanel';
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/DeleteClusterModal';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
-import {
-    DEFAULT_POST_AUTH_DESTINATION,
-    resolvePostAuthDestination,
-    setPostAuthDestination
-} from '@/modules/auth/services/post-auth-destination-storage';
+import { resolvePostAuthDestination } from '@/modules/auth/services/post-auth-destination-storage';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import { buildClusterInstallCommand } from '@/modules/cluster/utilities/build-cluster-install-command';
 import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
@@ -77,8 +73,7 @@ const ClusterOnboardingPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const nextDestination = resolvePostAuthDestination({
-        queryNext: new URLSearchParams(location.search).get('next'),
-        stateDestination: DEFAULT_POST_AUTH_DESTINATION
+        queryNext: new URLSearchParams(location.search).get('next')
     });
     const { clusters, createCluster, deleteCluster } = useClusterManagement();
     const hasConnectedCluster = hasUsableTeamCluster(clusters);
@@ -94,10 +89,6 @@ const ClusterOnboardingPage = () => {
     const [connectedClusterName, setConnectedClusterName] = useState<string | null>(null);
     const hasRedirected = useRef(false);
     const hadConnectedCluster = useRef(hasConnectedCluster);
-
-    useEffect(() => {
-        setPostAuthDestination(nextDestination);
-    }, [nextDestination]);
 
     const liveCluster = createdCluster
         ? clusters.find((cluster) => cluster._id === createdCluster._id) ?? createdCluster

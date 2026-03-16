@@ -99,6 +99,11 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                 error,
                 `@trajectory-background-processor: processing failed for ${trajectoryId} with ${failureCode}`
             );
+            logger.warn({
+                failureCode,
+                failureDetails,
+                trajectoryId
+            }, '@trajectory-background-processor: marking trajectory as failed');
             await this.updateStatus(
                 trajectoryId,
                 teamId,

@@ -9,24 +9,62 @@ export interface WaitForReadyScriptingSessionOptions {
 
 export interface WaitForReadyScriptingSessionStateLoader {
     initialSession: ScriptingSession;
-    readSession: () => Promise<ScriptingSession>;
+    readSession: (session: ScriptingSession) => Promise<ScriptingSession>;
 };
 
 export interface WaitForReadyScriptingSessionResult {
-    session: ScriptingSession | null;
+    session: ScriptingSession;
     timedOut: boolean;
 };
 
-interface ReadSessionWithinDeadlineResult {
-    session: ScriptingSession | null;
-    timedOut: boolean;
+interface ReadSessionWithinDeadlineTimeoutResult {
+    timedOut: true;
 };
+
+interface ReadSessionWithinDeadlineSuccessResult {
+    session: ScriptingSession;
+    timedOut: false;
+};
+
+export interface StartAndWaitForReadyScriptingSessionStateLoader {
+    createSession: () => Promise<ScriptingSession>;
+    readSession: (session: ScriptingSession) => Promise<ScriptingSession>;
+};
+
+type ReadSessionWithinDeadlineResult = ReadSessionWithinDeadlineTimeoutResult | ReadSessionWithinDeadlineSuccessResult;
 
 const DEFAULT_JUPYTER_SESSION_POLL_INTERVAL_MS = 2_000;
 const DEFAULT_JUPYTER_SESSION_TIMEOUT_MS = 120_000;
 
 export const JUPYTER_SESSION_PENDING_MESSAGE = 'Jupyter is still starting. Please wait a moment.';
 export const JUPYTER_SESSION_TIMEOUT_MESSAGE = 'Jupyter is still starting. Please retry in a moment.';
+
+/**
+ * Normalizes absolute backend Jupyter URLs to a same-origin proxy path during development.
+ */
+export const normalizeScriptingJupyterUrl = (url: string): string => {
+    if (!import.meta.env.DEV || typeof window === 'undefined') {
+        return url;
+    }
+
+    let parsedUrl: URL;
+
+    try {
+        parsedUrl = new URL(url);
+    } catch {
+        return url;
+    }
+
+    if (parsedUrl.origin === window.location.origin) {
+        return url;
+    }
+
+    if (!parsedUrl.pathname.startsWith('/api/jupyter/')) {
+        return url;
+    }
+
+    return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+};
 
 const sleep = async (delayMs: number): Promise<void> => {
     await new Promise((resolve) => setTimeout(resolve, delayMs));
@@ -43,13 +81,11 @@ const readSessionWithinDeadline = async (
     const remainingTimeMs = getRemainingTimeMs(deadlineMs);
     if (remainingTimeMs === 0) {
         return {
-            session: null,
             timedOut: true
         };
     }
 
     const timeoutPromise = sleep(remainingTimeMs).then<ReadSessionWithinDeadlineResult>(() => ({
-        session: null,
         timedOut: true
     }));
     const sessionPromise = readSession().then<ReadSessionWithinDeadlineResult>((session) => ({
@@ -71,7 +107,7 @@ export const waitForReadyScriptingSession = async (
     const intervalMs = Math.max(250, options.intervalMs ?? DEFAULT_JUPYTER_SESSION_POLL_INTERVAL_MS);
     const timeoutMs = Math.max(intervalMs, options.timeoutMs ?? DEFAULT_JUPYTER_SESSION_TIMEOUT_MS);
     const deadlineMs = Date.now() + timeoutMs;
-    let lastSession: ScriptingSession | null = stateLoader.initialSession;
+    let lastSession = stateLoader.initialSession;
     let attempt = 1;
 
     if (lastSession.jupyter.ready) {
@@ -103,16 +139,12 @@ export const waitForReadyScriptingSession = async (
             break;
         }
 
-        const readResult = await readSessionWithinDeadline(stateLoader.readSession, deadlineMs);
+        const readResult = await readSessionWithinDeadline(() => stateLoader.readSession(lastSession), deadlineMs);
         if (readResult.timedOut) {
             return {
                 session: lastSession,
                 timedOut: true
             };
-        }
-
-        if (!readResult.session) {
-            break;
         }
 
         lastSession = readResult.session;
@@ -130,4 +162,23 @@ export const waitForReadyScriptingSession = async (
         session: lastSession,
         timedOut: true
     };
+};
+
+/** Creates a session and reuses the shared readiness polling flow for startup. */
+export const startAndWaitForReadyScriptingSession = async (
+    stateLoader: StartAndWaitForReadyScriptingSessionStateLoader,
+    options: WaitForReadyScriptingSessionOptions = {}
+): Promise<WaitForReadyScriptingSessionResult> => {
+    const session = await stateLoader.createSession();
+    if (session.jupyter.ready || options.isCancelled?.()) {
+        return {
+            session,
+            timedOut: false
+        };
+    }
+
+    return waitForReadyScriptingSession({
+        initialSession: session,
+        readSession: stateLoader.readSession
+    }, options);
 };

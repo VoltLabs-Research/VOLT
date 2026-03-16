@@ -8,6 +8,7 @@ import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
+import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@mui/material';
 import { ArrowLeft, Activity, BarChart3, PieChart as PieChartIcon, List, Clock, Zap, CheckCircle, Hash } from 'lucide-react';
@@ -117,6 +118,8 @@ export default function SecretKeyUsage() {
     const { secretKeyId } = useParams<SecretKeyUsageRouteParams>();
     const navigate = useNavigate();
     const { usage, isLoading, error, refetch } = useSecretKeyUsage(secretKeyId);
+
+    usePageTitle(usage?.key?.name ? `${usage.key.name} Usage` : 'Secret Key Usage');
 
     const hourlyData = useMemo(() => {
         if (!usage?.hourly) return [];

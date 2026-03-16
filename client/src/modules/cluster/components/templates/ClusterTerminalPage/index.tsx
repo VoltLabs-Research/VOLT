@@ -6,6 +6,7 @@ import { TeamClusterRemoteAccessTarget } from '@/modules/cluster/api/entities/te
 import { openModal } from '@/shared/presentation/components/Modal';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
+import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,6 +14,8 @@ const ClusterTerminalPage = () => {
     const vm = useClusterRemoteAccessPage(TeamClusterRemoteAccessTarget.HostTerminal);
     const navigate = useNavigate();
     const didCollapseSidebar = useRef(false);
+
+    usePageTitle(vm.cluster ? `${vm.cluster.name} - Terminal` : 'Cluster Terminal');
 
     useEffect(() => {
         didCollapseSidebar.current = true;

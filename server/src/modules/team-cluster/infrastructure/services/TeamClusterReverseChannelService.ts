@@ -229,6 +229,7 @@ export default class TeamClusterReverseChannelService {
         if (teamClusterId && this.daemonSocketIdsByTeamClusterId.get(teamClusterId) === socketId) {
             this.daemonSocketIdsByTeamClusterId.delete(teamClusterId);
             this.exposureRegistryService.clearTeamCluster(teamClusterId);
+            logger.warn({ socketId, teamClusterId }, '[ReverseChannel] Daemon connection unregistered');
         }
 
         this.teamClusterIdsBySocketId.delete(socketId);

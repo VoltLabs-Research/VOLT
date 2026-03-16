@@ -20,6 +20,7 @@ import { DefaultPluginBootstrapService } from '@modules/plugin/infrastructure/se
 import { PluginExposureExportService } from '@modules/plugin/infrastructure/services/exposure/PluginExposureExportService';
 import { DaemonPluginListingService } from '@modules/plugin/infrastructure/services/listing-row/DaemonPluginListingService';
 import { WorkflowValidatorService } from '@modules/plugin/infrastructure/services/plugin/WorkflowValidatorService';
+import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/services/plugin/PluginDependencyResolverService';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
 import PluginBinaryCacheService from '@modules/plugin/infrastructure/services/plugin/PluginBinaryCacheService';
 import PluginExecutionRouter from '@modules/plugin/infrastructure/services/plugin/PluginExecutionRouter';
@@ -37,6 +38,7 @@ export const registerPluginDependencies = (): void => {
         singletons: [
             [PLUGIN_TOKENS.PluginListingService, DaemonPluginListingService],
             [PLUGIN_TOKENS.WorkflowValidatorService, WorkflowValidatorService],
+            [PLUGIN_TOKENS.PluginDependencyResolverService, PluginDependencyResolverService],
             [PLUGIN_TOKENS.PluginStorageService, PluginStorageService],
             [PLUGIN_TOKENS.DefaultPluginBootstrapService, DefaultPluginBootstrapService],
             [PLUGIN_TOKENS.PluginBinaryCacheService, PluginBinaryCacheService],

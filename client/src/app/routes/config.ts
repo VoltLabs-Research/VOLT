@@ -1,4 +1,3 @@
-import type { RouteGroup } from './types';
 import AnalysesListing from '@/modules/analysis/components/templates/AnalysesListing';
 import AuthenticationSettings from '@/modules/auth/components/templates/AuthenticationSettings';
 import AIPage from '@/modules/ai/components/templates/AIPage';
@@ -42,11 +41,14 @@ import TrajectoryArtifactsListing from '@/modules/trajectory/components/template
 import TrajectoriesListing from '@/modules/trajectory/components/templates/TrajectoriesListing';
 import ErrorPage from '@/shared/presentation/components/ErrorPage';
 import RootDashboardRedirect from './RootDashboardRedirect';
+import { RoutePermissionMode } from './types';
+import type { RouteGroup } from './types';
 
 export const routesConfig: RouteGroup = {
     public: [
         {
             path: '/error',
+            title: 'Error',
             component: ErrorPage
         }
     ],
@@ -54,218 +56,263 @@ export const routesConfig: RouteGroup = {
     protected: [
         {
             path: '/',
+            title: 'Dashboard',
             component: RootDashboardRedirect
         },
         {
             path: '/start',
+            title: 'Start',
             component: StartPage
         },
         {
             path: '/dashboard',
+            title: 'Dashboard',
             component: Dashboard,
             index: true
         },
         {
             path: '/dashboard/settings/general',
+            title: 'General Settings',
             component: GeneralSettings
         },
         {
             path: '/dashboard/settings/authentication',
+            title: 'Authentication Settings',
             component: AuthenticationSettings
         },
         {
             path: '/dashboard/settings/theme',
+            title: 'Theme Settings',
             component: ThemeSettings
         },
         {
             path: '/dashboard/settings/integrations',
+            title: 'Integrations Settings',
             component: IntegrationsSettings
         },
         {
             path: '/dashboard/settings/sessions',
+            title: 'Session Settings',
             component: SessionSettings
         },
         {
             path: '/dashboard/my-team',
+            title: 'My Team',
             component: MyTeamTemplate,
             requiredPermissions: ['team:read']
         },
         {
             path: '/dashboard/manage-roles',
+            title: 'Manage Roles',
             component: ManageRolesTemplate,
             requiredPermissions: ['team-role:read']
         },
         {
             path: '/dashboard/secret-keys',
+            title: 'Secret Keys',
             component: SecretKeysListing,
             requiredPermissions: ['team-secret-key:read']
         },
         {
             path: '/dashboard/secret-keys/metrics',
+            title: 'Secret Key Metrics',
             component: SecretKeyMetrics,
             requiredPermissions: ['team-secret-key:read']
         },
         {
             path: '/dashboard/secret-keys/:secretKeyId/usage',
+            title: 'Secret Key Usage',
             loader: () => import('@/modules/team/components/templates/SecretKeyUsage'),
             requiredPermissions: ['team-secret-key:read']
         },
         {
             path: '/dashboard/trajectories/list',
+            title: 'Trajectories',
             component: TrajectoriesListing,
             requiredPermissions: ['trajectory:read']
         },
         {
             path: '/dashboard/trajectories/artifacts',
+            title: 'Trajectory Artifacts',
             component: TrajectoryArtifactsListing,
             requiredPermissions: ['trajectory:read']
         },
         {
             path: '/canvas/:trajectoryId',
+            title: 'Canvas',
             loader: () => import('@/modules/canvas/components/templates/CanvasPage'),
             requiredPermissions: ['trajectory:read']
         },
         {
             path: '/dashboard/whiteboard/:whiteboardId',
+            title: 'Whiteboard',
             loader: () => import('@/modules/whiteboards/components/templates/WhiteboardEditorPage'),
             requiredPermissions: ['whiteboard:read']
         },
         {
             path: '/dashboard/trajectory/:trajectoryId/atoms',
+            title: 'Trajectory Atoms',
             loader: () => import('@/modules/trajectory/components/templates/PerAtomViewer'),
             requiredPermissions: ['trajectory:read']
         },
         {
             path: '/dashboard/analysis-configs/list',
+            title: 'Analysis Configurations',
             component: AnalysesListing,
             requiredPermissions: ['analysis:read']
         },
         {
             path: '/dashboard/simulation-cells/list',
+            title: 'Simulation Cells',
             loader: () => import('@/modules/simulation-cell/components/templates/SimulationCellsListing'),
             requiredPermissions: ['simulation-cell:read']
         },
         {
             path: '/dashboard/plugins/list',
+            title: 'Plugins',
             component: PluginsListing,
             requiredPermissions: ['plugin:read']
         },
         {
             path: '/plugins/builder',
+            title: 'Plugin Builder',
             component: PluginBuilderPage,
             requiredPermissions: ['plugin:create']
         },
         {
             path: '/dashboard/plugins/:pluginId/exposure/:exposureId/listing',
+            title: 'Plugin Listing',
             component: PluginListingPage,
             requiredPermissions: ['plugin:read']
         },
         {
             path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginId/exposure/:exposureId/listing',
+            title: 'Plugin Listing',
             component: PluginListingPage,
             requiredPermissions: ['plugin:read', 'trajectory:read'],
-            permissionMode: 'all'
+            permissionMode: RoutePermissionMode.All
         },
         {
             path: '/onboarding',
+            title: 'Onboarding',
             component: PostAuthOnboarding
         },
         {
             path: '/onboarding/cluster/setup',
+            title: 'Cluster Setup',
             component: ClusterOnboardingPage
         },
         {
             path: '/dashboard/clusters',
+            title: 'Clusters',
             component: ClustersListing
         },
         {
             path: '/dashboard/clusters/:clusterId',
+            title: 'Cluster Monitoring',
             component: ClusterMonitoringPage
         },
         {
             path: '/dashboard/clusters/:clusterId/terminal',
+            title: 'Cluster Terminal',
             loader: () => import('@/modules/cluster/components/templates/ClusterTerminalPage')
         },
         {
             path: '/dashboard/clusters/:clusterId/mongo',
+            title: 'Mongo Explorer',
             loader: () => import('@/modules/cluster/components/templates/ClusterRemoteExplorerPage')
         },
         {
             path: '/dashboard/clusters/:clusterId/redis',
+            title: 'Redis Explorer',
             loader: () => import('@/modules/cluster/components/templates/ClusterRemoteExplorerPage')
         },
         {
             path: '/dashboard/clusters/:clusterId/minio',
+            title: 'MinIO Explorer',
             loader: () => import('@/modules/cluster/components/templates/ClusterRemoteExplorerPage')
         },
         {
             path: '/dashboard/containers',
+            title: 'Containers',
             component: ContainersListing,
             requiredPermissions: ['container:read']
         },
         {
             path: '/dashboard/containers/new',
+            title: 'Create Container',
             component: CreateContainer,
             requiredPermissions: ['container:create']
         },
         {
             path: '/dashboard/containers/:id',
+            title: 'Container Details',
             component: ContainerDetailsLayout,
             requiredPermissions: ['container:read'],
             children: [
-                { path: 'overview', component: ContainerOverviewPage, index: true },
-                { path: 'processes', component: ContainerProcessesPage },
-                { path: 'terminal', component: ContainerTerminalPage },
-                { path: 'logs', component: ContainerTerminalPage },
-                { path: 'storage', component: ContainerStoragePage },
-                { path: 'remote-desktop', component: ContainerRemoteDesktopPage }
+                { path: 'overview', title: 'Container Overview', component: ContainerOverviewPage, index: true },
+                { path: 'processes', title: 'Container Processes', component: ContainerProcessesPage },
+                { path: 'terminal', title: 'Container Terminal', component: ContainerTerminalPage },
+                { path: 'logs', title: 'Container Logs', component: ContainerTerminalPage },
+                { path: 'storage', title: 'Container Storage', component: ContainerStoragePage },
+                { path: 'remote-desktop', title: 'Container Remote Desktop', component: ContainerRemoteDesktopPage }
             ]
         },
         {
             path: '/dashboard/ssh-connections',
+            title: 'SSH Connections',
             component: SSHConnectionsPage,
             requiredPermissions: ['ssh-connection:read']
         },
         {
             path: '/dashboard/ssh-connections/:connectionId/file-explorer',
+            title: 'SSH File Explorer',
             component: SSHFileExplorerPage,
             requiredPermissions: ['ssh-connection:read']
         },
         {
             path: '/dashboard/messages/:chatId?',
+            title: 'Messages',
             component: MessagesPage
         },
         {
             path: '/dashboard/ai/:conversationId?',
+            title: 'AI',
             component: AIPage,
             requiredPermissions: ['ai-conversation:read']
         },
         {
             path: '/dashboard/latex',
+            title: 'LaTeX Documents',
             component: LatexDocumentsListing,
             requiredPermissions: ['latex:read']
         },
         {
             path: '/dashboard/latex/:documentId',
+            title: 'LaTeX Workspace',
             loader: () => import('@/modules/latex/components/templates/LatexDocumentWorkspace'),
             requiredPermissions: ['latex:read']
         },
         {
             path: '/dashboard/notebooks',
+            title: 'Notebooks',
             component: NotebooksListing,
             requiredPermissions: ['plugin:read']
         },
         {
             path: '/dashboard/whiteboards',
+            title: 'Whiteboards',
             component: WhiteboardsListing,
             requiredPermissions: ['whiteboard:read']
         },
         {
             path: '/team-invitation/code/:code',
+            title: 'Team Invitation',
             component: TeamInvitationByCodeTemplate
         },
         {
             path: '/team-invitation/:invitationId',
+            title: 'Team Invitation',
             component: TeamInvitationTemplate
         }
     ],
@@ -273,10 +320,12 @@ export const routesConfig: RouteGroup = {
     guest: [
         {
             path: '/auth/sign-in',
+            title: 'Sign In',
             component: SignInPage
         },
         {
             path: '/auth/oauth/callback',
+            title: 'Signing In',
             component: OAuthCallbackPage
         }
     ],

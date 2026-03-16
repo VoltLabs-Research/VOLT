@@ -72,6 +72,7 @@ const AvatarUpload = ({
             <Button
                 type='button'
                 variant='ghost'
+                align='start'
                 className='avatar-upload-trigger d-flex items-center gap-1 p-0'
                 onClick={handleAvatarTrigger}
                 aria-describedby={helperTextId}
@@ -80,12 +81,12 @@ const AvatarUpload = ({
             >
                 <Container className="avatar-upload radius-full p-relative overflow-hidden f-shrink-0">
                     {avatarContent}
-                    <Container className="avatar-overlay p-absolute inset-0 d-flex items-center content-center">
+                    <Container className="avatar-overlay p-absolute inset-0 d-flex items-center r">
                         {overlayContent}
                     </Container>
                 </Container>
 
-                <Container className="d-flex column gap-025 text-left">
+                <Container className="d-flex column gap-025" style={{ textAlign: 'left' }}>
                     <Title className="font-size-2 font-weight-6">
                         Profile Picture
                     </Title>

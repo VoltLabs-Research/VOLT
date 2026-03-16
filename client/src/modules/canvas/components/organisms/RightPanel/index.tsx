@@ -1,6 +1,4 @@
 import { buildCanvasModifierOptions, LEGACY_MODIFIERS } from '../../../utilities/modifier-registry';
-import PluginClusterField from '../../molecules/PluginClusterField';
-import SelectedTimestepsField from '../../molecules/SelectedTimestepsField';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import usePluginExecution from '../../../hooks/use-plugin-execution';
 import { ExecState } from '../../../hooks/use-plugin-execution';
@@ -8,11 +6,10 @@ import ModifierConfig from '../../molecules/ModifierConfig';
 import ModifiersSection from '../../molecules/ModifiersSection';
 import CanvasRenderSections from '../CanvasRenderSections';
 
-import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/molecules/ArgumentFieldsRenderer';
+import PluginExecutionConfigFields from '@/modules/plugin/components/plugin/molecules/PluginExecutionConfigFields';
 import { useExecutePluginMutation, usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import { Wrench, Monitor } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
@@ -242,50 +239,20 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
                 value: String(timestep),
                 title: `t=${timestep}`
             }));
-            const selectedTimestepsField = (
-                <SelectedTimestepsField
+            content = (
+                <PluginExecutionConfigFields
+                    argumentsDefinitions={args}
+                    configValues={pluginConfigs[option.pluginModifierId!] ?? {}}
+                    onConfigChange={(key, value) => handlePluginConfigChange(option.pluginModifierId!, key, value)}
                     availableTimesteps={availableTimesteps}
                     selectedTimesteps={getSelectedTimesteps(option.pluginModifierId)}
-                    onChange={(selectedTimesteps) => handlePluginSelectedTimestepsChange(option.pluginModifierId!, selectedTimesteps)}
+                    onSelectedTimestepsChange={(selectedTimesteps) => handlePluginSelectedTimestepsChange(option.pluginModifierId!, selectedTimesteps)}
+                    selectedTeamClusterId={selectedClusterId}
+                    teamClusterOptions={teamClusterOptions}
+                    onSelectedTeamClusterIdChange={(value) => handlePluginClusterChange(option.pluginModifierId!, value)}
+                    frameOptions={frameOptions}
                 />
             );
-            const clusterField = (
-                hasTeamClusterOptions
-                    ? (
-                        <PluginClusterField
-                            fieldKey={`plugin-cluster-${option.pluginModifierId}`}
-                            fieldValue={selectedClusterId}
-                            options={teamClusterOptions}
-                            onFieldChange={(_, value) => handlePluginClusterChange(option.pluginModifierId!, value)}
-                        />
-                    )
-                    : (
-                        <Paragraph className='font-size-1 color-muted'>No team clusters available</Paragraph>
-                    )
-            );
-
-            if(args.length > 0){
-                content = (
-                    <Container className='d-flex column gap-05'>
-                        <ArgumentFieldsRenderer
-                            arguments={args}
-                            values={pluginConfigs[option.pluginModifierId!] ?? {}}
-                            onChange={(key, value) => handlePluginConfigChange(option.pluginModifierId!, key, value)}
-                            frameOptions={frameOptions}
-                            emptyMessage='No arguments configured.'
-                        />
-                        {clusterField}
-                        {selectedTimestepsField}
-                    </Container>
-                );
-            } else {
-                content = (
-                    <Container className="d-flex column gap-05">
-                        {clusterField}
-                        {selectedTimestepsField}
-                    </Container>
-                );
-            }
         }else{
             const LegacyComponent = LEGACY_COMPONENT_MAP.get(option.modifierId);
             if(LegacyComponent){

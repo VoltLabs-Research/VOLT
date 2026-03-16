@@ -17,12 +17,14 @@ import { sortData } from '@/shared/utils/sort';
 import {
     JUPYTER_SESSION_PENDING_MESSAGE,
     JUPYTER_SESSION_TIMEOUT_MESSAGE,
-    waitForReadyScriptingSession
+    normalizeScriptingJupyterUrl,
+    startAndWaitForReadyScriptingSession
 } from '../utilities/jupyter-session';
 import {
     createEmptyNotebooksResponse,
     createScriptingNotebooksExport,
     getDeleteConfirmationMessage,
+    getNotebookTeamClusterId,
     getTrajectoryIds
 } from '../utilities/notebooks';
 import { getJupyterStartErrorMessage } from '../utilities/workspace';
@@ -77,18 +79,6 @@ const RENAME_NOTEBOOK_TOAST = {
 
 const resolveScope = (scope?: ScriptingNotebookScope): ScriptingNotebookScope => {
     return scope || DEFAULT_NOTEBOOK_SCOPE;
-};
-
-const getTeamClusterId = (notebook: ScriptingNotebook): string | undefined => {
-    if (!notebook.teamCluster) {
-        return undefined;
-    }
-
-    if (typeof notebook.teamCluster === 'string') {
-        return notebook.teamCluster;
-    }
-
-    return notebook.teamCluster._id;
 };
 
 const renderNotebookStartupTab = (notebookTab: Window, state: NotebookStartupWindowState): void => {
@@ -238,22 +228,11 @@ const useNotebooksListing = () => {
         });
 
         try {
-            const session = await createNotebookSession({
-                notebookId: notebook._id,
-                teamClusterId: getTeamClusterId(notebook)
-            });
-
-            if (notebookTab.closed) {
-                return;
-            }
-
-            if (session.jupyter.ready) {
-                notebookTab.location.replace(session.jupyter.url);
-                return;
-            }
-
-            const result = await waitForReadyScriptingSession({
-                initialSession: session,
+            const result = await startAndWaitForReadyScriptingSession({
+                createSession: () => createNotebookSession({
+                    notebookId: notebook._id,
+                    teamClusterId: getNotebookTeamClusterId(notebook)
+                }),
                 readSession: () => service.readNotebookSessionStatus({ notebookId: notebook._id })
             }, {
                 isCancelled: () => notebookTab.closed
@@ -263,7 +242,7 @@ const useNotebooksListing = () => {
                 return;
             }
 
-            if (result.timedOut || !result.session?.jupyter.ready) {
+            if (result.timedOut || !result.session.jupyter.ready) {
                 renderNotebookStartupTab(notebookTab, {
                     title: 'Notebook is still starting',
                     description: JUPYTER_SESSION_TIMEOUT_MESSAGE
@@ -275,7 +254,7 @@ const useNotebooksListing = () => {
                 return;
             }
 
-            notebookTab.location.replace(result.session.jupyter.url);
+            notebookTab.location.replace(normalizeScriptingJupyterUrl(result.session.jupyter.url));
         } catch (error: unknown) {
             notebookTab.close();
 

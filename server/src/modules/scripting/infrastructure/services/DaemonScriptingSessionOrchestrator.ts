@@ -1,5 +1,6 @@
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
+import { buildJupyterProxyBasePath, buildJupyterProxyUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -44,17 +45,6 @@ const getNotebookTeamClusterId = (teamCluster: string | null | undefined): strin
     return teamCluster ?? null;
 };
 
-const buildServerBaseUrl = (): string => {
-    const configuredServerUrl = process.env.SERVER_ENDPOINT?.trim();
-    if (configuredServerUrl) {
-        return configuredServerUrl.replace(/\/+$/g, '');
-    }
-
-    const protocol = process.env.SERVER_SCHEMA?.trim() || 'http';
-    const host = process.env.SERVER_HOSTNAME?.trim() || 'localhost';
-    return `${protocol}://${host}`;
-};
-
 @injectable()
 export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrchestrator {
     constructor(
@@ -86,7 +76,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         const runtimeNotebookId = input.notebookId;
         const request: DaemonNotebookSessionRequest = {
             requestedBy: input.userId,
-            publicBasePath: this.buildPublicProxyBasePath(input.teamId, runtimeNotebookId),
+            publicBasePath: buildJupyterProxyBasePath(input.teamId, runtimeNotebookId),
             notebook: {
                 _id: runtimeNotebookId,
                 teamId: input.teamId,
@@ -106,7 +96,13 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         });
 
         const daemonPath = this.resolveDaemonJupyterPath(response.jupyter);
-        const jupyterUrl = this.buildProxyJupyterUrl(input.teamId, runtimeNotebookId, daemonPath, input.userId);
+        const jupyterUrl = buildJupyterProxyUrl({
+            teamId: input.teamId,
+            runtimeNotebookId,
+            daemonPath,
+            userId: input.userId,
+            createAccessToken: this.accessTokenService.create.bind(this.accessTokenService)
+        });
         return {
             notebookId: input.notebookId,
             jupyter: {
@@ -144,22 +140,6 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
 
     async resolveDefaultNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<string> {
         return this.notebookService.resolveDefaultNotebookTemplateContent(context);
-    }
-
-    private buildProxyJupyterUrl(teamId: string, runtimeNotebookId: string, daemonPath: string, userId: string): string {
-        const accessToken = this.accessTokenService.create({
-            teamId,
-            runtimeNotebookId,
-            userId
-        });
-        const serverBaseUrl = buildServerBaseUrl();
-        const proxyUrl = new URL(`/api/jupyter/${encodeURIComponent(teamId)}/notebooks/${encodeURIComponent(runtimeNotebookId)}${daemonPath}`, serverBaseUrl);
-        proxyUrl.searchParams.set('access_token', accessToken);
-        return proxyUrl.toString();
-    }
-
-    private buildPublicProxyBasePath(teamId: string, runtimeNotebookId: string): string {
-        return `/api/jupyter/${encodeURIComponent(teamId)}/notebooks/${encodeURIComponent(runtimeNotebookId)}`;
     }
 
     private resolveDaemonJupyterPath(jupyter: DaemonNotebookJupyterResponse): string {

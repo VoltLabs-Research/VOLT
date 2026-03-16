@@ -20,6 +20,8 @@ import type ScriptingNotebook from '@modules/scripting/domain/entities/Scripting
 import type { IUseCase } from '@shared/application/IUseCase';
 
 const LOCK_TTL_MS = 90_000;
+const LOCK_BUSY_WAIT_ATTEMPTS = 5;
+const LOCK_BUSY_WAIT_DELAY_MS = 300;
 
 const PENDING_JUPYTER_SESSION: CreateScriptingJupyterSessionOutputDTO = {
     notebookId: '',
@@ -61,6 +63,12 @@ const selectExistingTrajectoryNotebook = (
     })[0] || null;
 };
 
+const sleep = async (delayMs: number): Promise<void> => {
+    await new Promise<void>((resolve) => {
+        setTimeout(resolve, delayMs);
+    });
+};
+
 @injectable()
 export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScriptingJupyterSessionInputDTO, CreateScriptingJupyterSessionOutputDTO, ApplicationError> {
     constructor(
@@ -99,9 +107,10 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         try {
             lease = await this.scriptingSessionLock.acquire(lockKey, LOCK_TTL_MS);
             if (!lease) {
+                const pendingNotebookId = await this.resolvePendingNotebookId(input);
                 return Result.ok({
                     ...PENDING_JUPYTER_SESSION,
-                    notebookId: input.notebookId || ''
+                    notebookId: pendingNotebookId
                 });
             }
 
@@ -239,6 +248,30 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         }
 
         return null;
+    }
+
+    private async resolvePendingNotebookId(input: CreateScriptingJupyterSessionInputDTO): Promise<string> {
+        if (input.notebookId) {
+            return input.notebookId;
+        }
+
+        if (!input.trajectoryId) {
+            return '';
+        }
+
+        for (let attempt = 0; attempt < LOCK_BUSY_WAIT_ATTEMPTS; attempt += 1) {
+            const notebooks = await this.scriptingNotebookRepository.findAllWithTrajectory(input.trajectoryId);
+            const existingNotebook = selectExistingTrajectoryNotebook(notebooks, input.teamId);
+            if (existingNotebook) {
+                return existingNotebook.id;
+            }
+
+            if (attempt < LOCK_BUSY_WAIT_ATTEMPTS - 1) {
+                await sleep(LOCK_BUSY_WAIT_DELAY_MS);
+            }
+        }
+
+        return '';
     }
 
     private mapError(error: unknown): Result<CreateScriptingJupyterSessionOutputDTO, ApplicationError> {

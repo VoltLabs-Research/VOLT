@@ -1,6 +1,6 @@
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ValidateWorkflowInputDTO, ValidateWorkflowOutputDTO } from '@modules/plugin/application/dtos/plugin/ValidateWorkflowDTO';
-import { IWorkflowValidatorService } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
+import { IWorkflowValidatorService, WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -14,7 +14,7 @@ export class ValidateWorkflowUseCase implements IUseCase<ValidateWorkflowInputDT
     ){}
 
     async execute(input: ValidateWorkflowInputDTO): Promise<Result<ValidateWorkflowOutputDTO>> {
-        const validation = this.validatorService.validate(input.workflow);
+        const validation = await this.validatorService.validate(input.workflow, input.pluginId, WorkflowValidationMode.Strict);
 
         return Result.ok({
             validated: validation.isValid,

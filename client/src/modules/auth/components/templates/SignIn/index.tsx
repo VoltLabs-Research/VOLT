@@ -20,25 +20,10 @@ import useZodForm from '@/shared/presentation/hooks/use-zod-form';
 import { buildBackendUrl } from '@/app/core/http/utilities/backend-origin';
 import { sileo } from 'sileo';
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import type { FormEvent } from 'react';
 import type { StepTitles } from '@/shared/presentation/components/Stepper';
 import type { SignInForm } from './validation-schema';
-
-interface SignInLocationState {
-    from?: {
-        pathname?: string;
-        search?: string;
-    };
-};
-
-const isSignInLocationState = (value: unknown): value is SignInLocationState => {
-    if (typeof value !== 'object' || value === null) {
-        return false;
-    }
-
-    return 'from' in value;
-};
 
 enum SignInStep {
     Email = 'email',
@@ -63,7 +48,6 @@ const stepTitles: StepTitles<SignInStep> = {
 
 const SignInTemplate = () => {
     const navigate = useNavigate();
-    const location = useLocation();
     const { step, goTo } = useStepper<SignInStep>(SignInStep.Email);
     const checkEmail = useCheckEmailMutation();
     const signIn = useSignInMutation();
@@ -83,22 +67,11 @@ const SignInTemplate = () => {
     });
 
     const getNextDestination = (): string => {
-        const params = new URLSearchParams(location.search);
+        const params = new URLSearchParams(window.location.search);
         const queryNext = params.get('next');
 
-        let stateFrom: SignInLocationState['from'];
-        if (isSignInLocationState(location.state)) {
-            stateFrom = location.state.from;
-        }
-
-        let stateDestination: string | null = null;
-        if (stateFrom?.pathname) {
-            stateDestination = stateFrom.pathname + (stateFrom.search ?? '');
-        }
-
         return resolvePostAuthDestination({
-            queryNext,
-            stateDestination
+            queryNext
         });
     };
 

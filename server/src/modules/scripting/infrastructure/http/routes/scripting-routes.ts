@@ -1,13 +1,13 @@
 import { Resource } from '@core/constants/resources';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import { buildJupyterProxyUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import { ErrorCodes } from '@core/constants/error-codes';
 import scriptingControllers from '@modules/scripting/infrastructure/http/controllers';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { container } from 'tsyringe';
 import type { NextFunction, Response } from 'express';
@@ -32,38 +32,6 @@ interface ScriptingSessionStatusResponse {
         ready: boolean;
         url: string;
     };
-};
-
-const buildServerBaseUrl = (): string => {
-    const configuredServerUrl = process.env.SERVER_ENDPOINT?.trim();
-    if (configuredServerUrl) {
-        return configuredServerUrl.replace(/\/+$/g, '');
-    }
-
-    const protocol = process.env.SERVER_SCHEMA?.trim() || 'http';
-    const host = process.env.SERVER_HOSTNAME?.trim() || 'localhost';
-
-    return `${protocol}://${host}`;
-};
-
-const buildScriptingProxyUrl = (
-    teamId: string,
-    runtimeNotebookId: string,
-    userId: string
-): string => {
-    const accessToken = scriptingJupyterAccessTokenService.create({
-        teamId,
-        runtimeNotebookId,
-        userId
-    });
-    const proxyUrl = new URL(
-        `/api/jupyter/${encodeURIComponent(teamId)}/notebooks/${encodeURIComponent(runtimeNotebookId)}`,
-        buildServerBaseUrl()
-    );
-
-    proxyUrl.searchParams.set('access_token', accessToken);
-
-    return proxyUrl.toString();
 };
 
 const normalizeRouteParam = (
@@ -153,7 +121,13 @@ const readScriptingSessionStatus = async (
         };
     }
 
-    const jupyterUrl = buildScriptingProxyUrl(input.teamId, notebook.props.runtimeNotebookId, userId);
+    const jupyterUrl = buildJupyterProxyUrl({
+        teamId: input.teamId,
+        runtimeNotebookId: notebook.props.runtimeNotebookId,
+        notebookPath: notebook.props.notebookPath,
+        userId,
+        createAccessToken: scriptingJupyterAccessTokenService.create.bind(scriptingJupyterAccessTokenService)
+    });
 
     if (!notebook.props.teamCluster) {
         return {
