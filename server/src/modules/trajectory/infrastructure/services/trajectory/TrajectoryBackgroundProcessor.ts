@@ -1,3 +1,4 @@
+import { getTrajectoryBackgroundProcessorConcurrency } from '@core/config/trajectory';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
@@ -20,6 +21,7 @@ import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import pLimit from 'p-limit';
 
 import type { ErrorCode } from '@core/constants/error-codes';
 import type { ExtractedFile } from '@shared/domain/port/IFileExtractorService';
@@ -35,6 +37,8 @@ type ParsedFrame = {
 
 @injectable()
 export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgroundProcessor {
+    private readonly concurrency = getTrajectoryBackgroundProcessorConcurrency();
+
     constructor(
         @inject(SHARED_TOKENS.TempFileService)
         private readonly tempFileService: ITempFileService,
@@ -174,8 +178,11 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         teamId: string,
         files: ExtractedFile[]
     ): Promise<ParsedFrame[]>{
-        const frames = await Promise.all(files.map(
-            (file) => this.parseFrame(trajectoryId, teamId, file)));
+        const limit = pLimit(this.concurrency);
+        const frames = await Promise.all(files.map((file) => {
+            return limit(() => this.parseFrame(trajectoryId, teamId, file));
+        }));
+
         return frames
             .filter((frame): frame is ParsedFrame => frame !== null)
             .sort((a, b) => (a.timestep as number) - (b.timestep as number));
@@ -327,8 +334,9 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         teamId: string
     ): Promise<void>{
         logger.info(`@trajectory-background-processor: Uploading ${frames.length} trajectory frame(s) directly`);
+        const limit = pLimit(this.concurrency);
 
-        for (const frame of frames) {
+        await Promise.all(frames.map((frame) => {
             const { cachePath, timestep } = frame;
             const cloudUploadTask = {
                 trajectoryId: trajectory._id,
@@ -339,7 +347,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                 frameFilePath: cachePath
             };
 
-            await this.cloudUploadProcessor.process(cloudUploadTask);
-        }
+            return limit(() => this.cloudUploadProcessor.process(cloudUploadTask));
+        }));
     }
 };

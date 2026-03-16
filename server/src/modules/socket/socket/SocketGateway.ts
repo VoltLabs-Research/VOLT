@@ -93,7 +93,8 @@ export default class SocketGateway{
             },
             transports: ['websocket', 'polling'],
             pingTimeout: this.pingTimeout,
-            pingInterval: this.pingInterval
+            pingInterval: this.pingInterval,
+            maxHttpBufferSize: 10e6 // 10 MB — safety net for chunked uploads (~682 KB base64 per chunk)
         });
 
         this.adapterPub = createRedisClient();
