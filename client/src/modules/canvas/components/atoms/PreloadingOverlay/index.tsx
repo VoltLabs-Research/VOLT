@@ -19,9 +19,9 @@ const PreloadingOverlay = () => {
 
     return (
         <Container className="canvas-preload-overlay d-flex items-center content-center p-absolute inset-0">
-            <Container className="canvas-preload-card glass-bg d-flex column items-center gap-05 radius-lg">
+            <Container className="canvas-preload-card d-flex column items-center gap-05 radius-lg">
                 <Loader scale={0.7} />
-                <Title className="font-size-2">Setting up your scene...</Title>
+                <Title className="font-size-2" style={{ marginTop: '7rem' }}>Setting up your scene...</Title>
                 <Paragraph className="font-size-1 color-secondary">
                     {Math.round(progress * 100)}% loaded
                 </Paragraph>
