@@ -505,9 +505,7 @@ export class JupyterRuntimeService {
     private buildJupyterPath(notebookPath: string): string {
         const uiPath = this.resolveUiPath();
         const encodedNotebookPath = notebookPath.split('/').map(encodeURIComponent).join('/');
-        const basePath = path.posix.join(uiPath, 'tree', encodedNotebookPath);
-
-        return `${basePath}?token=${encodeURIComponent(this.config.jupyter.token)}`;
+        return path.posix.join(uiPath, 'tree', encodedNotebookPath);
     }
 
     private resolveUiPath(): string {
