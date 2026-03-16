@@ -146,7 +146,7 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         outputs: 1,
         allowedConnections: {
             from: [NodeType.CONTEXT],
-            to: [NodeType.ENTRYPOINT]
+            to: [NodeType.ENTRYPOINT, NodeType.PLUGIN]
         },
         createDefaultData: () => ({
             forEach: {
@@ -162,8 +162,8 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         inputs: 1,
         outputs: -1,
         allowedConnections: {
-            from: [NodeType.FOREACH],
-            to: [NodeType.EXPOSURE, NodeType.IF_STATEMENT, NodeType.PLUGIN]
+            from: [NodeType.FOREACH, NodeType.PLUGIN],
+            to: [NodeType.EXPOSURE, NodeType.IF_STATEMENT]
         },
         createDefaultData: () => ({
             entrypoint: {
@@ -183,8 +183,8 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         inputs: 1,
         outputs: -1,
         allowedConnections: {
-            from: [NodeType.ENTRYPOINT, NodeType.PLUGIN, NodeType.IF_STATEMENT],
-            to: [NodeType.PLUGIN]
+            from: [NodeType.FOREACH, NodeType.PLUGIN],
+            to: [NodeType.PLUGIN, NodeType.ENTRYPOINT]
         },
         createDefaultData: () => ({
             pluginNode: {
@@ -244,7 +244,7 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         outputs: 2,
         allowedConnections: {
             from: [NodeType.ENTRYPOINT, NodeType.FOREACH, NodeType.CONTEXT],
-            to: [NodeType.ENTRYPOINT, NodeType.EXPOSURE, NodeType.EXPORT, NodeType.PLUGIN]
+            to: [NodeType.ENTRYPOINT, NodeType.EXPOSURE, NodeType.EXPORT]
         },
         createDefaultData: () => ({
             ifStatement: {

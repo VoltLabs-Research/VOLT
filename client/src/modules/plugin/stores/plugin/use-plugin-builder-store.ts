@@ -200,6 +200,7 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
 
                 if (!srcConfig || !tgtConfig) return false;
                 if (!srcConfig.allowedConnections.to.includes(tgtNode.type as NodeType)) return false;
+                if (!tgtConfig.allowedConnections.from.includes(srcNode.type as NodeType)) return false;
                 if (edges.some((e) => e.source === source && e.target === target)) return false;
 
                 const tgtLimit = typeof tgtConfig.inputs === 'number' ? tgtConfig.inputs : 1;
