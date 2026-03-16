@@ -291,7 +291,15 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
     }
 
     /**
-     * Copies a frame file into the trajectory cache.
+     * Moves a frame file into the trajectory cache.
+     *
+     * Uses `fs.rename` which is an atomic metadata-only operation when source
+     * and destination reside on the same filesystem (both live under the
+     * tempFileService root).  This turns a ~219 MB copy (~200 ms) into a
+     * sub-millisecond inode pointer swap.
+     *
+     * Falls back to `fs.copyFile` + `fs.unlink` for the rare cross-device case
+     * (EXDEV), e.g. when tmpdir and cache are on different mount points.
      */
     private async cacheFrame(
         trajectoryId: string,
@@ -306,7 +314,17 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         );
 
         await fs.mkdir(path.dirname(cachePath), { recursive: true });
-        await fs.copyFile(sourcePath, cachePath);
+
+        try {
+            await fs.rename(sourcePath, cachePath);
+        } catch (error: unknown) {
+            if (error instanceof Error && 'code' in error && error.code === 'EXDEV') {
+                await fs.copyFile(sourcePath, cachePath);
+                await fs.unlink(sourcePath).catch(() => {});
+            } else {
+                throw error;
+            }
+        }
 
         return cachePath;
     }
