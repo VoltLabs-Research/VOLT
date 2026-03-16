@@ -59,7 +59,6 @@
 
 .cover-container {
     height: 200px;
-    background: linear-gradient(180deg, var(--color-surface-2) 0%, color-mix(in srgb, var(--color-surface-2) 60%, var(--color-surface-1)) 100%);
 }
 
 .cover-container::before {
