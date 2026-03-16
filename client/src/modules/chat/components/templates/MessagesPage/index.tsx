@@ -7,6 +7,7 @@ import ChatDetailsPanel from '../../molecules/ChatDetailsPanel';
 import { cn } from '@/shared/utils';
 import { useParams } from 'react-router-dom';
 import Container from '@/shared/presentation/components/Container';
+import useTip from '@/shared/tips/use-tip';
 import './MessagesPage.css';
 
 type MessagesPageRouteParam = 'chatId';
@@ -47,6 +48,10 @@ const MessagesPage = () => {
         addUsersToGroup,
         leaveGroup
     } = useMessagesPage(chatId);
+
+    useTip('messages-details-panel', {
+        enabled: Boolean(currentChat)
+    });
 
     return (
         <Container

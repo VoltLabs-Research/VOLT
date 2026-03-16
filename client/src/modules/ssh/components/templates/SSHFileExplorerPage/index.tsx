@@ -10,6 +10,7 @@ import SSHExplorerHeaderLeft from '@/modules/ssh/components/atoms/SSHExplorerHea
 import SSHExplorerHeaderRight from '@/modules/ssh/components/atoms/SSHExplorerHeaderRight';
 import FileExplorer from '@/shared/presentation/components/FileExplorer';
 import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileExplorerRow';
+import useTip from '@/shared/tips/use-tip';
 import { formatDistanceToNow } from 'date-fns';
 import { LuFile, LuFolder } from 'react-icons/lu';
 import { useEffect } from 'react';
@@ -45,6 +46,10 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
         { enabled: !!connectionId }
     );
     const connection = connectionQuery.data || null;
+
+    useTip('ssh-file-explorer-navigation', {
+        enabled: Boolean(connection) && !connectionQuery.isLoading
+    });
 
     usePageTitle(connection?.name ? `${connection.name} - File Explorer` : 'SSH File Explorer');
 
