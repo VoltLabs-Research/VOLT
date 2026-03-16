@@ -13,6 +13,7 @@ export interface ContainerPortMapping {
 export interface CreateRuntimeContainerOptions {
     image: string;
     name: string;
+    operationId?: string;
     env?: ContainerEnvironmentVariable[];
     ports?: ContainerPortMapping[];
     labels?: Record<string, string>;

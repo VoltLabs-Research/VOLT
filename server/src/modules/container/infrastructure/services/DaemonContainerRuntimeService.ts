@@ -32,7 +32,9 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
     }
 
     async createContainer(teamClusterId: string, config: CreateRuntimeContainerOptions): Promise<RuntimeContainerInfo> {
-        return this.teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, 'container.create', { ...config });
+        return this.teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, 'container.create', { ...config }, {
+            timeoutMs: 5 * 60 * 1000
+        });
     }
 
     async getContainer(teamClusterId: string, containerId: string): Promise<RuntimeContainerInfo> {

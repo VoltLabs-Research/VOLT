@@ -106,8 +106,8 @@ export const RENDERER_SUBSECTION_TITLES = {
 };
 
 export const RENDERER_CREATE_DEFAULTS: RendererCreateSettings = {
-    antialias: false,
-    alpha: false,
+    antialias: true,
+    alpha: true,
     depth: true,
     stencil: false,
     logarithmicDepthBuffer: false,
@@ -115,7 +115,7 @@ export const RENDERER_CREATE_DEFAULTS: RendererCreateSettings = {
     premultipliedAlpha: true,
     failIfMajorPerformanceCaveat: false,
     precision: PrecisionType.High,
-    powerPreference: PowerPreference.LowPower
+    powerPreference: PowerPreference.HighPerformance
 };
 
 export const RENDERER_RUNTIME_DEFAULTS: RendererRuntimeSettings = {

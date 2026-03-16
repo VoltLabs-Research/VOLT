@@ -2,6 +2,7 @@ import ReviewItem from '../../atoms/ReviewItem';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader';
 import Title from '@/shared/presentation/components/Title';
 import { Box } from 'lucide-react';
 import { getMaskedCustomFieldValue, mergeContainerEnvVariables } from '../../../hooks/use-create-container-form';
@@ -19,6 +20,7 @@ interface ReviewStepProps {
     selectedTeamClusterId: string | null;
     image: string | undefined;
     isLoading: boolean;
+    deployProgressMessage: string | null;
     onBack: () => void;
     onCreate: () => void;
 };
@@ -31,6 +33,7 @@ const ReviewStep = ({
     selectedTeamClusterId,
     image,
     isLoading,
+    deployProgressMessage,
     onBack,
     onCreate
 }: ReviewStepProps) => {
@@ -78,6 +81,12 @@ const ReviewStep = ({
                 {customFieldsDisplay && <ReviewItem label='Template settings' value={customFieldsDisplay} />}
                 <ReviewItem label='Docker access' value={dockerAccessLabel} />
             </Container>
+
+            <ProcessingLoader
+                isVisible={isLoading && !!deployProgressMessage}
+                message={deployProgressMessage || 'Deploying container...'}
+                className='mt-1'
+            />
 
             <Container className='d-flex content-end gap-1 create-container-step-actions mt-3'>
                 <Button variant='outline' intent='neutral' onClick={onBack}>Back</Button>

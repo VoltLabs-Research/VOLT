@@ -41,25 +41,29 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
 }, ref) => {
     const orbitControlsRef = useRef<OrbitControlsHandle | null>(null);
     const initialDistanceRef = useRef<number | null>(null);
-    const [isInteracting, setIsInteracting] = useState(false);
+    // isInteracting is stored in a ref to avoid re-rendering the entire Canvas
+    // subtree on every orbit start/end. R3F's performance.regress() + AdaptiveDpr
+    // handle DPR degradation natively without React state.
+    const isInteractingRef = useRef(false);
     const [screenshotAnnouncement, setScreenshotAnnouncement] = useState('');
     const titleId = useId();
     const descriptionId = useId();
 
+    // Compute DPR/performance once (non-interacting baseline).
+    // During interaction, R3F's built-in adaptive system handles degradation.
     const canvasRuntimeProps = useMemo(() => {
         return resolveCanvasRuntimeProps({
             dpr: config.dpr,
             performance: config.performance,
             interactionDegradeEnabled: config.interactionDegradeEnabled
         }, {
-            interacting: isInteracting,
+            interacting: false,
             boostScreenshot: screenshotCaptureRequested
         });
     }, [
         config.dpr,
         config.interactionDegradeEnabled,
         config.performance,
-        isInteracting,
         screenshotCaptureRequested
     ]);
 
@@ -71,7 +75,7 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     }, [config.orbitControls.target]);
 
     const markInteracting = useCallback((active: boolean) => {
-        setIsInteracting(active);
+        isInteractingRef.current = active;
         onInteractionChange?.(active);
     }, [onInteractionChange]);
 

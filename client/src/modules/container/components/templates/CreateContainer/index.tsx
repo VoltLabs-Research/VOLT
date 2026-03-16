@@ -59,6 +59,7 @@ const CreateContainer = () => {
         clusterResourceLimits,
         isLoadingResourceLimits,
         isLoading,
+        deployProgressMessage,
         setSelectedTeamId,
         setSelectedTeamClusterId,
         updateConfig,
@@ -153,6 +154,7 @@ const CreateContainer = () => {
                     selectedTeamClusterId={selectedTeamClusterId}
                     image={getSelectedImage()}
                     isLoading={isLoading}
+                    deployProgressMessage={deployProgressMessage}
                     onBack={() => goTo(StepKey.Config)}
                     onCreate={handleCreate}
                 />

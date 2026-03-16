@@ -7,9 +7,13 @@ import {
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import logger from '@shared/infrastructure/logger';
+import {
+    readRelayHostValue,
+    readRelayPortRangeValue,
+    resolveRelayAdvertisedHost
+} from '@shared/infrastructure/utilities/relay-network';
 import { inject, injectable } from 'tsyringe';
 import net from 'node:net';
-import { networkInterfaces } from 'node:os';
 import type TeamClusterExposureRegistryService from './TeamClusterExposureRegistryService';
 
 interface PublicExposureBinding {
@@ -24,112 +28,12 @@ const DEFAULT_PUBLIC_PORT_END = 23999;
 const DEFAULT_RELAY_BIND_HOST = '127.0.0.1';
 const VNC_PRIVATE_PORT = 5901;
 
-const readPortRangeValue = (name: string, fallback: number): number => {
-    const rawValue = process.env[name]?.trim();
-    if (!rawValue) {
-        return fallback;
-    }
-
-    const value = Number(rawValue);
-    if (!Number.isInteger(value) || value <= 0) {
-        throw new Error(`${name} must be a positive integer`);
-    }
-
-    return value;
-};
-
-const readHostValue = (name: string, fallback: string): string => {
-    const rawValue = process.env[name]?.trim();
-    if (!rawValue) {
-        return fallback;
-    }
-
-    return rawValue;
-};
-
-const readOptionalHostValue = (name: string): string | null => {
-    const rawValue = process.env[name]?.trim();
-    if (!rawValue) {
-        return null;
-    }
-
-    return rawValue;
-};
-
-const isWildcardHost = (value: string): boolean => {
-    return value === '0.0.0.0' || value === '::' || value === '[::]';
-};
-
-const detectNonInternalIpv4Host = (): string | null => {
-    const interfaces = networkInterfaces();
-
-    for (const addresses of Object.values(interfaces)) {
-        if (!addresses) {
-            continue;
-        }
-
-        for (const address of addresses) {
-            if (address.family !== 'IPv4' || address.internal || isWildcardHost(address.address)) {
-                continue;
-            }
-
-            return address.address;
-        }
-    }
-
-    return null;
-};
-
-const resolveRelayAdvertisedHost = (bindHost: string): string => {
-    const configuredAdvertisedHost = readOptionalHostValue('TEAM_CLUSTER_TCP_RELAY_ADVERTISED_HOST');
-    if (configuredAdvertisedHost) {
-        if (isWildcardHost(configuredAdvertisedHost)) {
-            throw new Error('TEAM_CLUSTER_TCP_RELAY_ADVERTISED_HOST must be a reachable host, not a wildcard bind address');
-        }
-
-        return configuredAdvertisedHost;
-    }
-
-    if (!isWildcardHost(bindHost)) {
-        return bindHost;
-    }
-
-    const configuredServerHostname = readOptionalHostValue('SERVER_HOSTNAME');
-    if (configuredServerHostname) {
-        if (!isWildcardHost(configuredServerHostname)) {
-            return configuredServerHostname;
-        }
-
-        logger.warn(
-            { bindHost, serverHostname: configuredServerHostname },
-            '[TcpExposureRelay] Ignoring wildcard SERVER_HOSTNAME for relay advertised host resolution'
-        );
-    }
-
-    const autoDetectedHost = detectNonInternalIpv4Host();
-    if (autoDetectedHost) {
-        logger.warn(
-            { bindHost, advertisedHost: autoDetectedHost },
-            '[TcpExposureRelay] Auto-detected relay advertised host because bind host is wildcard'
-        );
-        return autoDetectedHost;
-    }
-
-    logger.error(
-        { bindHost },
-        '[TcpExposureRelay] Unable to determine a reachable relay advertised host for wildcard bind host'
-    );
-    throw new Error(
-        'Unable to determine a reachable TEAM_CLUSTER_TCP_RELAY_ADVERTISED_HOST. Configure TEAM_CLUSTER_TCP_RELAY_ADVERTISED_HOST or SERVER_HOSTNAME to a non-wildcard host.'
-    );
-};
-
 @injectable()
 export default class TeamClusterTcpExposureRelayService {
-    private readonly bindHost = readHostValue('TEAM_CLUSTER_TCP_RELAY_BIND_HOST', DEFAULT_RELAY_BIND_HOST);
-    private readonly advertisedHost = resolveRelayAdvertisedHost(this.bindHost);
-    private readonly portStart = readPortRangeValue('TEAM_CLUSTER_TCP_RELAY_PORT_START', DEFAULT_PUBLIC_PORT_START);
-    private readonly portEnd = readPortRangeValue('TEAM_CLUSTER_TCP_RELAY_PORT_END', DEFAULT_PUBLIC_PORT_END);
+    private readonly bindHost = readRelayHostValue('TEAM_CLUSTER_TCP_RELAY_BIND_HOST', DEFAULT_RELAY_BIND_HOST);
+    private readonly advertisedHost = resolveRelayAdvertisedHost(this.bindHost, 'TEAM_CLUSTER_TCP_RELAY_ADVERTISED_HOST');
+    private readonly portStart = readRelayPortRangeValue('TEAM_CLUSTER_TCP_RELAY_PORT_START', DEFAULT_PUBLIC_PORT_START);
+    private readonly portEnd = readRelayPortRangeValue('TEAM_CLUSTER_TCP_RELAY_PORT_END', DEFAULT_PUBLIC_PORT_END);
     private readonly bindingsByExposureId = new Map<string, PublicExposureBinding>();
     private readonly pendingBindingsByExposureId = new Map<string, Promise<number | null>>();
     private readonly usedPorts = new Set<number>();

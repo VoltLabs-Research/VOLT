@@ -22,13 +22,14 @@
 
 import { useRef, useState, useCallback, useEffect } from 'react';
 import * as THREE from 'three';
-import { useThree } from '@react-three/fiber';
+import { useThree, useFrame } from '@react-three/fiber';
 import useThrottledCallback from '@/shared/presentation/hooks/use-throttled-callback';
 import useModelInteraction from '@/modules/fractal/hooks/use-model-interaction';
 import { createFractalEngine } from '@/modules/fractal/services/fractal-engine-factory';
 import type { ModelLoadingState, UseGlbSceneParams } from '@/modules/fractal/types';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 import type { FractalParams } from '@/modules/fractal/services/fractal-engine';
+import type { RefObject } from 'react';
 
 function extractEngineParams(params: UseGlbSceneParams): FractalParams {
     return {
@@ -47,10 +48,21 @@ function extractEngineParams(params: UseGlbSceneParams): FractalParams {
     };
 }
 
-export default function useGlbScene(params: UseGlbSceneParams) {
+export default function useGlbScene(
+    params: UseGlbSceneParams,
+    /** Optional parent group ref. When provided the loaded model is attached
+     *  imperatively via `parent.add(model)` instead of being returned as React
+     *  state — this keeps the heavy 3D model out of React's reconciliation tree
+     *  and eliminates re-renders when the model swaps. */
+    modelContainerRef?: RefObject<THREE.Group | null>
+) {
     const { scene, camera, gl, invalidate } = useThree();
 
-    const [model, setModel] = useState<THREE.Object3D | null>(null);
+    // Track the model imperatively — never store it in React state.
+    // A generation counter is bumped whenever the model changes so that
+    // downstream effects (point-cloud settings, opacity) still re-run.
+    const modelRef = useRef<THREE.Object3D | null>(null);
+    const [modelGeneration, setModelGeneration] = useState(0);
     const [modelBounds, setLocalModelBounds] = useState<BoundsInfo | null>(null);
 
     const {
@@ -95,7 +107,26 @@ export default function useGlbScene(params: UseGlbSceneParams) {
                     setLoadingState(state);
                     onLoadingStateChangedRef.current?.(state);
                 },
-                onModelAvailable: (modelObj) => setModel(modelObj)
+                onModelAvailable: (modelObj) => {
+                    const parent = modelContainerRef?.current;
+
+                    // Remove previous model from its parent imperatively.
+                    if (modelRef.current) {
+                        modelRef.current.removeFromParent();
+                    }
+
+                    modelRef.current = modelObj;
+
+                    if (modelObj && parent) {
+                        parent.add(modelObj);
+                    }
+
+                    // Bump a lightweight generation counter so effects that
+                    // depend on "has the model changed?" still fire, without
+                    // putting the heavy Object3D into React state.
+                    setModelGeneration((g) => g + 1);
+                    invalidate();
+                }
             }
         );
 
@@ -106,6 +137,11 @@ export default function useGlbScene(params: UseGlbSceneParams) {
         return () => {
             engineRef.current?.dispose();
             engineRef.current = null;
+            // Ensure any model attached to the container is removed on unmount.
+            if (modelRef.current) {
+                modelRef.current.removeFromParent();
+                modelRef.current = null;
+            }
         };
     }, [scene, camera, gl, invalidate]);
 
@@ -133,11 +169,20 @@ export default function useGlbScene(params: UseGlbSceneParams) {
 
     useEffect(() => {
         engineRef.current?.updatePointCloudSettings(pointCloudSettings, pointSizeMultiplier);
-    }, [model, pointCloudSettings, pointSizeMultiplier]);
+        // modelGeneration replaces the old `model` dependency — fires whenever the
+        // model reference changes without putting the Object3D into React state.
+    }, [modelGeneration, pointCloudSettings, pointSizeMultiplier]);
 
     useEffect(() => {
         engineRef.current?.updateOpacity(params.sceneKey, sceneOpacities, pointCloudSettings);
-    }, [model, pointCloudSettings, sceneOpacities, params.sceneKey]);
+    }, [modelGeneration, pointCloudSettings, sceneOpacities, params.sceneKey]);
+
+    // Update point cloud cameraPosition uniform each rendered frame.
+    // With frameloop="demand" this only runs when a frame is already being
+    // produced (orbit, model load, etc.), so it adds zero continuous cost.
+    useFrame(({ camera }) => {
+        engineRef.current?.updateCameraPosition(camera.position);
+    });
 
     const interaction = useModelInteraction({
         onSelect: params.onSelect,
@@ -157,7 +202,6 @@ export default function useGlbScene(params: UseGlbSceneParams) {
     }, [throttledUpdateScene]);
 
     return {
-        model,
         modelBounds: modelBounds ?? activeModelBounds,
         isLoading: loadingState.isLoading,
         loadProgress: loadingState.progress,

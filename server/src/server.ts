@@ -8,7 +8,6 @@ import { initializeRedis } from './core/config/redis';
 import { registerAllSubscribers } from './core/events/registerAllSubscribers';
 import { SOCKET_TOKENS } from './modules/socket/infrastructure/di/SocketTokens';
 import { ContainerVncGatewayService } from './modules/container/infrastructure/services/ContainerVncGatewayService';
-import { ContainerPortProxyService } from './modules/container/infrastructure/services/ContainerPortProxyService';
 import { ScriptingJupyterProxyService } from './modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
 import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
 import logger from './shared/infrastructure/logger';
@@ -64,15 +63,6 @@ const startServer = async () => {
         if (!proxyService.isJupyterUpgradeRequest(request)) {
             const vncGatewayService = container.resolve(ContainerVncGatewayService);
             if (!vncGatewayService.isVncUpgradeRequest(request)) {
-                const containerPortProxyService = container.resolve(ContainerPortProxyService);
-                if (!containerPortProxyService.isContainerPortUpgradeRequest(request)) {
-                    return;
-                }
-
-                containerPortProxyService.handleUpgrade(request, socket as Duplex, head).catch((error: unknown) => {
-                    logger.error(`@server: container port upgrade failed: ${error instanceof Error ? error.message : String(error)}`);
-                    (socket as Duplex).destroy();
-                });
                 return;
             }
 
