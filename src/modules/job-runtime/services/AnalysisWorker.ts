@@ -26,6 +26,10 @@ interface QueueJobPayload extends AnalysisQueueJobPayload {
     executionData: AnalysisJobExecutionData;
 };
 
+interface PluginNodeConfig {
+    pluginId?: string;
+};
+
 
 const resolveTemplate = (template: string, outputs: Map<string, Record<string, unknown>>): string => {
     return template.replace(/\{\{\s*([^}]+)\s*\}\}/g, (_, ref: string) => {
@@ -71,6 +75,95 @@ const parseArguments = (value: string): string[] => {
 
 const createRuntimeWorkflowRegistry = (): WorkflowNodeRegistry => {
     return createWorkflowNodeRegistry();
+};
+
+const getSingleAdjacentNodeId = (
+    adjacencyMap: Map<string, string[]>,
+    nodeId: string,
+    errorMessage: string
+): string | undefined => {
+    const adjacentNodeIds = adjacencyMap.get(nodeId) ?? [];
+    if (adjacentNodeIds.length > 1) {
+        throw new Error(errorMessage);
+    }
+
+    return adjacentNodeIds[0];
+};
+
+export const resolveInlinePluginExecutionOrder = (
+    workflow: AnalysisJobExecutionData['workflow']
+): Array<AnalysisJobExecutionData['workflow']['nodes'][number]> => {
+    const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
+    const totalPluginNodes = workflow.nodes.filter((node) => node.type === WorkflowNodeType.Plugin).length;
+    const parentMap = new Map<string, string[]>();
+    const childMap = new Map<string, string[]>();
+
+    for (const edge of workflow.edges) {
+        const parents = parentMap.get(edge.target) ?? [];
+        parents.push(edge.source);
+        parentMap.set(edge.target, parents);
+
+        const children = childMap.get(edge.source) ?? [];
+        children.push(edge.target);
+        childMap.set(edge.source, children);
+    }
+
+    const entrypointNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
+    if (!entrypointNode) {
+        throw new Error('Workflow entrypoint is missing');
+    }
+
+    let currentNodeId = getSingleAdjacentNodeId(
+        parentMap,
+        entrypointNode.id,
+        `Top-level entrypoint ${entrypointNode.id} must have a single upstream chain`
+    );
+    const pluginNodes: Array<AnalysisJobExecutionData['workflow']['nodes'][number]> = [];
+
+    while (currentNodeId) {
+        const currentNode = nodeMap.get(currentNodeId);
+        if (!currentNode) {
+            throw new Error(`Workflow node ${currentNodeId} is missing from the inline plugin chain`);
+        }
+
+        if (currentNode.type === WorkflowNodeType.ForEach) {
+            if (pluginNodes.length !== totalPluginNodes) {
+                throw new Error('Unsupported inline plugin topology outside the entrypoint chain');
+            }
+
+            return pluginNodes.reverse();
+        }
+
+        if (currentNode.type !== WorkflowNodeType.Plugin) {
+            throw new Error(`Unsupported inline plugin topology at node ${currentNode.id}`);
+        }
+
+        const pluginNodeData = currentNode.data.pluginNode as PluginNodeConfig | undefined;
+        const pluginId = typeof pluginNodeData?.pluginId === 'string'
+            ? pluginNodeData.pluginId.trim()
+            : '';
+        if (!pluginId) {
+            throw new Error(`Plugin node ${currentNode.id} is missing pluginId`);
+        }
+
+        getSingleAdjacentNodeId(
+            childMap,
+            currentNode.id,
+            `Plugin node ${currentNode.id} must have a single downstream chain`
+        );
+        pluginNodes.push(currentNode);
+        currentNodeId = getSingleAdjacentNodeId(
+            parentMap,
+            currentNode.id,
+            `Plugin node ${currentNode.id} must have a single upstream chain`
+        );
+    }
+
+    if (pluginNodes.length !== totalPluginNodes) {
+        throw new Error('Unsupported inline plugin topology outside the entrypoint chain');
+    }
+
+    throw new Error('Inline plugin chain must originate from the top-level forEach node');
 };
 
 export const collectInlineExposureArtifacts = async (
@@ -327,8 +420,7 @@ export class AnalysisWorker {
         dumpLocalPath: string,
         outputDir: string
     ): Promise<void> {
-        const workflowGraph = new WorkflowGraph(executionData.workflow);
-        const pluginNodes = workflowGraph.topologicalSort().filter((node) => node.type === WorkflowNodeType.Plugin);
+        const pluginNodes = resolveInlinePluginExecutionOrder(executionData.workflow);
         if (!pluginNodes.length) {
             return;
         }
@@ -356,14 +448,7 @@ export class AnalysisWorker {
     ): Promise<Record<string, unknown>> {
         const pluginId = typeof pluginNodeData?.pluginId === 'string' ? pluginNodeData.pluginId : '';
         if (!pluginId) {
-            return {
-                execution_result: {
-                    exposures: {
-                        items: [],
-                        str_json: '[]'
-                    }
-                }
-            };
+            throw new Error('Inline plugin node is missing pluginId');
         }
 
         const nestedPlugin = executionData.nestedPlugins.find((candidate) => candidate.pluginId === pluginId);
@@ -393,23 +478,18 @@ export class AnalysisWorker {
             workflow: new WorkflowGraph(nestedPlugin.workflow),
             nestedWorkflows: new Map(executionData.nestedPlugins.map((candidate) => [candidate.pluginId, candidate.workflow]))
         };
+        const nestedPluginNodes = resolveInlinePluginExecutionOrder(nestedPlugin.workflow);
+        const nestedEntrypointNode = nestedPlugin.workflow.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
+        if (!nestedEntrypointNode) {
+            throw new Error(`Nested plugin ${pluginId} has no entrypoint`);
+        }
 
         for (const node of nestedContext.workflow.topologicalSort()) {
-            if (node.type === WorkflowNodeType.Plugin) {
-                const nestedOutput = await this.executeNestedPluginWorkflow(
-                    executionData,
-                    node.data.pluginNode as Record<string, unknown> | undefined,
-                    nestedOutputs,
-                    timestep,
-                    dumpLocalPath,
-                    nestedOutputDir
-                );
-                nestedOutputs.set(node.id, nestedOutput);
-                continue;
+            if (node.id === nestedEntrypointNode.id) {
+                break;
             }
 
-            if (node.type === WorkflowNodeType.Entrypoint) {
-                await this.executeNestedEntrypoint(node.data.entrypoint as Record<string, unknown> | undefined, nestedOutputs, nestedContext, nestedOutputDir);
+            if (node.type === WorkflowNodeType.Plugin) {
                 continue;
             }
 
@@ -442,6 +522,25 @@ export class AnalysisWorker {
                 nestedOutputs.set(node.id, forEachOutput);
             }
         }
+
+        for (const pluginNode of nestedPluginNodes) {
+            const nestedOutput = await this.executeNestedPluginWorkflow(
+                executionData,
+                pluginNode.data.pluginNode as Record<string, unknown> | undefined,
+                nestedOutputs,
+                timestep,
+                dumpLocalPath,
+                nestedOutputDir
+            );
+            nestedOutputs.set(pluginNode.id, nestedOutput);
+        }
+
+        await this.executeNestedEntrypoint(
+            nestedEntrypointNode.data.entrypoint as Record<string, unknown> | undefined,
+            nestedOutputs,
+            nestedContext,
+            nestedOutputDir
+        );
 
         const exposures = await collectInlineExposureArtifacts(nestedPlugin.workflow, nestedOutputDir);
         return {
