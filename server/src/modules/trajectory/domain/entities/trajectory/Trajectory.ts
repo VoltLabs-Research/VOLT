@@ -30,6 +30,7 @@ export interface TrajectoryProps {
     frames: TrajectoryFrame[];
     analysis?: string[];
     rasterSceneViews: number;
+    hasPreview?: boolean;
     stats: TrajectoryStats;
     updatedAt: Date;
     createdAt: Date;

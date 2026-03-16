@@ -1,4 +1,4 @@
-import { Exporter, ModifierContext, NodeType, ExportType_ as ExportType, ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { Exporter, ModifierContext, NodeType, ExportType_ as ExportType, ArgumentType, EntrypointType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
 import { v4 } from 'uuid';
 import type { Node } from '@xyflow/react';
@@ -52,6 +52,9 @@ export const ARGUMENT_TYPE_OPTIONS: NodeOption<ArgumentType>[] = [{
 }, {
     value: ArgumentType.FRAME,
     label: 'Frame'
+}, {
+    value: ArgumentType.LIST,
+    label: 'List'
 }];
 
 export const EXPORTER_OPTIONS: NodeOption<Exporter>[] = [{
@@ -165,7 +168,9 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         createDefaultData: () => ({
             entrypoint: {
                 binary: '',
+                type: EntrypointType.EXECUTABLE,
                 arguments: '{{ forEach.currentValue }} {{ forEach.outputPath }} {{ arguments.as_str }}',
+                requirementsFile: '',
                 timeout: -1
             }
         })

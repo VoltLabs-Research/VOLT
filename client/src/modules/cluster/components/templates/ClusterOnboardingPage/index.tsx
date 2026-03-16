@@ -2,6 +2,11 @@ import './ClusterOnboardingPage.css';
 import ClusterListPanel from '@/modules/cluster/components/molecules/ClusterListPanel';
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/DeleteClusterModal';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
+import {
+    DEFAULT_POST_AUTH_DESTINATION,
+    resolvePostAuthDestination,
+    setPostAuthDestination
+} from '@/modules/auth/services/post-auth-destination-storage';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import { buildClusterInstallCommand } from '@/modules/cluster/utilities/build-cluster-install-command';
 import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
@@ -24,10 +29,6 @@ import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { FormEvent, ReactNode } from 'react';
 
-interface ClusterOnboardingLocationState {
-    next?: string;
-};
-
 enum ClusterType {
     Computer = 'computer',
     Server = 'server'
@@ -47,15 +48,6 @@ interface OnboardingStepContentProps {
 };
 
 const INSTALL_MODAL_ID = 'cluster-onboarding-install-modal';
-
-const isClusterOnboardingLocationState = (state: unknown): state is ClusterOnboardingLocationState => {
-    if (!state || typeof state !== 'object') {
-        return false;
-    }
-
-    const next = Reflect.get(state, 'next');
-    return next === undefined || typeof next === 'string';
-};
 
 const OnboardingStepContent = ({
     step,
@@ -84,8 +76,10 @@ const OnboardingStepContent = ({
 const ClusterOnboardingPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const locationState = isClusterOnboardingLocationState(location.state) ? location.state : null;
-    const nextDestination = locationState?.next ?? '/dashboard';
+    const nextDestination = resolvePostAuthDestination({
+        queryNext: new URLSearchParams(location.search).get('next'),
+        stateDestination: DEFAULT_POST_AUTH_DESTINATION
+    });
     const { clusters, createCluster, deleteCluster } = useClusterManagement();
     const hasConnectedCluster = hasUsableTeamCluster(clusters);
     const [isSigningOut, setIsSigningOut] = useState(false);
@@ -100,6 +94,10 @@ const ClusterOnboardingPage = () => {
     const [connectedClusterName, setConnectedClusterName] = useState<string | null>(null);
     const hasRedirected = useRef(false);
     const hadConnectedCluster = useRef(hasConnectedCluster);
+
+    useEffect(() => {
+        setPostAuthDestination(nextDestination);
+    }, [nextDestination]);
 
     const liveCluster = createdCluster
         ? clusters.find((cluster) => cluster._id === createdCluster._id) ?? createdCluster
@@ -125,7 +123,7 @@ const ClusterOnboardingPage = () => {
 
         hasRedirected.current = true;
         const timer = setTimeout(() => {
-            navigate(nextDestination);
+            navigate(nextDestination, { replace: true });
         }, 2500);
 
         return () => clearTimeout(timer);
@@ -145,7 +143,7 @@ const ClusterOnboardingPage = () => {
         }
 
         hasRedirected.current = true;
-        navigate(nextDestination);
+        navigate(nextDestination, { replace: true });
     }, [hasConnectedCluster, isCreatedClusterConnected, navigate, nextDestination]);
 
     useEffect(() => {
@@ -281,7 +279,7 @@ const ClusterOnboardingPage = () => {
                         {successMessage}
                     </Title>
                     <Paragraph className='color-secondary'>
-                        Redirecting you to the dashboard.
+                        Redirecting you to your workspace.
                     </Paragraph>
                 </Container>
             </OnboardingLayout>

@@ -81,6 +81,7 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
             stats,
             analysis: [],
             rasterSceneViews: 0,
+            hasPreview: false,
             isPublic: true,
             updatedAt: new Date(),
             createdAt: new Date()

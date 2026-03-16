@@ -255,7 +255,7 @@ const LatexEditorPanel = ({
 
         if (activeAssetKind === AssetKind.Image) {
             return (
-                <Container className='h-100 d-flex flex-center items-center p-1 overflow-auto'>
+                <Container className='h-max d-flex flex-center items-center p-1 overflow-auto'>
                     <img
                         src={activeAsset.url}
                         alt={headerTitle}

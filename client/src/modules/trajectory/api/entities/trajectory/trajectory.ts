@@ -23,6 +23,7 @@ export interface Trajectory extends BaseEntity {
     analysis: Analysis[];
     frames: TimestepInfo[];
     stats: TrajectoryStats;
+    hasPreview?: boolean;
     preview?: string;
     isPublic?: boolean;
     status?: TrajectoryStatus;

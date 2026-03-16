@@ -275,6 +275,7 @@ export default class PluginStorageService implements IPluginStorageService {
             );
 
             newPlugin.props.workflow.updateEntrypoint({
+                binary: binaryFileName,
                 binaryObjectPath,
                 binaryFileName
             });
