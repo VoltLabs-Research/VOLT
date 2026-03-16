@@ -18,6 +18,7 @@ import type { EnvVariable } from '../api/entities/env-variable';
 import type { PortMapping } from '../api/entities/port-mapping';
 import type { TeamClusterOption } from '../api/entities/team-cluster-option';
 import type { Team } from '@/modules/team/api/entities/team/team';
+import { v4 as uuidv4 } from 'uuid';
 
 export type { EnvVariable } from '../api/entities/env-variable';
 export type { PortMapping } from '../api/entities/port-mapping';
@@ -475,7 +476,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
 
         await showPromise(
             (() => {
-                const operationId = crypto.randomUUID();
+                const operationId = uuidv4();
                 setActiveCreateOperationId(operationId);
                 setDeployProgressMessage('Preparing deployment...');
 
