@@ -122,6 +122,12 @@ export class FractalEngine {
     private consecutiveLoadFailures = 0;
     private static readonly MAX_LOAD_RETRIES = 3;
 
+    private lastPointCloudSettings: PointCloudSceneSettings | undefined = undefined;
+    private lastPointSizeMultiplier: number = 1;
+    private lastOpacitySceneKey: string | undefined = undefined;
+    private lastOpacityValue: number = 1;
+    private lastPointOpacityValue: number = 1;
+
     constructor(
         private surface: FractalSurface,
         params: FractalParams,
@@ -226,6 +232,13 @@ export class FractalEngine {
             this.state.lastLoadedUrl = url;
             this.consecutiveLoadFailures = 0;
 
+            // Reset caches so the first application on the new model always runs.
+            this.lastPointCloudSettings = undefined;
+            this.lastPointSizeMultiplier = -1;
+            this.lastOpacitySceneKey = undefined;
+            this.lastOpacityValue = -1;
+            this.lastPointOpacityValue = -1;
+
             this.updatePointCloudSettings(this.params.pointCloudSettings, this.params.pointCloudSettings?.pointSizeMultiplier ?? 1);
 
             this.callbacks.onModelLoaded?.(bounds);
@@ -301,6 +314,13 @@ export class FractalEngine {
             return;
         }
 
+        if (settings === this.lastPointCloudSettings
+            && fallbackPointSizeMultiplier === this.lastPointSizeMultiplier) {
+            return;
+        }
+        this.lastPointCloudSettings = settings;
+        this.lastPointSizeMultiplier = fallbackPointSizeMultiplier;
+
         const pointCloudSettings: PointCloudSceneSettings = settings ?? {
             overridesEnabled: false,
             detailLevel: PointCloudDetailLevel.Auto,
@@ -355,6 +375,15 @@ export class FractalEngine {
         const pointOpacity = pointCloudSettings?.overridesEnabled && !pointCloudSettings.useSceneOpacity
             ? 1
             : opacity;
+
+        if (sceneKey === this.lastOpacitySceneKey
+            && opacity === this.lastOpacityValue
+            && pointOpacity === this.lastPointOpacityValue) {
+            return;
+        }
+        this.lastOpacitySceneKey = sceneKey;
+        this.lastOpacityValue = opacity;
+        this.lastPointOpacityValue = pointOpacity;
 
         this.state.model.traverse((child) => {
             if (child instanceof THREE.Points && child.material) {

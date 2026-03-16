@@ -1,10 +1,8 @@
 import { LightingPreset, LightsColorField, resolveLightsColor } from '@/shared/domain/rendering/lights';
-import { Theme } from '@/shared/presentation/hooks/use-theme';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
 import { useThree } from '@react-three/fiber';
 import { Color, DirectionalLight, DirectionalLightHelper, HemisphereLight, HemisphereLightHelper, PointLight, PointLightHelper, RectAreaLight, SpotLight, SpotLightHelper } from 'three';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { LightsState } from '@/shared/domain/rendering/lights';
 import type { FC } from 'react';
 
@@ -32,6 +30,7 @@ export { LightingPreset };
 interface DynamicLightsProps {
     settings?: LightsState;
     preset?: LightingPreset;
+    darkTheme: boolean;
 };
 
 interface PresetLightColors {
@@ -107,16 +106,6 @@ const getDefectPresetColors = (darkTheme: boolean): Omit<PresetLightColors, 'hem
     };
 };
 
-const useThemeMode = (): boolean => {
-    const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
-
-    useEffect(() => {
-        return subscribeToAppTheme(setTheme);
-    }, []);
-
-    return theme === Theme.Dark;
-};
-
 const applyPresetShadow = (light: DirectionalLight, shadow: PresetShadowConfig): void => {
     light.shadow.mapSize.set(shadow.mapSize[0], shadow.mapSize[1]);
 
@@ -133,7 +122,7 @@ const applyPresetShadow = (light: DirectionalLight, shadow: PresetShadowConfig):
     light.shadow.camera.updateProjectionMatrix();
 };
 
-const DynamicLights: FC<DynamicLightsProps> = ({ settings, preset }) => {
+const DynamicLights: FC<DynamicLightsProps> = ({ settings, preset, darkTheme }) => {
     const dirLightRef = useRef<DirectionalLight>(null);
     const dirHelperRef = useRef<DirectionalLightHelper | null>(null);
     const pointLightRef = useRef<PointLight>(null);
@@ -143,7 +132,6 @@ const DynamicLights: FC<DynamicLightsProps> = ({ settings, preset }) => {
     const hemiLightRef = useRef<HemisphereLight>(null);
     const hHelperRef = useRef<HemisphereLightHelper | null>(null);
     const { scene } = useThree();
-    const darkTheme = useThemeMode();
     const isTrajectoryPreset = preset === LightingPreset.Trajectory;
     const isDefectPreset = preset === LightingPreset.Defect;
     const customSettings = settings;

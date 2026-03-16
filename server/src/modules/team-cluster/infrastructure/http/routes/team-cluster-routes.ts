@@ -12,6 +12,11 @@ export default createHttpModule({
             .post(teamClusterValidation.create, controllers.create.handle);
         router.get('/:teamClusterId', teamClusterValidation.getById, controllers.getById.handle);
         router.get(
+            '/:teamClusterId/resource-limits',
+            teamClusterValidation.getResourceLimits,
+            controllers.getResourceLimits.handle
+        );
+        router.get(
             '/:teamClusterId/available-updates',
             teamClusterValidation.fetchAvailableVersions,
             controllers.fetchAvailableVersions.handle

@@ -117,7 +117,19 @@ export default function useGlbScene(params: UseGlbSceneParams) {
     useEffect(() => {
         const engineParams = extractEngineParams(params);
         engineRef.current?.configure(engineParams);
-    }, [params]);
+    }, [
+        params.url,
+        params.sliceClippingPlanes,
+        params.position?.x, params.position?.y, params.position?.z,
+        params.rotation?.x, params.rotation?.y, params.rotation?.z,
+        params.scale,
+        params.updateThrottle,
+        params.disableAutoTransform,
+        params.useFixedReference,
+        params.sceneKey,
+        params.boxBounds,
+        params.pointCloudSettings
+    ]);
 
     useEffect(() => {
         engineRef.current?.updatePointCloudSettings(pointCloudSettings, pointSizeMultiplier);
