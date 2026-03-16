@@ -12,6 +12,7 @@ import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import useTip from '@/shared/tips/use-tip';
 import { areContextualTipsEnabled, setContextualTipsEnabled } from '@/shared/tips/tip-storage';
 import { Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
@@ -30,6 +31,8 @@ const DELETE_ACCOUNT_TOAST_OPTIONS = createPromiseToastOptions({
 });
 
 const GeneralSettings = () => {
+    useTip('general-settings-tips-toggle');
+
     const user = useCurrentUser();
     const signOut = useAuthStore((state) => state.signOut);
     const updateMe = useUpdateMeMutation();

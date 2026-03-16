@@ -10,6 +10,7 @@ import Button from '@/shared/presentation/components/Button';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import usePermission from '@/shared/presentation/hooks/use-permission';
+import useTip from '@/shared/tips/use-tip';
 import { dateColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -50,6 +51,8 @@ const DELETE_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({
 });
 
 const PluginsListing = () => {
+    useTip('plugins-import-export');
+
     const navigate = useNavigate();
     const importInputRef = useRef<HTMLInputElement>(null);
     const [isImporting, setIsImporting] = useState(false);

@@ -1,5 +1,6 @@
 import { buildCanvasModifierOptions, LEGACY_MODIFIERS } from '../../../utilities/modifier-registry';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
+import useTip from '@/shared/tips/use-tip';
 import usePluginExecution from '../../../hooks/use-plugin-execution';
 import { ExecState } from '../../../hooks/use-plugin-execution';
 import ModifierConfig from '../../molecules/ModifierConfig';
@@ -42,6 +43,8 @@ interface RightPanelProps {
 };
 
 const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: RightPanelProps) => {
+    useTip('canvas-render-settings');
+
     const { activeModifiers, toggleModifier, pluginParam } = useCanvasUrlState();
     const selectedTeamId = useSelectedTeamId();
     const executePluginMutation = useExecutePluginMutation();

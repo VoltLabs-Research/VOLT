@@ -14,6 +14,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import Title from '@/shared/presentation/components/Title';
+import useTip from '@/shared/tips/use-tip';
 import './WhiteboardsListing.css';
 import { Folder, Pencil, SquarePen, Trash2 } from 'lucide-react';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
@@ -78,6 +79,8 @@ const COLUMNS: ColumnConfig<WhiteboardListingRow>[] = [
 ];
 
 const WhiteboardsListing = () => {
+    useTip('whiteboards-organization');
+
     const {
         breadcrumbs,
         context,

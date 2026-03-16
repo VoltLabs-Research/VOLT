@@ -7,6 +7,7 @@ import type { Container as ContainerEntity } from '@/modules/container/api/entit
 import { RemoteDesktopConnectionState } from '../../../hooks/use-container-remote-desktop';
 import { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import useContainerRemoteDesktop from '../../../hooks/use-container-remote-desktop';
+import useTip from '@/shared/tips/use-tip';
 import Modal from '@/shared/presentation/components/Modal';
 import './ContainerRemoteDesktop.css';
 
@@ -24,6 +25,8 @@ const CONNECTION_STATUS_LABELS: Record<RemoteDesktopConnectionState, string> = {
 };
 
 const ContainerRemoteDesktop = ({ container }: ContainerRemoteDesktopProps) => {
+    useTip('container-remote-desktop');
+
     const remoteDesktop = useContainerRemoteDesktop(container);
     const isBusy = remoteDesktop.connectionState === RemoteDesktopConnectionState.Connecting;
     const isConnected = remoteDesktop.connectionState === RemoteDesktopConnectionState.Connected;

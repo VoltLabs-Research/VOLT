@@ -1,6 +1,7 @@
 import useCreateContainerForm from '../../../hooks/use-create-container-form';
 import { ImageSelectionStep, ConfigurationStep, ReviewStep } from '../../organisms/CreateContainerSteps';
 import useStepper from '@/shared/presentation/hooks/use-stepper';
+import useTip from '@/shared/tips/use-tip';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
@@ -44,6 +45,8 @@ const STEP_INDICATORS: StepIndicator<StepKey>[] = [
 const CUSTOM_IMAGE_MODAL_ID = 'custom-image-modal';
 
 const CreateContainer = () => {
+    useTip('container-create-stepper');
+
     const navigate = useNavigate();
     const { step, goTo } = useStepper<StepKey>(StepKey.Image, { steps: STEP_ORDER });
     const [tempCustomImage, setTempCustomImage] = useState('');

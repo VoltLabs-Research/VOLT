@@ -27,6 +27,7 @@ interface StoredRemoteAccessSession extends TeamClusterRemoteAccessSessionDTO {
 };
 
 const REMOTE_ACCESS_SESSION_TTL_MS = 15 * 60 * 1000;
+const SESSION_SWEEP_INTERVAL_MS = 5 * 60 * 1000;
 
 const isExpiredSession = (session: StoredRemoteAccessSession): boolean => {
     return new Date(session.expiresAt).getTime() <= Date.now();
@@ -35,6 +36,12 @@ const isExpiredSession = (session: StoredRemoteAccessSession): boolean => {
 @injectable()
 export default class TeamClusterRemoteAccessSessionService {
     private readonly sessions = new Map<string, StoredRemoteAccessSession>();
+    private readonly sweepTimer: ReturnType<typeof setInterval>;
+
+    constructor() {
+        this.sweepTimer = setInterval(() => this.cleanupExpiredSessions(), SESSION_SWEEP_INTERVAL_MS);
+        this.sweepTimer.unref();
+    }
 
     /**
      * Creates an ephemeral session that authorizes a single remote access flow.
