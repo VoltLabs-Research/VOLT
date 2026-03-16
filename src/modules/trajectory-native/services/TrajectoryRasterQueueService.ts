@@ -34,10 +34,10 @@ const buildRasterJobId = (
     model?: string
 ): string => {
     if (analysisId && model) {
-        return `trajectory-raster:${trajectoryId}:${analysisId}:${timestep}:${model}`;
+        return `trajectory-raster_${trajectoryId}_${analysisId}_${timestep}_${model}`;
     }
 
-    return `trajectory-raster:${trajectoryId}:${timestep}`;
+    return `trajectory-raster_${trajectoryId}_${timestep}`;
 };
 
 const buildAutoPreviewRasterKey = (trajectoryId: string): string => {
