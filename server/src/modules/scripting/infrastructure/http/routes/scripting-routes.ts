@@ -175,7 +175,7 @@ const handleScriptingSessionStatus = async (
             req.userId
         );
 
-        res.json(status);
+        res.json({ status: 'success', data: status });
     } catch (error) {
         next(error);
     }
