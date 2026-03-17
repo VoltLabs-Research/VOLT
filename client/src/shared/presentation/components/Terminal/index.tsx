@@ -1,7 +1,7 @@
 import './Terminal.css';
 import 'xterm/css/xterm.css';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
-import { subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
+import { subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import { FitAddon } from 'xterm-addon-fit';
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Terminal as XTerm } from 'xterm';

@@ -1,6 +1,7 @@
 import Container from '@/shared/presentation/components/Container';
 import Popover from '@/shared/presentation/components/Popover';
-import { applyMonacoTheme, getActiveAppTheme, getMonacoThemeName, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
+import { applyMonacoTheme, getMonacoThemeName } from '@/shared/presentation/utilities/ensure-monaco';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import Button from '@/shared/presentation/components/Button';
 import Editor from '@monaco-editor/react';
 import { RiCodeSSlashLine } from 'react-icons/ri';
