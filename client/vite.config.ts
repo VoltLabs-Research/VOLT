@@ -80,6 +80,7 @@ export default defineConfig(({ mode }) => {
         build: {
             rollupOptions: {
                 output: {
+                    onlyExplicitManualChunks: true,
                     manualChunks: getManualChunk
                 }
             }
