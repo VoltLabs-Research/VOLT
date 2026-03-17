@@ -58,6 +58,7 @@ const DesktopTitlebar = () => {
                     </Tooltip>
                 ))}
             </Container>
+            <div className='desktop-titlebar__drag-region' data-tauri-drag-region aria-hidden='true' />
         </header>
     );
 };

@@ -36,6 +36,14 @@ interface PopulatedNameColumnOptions<TRow> {
     modelName?: string;
 };
 
+interface EnumColumnOptions<TRow> {
+    width?: number;
+    sortable?: boolean;
+    size?: 'default' | 'compact';
+    resolveValue?: (value: unknown, row: TRow) => string;
+    resolveLabel?: (value: string) => string;
+};
+
 interface TitleWithIconColumnOptions {
     width?: number;
     sortable?: boolean;
@@ -219,5 +227,47 @@ export function titleWithIconColumn<TRow = unknown>(
             </Container>
         ),
         skeleton: { variant: 'text', width: options?.width ?? 180 }
+    };
+}
+
+/**
+ * Renders any value as a StatusBadge.
+ * Use this helper in custom column renderers for enum fields
+ * that need a consistent badge appearance.
+ */
+export function renderEnumField(value: unknown, label?: string): ReactNode {
+    const raw = String(value ?? '');
+    return label
+        ? <StatusBadge status={raw}>{label}</StatusBadge>
+        : <StatusBadge status={raw} />;
+}
+
+/**
+ * Column preset for generic enum fields.
+ * Renders the cell value as a StatusBadge with automatic variant mapping.
+ * Use `resolveLabel` to provide a human-friendly display label,
+ * or `resolveValue` to transform the raw cell value before rendering.
+ */
+export function enumColumn<TRow = unknown>(
+    key: string,
+    label: string,
+    options?: EnumColumnOptions<TRow>
+): ColumnConfig<TRow> {
+    return {
+        key,
+        title: label,
+        sortable: options?.sortable ?? false,
+        render: (value: unknown, row: TRow) => {
+            const raw = options?.resolveValue ? options.resolveValue(value, row) : String(value ?? '');
+            const displayLabel = options?.resolveLabel ? options.resolveLabel(raw) : undefined;
+            return displayLabel
+                ? <StatusBadge status={raw} size={options?.size}>{displayLabel}</StatusBadge>
+                : <StatusBadge status={raw} size={options?.size} />;
+        },
+        skeleton: {
+            variant: 'rounded',
+            width: options?.width ?? 100,
+            height: 24
+        }
     };
 }

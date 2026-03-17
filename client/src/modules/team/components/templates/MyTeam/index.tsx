@@ -195,10 +195,10 @@ export default function MyTeamTemplate() {
             render: (_value, member) => {
                 const lastSeenAt = member.user.lastSeenAt ? new Date(member.user.lastSeenAt) : null;
                 return member.user.isOnline ? (
-                    <span className='color-success font-size-2 font-weight-5'>Online</span>
+                    <StatusBadge status='online' size='compact'>Online</StatusBadge>
                 ) : (
                     <Container className='d-flex column'>
-                        <span className='color-secondary font-size-2'>Offline</span>
+                        <StatusBadge status='offline' size='compact'>Offline</StatusBadge>
                         <span className='color-muted font-size-2'>
                             {lastSeenAt
                                 ? `Seen ${formatDistanceToNow(lastSeenAt)} ago`

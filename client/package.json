@@ -4,12 +4,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "build:electron-renderer": "cross-env NODE_OPTIONS=--max-old-space-size=8192 VITE_ELECTRON_BUILD=true vite build",
-    "build:electron-runtime": "tsc -p tsconfig.electron.json",
-    "build-electron": "npm run build:electron-renderer && npm run build:electron-runtime && electron-builder --config electron-builder.yml",
+    "build": "node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc -b && node --max-old-space-size=8192 ./node_modules/vite/bin/vite.js build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
     "test:apis": "jest --config ./tests/apis/jest.config.cjs --runInBand",
     "test:apis:watch": "jest --config ./tests/apis/jest.config.cjs --watch"
   },
@@ -30,6 +29,7 @@
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
     "@react-three/postprocessing": "^2.19.1",
+    "@tauri-apps/api": "^2.10.1",
     "@tanstack/react-query": "^5.90.21",
     "@types/three": "^0.177.0",
     "@voltstack/voltclient": "^1.0.1",
@@ -74,13 +74,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
+    "@tauri-apps/cli": "^2.10.1",
     "@rollup/plugin-commonjs": "^28.0.6",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",
-    "cross-env": "^10.1.0",
-    "electron": "^41.0.0",
-    "electron-builder": "^26.8.1",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
@@ -92,7 +90,6 @@
     "vite": "^6.3.5",
     "vite-plugin-top-level-await": "^1.6.0"
   },
-  "main": "dist-electron/electron/main.js",
   "description": "Volt desktop client",
   "homepage": "https://voltlabs.io",
   "author": {

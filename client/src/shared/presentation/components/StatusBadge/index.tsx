@@ -38,19 +38,31 @@ const statusToVariant = (status: string): string => {
         case 'success':
         case 'active':
         case 'published':
+        case 'healthy':
+        case 'online':
+        case 'accepted':
+        case 'connected':
             return 'success';
         case 'processing':
         case 'queued':
         case 'rendering':
         case 'warning':
         case 'pending':
+        case 'waiting-for-process':
+        case 'analyzing':
+        case 'running':
             return 'warning';
         case 'failed':
         case 'error':
         case 'danger':
+        case 'critical':
+        case 'rejected':
             return 'danger';
         case 'inactive':
         case 'draft':
+        case 'disabled':
+        case 'offline':
+        case 'disconnected':
             return 'inactive';
         case 'brand':
             return 'brand';

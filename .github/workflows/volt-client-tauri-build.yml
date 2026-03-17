@@ -1,4 +1,4 @@
-name: Volt Client Electron Build
+name: Volt Client Tauri Build
 
 on:
   push:
@@ -8,15 +8,15 @@ on:
       - 'v*'
     paths:
       - 'client/**'
-      - '.github/workflows/volt-client-electron-build.yml'
+      - '.github/workflows/volt-client-tauri-build.yml'
   pull_request:
     paths:
       - 'client/**'
-      - '.github/workflows/volt-client-electron-build.yml'
+      - '.github/workflows/volt-client-tauri-build.yml'
   workflow_dispatch:
 
 concurrency:
-  group: volt-client-electron-${{ github.ref }}
+  group: volt-client-tauri-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Electron artifacts (${{ matrix.label }})
+    name: Build Tauri artifacts (${{ matrix.label }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -32,30 +32,25 @@ jobs:
         include:
           - os: ubuntu-latest
             label: linux
-            artifact_name: volt-electron-linux
+            artifact_name: volt-tauri-linux
             artifact_path: |
-              client/release/*.AppImage
-              client/release/*.deb
-              client/release/*.yml
+              client/src-tauri/target/release/bundle/appimage/*.AppImage
+              client/src-tauri/target/release/bundle/deb/*.deb
           - os: windows-latest
             label: windows
-            artifact_name: volt-electron-windows
+            artifact_name: volt-tauri-windows
             artifact_path: |
-              client/release/*.exe
-              client/release/*.blockmap
-              client/release/*.yml
+              client/src-tauri/target/release/bundle/msi/*.msi
           - os: macos-latest
             label: macos
-            artifact_name: volt-electron-macos
+            artifact_name: volt-tauri-macos
             artifact_path: |
-              client/release/*.dmg
-              client/release/*.zip
-              client/release/*.blockmap
-              client/release/*.yml
+              client/src-tauri/target/release/bundle/dmg/*.dmg
     defaults:
       run:
         working-directory: client
     env:
+      NODE_OPTIONS: --max-old-space-size=8192
       VITE_API_URL: https://example.invalid
       VITE_ENV: production
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
@@ -71,13 +66,31 @@ jobs:
           cache: 'npm'
           cache-dependency-path: client/package-lock.json
 
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
       - name: Install client dependencies
         run: npm ci
 
-      - name: Build Electron desktop artifacts
-        run: npm run build-electron
+      - name: Build Tauri desktop artifacts
+        run: npm run tauri:build
 
-      - name: Upload Electron artifacts
+      - name: Upload Tauri artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
