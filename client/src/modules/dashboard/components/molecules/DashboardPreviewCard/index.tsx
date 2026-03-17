@@ -113,16 +113,16 @@ const DashboardPreviewCard = () => {
                         <Container className='dashboard-preview-overlay' />
 
                         <Container className='dashboard-preview-info' style={{ pointerEvents: 'auto' }}>
-                            <span className='dashboard-preview-badge'>
+                            <span className='dashboard-preview-badge glass-bg'>
                                 {readyTrajectory.name}
                             </span>
-                            <span className='dashboard-preview-badge'>
+                            <span className='dashboard-preview-badge glass-bg'>
                                 {formatNumber(atomCount)} atoms
                             </span>
                         </Container>
 
                         <Container className='dashboard-preview-action' style={{ pointerEvents: 'auto' }}>
-                            <Button className='dashboard-preview-action-btn' shape='pill' onClick={openCanvas} rightIcon={<GoArrowRight size={14} />}>
+                            <Button className='dashboard-preview-action-btn glass-bg' shape='pill' variant='outline' onClick={openCanvas} rightIcon={<GoArrowRight size={14} />}>
                                 Open in Canvas
                             </Button>
                         </Container>
