@@ -11,6 +11,7 @@ import { TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/util
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
+import { buildWebSocketProtocolList } from '@shared/infrastructure/utilities/websocket-protocols';
 import {
     readRelayHostValue,
     readRelayPortRangeValue,
@@ -263,13 +264,15 @@ export class ContainerPortProxyRelayService {
             targetPort: session.privatePort,
             accessMode: TeamClusterServiceExposureAccessMode.WebSocket
         });
-        const upstreamWebSocket = new WebSocket(
-            `ws://${session.internalIp}:${session.privatePort}${target.proxiedPath}${target.rawQuery}`,
-            {
-                createConnection: () => tunnel,
-                headers: this.readUpgradeRequestHeaders(request, session)
-            }
-        );
+        const upstreamWebSocketUrl = `ws://${session.internalIp}:${session.privatePort}${target.proxiedPath}${target.rawQuery}`;
+        const requestedProtocols = buildWebSocketProtocolList(request.headers['sec-websocket-protocol']);
+        const upstreamWebSocketOptions = {
+            createConnection: () => tunnel,
+            headers: this.readUpgradeRequestHeaders(request, session)
+        };
+        const upstreamWebSocket = requestedProtocols
+            ? new WebSocket(upstreamWebSocketUrl, requestedProtocols, upstreamWebSocketOptions)
+            : new WebSocket(upstreamWebSocketUrl, upstreamWebSocketOptions);
 
         this.webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
             this.bindWebSocketProxy(webSocket, upstreamWebSocket);
