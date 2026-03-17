@@ -24,10 +24,11 @@ export const SYS_BUCKETS = {
 };
 
 export const getMinioConfig = (): MinioClientConfig => {
+    const useSSL = process.env.MINIO_USE_SSL === 'true';
     return {
         endPoint: process.env.MINIO_ENDPOINT || 'localhost',
-        port: readNumberEnv('MINIO_PORT', 9000),
-        useSSL: process.env.MINIO_USE_SSL === 'true',
+        port: readNumberEnv('MINIO_PORT', useSSL ? 443 : 9000),
+        useSSL,
         accessKey: process.env.MINIO_ACCESS_KEY,
         secretKey: process.env.MINIO_SECRET_KEY
     };
