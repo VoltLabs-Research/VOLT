@@ -6,8 +6,7 @@ import { createHttpModule } from '@shared/infrastructure/http/routing/create-htt
 import multer from 'multer';
 
 const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 200 * 1024 * 1024 }
+    storage: multer.memoryStorage()
 });
 
 export default createHttpModule({

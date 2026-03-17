@@ -10,5 +10,6 @@ export interface EntrypointNodeData{
     type?: EntrypointNodeType;
     arguments: string;
     requirementsFile?: string;
+    entrypointScript?: string;
     timeout?: number;
 };
