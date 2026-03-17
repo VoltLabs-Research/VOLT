@@ -2,7 +2,7 @@ import sceneArtifactService from '@/modules/trajectory/api/services/scene-artifa
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import { clusterColumn, dateColumn, populatedNameColumn } from '@/shared/presentation/utilities/column-presets';
+import { clusterColumn, dateColumn, enumColumn, populatedNameColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
@@ -45,13 +45,7 @@ const COLUMNS: ColumnConfig<SceneArtifact>[] = [
         render: (value) => <span className='font-size-2 color-secondary'>{String(value)}</span>,
         skeleton: { variant: 'text', width: 80 }
     },
-    {
-        key: 'status',
-        title: 'Status',
-        sortable: true,
-        render: (value) => <span className='font-size-2 color-secondary'>{String(value)}</span>,
-        skeleton: { variant: 'text', width: 90 }
-    },
+    statusColumn<SceneArtifact>('status', 'Status', { sortable: true, width: 90 }),
     {
         key: 'displayName',
         title: 'Display Name',
@@ -68,13 +62,7 @@ const COLUMNS: ColumnConfig<SceneArtifact>[] = [
         render: renderAnalysisId,
         skeleton: { variant: 'text', width: 160 }
     },
-    {
-        key: 'sourceType',
-        title: 'Source',
-        sortable: true,
-        render: (value) => <span className='font-size-2 color-secondary'>{String(value)}</span>,
-        skeleton: { variant: 'text', width: 120 }
-    },
+    enumColumn<SceneArtifact>('sourceType', 'Source', { sortable: true, width: 120 }),
     dateColumn<SceneArtifact>('updatedAt', 'Updated At', {
         width: 110,
         withTitle: true

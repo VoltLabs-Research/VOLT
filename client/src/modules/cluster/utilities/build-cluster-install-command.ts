@@ -1,5 +1,5 @@
-import { DesktopPlatform } from '@/shared/utils/electron-contract';
-import { getDesktopPlatform, isElectronEnvironment } from '@/shared/utils/electron-environment';
+import { DesktopPlatform } from '@/shared/utils/desktop-contract';
+import { getDesktopPlatform, isDesktopEnvironment } from '@/shared/utils/desktop-environment';
 
 export enum ClusterInstallPlatform {
     Windows = 'windows',
@@ -36,7 +36,7 @@ const detectBrowserInstallPlatform = (): ClusterInstallPlatform => {
 };
 
 export const detectClusterInstallPlatform = (): ClusterInstallPlatform => {
-    if (!isElectronEnvironment()) {
+    if (!isDesktopEnvironment()) {
         return detectBrowserInstallPlatform();
     }
 

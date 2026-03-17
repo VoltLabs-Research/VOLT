@@ -9,7 +9,7 @@ import { ErrorSurface, isApiError, normalizeError, reportError } from '@/shared/
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
 import { ensureApplicationStoreCleanupsRegistered } from '@/shared/utils/application-store-cleanups';
 import { buildErrorPath } from '@/shared/utils';
-import { isElectronEnvironment } from '@/shared/utils/electron-environment';
+import { isDesktopEnvironment } from '@/shared/utils/desktop-environment';
 import AppToaster from '@/shared/presentation/components/AppToaster';
 import DesktopShell from '@/shared/presentation/components/DesktopShell';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
@@ -72,7 +72,7 @@ const AppRoutes = () => {
 };
 
 export default function App() {
-    const Router = isElectronEnvironment() ? HashRouter : BrowserRouter;
+    const Router = isDesktopEnvironment() ? HashRouter : BrowserRouter;
     usePageScale();
     useThemeInitialization();
 

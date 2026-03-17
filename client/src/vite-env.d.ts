@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import '@react-three/fiber';
-import type { VoltDesktopApi } from '@/shared/utils/electron-contract';
+import type { VoltDesktopApi } from '@/shared/utils/desktop-contract';
 
 interface ImportMetaEnv {
     readonly VITE_API_URL: string;
