@@ -35,9 +35,9 @@ const PaletteItem = ({ config, onDragStart, onAdd }: PaletteItemProps) => {
             <Container>
                 <DynamicIcon iconName={config.icon} />
             </Container>
-            <Container className='d-flex column'>
+            <Container className='d-flex column gap-05'>
                 <Title>{config.label}</Title>
-                <Paragraph>{config.description}</Paragraph>
+                <Paragraph className='color-muted'>{config.description}</Paragraph>
             </Container>
         </Container>
     );

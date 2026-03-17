@@ -1,4 +1,5 @@
 .popover-menu {
     min-width: 160px;
     padding: 0.25rem;
+    overflow-y: scroll;
 }

@@ -108,7 +108,7 @@ export const DashboardQuickActions = () => {
                 <Container className={`dashboard-action-icon ${action.variant}`}>
                     {action.icon}
                 </Container>
-                <Container className='d-flex column gap-01'>
+                <Container className='d-flex column gap-05'>
                     <span className='font-size-2 color-primary font-weight-5'>{action.label}</span>
                     <span className='font-size-1 color-muted'>{action.description}</span>
                 </Container>
