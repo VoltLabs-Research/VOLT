@@ -1,6 +1,12 @@
+import os from 'node:os';
+import path from 'node:path';
+
+const DEFAULT_DATA_DIR = path.join(os.homedir(), '.volt-daemon', 'data');
+const dataDir = process.env.DAEMON_DATA_DIR || DEFAULT_DATA_DIR;
+
 export const DAEMON_PATHS = Object.freeze({
-    analysisOutput: '/tmp/analysis-output',
-    analysisDumps: '/tmp/analysis-dumps',
-    pluginBinCache: '/tmp/plugin-bin-cache',
-    sshImport: '/tmp/ssh-import'
+    analysisOutput: path.join(dataDir, 'analysis-output'),
+    analysisDumps: path.join(dataDir, 'analysis-dumps'),
+    pluginBinCache: path.join(dataDir, 'plugin-bin-cache'),
+    sshImport: path.join(dataDir, 'ssh-import')
 });

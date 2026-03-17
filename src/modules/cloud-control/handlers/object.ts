@@ -1,9 +1,9 @@
 import { createObjectSyncService } from '@/modules/platform/services';
+import { DAEMON_PATHS } from '@/core/paths';
 import { Readable } from 'node:stream';
 import { createReadStream } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
-import os from 'node:os';
 import type { MinioService } from '@/modules/platform/services';
 import type { ObjectUploadRequest, PluginSyncRequest, RuntimeEventBroker } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
@@ -171,7 +171,7 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                     throw new Error(`Transfer ${transferId} already exists`);
                 }
 
-                const tempPath = path.join(os.tmpdir(), `chunked-upload-${transferId}`);
+                const tempPath = path.join(DAEMON_PATHS.analysisOutput, `chunked-upload-${transferId}`);
                 // Create an empty file to append chunks into
                 await fsPromises.writeFile(tempPath, Buffer.alloc(0));
 

@@ -1,5 +1,6 @@
 import { ObjectBucketName, type AnalysisExposureDefinition, type AnalysisJobExecutionData } from '@/shared/contracts';
 import { logger } from '@/core/logger';
+import { DAEMON_PATHS } from '@/core/paths';
 import { MinioService } from '@/modules/platform/services';
 import { NativeModuleLoader } from '@/modules/trajectory-native/services';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
@@ -8,7 +9,6 @@ import type { DaemonArtifactReporterService } from '@/modules/cloud-control/serv
 import { isRecord, toRecord } from '@/shared/utils';
 import { createReadStream } from 'node:fs';
 import fsPromises from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 
 type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
@@ -699,7 +699,7 @@ const uploadBuffer = async (
         return;
     }
 
-    const tmpPath = path.join(os.tmpdir(), `volt-export-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const tmpPath = path.join(DAEMON_PATHS.analysisOutput, `volt-export-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     const size = buffer.length;
     try {
         await fsPromises.writeFile(tmpPath, buffer);
