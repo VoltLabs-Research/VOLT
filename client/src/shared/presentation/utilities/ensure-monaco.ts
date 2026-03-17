@@ -1,4 +1,5 @@
 import { Theme } from '@/shared/presentation/hooks/use-theme';
+import { getActiveAppTheme } from '@/shared/presentation/utilities/app-theme';
 import { loader } from '@monaco-editor/react';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
@@ -119,17 +120,6 @@ export const registerMonacoThemes = (monaco: typeof Monaco): void => {
     registerMonacoTheme(monaco, Theme.Dark);
 };
 
-/** Returns the active application theme from the global theme contract. */
-export const getActiveAppTheme = (): Theme => {
-    const theme = document.documentElement.getAttribute('data-theme');
-
-    if (theme === Theme.Light) {
-        return Theme.Light;
-    }
-
-    return Theme.Dark;
-};
-
 /** Resolves the Monaco theme name for the active application theme. */
 export const getMonacoThemeName = (theme: Theme): MonacoThemeName => {
     return theme === Theme.Light ? MonacoThemeName.Light : MonacoThemeName.Dark;
@@ -138,32 +128,6 @@ export const getMonacoThemeName = (theme: Theme): MonacoThemeName => {
 /** Registers the Volt Monaco theme that matches the active application theme. */
 export const registerMonacoTheme = (monaco: typeof Monaco, theme: Theme): void => {
     monaco.editor.defineTheme(getMonacoThemeName(theme), buildMonacoTheme(theme));
-};
-
-/** Subscribes to document-level theme contract changes. */
-export const subscribeToAppTheme = (listener: (theme: Theme) => void): (() => void) => {
-    let currentTheme = getActiveAppTheme();
-    listener(currentTheme);
-
-    const observer = new MutationObserver(() => {
-        const nextTheme = getActiveAppTheme();
-
-        if (nextTheme === currentTheme) {
-            return;
-        }
-
-        currentTheme = nextTheme;
-        listener(nextTheme);
-    });
-
-    observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['data-theme']
-    });
-
-    return () => {
-        observer.disconnect();
-    };
 };
 
 /**
