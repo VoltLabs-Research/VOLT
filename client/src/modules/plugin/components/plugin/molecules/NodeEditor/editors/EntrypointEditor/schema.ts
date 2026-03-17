@@ -17,6 +17,7 @@ export const entrypointEditorSchema = z.object({
     type: z.enum([EntrypointType.EXECUTABLE, EntrypointType.PYTHON_SCRIPT]).default(EntrypointType.EXECUTABLE),
     arguments: z.string().default(''),
     requirementsFile: z.string().default(''),
+    entrypointScript: z.string().default(''),
     timeout: timeoutSchema
 }).strict();
 
@@ -26,5 +27,6 @@ export const ENTRYPOINT_EDITOR_DEFAULT_VALUES = {
     binary: '',
     type: EntrypointType.EXECUTABLE,
     arguments: '',
-    requirementsFile: ''
+    requirementsFile: '',
+    entrypointScript: ''
 } satisfies EntrypointEditorFormValues;

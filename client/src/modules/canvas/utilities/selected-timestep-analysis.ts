@@ -107,6 +107,10 @@ export const getSelectedTimestepsForAnalysis = (
         return undefined;
     }
 
+    if (!analysis.config) {
+        return undefined;
+    }
+
     const metadata = readAnalysisExecutionMetadata(analysis.config);
     return normalizeSelectedTimesteps(metadata?.selectedTimesteps, trajectoryTimesteps);
 };
