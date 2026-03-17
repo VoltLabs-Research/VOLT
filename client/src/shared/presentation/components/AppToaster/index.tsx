@@ -1,5 +1,5 @@
 import { Theme } from '@/shared/presentation/hooks/use-theme';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/ensure-monaco';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import { Toaster } from 'sileo';
 import { useEffect, useRef, useState } from 'react';
 
