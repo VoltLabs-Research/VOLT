@@ -95,7 +95,7 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
     if (!showArgumentsPanel) return null;
 
     return (
-        <Container className='p-absolute z-10 center-x panel-floating radius-md overflow-hidden d-flex column debug-arguments-panel'>
+        <Container className='p-absolute z-10 center-x panel-floating radius-md overflow-hidden d-flex column debug-arguments-panel glass-bg'>
             <Container className='d-flex content-between items-center f-shrink-0 debug-arguments-panel-header'>
                 <Container className='d-flex items-center gap-05'>
                     <Settings2 size={14} />
