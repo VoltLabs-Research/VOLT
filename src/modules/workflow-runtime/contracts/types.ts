@@ -35,6 +35,7 @@ export interface WorkflowExecutionContext {
     runtimeArguments: Record<string, unknown>;
     trajectoryId: string;
     trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
+    trajectoryDumpOverrides?: Array<{ timestep: number; natoms: number; simulationCell: string; path: string; originalPath?: string; }>;
     analysis: DaemonAnalysisDocument;
     analysisId: string;
     generatedFiles: string[];

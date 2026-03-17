@@ -11,6 +11,7 @@ import { TrajectoryParserFactory } from './TrajectoryParserFactory';
 import { isMemoryPressured } from '@/core/memory';
 import { logger } from '@/core/logger';
 import crypto from 'node:crypto';
+import { promisify } from 'node:util';
 import fs from 'node:fs/promises';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
@@ -38,6 +39,8 @@ interface ImportedFrameRecord {
     simulationCell: Record<string, unknown> | null;
     size: number;
 };
+
+const scryptAsync = promisify(crypto.scrypt);
 
 export class SSHImportWorkerService {
     private worker: Worker<SSHImportJobPayload> | null = null;
@@ -103,7 +106,7 @@ export class SSHImportWorkerService {
                 }
             });
 
-            const password = this.decryptPassword(job.encryptedPassword);
+            const password = await this.decryptPassword(job.encryptedPassword);
             const connection: SSHConnectionConfig = {
                 host: job.host,
                 port: job.port || 22,
@@ -253,7 +256,7 @@ export class SSHImportWorkerService {
         }
     }
 
-    private decryptPassword(value: string): string {
+    private async decryptPassword(value: string): Promise<string> {
         if (!process.env.SSH_ENCRYPTION_KEY) {
             throw new Error('SSH_ENCRYPTION_KEY environment variable is required');
         }
@@ -263,7 +266,7 @@ export class SSHImportWorkerService {
             throw new Error('Invalid encrypted SSH password');
         }
 
-        const key = crypto.scryptSync(process.env.SSH_ENCRYPTION_KEY, 'Volt-ssh', 32);
+        const key = await scryptAsync(process.env.SSH_ENCRYPTION_KEY, 'Volt-ssh', 32) as Buffer;
         const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(ivB64, 'base64'));
         decipher.setAuthTag(Buffer.from(authTagB64, 'base64'));
 

@@ -4,6 +4,13 @@ import { WorkflowNodeType } from '../contracts';
 import { logger } from '@/core/logger';
 
 const resolveSelectedTrajectoryFrames = (context: WorkflowExecutionContext): Record<string, unknown>[] => {
+    if (Array.isArray(context.trajectoryDumpOverrides) && context.trajectoryDumpOverrides.length > 0) {
+        return context.trajectoryDumpOverrides.map((frame) => ({
+            ...frame,
+            path: frame.path
+        }));
+    }
+
     const allFrames = context.trajectoryFrames;
     let selected: typeof allFrames;
 
