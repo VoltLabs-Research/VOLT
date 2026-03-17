@@ -36,8 +36,11 @@ interface JupyterConfig {
 
 export interface QueueConcurrencyConfig {
     analysis: number;
+    analysisExposureProcessing?: number;
+    sshImportFrames?: number;
     glbPreprocessing: number;
     rasterizer: number;
+    trajectoryArtifactExports?: number;
 };
 
 export interface DaemonConfig {
@@ -212,8 +215,11 @@ export const loadConfig = (): DaemonConfig => {
         ],
         queueConcurrency: {
             analysis: readNumber('ANALYSIS_CONCURRENCY', 1),
+            analysisExposureProcessing: readNumber('ANALYSIS_EXPOSURE_PROCESSING_CONCURRENCY', 2),
+            sshImportFrames: readNumber('SSH_IMPORT_FRAME_CONCURRENCY', 2),
             glbPreprocessing: readNumber('GLB_CONCURRENCY', 2),
-            rasterizer: readNumber('RASTER_CONCURRENCY', 2)
+            rasterizer: readNumber('RASTER_CONCURRENCY', 2),
+            trajectoryArtifactExports: readNumber('TRAJECTORY_ARTIFACT_EXPORT_CONCURRENCY', 2)
         }
     };
 };

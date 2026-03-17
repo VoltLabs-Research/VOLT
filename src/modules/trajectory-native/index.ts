@@ -37,7 +37,12 @@ export const createTrajectoryNativeModule = (
         queueService,
         redisConnectionService
     );
-    const filterEvaluatorService = createFilterEvaluatorService(minioService, nativeModuleLoader, trajectoryParserService);
+    const filterEvaluatorService = createFilterEvaluatorService(
+        minioService,
+        nativeModuleLoader,
+        trajectoryParserService,
+        queueService
+    );
 
     return {
         nativeModuleLoader,

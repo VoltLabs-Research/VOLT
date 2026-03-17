@@ -1,5 +1,5 @@
 import { AnalysisDispatchService, AnalysisWorker, createBinaryExecutorService, createPluginBinaryCacheService, createJobControlService } from './services';
-import type { ResultProcessorService } from '@/modules/artifacts/services';
+import type { AnalysisExposureProcessingDispatchService } from '@/modules/artifacts/services';
 import type { WorkflowEngine } from '@/modules/workflow-runtime/services';
 import type { RuntimeEventBroker } from '@/shared/services';
 import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
@@ -31,7 +31,7 @@ export const createAnalysisWorker = (deps: {
     queueService: QueueService;
     redisConnectionService: RedisConnectionService;
     minioService: MinioService;
-    resultProcessorService: ResultProcessorService;
+    analysisExposureProcessingDispatchService: AnalysisExposureProcessingDispatchService;
     daemonJobReporterService: DaemonJobReporterService;
 }): AnalysisWorker => {
     const pluginBinaryCacheService = createPluginBinaryCacheService(deps.minioService);
@@ -43,7 +43,7 @@ export const createAnalysisWorker = (deps: {
         deps.minioService,
         pluginBinaryCacheService,
         binaryExecutorService,
-        deps.resultProcessorService,
+        deps.analysisExposureProcessingDispatchService,
         deps.daemonJobReporterService
     );
 };

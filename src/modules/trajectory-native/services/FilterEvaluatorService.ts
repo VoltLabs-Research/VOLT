@@ -1,6 +1,7 @@
+import { TRAJECTORY_ARTIFACT_EXPORT_QUEUE_NAME } from '@/modules/platform/services';
 import { ObjectBucketName } from '@/shared/contracts';
 import { DAEMON_PATHS } from '@/core/paths';
-import { MinioService } from '@/modules/platform/services';
+import type { QueueService, MinioService } from '@/modules/platform/services';
 import {
     NativeModuleLoader,
     type NativeColorModelRequest,
@@ -10,6 +11,7 @@ import {
 } from './NativeModuleLoader';
 import { resolveGradientType } from './property-coloring';
 import type { TrajectoryParserService } from './TrajectoryParserService';
+import { TrajectoryArtifactExportJobType } from './TrajectoryArtifactExportWorkerService';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -150,14 +152,48 @@ export interface FilterEvaluatorService {
     previewFilter(input: NativeFilterPreviewRequest): Promise<NativeFilterPreviewResponse>;
     exportColoredModel(input: NativeColorModelRequest): Promise<{ objectKey: string; }>;
     exportParticleFilterModel(input: NativeParticleFilterModelRequest): Promise<{ objectKey: string; atomsResult: number; }>;
+    previewFilterInline(input: NativeFilterPreviewRequest): Promise<NativeFilterPreviewResponse>;
+    exportColoredModelInline(input: NativeColorModelRequest): Promise<{ objectKey: string; }>;
+    exportParticleFilterModelInline(input: NativeParticleFilterModelRequest): Promise<{ objectKey: string; atomsResult: number; }>;
 };
 
 export const createFilterEvaluatorService = (
     minioService: MinioService,
     nativeModuleLoader: NativeModuleLoader,
-    trajectoryParserService: TrajectoryParserService
+    trajectoryParserService: TrajectoryParserService,
+    queueService?: QueueService
 ): FilterEvaluatorService => ({
     async previewFilter(input) {
+        if (!queueService) {
+            return this.previewFilterInline(input);
+        }
+
+        const timestamp = new Date().toISOString();
+        const jobId = `trajectory-artifact:filter-preview:${input.trajectoryId}:${input.timestep}:${input.property}`;
+
+        await queueService.enqueue(TRAJECTORY_ARTIFACT_EXPORT_QUEUE_NAME, {
+            jobId,
+            teamId: input.teamId,
+            trajectoryId: input.trajectoryId,
+            trajectoryName: input.trajectoryName,
+            timestep: input.timestep,
+            queueType: TRAJECTORY_ARTIFACT_EXPORT_QUEUE_NAME,
+            status: 'queued',
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            type: TrajectoryArtifactExportJobType.FilterPreview,
+            request: input
+        }, {
+            preserveExistingJob: true
+        });
+
+        return queueService.waitForJobCompletion<NativeFilterPreviewResponse>(
+            TRAJECTORY_ARTIFACT_EXPORT_QUEUE_NAME,
+            jobId
+        );
+    },
+
+    async previewFilterInline(input) {
         return trajectoryParserService.withDumpFile(input, async (dumpPath) => {
             let values: Float32Array;
 
@@ -194,6 +230,36 @@ export const createFilterEvaluatorService = (
     },
 
     async exportColoredModel(input) {
+        if (!queueService) {
+            return this.exportColoredModelInline(input);
+        }
+
+        const timestamp = new Date().toISOString();
+        const jobId = `trajectory-artifact:color-model:${input.trajectoryId}:${input.timestep}:${input.objectKey}`;
+
+        await queueService.enqueue(TRAJECTORY_ARTIFACT_EXPORT_QUEUE_NAME, {
+            jobId,
+            teamId: input.teamId,
+            trajectoryId: input.trajectoryId,
+            trajectoryName: input.trajectoryName,
+            timestep: input.timestep,
+            queueType: TRAJECTORY_ARTIFACT_EXPORT_QUEUE_NAME,
+            status: 'queued',
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            type: TrajectoryArtifactExportJobType.ColorModel,
+            request: input
+        }, {
+            preserveExistingJob: true
+        });
+
+        return queueService.waitForJobCompletion<{ objectKey: string; }>(
+            TRAJECTORY_ARTIFACT_EXPORT_QUEUE_NAME,
+            jobId
+        );
+    },
+
+    async exportColoredModelInline(input) {
         await trajectoryParserService.withDumpFile({ trajectoryId: input.trajectoryId, timestep: input.timestep }, async (dumpPath) => {
             let buffer: Buffer;
             {
@@ -240,6 +306,36 @@ export const createFilterEvaluatorService = (
     },
 
     async exportParticleFilterModel(input) {
+        if (!queueService) {
+            return this.exportParticleFilterModelInline(input);
+        }
+
+        const timestamp = new Date().toISOString();
+        const jobId = `trajectory-artifact:particle-filter:${input.trajectoryId}:${input.timestep}:${input.objectKey}`;
+
+        await queueService.enqueue(TRAJECTORY_ARTIFACT_EXPORT_QUEUE_NAME, {
+            jobId,
+            teamId: input.teamId,
+            trajectoryId: input.trajectoryId,
+            trajectoryName: input.trajectoryName,
+            timestep: input.timestep,
+            queueType: TRAJECTORY_ARTIFACT_EXPORT_QUEUE_NAME,
+            status: 'queued',
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            type: TrajectoryArtifactExportJobType.ParticleFilterModel,
+            request: input
+        }, {
+            preserveExistingJob: true
+        });
+
+        return queueService.waitForJobCompletion<{ objectKey: string; atomsResult: number; }>(
+            TRAJECTORY_ARTIFACT_EXPORT_QUEUE_NAME,
+            jobId
+        );
+    },
+
+    async exportParticleFilterModelInline(input) {
         return trajectoryParserService.withDumpFile({ trajectoryId: input.trajectoryId, timestep: input.timestep }, async (dumpPath) => {
             let buffer: Buffer;
             let atomsResult = 0;

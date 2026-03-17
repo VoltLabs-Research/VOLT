@@ -54,6 +54,10 @@ export class AnalysisDispatchService {
             throw new Error('No items after daemon workflow planning');
         }
 
+        const pluginReferenceExecutions = Array.isArray(input.pluginReferenceExecutions)
+            ? input.pluginReferenceExecutions
+            : [];
+
         const isBatchMode = plan.batchMode === true;
         const jobs = isBatchMode
             ? this.buildBatchJob(input, plan.items)
@@ -63,38 +67,38 @@ export class AnalysisDispatchService {
             ? plan.items.map((item) => typeof item.path === 'string' ? item.path : '').filter((url) => url.length > 0)
             : undefined;
 
-        for (const job of jobs) {
-            await this.queueService.enqueue(ANALYSIS_QUEUE_NAME, {
-                ...job,
-                executionData: {
-                    ...this.resolveEntrypoint(input.workflow),
-                    pluginId: input.pluginId,
-                    trajectoryId: input.trajectoryId,
-                    analysisId: input.analysisId,
-                    teamClusterId: input.teamClusterId,
-                    exposures: this.collectExposures(input.workflow),
-                    forEachNodeId: plan.forEachNodeId,
-                    nodeOutputSnapshots: plan.nodeOutputSnapshots,
-                    workflow: input.workflow,
-                    nestedPlugins: input.nestedPlugins,
-                    pluginReferenceExecutions: input.pluginReferenceExecutions,
-                    ...(isBatchMode ? {
-                        batchMode: true,
-                        allDumpUrls,
-                        contextNodeId: plan.contextNodeId,
-                        batchContextVariableName: 'allDumpLocalPaths'
-                    } : {})
-                }
-            });
+        const exposures = this.collectExposures(input.workflow);
+        const queueJobs = jobs.map((job) => ({
+            ...job,
+            executionData: {
+                ...this.resolveEntrypoint(input.workflow),
+                pluginId: input.pluginId,
+                trajectoryId: input.trajectoryId,
+                analysisId: input.analysisId,
+                teamClusterId: input.teamClusterId,
+                exposures,
+                forEachNodeId: plan.forEachNodeId,
+                nodeOutputSnapshots: plan.nodeOutputSnapshots,
+                workflow: input.workflow,
+                nestedPlugins: input.nestedPlugins,
+                pluginReferenceExecutions,
+                ...(isBatchMode ? {
+                    batchMode: true,
+                    allDumpUrls,
+                    contextNodeId: plan.contextNodeId,
+                    batchContextVariableName: 'allDumpLocalPaths'
+                } : {})
+            }
+        }));
 
-            await this.redisConnectionService.projectJobStatus({
-                ...job,
-                jobId: job.jobId,
-                teamId: job.teamId,
-                status: 'queued',
-                queueType: ANALYSIS_QUEUE_NAME
-            });
-        }
+        const enqueueResult = await this.queueService.enqueueMany(ANALYSIS_QUEUE_NAME, queueJobs);
+        await Promise.all(enqueueResult.enqueuedPayloads.map((job) => this.redisConnectionService.projectJobStatus({
+            ...job,
+            jobId: job.jobId,
+            teamId: job.teamId,
+            status: 'queued',
+            queueType: ANALYSIS_QUEUE_NAME
+        })));
 
         this.eventBroker.emitProgress({
             action: OrchestrationAction.AnalysisStart,

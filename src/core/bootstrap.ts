@@ -6,6 +6,7 @@ import { createMetricsModule } from '@/modules/metrics';
 import { createSSHImportModule } from '@/modules/ssh-import';
 import { createPlatformModule } from '@/modules/platform';
 import { createTrajectoryNativeModule } from '@/modules/trajectory-native';
+import { TrajectoryArtifactExportWorkerService } from '@/modules/trajectory-native/services';
 import { TrajectoryRasterWorkerService } from '@/modules/trajectory-native/services';
 import { TrajectoryGlbWorkerService } from '@/modules/trajectory-native/services';
 import { createArtifactsModule, createPluginListingRepository } from '@/modules/artifacts';
@@ -62,6 +63,8 @@ export const bootstrap = async (): Promise<void> => {
     const artifacts = createArtifactsModule(
         platform.minioService,
         trajectoryNative.nativeModuleLoader,
+        platform.queueService,
+        platform.redisConnectionService,
         cloudControl.daemonArtifactReporterService,
         pluginListingRepository
     );
@@ -69,9 +72,14 @@ export const bootstrap = async (): Promise<void> => {
         queueService: platform.queueService,
         redisConnectionService: platform.redisConnectionService,
         minioService: platform.minioService,
-        resultProcessorService: artifacts.resultProcessorService,
+        analysisExposureProcessingDispatchService: artifacts.analysisExposureProcessingDispatchService,
         daemonJobReporterService: cloudControl.daemonJobReporterService
     });
+    const trajectoryArtifactExportWorkerService = new TrajectoryArtifactExportWorkerService(
+        platform.queueService,
+        platform.redisConnectionService,
+        trajectoryNative.filterEvaluatorService
+    );
     const trajectoryRasterWorkerService = new TrajectoryRasterWorkerService(
         platform.queueService,
         platform.redisConnectionService,
@@ -99,8 +107,11 @@ export const bootstrap = async (): Promise<void> => {
     await cloudControl.voltCloudConnection.start();
     cloudControl.daemonExposureRegistryService.start();
     analysisWorker.start(config.queueConcurrency.analysis);
+    artifacts.analysisExposureProcessingWorkerService.start(config.queueConcurrency.analysisExposureProcessing ?? 2);
+    trajectoryArtifactExportWorkerService.start(config.queueConcurrency.trajectoryArtifactExports ?? 2);
     trajectoryRasterWorkerService.start(config.queueConcurrency.rasterizer);
     trajectoryGlbWorkerService.start(config.queueConcurrency.glbPreprocessing);
+    sshImport.sshImportFrameWorkerService.start(config.queueConcurrency.sshImportFrames ?? 2);
     sshImport.sshImportWorkerService.start();
     logger.info(`cluster-daemon started for team cluster ${config.teamClusterId}`);
 
@@ -112,8 +123,11 @@ export const bootstrap = async (): Promise<void> => {
         stopMemoryMonitor();
         workflowRuntime.debugSessionManager.shutdown();
         await analysisWorker.stop();
+        await artifacts.analysisExposureProcessingWorkerService.stop();
+        await trajectoryArtifactExportWorkerService.stop();
         await trajectoryRasterWorkerService.stop();
         await trajectoryGlbWorkerService.stop();
+        await sshImport.sshImportFrameWorkerService.stop();
         await sshImport.sshImportWorkerService.stop();
         cloudControl.daemonExposureRegistryService.stop();
         await cloudControl.voltCloudConnection.stop();
