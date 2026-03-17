@@ -2,20 +2,20 @@ import './GlobalSearch.css';
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import useDashboardGlobalSearch from '@/modules/dashboard/hooks/use-dashboard-global-search';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
-import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import SearchInput from '@/shared/presentation/components/SearchInput';
 import useTip from '@/shared/tips/use-tip';
 import { FloatingPortal } from '@floating-ui/react';
+import { useId, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { CiChat1 } from 'react-icons/ci';
 import { GoWorkflow } from 'react-icons/go';
 import { IoChevronForward, IoCubeOutline, IoPeopleOutline } from 'react-icons/io5';
 import { TbCube3dSphere, TbObjectScan } from 'react-icons/tb';
 import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/dtos/global-search';
-import { useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
 
 type SectionConfig = {
     key: GlobalSearchSectionKey;
@@ -80,7 +80,21 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
     const floatingRoot = useFloatingRoot();
     const [isFocused, setIsFocused] = useState(false);
     const [focusTipTrigger, setFocusTipTrigger] = useState(0);
+    const searchInputId = useId();
+    const resultsListId = useId();
     let itemIndex = -1;
+
+    const flattenedEntries = useMemo(() => {
+        return sections.flatMap((section) => section.items.map((item) => ({
+            id: item.id,
+            sectionKey: section.key
+        })));
+    }, [sections]);
+
+    const activeEntry = activeIndex >= 0 ? flattenedEntries[activeIndex] : null;
+    const activeOptionId = activeEntry
+        ? `${resultsListId}-${activeEntry.sectionKey}-${activeEntry.id}`
+        : undefined;
 
     useTip('dashboard-global-search', {
         enabled: isFocused && focusTipTrigger > 0,
@@ -101,7 +115,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
 
                     return (
                         <Container key={item.id ?? 'root'} className='d-flex items-center gap-05'>
-                            {index > 0 && <IoChevronForward size={12} className='color-muted' />}
+                            {index > 0 && <IoChevronForward size={12} className='color-muted' aria-hidden='true' />}
                             <button
                                 type='button'
                                 className={`global-search-breadcrumb-item ${isCurrent ? 'is-current' : ''}`}
@@ -116,22 +130,29 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
         );
     }, [contextBreadcrumb]);
 
-    const renderItem = (item: (typeof sections)[number]['items'][number]) => {
+    const renderItem = (sectionKey: GlobalSearchSectionKey, item: (typeof sections)[number]['items'][number]) => {
         itemIndex += 1;
         const isActive = itemIndex === activeIndex;
+        const optionId = `${resultsListId}-${sectionKey}-${item.id}`;
 
         return (
-            <Button
+            <Container
                 key={item.id}
+                id={optionId}
+                role='option'
+                aria-selected={isActive}
+                tabIndex={-1}
                 onClick={() => handleSelect(item)}
-                className={`global-search-item d-flex column items-start gap-025 p-075 w-max cursor-pointer${isActive ? ' global-search-item--active' : ''}`}
-                variant='ghost'
-                intent='neutral'
-                align='start'
+                onMouseDown={(event) => event.preventDefault()}
+                title={item.subtitle ? `${item.title} - ${item.subtitle}` : item.title}
+                aria-label={item.subtitle ? `${item.title}. ${item.subtitle}` : item.title}
+                className={`global-search-item list-item-hoverable radius-sm d-flex column items-start gap-025 w-max cursor-pointer${isActive ? ' global-search-item--active' : ''}`}
             >
-                <Paragraph className='font-size-2 font-weight-5'>{item.title}</Paragraph>
-                <Paragraph className='font-size-1 color-muted'>{item.subtitle}</Paragraph>
-            </Button>
+                <Paragraph className='font-size-2 font-weight-5 text-truncate w-max' title={item.title}>{item.title}</Paragraph>
+                {item.subtitle ? (
+                    <Paragraph className='font-size-1 color-muted text-truncate w-max' title={item.subtitle}>{item.subtitle}</Paragraph>
+                ) : null}
+            </Container>
         );
     };
 
@@ -144,12 +165,14 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
         }
 
         return (
-            <Container key={key} className='global-search-section'>
-                <Container className='global-search-section-header d-flex items-center gap-05 p-075 font-size-3 color-muted'>
-                    {icon}
+            <Container key={key} className='global-search-section' role='group' aria-labelledby={`${resultsListId}-${key}-label`}>
+                <Container id={`${resultsListId}-${key}-label`} className='global-search-section-header d-flex items-center gap-05 p-075 font-size-3 color-muted'>
+                    <span aria-hidden='true'>{icon}</span>
                     <Paragraph className='font-size-1 font-weight-5'>{title}</Paragraph>
                 </Container>
-                {items.map(renderItem)}
+                <Container className='global-search-section-items d-flex column gap-025'>
+                    {items.map((item) => renderItem(key, item))}
+                </Container>
             </Container>
         );
     };
@@ -157,8 +180,16 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
     return (
         <Container className='global-search-wrapper w-max' ref={refs.setReference} {...getReferenceProps()}>
             <SearchInput
-                placeholder='Search...'
+                id={searchInputId}
+                placeholder='Search…'
                 value={query}
+                aria-label='Global search'
+                role='combobox'
+                aria-autocomplete='list'
+                aria-expanded={showResults}
+                aria-haspopup='listbox'
+                aria-controls={showResults ? resultsListId : undefined}
+                aria-activedescendant={activeOptionId}
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => {
                     setIsFocused(true);
@@ -175,15 +206,33 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
                 <FloatingPortal root={floatingRoot}>
                     <Container
                         ref={refs.setFloating}
-                        className='global-search-results panel-floating radius-md y-auto'
+                        className='global-search-results glass-bg panel-floating radius-md y-auto'
+                        aria-busy={isLoading}
                         style={floatingStyles}
                         {...getFloatingProps()}
                     >
-                        {isLoading && <Container className='global-search-loading p-2'><EmptyState title='Searching...' description='' /></Container>}
+                        <Paragraph className='global-search-status' role='status' aria-live='polite' aria-atomic='true'>
+                            {isLoading ? 'Searching…' : totalResults === 0 ? 'No results found.' : `${totalResults} result${totalResults === 1 ? '' : 's'} available.`}
+                        </Paragraph>
 
-                        {!isLoading && totalResults === 0 && <EmptyState title='No results found' description='' />}
+                        {isLoading && (
+                            <Container className='global-search-loading p-2'>
+                                <Loader scale={0.5} isFixed={false} announce />
+                            </Container>
+                        )}
 
-                        {!isLoading && totalResults > 0 && SECTIONS.map(renderSection)}
+                        {!isLoading && totalResults === 0 && <EmptyState title='No results found' description='' announce />}
+
+                        {!isLoading && totalResults > 0 && (
+                            <Container
+                                id={resultsListId}
+                                role='listbox'
+                                aria-label='Global search results'
+                                className='global-search-results-list d-flex column'
+                            >
+                                {SECTIONS.map(renderSection)}
+                            </Container>
+                        )}
                     </Container>
                 </FloatingPortal>
             )}

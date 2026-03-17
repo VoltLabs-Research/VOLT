@@ -19,14 +19,7 @@
 }
 
 .footer-options-btn {
-    min-width: 2.25rem;
-    min-height: 2.25rem;
     font-size: 1.25rem;
-    flex-shrink: 0;
-    align-self: flex-start;
-    background: transparent;
-    border: none;
-    box-shadow: none;
     color: var(--color-text-secondary);
 }
 
@@ -41,7 +34,8 @@
 
 .simulation-card-status-loader {
     margin-left: 0;
-    padding-right: 0.25rem;
+    margin-left: .5rem;
+    padding-right: .5rem;
 }
 
 .simulation-card-status-text {
