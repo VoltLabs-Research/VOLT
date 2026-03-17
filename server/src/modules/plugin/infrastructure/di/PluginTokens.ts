@@ -8,5 +8,6 @@ export const PLUGIN_TOKENS = Object.freeze({
     PluginBinaryCacheService: Symbol.for('PluginBinaryCacheService'),
     PluginExecutionRouter: Symbol.for('PluginExecutionRouter'),
     ListingRowsExportPresenter: Symbol.for('ListingRowsExportPresenter'),
-    PluginExposureExportService: Symbol.for('PluginExposureExportService')
+    PluginExposureExportService: Symbol.for('PluginExposureExportService'),
+    PluginDebugSocketModule: Symbol.for('PluginDebugSocketModule')
 });

@@ -1,10 +1,10 @@
-import { createDefaultDesktopWindowState, type DesktopWindowState } from '@/shared/utils/electron-contract';
-import { isElectronEnvironment } from '@/shared/utils/electron-environment';
+import { createDefaultDesktopWindowState, type DesktopWindowState } from '@/shared/utils/desktop-contract';
+import { isDesktopEnvironment } from '@/shared/utils/desktop-environment';
 import { useEffect, useState } from 'react';
 
 export const useDesktopWindowState = () => {
     const [windowState, setWindowState] = useState<DesktopWindowState>(createDefaultDesktopWindowState);
-    const isDesktop = isElectronEnvironment();
+    const isDesktop = isDesktopEnvironment();
 
     useEffect(() => {
         if (!isDesktop || !window.voltDesktop) {

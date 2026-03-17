@@ -15,6 +15,7 @@ import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import { openModal } from '@/shared/presentation/components/Modal';
 import { clusterColumn, dateColumn } from '@/shared/presentation/utilities/column-presets';
+import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import useTip from '@/shared/tips/use-tip';
 import { formatNumber, formatSize } from '@/shared/utils/format';
 import { Folder, Pencil, Trash2 } from 'lucide-react';
@@ -49,8 +50,10 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
     {
         key: 'status',
         title: 'Status',
-        render: (value, row) => <span className='font-size-2 color-secondary'>{isTrajectoryFolderRow(row) ? '-' : String(value)}</span>,
-        skeleton: { variant: 'text', width: 90 }
+        render: (value, row) => isTrajectoryFolderRow(row)
+            ? <span className='font-size-2 color-muted'>-</span>
+            : <StatusBadge status={String(value)} />,
+        skeleton: { variant: 'rounded', width: 90, height: 24 }
     },
     {
         key: 'isPublic',

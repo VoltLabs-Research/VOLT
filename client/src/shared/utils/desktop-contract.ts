@@ -5,18 +5,6 @@ export enum DesktopPlatform {
     Unknown = 'unknown'
 };
 
-export enum DesktopWindowAction {
-    Minimize = 'minimize',
-    ToggleMaximize = 'toggle-maximize',
-    Close = 'close'
-};
-
-export enum DesktopIpcChannel {
-    PerformWindowAction = 'desktop:perform-window-action',
-    GetWindowState = 'desktop:get-window-state',
-    WindowStateChanged = 'desktop:window-state-changed'
-};
-
 export interface DesktopWindowState {
     isFullScreen: boolean;
     isMaximized: boolean;
@@ -31,7 +19,8 @@ export interface DesktopWindowControlsApi {
 };
 
 export interface VoltDesktopApi {
-    isElectron: boolean;
+    isDesktop: boolean;
+    runtime: 'tauri';
     platform: DesktopPlatform;
     windowControls: DesktopWindowControlsApi;
 };

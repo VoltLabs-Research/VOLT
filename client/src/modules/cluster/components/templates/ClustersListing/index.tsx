@@ -117,9 +117,7 @@ const ClustersListing = () => {
             sortable: true,
             width: 160,
             render: (_, row) => (
-                <Paragraph className={`server-table-status ${row.statusClass} font-size-1 font-weight-5`}>
-                    {row.status}
-                </Paragraph>
+                <StatusBadge status={row.status} />
             )
         },
         {

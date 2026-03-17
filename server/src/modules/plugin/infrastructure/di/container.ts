@@ -25,8 +25,10 @@ import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/r
 import PluginBinaryCacheService from '@modules/plugin/infrastructure/services/plugin/PluginBinaryCacheService';
 import PluginExecutionRouter from '@modules/plugin/infrastructure/services/plugin/PluginExecutionRouter';
 import PluginStorageService from '@modules/plugin/infrastructure/services/plugin/PluginStorageService';
+import PluginDebugSocketModule from '@modules/plugin/infrastructure/socket/PluginDebugSocketModule';
 
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 import type { ClassProvider } from 'tsyringe';
 import { container } from 'tsyringe';
@@ -46,6 +48,7 @@ export const registerPluginDependencies = (): void => {
             [PLUGIN_TOKENS.ListingRowsExportPresenter, ListingRowsExportPresenter],
             [PLUGIN_TOKENS.PluginExposureExportService, PluginExposureExportService],
             [PLUGIN_TOKENS.PluginRepository, PluginRepository],
+            [PLUGIN_TOKENS.PluginDebugSocketModule, PluginDebugSocketModule],
             CreatePluginUseCase,
             GetPluginByIdUseCase,
             UpdatePluginByIdUseCase,
@@ -61,6 +64,9 @@ export const registerPluginDependencies = (): void => {
             ExportListingRowsByAnalysisIdUseCase,
             GetPluginExposureGLBUseCase,
             GetPluginExposureExportUseCase
+        ],
+        aliases: [
+            [SOCKET_TOKENS.SocketModule, PLUGIN_TOKENS.PluginDebugSocketModule]
         ]
     });
 
