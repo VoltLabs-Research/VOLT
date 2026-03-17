@@ -33,7 +33,7 @@ const buildPluginsById = (plugins: Plugin[]): Record<string, Plugin> => {
 };
 
 const usePluginSelectors = () => {
-    const { data: plugins = [], isLoading } = useAllPluginsQuery({ enabled: false });
+    const { data: plugins = [], isLoading } = useAllPluginsQuery({ enabled: true });
 
     const pluginsById = useMemo(() => buildPluginsById(plugins), [plugins]);
 

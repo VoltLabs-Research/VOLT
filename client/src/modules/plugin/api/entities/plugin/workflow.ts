@@ -54,6 +54,7 @@ export interface IArgumentDefinition {
     value?: unknown;
     options?: IArgumentOption[];
     listArguments?: IArgumentDefinition[];
+    pluginReferenceFilter?: string[];
     min?: number;
     max?: number;
     step?: number;

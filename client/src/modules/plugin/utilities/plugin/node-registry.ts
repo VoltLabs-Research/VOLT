@@ -56,8 +56,8 @@ export const ARGUMENT_TYPE_OPTIONS: NodeOption<ArgumentType>[] = [{
     value: ArgumentType.LIST,
     label: 'List'
 }, {
-    value: ArgumentType.PLUGIN_CONFIG,
-    label: 'Plugin Config'
+    value: ArgumentType.PLUGIN_REFERENCE,
+    label: 'Plugin Reference'
 }];
 
 export const EXPORTER_OPTIONS: NodeOption<Exporter>[] = [{
@@ -132,7 +132,7 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         outputs: 1,
         allowedConnections: {
             from: [NodeType.ARGUMENTS],
-            to: [NodeType.FOREACH]
+            to: [NodeType.FOREACH, NodeType.ENTRYPOINT, NodeType.PLUGIN]
         },
         createDefaultData: () => ({
             context: {
@@ -165,14 +165,14 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         inputs: 1,
         outputs: -1,
         allowedConnections: {
-            from: [NodeType.FOREACH, NodeType.PLUGIN],
+            from: [NodeType.CONTEXT, NodeType.FOREACH, NodeType.PLUGIN],
             to: [NodeType.EXPOSURE, NodeType.IF_STATEMENT]
         },
         createDefaultData: () => ({
             entrypoint: {
                 binary: '',
                 type: EntrypointType.EXECUTABLE,
-                arguments: '{{ forEach.currentValue }} {{ forEach.outputPath }} {{ arguments.as_str }}',
+                arguments: '{{ context.outputPath }} {{ context.allDumpLocalPaths }} {{ arguments.as_str }}',
                 requirementsFile: '',
                 timeout: -1
             }

@@ -1,6 +1,12 @@
 import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
 
+export interface PluginReferenceExecutionRequest {
+    referencePath: string;
+    pluginId: string;
+    config: Record<string, unknown>;
+};
+
 export interface RoutePluginExecutionInput {
     teamClusterId: string;
     analysis: Analysis;
@@ -12,6 +18,7 @@ export interface RoutePluginExecutionInput {
     teamId: string;
     plugin: Plugin;
     pluginDependencies: Plugin[];
+    pluginReferenceExecutions: PluginReferenceExecutionRequest[];
     config: Record<string, unknown>;
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];
