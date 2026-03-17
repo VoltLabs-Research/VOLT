@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { existsSync, readFileSync } from 'fs';
+import { access, readFile } from 'node:fs/promises';
 import { join } from 'path';
 import helmet from 'helmet';
 
@@ -56,29 +56,38 @@ const REDOC_HTML = `<!DOCTYPE html>
 
 let specCache: string | null = null;
 
-const resolveSpecPath = (): string => {
-    const existingPath = OPENAPI_SPEC_CANDIDATES.find((candidate) => existsSync(candidate));
-
-    if (!existingPath) {
-        throw new Error(`OpenAPI spec not found. Checked: ${OPENAPI_SPEC_CANDIDATES.join(', ')}`);
+const resolveSpecPath = async (): Promise<string> => {
+    for (const candidate of OPENAPI_SPEC_CANDIDATES) {
+        try {
+            await access(candidate);
+            return candidate;
+        } catch {
+            continue;
+        }
     }
 
-    return existingPath;
+    throw new Error(`OpenAPI spec not found. Checked: ${OPENAPI_SPEC_CANDIDATES.join(', ')}`);
 };
 
-const loadSpec = (): string => {
+const loadSpec = async (): Promise<string> => {
     if (process.env.NODE_ENV === 'production' && specCache) {
         return specCache;
     }
 
-    specCache = readFileSync(resolveSpecPath(), 'utf-8');
+    const specPath = await resolveSpecPath();
+    specCache = await readFile(specPath, 'utf-8');
     return specCache;
 };
 
-router.get('/openapi.yaml', (_req, res) => {
-    res.setHeader('Content-Type', 'text/yaml; charset=utf-8');
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.send(loadSpec());
+router.get('/openapi.yaml', async (_req, res, next) => {
+    try {
+        const spec = await loadSpec();
+        res.setHeader('Content-Type', 'text/yaml; charset=utf-8');
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.send(spec);
+    } catch (error) {
+        next(error);
+    }
 });
 
 router.get('/', docsHelmet, (_req, res) => {
