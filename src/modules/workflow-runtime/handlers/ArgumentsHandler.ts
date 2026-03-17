@@ -11,6 +11,58 @@ interface ArgumentDefinition {
     listArguments?: ArgumentDefinition[];
 };
 
+interface PluginReferencePlanningItem {
+    referencePath: string;
+    pluginId: string;
+    config: Record<string, unknown>;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+const collectPluginReferences = (
+    definition: ArgumentDefinition,
+    value: unknown,
+    currentPath: string,
+    results: PluginReferencePlanningItem[]
+): void => {
+    if (definition.type === 'pluginReference') {
+        if (!isRecord(value) || typeof value.pluginId !== 'string' || !value.pluginId.trim()) {
+            return;
+        }
+
+        results.push({
+            referencePath: currentPath,
+            pluginId: value.pluginId.trim(),
+            config: isRecord(value.config) ? value.config : {}
+        });
+        return;
+    }
+
+    if (definition.type === 'list' && Array.isArray(value)) {
+        const nestedDefinitions = definition.listArguments ?? [];
+        value.forEach((entry, index) => {
+            if (!isRecord(entry)) {
+                return;
+            }
+
+            for (const nestedDefinition of nestedDefinitions) {
+                if (!nestedDefinition.argument) {
+                    continue;
+                }
+
+                collectPluginReferences(
+                    nestedDefinition,
+                    entry[nestedDefinition.argument],
+                    `${currentPath}[${index}].${nestedDefinition.argument}`,
+                    results
+                );
+            }
+        });
+    }
+};
+
 interface ArgumentsNodeData {
     arguments?: ArgumentDefinition[];
 };
@@ -110,9 +162,23 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
             }
         }
 
+        const pluginReferences: PluginReferencePlanningItem[] = [];
+        for (const definition of definitions) {
+            const argumentKey = definition.argument;
+            if (!argumentKey) {
+                continue;
+            }
+
+            collectPluginReferences(definition, values[argumentKey], argumentKey, pluginReferences);
+        }
+
         return {
             as_str: encodeCliArgumentsToken(cliArgs),
             as_array: cliArgs,
+            pluginReferences: {
+                items: pluginReferences,
+                str_json: JSON.stringify(pluginReferences)
+            },
             ...values
         };
     }

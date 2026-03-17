@@ -46,6 +46,12 @@ interface PluginNodeConfig {
     pluginId?: string;
 };
 
+interface PluginReferenceExecutionRequest {
+    referencePath: string;
+    pluginId: string;
+    config: Record<string, unknown>;
+};
+
 interface DumpExecutionTarget {
     localPath: string;
     originalPath?: string;
@@ -143,6 +149,54 @@ const createNestedExecutionResult = (items: InlineExposureArtifact[]): Record<st
         }
     }
 });
+
+const setNestedValueAtPath = (target: Record<string, unknown>, pathExpression: string, value: unknown): void => {
+    const segments = pathExpression
+        .replace(/\[(\d+)\]/g, '.$1')
+        .split('.')
+        .filter(Boolean);
+
+    if (!segments.length) {
+        return;
+    }
+
+    let cursor: Record<string, unknown> | unknown[] = target;
+    for (let index = 0; index < segments.length - 1; index += 1) {
+        const segment = segments[index];
+        const nextSegment = segments[index + 1];
+        const nextIsIndex = /^\d+$/.test(nextSegment);
+
+        if (Array.isArray(cursor)) {
+            const arrayIndex = Number(segment);
+            if (!Number.isInteger(arrayIndex)) {
+                return;
+            }
+
+            if (cursor[arrayIndex] === undefined) {
+                cursor[arrayIndex] = nextIsIndex ? [] : {};
+            }
+            cursor = cursor[arrayIndex] as Record<string, unknown> | unknown[];
+            continue;
+        }
+
+        if (!(segment in cursor) || cursor[segment] === undefined || cursor[segment] === null) {
+            cursor[segment] = nextIsIndex ? [] : {};
+        }
+
+        cursor = cursor[segment] as Record<string, unknown> | unknown[];
+    }
+
+    const finalSegment = segments[segments.length - 1];
+    if (Array.isArray(cursor)) {
+        const arrayIndex = Number(finalSegment);
+        if (Number.isInteger(arrayIndex)) {
+            cursor[arrayIndex] = value;
+        }
+        return;
+    }
+
+    cursor[finalSegment] = value;
+};
 
 const readNestedExposureItems = (output: Record<string, unknown>): InlineExposureArtifact[] => {
     const executionResult = isRecord(output.execution_result) ? output.execution_result : undefined;
@@ -637,12 +691,17 @@ export class AnalysisWorker {
         dumpLocalPath: string,
         outputDir: string
     ): Promise<void> {
+        const dumpTarget = this.createDumpExecutionTargets(executionData, [dumpLocalPath], timestep)[0];
+        if (dumpTarget) {
+            await this.executeArgumentPluginReferences(executionData, outputs, [dumpTarget], outputDir);
+        }
+
         const pluginNodes = resolveInlinePluginExecutionOrder(executionData.workflow);
         if (!pluginNodes.length) {
             return;
         }
 
-        const dumpTarget = this.createDumpExecutionTargets(executionData, [dumpLocalPath], timestep)[0];
+        
         if (!dumpTarget) {
             return;
         }
@@ -665,12 +724,16 @@ export class AnalysisWorker {
         dumpLocalPaths: string[],
         outputDir: string
     ): Promise<void> {
+        const dumpTargets = this.createDumpExecutionTargets(executionData, dumpLocalPaths);
+        if (dumpTargets.length > 0) {
+            await this.executeArgumentPluginReferences(executionData, outputs, dumpTargets, outputDir);
+        }
+
         const pluginNodes = resolveInlinePluginExecutionOrder(executionData.workflow);
         if (!pluginNodes.length) {
             return;
         }
 
-        const dumpTargets = this.createDumpExecutionTargets(executionData, dumpLocalPaths);
         if (!dumpTargets.length) {
             return;
         }
@@ -703,6 +766,77 @@ export class AnalysisWorker {
 
             outputs.set(pluginNode.id, createNestedExecutionResult(aggregatedArtifacts));
         }
+    }
+
+    private async executeArgumentPluginReferences(
+        executionData: AnalysisJobExecutionData,
+        outputs: Map<string, Record<string, unknown>>,
+        dumpTargets: DumpExecutionTarget[],
+        outputDir: string
+    ): Promise<void> {
+        const requests = Array.isArray(executionData.pluginReferenceExecutions)
+            ? executionData.pluginReferenceExecutions as PluginReferenceExecutionRequest[]
+            : [];
+        if (!requests.length || !dumpTargets.length) {
+            return;
+        }
+
+        const dedupedRequests = new Map<string, PluginReferenceExecutionRequest>();
+        for (const request of requests) {
+            const dedupeKey = JSON.stringify({ pluginId: request.pluginId, config: request.config });
+            if (!dedupedRequests.has(dedupeKey)) {
+                dedupedRequests.set(dedupeKey, request);
+            }
+        }
+
+        const dedupedResults = new Map<string, Record<string, unknown>>();
+
+        for (const [dedupeKey, request] of dedupedRequests.entries()) {
+            const aggregatedArtifacts: InlineExposureArtifact[] = [];
+            for (const [index, dumpTarget] of dumpTargets.entries()) {
+                const output = await this.executeNestedPluginWorkflow(
+                    executionData,
+                    {
+                        pluginId: request.pluginId,
+                        config: request.config,
+                        selectedTimesteps: [dumpTarget.timestep]
+                    },
+                    outputs,
+                    dumpTarget,
+                    `${outputDir}_plugin_reference_${index}`
+                );
+                aggregatedArtifacts.push(...readNestedExposureItems(output));
+            }
+
+            dedupedResults.set(dedupeKey, createNestedExecutionResult(aggregatedArtifacts));
+        }
+
+        const argumentsNode = executionData.workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
+        if (!argumentsNode) {
+            return;
+        }
+
+        const argumentsOutput = { ...(outputs.get(argumentsNode.id) ?? {}) };
+        const executionResultsObject: Record<string, unknown> = {};
+
+        for (const request of requests) {
+            const dedupeKey = JSON.stringify({ pluginId: request.pluginId, config: request.config });
+            const dedupedResult = dedupedResults.get(dedupeKey) ?? createNestedExecutionResult([]);
+            const executionResult = dedupedResult.execution_result;
+
+            executionResultsObject[request.referencePath] = executionResult;
+            setNestedValueAtPath(argumentsOutput, request.referencePath, {
+                pluginId: request.pluginId,
+                config: request.config,
+                execution_result: executionResult
+            });
+        }
+
+        argumentsOutput.pluginReferences = {
+            execution_results: executionResultsObject,
+            execution_results_str_json: JSON.stringify(executionResultsObject)
+        };
+        outputs.set(argumentsNode.id, argumentsOutput);
     }
 
     private async executeNestedPluginWorkflow(

@@ -70,6 +70,7 @@ export class AnalysisDispatchService {
                     nodeOutputSnapshots: plan.nodeOutputSnapshots,
                     workflow: input.workflow,
                     nestedPlugins: input.nestedPlugins,
+                    pluginReferenceExecutions: input.pluginReferenceExecutions,
                     ...(isBatchMode ? {
                         batchMode: true,
                         allDumpUrls,
