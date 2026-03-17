@@ -30,7 +30,7 @@ const DashboardNotificationsFeed = () => {
             {!notification.read && (
                 <span className='dashboard-notification-unread-dot' />
             )}
-            <Container className='d-flex column gap-01 flex-1 min-w-0'>
+            <Container className='d-flex column gap-05 flex-1 min-w-0'>
                 <span className='font-size-2 color-primary font-weight-5 text-truncate'>
                     {notification.title}
                 </span>
