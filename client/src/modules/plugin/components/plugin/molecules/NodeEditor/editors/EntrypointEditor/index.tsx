@@ -175,7 +175,6 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                         name='entrypointScript'
                         control={form.control}
                         placeholder='main.py'
-                        helperText='For single-file scripts, leave empty. For projects (ZIP), specify the main script path relative to the archive root.'
                     />
                 )}
                 <FormFieldRHF<EntrypointEditorFormValues>
