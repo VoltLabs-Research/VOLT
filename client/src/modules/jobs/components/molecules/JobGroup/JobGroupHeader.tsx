@@ -38,7 +38,7 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
             aria-controls={contentId}
         >
             <Container className='d-flex w-max items-center content-between gap-05 p-1'>
-                <Container className='d-flex column gap-01'>
+                <Container className='d-flex column gap-05'>
                     <Title className='font-size-1 font-weight-6 color-primary job-group-name text-truncate'>
                         {group.trajectoryName}
                     </Title>
