@@ -156,6 +156,7 @@ export class AnalysisDispatchService {
         entrypointType: EntrypointType;
         arguments: string;
         requirementsFile?: string;
+        entrypointScript?: string;
     } {
         const entrypoint = workflow.nodes.find((node) => node.type === 'entrypoint');
         const entrypointData = entrypoint?.data?.entrypoint as Record<string, unknown> | undefined;
@@ -171,6 +172,9 @@ export class AnalysisDispatchService {
             arguments: String(entrypointData.arguments),
             requirementsFile: typeof entrypointData.requirementsFile === 'string'
                 ? entrypointData.requirementsFile
+                : undefined,
+            entrypointScript: typeof entrypointData.entrypointScript === 'string' && entrypointData.entrypointScript.length > 0
+                ? entrypointData.entrypointScript
                 : undefined
         };
     }

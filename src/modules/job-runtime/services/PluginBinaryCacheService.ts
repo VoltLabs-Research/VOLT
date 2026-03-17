@@ -14,6 +14,8 @@ const PLUGINS_BUCKET = 'volt-plugins';
 const PYTHON_VENV_DIRECTORY = 'venv';
 const PYTHON_REQUIREMENTS_FILENAME = 'requirements.txt';
 const PYTHON_INSTALL_MARKER_FILENAME = '.requirements-installed';
+const PYTHON_PROJECT_DIRECTORY = 'project';
+const PYTHON_ZIP_EXTRACTED_MARKER = '.zip-extracted';
 
 const buildCacheKey = (binaryObjectPath: string): string => {
     const basename = path.basename(binaryObjectPath);
@@ -38,6 +40,7 @@ export interface PluginBinaryCacheService {
         binaryObjectPath: string;
         entrypointType?: EntrypointType;
         requirementsFile?: string;
+        entrypointScript?: string;
     }): Promise<{
         artifactPath: string;
         commandPath: string;
@@ -122,7 +125,7 @@ export const createPluginBinaryCacheService = (minioService: MinioService): Plug
         return nextPromise;
     };
 
-    const getPythonRuntime = async (binaryObjectPath: string, requirementsFile: string) => {
+    const getPythonRuntime = async (binaryObjectPath: string, requirementsFile: string, entrypointScript?: string) => {
         const artifactPath = await getCachedBinaryPath(binaryObjectPath);
         const runtimeKey = buildPythonRuntimeKey(binaryObjectPath, requirementsFile);
         const existingPromise = pythonRuntimePromises.get(runtimeKey);
@@ -138,6 +141,29 @@ export const createPluginBinaryCacheService = (minioService: MinioService): Plug
             const pythonPath = path.join(venvPath, 'bin', 'python3');
 
             await fs.mkdir(runtimeDirectory, { recursive: true });
+
+            // When entrypointScript is provided, the artifact is a ZIP project.
+            // Extract it before installing requirements so that local package
+            // references (e.g. "." or "./mypackage") in requirements.txt resolve
+            // correctly against the extracted project tree.
+            let scriptPath = artifactPath;
+            if (entrypointScript) {
+                const projectDir = path.join(runtimeDirectory, PYTHON_PROJECT_DIRECTORY);
+                const extractMarkerPath = path.join(runtimeDirectory, PYTHON_ZIP_EXTRACTED_MARKER);
+
+                try {
+                    await fs.access(extractMarkerPath, fs.constants.F_OK);
+                } catch {
+                    await fs.rm(projectDir, { recursive: true, force: true });
+                    await fs.mkdir(projectDir, { recursive: true });
+                    await runCommand('unzip', ['-o', artifactPath, '-d', projectDir], runtimeDirectory);
+                    await fs.writeFile(extractMarkerPath, artifactPath, 'utf-8');
+                    logger.info(`Python project extracted: ${artifactPath} -> ${projectDir}`);
+                }
+
+                scriptPath = path.join(projectDir, entrypointScript);
+            }
+
             await writeFileIfChanged(requirementsPath, requirementsFile);
 
             try {
@@ -153,14 +179,20 @@ export const createPluginBinaryCacheService = (minioService: MinioService): Plug
                 await fs.writeFile(installMarkerPath, runtimeKey, 'utf-8');
             }
 
+            const runtimeEnv: NodeJS.ProcessEnv = {
+                VIRTUAL_ENV: venvPath,
+                PATH: `${path.join(venvPath, 'bin')}:${process.env.PATH ?? ''}`
+            };
+
+            if (entrypointScript) {
+                runtimeEnv.PLUGIN_PROJECT_DIR = path.join(runtimeDirectory, PYTHON_PROJECT_DIRECTORY);
+            }
+
             return {
                 artifactPath,
                 commandPath: pythonPath,
-                argsPrefix: [artifactPath],
-                env: {
-                    VIRTUAL_ENV: venvPath,
-                    PATH: `${path.join(venvPath, 'bin')}:${process.env.PATH ?? ''}`
-                }
+                argsPrefix: [scriptPath],
+                env: runtimeEnv
             };
         })().finally(() => {
             pythonRuntimePromises.delete(runtimeKey);
@@ -174,7 +206,7 @@ export const createPluginBinaryCacheService = (minioService: MinioService): Plug
         async getExecutionRuntime(input) {
             const entrypointType = input.entrypointType ?? EntrypointType.Executable;
             if (entrypointType === EntrypointType.PythonScript) {
-                return getPythonRuntime(input.binaryObjectPath, input.requirementsFile ?? '');
+                return getPythonRuntime(input.binaryObjectPath, input.requirementsFile ?? '', input.entrypointScript);
             }
 
             const artifactPath = await getCachedBinaryPath(input.binaryObjectPath);

@@ -194,6 +194,7 @@ export interface AnalysisJobExecutionData {
     entrypointType?: EntrypointType;
     arguments: string;
     requirementsFile?: string;
+    entrypointScript?: string;
     pluginId: string;
     trajectoryId: string;
     analysisId: string;

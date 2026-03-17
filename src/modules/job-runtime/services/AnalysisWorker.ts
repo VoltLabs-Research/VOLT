@@ -306,7 +306,8 @@ export class AnalysisWorker {
             const executionRuntime = await this.pluginBinaryCacheService.getExecutionRuntime({
                 binaryObjectPath: executionData.binaryObjectPath,
                 entrypointType: executionData.entrypointType,
-                requirementsFile: executionData.requirementsFile
+                requirementsFile: executionData.requirementsFile,
+                entrypointScript: executionData.entrypointScript
             });
             dumpLocalPath = await this.downloadDump(inputFile);
             logMemoryUsage('after-dump-download', job.jobId);
@@ -618,6 +619,9 @@ export class AnalysisWorker {
             entrypointType: entrypointData?.type as never,
             requirementsFile: typeof entrypointData?.requirementsFile === 'string'
                 ? entrypointData.requirementsFile
+                : undefined,
+            entrypointScript: typeof entrypointData?.entrypointScript === 'string' && entrypointData.entrypointScript.length > 0
+                ? entrypointData.entrypointScript
                 : undefined
         });
         const resolvedArgs = resolveTemplate(argumentsTemplate, outputs);
