@@ -2,7 +2,6 @@ import type {
     AnalysisStartRequest,
     DaemonAnalysisDocument,
     NestedPluginDefinition,
-    PluginReferenceExecutionRequest,
     WorkflowDefinition,
     WorkflowEdgeDefinition,
     WorkflowNodeDefinition
@@ -177,16 +176,6 @@ const readNestedPluginDefinition = (value: unknown): NestedPluginDefinition => {
     };
 };
 
-const readPluginReferenceExecutionRequest = (value: unknown): PluginReferenceExecutionRequest => {
-    const record = readRecord(value, 'pluginReferenceExecutions');
-
-    return {
-        referencePath: readString(record.referencePath, 'pluginReferenceExecutions.referencePath'),
-        pluginId: readString(record.pluginId, 'pluginReferenceExecutions.pluginId'),
-        config: readRecord(record.config, 'pluginReferenceExecutions.config')
-    };
-};
-
 const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
     const record = readPayloadRecord(payload);
     const pluginDisplayName = readString(record.pluginDisplayName, 'pluginDisplayName');
@@ -202,9 +191,6 @@ const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
         workflow: readWorkflowDefinition(record.workflow),
         nestedPlugins: Array.isArray(record.nestedPlugins)
             ? record.nestedPlugins.map(readNestedPluginDefinition)
-            : [],
-        pluginReferenceExecutions: Array.isArray(record.pluginReferenceExecutions)
-            ? record.pluginReferenceExecutions.map(readPluginReferenceExecutionRequest)
             : [],
         config: readRecord(record.config, 'config')
     };

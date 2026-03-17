@@ -5,7 +5,7 @@ import { createReadStream } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import type { MinioService } from '@/modules/platform/services';
-import type { ObjectUploadRequest, RuntimeEventBroker } from '@/shared/contracts';
+import type { ObjectUploadRequest, PluginSyncRequest, RuntimeEventBroker } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
 import {
     readObjectBucketName,
@@ -50,7 +50,6 @@ interface ChunkedTransfer {
     totalChunks: number;
     metadata?: Record<string, string>;
     tempPath: string;
-    nextChunkIndex: number;
     receivedCount: number;
     totalSize: number;
     createdAt: number;
@@ -92,6 +91,15 @@ const readObjectUploadRequest = (payload: unknown): ObjectUploadRequest => {
     }
 
     return request;
+};
+
+const readPluginSyncRequest = (payload: unknown): PluginSyncRequest => {
+    const record = readPayloadRecord(payload);
+
+    return {
+        pluginId: readString(record.pluginId, 'pluginId'),
+        objectKey: readString(record.objectKey, 'objectKey')
+    };
 };
 
 const readObjectListRequest = (payload: unknown): ObjectListRequest => {
@@ -173,7 +181,6 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                     totalChunks,
                     metadata,
                     tempPath,
-                    nextChunkIndex: 0,
                     receivedCount: 0,
                     totalSize: 0,
                     createdAt: Date.now()
@@ -206,15 +213,8 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                     throw new Error(`Chunk index ${index} out of range [0, ${transfer.totalChunks})`);
                 }
 
-                if (index !== transfer.nextChunkIndex) {
-                    throw new Error(
-                        `Chunk index ${index} out of order for transfer ${transferId}; expected ${transfer.nextChunkIndex}`
-                    );
-                }
-
                 const chunkBuffer = Buffer.from(data, 'base64');
                 await fsPromises.appendFile(transfer.tempPath, chunkBuffer);
-                transfer.nextChunkIndex += 1;
                 transfer.receivedCount += 1;
                 transfer.totalSize += chunkBuffer.length;
 

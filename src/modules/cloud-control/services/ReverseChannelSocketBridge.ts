@@ -93,7 +93,6 @@ export class ReverseChannelSocketBridge {
     private readonly terminalStates = new Map<string, ReverseChannelTerminalState>();
     private readonly webSocketStates = new Map<string, ReverseChannelWebSocketState>();
     private readonly tunnelStates = new Map<string, ReverseChannelTunnelState>();
-    private readonly sessionGenerations = new Map<string, number>();
 
     /** Tracks last activity timestamp per session for idle TTL. */
     private readonly sessionActivity = new Map<string, number>();
@@ -171,35 +170,6 @@ export class ReverseChannelSocketBridge {
         this.sessionActivity.set(sessionId, Date.now());
     }
 
-    private beginSession(sessionId: string): number {
-        this.cleanupSession(sessionId);
-
-        const nextGeneration = (this.sessionGenerations.get(sessionId) || 0) + 1;
-        this.sessionGenerations.set(sessionId, nextGeneration);
-        this.touchSession(sessionId);
-        return nextGeneration;
-    }
-
-    private isCurrentSessionGeneration(sessionId: string, generation: number): boolean {
-        return this.sessionGenerations.get(sessionId) === generation;
-    }
-
-    private cleanupSession(sessionId: string): void {
-        this.cleanupTerminalSession(sessionId);
-        this.cleanupWebSocketSession(sessionId);
-        this.cleanupTunnelSession(sessionId);
-        this.finalizeSessionTracking(sessionId);
-    }
-
-    private finalizeSessionTracking(sessionId: string): void {
-        if (this.terminalStates.has(sessionId) || this.webSocketStates.has(sessionId) || this.tunnelStates.has(sessionId)) {
-            return;
-        }
-
-        this.sessionActivity.delete(sessionId);
-        this.sessionGenerations.delete(sessionId);
-    }
-
     /**
      * Starts a periodic sweep that cleans up sessions idle beyond SESSION_IDLE_TTL_MS.
      */
@@ -211,7 +181,9 @@ export class ReverseChannelSocketBridge {
             for (const [sessionId, lastActive] of this.sessionActivity) {
                 if (now - lastActive > SESSION_IDLE_TTL_MS) {
                     logger.warn({ sessionId }, 'Session idle TTL expired — cleaning up');
-                    this.cleanupSession(sessionId);
+                    this.cleanupTerminalSession(sessionId);
+                    this.cleanupWebSocketSession(sessionId);
+                    this.cleanupTunnelSession(sessionId);
                     // sessionActivity is cleaned up in the individual cleanup methods
                 }
             }
@@ -220,18 +192,19 @@ export class ReverseChannelSocketBridge {
     }
 
     cleanup(): void {
-        const sessionIds = new Set<string>([
-            ...this.terminalStates.keys(),
-            ...this.webSocketStates.keys(),
-            ...this.tunnelStates.keys()
-        ]);
+        for (const sessionId of Array.from(this.terminalStates.keys())) {
+            this.cleanupTerminalSession(sessionId);
+        }
 
-        for (const sessionId of sessionIds) {
-            this.cleanupSession(sessionId);
+        for (const sessionId of Array.from(this.webSocketStates.keys())) {
+            this.cleanupWebSocketSession(sessionId);
+        }
+
+        for (const sessionId of Array.from(this.tunnelStates.keys())) {
+            this.cleanupTunnelSession(sessionId);
         }
 
         this.sessionActivity.clear();
-        this.sessionGenerations.clear();
 
         if (this.idleSweepTimer) {
             clearInterval(this.idleSweepTimer);
@@ -365,14 +338,12 @@ export class ReverseChannelSocketBridge {
         }
 
         try {
-            const sessionGeneration = this.beginSession(payload.sessionId);
             let attachment: RuntimeTerminalAttachment;
 
             if (payload.terminalTarget === REVERSE_CHANNEL.TerminalTarget.Host) {
                 attachment = await this.hostShellService.attachTerminal();
             } else {
                 if (!payload.containerId) {
-                    this.finalizeSessionTracking(payload.sessionId);
                     this.emitSessionEnd({
                         type: 'session-end',
                         sessionId: payload.sessionId,
@@ -384,16 +355,7 @@ export class ReverseChannelSocketBridge {
                 attachment = await this.dockerRuntimeService.attachTerminal(payload.containerId);
             }
 
-            if (!this.isCurrentSessionGeneration(payload.sessionId, sessionGeneration)) {
-                attachment.stream.destroy();
-                return { status: 200, data: { status: 'success', data: { attached: true } } };
-            }
-
             const onData = (chunk: Buffer) => {
-                if (!this.isCurrentSessionGeneration(payload.sessionId, sessionGeneration)) {
-                    return;
-                }
-
                 this.touchSession(payload.sessionId);
                 const dataPayload: TeamClusterDaemonSessionDataPayload = {
                     type: 'session-data',
@@ -404,18 +366,10 @@ export class ReverseChannelSocketBridge {
                 this.emitMessage(dataPayload);
             };
             const onEnd = () => {
-                if (!this.isCurrentSessionGeneration(payload.sessionId, sessionGeneration)) {
-                    return;
-                }
-
                 this.emitSessionEnd({ type: 'session-end', sessionId: payload.sessionId });
                 this.cleanupTerminalSession(payload.sessionId);
             };
             const onError = (error: Error) => {
-                if (!this.isCurrentSessionGeneration(payload.sessionId, sessionGeneration)) {
-                    return;
-                }
-
                 this.emitSessionEnd({
                     type: 'session-end',
                     sessionId: payload.sessionId,
@@ -435,10 +389,10 @@ export class ReverseChannelSocketBridge {
                 onEnd,
                 onError
             });
+            this.touchSession(payload.sessionId);
 
             return { status: 200, data: { status: 'success', data: { attached: true } } };
         } catch (error: unknown) {
-            this.finalizeSessionTracking(payload.sessionId);
             this.emitSessionEnd({
                 type: 'session-end',
                 sessionId: payload.sessionId,
@@ -459,13 +413,8 @@ export class ReverseChannelSocketBridge {
         }
 
         try {
-            const sessionGeneration = this.beginSession(payload.sessionId);
             const webSocket = new WebSocket(payload.targetUrl);
             const onMessage = (event: MessageEvent) => {
-                if (!this.isCurrentSessionGeneration(payload.sessionId, sessionGeneration)) {
-                    return;
-                }
-
                 this.handleWebSocketMessage(payload.sessionId, event).catch((error: unknown) => {
                     this.emitSessionEnd({
                         type: 'session-end',
@@ -475,10 +424,6 @@ export class ReverseChannelSocketBridge {
                 });
             };
             const onError = () => {
-                if (!this.isCurrentSessionGeneration(payload.sessionId, sessionGeneration)) {
-                    return;
-                }
-
                 this.emitSessionEnd({
                     type: 'session-end',
                     sessionId: payload.sessionId,
@@ -487,10 +432,6 @@ export class ReverseChannelSocketBridge {
                 this.cleanupWebSocketSession(payload.sessionId);
             };
             const onClose = (event: CloseEvent) => {
-                if (!this.isCurrentSessionGeneration(payload.sessionId, sessionGeneration)) {
-                    return;
-                }
-
                 this.emitSessionEnd({
                     type: 'session-end',
                     sessionId: payload.sessionId,
@@ -512,10 +453,10 @@ export class ReverseChannelSocketBridge {
                 onError,
                 onClose
             });
+            this.touchSession(payload.sessionId);
 
             return { status: 200, data: { status: 'success', data: { attached: true } } };
         } catch (error: unknown) {
-            this.finalizeSessionTracking(payload.sessionId);
             this.emitSessionEnd({
                 type: 'session-end',
                 sessionId: payload.sessionId,
@@ -557,7 +498,8 @@ export class ReverseChannelSocketBridge {
     }
 
     private handleSessionDetach(payload: { sessionId: string }): void {
-        this.cleanupSession(payload.sessionId);
+        this.cleanupTerminalSession(payload.sessionId);
+        this.cleanupWebSocketSession(payload.sessionId);
     }
 
     private validateTunnelOpenPayload(
@@ -608,7 +550,6 @@ export class ReverseChannelSocketBridge {
     }
 
     private handleTunnelOpen(payload: LocalTeamClusterDaemonTunnelOpenPayload): void {
-        const sessionGeneration = this.beginSession(payload.sessionId);
         let targetHost: string;
         let targetPort: number;
 
@@ -619,7 +560,6 @@ export class ReverseChannelSocketBridge {
             const exposure = this.exposureRegistryService?.getExposure(payload.exposureId);
 
             if (!exposure) {
-                this.finalizeSessionTracking(payload.sessionId);
                 this.emitTunnelState({
                     type: 'tunnel-state',
                     sessionId: payload.sessionId,
@@ -630,7 +570,6 @@ export class ReverseChannelSocketBridge {
             }
 
             if (!exposure.accessModes.some(mode => mode === payload.accessMode)) {
-                this.finalizeSessionTracking(payload.sessionId);
                 this.emitTunnelState({
                     type: 'tunnel-state',
                     sessionId: payload.sessionId,
@@ -651,10 +590,6 @@ export class ReverseChannelSocketBridge {
         tunnelSocket.setNoDelay(true);
 
         const onConnect = () => {
-            if (!this.isCurrentSessionGeneration(payload.sessionId, sessionGeneration)) {
-                return;
-            }
-
             this.emitTunnelState({
                 type: 'tunnel-state',
                 sessionId: payload.sessionId,
@@ -662,10 +597,6 @@ export class ReverseChannelSocketBridge {
             });
         };
         const onData = (chunk: Buffer) => {
-            if (!this.isCurrentSessionGeneration(payload.sessionId, sessionGeneration)) {
-                return;
-            }
-
             this.touchSession(payload.sessionId);
             const dataPayload: TeamClusterDaemonTunnelDataPayload = {
                 type: 'tunnel-data',
@@ -676,10 +607,6 @@ export class ReverseChannelSocketBridge {
             this.emitMessage(dataPayload);
         };
         const onError = (error: Error) => {
-            if (!this.isCurrentSessionGeneration(payload.sessionId, sessionGeneration)) {
-                return;
-            }
-
             this.emitTunnelState({
                 type: 'tunnel-state',
                 sessionId: payload.sessionId,
@@ -689,10 +616,6 @@ export class ReverseChannelSocketBridge {
             this.cleanupTunnelSession(payload.sessionId);
         };
         const onClose = () => {
-            if (!this.isCurrentSessionGeneration(payload.sessionId, sessionGeneration)) {
-                return;
-            }
-
             const closePayload: TeamClusterDaemonTunnelClosePayload = {
                 type: 'tunnel-close',
                 sessionId: payload.sessionId
@@ -714,6 +637,7 @@ export class ReverseChannelSocketBridge {
             onError,
             onClose
         });
+        this.touchSession(payload.sessionId);
 
         this.emitTunnelState({
             type: 'tunnel-state',
@@ -794,7 +718,7 @@ export class ReverseChannelSocketBridge {
         terminalState.attachment.stream.removeListener('error', terminalState.onError);
         terminalState.attachment.stream.destroy();
         this.terminalStates.delete(sessionId);
-        this.finalizeSessionTracking(sessionId);
+        this.sessionActivity.delete(sessionId);
     }
 
     private cleanupWebSocketSession(sessionId: string): void {
@@ -815,7 +739,7 @@ export class ReverseChannelSocketBridge {
         }
 
         this.webSocketStates.delete(sessionId);
-        this.finalizeSessionTracking(sessionId);
+        this.sessionActivity.delete(sessionId);
     }
 
     private cleanupTunnelSession(sessionId: string): void {
@@ -834,6 +758,6 @@ export class ReverseChannelSocketBridge {
         }
 
         this.tunnelStates.delete(sessionId);
-        this.finalizeSessionTracking(sessionId);
+        this.sessionActivity.delete(sessionId);
     }
 };

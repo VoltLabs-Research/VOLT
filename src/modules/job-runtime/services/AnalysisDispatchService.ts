@@ -1,12 +1,5 @@
 import { EntrypointType } from '@/shared/contracts';
-import type {
-    AnalysisExposureExportConfig,
-    AnalysisExposureExportDefinition,
-    AnalysisStartRequest,
-    AnalysisQueueJobPayload,
-    AnalysisStartResponse,
-    QueuedJobNotification
-} from '@/shared/contracts';
+import type { AnalysisStartRequest, AnalysisQueueJobPayload, AnalysisStartResponse, QueuedJobNotification } from '@/shared/contracts';
 import { OrchestrationAction } from '@/shared/contracts';
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
 import { RuntimeEventBroker } from '@/shared/services';
@@ -77,12 +70,10 @@ export class AnalysisDispatchService {
                     nodeOutputSnapshots: plan.nodeOutputSnapshots,
                     workflow: input.workflow,
                     nestedPlugins: input.nestedPlugins,
-                    pluginReferenceExecutions: input.pluginReferenceExecutions,
                     ...(isBatchMode ? {
                         batchMode: true,
                         allDumpUrls,
-                        contextNodeId: plan.contextNodeId,
-                        batchContextVariableName: 'allDumpLocalPaths'
+                        contextNodeId: plan.contextNodeId
                     } : {})
                 }
             });
@@ -228,35 +219,13 @@ export class AnalysisDispatchService {
         name: string;
         results: string;
         iterable?: string;
-        export?: AnalysisExposureExportDefinition;
+        export?: {
+            exporter: string;
+            type: string;
+            options?: Record<string, unknown>;
+        };
     }> {
         const graphEdges = workflow.edges;
-
-        const toExportConfig = (value: unknown): AnalysisExposureExportConfig | undefined => {
-            if (!value || typeof value !== 'object') {
-                return undefined;
-            }
-
-            const record = value as Record<string, unknown>;
-            return {
-                exporter: String(record.exporter || ''),
-                type: String(record.type || ''),
-                options: typeof record.options === 'object' && record.options !== null
-                    ? record.options as Record<string, unknown>
-                    : undefined
-            };
-        };
-
-        const resolveExportDefinition = (value: unknown): AnalysisExposureExportDefinition | undefined => {
-            if (Array.isArray(value)) {
-                const configs = value
-                    .map((entry) => toExportConfig(entry))
-                    .filter((entry): entry is AnalysisExposureExportConfig => entry !== undefined);
-                return configs.length > 0 ? configs : undefined;
-            }
-
-            return toExportConfig(value);
-        };
 
         return workflow.nodes
             .filter((node) => node.type === 'exposure')
@@ -273,7 +242,15 @@ export class AnalysisDispatchService {
                     name: String(exposureData.name || ''),
                     results: String(exposureData.results || ''),
                     iterable: typeof exposureData.iterable === 'string' ? exposureData.iterable : undefined,
-                    export: resolveExportDefinition(exportData)
+                    export: exportData
+                        ? {
+                            exporter: String(exportData.exporter || ''),
+                            type: String(exportData.type || ''),
+                            options: typeof exportData.options === 'object' && exportData.options !== null
+                                ? exportData.options as Record<string, unknown>
+                                : undefined
+                        }
+                        : undefined
                 };
             });
     }

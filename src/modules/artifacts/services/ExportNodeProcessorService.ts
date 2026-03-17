@@ -1,24 +1,26 @@
+import { ObjectBucketName, type AnalysisExposureDefinition, type AnalysisJobExecutionData } from '@/shared/contracts';
 import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
-import { ObjectBucketName } from '@/shared/contracts';
-import { resolveGradientType } from '@/modules/trajectory-native/services';
+import { MinioService } from '@/modules/platform/services';
+import { NativeModuleLoader } from '@/modules/trajectory-native/services';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
+import type { BubbleDataPoint, ChartConfiguration, ChartDataset, ChartTypeRegistry, Point } from 'chart.js';
+import type { DaemonArtifactReporterService } from '@/modules/cloud-control/services';
 import { isRecord, toRecord } from '@/shared/utils';
 import { createReadStream } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
-import type {
-    AnalysisExposureDefinition,
-    AnalysisExposureExportConfig,
-    AnalysisExposureExportDefinition,
-    AnalysisJobExecutionData
-} from '@/shared/contracts';
-import type { DaemonArtifactReporterService } from '@/modules/cloud-control/services';
-import type { MinioService } from '@/modules/platform/services';
-import type { NativeModuleLoader } from '@/modules/trajectory-native/services';
-import type { BubbleDataPoint, ChartConfiguration, ChartDataset, ChartTypeRegistry, Point } from 'chart.js';
 
 type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
+
+interface PrimitiveAtom {
+    id: number;
+    pos: [number, number, number];
+};
+
+interface AtomsGroupedByType {
+    [typeName: string]: PrimitiveAtom[];
+};
 
 interface MeshFacet {
     vertices: [number, number, number];
@@ -76,38 +78,6 @@ interface ChartPoint {
     y: number;
 };
 
-interface AtomisticPropertyColoringConfig {
-    property: string;
-    min: number;
-    max: number;
-    gradient: string;
-};
-
-interface AtomisticExportOptions {
-    propertyColoring?: AtomisticPropertyColoringConfig;
-};
-
-interface AtomisticPointCloudBuildResult {
-    positions: Float32Array;
-    min: [number, number, number];
-    max: [number, number, number];
-};
-
-interface ExportDefinitionEntry {
-    config: AnalysisExposureExportConfig;
-    exportIndex: number | undefined;
-};
-
-interface ExporterEntry {
-    exportData: Record<string, unknown>;
-    arrayIndex: number | undefined;
-    entryName?: string;
-};
-
-interface ExportProcessResult {
-    processedCount: number;
-};
-
 export interface ExportExecutionInput {
     executionData: AnalysisJobExecutionData;
     exposure: AnalysisExposureDefinition;
@@ -140,90 +110,46 @@ const toStringMap = (value: unknown): Record<string, unknown> => {
     return toRecord(value);
 };
 
-const toPropertyColoringConfig = (value: unknown): AtomisticPropertyColoringConfig | undefined => {
-    if (!isRecord(value)) {
-        return undefined;
-    }
-
-    const property = typeof value.property === 'string'
-        ? value.property.trim()
-        : '';
-    if (!property) {
-        return undefined;
-    }
-
-    const min = toFiniteNumber(value.min, Number.NaN);
-    const max = toFiniteNumber(value.max, Number.NaN);
-    if (!Number.isFinite(min) || !Number.isFinite(max)) {
-        return undefined;
-    }
-
-    const gradient = typeof value.gradient === 'string' && value.gradient.trim().length > 0
-        ? value.gradient
-        : 'Viridis';
-
-    return {
-        property,
-        min,
-        max,
-        gradient
-    };
-};
-
-const resolveExportDefinitionEntries = (
-    exportDefinition: AnalysisExposureExportDefinition | undefined
-): ExportDefinitionEntry[] => {
-    if (!exportDefinition) {
-        return [];
-    }
-
-    if (Array.isArray(exportDefinition)) {
-        return exportDefinition.map((config, exportIndex) => ({
-            config,
-            exportIndex
-        }));
-    }
-
-    return [{
-        config: exportDefinition,
-        exportIndex: undefined
-    }];
-};
-
-const buildObjectPath = (
-    input: ExportExecutionInput,
-    exporter: ExporterName,
-    type: string,
-    exportIndex?: number,
-    arrayIndex?: number,
-    entryName?: string
-): string => {
+const buildObjectPath = (input: ExportExecutionInput, exporter: ExporterName, type: string, arrayIndex?: number): string => {
     const isChart = exporter === 'ChartExporter' || type === 'chart-png';
     const folder = isChart ? 'charts' : 'glb';
     const extension = isChart ? 'png' : type;
-    const sanitizedEntryName = typeof entryName === 'string'
-        ? entryName.trim().replace(/[^a-zA-Z0-9_-]+/g, '_')
-        : '';
-
-    if (sanitizedEntryName) {
-        return `trajectory-${input.executionData.trajectoryId}/analysis-${input.executionData.analysisId}/${folder}/${input.timestep}/${sanitizedEntryName}.${extension}`;
-    }
-
-    const suffixSegments: string[] = [];
-
-    if (exportIndex != null) {
-        suffixSegments.push(String(exportIndex));
-    }
-
-    if (arrayIndex != null) {
-        suffixSegments.push(String(arrayIndex));
-    }
-
-    const suffix = suffixSegments.length > 0
-        ? `_${suffixSegments.join('_')}`
-        : '';
+    const suffix = arrayIndex != null ? `_${arrayIndex}` : '';
 
     return `trajectory-${input.executionData.trajectoryId}/analysis-${input.executionData.analysisId}/${folder}/${input.timestep}/${input.exposure.nodeId}${suffix}.${extension}`;
+};
+
+const normalizeAtomsByType = (value: Record<string, unknown>): AtomsGroupedByType => {
+    const result: AtomsGroupedByType = {};
+
+    for (const [typeName, atoms] of Object.entries(value)) {
+        if (!Array.isArray(atoms)) {
+            continue;
+        }
+
+        const normalized = atoms
+            .map((atom, index) => {
+                if (!isRecord(atom) || !Array.isArray(atom.pos) || atom.pos.length < 3) {
+                    return null;
+                }
+
+                return {
+                    id: toFiniteNumber(atom.id, index),
+                    pos: [
+                        toFiniteNumber(atom.pos[0]),
+                        toFiniteNumber(atom.pos[1]),
+                        toFiniteNumber(atom.pos[2])
+                    ] as [number, number, number]
+                };
+            })
+            .filter((atom): atom is PrimitiveAtom => atom !== null);
+
+        if (normalized.length > 0) {
+            result[typeName] = normalized;
+        }
+    }
+
+    return result;
 };
 
 const calculateDislocationType = (segment: Record<string, unknown>, tolerance: number = 1e-6): string => {
@@ -658,212 +584,50 @@ const colorForType = (typeName: string, typeIndex: number): [number, number, num
     return generateColor(typeIndex);
 };
 
-const buildPropertyColorLookup = (value: unknown): Map<number, number> => {
-    if (!isRecord(value)) {
-        return new Map<number, number>();
-    }
-
-    const result = new Map<number, number>();
-    for (const [key, propertyValue] of Object.entries(value)) {
-        const atomId = Number(key);
-        if (Number.isFinite(atomId)) {
-            result.set(atomId, toFiniteNumber(propertyValue));
-        }
-    }
-
-    return result;
-};
-
-const buildPropertyColorLookupFromPerAtomProperties = (
-    value: unknown,
-    property: string
-): Map<number, number> => {
-    if (Array.isArray(value)) {
-        const result = new Map<number, number>();
-        for (const row of value) {
-            if (!isRecord(row)) {
-                continue;
-            }
-
-            const atomId = toFiniteNumber(row.id, Number.NaN);
-            const propertyValue = toFiniteNumber(row[property], Number.NaN);
-            if (Number.isFinite(atomId) && Number.isFinite(propertyValue)) {
-                result.set(atomId, propertyValue);
-            }
-        }
-        return result;
-    }
-
-    if (!isRecord(value)) {
-        return new Map<number, number>();
-    }
-
-    const idValues = value.id;
-    const propertyValues = value[property];
-    const ids = Array.isArray(idValues) || idValues instanceof Uint32Array || idValues instanceof Float32Array || idValues instanceof Float64Array
-        ? idValues
-        : undefined;
-    const values = Array.isArray(propertyValues) || propertyValues instanceof Float32Array || propertyValues instanceof Float64Array
-        ? propertyValues
-        : undefined;
-    if (!ids || !values) {
-        return new Map<number, number>();
-    }
-
-    const length = Math.min(ids.length, values.length);
-    const result = new Map<number, number>();
-    for (let index = 0; index < length; index++) {
-        const atomId = toFiniteNumber(ids[index], Number.NaN);
-        const propertyValue = toFiniteNumber(values[index], Number.NaN);
-        if (Number.isFinite(atomId) && Number.isFinite(propertyValue)) {
-            result.set(atomId, propertyValue);
-        }
-    }
-
-    return result;
-};
-
-const extractAtomisticPropertyValues = (
-    exportData: Record<string, unknown>,
-    property: string
-): Float32Array | undefined => {
-    const directPropertyValue = exportData[property];
-    if (directPropertyValue !== undefined) {
-        const directLookup = buildPropertyColorLookup(directPropertyValue);
-        if (directLookup.size > 0) {
-            return buildPropertyValuesFromAtoms(exportData, directLookup);
-        }
-    }
-
-    const perAtomProperties = exportData['per-atom-properties'];
-    if (perAtomProperties !== undefined) {
-        const nestedLookup = buildPropertyColorLookupFromPerAtomProperties(perAtomProperties, property);
-        if (nestedLookup.size > 0) {
-            return buildPropertyValuesFromAtoms(exportData, nestedLookup);
-        }
-    }
-
-    return undefined;
-};
-
-const buildPropertyValuesFromAtoms = (
-    exportData: Record<string, unknown>,
-    propertyLookup: Map<number, number>
-): Float32Array | undefined => {
-    let totalAtoms = 0;
-    for (const atoms of Object.values(exportData)) {
-        if (Array.isArray(atoms)) {
-            totalAtoms += atoms.length;
-        }
-    }
-
-    if (totalAtoms === 0) {
-        return undefined;
-    }
-
-    const values = new Float32Array(totalAtoms);
-    let offset = 0;
-    let hasValue = false;
-
-    for (const atoms of Object.values(exportData)) {
-        if (!Array.isArray(atoms)) {
-            continue;
-        }
-
-        for (const atom of atoms) {
-            if (!isRecord(atom) || !Array.isArray(atom.pos) || atom.pos.length < 3) {
-                continue;
-            }
-
-            const atomId = toFiniteNumber(atom.id, Number.NaN);
-            if (Number.isFinite(atomId)) {
-                const propertyValue = propertyLookup.get(atomId);
-                if (typeof propertyValue === 'number' && Number.isFinite(propertyValue)) {
-                    values[offset] = propertyValue;
-                    hasValue = true;
-                }
-            }
-
-            offset += 1;
-        }
-    }
-
-    if (!hasValue || offset === 0) {
-        return undefined;
-    }
-
-    if (offset < values.length) {
-        return values.subarray(0, offset);
-    }
-
-    return values;
-};
-
-const buildPointCloudGeometryDirect = async (exportData: Record<string, unknown>): Promise<AtomisticPointCloudBuildResult> => {
-    let totalAtoms = 0;
-    for (const atoms of Object.values(exportData)) {
-        if (Array.isArray(atoms)) {
-            totalAtoms += atoms.length;
-        }
-    }
-
+const buildPointCloudData = (atomsByType: AtomsGroupedByType): {
+    positions: Float32Array;
+    colors: Float32Array;
+    min: [number, number, number];
+    max: [number, number, number];
+} => {
+    const typeEntries = Object.entries(atomsByType);
+    const totalAtoms = typeEntries.reduce((count, [, atoms]) => count + atoms.length, 0);
     if (totalAtoms === 0) {
         throw new Error('No atom data available for export');
     }
 
     const positions = new Float32Array(totalAtoms * 3);
+    const colors = new Float32Array(totalAtoms * 3);
     const min: [number, number, number] = [Infinity, Infinity, Infinity];
     const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
     let offset = 0;
-    let sinceLastYield = 0;
 
-    for (const atoms of Object.values(exportData)) {
-        if (!Array.isArray(atoms)) {
-            continue;
-        }
-
+    typeEntries.forEach(([typeName, atoms], typeIndex) => {
+        const color = colorForType(typeName, typeIndex);
         for (const atom of atoms) {
-            if (!isRecord(atom) || !Array.isArray(atom.pos) || atom.pos.length < 3) {
-                continue;
-            }
-
-            const x = toFiniteNumber(atom.pos[0]);
-            const y = toFiniteNumber(atom.pos[1]);
-            const z = toFiniteNumber(atom.pos[2]);
             const base = offset * 3;
-            positions[base] = x;
-            positions[base + 1] = y;
-            positions[base + 2] = z;
-            min[0] = Math.min(min[0], x);
-            min[1] = Math.min(min[1], y);
-            min[2] = Math.min(min[2], z);
-            max[0] = Math.max(max[0], x);
-            max[1] = Math.max(max[1], y);
-            max[2] = Math.max(max[2], z);
-            offset++;
-            sinceLastYield++;
-
-            if (sinceLastYield >= YIELD_INTERVAL) {
-                sinceLastYield = 0;
-                await yieldToEventLoop();
-            }
+            positions[base] = atom.pos[0];
+            positions[base + 1] = atom.pos[1];
+            positions[base + 2] = atom.pos[2];
+            colors[base] = color[0];
+            colors[base + 1] = color[1];
+            colors[base + 2] = color[2];
+            min[0] = Math.min(min[0], atom.pos[0]);
+            min[1] = Math.min(min[1], atom.pos[1]);
+            min[2] = Math.min(min[2], atom.pos[2]);
+            max[0] = Math.max(max[0], atom.pos[0]);
+            max[1] = Math.max(max[1], atom.pos[1]);
+            max[2] = Math.max(max[2], atom.pos[2]);
+            offset += 1;
         }
-    }
+    });
 
-    if (offset === 0) {
-        throw new Error('No valid atom data available for export');
-    }
-
-    return {
-        positions: offset < totalAtoms ? positions.subarray(0, offset * 3) : positions,
-        min,
-        max
-    };
+    return { positions, colors, min, max };
 };
 
 /**
  * Single-pass version: reads raw decoded payload directly into typed arrays,
- * skipping intermediate normalized atom object arrays.
+ * skipping the intermediate PrimitiveAtom[] JS objects that normalizeAtomsByType creates.
  * For 4.5M atoms this saves ~1GB+ of JS heap overhead.
  */
 const buildPointCloudDataDirect = async (exportData: Record<string, unknown>): Promise<{
@@ -872,13 +636,14 @@ const buildPointCloudDataDirect = async (exportData: Record<string, unknown>): P
     min: [number, number, number];
     max: [number, number, number];
 }> => {
+    // First pass: count valid atoms to pre-allocate typed arrays
+    const entries: Array<[string, unknown[]]> = [];
     let totalAtoms = 0;
-    for (const atoms of Object.values(exportData)) {
-        if (Array.isArray(atoms)) {
-            totalAtoms += atoms.length;
-        }
+    for (const [typeName, atoms] of Object.entries(exportData)) {
+        if (!Array.isArray(atoms)) continue;
+        entries.push([typeName, atoms]);
+        totalAtoms += atoms.length;
     }
-
     if (totalAtoms === 0) {
         throw new Error('No atom data available for export');
     }
@@ -890,15 +655,9 @@ const buildPointCloudDataDirect = async (exportData: Record<string, unknown>): P
     let offset = 0;
     let sinceLastYield = 0;
 
-    let typeIndex = 0;
-    for (const [typeName, atoms] of Object.entries(exportData)) {
-        if (!Array.isArray(atoms)) {
-            continue;
-        }
-
-        const color = colorForType(typeName, typeIndex);
-        typeIndex += 1;
-
+    for (let entryIdx = 0; entryIdx < entries.length; entryIdx++) {
+        const [typeName, atoms] = entries[entryIdx];
+        const color = colorForType(typeName, entryIdx);
         for (const atom of atoms) {
             if (!isRecord(atom) || !Array.isArray(atom.pos) || atom.pos.length < 3) {
                 continue;
@@ -1155,31 +914,7 @@ export const createExportNodeProcessorService = (
     nativeModuleLoader: NativeModuleLoader,
     daemonArtifactReporterService: DaemonArtifactReporterService
 ): ExportNodeProcessorService => {
-    const exportAtomistic = async (
-        exportData: Record<string, unknown>,
-        objectPath: string,
-        options: AtomisticExportOptions
-    ): Promise<void> => {
-        const propertyColoring = toPropertyColoringConfig(options.propertyColoring);
-        if (propertyColoring) {
-            const { positions, min, max } = await buildPointCloudGeometryDirect(exportData);
-            const propertyValues = extractAtomisticPropertyValues(exportData, propertyColoring.property);
-            if (!propertyValues || propertyValues.length !== positions.length / 3) {
-                throw new Error(`Property '${propertyColoring.property}' is not available for atomistic export coloring`);
-            }
-
-            const colors = nativeModuleLoader.getExporterModule().applyPropertyColors(
-                propertyValues,
-                propertyColoring.min,
-                propertyColoring.max,
-                resolveGradientType(propertyColoring.gradient)
-            );
-            const buffer = nativeModuleLoader.getExporterModule().generatePointCloudGLB(positions, colors, min, max);
-
-            await uploadBuffer(minioService, ObjectBucketName.Models, objectPath, buffer, 'model/gltf-binary');
-            return;
-        }
-
+    const exportAtomistic = async (exportData: Record<string, unknown>, objectPath: string): Promise<void> => {
         const { positions, colors, min, max } = await buildPointCloudDataDirect(exportData);
         const buffer = nativeModuleLoader.getExporterModule().generatePointCloudGLB(positions, colors, min, max);
 
@@ -1389,15 +1124,15 @@ export const createExportNodeProcessorService = (
      *
      * Returns an array of individual exporter objects so callers can iterate uniformly.
      */
-    const processExporterEntries = async (
+    const resolveExporterEntries = (
         decodedPayload: Record<string, unknown>,
-        exporter: ExporterName,
-        onEntry: (entry: ExporterEntry) => Promise<void>
-    ): Promise<ExportProcessResult> => {
+        exporter: ExporterName
+    ): { exportData: Record<string, unknown>; arrayIndex: number | undefined }[] => {
         const rawExport = decodedPayload['export'];
 
         if (Array.isArray(rawExport)) {
-            let processedCount = 0;
+            // Array format: each element is an exporter object like { AtomisticExporter: { ... } }
+            const entries: { exportData: Record<string, unknown>; arrayIndex: number }[] = [];
             for (let i = 0; i < rawExport.length; i++) {
                 const element = rawExport[i];
                 if (!isRecord(element)) {
@@ -1409,61 +1144,33 @@ export const createExportNodeProcessorService = (
                     logger.warn({ index: i, exporter }, 'Exporter key missing from export array element');
                     continue;
                 }
-
-                await onEntry({
-                    exportData: exporterData,
-                    arrayIndex: i,
-                    entryName: typeof element.name === 'string' ? element.name : undefined
-                });
-                processedCount += 1;
-                await yieldToEventLoop();
+                entries.push({ exportData: exporterData, arrayIndex: i });
             }
-
-            return { processedCount };
+            return entries;
         }
 
         // Single-object format (backward compatible): { AtomisticExporter: { ... } }
         if (isRecord(rawExport)) {
             const exporterData = rawExport[exporter];
             if (!isRecord(exporterData)) {
-                return { processedCount: 0 };
+                return [];
             }
-
-            await onEntry({
-                exportData: exporterData,
-                arrayIndex: undefined,
-                entryName: typeof rawExport.name === 'string' ? rawExport.name : undefined
-            });
-
-            return { processedCount: 1 };
+            return [{ exportData: exporterData, arrayIndex: undefined }];
         }
 
-        return { processedCount: 0 };
+        return [];
     };
 
     const reportArtifact = async (
         input: ExportExecutionInput,
         exporter: ExporterName,
-        exportConfig: AnalysisExposureExportConfig,
+        exportConfig: NonNullable<ExportExecutionInput['exposure']['export']>,
         objectPath: string,
-        storageBucket: ObjectBucketName,
-        exportIndex: number | undefined,
-        arrayIndex: number | undefined,
-        entryName?: string
+        arrayIndex: number | undefined
     ): Promise<void> => {
-        const suffixParts: string[] = [];
-        if (exportIndex != null) {
-            suffixParts.push(`export ${exportIndex}`);
-        }
-        if (arrayIndex != null) {
-            suffixParts.push(`item ${arrayIndex}`);
-        }
-        const baseDisplayName = entryName && entryName.trim().length > 0
-            ? entryName.trim()
+        const displayName = arrayIndex != null
+            ? `${input.exposure.name} [${arrayIndex}]`
             : input.exposure.name;
-        const displayName = suffixParts.length > 0
-            ? `${baseDisplayName} [${suffixParts.join(' · ')}]`
-            : baseDisplayName;
 
         await daemonArtifactReporterService.reportArtifact({
             trajectory: input.executionData.trajectoryId,
@@ -1473,10 +1180,9 @@ export const createExportNodeProcessorService = (
             sourceType: 'plugin-exposure',
             timestep: input.timestep,
             objectName: objectPath,
-            storageBucket,
+            storageBucket: ObjectBucketName.Models,
             params: {
                 exposureId: input.exposure.nodeId,
-                ...(exportIndex != null ? { exportIndex } : {}),
                 ...(arrayIndex != null ? { arrayIndex } : {})
             },
             displayName,
@@ -1485,10 +1191,8 @@ export const createExportNodeProcessorService = (
                 pluginId: input.executionData.pluginId,
                 exposureId: input.exposure.nodeId,
                 exposureName: input.exposure.name,
-                ...(entryName ? { entryName } : {}),
                 exporter,
                 exportType: exportConfig.type,
-                ...(exportIndex != null ? { exportIndex } : {}),
                 ...(arrayIndex != null ? { arrayIndex } : {})
             }
         });
@@ -1496,48 +1200,45 @@ export const createExportNodeProcessorService = (
 
     return {
         async process(input) {
-            const exportConfigs = resolveExportDefinitionEntries(input.exposure.export);
-            if (exportConfigs.length === 0) {
+            const exportConfig = input.exposure.export;
+            if (!exportConfig) {
                 return;
             }
 
-            for (const { config: exportConfig, exportIndex } of exportConfigs) {
-                const exporter = exportConfig.exporter as ExporterName;
-                const options = toStringMap(exportConfig.options);
+            const exporter = exportConfig.exporter as ExporterName;
+            const options = toStringMap(exportConfig.options);
 
-                if (exporter === 'ChartExporter') {
-                    const objectPath = buildObjectPath(input, exporter, exportConfig.type, exportIndex);
-                    await exportChart(input.decodedPayload, objectPath, options as unknown as ChartExportOptions);
-                    await reportArtifact(input, exporter, exportConfig, objectPath, ObjectBucketName.Plugins, exportIndex, undefined);
-                    continue;
+            // ChartExporter operates on the full decoded payload, not the export key — handle separately
+            if (exporter === 'ChartExporter') {
+                const objectPath = buildObjectPath(input, exporter, exportConfig.type);
+                await exportChart(input.decodedPayload, objectPath, options as unknown as ChartExportOptions);
+                return;
+            }
+
+            const entries = resolveExporterEntries(input.decodedPayload, exporter);
+            if (entries.length === 0) {
+                throw new Error(`${exporter} data missing from exposure payload`);
+            }
+
+            for (const { exportData, arrayIndex } of entries) {
+                const objectPath = buildObjectPath(input, exporter, exportConfig.type, arrayIndex);
+
+                switch (exporter) {
+                    case 'AtomisticExporter':
+                        await exportAtomistic(exportData, objectPath);
+                        break;
+                    case 'MeshExporter':
+                        await exportMesh(exportData, objectPath, options as MeshExportOptions);
+                        break;
+                    case 'DislocationExporter':
+                        await exportDislocation(exportData, objectPath, options as DislocationExportOptions);
+                        break;
+                    default:
+                        logger.warn({ exporter }, 'Unsupported export node exporter on daemon');
+                        return;
                 }
 
-                const processResult = await processExporterEntries(input.decodedPayload, exporter, async ({ exportData, arrayIndex, entryName }) => {
-                    const objectPath = buildObjectPath(input, exporter, exportConfig.type, exportIndex, arrayIndex, entryName);
-
-                    switch (exporter) {
-                        case 'AtomisticExporter':
-                            await exportAtomistic(exportData, objectPath, options as AtomisticExportOptions);
-                            break;
-                        case 'MeshExporter':
-                            await exportMesh(exportData, objectPath, options as MeshExportOptions);
-                            break;
-                        case 'DislocationExporter':
-                            await exportDislocation(exportData, objectPath, options as DislocationExportOptions);
-                            break;
-                        default:
-                            logger.warn({ exporter }, 'Unsupported export node exporter on daemon');
-                            return;
-                    }
-
-                    await reportArtifact(input, exporter, exportConfig, objectPath, ObjectBucketName.Models, exportIndex, arrayIndex, entryName);
-                });
-
-                if (processResult.processedCount === 0) {
-                    throw new Error(`${exporter} data missing from exposure payload`);
-                }
-
-                await yieldToEventLoop();
+                await reportArtifact(input, exporter, exportConfig, objectPath, arrayIndex);
             }
         }
     };

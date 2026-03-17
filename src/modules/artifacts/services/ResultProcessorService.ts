@@ -1,15 +1,15 @@
+import { AnalysisExposureDefinition, type AnalysisJobExecutionData } from '@/shared/contracts';
 import { logger } from '@/core/logger';
 import { forceGC } from '@/core/memory';
-import { isRecord } from '@/shared/utils';
-import mergeChunkedValue from '@/shared/utilities/merge-chunked-value';
-import { Decoder } from '@msgpack/msgpack';
-import fs from 'node:fs/promises';
-import { createReadStream } from 'node:fs';
-import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@/shared/contracts';
 import type { MinioService } from '@/modules/platform/services';
-import type { Readable } from 'node:stream';
 import type { PluginListingRepository } from '../repositories/PluginListingRepository';
 import type { ExportNodeProcessorService } from './ExportNodeProcessorService';
+import { Decoder } from '@msgpack/msgpack';
+import { isRecord } from '@/shared/utils';
+import mergeChunkedValue from '@/shared/utilities/merge-chunked-value';
+import fs from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import type { Readable } from 'node:stream';
 
 const PLUGINS_BUCKET = 'volt-plugins';
 
@@ -87,72 +87,6 @@ const mergeSelectiveChunk = (
 
     const merged = mergeChunkedValue(target, filtered);
     return isRecord(merged) ? merged : target;
-};
-
-const resolveSubListingSeedRow = (value: unknown): Record<string, unknown> | null => {
-    if (Array.isArray(value)) {
-        for (const row of value) {
-            if (isRecord(row)) {
-                return row;
-            }
-        }
-
-        return null;
-    }
-
-    if (isRecord(value) && Object.keys(value).length > 0) {
-        return value;
-    }
-
-    return null;
-};
-
-const resolveSubListingValidKeys = (value: unknown): string[] => {
-    const seedRow = resolveSubListingSeedRow(value);
-    if (!seedRow) {
-        return [];
-    }
-
-    return Object.keys(seedRow).filter((key) => !shouldIgnoreValue(seedRow[key]));
-};
-
-const insertSubListingBatches = async (
-    pluginListingRepository: PluginListingRepository,
-    rawValue: unknown,
-    validKeys: string[],
-    sharedFields: Record<string, unknown>
-): Promise<void> => {
-    if (validKeys.length === 0) {
-        return;
-    }
-
-    const batch: Record<string, unknown>[] = [];
-
-    const flushBatch = async (): Promise<void> => {
-        if (batch.length === 0) {
-            return;
-        }
-
-        await pluginListingRepository.insertSubListingRows(batch);
-        batch.length = 0;
-    };
-
-    if (Array.isArray(rawValue)) {
-        for (const row of rawValue) {
-            if (!isRecord(row)) {
-                continue;
-            }
-
-            batch.push(buildSubListingDocument(row, validKeys, sharedFields));
-            if (batch.length >= SUB_LISTING_BATCH_SIZE) {
-                await flushBatch();
-            }
-        }
-    } else if (isRecord(rawValue) && Object.keys(rawValue).length > 0) {
-        batch.push(buildSubListingDocument(rawValue, validKeys, sharedFields));
-    }
-
-    await flushBatch();
 };
 
 async function* decodeMultiStream(src: AsyncIterable<Uint8Array | Buffer>): AsyncIterable<unknown> {
@@ -341,17 +275,20 @@ async function precomputeListingRows(
         timestep
     });
 
+    let subListings: Record<string, Array<Record<string, unknown>>> = {};
     const rawSubListings = decoded.sub_listings;
-    const subListingNames: string[] = [];
-
     if (rawSubListings && typeof rawSubListings === 'object') {
-        for (const [subListingName, rawValue] of Object.entries(rawSubListings)) {
-            const validKeys = resolveSubListingValidKeys(rawValue);
-            if (validKeys.length > 0) {
-                subListingNames.push(subListingName);
+        const entries = Object.entries(rawSubListings);
+        for (const [name, value] of entries) {
+            if (Array.isArray(value) && value.length > 0) {
+                subListings[name] = value.filter(isRecord);
+            } else if (isRecord(value) && Object.keys(value).length > 0) {
+                subListings[name] = [value];
             }
         }
     }
+
+    const subListingNames = Object.keys(subListings);
 
     await pluginListingRepository.bulkUpsertListingRows([{
         filter: {
@@ -378,32 +315,41 @@ async function precomputeListingRows(
     // (which triples memory: rawRows + cleanedRows + document wrappers),
     // we iterate in fixed-size batches and insert each batch before
     // building the next one.  Only the current batch lives in memory.
-    if (rawSubListings && typeof rawSubListings === 'object') {
-        for (const [subListingName, rawValue] of Object.entries(rawSubListings)) {
-            const validKeys = resolveSubListingValidKeys(rawValue);
-            if (validKeys.length === 0) {
-                continue;
+    for (const [subListingName, rawRows] of Object.entries(subListings)) {
+        if (rawRows.length === 0) continue;
+
+        // Determine valid keys from the first row (same logic as before)
+        const firstRow = rawRows[0];
+        const validKeys = Object.keys(firstRow).filter((key) => !shouldIgnoreValue(firstRow[key]));
+        if (validKeys.length === 0) continue;
+
+        // Shared fields that are identical for every document in this sub-listing
+        const sharedFields: Record<string, unknown> = {
+            plugin: executionData.pluginId,
+            team: teamId,
+            trajectory: executionData.trajectoryId,
+            analysis: executionData.analysisId,
+            exposureId: exposure.nodeId,
+            exposureName: exposure.name,
+            timestep,
+            subListingName
+        };
+
+        for (let offset = 0; offset < rawRows.length; offset += SUB_LISTING_BATCH_SIZE) {
+            const end = Math.min(offset + SUB_LISTING_BATCH_SIZE, rawRows.length);
+            const batch: Record<string, unknown>[] = [];
+
+            for (let i = offset; i < end; i++) {
+                batch.push(buildSubListingDocument(rawRows[i], validKeys, sharedFields));
             }
 
-            const sharedFields: Record<string, unknown> = {
-                plugin: executionData.pluginId,
-                team: teamId,
-                trajectory: executionData.trajectoryId,
-                analysis: executionData.analysisId,
-                exposureId: exposure.nodeId,
-                exposureName: exposure.name,
-                timestep,
-                subListingName
-            };
-
-            await insertSubListingBatches(
-                pluginListingRepository,
-                rawValue,
-                validKeys,
-                sharedFields
-            );
+            await pluginListingRepository.insertSubListingRows(batch);
         }
     }
+
+    // Release sub-listing references — the raw arrays from the decoded
+    // msgpack can be very large and we no longer need them.
+    subListings = {};
 
     logger.info(
         {

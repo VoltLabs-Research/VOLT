@@ -46,42 +46,20 @@ interface PluginNodeConfig {
     pluginId?: string;
 };
 
-interface PluginReferenceExecutionRequest {
-    referencePath: string;
-    pluginId: string;
-    config: Record<string, unknown>;
-};
-
 interface DumpExecutionTarget {
-    index: number;
     localPath: string;
     originalPath?: string;
     timestep: number;
     natoms: number;
     simulationCell: string;
-};
+}
 
 interface InlineExposureArtifact {
     exposureId: string;
     name: string;
     results: string;
     filePath: string;
-    pluginId?: string;
-    dumpIndex?: number;
-    timestep?: number;
-    originalPath?: string;
-    localDumpPath?: string;
-};
-
-interface BatchOutputContext {
-    allDumpLocalPaths: string[];
-    outputPath: string;
-};
-
-interface BatchContextInjectionConfig {
-    contextNodeId?: string;
-    variableName?: string;
-};
+}
 
 
 const resolveTemplate = (template: string, outputs: Map<string, Record<string, unknown>>): string => {
@@ -165,54 +143,6 @@ const createNestedExecutionResult = (items: InlineExposureArtifact[]): Record<st
         }
     }
 });
-
-const setNestedValueAtPath = (target: Record<string, unknown>, pathExpression: string, value: unknown): void => {
-    const segments = pathExpression
-        .replace(/\[(\d+)\]/g, '.$1')
-        .split('.')
-        .filter(Boolean);
-
-    if (!segments.length) {
-        return;
-    }
-
-    let cursor: Record<string, unknown> | unknown[] = target;
-    for (let index = 0; index < segments.length - 1; index += 1) {
-        const segment = segments[index];
-        const nextSegment = segments[index + 1];
-        const nextIsIndex = /^\d+$/.test(nextSegment);
-
-        if (Array.isArray(cursor)) {
-            const arrayIndex = Number(segment);
-            if (!Number.isInteger(arrayIndex)) {
-                return;
-            }
-
-            if (cursor[arrayIndex] === undefined) {
-                cursor[arrayIndex] = nextIsIndex ? [] : {};
-            }
-            cursor = cursor[arrayIndex] as Record<string, unknown> | unknown[];
-            continue;
-        }
-
-        if (!(segment in cursor) || cursor[segment] === undefined || cursor[segment] === null) {
-            cursor[segment] = nextIsIndex ? [] : {};
-        }
-
-        cursor = cursor[segment] as Record<string, unknown> | unknown[];
-    }
-
-    const finalSegment = segments[segments.length - 1];
-    if (Array.isArray(cursor)) {
-        const arrayIndex = Number(finalSegment);
-        if (Number.isInteger(arrayIndex)) {
-            cursor[arrayIndex] = value;
-        }
-        return;
-    }
-
-    cursor[finalSegment] = value;
-};
 
 const readNestedExposureItems = (output: Record<string, unknown>): InlineExposureArtifact[] => {
     const executionResult = isRecord(output.execution_result) ? output.execution_result : undefined;
@@ -664,10 +594,6 @@ export class AnalysisWorker {
             outputs.set(nodeId, { ...nodeOutput });
         }
 
-        if (!executionData.forEachNodeId) {
-            return outputs;
-        }
-
         const forEachOutput = outputs.get(executionData.forEachNodeId) || {};
         forEachOutput.currentValue = {
             ...forEachItem,
@@ -691,31 +617,17 @@ export class AnalysisWorker {
             outputs.set(nodeId, { ...nodeOutput });
         }
 
-        this.injectBatchContextOutputs(outputs, executionData, {
-            allDumpLocalPaths,
-            outputPath: outputDir
-        });
-
-        return outputs;
-    }
-
-    private injectBatchContextOutputs(
-        outputs: Map<string, Record<string, unknown>>,
-        executionData: AnalysisJobExecutionData,
-        batchContext: BatchOutputContext,
-        config?: BatchContextInjectionConfig
-    ): void {
-        const contextNodeId = config?.contextNodeId ?? executionData.contextNodeId;
-        if (!contextNodeId) {
-            return;
+        // Inject allDumpLocalPaths and outputPath into the context node's outputs
+        // so templates like {{ contextNodeId.allDumpLocalPaths }} resolve correctly
+        const contextNodeId = executionData.contextNodeId;
+        if (contextNodeId) {
+            const contextOutput = outputs.get(contextNodeId) || {};
+            contextOutput.allDumpLocalPaths = JSON.stringify(allDumpLocalPaths);
+            contextOutput.outputPath = outputDir;
+            outputs.set(contextNodeId, contextOutput);
         }
 
-        const variableName = config?.variableName ?? executionData.batchContextVariableName ?? 'allDumpLocalPaths';
-        const contextOutput = outputs.get(contextNodeId) || {};
-
-        contextOutput[variableName] = JSON.stringify(batchContext.allDumpLocalPaths);
-        contextOutput.outputPath = batchContext.outputPath;
-        outputs.set(contextNodeId, contextOutput);
+        return outputs;
     }
 
     private async executeInlinePluginNodes(
@@ -725,10 +637,6 @@ export class AnalysisWorker {
         dumpLocalPath: string,
         outputDir: string
     ): Promise<void> {
-        await this.executeArgumentPluginReferences(executionData, outputs, [
-            this.createDumpExecutionTargets(executionData, [dumpLocalPath], timestep)[0]
-        ].filter(Boolean) as DumpExecutionTarget[], outputDir);
-
         const pluginNodes = resolveInlinePluginExecutionOrder(executionData.workflow);
         if (!pluginNodes.length) {
             return;
@@ -757,14 +665,12 @@ export class AnalysisWorker {
         dumpLocalPaths: string[],
         outputDir: string
     ): Promise<void> {
-        const dumpTargets = this.createDumpExecutionTargets(executionData, dumpLocalPaths);
-        await this.executeArgumentPluginReferences(executionData, outputs, dumpTargets, outputDir);
-
         const pluginNodes = resolveInlinePluginExecutionOrder(executionData.workflow);
         if (!pluginNodes.length) {
             return;
         }
 
+        const dumpTargets = this.createDumpExecutionTargets(executionData, dumpLocalPaths);
         if (!dumpTargets.length) {
             return;
         }
@@ -799,91 +705,6 @@ export class AnalysisWorker {
         }
     }
 
-    private async executeArgumentPluginReferences(
-        executionData: AnalysisJobExecutionData,
-        outputs: Map<string, Record<string, unknown>>,
-        dumpTargets: DumpExecutionTarget[],
-        outputDir: string
-    ): Promise<void> {
-        const requests = Array.isArray(executionData.pluginReferenceExecutions)
-            ? executionData.pluginReferenceExecutions
-            : [];
-        if (!requests.length || !dumpTargets.length) {
-            return;
-        }
-
-        const uniqueRequests = new Map<string, PluginReferenceExecutionRequest>();
-        for (const request of requests) {
-            const key = JSON.stringify({ pluginId: request.pluginId, config: request.config });
-            if (!uniqueRequests.has(key)) {
-                uniqueRequests.set(key, request);
-            }
-        }
-
-        const executionResults = new Map<string, Record<string, unknown>>();
-
-        for (const [dedupeKey, request] of uniqueRequests.entries()) {
-            const aggregatedArtifacts: InlineExposureArtifact[] = [];
-
-            for (const [index, dumpTarget] of dumpTargets.entries()) {
-                const output = await this.executeNestedPluginWorkflow(
-                    executionData,
-                    {
-                        pluginId: request.pluginId,
-                        config: request.config,
-                        selectedTimesteps: [dumpTarget.timestep]
-                    },
-                    outputs,
-                    dumpTarget,
-                    `${outputDir}_plugin_reference_${index}`
-                );
-
-                aggregatedArtifacts.push(...readNestedExposureItems(output));
-            }
-
-            executionResults.set(dedupeKey, createNestedExecutionResult(aggregatedArtifacts));
-        }
-
-        const argumentsNode = executionData.workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
-        if (!argumentsNode) {
-            return;
-        }
-
-        const argumentsOutput = { ...(outputs.get(argumentsNode.id) ?? {}) };
-        const pluginReferencesContainer: Record<string, unknown> = {
-            items: [],
-            execution_results: {},
-            execution_results_str_json: '{}'
-        };
-
-        const items: Array<Record<string, unknown>> = [];
-        const executionResultsObject: Record<string, unknown> = {};
-
-        for (const request of requests) {
-            const dedupeKey = JSON.stringify({ pluginId: request.pluginId, config: request.config });
-            const result = executionResults.get(dedupeKey) ?? createNestedExecutionResult([]);
-            setNestedValueAtPath(pluginReferencesContainer, request.referencePath, {
-                pluginId: request.pluginId,
-                config: request.config,
-                execution_result: result.execution_result
-            });
-            executionResultsObject[request.referencePath] = result.execution_result;
-            items.push({
-                referencePath: request.referencePath,
-                pluginId: request.pluginId,
-                config: request.config,
-                execution_result: result.execution_result
-            });
-        }
-
-        pluginReferencesContainer.items = items;
-        pluginReferencesContainer.str_json = JSON.stringify(items);
-        pluginReferencesContainer.execution_results = executionResultsObject;
-        pluginReferencesContainer.execution_results_str_json = JSON.stringify(executionResultsObject);
-        argumentsOutput.pluginReferences = pluginReferencesContainer;
-        outputs.set(argumentsNode.id, argumentsOutput);
-    }
-
     private async executeNestedPluginWorkflow(
         executionData: AnalysisJobExecutionData,
         pluginNodeData: Record<string, unknown> | undefined,
@@ -904,7 +725,6 @@ export class AnalysisWorker {
         const nestedOutputDir = `${parentOutputDir}_plugin_${pluginId}_${Date.now()}`;
         await fs.mkdir(nestedOutputDir, { recursive: true });
         const nestedOutputs = new Map(parentOutputs);
-        const nestedContextNode = nestedPlugin.workflow.nodes.find((node) => node.type === WorkflowNodeType.Context);
         const selectedTimesteps = Array.isArray(pluginNodeData?.selectedTimesteps)
             ? pluginNodeData.selectedTimesteps.filter((value): value is number => typeof value === 'number')
             : [dumpTarget.timestep];
@@ -935,17 +755,6 @@ export class AnalysisWorker {
             workflow: new WorkflowGraph(nestedPlugin.workflow),
             nestedWorkflows: new Map(executionData.nestedPlugins.map((candidate) => [candidate.pluginId, candidate.workflow]))
         };
-
-        const hasNestedForEachNode = nestedPlugin.workflow.nodes.some((node) => node.type === WorkflowNodeType.ForEach);
-        if (!hasNestedForEachNode) {
-            this.injectBatchContextOutputs(nestedOutputs, executionData, {
-                allDumpLocalPaths: [dumpTarget.localPath],
-                outputPath: nestedOutputDir
-            }, {
-                contextNodeId: nestedContextNode?.id
-            });
-        }
-
         const nestedPluginNodes = resolveInlinePluginExecutionOrder(nestedPlugin.workflow);
         const nestedEntrypointNode = nestedPlugin.workflow.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
         if (!nestedEntrypointNode) {
@@ -1002,14 +811,7 @@ export class AnalysisWorker {
             nestedOutputDir
         );
 
-        const exposures = (await collectInlineExposureArtifacts(nestedPlugin.workflow, nestedOutputDir)).map((artifact) => ({
-            ...artifact,
-            pluginId,
-            dumpIndex: dumpTarget.index,
-            timestep: dumpTarget.timestep,
-            originalPath: dumpTarget.originalPath,
-            localDumpPath: dumpTarget.localPath
-        }));
+        const exposures = await collectInlineExposureArtifacts(nestedPlugin.workflow, nestedOutputDir);
         return createNestedExecutionResult(exposures);
     }
 
@@ -1026,7 +828,6 @@ export class AnalysisWorker {
             const timestep = inferredTimestep || fallbackTimestep || 0;
 
             return {
-                index,
                 localPath,
                 originalPath,
                 timestep,

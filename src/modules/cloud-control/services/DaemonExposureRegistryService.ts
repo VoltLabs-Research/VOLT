@@ -85,7 +85,6 @@ const readPublishedTcpPorts = (inspection: ContainerInspection): number[] => {
 export class DaemonExposureRegistryService {
     private syncTimer: NodeJS.Timeout | null = null;
     private exposures = new Map<string, TeamClusterServiceExposure>();
-    private latestSyncToken = 0;
 
     constructor(
         private readonly config: DaemonConfig,
@@ -122,16 +121,10 @@ export class DaemonExposureRegistryService {
     }
 
     async sync(): Promise<void> {
-        const syncToken = ++this.latestSyncToken;
         const containers = await this.dockerRuntimeService.listContainers(true, {
             label: ['volt.managed=true']
         });
         const nextExposures = await this.buildExposures(containers);
-
-        if (syncToken !== this.latestSyncToken) {
-            return;
-        }
-
         this.exposures = new Map(nextExposures.map((exposure) => [exposure.id, exposure]));
         this.emitSnapshot(nextExposures);
     }
