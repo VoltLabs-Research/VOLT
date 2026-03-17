@@ -339,13 +339,16 @@ const processDislocations = async (
         const geometry = createLineGeometry(normalizedPoints, opts.lineWidth, opts.tubularSegments);
         if (geometry.positions.length === 0) continue;
 
-        allPositions.push(...geometry.positions);
-        allNormals.push(...geometry.normals);
+        // Iterative push — avoids call-stack overflow from spread on large arrays
+        for (let i = 0; i < geometry.positions.length; i++) allPositions.push(geometry.positions[i]);
+        for (let i = 0; i < geometry.normals.length; i++) allNormals.push(geometry.normals[i]);
 
         if (opts.colorByType) {
             const color = typeColors[type] || typeColors['Other'];
             const vertexCount = geometry.positions.length / 3;
-            for (let i = 0; i < vertexCount; i++) allColors.push(...color);
+            for (let i = 0; i < vertexCount; i++) {
+                allColors.push(color[0], color[1], color[2], color[3]);
+            }
         }
 
         for (const index of geometry.indices) allIndices.push(index + currentVertexOffset);

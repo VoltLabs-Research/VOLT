@@ -1,5 +1,6 @@
 import { logger } from './logger';
 import { loadConfig } from './config';
+import { startMemoryMonitor, stopMemoryMonitor } from './memory';
 import { createJupyterModule } from '@/modules/jupyter';
 import { createMetricsModule } from '@/modules/metrics';
 import { createSSHImportModule } from '@/modules/ssh-import';
@@ -85,6 +86,7 @@ export const bootstrap = async (): Promise<void> => {
     );
 
     await platform.connect();
+    startMemoryMonitor();
 
     platform.eventBroker.emitLifecycle({
         type: 'services-ready',
@@ -107,6 +109,7 @@ export const bootstrap = async (): Promise<void> => {
     });
 
     const shutdown = async () => {
+        stopMemoryMonitor();
         workflowRuntime.debugSessionManager.shutdown();
         await analysisWorker.stop();
         await trajectoryRasterWorkerService.stop();

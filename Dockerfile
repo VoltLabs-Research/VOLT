@@ -25,6 +25,7 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 COPY tsconfig.json ./
 COPY src ./src
+COPY scripts ./scripts
 COPY image-contexts ./image-contexts
 
 RUN npm run build && npm prune --omit=dev

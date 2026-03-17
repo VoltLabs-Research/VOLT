@@ -70,7 +70,12 @@ export class QueueService {
             async (job) => processor(job.data, job),
             {
                 connection: this.redisConnectionService.getConnectionOptions(),
-                concurrency: options.concurrency ?? 1
+                concurrency: options.concurrency ?? 1,
+                // Generous lock settings to survive GC pauses and heavy processing.
+                // Default 30s is far too short — long GC mark-compact cycles (1s+)
+                // cause lock renewal failures and stalled-job misdetection.
+                lockDuration: 300_000,
+                stalledInterval: 300_000
             }
         );
     }

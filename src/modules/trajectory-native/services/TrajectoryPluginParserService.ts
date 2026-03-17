@@ -8,6 +8,30 @@ import { ObjectBucketName } from '@/shared/contracts';
 type PerAtomRow = Record<string, unknown>;
 type PerAtomColumnarData = Record<string, unknown[]>;
 
+const mergeSelectiveChunk = (
+    target: Record<string, unknown> | null,
+    incoming: unknown,
+    keyFilter: (key: string) => boolean
+): Record<string, unknown> | null => {
+    if (!isRecord(incoming)) {
+        return target;
+    }
+
+    const filtered: Record<string, unknown> = {};
+    for (const [key, incomingValue] of Object.entries(incoming)) {
+        if (keyFilter(key)) {
+            filtered[key] = incomingValue;
+        }
+    }
+
+    if (Object.keys(filtered).length === 0) {
+        return target;
+    }
+
+    const merged = mergeChunkedValue(target, filtered);
+    return isRecord(merged) ? merged : target;
+};
+
 export interface PluginPropertyNamesRequest {
     trajectoryId: string;
     analysisId: string;
@@ -90,15 +114,11 @@ export class TrajectoryPluginParserService {
         if (!firstObjectName) return [];
 
         const stream = await this.minioService.getObjectStream(ObjectBucketName.Plugins, firstObjectName);
-        let decoded: Record<string, unknown> | null = null;
 
+        // Selective decode: only keep 'per-atom-properties' key, discard everything else
+        let decoded: Record<string, unknown> | null = null;
         for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
-            if (isRecord(message)) {
-                const mergedPayload = mergeChunkedValue(decoded, message);
-                if (isRecord(mergedPayload)) {
-                    decoded = mergedPayload;
-                }
-            }
+            decoded = mergeSelectiveChunk(decoded, message, (key) => key === 'per-atom-properties');
         }
 
         if (!decoded) return [];
@@ -112,15 +132,11 @@ export class TrajectoryPluginParserService {
         
         try {
             const stream = await this.minioService.getObjectStream(ObjectBucketName.Plugins, key);
-            let decoded: Record<string, unknown> | null = null;
 
+            // Selective decode: only keep 'per-atom-properties' key
+            let decoded: Record<string, unknown> | null = null;
             for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
-                if (isRecord(message)) {
-                    const mergedPayload = mergeChunkedValue(decoded, message);
-                    if (isRecord(mergedPayload)) {
-                        decoded = mergedPayload;
-                    }
-                }
+                decoded = mergeSelectiveChunk(decoded, message, (k) => k === 'per-atom-properties');
             }
 
             if (!decoded) return null;
@@ -173,7 +189,9 @@ export class TrajectoryPluginParserService {
             for await (const message of decodeMultiStream(stream)) {
                 if (!isRecord(message)) continue;
 
-                const perAtomData = this.normalizePerAtomProperties(message['per-atom-properties']);
+                // Only extract per-atom-properties from each chunk
+                const perAtomRaw = message['per-atom-properties'];
+                const perAtomData = this.normalizePerAtomProperties(perAtomRaw);
                 if (!perAtomData) continue;
 
                 let shouldBreak = false;

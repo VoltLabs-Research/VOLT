@@ -1,4 +1,5 @@
 import { ObjectBucketName } from '@/shared/contracts';
+import { DAEMON_PATHS } from '@/core/paths';
 import { MinioService } from '@/modules/platform/services';
 import {
     NativeModuleLoader,
@@ -8,6 +9,9 @@ import {
     type NativeParticleFilterModelRequest
 } from './NativeModuleLoader';
 import type { TrajectoryParserService } from './TrajectoryParserService';
+import { createReadStream } from 'node:fs';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 enum GradientType {
     Viridis = 0,
@@ -18,6 +22,45 @@ enum GradientType {
 
 const HIGHLIGHT_COLOR = [1.0, 0.2, 0.6];
 const DEFAULT_COLOR = [0.8, 0.8, 0.8];
+const STREAM_UPLOAD_THRESHOLD = 10 * 1024 * 1024;
+
+const uploadBuffer = async (
+    minioService: MinioService,
+    objectKey: string,
+    buffer: Buffer
+): Promise<void> => {
+    if (buffer.length < STREAM_UPLOAD_THRESHOLD) {
+        await minioService.putObject({
+            bucket: ObjectBucketName.Models,
+            objectKey,
+            body: buffer,
+            metadata: {
+                'Content-Type': 'model/gltf-binary'
+            }
+        });
+        return;
+    }
+
+    const tmpPath = path.join(
+        DAEMON_PATHS.analysisOutput,
+        `volt-filter-export-${Date.now()}-${Math.random().toString(36).slice(2)}.glb`
+    );
+
+    try {
+        await fs.writeFile(tmpPath, buffer);
+        await minioService.putObjectStream({
+            bucket: ObjectBucketName.Models,
+            objectKey,
+            stream: createReadStream(tmpPath),
+            size: buffer.length,
+            metadata: {
+                'Content-Type': 'model/gltf-binary'
+            }
+        });
+    } finally {
+        await fs.unlink(tmpPath).catch(() => {});
+    }
+};
 
 const resolveGradientType = (gradientName: string): GradientType => {
     if (gradientName === 'Plasma') {
@@ -210,14 +253,7 @@ export const createFilterEvaluatorService = (
             }
             // parsed, values, colors now out of scope — eligible for GC
 
-            await minioService.putObject({
-                bucket: ObjectBucketName.Models,
-                objectKey: input.objectKey,
-                body: buffer,
-                metadata: {
-                    'Content-Type': 'model/gltf-binary'
-                }
-            });
+            await uploadBuffer(minioService, input.objectKey, buffer);
         });
 
         return {
@@ -276,14 +312,7 @@ export const createFilterEvaluatorService = (
             }
             // parsed, mask, colors, filtered now out of scope — eligible for GC
 
-            await minioService.putObject({
-                bucket: ObjectBucketName.Models,
-                objectKey: input.objectKey,
-                body: buffer,
-                metadata: {
-                    'Content-Type': 'model/gltf-binary'
-                }
-            });
+            await uploadBuffer(minioService, input.objectKey, buffer);
 
             return {
                 objectKey: input.objectKey,

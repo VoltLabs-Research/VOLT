@@ -1,5 +1,6 @@
 import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
+import { isMemoryPressured } from '@/core/memory';
 import { ANALYSIS_QUEUE_NAME } from '@/modules/platform/services';
 import { MinioService } from '@/modules/platform/services';
 import { RedisConnectionService } from '@/modules/platform/services';
@@ -13,7 +14,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import type { AnalysisJobExecutionData, AnalysisQueueJobPayload } from '@/shared/contracts';
-import type { Job as BullMQJob, Worker } from 'bullmq';
+import { DelayedError, type Job as BullMQJob, type Worker } from 'bullmq';
 import type { Readable } from 'node:stream';
 import { isRecord } from '@/shared/utils';
 import { WorkflowGraph, WorkflowNodeType } from '@/modules/workflow-runtime/contracts';
@@ -266,6 +267,17 @@ export class AnalysisWorker {
     }
 
     private async processJob(job: QueueJobPayload, bullJob: BullMQJob<QueueJobPayload>): Promise<void> {
+        // Memory-aware scheduling: if heap is above 75%, requeue with delay instead of risking OOM
+        if (isMemoryPressured()) {
+            const delayMs = 30_000;
+            logger.warn(
+                { jobId: job.jobId, delayMs },
+                'Heap memory pressure detected — delaying analysis job'
+            );
+            await bullJob.moveToDelayed(Date.now() + delayMs, bullJob.token);
+            throw new DelayedError();
+        }
+
         const { executionData } = job;
         const metadata = job.metadata || {};
         const forEachItem = isRecord(metadata.forEachItem) ? metadata.forEachItem : {};
@@ -377,6 +389,10 @@ export class AnalysisWorker {
             logger.info({ jobId: job.jobId }, 'Job completed successfully');
             await bullJob.updateProgress(100);
         } catch (error: unknown) {
+            if (error instanceof DelayedError) {
+                return;
+            }
+
             const message = error instanceof Error ? error.message : String(error);
             logger.error({ jobId: job.jobId, err: error }, `Job failed: ${message}`);
 

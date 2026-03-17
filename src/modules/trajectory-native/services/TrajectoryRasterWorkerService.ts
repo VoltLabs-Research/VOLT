@@ -1,11 +1,12 @@
 import { logger } from '@/core/logger';
+import { isMemoryPressured } from '@/core/memory';
 import { TRAJECTORY_RASTER_QUEUE_NAME } from '@/modules/platform/services';
 import { ObjectBucketName } from '@/shared/contracts';
 import type { DaemonJobReporterService, RasterJobStatus } from '@/modules/cloud-control/services/DaemonJobReporterService';
 import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { RasterQueueJobPayload } from '@/shared/contracts';
 import { isRecord } from '@/shared/utilities/type-guards';
-import type { Job, Worker } from 'bullmq';
+import { DelayedError, type Job, type Worker } from 'bullmq';
 import type { RasterizerService } from './RasterizerService';
 
 const isAutoPreviewRasterJob = (job: RasterQueueJobPayload): boolean => {
@@ -136,6 +137,17 @@ export class TrajectoryRasterWorkerService {
     }
 
     private async processJob(job: RasterQueueJobPayload, bullJob: Job<RasterQueueJobPayload>): Promise<void> {
+        // Memory-aware scheduling: requeue with delay if heap is under pressure
+        if (isMemoryPressured()) {
+            const delayMs = 30_000;
+            logger.warn(
+                { jobId: job.jobId, delayMs },
+                'Heap memory pressure detected — delaying raster job'
+            );
+            await bullJob.moveToDelayed(Date.now() + delayMs, bullJob.token);
+            throw new DelayedError();
+        }
+
         const runningTimestamp = new Date().toISOString();
 
         try {
@@ -158,6 +170,10 @@ export class TrajectoryRasterWorkerService {
             );
             await this.reportJobStatusBestEffort(job, 'completed');
         } catch (error: unknown) {
+            if (error instanceof DelayedError) {
+                return;
+            }
+
             const message = error instanceof Error ? error.message : String(error);
             const failedTimestamp = new Date().toISOString();
 

@@ -5,11 +5,18 @@ import type { PluginListingRepository } from '../repositories/PluginListingRepos
 import type { ExportNodeProcessorService } from './ExportNodeProcessorService';
 import { Decoder } from '@msgpack/msgpack';
 import { isRecord } from '@/shared/utils';
+import mergeChunkedValue from '@/shared/utilities/merge-chunked-value';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import type { Readable } from 'node:stream';
 
 const PLUGINS_BUCKET = 'volt-plugins';
+
+/** Keys to keep during listing-only decode pass. */
+const LISTING_KEYS = new Set(['main_listing', 'sub_listings']);
+
+/** Keys to keep during export-only decode pass. */
+const EXPORT_KEY_PREFIX = 'export';
 
 const logMemoryUsage = (context: string): void => {
     const usage = process.memoryUsage();
@@ -24,7 +31,6 @@ const logMemoryUsage = (context: string): void => {
         'Memory usage'
     );
 };
-
 
 const shouldIgnoreValue = (value: unknown): boolean => {
     return Array.isArray(value) && value.length >= 1 && Array.isArray(value[0]);
@@ -48,36 +54,28 @@ const cleanSubListingRows = (rawRows: Array<Record<string, unknown>>): Array<Rec
     });
 };
 
-const mergeChunkedValue = (target: unknown, incoming: unknown): unknown => {
-    if (incoming === null) {
-        return target;
-    }
-    if (target === null) {
-        return incoming;
-    }
-
-    if (Array.isArray(target) && Array.isArray(incoming)) {
-        target.push(...incoming);
+const mergeSelectiveChunk = (
+    target: Record<string, unknown> | null,
+    incoming: unknown,
+    keyFilter: (key: string) => boolean
+): Record<string, unknown> | null => {
+    if (!isRecord(incoming)) {
         return target;
     }
 
-    if (isRecord(target) && isRecord(incoming)) {
-        for (const [key, incomingValue] of Object.entries(incoming)) {
-            const targetValue = target[key];
-
-            if (Array.isArray(targetValue) && Array.isArray(incomingValue)) {
-                targetValue.push(...incomingValue);
-            } else if (isRecord(targetValue) && isRecord(incomingValue)) {
-                target[key] = mergeChunkedValue(targetValue, incomingValue);
-            } else {
-                target[key] = incomingValue;
-            }
+    const filtered: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(incoming)) {
+        if (keyFilter(key)) {
+            filtered[key] = value;
         }
+    }
 
+    if (Object.keys(filtered).length === 0) {
         return target;
     }
 
-    return incoming;
+    const merged = mergeChunkedValue(target, filtered);
+    return isRecord(merged) ? merged : target;
 };
 
 async function* decodeMultiStream(src: AsyncIterable<Uint8Array | Buffer>): AsyncIterable<unknown> {
@@ -93,7 +91,14 @@ async function* decodeMultiStream(src: AsyncIterable<Uint8Array | Buffer>): Asyn
     }
 }
 
-async function readDecodedPayload(stream: Readable): Promise<Record<string, unknown> | null> {
+/**
+ * PASS 1 — Listing decode.
+ * Streams the msgpack file and only materializes `main_listing` and `sub_listings`.
+ * All other keys (export data, per-atom-properties, etc.) are discarded during decode,
+ * so they never occupy heap space.
+ */
+async function readListingPayload(filePath: string): Promise<Record<string, unknown> | null> {
+    const stream = createReadStream(filePath) as unknown as Readable;
     const asyncIterable = (async function* () {
         for await (const chunk of stream) {
             yield chunk as Uint8Array | Buffer;
@@ -102,23 +107,31 @@ async function readDecodedPayload(stream: Readable): Promise<Record<string, unkn
 
     let decoded: Record<string, unknown> | null = null;
     for await (const message of decodeMultiStream(asyncIterable)) {
-        if (isRecord(message)) {
-            const mergedPayload = mergeChunkedValue(decoded, message);
-            if (isRecord(mergedPayload)) {
-                decoded = mergedPayload;
-            }
-        }
+        decoded = mergeSelectiveChunk(decoded, message, (key) => LISTING_KEYS.has(key));
     }
 
     return decoded;
 }
 
-async function readDecodedPayloadFromObject(
-    minioService: MinioService,
-    objectKey: string
-): Promise<Record<string, unknown> | null> {
-    const stream = await minioService.getObjectStream(PLUGINS_BUCKET, objectKey);
-    return readDecodedPayload(stream);
+/**
+ * PASS 2 — Export decode.
+ * Streams the msgpack file and only materializes the `export` key.
+ * Listing data and per-atom-properties are discarded.
+ */
+async function readExportPayload(filePath: string): Promise<Record<string, unknown> | null> {
+    const stream = createReadStream(filePath) as unknown as Readable;
+    const asyncIterable = (async function* () {
+        for await (const chunk of stream) {
+            yield chunk as Uint8Array | Buffer;
+        }
+    })();
+
+    let decoded: Record<string, unknown> | null = null;
+    for await (const message of decodeMultiStream(asyncIterable)) {
+        decoded = mergeSelectiveChunk(decoded, message, (key) => key === EXPORT_KEY_PREFIX || key.startsWith(`${EXPORT_KEY_PREFIX}.`));
+    }
+
+    return decoded;
 }
 
 export interface ResultProcessorService {
@@ -172,27 +185,33 @@ export const createResultProcessorService = (
         });
 
         logger.info({ storageKey }, 'Uploaded exposure .msgpack');
-        logMemoryUsage('before-msgpack-decode');
-        // Decode directly from the local file — avoids redundant MinIO re-download
-        const decoded = await readDecodedPayload(createReadStream(outputFilePath) as unknown as Readable);
-        logMemoryUsage('after-msgpack-decode');
-        await precomputeListingRows(pluginListingRepository, executionData, exposure, decoded, storageKey, timestep, teamId);
 
-        if (decoded && exposure.export) {
-            // Release listing data before heavy export processing to reduce peak memory.
-            // The listing rows have already been persisted to the database above.
-            delete decoded.main_listing;
-            delete decoded.sub_listings;
+        // ── PASS 1: Decode only listing keys ──────────────────────────────
+        logMemoryUsage('before-listing-decode');
+        const listingPayload = await readListingPayload(outputFilePath);
+        logMemoryUsage('after-listing-decode');
 
-            logMemoryUsage('before-export-processing');
-            await exportNodeProcessorService.process({
-                executionData,
-                exposure,
-                decodedPayload: decoded,
-                timestep,
-                teamClusterId: executionData.teamClusterId || ''
-            });
-            logMemoryUsage('after-export-processing');
+        await precomputeListingRows(pluginListingRepository, executionData, exposure, listingPayload, storageKey, timestep, teamId);
+
+        // Release listing data explicitly before export pass
+        // (listingPayload becomes unreachable and eligible for GC)
+
+        // ── PASS 2: Decode only export key (if needed) ───────────────────
+        if (exposure.export) {
+            logMemoryUsage('before-export-decode');
+            const exportPayload = await readExportPayload(outputFilePath);
+            logMemoryUsage('after-export-decode');
+
+            if (exportPayload) {
+                await exportNodeProcessorService.process({
+                    executionData,
+                    exposure,
+                    decodedPayload: exportPayload,
+                    timestep,
+                    teamClusterId: executionData.teamClusterId || ''
+                });
+                logMemoryUsage('after-export-processing');
+            }
         }
     }
 });

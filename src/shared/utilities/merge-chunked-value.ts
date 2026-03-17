@@ -8,7 +8,9 @@ const mergeChunkedValue = (target: unknown, incoming: unknown): unknown => {
     if (target === null) return incoming;
 
     if (Array.isArray(target) && Array.isArray(incoming)) {
-        target.push(...incoming);
+        for (let i = 0; i < incoming.length; i++) {
+            target.push(incoming[i]);
+        }
         return target;
     }
 
@@ -17,7 +19,9 @@ const mergeChunkedValue = (target: unknown, incoming: unknown): unknown => {
             const targetValue = target[key];
 
             if (Array.isArray(targetValue) && Array.isArray(incomingValue)) {
-                targetValue.push(...incomingValue);
+                for (let i = 0; i < incomingValue.length; i++) {
+                    targetValue.push(incomingValue[i]);
+                }
             } else if (isRecord(targetValue) && isRecord(incomingValue)) {
                 target[key] = mergeChunkedValue(targetValue, incomingValue);
             } else {

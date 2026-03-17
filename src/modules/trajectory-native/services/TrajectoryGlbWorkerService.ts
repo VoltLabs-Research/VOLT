@@ -1,9 +1,10 @@
 import { logger } from '@/core/logger';
+import { isMemoryPressured } from '@/core/memory';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@/modules/platform/services';
 import type { DaemonJobReporterService, GlbJobStatus } from '@/modules/cloud-control/services/DaemonJobReporterService';
 import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { GlbConversionQueueJobPayload } from '@/shared/contracts';
-import type { Job, Worker } from 'bullmq';
+import { DelayedError, type Job, type Worker } from 'bullmq';
 import type { GlbExporterService } from './GlbExporterService';
 
 export class TrajectoryGlbWorkerService {
@@ -110,6 +111,17 @@ export class TrajectoryGlbWorkerService {
     }
 
     private async processJob(job: GlbConversionQueueJobPayload, bullJob: Job<GlbConversionQueueJobPayload>): Promise<void> {
+        // Memory-aware scheduling: requeue with delay if heap is under pressure
+        if (isMemoryPressured()) {
+            const delayMs = 30_000;
+            logger.warn(
+                { jobId: job.jobId, delayMs },
+                'Heap memory pressure detected — delaying GLB conversion job'
+            );
+            await bullJob.moveToDelayed(Date.now() + delayMs, bullJob.token);
+            throw new DelayedError();
+        }
+
         const runningTimestamp = new Date().toISOString();
 
         try {
@@ -134,6 +146,10 @@ export class TrajectoryGlbWorkerService {
             );
             await this.reportJobStatusBestEffort(job, 'completed');
         } catch (error: unknown) {
+            if (error instanceof DelayedError) {
+                return;
+            }
+
             const message = error instanceof Error ? error.message : String(error);
             const failedTimestamp = new Date().toISOString();
 
