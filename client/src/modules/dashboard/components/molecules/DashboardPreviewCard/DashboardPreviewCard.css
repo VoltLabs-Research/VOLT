@@ -28,15 +28,7 @@
 }
 
 .dashboard-preview-action-btn {
-    gap: 0.4rem;
-    padding: 0.5rem 1rem;
-    background: var(--color-surface-2);
-    border: 1px solid var(--color-border-soft);
-    color: var(--color-text-primary);
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s ease, transform 0.15s ease;
+    border: unset;
 }
 
 .dashboard-preview-action-btn:hover {
@@ -47,8 +39,6 @@
 .dashboard-preview-badge {
     padding: 0.35rem 0.75rem;
     border-radius: var(--radius-full);
-    background: var(--color-surface-2);
-    border: 1px solid var(--color-border-soft);
     font-size: 0.8rem;
     font-weight: 500;
     color: var(--color-text-primary);
