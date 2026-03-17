@@ -22,7 +22,8 @@ export enum ArgumentType {
     FRAME = 'frame',
     BOOLEAN = 'boolean',
     STRING = 'string',
-    LIST = 'list'
+    LIST = 'list',
+    PLUGIN_CONFIG = 'pluginConfig'
 };
 
 export enum ModifierContext {
