@@ -10,11 +10,14 @@ import { normalizeTeamClusterInstallRoot } from '@modules/team-cluster/utilities
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import DaemonCredentialGuard, { DecryptedTeamClusterServiceCredentials } from '@shared/application/team-cluster/DaemonCredentialGuard';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { existsSync } from 'node:fs';
+import { access } from 'node:fs/promises';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { gzipSync } from 'node:zlib';
+import { gzip } from 'node:zlib';
+import { promisify } from 'node:util';
 import { inject, injectable } from 'tsyringe';
+
+const gzipAsync = promisify(gzip);
 
 interface DaemonManifestFile {
     relativePath: string;
@@ -107,7 +110,7 @@ const buildComposeFile = (daemonDistributionMode: DaemonDistributionMode): strin
     ].join('\n');
 };
 
-const resolveDaemonPackageRoot = (): string | null => {
+const resolveDaemonPackageRoot = async (): Promise<string | null> => {
     const candidatePaths = [
         path.resolve(process.cwd(), '..', 'cluster-daemon'),
         path.resolve(process.cwd(), '..', 'ClusterDaemon'),
@@ -116,16 +119,19 @@ const resolveDaemonPackageRoot = (): string | null => {
     ];
 
     for (const candidatePath of candidatePaths) {
-        if (existsSync(candidatePath)) {
+        try {
+            await access(candidatePath);
             return candidatePath;
+        } catch {
+            continue;
         }
     }
 
     return null;
 };
 
-const getDaemonPackageRoot = (): string => {
-    const daemonPackageRoot = resolveDaemonPackageRoot();
+const getDaemonPackageRoot = async (): Promise<string> => {
+    const daemonPackageRoot = await resolveDaemonPackageRoot();
     if (!daemonPackageRoot) {
         throw ApplicationError.internalServerError('Unable to locate local ClusterDaemon source directory for build distribution mode');
     }
@@ -168,7 +174,7 @@ const readDaemonManifestFiles = async (): Promise<DaemonManifestFile[]> => {
     });
 };
 
-const getDaemonDistributionMode = (): DaemonDistributionMode => {
+const getDaemonDistributionMode = async (): Promise<DaemonDistributionMode> => {
     const rawDistributionMode = process.env.TEAM_CLUSTER_DAEMON_DISTRIBUTION_MODE?.trim().toLowerCase();
     if (rawDistributionMode === DaemonDistributionMode.Build) {
         return DaemonDistributionMode.Build;
@@ -178,7 +184,7 @@ const getDaemonDistributionMode = (): DaemonDistributionMode => {
         return DaemonDistributionMode.Image;
     }
 
-    if (resolveDaemonPackageRoot()) {
+    if (await resolveDaemonPackageRoot()) {
         return DaemonDistributionMode.Build;
     }
 
@@ -221,7 +227,7 @@ const createTarHeader = (filePath: string, size: number, mode: string): Buffer =
     return header;
 };
 
-const createBuildContextArchiveBase64 = (files: TeamClusterInstallManifestFileDTO[]): string => {
+const createBuildContextArchiveBase64 = async (files: TeamClusterInstallManifestFileDTO[]): Promise<string> => {
     const chunks: Buffer[] = [];
 
     for (const file of files) {
@@ -242,7 +248,8 @@ const createBuildContextArchiveBase64 = (files: TeamClusterInstallManifestFileDT
 
     chunks.push(Buffer.alloc(TAR_BLOCK_SIZE, 0), Buffer.alloc(TAR_BLOCK_SIZE, 0));
 
-    return gzipSync(Buffer.concat(chunks)).toString('base64');
+    const compressed = await gzipAsync(Buffer.concat(chunks));
+    return compressed.toString('base64');
 };
 
 const buildRootEnvFile = (
@@ -348,7 +355,7 @@ export default class TeamClusterInstallManifestService {
         const cloudUrl = this.requireCloudUrl();
         const normalizedInstallRoot = this.requireInstallRoot(installRoot);
         const credentials = this.daemonCredentialGuard.getDecryptedServiceCredentials(teamCluster);
-        const daemonDistributionMode = getDaemonDistributionMode();
+        const daemonDistributionMode = await getDaemonDistributionMode();
 
         await this.persistInstallContext(teamCluster, normalizedInstallRoot, ports);
 
@@ -403,7 +410,7 @@ export default class TeamClusterInstallManifestService {
 
         let buildContextArchiveBase64: string | undefined;
         if (daemonDistributionMode === DaemonDistributionMode.Build) {
-            buildContextArchiveBase64 = createBuildContextArchiveBase64(files);
+            buildContextArchiveBase64 = await createBuildContextArchiveBase64(files);
         }
 
         return {
