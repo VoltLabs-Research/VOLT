@@ -116,6 +116,7 @@ export class DebugSessionManager {
             generatedFiles: [],
             pluginId: request.pluginId,
             teamId: request.teamId,
+            selectedFrameOnly: typeof request.timestep === 'number',
             selectedTimestep: request.timestep,
             workflow,
             nestedWorkflows: new Map()

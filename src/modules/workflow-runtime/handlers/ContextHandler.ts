@@ -5,17 +5,21 @@ import { logger } from '@/core/logger';
 
 const resolveSelectedTrajectoryFrames = (context: WorkflowExecutionContext): Record<string, unknown>[] => {
     const allFrames = context.trajectoryFrames;
+    let selected: typeof allFrames;
 
     if (context.selectedFrameOnly && typeof context.selectedTimestep === 'number') {
-        return allFrames.filter((frame) => frame.timestep === context.selectedTimestep);
-    }
-
-    if (context.selectedTimesteps?.length) {
+        selected = allFrames.filter((frame) => frame.timestep === context.selectedTimestep);
+    } else if (context.selectedTimesteps?.length) {
         const selectedTimestepsSet = new Set(context.selectedTimesteps);
-        return allFrames.filter((frame) => selectedTimestepsSet.has(frame.timestep));
+        selected = allFrames.filter((frame) => selectedTimestepsSet.has(frame.timestep));
+    } else {
+        selected = allFrames;
     }
 
-    return allFrames;
+    return selected.map((frame) => ({
+        ...frame,
+        path: `trajectory-${context.trajectoryId}/timestep-${String(frame.timestep)}.dump.gz`
+    }));
 };
 
 export class WorkflowContextHandler implements WorkflowNodeHandler {
