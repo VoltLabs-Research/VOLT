@@ -313,4 +313,5 @@ export interface AnalysisStartResponse {
 export interface EnqueuePreprocessingResponse {
     queuedJobs: number;
     duplicateJobs: number;
+    skippedJobs: number;
 };

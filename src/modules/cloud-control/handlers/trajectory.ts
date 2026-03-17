@@ -210,6 +210,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
         deps.redisConnectionService
     );
     const trajectoryGlbQueueService = createTrajectoryGlbQueueService(
+        deps.minioService,
         deps.queueService,
         deps.redisConnectionService
     );

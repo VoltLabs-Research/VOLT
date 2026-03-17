@@ -210,10 +210,11 @@ export const loadConfig = (): DaemonConfig => {
             ObjectBucketName.Plugins,
             ObjectBucketName.Rasterizer
         ],
+        // TODO:
         queueConcurrency: {
-            analysis: readNumber('ANALYSIS_CONCURRENCY', 1),
-            glbPreprocessing: readNumber('GLB_CONCURRENCY', 2),
-            rasterizer: readNumber('RASTER_CONCURRENCY', 2)
+            analysis: readNumber('ANALYSIS_CONCURRENCY', 5),
+            glbPreprocessing: readNumber('GLB_CONCURRENCY', 5),
+            rasterizer: readNumber('RASTER_CONCURRENCY', 3)
         }
     };
 };

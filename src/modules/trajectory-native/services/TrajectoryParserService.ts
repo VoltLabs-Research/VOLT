@@ -245,6 +245,25 @@ export const createTrajectoryParserService = (
             );
 
             return await action(tempDumpPath);
+        } catch (error: unknown) {
+            // Provide a clear error message for missing S3 objects
+            if (
+                error !== null &&
+                typeof error === 'object' &&
+                'code' in error &&
+                ((error as Record<string, unknown>).code === 'NoSuchKey' ||
+                 (error as Record<string, unknown>).code === 'NotFound')
+            ) {
+                const dumpNotFoundError = new Error(
+                    `Dump object not found in S3: bucket=${ObjectBucketName.Dumps}, ` +
+                    `key=${objectKey}, trajectoryId=${input.trajectoryId}, timestep=${input.timestep}. ` +
+                    `The dump file may not have been uploaded successfully.`
+                );
+                dumpNotFoundError.name = 'DumpNotFoundError';
+                throw dumpNotFoundError;
+            }
+
+            throw error;
         } finally {
             await fs.unlink(tempDumpPath).catch(() => {});
         }
