@@ -21,6 +21,7 @@ const setVec3 = <T extends { position: Vec3 }>(
 
 const useLightsGroup = (): RenderGroup => {
     const st = useEditorStore(useShallow((s) => s.lights));
+    const isPointCloudScene = useEditorStore((s) => s.isPointCloudScene);
     const { setGlobal, setDirectional, setPoint, setSpot, setHemisphere, setRectArea } = st;
 
     return useMemo(() => {
@@ -127,6 +128,7 @@ const useLightsGroup = (): RenderGroup => {
         return {
             id: 'lights', title: 'Lights',
             icon: <MdLightbulb size={12} />,
+            visible: !isPointCloudScene,
             subsections: [
                 { label: 'Global IBL', sections: [sections.global] },
                 { label: 'Directional Light', sections: [sections.directional] },
@@ -136,7 +138,7 @@ const useLightsGroup = (): RenderGroup => {
                 { label: 'Rect Area Light', sections: [sections.rectArea] }
             ]
         };
-    }, [st.global, st.directional, st.point, st.spot, st.hemisphere, st.rectArea]);
+    }, [st.global, st.directional, st.point, st.spot, st.hemisphere, st.rectArea, isPointCloudScene]);
 };
 
 export default useLightsGroup;

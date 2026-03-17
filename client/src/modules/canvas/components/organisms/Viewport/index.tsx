@@ -21,7 +21,7 @@ import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
 import { Box, Camera, Gauge } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -84,6 +84,7 @@ const Viewport = ({
         setModelBounds,
         setModelWorldBounds,
         setModelLoadingState,
+        setIsPointCloudScene,
         performancePreset,
         setPerformancePreset
     } = useEditorStore(useShallow((s) => ({
@@ -95,6 +96,7 @@ const Viewport = ({
         setModelBounds: s.setModelBounds,
         setModelWorldBounds: s.setModelWorldBounds,
         setModelLoadingState: s.setModelLoadingState,
+        setIsPointCloudScene: s.setIsPointCloudScene,
         performancePreset: s.performanceSettings.preset,
         setPerformancePreset: s.performanceSettings.setPreset
     })));
@@ -116,6 +118,10 @@ const Viewport = ({
 
         return getFrameBoxBounds(currentFrame);
     }, [currentFrame]);
+
+    const handleContentTypeDetected = useCallback((info: { hasPointClouds: boolean }) => {
+        setIsPointCloudScene(info.hasPointClouds);
+    }, [setIsPointCloudScene]);
 
     return (
         <Container className="canvas-viewport d-flex column flex-1 overflow-hidden p-relative min-h-0">
@@ -255,6 +261,7 @@ const Viewport = ({
                                     scale={TIMESTEP_VIEWER_DEFAULTS.scale}
                                     rotation={TIMESTEP_VIEWER_DEFAULTS.rotation}
                                     position={TIMESTEP_VIEWER_DEFAULTS.position}
+                                    onContentTypeDetected={handleContentTypeDetected}
                                 />
                             )}
                         </FractalScene>
