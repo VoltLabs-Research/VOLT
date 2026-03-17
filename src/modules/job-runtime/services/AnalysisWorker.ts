@@ -415,12 +415,15 @@ export class AnalysisWorker {
                 {
                     jobId: job.jobId,
                     binary: path.basename(executionRuntime.artifactPath),
-                    args
+                    args,
+                    outputDir,
+                    entrypointType: executionData.entrypointType ?? 'executable'
                 },
                 'Executing plugin binary'
             );
 
             await bullJob.updateProgress(10);
+            const binaryStartedAt = Date.now();
             const result = await this.binaryExecutorService.executeProcess({
                 jobId: job.jobId,
                 commandPath: executionRuntime.commandPath,
@@ -432,17 +435,49 @@ export class AnalysisWorker {
                 throw new Error(`Binary exited with code ${result.code}: ${result.stderr || result.stdout}`);
             }
 
-            logger.info({ jobId: job.jobId, exitCode: result.code }, 'Binary execution completed');
+            const outputFiles = await fs.readdir(outputDir).catch(() => []);
+
+            logger.info(
+                {
+                    jobId: job.jobId,
+                    exitCode: result.code,
+                    durationMs: Date.now() - binaryStartedAt,
+                    stdoutPreview: result.stdout.slice(0, 4000),
+                    stderrPreview: result.stderr.slice(0, 4000),
+                    outputFiles
+                },
+                'Binary execution completed'
+            );
             logMemoryUsage('after-binary-execution', job.jobId);
             await bullJob.updateProgress(70);
 
             for (const exposure of executionData.exposures) {
+                const exposureStartedAt = Date.now();
+                logger.info(
+                    {
+                        jobId: job.jobId,
+                        exposureName: exposure.name,
+                        exposureNodeId: exposure.nodeId,
+                        exposureResults: exposure.results,
+                        outputDir
+                    },
+                    'Starting exposure result processing'
+                );
                 await this.resultProcessorService.processExposureResult(
                     executionData,
                     exposure,
                     outputDir,
                     timestep!,
                     job.teamId
+                );
+                logger.info(
+                    {
+                        jobId: job.jobId,
+                        exposureName: exposure.name,
+                        exposureNodeId: exposure.nodeId,
+                        durationMs: Date.now() - exposureStartedAt
+                    },
+                    'Completed exposure result processing'
                 );
             }
 

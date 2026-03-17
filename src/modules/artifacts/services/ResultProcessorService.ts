@@ -157,6 +157,7 @@ export const createResultProcessorService = (
         teamId: string
     ): Promise<void> {
         const outputFilePath = `${outputDir}_${exposure.results}`;
+        const startedAt = Date.now();
 
         try {
             await fs.access(outputFilePath);
@@ -173,6 +174,18 @@ export const createResultProcessorService = (
 
         const storageKey = `plugins/trajectory-${executionData.trajectoryId}/analysis-${executionData.analysisId}/${exposure.nodeId}/timestep-${timestep}.msgpack`;
         const fileStat = await fs.stat(outputFilePath);
+
+        logger.info(
+            {
+                analysisId: executionData.analysisId,
+                exposure: exposure.name,
+                outputFilePath,
+                sizeBytes: fileStat.size,
+                storageKey,
+                timestep
+            },
+            'Uploading exposure output'
+        );
 
         await minioService.putObjectStream({
             bucket: PLUGINS_BUCKET,
@@ -213,6 +226,17 @@ export const createResultProcessorService = (
                 logMemoryUsage('after-export-processing');
             }
         }
+
+        logger.info(
+            {
+                analysisId: executionData.analysisId,
+                exposure: exposure.name,
+                durationMs: Date.now() - startedAt,
+                storageKey,
+                timestep
+            },
+            'Finished exposure result processing'
+        );
     }
 });
 
