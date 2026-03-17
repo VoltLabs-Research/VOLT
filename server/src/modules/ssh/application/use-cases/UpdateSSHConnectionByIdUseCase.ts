@@ -62,7 +62,7 @@ export class UpdateSSHConnectionByIdUseCase implements IUseCase<UpdateSSHConnect
         }
 
         if (typeof password === 'string' && password.trim().length > 0) {
-            updateData.encryptedPassword = this.sshCredentialsCipher.encrypt(password);
+            updateData.encryptedPassword = await this.sshCredentialsCipher.encrypt(password);
         }
 
         let result: SSHConnection | null;

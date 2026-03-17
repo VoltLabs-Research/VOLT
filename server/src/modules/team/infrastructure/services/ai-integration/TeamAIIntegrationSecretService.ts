@@ -10,7 +10,7 @@ export default class TeamAIIntegrationSecretService {
         private readonly secretCipher: ITeamAIIntegrationSecretCipher
     ) {}
 
-    encryptApiKey(apiKey: string): string {
+    async encryptApiKey(apiKey: string): Promise<string> {
         const normalizedApiKey = apiKey?.trim();
 
         if (!normalizedApiKey) {
@@ -20,7 +20,7 @@ export default class TeamAIIntegrationSecretService {
         return this.secretCipher.encrypt(normalizedApiKey);
     }
 
-    decryptApiKey(encryptedApiKey?: string): string {
+    async decryptApiKey(encryptedApiKey?: string): Promise<string> {
         if (!encryptedApiKey) {
             return '';
         }
@@ -28,7 +28,7 @@ export default class TeamAIIntegrationSecretService {
         return this.secretCipher.decrypt(encryptedApiKey);
     }
 
-    resolveEncryptedApiKey(apiKey?: string, fallbackEncryptedApiKey?: string): string {
+    async resolveEncryptedApiKey(apiKey?: string, fallbackEncryptedApiKey?: string): Promise<string> {
         const normalizedApiKey = apiKey?.trim();
 
         if (normalizedApiKey) {

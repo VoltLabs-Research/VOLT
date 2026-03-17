@@ -67,7 +67,7 @@ export default class SSHConnectionService implements ISSHConnectionService {
     }
 
     async testConnection(connection: SSHConnection): Promise<boolean> {
-        const config = this.createConfig(connection);
+        const config = await this.createConfig(connection);
         const client = new Client();
 
         return new Promise((resolve, reject) => {
@@ -297,7 +297,7 @@ export default class SSHConnectionService implements ISSHConnectionService {
     }
 
     private async getConnection(connection: SSHConnection): Promise<SSH2Connection> {
-        const config = this.createConfig(connection);
+        const config = await this.createConfig(connection);
         const configHash = this.getConfigHash(config);
         const cached = this.connections.get(connection._id);
         if (cached) {
@@ -370,13 +370,13 @@ export default class SSHConnectionService implements ISSHConnectionService {
         }
     }
 
-    private createConfig(connection: SSHConnection): SSHConnectionConfig {
+    private async createConfig(connection: SSHConnection): Promise<SSHConnectionConfig> {
         const { encryptedPassword, host, port, username } = connection.props;
         return {
             host,
             port: Number(port),
             username,
-            password: this.sshCredentialsCipher.decrypt(encryptedPassword),
+            password: await this.sshCredentialsCipher.decrypt(encryptedPassword),
             readyTimeout: this.CONNECTION_TIMEOUT,
             keepAliveInterval: 10000
         };

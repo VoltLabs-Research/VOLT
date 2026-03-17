@@ -29,8 +29,8 @@ export default class TeamClusterServiceResolver {
 
         return {
             daemon: this.resolveDaemonConnection(teamCluster),
-            redis: this.resolveRedisConnection(teamCluster),
-            minio: this.resolveMinioConnection(teamCluster),
+            redis: await this.resolveRedisConnection(teamCluster),
+            minio: await this.resolveMinioConnection(teamCluster),
             services: teamCluster.props.services
         };
     }
@@ -50,7 +50,7 @@ export default class TeamClusterServiceResolver {
         };
     }
 
-    private resolveRedisConnection(teamCluster: TeamCluster): ResolvedTeamClusterRedisConnection {
+    private async resolveRedisConnection(teamCluster: TeamCluster): Promise<ResolvedTeamClusterRedisConnection> {
         const redis = teamCluster.props.services.redis;
         if (redis.port === null || !redis.username || !redis.password) {
             throw ApplicationError.conflict(
@@ -63,13 +63,13 @@ export default class TeamClusterServiceResolver {
             teamClusterId: teamCluster.id,
             host: this.resolveClusterHost(teamCluster.id),
             port: redis.port,
-            username: this.teamClusterCredentialsCipher.decrypt(redis.username),
-            password: this.teamClusterCredentialsCipher.decrypt(redis.password),
+            username: await this.teamClusterCredentialsCipher.decrypt(redis.username),
+            password: await this.teamClusterCredentialsCipher.decrypt(redis.password),
             db: 0
         };
     }
 
-    private resolveMinioConnection(teamCluster: TeamCluster): ResolvedTeamClusterMinioConnection {
+    private async resolveMinioConnection(teamCluster: TeamCluster): Promise<ResolvedTeamClusterMinioConnection> {
         const minio = teamCluster.props.services.minio;
         if (minio.port === null || !minio.username || !minio.password) {
             throw ApplicationError.conflict(
@@ -83,8 +83,8 @@ export default class TeamClusterServiceResolver {
             endPoint: this.resolveClusterHost(teamCluster.id),
             port: minio.port,
             useSSL: false,
-            accessKey: this.teamClusterCredentialsCipher.decrypt(minio.username),
-            secretKey: this.teamClusterCredentialsCipher.decrypt(minio.password)
+            accessKey: await this.teamClusterCredentialsCipher.decrypt(minio.username),
+            secretKey: await this.teamClusterCredentialsCipher.decrypt(minio.password)
         };
     }
 

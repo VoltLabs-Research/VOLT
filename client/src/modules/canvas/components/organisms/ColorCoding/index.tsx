@@ -25,8 +25,8 @@ interface SelectFieldConfig {
 interface NumberFieldConfig {
     key: string;
     label: string;
-    value: number;
-    onChange: (value: number) => void;
+    value: string;
+    onChange: (value: string) => void;
 };
 
 interface BooleanFieldConfig {
@@ -56,9 +56,11 @@ interface ColorCodingFormProps {
     setGradient: (gradient: ColorGradient) => void;
     gradientOptions: SelectOption[];
     startValue: number;
-    setStartValue: (value: number) => void;
+    startValueInput: string;
+    setStartValue: (value: string) => void;
     endValue: number;
-    setEndValue: (value: number) => void;
+    endValueInput: string;
+    setEndValue: (value: string) => void;
     automaticRange: boolean;
     setAutomaticRange: (value: boolean) => void;
     symmetricRange: boolean;
@@ -73,8 +75,10 @@ const ColorCodingForm = ({
     setGradient,
     gradientOptions,
     startValue,
+    startValueInput,
     setStartValue,
     endValue,
+    endValueInput,
     setEndValue,
     automaticRange,
     setAutomaticRange,
@@ -106,13 +110,13 @@ const ColorCodingForm = ({
         {
             key: 'startValue',
             label: 'Start value',
-            value: startValue,
+            value: startValueInput,
             onChange: setStartValue
         },
         {
             key: 'endValue',
             label: 'End value',
-            value: endValue,
+            value: endValueInput,
             onChange: setEndValue
         }
     ];
@@ -161,7 +165,8 @@ const ColorCodingForm = ({
                         fieldType="input"
                         label={field.label}
                         fieldValue={field.value}
-                        onFieldChange={(_, value) => field.onChange(Number(value))}
+                        onFieldChange={(_, value) => field.onChange(String(value))}
+                        inputProps={{ inputMode: 'decimal' }}
                         variant="canvas"
                     />
                 ))}
@@ -191,8 +196,10 @@ const ColorCoding = ({ trajectoryId, analysisId, currentTimestep, legacyRef }: C
         setGradient,
         gradientOptions,
         startValue,
+        startValueInput,
         setStartValue,
         endValue,
+        endValueInput,
         setEndValue,
         automaticRange,
         setAutomaticRange,
@@ -235,8 +242,10 @@ const ColorCoding = ({ trajectoryId, analysisId, currentTimestep, legacyRef }: C
             setGradient={setGradient}
             gradientOptions={gradientOptions}
             startValue={startValue}
+            startValueInput={startValueInput}
             setStartValue={setStartValue}
             endValue={endValue}
+            endValueInput={endValueInput}
             setEndValue={setEndValue}
             automaticRange={automaticRange}
             setAutomaticRange={setAutomaticRange}

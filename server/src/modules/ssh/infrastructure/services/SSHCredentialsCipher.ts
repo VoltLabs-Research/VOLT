@@ -4,11 +4,11 @@ import { ISSHCredentialsCipher } from '@modules/ssh/domain/port/ISSHCredentialsC
 
 @injectable()
 export default class SSHCredentialsCipher implements ISSHCredentialsCipher {
-    encrypt(value: string): string {
+    async encrypt(value: string): Promise<string> {
         return encrypt(value);
     }
 
-    decrypt(value: string): string {
+    async decrypt(value: string): Promise<string> {
         return decrypt(value);
     }
 }
