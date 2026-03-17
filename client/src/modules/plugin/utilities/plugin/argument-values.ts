@@ -63,7 +63,7 @@ export const getArgumentDefaultValue = (definition: IArgumentDefinition): unknow
         return [];
     }
 
-    if (definition.type === ArgumentType.PLUGIN_CONFIG) {
+    if (definition.type === ArgumentType.PLUGIN_REFERENCE) {
         return { pluginId: '', config: {} };
     }
 
@@ -123,6 +123,10 @@ export const getListArgumentValue = (
 export interface PluginConfigValue {
     pluginId: string;
     config: Record<string, unknown>;
+};
+
+export const isPluginReferenceArgumentType = (type: ArgumentType): boolean => {
+    return type === ArgumentType.PLUGIN_REFERENCE;
 };
 
 const isPluginConfigValue = (value: unknown): value is PluginConfigValue => {

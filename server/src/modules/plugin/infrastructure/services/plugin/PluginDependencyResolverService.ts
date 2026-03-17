@@ -1,4 +1,5 @@
 import Plugin, { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
+import { ArgumentType, type ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { injectable, inject } from 'tsyringe';
@@ -12,6 +13,54 @@ interface PluginDependencyTraversalResult {
 interface PluginDependencyReference {
     nodeId: string;
     pluginId: string;
+};
+
+interface PluginReferenceExecutionRequest {
+    referencePath: string;
+    pluginId: string;
+    config: Record<string, unknown>;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+const collectArgumentPluginReferenceExecutions = (
+    definition: ArgumentDefinition,
+    value: unknown,
+    currentPath: string,
+    results: PluginReferenceExecutionRequest[]
+): void => {
+    if (definition.type === ArgumentType.PluginReference) {
+        if (!isRecord(value) || typeof value.pluginId !== 'string' || !value.pluginId.trim()) {
+            return;
+        }
+
+        results.push({
+            referencePath: currentPath,
+            pluginId: value.pluginId.trim(),
+            config: isRecord(value.config) ? value.config : {}
+        });
+        return;
+    }
+
+    if (definition.type === ArgumentType.List && Array.isArray(value)) {
+        const nestedDefinitions = definition.listArguments ?? [];
+        value.forEach((entry, index) => {
+            if (!isRecord(entry)) {
+                return;
+            }
+
+            for (const nestedDefinition of nestedDefinitions) {
+                collectArgumentPluginReferenceExecutions(
+                    nestedDefinition,
+                    entry[nestedDefinition.argument],
+                    `${currentPath}[${index}].${nestedDefinition.argument}`,
+                    results
+                );
+            }
+        });
+    }
 };
 
 @injectable()
@@ -43,6 +92,28 @@ export class PluginDependencyResolverService {
                 pluginId: node.data.pluginNode?.pluginId?.trim() ?? ''
             }))
             .filter((reference) => Boolean(reference.pluginId));
+    }
+
+    getArgumentPluginReferenceExecutions(
+        plugin: Plugin,
+        config: Record<string, unknown>
+    ): PluginReferenceExecutionRequest[] {
+        const argumentsNode = plugin.props.workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
+        const definitions = Array.isArray(argumentsNode?.data.arguments?.arguments)
+            ? argumentsNode.data.arguments.arguments as ArgumentDefinition[]
+            : [];
+        const results: PluginReferenceExecutionRequest[] = [];
+
+        for (const definition of definitions) {
+            collectArgumentPluginReferenceExecutions(
+                definition,
+                config[definition.argument],
+                definition.argument,
+                results
+            );
+        }
+
+        return results;
     }
 
     private async visitPluginDependencies(

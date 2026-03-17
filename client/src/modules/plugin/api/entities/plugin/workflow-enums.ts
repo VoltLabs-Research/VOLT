@@ -23,7 +23,7 @@ export enum ArgumentType {
     BOOLEAN = 'boolean',
     STRING = 'string',
     LIST = 'list',
-    PLUGIN_CONFIG = 'pluginConfig'
+    PLUGIN_REFERENCE = 'pluginReference'
 };
 
 export enum ModifierContext {

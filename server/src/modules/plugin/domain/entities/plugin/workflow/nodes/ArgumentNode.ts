@@ -5,7 +5,7 @@ export enum ArgumentType{
     Boolean = 'boolean',
     String = 'string',
     List = 'list',
-    PluginConfig = 'pluginConfig'
+    PluginReference = 'pluginReference'
 };
 
 export interface ArgumentOption{
@@ -21,6 +21,7 @@ export interface ArgumentDefinition{
     value?: unknown;
     options?: ArgumentOption[];
     listArguments?: ArgumentDefinition[];
+    pluginReferenceFilter?: string[];
     min?: number;
     max?: number;
     step?: number;

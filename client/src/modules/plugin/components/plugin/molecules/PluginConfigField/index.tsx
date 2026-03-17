@@ -30,13 +30,25 @@ const PluginConfigField = ({
     const pluginConfigValue = getPluginConfigValue(argument, value);
 
     const pluginOptions = useMemo<SelectOption[]>(() => {
+        const allowedPluginIds = new Set(argument.pluginReferenceFilter ?? []);
+
         return publishedPlugins
-            .filter((plugin) => plugin.status === PluginStatus.PUBLISHED)
+            .filter((plugin) => {
+                if (plugin.status !== PluginStatus.PUBLISHED) {
+                    return false;
+                }
+
+                if (allowedPluginIds.size === 0) {
+                    return true;
+                }
+
+                return allowedPluginIds.has(plugin._id);
+            })
             .map((plugin) => ({
                 value: plugin._id,
                 title: plugin.modifier?.name?.trim() || plugin._id
             }));
-    }, [publishedPlugins]);
+    }, [argument.pluginReferenceFilter, publishedPlugins]);
 
     const selectedPluginArguments = useMemo<IArgumentDefinition[]>(() => {
         if (!pluginConfigValue.pluginId) {
@@ -74,7 +86,7 @@ const PluginConfigField = ({
                 {argument.label || argument.argument}
             </Paragraph>
             <FormFieldRHF
-                label='Algorithm Plugin'
+                label='Referenced Plugin'
                 fieldKey={`${fieldKey}-plugin-select`}
                 fieldType='select'
                 fieldValue={pluginConfigValue.pluginId}
