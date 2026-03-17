@@ -138,7 +138,7 @@ const Sidebar = ({
             animate={{ width: collapsed ? collapsedWidth : expandedWidth }}
             transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 30 }}
         >
-            <Container className='editor-sidebar-container glass-bg b-none d-flex column content-between overflow-hidden w-max h-max'>
+            <Container className='editor-sidebar-container glass-bg b-none d-flex column glass-bg content-between overflow-hidden w-max h-max'>
                 <Container id={`${sidebarId}-content`} className='editor-sidebar-top-container'>
                     {headerElement}
 

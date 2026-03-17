@@ -3,26 +3,14 @@
 }
 
 .debug-toolbar {
-    padding: 0.375rem 0.75rem;
+    padding: 0 1rem;
     white-space: nowrap;
-    background-color: var(--color-surface-1);
 }
 
 .debug-toolbar-divider {
     height: 20px;
     background: var(--color-border-strong);
     margin: 0 0.25rem;
-}
-
-.debug-toolbar-select.select-trigger {
-    background: var(--color-surface-2);
-    border: 1px solid var(--color-border-soft);
-    color: inherit;
-    padding: 0.25rem 0.5rem;
-    outline: none;
-    max-width: 160px;
-    font-size: var(--font-size-1);
-    border-radius: var(--radius-sm);
 }
 
 .debug-toolbar-select.select-trigger:disabled {

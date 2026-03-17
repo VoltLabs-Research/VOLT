@@ -16,7 +16,7 @@ const CanvasEmptyState = () => {
 
     return (
         <Container className='p-absolute inset-0 d-flex flex-center z-10 canvas-empty-state'>
-            <Container className='card-elevated d-flex column items-center gap-1 text-center canvas-empty-state-card'>
+            <Container className='d-flex column items-center gap-1 text-center canvas-empty-state-card glass-bg'>
                 <Container className='d-flex flex-center radius-md canvas-empty-state-icon-wrapper'>
                     <PlugZap size={28} />
                 </Container>
@@ -33,7 +33,7 @@ const CanvasEmptyState = () => {
                 <Button
                     intent='brand'
                     variant='solid'
-                    size='md'
+                    size='sm'
                     rightIcon={<ArrowRight size={16} />}
                     onClick={handleAddModifier}
                 >
