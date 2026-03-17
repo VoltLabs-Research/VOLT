@@ -3,7 +3,6 @@ export * from './GlbExporterService';
 export * from './NativeModuleLoader';
 export * from './property-coloring';
 export * from './RasterizerService';
-export * from './TrajectoryArtifactExportWorkerService';
 export * from './TrajectoryParserService';
 export * from './TrajectoryGlbQueueService';
 export * from './TrajectoryGlbWorkerService';

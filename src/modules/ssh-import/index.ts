@@ -1,10 +1,9 @@
 import type { DaemonConfig } from '@/core/config';
 import type { GlbExporterService } from '@/modules/trajectory-native/services';
 import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
-import { FileExtractorService, SSHConnectionService, SSHImportFrameWorkerService, SSHImportWorkerService } from './services';
+import { FileExtractorService, SSHConnectionService, SSHImportWorkerService } from './services';
 
 export interface SSHImportModule {
-    sshImportFrameWorkerService: SSHImportFrameWorkerService;
     sshImportWorkerService: SSHImportWorkerService;
 }
 
@@ -17,18 +16,14 @@ export const createSSHImportModule = (deps: {
 }): SSHImportModule => {
     const sshConnectionService = new SSHConnectionService();
     const fileExtractorService = new FileExtractorService();
-    const sshImportFrameWorkerService = new SSHImportFrameWorkerService(
-        deps.queueService,
-        deps.minioService,
-        deps.glbExporterService
-    );
 
     return {
-        sshImportFrameWorkerService,
         sshImportWorkerService: new SSHImportWorkerService(
             deps.config,
             deps.queueService,
             deps.redisConnectionService,
+            deps.minioService,
+            deps.glbExporterService,
             sshConnectionService,
             fileExtractorService
         )

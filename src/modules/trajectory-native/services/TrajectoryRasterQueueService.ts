@@ -230,26 +230,6 @@ const enqueueRasterJob = async (
     return true;
 };
 
-const enqueueRasterJobs = async (
-    queueService: QueueService,
-    redisConnectionService: RedisConnectionService,
-    jobs: RasterQueueJobPayload[]
-): Promise<{
-    queuedJobs: RasterQueueJobPayload[];
-    duplicateJobs: RasterQueueJobPayload[];
-}> => {
-    const enqueueResult = await queueService.enqueueMany(TRAJECTORY_RASTER_QUEUE_NAME, jobs, {
-        preserveExistingJob: true
-    });
-
-    await Promise.all(enqueueResult.enqueuedPayloads.map((job) => redisConnectionService.projectJobStatus(job)));
-
-    return {
-        queuedJobs: enqueueResult.enqueuedPayloads,
-        duplicateJobs: enqueueResult.skippedPayloads
-    };
-};
-
 const queueAutoPreviewRasterizationJob = async (
     input: RasterizeTrajectoryRequest,
     queueService: QueueService,
@@ -327,15 +307,24 @@ export const createTrajectoryRasterQueueService = (
         const existingOutputKeys = await getExistingOutputKeys(minioService, rasterModels);
         const rasterJobs = rasterModels.map((rasterModel) => buildRasterJobPayload(input, rasterModel));
         const result = createQueueRasterizationJobsResult();
-        const queueableJobs = rasterJobs.filter((job) => !existingOutputKeys.has(job.outputObjectKey));
 
-        result.skippedJobs += rasterJobs.length - queueableJobs.length;
-        result.alreadyRasterizedJobs += rasterJobs.length - queueableJobs.length;
+        for (const job of rasterJobs) {
+            if (existingOutputKeys.has(job.outputObjectKey)) {
+                result.skippedJobs += 1;
+                result.alreadyRasterizedJobs += 1;
+                continue;
+            }
 
-        const enqueueResult = await enqueueRasterJobs(queueService, redisConnectionService, queueableJobs);
-        result.queuedJobs += enqueueResult.queuedJobs.length;
-        result.skippedJobs += enqueueResult.duplicateJobs.length;
-        result.duplicateJobs += enqueueResult.duplicateJobs.length;
+            const wasEnqueued = await enqueueRasterJob(queueService, redisConnectionService, job);
+
+            if (!wasEnqueued) {
+                result.skippedJobs += 1;
+                result.duplicateJobs += 1;
+                continue;
+            }
+
+            result.queuedJobs += 1;
+        }
 
         return result;
     }

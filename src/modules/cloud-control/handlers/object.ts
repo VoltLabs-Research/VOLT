@@ -54,7 +54,6 @@ interface ChunkedTransfer {
     receivedCount: number;
     totalSize: number;
     createdAt: number;
-    updatedAt: number;
 };
 
 /**
@@ -123,7 +122,7 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
     const sweepInterval = setInterval(() => {
         const now = Date.now();
         for (const [transferId, transfer] of chunkedTransfers) {
-            if (now - transfer.updatedAt > TRANSFER_TTL_MS) {
+            if (now - transfer.createdAt > TRANSFER_TTL_MS) {
                 chunkedTransfers.delete(transferId);
                 fsPromises.unlink(transfer.tempPath).catch(() => {});
                 logger.warn(
@@ -177,8 +176,7 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                     nextChunkIndex: 0,
                     receivedCount: 0,
                     totalSize: 0,
-                    createdAt: Date.now(),
-                    updatedAt: Date.now()
+                    createdAt: Date.now()
                 });
 
                 logger.info(
@@ -219,7 +217,6 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                 transfer.nextChunkIndex += 1;
                 transfer.receivedCount += 1;
                 transfer.totalSize += chunkBuffer.length;
-                transfer.updatedAt = Date.now();
 
                 return { data: { received: true, index } };
             }
@@ -242,7 +239,6 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                         `Transfer ${transferId} incomplete: received ${transfer.receivedCount}/${transfer.totalChunks} chunks`
                     );
                 }
-                transfer.updatedAt = Date.now();
 
                 try {
                     // Stream the spooled temp file directly to MinIO — no in-memory concat

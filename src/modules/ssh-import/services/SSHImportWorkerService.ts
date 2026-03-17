@@ -1,20 +1,24 @@
+import { ObjectBucketName } from '@/shared/contracts';
 import { DAEMON_PATHS } from '@/core/paths';
+import { MinioService } from '@/modules/platform/services';
 import { RedisConnectionService } from '@/modules/platform/services';
 import { QueueService } from '@/modules/platform/services';
 import { SSH_IMPORT_QUEUE_NAME } from '@/modules/platform/services';
+import type { GlbExporterService } from '@/modules/trajectory-native/services';
 import { FileExtractorService } from './FileExtractorService';
 import { SSHConnectionService, type SSHConnectionConfig } from './SSHConnectionService';
-import type { ImportedFrameRecord, SSHImportFrameJobPayload } from './SSHImportFrameWorkerService';
 import { TrajectoryParserFactory } from './TrajectoryParserFactory';
 import { isMemoryPressured } from '@/core/memory';
 import { logger } from '@/core/logger';
 import crypto from 'node:crypto';
 import { promisify } from 'node:util';
 import fs from 'node:fs/promises';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
 import path from 'node:path';
-import { DelayedError, type Worker } from 'bullmq';
+import zlib from 'node:zlib';
+import { DelayedError, type Job, type Worker } from 'bullmq';
 import type { DaemonConfig } from '@/core/config';
-import { SSH_IMPORT_FRAME_QUEUE_NAME } from '@/modules/platform/services';
 
 interface SSHImportJobPayload extends Record<string, unknown> {
     teamId: string;
@@ -29,6 +33,13 @@ interface SSHImportJobPayload extends Record<string, unknown> {
     trajectoryName: string;
 };
 
+interface ImportedFrameRecord {
+    timestep: number;
+    natoms: number;
+    simulationCell: Record<string, unknown> | null;
+    size: number;
+};
+
 const scryptAsync = promisify(crypto.scrypt);
 
 export class SSHImportWorkerService {
@@ -38,6 +49,8 @@ export class SSHImportWorkerService {
         private readonly config: DaemonConfig,
         private readonly queueService: QueueService,
         private readonly redisConnectionService: RedisConnectionService,
+        private readonly minioService: MinioService,
+        private readonly glbExporterService: GlbExporterService,
         private readonly sshConnectionService: SSHConnectionService,
         private readonly fileExtractorService: FileExtractorService
     ) {
@@ -125,30 +138,68 @@ export class SSHImportWorkerService {
                 path.join(workdir, 'extracted')
             );
 
-            const frameJobs: SSHImportFrameJobPayload[] = [];
-            for (const [index, file] of extractedFiles.entries()) {
+            const frames: ImportedFrameRecord[] = [];
+            for (const file of extractedFiles) {
                 const metadata = await TrajectoryParserFactory.parseMetadata(file.path);
                 const objectKey = `trajectory-${job.trajectoryId}/timestep-${metadata.timestep}.dump.gz`;
-                frameJobs.push({
-                    jobId: `ssh-import-frame:${job.trajectoryId}:${metadata.timestep}:${index}`,
+                const tempGzPath = `${file.path}.gz`;
+                try {
+                    await pipeline(
+                        createReadStream(file.path),
+                        zlib.createGzip({ level: zlib.constants.Z_BEST_SPEED }),
+                        createWriteStream(tempGzPath)
+                    );
+                    const gzStat = await fs.stat(tempGzPath);
+                    await this.minioService.putObjectStream({
+                        bucket: ObjectBucketName.Dumps,
+                        objectKey,
+                        stream: createReadStream(tempGzPath),
+                        size: gzStat.size,
+                        metadata: {
+                            'Content-Type': 'application/gzip',
+                            'Content-Encoding': 'gzip'
+                        }
+                    });
+                } finally {
+                    await fs.unlink(tempGzPath).catch(() => {});
+                }
+
+                logger.info(
+                    {
+                        filePath: file.path,
+                        natoms: metadata.natoms,
+                        objectKey,
+                        sourceSizeBytes: file.size,
+                        timestep: metadata.timestep,
+                        trajectoryId: job.trajectoryId
+                    },
+                    'Starting native preprocessing for imported trajectory frame'
+                );
+
+                await this.glbExporterService.preprocessTrajectory({
                     teamId: job.teamId,
                     trajectoryId: job.trajectoryId,
                     trajectoryName: job.trajectoryName,
                     timestep: metadata.timestep,
-                    natoms: metadata.natoms,
-                    simulationCell: metadata.simulationCell,
-                    size: file.size,
-                    sourceFilePath: file.path,
                     objectKey
                 });
-            }
 
-            await this.queueService.enqueueMany(SSH_IMPORT_FRAME_QUEUE_NAME, frameJobs, {
-                preserveExistingJob: true
-            });
-            const frames = await Promise.all(frameJobs.map((frameJob) =>
-                this.queueService.waitForJobCompletion<ImportedFrameRecord>(SSH_IMPORT_FRAME_QUEUE_NAME, frameJob.jobId)
-            ));
+                logger.info(
+                    {
+                        objectKey,
+                        timestep: metadata.timestep,
+                        trajectoryId: job.trajectoryId
+                    },
+                    'Finished native preprocessing for imported trajectory frame'
+                );
+
+                frames.push({
+                    timestep: metadata.timestep,
+                    natoms: metadata.natoms,
+                    simulationCell: metadata.simulationCell,
+                    size: file.size
+                });
+            }
 
             await this.reportTrajectoryImport({
                 teamClusterId: this.config.teamClusterId,

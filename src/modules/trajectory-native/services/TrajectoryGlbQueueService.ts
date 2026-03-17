@@ -50,16 +50,26 @@ export const createTrajectoryGlbQueueService = (
     redisConnectionService: RedisConnectionService
 ): TrajectoryGlbQueueService => ({
     async enqueueGlbConversionJobs(input) {
-        const jobs = input.frames.map((frame) => buildGlbJobPayload(input, frame));
-        const enqueueResult = await queueService.enqueueMany(TRAJECTORY_GLB_QUEUE_NAME, jobs, {
-            preserveExistingJob: true
-        });
+        const result: EnqueueGlbJobsResult = {
+            queuedJobs: 0,
+            duplicateJobs: 0
+        };
 
-        await Promise.all(enqueueResult.enqueuedPayloads.map((job) => redisConnectionService.projectJobStatus(job)));
+        for (const frame of input.frames) {
+            const job = buildGlbJobPayload(input, frame);
+            const wasEnqueued = await queueService.enqueue(TRAJECTORY_GLB_QUEUE_NAME, job, {
+                preserveExistingJob: true
+            });
 
-        return {
-            queuedJobs: enqueueResult.enqueuedPayloads.length,
-            duplicateJobs: enqueueResult.skippedPayloads.length
-        } satisfies EnqueueGlbJobsResult;
+            if (!wasEnqueued) {
+                result.duplicateJobs += 1;
+                continue;
+            }
+
+            await redisConnectionService.projectJobStatus(job);
+            result.queuedJobs += 1;
+        }
+
+        return result;
     }
 });

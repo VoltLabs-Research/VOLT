@@ -2,14 +2,13 @@ import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
 import { isMemoryPressured, forceGC } from '@/core/memory';
 import { ANALYSIS_QUEUE_NAME } from '@/modules/platform/services';
-import { ANALYSIS_EXPOSURE_PROCESSING_QUEUE_NAME } from '@/modules/platform/services';
 import { MinioService } from '@/modules/platform/services';
 import { RedisConnectionService } from '@/modules/platform/services';
 import { QueueService } from '@/modules/platform/services';
 import type { BinaryExecutorService } from './BinaryExecutorService';
 import type { DaemonJobReporterService } from '@/modules/cloud-control/services';
 import type { PluginBinaryCacheService } from './PluginBinaryCacheService';
-import type { AnalysisExposureProcessingDispatchService } from '@/modules/artifacts/services';
+import type { ResultProcessorService } from '@/modules/artifacts/services';
 import { decodeCliArgumentsToken, stringifyUnknown } from '@/shared/utils';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -351,7 +350,7 @@ export class AnalysisWorker {
         private readonly minioService: MinioService,
         private readonly pluginBinaryCacheService: PluginBinaryCacheService,
         private readonly binaryExecutorService: BinaryExecutorService,
-        private readonly analysisExposureProcessingDispatchService: AnalysisExposureProcessingDispatchService,
+        private readonly resultProcessorService: ResultProcessorService,
         private readonly daemonJobReporterService: DaemonJobReporterService
     ) {
     }
@@ -522,40 +521,53 @@ export class AnalysisWorker {
             logMemoryUsage('after-binary-execution', job.jobId);
             await bullJob.updateProgress(70);
 
-            if (executionData.exposures.length > 0) {
+            for (const exposure of executionData.exposures) {
+                // Memory-aware scheduling between exposures: if heap is above
+                // 75 % after a previous exposure, force GC and wait before
+                // starting the next one to avoid compounding allocations.
+                if (isMemoryPressured()) {
+                    logger.warn(
+                        { jobId: job.jobId, exposure: exposure.name },
+                        'Heap pressure detected between exposures — forcing GC and yielding'
+                    );
+                    forceGC();
+                    // Yield to the event loop so V8 can finish sweeping before
+                    // the next heavy allocation.
+                    await new Promise((resolve) => setImmediate(resolve));
+                }
+
+                const exposureStartedAt = Date.now();
                 logger.info(
                     {
-                        exposureCount: executionData.exposures.length,
                         jobId: job.jobId,
+                        exposureName: exposure.name,
+                        exposureNodeId: exposure.nodeId,
+                        exposureResults: exposure.results,
                         outputDir
                     },
-                    'Dispatching exposure processing jobs'
+                    'Starting exposure result processing'
+                );
+                await this.resultProcessorService.processExposureResult(
+                    executionData,
+                    exposure,
+                    outputDir,
+                    timestep!,
+                    job.teamId
+                );
+                logger.info(
+                    {
+                        jobId: job.jobId,
+                        exposureName: exposure.name,
+                        exposureNodeId: exposure.nodeId,
+                        durationMs: Date.now() - exposureStartedAt
+                    },
+                    'Completed exposure result processing'
                 );
 
-                const exposureJobs = await this.analysisExposureProcessingDispatchService.dispatchExposureJobs({
-                    executionData,
-                    parentJobId: job.jobId,
-                    outputDir,
-                    teamId: job.teamId,
-                    timestep: timestep!
-                });
-
-                for (const exposureJob of exposureJobs) {
-                    const exposureStartedAt = Date.now();
-                    await this.queueService.waitForJobCompletion(
-                        ANALYSIS_EXPOSURE_PROCESSING_QUEUE_NAME,
-                        exposureJob.jobId
-                    );
-                    logger.info(
-                        {
-                            durationMs: Date.now() - exposureStartedAt,
-                            exposureName: exposureJob.exposure.name,
-                            exposureNodeId: exposureJob.exposure.nodeId,
-                            jobId: job.jobId
-                        },
-                        'Completed exposure result processing'
-                    );
-                }
+                // Always force GC after each exposure to reclaim decoded
+                // msgpack data, typed arrays, and intermediate objects before
+                // the next exposure starts.
+                forceGC();
             }
 
             logMemoryUsage('after-result-processing', job.jobId);
