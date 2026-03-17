@@ -1,7 +1,7 @@
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 
 const flattenConfig = (analysis: Analysis): Record<string, unknown> => {
-    return (analysis as any).config;
+    return (analysis as any).config ?? {};
 };
 
 export const computeDifferingConfigFields = (analyses: Analysis[]) => {

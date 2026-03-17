@@ -91,6 +91,7 @@ export interface IEntrypointData {
     type?: EntrypointType;
     arguments: string;
     requirementsFile?: string;
+    entrypointScript?: string;
     timeout?: number;
 };
 

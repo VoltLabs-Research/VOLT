@@ -23,6 +23,9 @@ export const EntrypointDataSchema = new Schema({
     requirementsFile: {
         type: String
     },
+    entrypointScript: {
+        type: String
+    },
     timeout: {
         type: Number,
         default: 300000

@@ -49,8 +49,15 @@ const EntrypointEditor = ({ node }: EditorProps) => {
     const watchedBinary = form.watch('binary');
     const watchedEntrypointType = form.watch('type') ?? EntrypointType.EXECUTABLE;
     const watchedRequirementsFile = form.watch('requirementsFile') ?? '';
-    const binarySectionTitle = watchedEntrypointType === EntrypointType.PYTHON_SCRIPT ? 'Script' : 'Binary';
-    const uploadButtonLabel = watchedEntrypointType === EntrypointType.PYTHON_SCRIPT ? 'Upload Script' : 'Upload Binary';
+    const watchedEntrypointScript = form.watch('entrypointScript') ?? '';
+    const isPythonScript = watchedEntrypointType === EntrypointType.PYTHON_SCRIPT;
+    const isProjectMode = isPythonScript && watchedEntrypointScript.length > 0;
+    const binarySectionTitle = isPythonScript
+        ? (isProjectMode ? 'Project' : 'Script')
+        : 'Binary';
+    const uploadButtonLabel = isPythonScript
+        ? (isProjectMode ? 'Upload Project (ZIP)' : 'Upload Script')
+        : 'Upload Binary';
 
     useEffect(() => {
         if (!form.getValues('type')) {
@@ -159,6 +166,17 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     control={form.control}
                     options={ENTRYPOINT_TYPE_OPTIONS}
                 />
+                {isPythonScript && (
+                    <FormFieldRHF<EntrypointEditorFormValues>
+                        variant='inline'
+                        label='Entry Script'
+                        fieldType='input'
+                        name='entrypointScript'
+                        control={form.control}
+                        placeholder='main.py'
+                        helperText='For single-file scripts, leave empty. For projects (ZIP), specify the main script path relative to the archive root.'
+                    />
+                )}
                 <FormFieldRHF<EntrypointEditorFormValues>
                     variant='inline'
                     label='Arguments'
