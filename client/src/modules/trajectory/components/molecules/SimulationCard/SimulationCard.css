@@ -1,17 +1,3 @@
-@keyframes simulation-card-processing-pulse {
-    0%, 100% {
-        box-shadow:
-            var(--shadow-card),
-            0 0 0 1px color-mix(in srgb, var(--status-info-border) 75%, transparent);
-    }
-
-    50% {
-        box-shadow:
-            var(--shadow-elevated),
-            0 0 0 1px color-mix(in srgb, var(--status-info-border) 100%, transparent);
-    }
-}
-
 .simulation-card {
     overflow: hidden;
     background: var(--color-surface-1);
@@ -43,10 +29,6 @@
 .simulation-card:focus-visible .simulation-card-header {
     opacity: 1;
     visibility: visible;
-}
-
-.simulation-card.has-jobs {
-    animation: simulation-card-processing-pulse 2s ease-in-out infinite;
 }
 
 .simulation-card.is-selected {
