@@ -20,6 +20,8 @@ export type SectionDef = {
     onToggle?: (enabled: boolean) => void;
     rows: SliderRowDef[];
     extras?: ReactNode;
+    disabled?: boolean;
+    disabledReason?: string;
 };
 
 export interface Subsection {
@@ -27,6 +29,8 @@ export interface Subsection {
     icon?: ReactNode;
     sections: SectionDef[];
     visible?: boolean;
+    disabled?: boolean;
+    disabledReason?: string;
 };
 
 export interface RenderGroup {
@@ -34,4 +38,5 @@ export interface RenderGroup {
     title: string;
     icon: ReactNode;
     subsections: Subsection[];
+    visible?: boolean;
 };

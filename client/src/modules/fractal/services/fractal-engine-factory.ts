@@ -17,6 +17,7 @@ export type FractalEngineCallbacks = {
     onModelLoaded?: (bounds: BoundsInfo) => void;
     onLoadingState?: (state: ModelLoadingState) => void;
     onModelAvailable?: (model: THREE.Group | null) => void;
+    onContentTypeDetected?: (info: { hasPointClouds: boolean }) => void;
 };
 
 const assetLoader: IFractalAssetLoader = new FractalAssetLoader();

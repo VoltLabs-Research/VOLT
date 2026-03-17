@@ -10,6 +10,7 @@ import type { RenderGroup } from '../../types';
 
 const useEnvironmentGroup = (): RenderGroup => {
     const environment = useEditorStore(useShallow((state) => state.environment));
+    const isPointCloudScene = useEditorStore((s) => s.isPointCloudScene);
 
     return useMemo(() => {
         const backgroundSection = {
@@ -46,10 +47,16 @@ const useEnvironmentGroup = (): RenderGroup => {
             icon: <MdNature size={12} />,
             subsections: [
                 { label: ENVIRONMENT_SUBSECTION_TITLES.background, sections: [backgroundSection] },
-                { label: ENVIRONMENT_SUBSECTION_TITLES.fog, sections: [fogSection] }
+                {
+                    label: ENVIRONMENT_SUBSECTION_TITLES.fog,
+                    sections: [fogSection],
+                    ...(isPointCloudScene
+                        ? { disabled: true, disabledReason: 'Not compatible with point cloud scenes' }
+                        : {})
+                }
             ]
         };
-    }, [environment]);
+    }, [environment, isPointCloudScene]);
 };
 
 export default useEnvironmentGroup;

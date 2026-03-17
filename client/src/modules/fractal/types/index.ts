@@ -44,4 +44,5 @@ export type UseGlbSceneParams = {
     activeModelBounds?: BoundsInfo | null;
     onModelBoundsChanged?: (bounds: BoundsInfo) => void;
     onLoadingStateChanged?: (state: ModelLoadingState) => void;
+    onContentTypeDetected?: (info: { hasPointClouds: boolean }) => void;
 };

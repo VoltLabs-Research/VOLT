@@ -24,3 +24,18 @@
     min-width: 40px;
     text-align: right;
 }
+
+.canvas-render-disabled {
+    opacity: 0.45;
+}
+
+.canvas-render-disabled-content {
+    pointer-events: none;
+    user-select: none;
+}
+
+.canvas-render-disabled-reason {
+    color: var(--color-text-muted);
+    padding: 4px 8px;
+    font-style: italic;
+}
