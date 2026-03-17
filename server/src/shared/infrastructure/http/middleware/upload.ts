@@ -9,7 +9,8 @@ import os from 'node:os';
 import path from 'node:path';
 
 const storage = multer.memoryStorage();
-const trajectoryUploadTempDir = path.join(os.tmpdir(), 'volt-trajectory-uploads');
+const DEFAULT_TRAJECTORY_UPLOAD_DIR = path.join(os.homedir(), '.volt', 'trajectory-uploads');
+const trajectoryUploadDir = process.env.TRAJECTORY_UPLOAD_DIR || DEFAULT_TRAJECTORY_UPLOAD_DIR;
 const CHAT_MAX_FILE_SIZE = 25 * 1024 * 1024;
 const DEFAULT_TRAJECTORY_MAX_FILES = 10_000;
 
@@ -33,8 +34,8 @@ const ensureDirectoryExists = (directoryPath: string): void => {
 
 const trajectoryUploadStorage = multer.diskStorage({
     destination: (_req, _file, callback) => {
-        ensureDirectoryExists(trajectoryUploadTempDir);
-        callback(null, trajectoryUploadTempDir);
+        ensureDirectoryExists(trajectoryUploadDir);
+        callback(null, trajectoryUploadDir);
     },
     filename: (_req, file, callback) => {
         const safeName = path.basename(file.originalname || 'trajectory-upload');

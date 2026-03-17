@@ -11,7 +11,7 @@ import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEv
 import type { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import type { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
@@ -86,6 +86,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
         private readonly pluginRepository: IPluginRepository,
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(TeamClusterSelectionService)
         private readonly teamClusterSelectionService: TeamClusterSelectionService
     ) {
         super(emitter, roomManager, eventRegistry);
