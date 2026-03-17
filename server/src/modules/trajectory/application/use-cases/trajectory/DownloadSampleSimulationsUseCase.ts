@@ -5,7 +5,8 @@ import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 import { injectable } from 'tsyringe';
-import fs from 'node:fs';
+import { createReadStream } from 'node:fs';
+import { access } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -23,11 +24,13 @@ export default class DownloadSampleSimulationsUseCase implements IUseCase<Downlo
 
         const filePath = path.join(SAMPLES_PATH, filename);
 
-        if (!fs.existsSync(filePath)) {
+        try {
+            await access(filePath);
+        } catch {
             return Result.fail(new ApplicationError(ErrorCodes.FILE_NOT_FOUND, 'Sample not found', 404));
         }
 
-        const stream = fs.createReadStream(filePath);
+        const stream = createReadStream(filePath);
         return Result.ok({ stream, filename });
     }
 };

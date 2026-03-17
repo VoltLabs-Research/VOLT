@@ -1,25 +1,28 @@
 import crypto from 'node:crypto';
+import { promisify } from 'node:util';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const KEY_LENGTH = 32;
 
+const scryptAsync = promisify(crypto.scrypt);
+
 let cachedKey: Buffer | null = null;
 
-const getEncryptionKey = (): Buffer => {
+const getEncryptionKey = async (): Promise<Buffer> => {
     if (cachedKey) return cachedKey;
     const keyString = process.env.SSH_ENCRYPTION_KEY;
     if (!keyString) {
         throw new Error('SSH_ENCRYPTION_KEY environment variable is required');
     }
-    cachedKey = crypto.scryptSync(keyString, 'Volt-ssh', KEY_LENGTH);
+    cachedKey = await scryptAsync(keyString, 'Volt-ssh', KEY_LENGTH) as Buffer;
     return cachedKey;
 };
 
-export const encrypt = (text: string): string => {
+export const encrypt = async (text: string): Promise<string> => {
     try {
         const iv = crypto.randomBytes(IV_LENGTH);
-        const key = getEncryptionKey();
+        const key = await getEncryptionKey();
 
         const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
 
@@ -39,7 +42,7 @@ export const encrypt = (text: string): string => {
     }
 };
 
-export const decrypt = (encryptedText: string): string => {
+export const decrypt = async (encryptedText: string): Promise<string> => {
     try {
         const parts = encryptedText.split(':');
         let ivB64: string;
@@ -56,7 +59,7 @@ export const decrypt = (encryptedText: string): string => {
 
         const iv = Buffer.from(ivB64, 'base64');
         const authTag = Buffer.from(authTagB64, 'base64');
-        const key = getEncryptionKey();
+        const key = await getEncryptionKey();
 
         const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
         decipher.setAuthTag(authTag);

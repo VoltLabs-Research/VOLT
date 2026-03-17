@@ -27,13 +27,11 @@ export const TRAJECTORY_MAX_FILES = parsePositiveInteger(
     DEFAULT_TRAJECTORY_MAX_FILES
 );
 
-const ensureDirectoryExists = (directoryPath: string): void => {
-    fs.mkdirSync(directoryPath, { recursive: true });
-};
+// Ensure the upload directory exists once at startup (sync is acceptable here)
+fs.mkdirSync(trajectoryUploadDir, { recursive: true });
 
 const trajectoryUploadStorage = multer.diskStorage({
     destination: (_req, _file, callback) => {
-        ensureDirectoryExists(trajectoryUploadDir);
         callback(null, trajectoryUploadDir);
     },
     filename: (_req, file, callback) => {
