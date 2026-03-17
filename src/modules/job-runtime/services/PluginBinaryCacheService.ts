@@ -58,6 +58,9 @@ const writeFileIfChanged = async (filePath: string, content: string): Promise<vo
     await fs.writeFile(filePath, content, 'utf-8');
 };
 
+/** Cap stderr collection to prevent OOM from chatty subprocesses. */
+const MAX_STDERR_BYTES = 10 * 1024 * 1024; // 10 MB — matches BinaryExecutorService
+
 const runCommand = (commandPath: string, args: string[], cwd: string, env?: NodeJS.ProcessEnv): Promise<void> => {
     return new Promise((resolve, reject) => {
         const child = spawn(commandPath, args, {
@@ -66,8 +69,14 @@ const runCommand = (commandPath: string, args: string[], cwd: string, env?: Node
             stdio: ['ignore', 'pipe', 'pipe']
         });
         const stderrChunks: Buffer[] = [];
+        let stderrBytes = 0;
 
-        child.stderr.on('data', (chunk: Buffer) => stderrChunks.push(chunk));
+        child.stderr.on('data', (chunk: Buffer) => {
+            if (stderrBytes < MAX_STDERR_BYTES) {
+                stderrChunks.push(chunk);
+                stderrBytes += chunk.length;
+            }
+        });
         child.on('error', (error) => reject(error));
         child.on('close', (code) => {
             if (code === 0) {

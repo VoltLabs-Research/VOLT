@@ -7,6 +7,8 @@ export interface WorkflowPlanResult {
     items: Record<string, unknown>[];
     forEachNodeId: string;
     nodeOutputSnapshots: Record<string, Record<string, unknown>>;
+    batchMode?: boolean;
+    contextNodeId?: string;
 };
 
 export interface WorkflowExecutionRequest {
@@ -44,10 +46,22 @@ export class WorkflowEngine {
     async planExecutionStrategy(request: WorkflowExecutionRequest): Promise<WorkflowPlanResult | null> {
         const context = this.createExecutionContext(request);
         const executionOrder = context.workflow.topologicalSort();
+        const hasForEachNode = executionOrder.some((node) => node.type === WorkflowNodeType.ForEach);
 
-        logger.info(`@daemon-workflow-engine: planning execution for plugin "${request.pluginId}"`);
+        logger.info(`@daemon-workflow-engine: planning execution for plugin "${request.pluginId}" (batchMode=${!hasForEachNode})`);
+        let contextNodeId: string | undefined;
+
         for (const node of executionOrder) {
+            if (!hasForEachNode && node.type === WorkflowNodeType.ForEach) {
+                continue;
+            }
+
             await this.registry.execute(node, context);
+
+            if (node.type === WorkflowNodeType.Context) {
+                contextNodeId = node.id;
+            }
+
             if (node.type === WorkflowNodeType.ForEach) {
                 const output = context.outputs.get(node.id);
                 if (output?.items && Array.isArray(output.items)) {
@@ -63,6 +77,32 @@ export class WorkflowEngine {
                     };
                 }
             }
+        }
+
+        // Batch mode: no ForEach node — pass all dump URLs as a single batch
+        if (!hasForEachNode && contextNodeId) {
+            const contextOutput = context.outputs.get(contextNodeId);
+            const dumps = Array.isArray(contextOutput?.trajectory_dumps) ? contextOutput.trajectory_dumps : [];
+            const allDumpUrls = dumps
+                .map((dump: Record<string, unknown>) => typeof dump.path === 'string' ? dump.path : '')
+                .filter((url: string) => url.length > 0);
+
+            if (allDumpUrls.length === 0) {
+                return null;
+            }
+
+            const nodeOutputSnapshots: Record<string, Record<string, unknown>> = {};
+            context.outputs.forEach((value, key) => {
+                nodeOutputSnapshots[key] = value;
+            });
+
+            return {
+                items: allDumpUrls.map((url: string) => ({ path: url })),
+                forEachNodeId: '',
+                nodeOutputSnapshots,
+                batchMode: true,
+                contextNodeId
+            };
         }
 
         return null;

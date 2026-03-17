@@ -4,11 +4,12 @@ import v8 from 'node:v8';
 /**
  * Heap memory pressure thresholds (percentage of heap limit).
  * Warnings are emitted at each threshold via structured logging.
+ * When `gc` is true the monitor will attempt a manual GC cycle at that level.
  */
 const THRESHOLDS = [
-    { pct: 0.50, label: 'heap-50%' },
-    { pct: 0.70, label: 'heap-70%' },
-    { pct: 0.85, label: 'heap-85%' }
+    { pct: 0.50, label: 'heap-50%', gc: false },
+    { pct: 0.70, label: 'heap-70%', gc: true },
+    { pct: 0.85, label: 'heap-85%', gc: true }
 ] as const;
 
 /** Above this fraction of the heap limit, new heavy work should be delayed. */
@@ -17,8 +18,12 @@ const PRESSURE_THRESHOLD = 0.75;
 /** Interval between periodic heap checks (ms). */
 const MONITOR_INTERVAL_MS = 10_000;
 
+/** Minimum interval between manual GC invocations to avoid thrashing (ms). */
+const GC_COOLDOWN_MS = 30_000;
+
 let monitorTimer: ReturnType<typeof setInterval> | null = null;
 let lastTriggeredIndex = -1;
+let lastGcTimestamp = 0;
 
 const getHeapStats = (): { heapUsed: number; heapLimit: number; ratio: number } => {
     const stats = v8.getHeapStatistics();
@@ -41,6 +46,26 @@ export const isMemoryPressured = (): boolean => {
  */
 export const getHeapUsageRatio = (): number => {
     return getHeapStats().ratio;
+};
+
+/**
+ * Attempts a manual V8 garbage collection cycle.
+ * Requires `--expose-gc` (injected by scripts/start.js).
+ * Returns `true` if GC was triggered, `false` if unavailable or on cooldown.
+ */
+export const tryForceGC = (): boolean => {
+    if (typeof global.gc !== 'function') {
+        return false;
+    }
+
+    const now = Date.now();
+    if (now - lastGcTimestamp < GC_COOLDOWN_MS) {
+        return false;
+    }
+
+    lastGcTimestamp = now;
+    global.gc();
+    return true;
 };
 
 const checkAndLogThresholds = (): void => {
@@ -68,6 +93,22 @@ const checkAndLogThresholds = (): void => {
             },
             `Memory threshold crossed: ${threshold.label}`
         );
+
+        // Attempt a manual GC cycle when crossing into a high-pressure band
+        if (threshold.gc) {
+            const didGc = tryForceGC();
+            if (didGc) {
+                const after = getHeapStats();
+                logger.info(
+                    {
+                        heapUsedMB: Math.round(after.heapUsed / 1024 / 1024),
+                        heapUsagePct: Math.round(after.ratio * 100)
+                    },
+                    'Manual GC triggered by memory monitor'
+                );
+            }
+        }
+
         lastTriggeredIndex = highestIndex;
     } else if (highestIndex < lastTriggeredIndex) {
         // Heap dropped below the previously triggered threshold — reset
@@ -93,8 +134,9 @@ export const startMemoryMonitor = (): void => {
     if (monitorTimer) return;
 
     const { heapLimit } = getHeapStats();
+    const gcAvailable = typeof global.gc === 'function';
     logger.info(
-        { heapLimitMB: Math.round(heapLimit / 1024 / 1024) },
+        { heapLimitMB: Math.round(heapLimit / 1024 / 1024), gcAvailable },
         'Memory monitor started'
     );
 

@@ -280,17 +280,19 @@ export class AnalysisWorker {
 
         const { executionData } = job;
         const metadata = job.metadata || {};
+        const isBatchMode = executionData.batchMode === true;
         const forEachItem = isRecord(metadata.forEachItem) ? metadata.forEachItem : {};
         const forEachIndex = typeof metadata.forEachIndex === 'number' ? metadata.forEachIndex : 0;
-        const timestep = this.resolveJobTimestep(job, metadata);
+        const timestep = isBatchMode ? 0 : this.resolveJobTimestep(job, metadata);
         const inputFile = typeof metadata.inputFile === 'string' ? metadata.inputFile : '';
         const runningTimestamp = new Date().toISOString();
 
-        if (typeof timestep === 'undefined') {
+        if (!isBatchMode && typeof timestep === 'undefined') {
             throw new Error(`Missing timestep for analysis job ${job.jobId}`);
         }
 
         let dumpLocalPath: string | undefined;
+        let batchDumpLocalPaths: string[] | undefined;
         let outputDir: string | undefined;
 
         try {
@@ -321,13 +323,35 @@ export class AnalysisWorker {
                 requirementsFile: executionData.requirementsFile,
                 entrypointScript: executionData.entrypointScript
             });
-            dumpLocalPath = await this.downloadDump(inputFile);
-            logMemoryUsage('after-dump-download', job.jobId);
+
+            if (isBatchMode && Array.isArray(executionData.allDumpUrls) && executionData.allDumpUrls.length > 0) {
+                // Batch mode: download ALL dump files
+                batchDumpLocalPaths = [];
+                for (const dumpUrl of executionData.allDumpUrls) {
+                    const localPath = await this.downloadDump(dumpUrl);
+                    batchDumpLocalPaths.push(localPath);
+                }
+                dumpLocalPath = batchDumpLocalPaths[0];
+                logMemoryUsage('after-batch-dump-download', job.jobId);
+            } else {
+                dumpLocalPath = await this.downloadDump(inputFile);
+                logMemoryUsage('after-dump-download', job.jobId);
+            }
+
             outputDir = path.join(DAEMON_PATHS.analysisOutput, `${executionData.analysisId}-${forEachIndex}-${Date.now()}`);
             await fs.mkdir(outputDir, { recursive: true });
 
-            const outputs = this.buildOutputsMap(executionData, forEachItem, forEachIndex, dumpLocalPath, outputDir);
-            await this.executeInlinePluginNodes(executionData, outputs, timestep, dumpLocalPath, outputDir);
+            let outputs: Map<string, Record<string, unknown>>;
+            if (isBatchMode && batchDumpLocalPaths) {
+                outputs = this.buildBatchOutputsMap(executionData, batchDumpLocalPaths, outputDir);
+            } else {
+                outputs = this.buildOutputsMap(executionData, forEachItem, forEachIndex, dumpLocalPath!, outputDir);
+            }
+
+            if (!isBatchMode) {
+                await this.executeInlinePluginNodes(executionData, outputs, timestep!, dumpLocalPath!, outputDir);
+            }
+
             const resolvedArgs = resolveTemplate(executionData.arguments, outputs);
             const args = parseArguments(resolvedArgs);
 
@@ -361,7 +385,7 @@ export class AnalysisWorker {
                     executionData,
                     exposure,
                     outputDir,
-                    timestep,
+                    timestep!,
                     job.teamId
                 );
             }
@@ -417,7 +441,8 @@ export class AnalysisWorker {
             throw error instanceof Error ? error : new Error(message);
         } finally {
             if (dumpLocalPath && outputDir) {
-                await this.cleanup(dumpLocalPath, outputDir).catch((err) => {
+                const dumpPathsToClean = batchDumpLocalPaths ?? [dumpLocalPath];
+                await this.cleanupBatch(dumpPathsToClean, outputDir).catch((err) => {
                     logger.warn({ jobId: job.jobId, err }, 'Post-job cleanup failed');
                 });
             }
@@ -467,6 +492,30 @@ export class AnalysisWorker {
         forEachOutput.currentIndex = forEachIndex;
         forEachOutput.outputPath = outputDir;
         outputs.set(executionData.forEachNodeId, forEachOutput);
+
+        return outputs;
+    }
+
+    private buildBatchOutputsMap(
+        executionData: AnalysisJobExecutionData,
+        allDumpLocalPaths: string[],
+        outputDir: string
+    ): Map<string, Record<string, unknown>> {
+        const outputs = new Map<string, Record<string, unknown>>();
+
+        for (const [nodeId, nodeOutput] of Object.entries(executionData.nodeOutputSnapshots)) {
+            outputs.set(nodeId, { ...nodeOutput });
+        }
+
+        // Inject allDumpLocalPaths and outputPath into the context node's outputs
+        // so templates like {{ contextNodeId.allDumpLocalPaths }} resolve correctly
+        const contextNodeId = executionData.contextNodeId;
+        if (contextNodeId) {
+            const contextOutput = outputs.get(contextNodeId) || {};
+            contextOutput.allDumpLocalPaths = JSON.stringify(allDumpLocalPaths);
+            contextOutput.outputPath = outputDir;
+            outputs.set(contextNodeId, contextOutput);
+        }
 
         return outputs;
     }
@@ -685,6 +734,27 @@ export class AnalysisWorker {
     private async cleanup(dumpPath: string, outputDir: string): Promise<void> {
         const tasks = [
             fs.rm(dumpPath, { force: true }).catch(() => {}),
+            fs.rm(outputDir, { recursive: true, force: true }).catch(() => {})
+        ];
+
+        try {
+            const parentDir = path.dirname(outputDir);
+            const baseName = path.basename(outputDir);
+            const entries = await fs.readdir(parentDir);
+            for (const entry of entries) {
+                if (entry.startsWith(`${baseName}_`)) {
+                    tasks.push(fs.rm(path.join(parentDir, entry), { recursive: true, force: true }).catch(() => {}));
+                }
+            }
+        } catch {
+        }
+
+        await Promise.all(tasks);
+    }
+
+    private async cleanupBatch(dumpPaths: string[], outputDir: string): Promise<void> {
+        const tasks = [
+            ...dumpPaths.map((dumpPath) => fs.rm(dumpPath, { force: true }).catch(() => {})),
             fs.rm(outputDir, { recursive: true, force: true }).catch(() => {})
         ];
 

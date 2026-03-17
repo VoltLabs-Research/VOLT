@@ -64,7 +64,7 @@ export class MinioService {
         await this.client.putObject(input.bucket, input.objectKey, input.stream, input.size, input.metadata);
     }
 
-    async listObjects(bucket: string, prefix: string): Promise<string[]> {
+    async listObjects(bucket: string, prefix: string, maxKeys?: number): Promise<string[]> {
         return new Promise((resolve, reject) => {
             const keys: string[] = [];
             const stream = this.client.listObjectsV2(bucket, prefix, true);
@@ -73,9 +73,22 @@ export class MinioService {
                 if (item.name) {
                     keys.push(item.name);
                 }
+                // Early termination when the caller only needs a bounded number of keys
+                if (maxKeys !== undefined && keys.length >= maxKeys) {
+                    stream.destroy();
+                    resolve(keys);
+                }
             });
             stream.on('end', () => resolve(keys));
-            stream.on('error', (error) => reject(error));
+            stream.on('error', (error) => {
+                // destroy() above may emit a premature close/error — ignore it
+                // if we already collected enough keys.
+                if (maxKeys !== undefined && keys.length >= maxKeys) {
+                    resolve(keys);
+                    return;
+                }
+                reject(error);
+            });
         });
     }
 

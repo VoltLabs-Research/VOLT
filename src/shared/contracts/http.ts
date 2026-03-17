@@ -204,6 +204,9 @@ export interface AnalysisJobExecutionData {
     nodeOutputSnapshots: Record<string, Record<string, unknown>>;
     workflow: WorkflowDefinition;
     nestedPlugins: NestedPluginDefinition[];
+    allDumpUrls?: string[];
+    batchMode?: boolean;
+    contextNodeId?: string;
 };
 
 export interface AnalysisStartRequest {

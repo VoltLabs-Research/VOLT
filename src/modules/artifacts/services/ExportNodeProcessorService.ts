@@ -110,12 +110,13 @@ const toStringMap = (value: unknown): Record<string, unknown> => {
     return toRecord(value);
 };
 
-const buildObjectPath = (input: ExportExecutionInput, exporter: ExporterName, type: string): string => {
+const buildObjectPath = (input: ExportExecutionInput, exporter: ExporterName, type: string, arrayIndex?: number): string => {
     const isChart = exporter === 'ChartExporter' || type === 'chart-png';
     const folder = isChart ? 'charts' : 'glb';
     const extension = isChart ? 'png' : type;
+    const suffix = arrayIndex != null ? `_${arrayIndex}` : '';
 
-    return `trajectory-${input.executionData.trajectoryId}/analysis-${input.executionData.analysisId}/${folder}/${input.timestep}/${input.exposure.nodeId}.${extension}`;
+    return `trajectory-${input.executionData.trajectoryId}/analysis-${input.executionData.analysisId}/${folder}/${input.timestep}/${input.exposure.nodeId}${suffix}.${extension}`;
 };
 
 const normalizeAtomsByType = (value: Record<string, unknown>): AtomsGroupedByType => {
@@ -306,6 +307,13 @@ interface ProcessedDislocationGeometry {
     };
 };
 
+/**
+ * Maximum number of dislocation vertices before the loop stops accepting
+ * new segments.  Each vertex consumes ~24-40 bytes across the typed arrays
+ * (positions + normals + optional colors + indices), so 5 M vertices ≈ 200 MB.
+ */
+const MAX_DISLOCATION_VERTICES = 5_000_000;
+
 const processDislocations = async (
     data: Record<string, unknown>,
     opts: Required<DislocationExportOptions>
@@ -319,6 +327,7 @@ const processDislocations = async (
     let allColors: number[] = [];
     let currentVertexOffset = 0;
     let sinceLastYield = 0;
+    let vertexBudgetExhausted = false;
 
     for (const segment of segments) {
         if (!isRecord(segment)) continue;
@@ -339,26 +348,38 @@ const processDislocations = async (
         const geometry = createLineGeometry(normalizedPoints, opts.lineWidth, opts.tubularSegments);
         if (geometry.positions.length === 0) continue;
 
+        const segmentVertexCount = geometry.positions.length / 3;
+        if (currentVertexOffset + segmentVertexCount > MAX_DISLOCATION_VERTICES) {
+            vertexBudgetExhausted = true;
+            break;
+        }
+
         // Iterative push — avoids call-stack overflow from spread on large arrays
         for (let i = 0; i < geometry.positions.length; i++) allPositions.push(geometry.positions[i]);
         for (let i = 0; i < geometry.normals.length; i++) allNormals.push(geometry.normals[i]);
 
         if (opts.colorByType) {
             const color = typeColors[type] || typeColors['Other'];
-            const vertexCount = geometry.positions.length / 3;
-            for (let i = 0; i < vertexCount; i++) {
+            for (let i = 0; i < segmentVertexCount; i++) {
                 allColors.push(color[0], color[1], color[2], color[3]);
             }
         }
 
         for (const index of geometry.indices) allIndices.push(index + currentVertexOffset);
-        currentVertexOffset += geometry.positions.length / 3;
+        currentVertexOffset += segmentVertexCount;
 
         sinceLastYield++;
         if (sinceLastYield >= 500) {
             sinceLastYield = 0;
             await yieldToEventLoop();
         }
+    }
+
+    if (vertexBudgetExhausted) {
+        logger.warn(
+            { maxVertices: MAX_DISLOCATION_VERTICES, totalSegments: segments.length, processedVertices: currentVertexOffset },
+            'Dislocation vertex budget exhausted — geometry truncated to prevent OOM'
+        );
     }
 
     if (allPositions.length === 0) {
@@ -369,6 +390,13 @@ const processDislocations = async (
     const normals = new Float32Array(allNormals);
     const indices = new Uint32Array(allIndices);
     const colors = opts.colorByType ? new Float32Array(allColors) : undefined;
+
+    // Release the intermediate number[] arrays immediately — they duplicate the
+    // data now held in the typed arrays and can be hundreds of MB.
+    allPositions = [];
+    allNormals = [];
+    allIndices = [];
+    allColors = [];
 
     const min: [number, number, number] = [Infinity, Infinity, Infinity];
     const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
@@ -392,12 +420,89 @@ const processDislocations = async (
     };
 };
 
+/**
+ * Convert HSL (all in 0..1 range) to RGB (0..1 range).
+ */
+const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
+    if (s === 0) return [l, l, l];
+    const hue2rgb = (p: number, q: number, t: number): number => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    return [
+        hue2rgb(p, q, h + 1 / 3),
+        hue2rgb(p, q, h),
+        hue2rgb(p, q, h - 1 / 3)
+    ];
+};
+
+/**
+ * Extended discrete palette with 24 maximally perceptually distinct colors.
+ * Hand-picked to remain distinguishable under common colour-vision deficiencies.
+ */
+const EXTENDED_PALETTE: [number, number, number][] = [
+    [0.91, 0.30, 0.24],  //  0  Red
+    [0.20, 0.60, 0.86],  //  1  Blue
+    [0.18, 0.80, 0.44],  //  2  Green
+    [0.95, 0.77, 0.06],  //  3  Yellow
+    [0.61, 0.35, 0.71],  //  4  Purple
+    [1.00, 0.50, 0.00],  //  5  Orange
+    [0.00, 0.81, 0.82],  //  6  Cyan
+    [0.85, 0.20, 0.53],  //  7  Magenta/Rose
+    [0.55, 0.76, 0.22],  //  8  Lime
+    [0.36, 0.25, 0.60],  //  9  Indigo
+    [1.00, 0.62, 0.47],  // 10  Salmon
+    [0.00, 0.50, 0.50],  // 11  Teal
+    [0.80, 0.68, 0.00],  // 12  Dark Yellow / Gold
+    [0.44, 0.68, 0.28],  // 13  Olive Green
+    [0.69, 0.19, 0.38],  // 14  Crimson
+    [0.30, 0.75, 0.93],  // 15  Sky Blue
+    [0.90, 0.56, 0.67],  // 16  Pink
+    [0.50, 0.50, 0.00],  // 17  Olive
+    [0.00, 0.39, 0.74],  // 18  Cobalt
+    [0.75, 0.94, 0.27],  // 19  Yellow-Green
+    [0.58, 0.00, 0.83],  // 20  Violet
+    [0.94, 0.42, 0.31],  // 21  Burnt Orange
+    [0.27, 0.94, 0.94],  // 22  Aqua
+    [0.66, 0.47, 0.33],  // 23  Brown / Sienna
+];
+
+/**
+ * Return a colour for the given palette index.
+ * Indices within `EXTENDED_PALETTE` get a hand-picked colour; beyond that we
+ * generate colours algorithmically using golden-ratio hue spacing to guarantee
+ * no two nearby indices share a hue.
+ */
+const generateColor = (index: number): [number, number, number] => {
+    if (index < EXTENDED_PALETTE.length) return EXTENDED_PALETTE[index];
+
+    const GOLDEN_RATIO = 0.618033988749895;
+    const hue = ((index - EXTENDED_PALETTE.length) * GOLDEN_RATIO) % 1.0;
+    // Vary saturation and lightness slightly so consecutive generated colours
+    // differ in more than just hue.
+    const saturation = 0.65 + (index % 3) * 0.1;   // 0.65 / 0.75 / 0.85
+    const lightness  = 0.45 + (index % 2) * 0.12;   // 0.45 / 0.57
+    return hslToRgb(hue, saturation, lightness);
+};
+
+/** Regex for cluster names emitted by MultiSOM / clustering nodes, e.g. "Cluster 7". */
+const CLUSTER_NAME_RE = /^Cluster\s+(\d+)$/i;
+
 const colorForType = (typeName: string, typeIndex: number): [number, number, number] => {
+    // 1. Predefined colours for well-known structural types (unchanged).
     const predefined: Record<string, [number, number, number]> = {
         bcc: [0.2, 0.6, 1],
         fcc: [1, 0.5, 0.2],
         hcp: [0.4, 0.9, 0.4],
-        dislocation: [1, 0.2, 0.2]
+        dislocation: [1, 0.2, 0.2],
+        ico: [0.85, 0.20, 0.53],
+        unknown: [0.5, 0.5, 0.5]
     };
 
     const normalized = typeName.toLowerCase();
@@ -405,15 +510,15 @@ const colorForType = (typeName: string, typeIndex: number): [number, number, num
         return predefined[normalized];
     }
 
-    const palette: Array<[number, number, number]> = [
-        [0.91, 0.30, 0.24],
-        [0.20, 0.60, 0.86],
-        [0.18, 0.80, 0.44],
-        [0.95, 0.77, 0.06],
-        [0.61, 0.35, 0.71]
-    ];
+    // 2. Cluster-aware colouring: "Cluster N" → use N as palette index directly.
+    const clusterMatch = CLUSTER_NAME_RE.exec(typeName);
+    if (clusterMatch) {
+        const clusterIndex = parseInt(clusterMatch[1], 10);
+        return generateColor(clusterIndex);
+    }
 
-    return palette[typeIndex % palette.length];
+    // 3. All other types: use the typeIndex through the extended palette / generator.
+    return generateColor(typeIndex);
 };
 
 const buildPointCloudData = (atomsByType: AtomsGroupedByType): {
@@ -746,24 +851,14 @@ export const createExportNodeProcessorService = (
     nativeModuleLoader: NativeModuleLoader,
     daemonArtifactReporterService: DaemonArtifactReporterService
 ): ExportNodeProcessorService => {
-    const exportAtomistic = async (decodedPayload: Record<string, unknown>, objectPath: string): Promise<void> => {
-        const exportData = getNestedValue(decodedPayload, 'export.AtomisticExporter');
-        if (!isRecord(exportData)) {
-            throw new Error('Atomistic export data missing from exposure payload');
-        }
-
+    const exportAtomistic = async (exportData: Record<string, unknown>, objectPath: string): Promise<void> => {
         const { positions, colors, min, max } = await buildPointCloudDataDirect(exportData);
         const buffer = nativeModuleLoader.getExporterModule().generatePointCloudGLB(positions, colors, min, max);
 
         await uploadBuffer(minioService, ObjectBucketName.Models, objectPath, buffer, 'model/gltf-binary');
     };
 
-    const exportMesh = async (decodedPayload: Record<string, unknown>, objectPath: string, options: MeshExportOptions): Promise<void> => {
-        const exportData = getNestedValue(decodedPayload, 'export.MeshExporter');
-        if (!isRecord(exportData)) {
-            throw new Error('Mesh export data missing from exposure payload');
-        }
-
+    const exportMesh = async (exportData: Record<string, unknown>, objectPath: string, options: MeshExportOptions): Promise<void> => {
         const mesh = normalizeMesh(exportData);
         const material = resolveMaterial(options.material, options.enableDoubleSided);
         const processed = processMesh(mesh, options.smoothIterations);
@@ -846,12 +941,7 @@ export const createExportNodeProcessorService = (
         return { positions, normals, indices, bounds };
     };
 
-    const exportDislocation = async (decodedPayload: Record<string, unknown>, objectPath: string, options: DislocationExportOptions): Promise<void> => {
-        const exportData = getNestedValue(decodedPayload, 'export.DislocationExporter');
-        if (!isRecord(exportData)) {
-            throw new Error('Dislocation export data missing from exposure payload');
-        }
-
+    const exportDislocation = async (exportData: Record<string, unknown>, objectPath: string, options: DislocationExportOptions): Promise<void> => {
         const opts: Required<DislocationExportOptions> = {
             lineWidth: options.lineWidth ?? 0.08,
             tubularSegments: options.tubularSegments ?? 12,
@@ -963,6 +1053,88 @@ export const createExportNodeProcessorService = (
         await uploadBuffer(minioService, ObjectBucketName.Plugins, objectPath, buffer, 'image/png');
     };
 
+    /**
+     * Resolve the list of exporter payloads from the decoded msgpack data.
+     * Supports two shapes:
+     *   • Single object:  { export: { AtomisticExporter: { ... } } }
+     *   • Array of objects: { export: [ { AtomisticExporter: { ... } }, ... ] }
+     *
+     * Returns an array of individual exporter objects so callers can iterate uniformly.
+     */
+    const resolveExporterEntries = (
+        decodedPayload: Record<string, unknown>,
+        exporter: ExporterName
+    ): { exportData: Record<string, unknown>; arrayIndex: number | undefined }[] => {
+        const rawExport = decodedPayload['export'];
+
+        if (Array.isArray(rawExport)) {
+            // Array format: each element is an exporter object like { AtomisticExporter: { ... } }
+            const entries: { exportData: Record<string, unknown>; arrayIndex: number }[] = [];
+            for (let i = 0; i < rawExport.length; i++) {
+                const element = rawExport[i];
+                if (!isRecord(element)) {
+                    logger.warn({ index: i, exporter }, 'Skipping non-record element in export array');
+                    continue;
+                }
+                const exporterData = element[exporter];
+                if (!isRecord(exporterData)) {
+                    logger.warn({ index: i, exporter }, 'Exporter key missing from export array element');
+                    continue;
+                }
+                entries.push({ exportData: exporterData, arrayIndex: i });
+            }
+            return entries;
+        }
+
+        // Single-object format (backward compatible): { AtomisticExporter: { ... } }
+        if (isRecord(rawExport)) {
+            const exporterData = rawExport[exporter];
+            if (!isRecord(exporterData)) {
+                return [];
+            }
+            return [{ exportData: exporterData, arrayIndex: undefined }];
+        }
+
+        return [];
+    };
+
+    const reportArtifact = async (
+        input: ExportExecutionInput,
+        exporter: ExporterName,
+        exportConfig: NonNullable<ExportExecutionInput['exposure']['export']>,
+        objectPath: string,
+        arrayIndex: number | undefined
+    ): Promise<void> => {
+        const displayName = arrayIndex != null
+            ? `${input.exposure.name} [${arrayIndex}]`
+            : input.exposure.name;
+
+        await daemonArtifactReporterService.reportArtifact({
+            trajectory: input.executionData.trajectoryId,
+            teamCluster: input.teamClusterId,
+            analysis: input.executionData.analysisId,
+            plugin: input.executionData.pluginId,
+            sourceType: 'plugin-exposure',
+            timestep: input.timestep,
+            objectName: objectPath,
+            storageBucket: ObjectBucketName.Models,
+            params: {
+                exposureId: input.exposure.nodeId,
+                ...(arrayIndex != null ? { arrayIndex } : {})
+            },
+            displayName,
+            status: 'ready',
+            metadata: {
+                pluginId: input.executionData.pluginId,
+                exposureId: input.exposure.nodeId,
+                exposureName: input.exposure.name,
+                exporter,
+                exportType: exportConfig.type,
+                ...(arrayIndex != null ? { arrayIndex } : {})
+            }
+        });
+    };
+
     return {
         async process(input) {
             const exportConfig = input.exposure.export;
@@ -972,49 +1144,38 @@ export const createExportNodeProcessorService = (
 
             const exporter = exportConfig.exporter as ExporterName;
             const options = toStringMap(exportConfig.options);
-            const objectPath = buildObjectPath(input, exporter, exportConfig.type);
 
-            switch (exporter) {
-                case 'AtomisticExporter':
-                    await exportAtomistic(input.decodedPayload, objectPath);
-                    break;
-                case 'MeshExporter':
-                    await exportMesh(input.decodedPayload, objectPath, options as MeshExportOptions);
-                    break;
-                case 'DislocationExporter':
-                    await exportDislocation(input.decodedPayload, objectPath, options as DislocationExportOptions);
-                    break;
-                case 'ChartExporter':
-                    await exportChart(input.decodedPayload, objectPath, options as unknown as ChartExportOptions);
-                    break;
-                default:
-                    logger.warn({ exporter }, 'Unsupported export node exporter on daemon');
-                    return;
+            // ChartExporter operates on the full decoded payload, not the export key — handle separately
+            if (exporter === 'ChartExporter') {
+                const objectPath = buildObjectPath(input, exporter, exportConfig.type);
+                await exportChart(input.decodedPayload, objectPath, options as unknown as ChartExportOptions);
+                return;
             }
 
-            if (exporter !== 'ChartExporter') {
-                await daemonArtifactReporterService.reportArtifact({
-                    trajectory: input.executionData.trajectoryId,
-                    teamCluster: input.teamClusterId,
-                    analysis: input.executionData.analysisId,
-                    plugin: input.executionData.pluginId,
-                    sourceType: 'plugin-exposure',
-                    timestep: input.timestep,
-                    objectName: objectPath,
-                    storageBucket: ObjectBucketName.Models,
-                    params: {
-                        exposureId: input.exposure.nodeId
-                    },
-                    displayName: input.exposure.name,
-                    status: 'ready',
-                    metadata: {
-                        pluginId: input.executionData.pluginId,
-                        exposureId: input.exposure.nodeId,
-                        exposureName: input.exposure.name,
-                        exporter,
-                        exportType: exportConfig.type
-                    }
-                });
+            const entries = resolveExporterEntries(input.decodedPayload, exporter);
+            if (entries.length === 0) {
+                throw new Error(`${exporter} data missing from exposure payload`);
+            }
+
+            for (const { exportData, arrayIndex } of entries) {
+                const objectPath = buildObjectPath(input, exporter, exportConfig.type, arrayIndex);
+
+                switch (exporter) {
+                    case 'AtomisticExporter':
+                        await exportAtomistic(exportData, objectPath);
+                        break;
+                    case 'MeshExporter':
+                        await exportMesh(exportData, objectPath, options as MeshExportOptions);
+                        break;
+                    case 'DislocationExporter':
+                        await exportDislocation(exportData, objectPath, options as DislocationExportOptions);
+                        break;
+                    default:
+                        logger.warn({ exporter }, 'Unsupported export node exporter on daemon');
+                        return;
+                }
+
+                await reportArtifact(input, exporter, exportConfig, objectPath, arrayIndex);
             }
         }
     };

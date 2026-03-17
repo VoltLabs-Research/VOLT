@@ -25,7 +25,7 @@ export class TrajectoryGlbWorkerService {
         this.worker = this.queueService.createWorker<GlbConversionQueueJobPayload>(
             TRAJECTORY_GLB_QUEUE_NAME,
             async (jobPayload, job) => this.processJob(jobPayload, job),
-            { concurrency: concurrency ?? 3 }
+            { concurrency: concurrency ?? 2 }
         );
 
         this.worker.on('failed', (job, error) => {

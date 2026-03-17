@@ -47,7 +47,15 @@ export class AnalysisDispatchService {
             throw new Error('No items after daemon workflow planning');
         }
 
-        const jobs = this.buildJobs(input, plan.items);
+        const isBatchMode = plan.batchMode === true;
+        const jobs = isBatchMode
+            ? this.buildBatchJob(input, plan.items)
+            : this.buildJobs(input, plan.items);
+
+        const allDumpUrls = isBatchMode
+            ? plan.items.map((item) => typeof item.path === 'string' ? item.path : '').filter((url) => url.length > 0)
+            : undefined;
+
         for (const job of jobs) {
             await this.queueService.enqueue(ANALYSIS_QUEUE_NAME, {
                 ...job,
@@ -61,7 +69,12 @@ export class AnalysisDispatchService {
                     forEachNodeId: plan.forEachNodeId,
                     nodeOutputSnapshots: plan.nodeOutputSnapshots,
                     workflow: input.workflow,
-                    nestedPlugins: input.nestedPlugins
+                    nestedPlugins: input.nestedPlugins,
+                    ...(isBatchMode ? {
+                        batchMode: true,
+                        allDumpUrls,
+                        contextNodeId: plan.contextNodeId
+                    } : {})
                 }
             });
 
@@ -133,6 +146,28 @@ export class AnalysisDispatchService {
                 updatedAt: new Date().toISOString()
             };
         });
+    }
+
+    private buildBatchJob(input: AnalysisStartRequest, items: Record<string, unknown>[]): AnalysisQueueJobPayload[] {
+        return [{
+            jobId: `${input.analysisId}-batch-0`,
+            name: input.pluginDisplayName,
+            teamId: input.teamId,
+            timestep: 0,
+            status: 'queued',
+            queueType: ANALYSIS_QUEUE_NAME,
+            metadata: {
+                trajectoryId: input.trajectoryId,
+                analysisId: input.analysisId,
+                name: input.pluginDisplayName,
+                config: input.config,
+                plugin: input.pluginId,
+                totalItems: items.length,
+                batchMode: true
+            },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        }];
     }
 
     private resolveTimestep(item: Record<string, unknown>): number | undefined {

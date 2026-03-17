@@ -212,7 +212,7 @@ export const loadConfig = (): DaemonConfig => {
         ],
         queueConcurrency: {
             analysis: readNumber('ANALYSIS_CONCURRENCY', 1),
-            glbPreprocessing: readNumber('GLB_CONCURRENCY', 3),
+            glbPreprocessing: readNumber('GLB_CONCURRENCY', 2),
             rasterizer: readNumber('RASTER_CONCURRENCY', 2)
         }
     };

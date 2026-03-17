@@ -8,6 +8,7 @@ import type { GlbExporterService } from '@/modules/trajectory-native/services';
 import { FileExtractorService } from './FileExtractorService';
 import { SSHConnectionService, type SSHConnectionConfig } from './SSHConnectionService';
 import { TrajectoryParserFactory } from './TrajectoryParserFactory';
+import { isMemoryPressured } from '@/core/memory';
 import { logger } from '@/core/logger';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -15,7 +16,7 @@ import { createReadStream, createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import type { Worker } from 'bullmq';
+import { DelayedError, type Job, type Worker } from 'bullmq';
 import type { DaemonConfig } from '@/core/config';
 
 interface SSHImportJobPayload extends Record<string, unknown> {
@@ -57,7 +58,18 @@ export class SSHImportWorkerService {
             return;
         }
 
-        this.worker = this.queueService.createWorker<SSHImportJobPayload>(SSH_IMPORT_QUEUE_NAME, async (job) => {
+        this.worker = this.queueService.createWorker<SSHImportJobPayload>(SSH_IMPORT_QUEUE_NAME, async (job, bullJob) => {
+            // Memory-aware scheduling: requeue with delay if heap is under pressure
+            if (isMemoryPressured()) {
+                const delayMs = 30_000;
+                logger.warn(
+                    { trajectoryId: job.trajectoryId, delayMs },
+                    'Heap memory pressure detected — delaying SSH import job'
+                );
+                await bullJob.moveToDelayed(Date.now() + delayMs, bullJob.token);
+                throw new DelayedError();
+            }
+
             await this.processJob(job);
         });
         logger.info('SSHImportWorkerService started');

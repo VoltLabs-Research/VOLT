@@ -3,10 +3,16 @@
 /**
  * Heap-aware startup wrapper for ClusterDaemon.
  *
- * Computes --max-old-space-size dynamically at 80% of the host's total RAM,
+ * Computes --max-old-space-size dynamically at 80% of the available memory,
  * capped at a reasonable ceiling, and spawns the actual application with that flag.
- * This ensures the V8 heap limit is always proportional to available memory,
- * preventing both OOM kills (limit too high) and premature crashes (limit too low).
+ *
+ * In containerised environments (Docker / cgroup v2) `process.constrainedMemory()`
+ * returns the cgroup memory limit rather than the host's total RAM — preventing the
+ * daemon from sizing its heap beyond the container budget and getting OOM-killed.
+ * Falls back to `os.totalmem()` when running outside a cgroup.
+ *
+ * `--expose-gc` is injected so that the memory monitor can trigger manual GC cycles
+ * when heap pressure is detected (see src/core/memory.ts).
  */
 
 'use strict';
@@ -19,22 +25,34 @@ const HEAP_FRACTION = 0.80;
 const MIN_HEAP_MB = 512;
 const MAX_HEAP_MB = 16_384; // 16 GB ceiling
 
-const totalMemoryMB = Math.floor(os.totalmem() / (1024 * 1024));
+// Prefer the cgroup-aware API (Node 19.6+ / 20+); fall back to host total RAM.
+const constrainedBytes = typeof process.constrainedMemory === 'function'
+    ? process.constrainedMemory()
+    : 0;
+const effectiveBytes = constrainedBytes > 0 ? constrainedBytes : os.totalmem();
+const totalMemoryMB = Math.floor(effectiveBytes / (1024 * 1024));
 const heapMB = Math.max(MIN_HEAP_MB, Math.min(MAX_HEAP_MB, Math.floor(totalMemoryMB * HEAP_FRACTION)));
+
+const memorySource = constrainedBytes > 0 ? 'cgroup limit' : 'host total RAM';
 
 const entrypoint = path.resolve(__dirname, '..', 'dist', 'index.js');
 
 console.log(
-    `[start] Total RAM: ${totalMemoryMB} MB — setting --max-old-space-size=${heapMB} MB (${Math.round(HEAP_FRACTION * 100)}%)`
+    `[start] Memory source: ${memorySource} — ${totalMemoryMB} MB — setting --max-old-space-size=${heapMB} MB (${Math.round(HEAP_FRACTION * 100)}%)`
 );
 
-// Propagate the heap flag through NODE_OPTIONS so that the child process
-// (and any sub-processes it spawns) inherit the same limit.
+// Propagate the heap flag and --expose-gc through NODE_OPTIONS so that the child
+// process (and any sub-processes it spawns) inherit the same settings.
 const nodeOptions = process.env.NODE_OPTIONS || '';
 const hasHeapFlag = /--max[-_]old[-_]space[-_]size/.test(nodeOptions);
+const hasExposeGc = /--expose[-_]gc/.test(nodeOptions);
 
-if (!hasHeapFlag) {
-    process.env.NODE_OPTIONS = `${nodeOptions} --max-old-space-size=${heapMB}`.trim();
+const extraFlags = [];
+if (!hasHeapFlag) extraFlags.push(`--max-old-space-size=${heapMB}`);
+if (!hasExposeGc) extraFlags.push('--expose-gc');
+
+if (extraFlags.length > 0) {
+    process.env.NODE_OPTIONS = `${nodeOptions} ${extraFlags.join(' ')}`.trim();
 }
 
 // Replace the current process with node running the entrypoint.
