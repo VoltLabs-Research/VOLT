@@ -50,7 +50,17 @@ const createTauriDesktopApi = (): VoltDesktopApi => {
                 await appWindow.toggleMaximize();
             },
             close: async () => {
-                await appWindow.close();
+                try {
+                    await appWindow.close();
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : String(error);
+
+                    if (!message.includes('allow-destroy')) {
+                        throw error;
+                    }
+
+                    await appWindow.destroy();
+                }
             },
             getState: getWindowState,
             onStateChange: (callback) => {
