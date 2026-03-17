@@ -25,6 +25,8 @@ import type {
     ParsedTrajectory
 } from './NativeModuleLoader';
 
+const BUILT_IN_TRAJECTORY_PROPERTIES = new Set(['id', 'type', 'x', 'y', 'z']);
+
 const getDumpObjectKey = (trajectoryId: string, timestep: number): string => {
     return `trajectory-${trajectoryId}/timestep-${timestep}.dump.gz`;
 };
@@ -105,6 +107,83 @@ const toParsedDataResult = (result: NativeDataResult): ParsedTrajectory => {
     };
 };
 
+const hasRequestedProperty = (parsed: ParsedTrajectory, property: string): boolean => {
+    const lowerProperty = property.toLowerCase();
+
+    if (BUILT_IN_TRAJECTORY_PROPERTIES.has(lowerProperty)) {
+        return true;
+    }
+
+    return parsed.metadata.headers.includes(lowerProperty);
+};
+
+const shouldIncludeIdsForProperty = (property: string): boolean => {
+    return property.toLowerCase() === 'id';
+};
+
+const shouldRequestNativeProperty = (property: string): boolean => {
+    return !BUILT_IN_TRAJECTORY_PROPERTIES.has(property.toLowerCase());
+};
+
+const getPropertyParseOptions = (property: string): ParseOptions => {
+    const lowerProperty = property.toLowerCase();
+    const options: ParseOptions = {
+        includeIds: shouldIncludeIdsForProperty(lowerProperty),
+        properties: []
+    };
+
+    if (shouldRequestNativeProperty(lowerProperty)) {
+        options.properties = [lowerProperty];
+    }
+
+    return options;
+};
+
+const getNumericStats = (values: Float32Array): NativeStatsResult => {
+    if (values.length === 0) {
+        return {
+            min: 0,
+            max: 0
+        };
+    }
+
+    let min = values[0];
+    let max = values[0];
+
+    for (let index = 1; index < values.length; index++) {
+        const value = values[index];
+        if (value < min) {
+            min = value;
+        }
+
+        if (value > max) {
+            max = value;
+        }
+    }
+
+    return {
+        min,
+        max
+    };
+};
+
+const getUniqueNumericValues = (values: Float32Array, maxValues?: number): number[] => {
+    const limit = typeof maxValues === 'number' && maxValues > 0
+        ? maxValues
+        : Number.POSITIVE_INFINITY;
+    const uniqueValues = new Set<number>();
+
+    for (let index = 0; index < values.length; index++) {
+        uniqueValues.add(values[index]);
+
+        if (uniqueValues.size >= limit) {
+            break;
+        }
+    }
+
+    return Array.from(uniqueValues).sort((left, right) => left - right);
+};
+
 export interface TrajectoryParserService {
     getTrajectoryMetadata(input: NativeTrajectoryRequest): Promise<ParsedTrajectory['metadata']>;
     getPropertyStats(input: NativePropertyStatsRequest): Promise<NativeStatsResult>;
@@ -139,15 +218,12 @@ export const createTrajectoryParserService = (
             trajectoryId: input.trajectoryId
         });
         return this.withDumpFile(input, async (dumpPath) => {
-            const parsed = this.parseTrajectory(dumpPath, {
-                properties: []
-            });
-            const propertyIndex = parsed.metadata.headers.indexOf(input.property.toLowerCase());
-            if (propertyIndex === -1) {
+            const parsed = this.parseTrajectory(dumpPath, getPropertyParseOptions(input.property));
+            if (!hasRequestedProperty(parsed, input.property)) {
                 throw new Error(`Property '${input.property}' not found in trajectory dump`);
             }
 
-            return nativeModuleLoader.getStatsModule().getStatsForProperty(dumpPath, propertyIndex);
+            return getNumericStats(this.getPropertyValues(parsed, input.property));
         });
     },
 
@@ -158,15 +234,12 @@ export const createTrajectoryParserService = (
             trajectoryId: input.trajectoryId
         });
         return this.withDumpFile(input, async (dumpPath) => {
-            const parsed = this.parseTrajectory(dumpPath, {
-                properties: []
-            });
-            const propertyIndex = parsed.metadata.headers.indexOf(input.property.toLowerCase());
-            if (propertyIndex === -1) {
+            const parsed = this.parseTrajectory(dumpPath, getPropertyParseOptions(input.property));
+            if (!hasRequestedProperty(parsed, input.property)) {
                 return [];
             }
 
-            return nativeModuleLoader.getStatsModule().getUniqueValuesForProperty(dumpPath, propertyIndex, input.maxValues);
+            return getUniqueNumericValues(this.getPropertyValues(parsed, input.property), input.maxValues);
         });
     },
 

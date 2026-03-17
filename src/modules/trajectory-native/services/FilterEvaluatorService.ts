@@ -8,17 +8,11 @@ import {
     type NativeFilterPreviewResponse,
     type NativeParticleFilterModelRequest
 } from './NativeModuleLoader';
+import { resolveGradientType } from './property-coloring';
 import type { TrajectoryParserService } from './TrajectoryParserService';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-
-enum GradientType {
-    Viridis = 0,
-    Plasma = 1,
-    BlueRed = 2,
-    Grayscale = 3
-};
 
 const HIGHLIGHT_COLOR = [1.0, 0.2, 0.6];
 const DEFAULT_COLOR = [0.8, 0.8, 0.8];
@@ -60,22 +54,6 @@ const uploadBuffer = async (
     } finally {
         await fs.unlink(tmpPath).catch(() => {});
     }
-};
-
-const resolveGradientType = (gradientName: string): GradientType => {
-    if (gradientName === 'Plasma') {
-        return GradientType.Plasma;
-    }
-
-    if (gradientName === 'BlueRed') {
-        return GradientType.BlueRed;
-    }
-
-    if (gradientName === 'GrayScale') {
-        return GradientType.Grayscale;
-    }
-
-    return GradientType.Viridis;
 };
 
 const evaluateFilter = (values: Float32Array, operator: string, compareValue: number): { mask: Uint8Array; matchCount: number; } => {

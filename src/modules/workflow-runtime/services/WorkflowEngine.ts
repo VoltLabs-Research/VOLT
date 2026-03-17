@@ -5,11 +5,19 @@ import type { DaemonAnalysisDocument, NestedPluginDefinition, WorkflowDefinition
 
 export interface WorkflowPlanResult {
     items: Record<string, unknown>[];
-    forEachNodeId: string;
+    forEachNodeId?: string;
     nodeOutputSnapshots: Record<string, Record<string, unknown>>;
     batchMode?: boolean;
     contextNodeId?: string;
 };
+
+const PLANNING_NODE_TYPES = new Set<WorkflowNodeType>([
+    WorkflowNodeType.Modifier,
+    WorkflowNodeType.Arguments,
+    WorkflowNodeType.Context,
+    WorkflowNodeType.ForEach,
+    WorkflowNodeType.IfStatement
+]);
 
 export interface WorkflowExecutionRequest {
     workflow: WorkflowDefinition;
@@ -52,7 +60,7 @@ export class WorkflowEngine {
         let contextNodeId: string | undefined;
 
         for (const node of executionOrder) {
-            if (!hasForEachNode && node.type === WorkflowNodeType.ForEach) {
+            if (!PLANNING_NODE_TYPES.has(node.type)) {
                 continue;
             }
 
@@ -97,8 +105,7 @@ export class WorkflowEngine {
             });
 
             return {
-                items: allDumpUrls.map((url: string) => ({ path: url })),
-                forEachNodeId: '',
+                items: dumps,
                 nodeOutputSnapshots,
                 batchMode: true,
                 contextNodeId

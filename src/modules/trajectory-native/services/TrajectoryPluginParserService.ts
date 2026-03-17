@@ -8,6 +8,13 @@ import { ObjectBucketName } from '@/shared/contracts';
 type PerAtomRow = Record<string, unknown>;
 type PerAtomColumnarData = Record<string, unknown[]>;
 
+interface ExposureFetchResult {
+    exposureId: string;
+    data: Record<string, unknown>[] | null;
+};
+
+const ANALYSIS_EXPOSURE_CONCURRENCY = 4;
+
 const mergeSelectiveChunk = (
     target: Record<string, unknown> | null,
     incoming: unknown,
@@ -30,6 +37,32 @@ const mergeSelectiveChunk = (
 
     const merged = mergeChunkedValue(target, filtered);
     return isRecord(merged) ? merged : target;
+};
+
+const mapWithConcurrency = async <TInput, TOutput>(
+    items: TInput[],
+    concurrency: number,
+    mapper: (item: TInput) => Promise<TOutput>
+): Promise<TOutput[]> => {
+    if (items.length === 0) {
+        return [];
+    }
+
+    const results = new Array<TOutput>(items.length);
+    let nextIndex = 0;
+
+    const worker = async (): Promise<void> => {
+        while (nextIndex < items.length) {
+            const currentIndex = nextIndex;
+            nextIndex += 1;
+            results[currentIndex] = await mapper(items[currentIndex]);
+        }
+    };
+
+    const workerCount = Math.min(concurrency, items.length);
+    await Promise.all(Array.from({ length: workerCount }, worker));
+
+    return results;
 };
 
 export interface PluginPropertyNamesRequest {
@@ -101,15 +134,7 @@ export class TrajectoryPluginParserService {
     async discoverPerAtomPropertyNames(request: PluginPropertyNamesRequest): Promise<string[]> {
         const { trajectoryId, analysisId, exposureId } = request;
         const prefix = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/`;
-        let firstObjectName: string | null = null;
-
-        const objects = await this.minioService.listObjects(ObjectBucketName.Plugins, prefix);
-        for (const objectName of objects) {
-            if (objectName.endsWith('.msgpack')) {
-                firstObjectName = objectName;
-                break;
-            }
-        }
+        const [firstObjectName] = await this.minioService.listObjects(ObjectBucketName.Plugins, prefix, 1);
 
         if (!firstObjectName) return [];
 
@@ -234,6 +259,7 @@ export class TrajectoryPluginParserService {
     async getAnalysisAllPerAtomData(request: PluginAnalysisAllAtomsRequest): Promise<PluginAnalysisAllAtomsResponse> {
         const { trajectoryId, analysisId, timestep } = request;
         const analysisPrefix = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`;
+        const timestepSuffix = `/timestep-${timestep}.msgpack`;
 
         const allObjects = await this.minioService.listObjects(ObjectBucketName.Plugins, analysisPrefix);
 
@@ -241,6 +267,10 @@ export class TrajectoryPluginParserService {
         // Path format: plugins/trajectory-{id}/analysis-{id}/{exposureId}/timestep-{ts}.msgpack
         const exposureIds = new Set<string>();
         for (const objectKey of allObjects) {
+            if (!objectKey.endsWith(timestepSuffix)) {
+                continue;
+            }
+
             const relativePath = objectKey.slice(analysisPrefix.length);
             const slashIndex = relativePath.indexOf('/');
             if (slashIndex > 0) {
@@ -252,38 +282,56 @@ export class TrajectoryPluginParserService {
             return { propertyNames: [], atoms: [] };
         }
 
+        const exposureFetches = await mapWithConcurrency(
+            Array.from(exposureIds),
+            ANALYSIS_EXPOSURE_CONCURRENCY,
+            async (exposureId): Promise<ExposureFetchResult> => {
+                try {
+                    return {
+                        exposureId,
+                        data: await this.getModifierAnalysisData({
+                            trajectoryId,
+                            analysisId,
+                            exposureId,
+                            timestep
+                        })
+                    };
+                } catch {
+                    return {
+                        exposureId,
+                        data: null
+                    };
+                }
+            }
+        );
+
         const exposureResults: ExposureData[] = [];
 
-        for (const exposureId of exposureIds) {
-            try {
-                const data = await this.getModifierAnalysisData({
-                    trajectoryId,
-                    analysisId,
-                    exposureId,
-                    timestep
-                });
-
-                if (!data || data.length === 0) continue;
-
-                // Extract property names from already-normalized rows (avoids double-normalization)
-                const keys = new Set<string>();
-                for (const row of data) {
-                    for (const key of Object.keys(row)) {
-                        if (key !== 'id') keys.add(key);
-                    }
-                }
-
-                const propNames = Array.from(keys);
-                if (propNames.length === 0) continue;
-
-                exposureResults.push({
-                    exposureId,
-                    propertyNames: propNames,
-                    rows: data
-                });
-            } catch {
+        for (const exposureFetch of exposureFetches) {
+            const data = exposureFetch.data;
+            if (!data || data.length === 0) {
                 continue;
             }
+
+            const keys = new Set<string>();
+            for (const row of data) {
+                for (const key of Object.keys(row)) {
+                    if (key !== 'id') {
+                        keys.add(key);
+                    }
+                }
+            }
+
+            const propNames = Array.from(keys);
+            if (propNames.length === 0) {
+                continue;
+            }
+
+            exposureResults.push({
+                exposureId: exposureFetch.exposureId,
+                propertyNames: propNames,
+                rows: data
+            });
         }
 
         if (exposureResults.length === 0) {
