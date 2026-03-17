@@ -9,6 +9,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
+import { randomUUID } from 'node:crypto';
 import type { IScriptingSessionLock } from '@modules/scripting/domain/port/IScriptingSessionLock';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 import type {
@@ -194,9 +195,14 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             return touched || existing;
         }
 
-        const templateRaw = await this.scriptingSessionOrchestrator.resolveDefaultNotebookTemplateContent({
-            trajectoryId: input.trajectoryId
-        });
+        const [templateRaw, ovitoTemplateRaw] = await Promise.all([
+            this.scriptingSessionOrchestrator.resolveDefaultNotebookTemplateContent({
+                trajectoryId: input.trajectoryId
+            }),
+            this.scriptingSessionOrchestrator.resolveOvitoNotebookTemplateContent({
+                trajectoryId: input.trajectoryId
+            })
+        ]);
         const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(
             input.teamId,
             input.teamClusterId
@@ -215,7 +221,25 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             updatedAt: now
         };
 
-        return this.scriptingNotebookRepository.create(createData);
+        const ovitoCreateData: ScriptingNotebookProps = {
+            team: input.teamId,
+            teamCluster: teamClusterId,
+            title: 'OVITO Usage Example',
+            notebookPath: buildScriptingNotebookPath(randomUUID()),
+            trajectory: input.trajectoryId,
+            createdBy: userId,
+            content: parseScriptingNotebookContent(ovitoTemplateRaw),
+            lastOpenedAt: now,
+            createdAt: now,
+            updatedAt: now
+        };
+
+        const [notebook] = await Promise.all([
+            this.scriptingNotebookRepository.create(createData),
+            this.scriptingNotebookRepository.create(ovitoCreateData)
+        ]);
+
+        return notebook;
     }
 
     private async resolveNotebookTeamClusterId(
