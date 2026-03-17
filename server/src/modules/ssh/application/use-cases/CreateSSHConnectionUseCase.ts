@@ -39,7 +39,7 @@ export class CreateSSHConnectionUseCase implements IUseCase<CreateSSHConnectionI
 
         const sshConnection = SSHConnection.create('', {
             ...input,
-            encryptedPassword: this.sshCredentialsCipher.encrypt(input.password)
+            encryptedPassword: await this.sshCredentialsCipher.encrypt(input.password)
         });
 
         if (!sshConnection) {

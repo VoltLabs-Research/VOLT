@@ -50,7 +50,7 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
             ));
         }
 
-        const encryptedApiKey = this.secretService.resolveEncryptedApiKey(
+        const encryptedApiKey = await this.secretService.resolveEncryptedApiKey(
             input.apiKey,
             existing.props.encryptedApiKey
         );

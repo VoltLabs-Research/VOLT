@@ -1,5 +1,6 @@
 import { UseModifierBaseOptions } from './use-modifier-base';
 import useModifierBase from './use-modifier-base';
+import { parseNumericInput } from '../utilities/parse-numeric-input';
 
 import { useApplyFilterMutation, uniqueValuesQuery, usePreviewFilterMutation } from '@/modules/trajectory/hooks/particle-filter/queries';
 import { ErrorSurface, isAccessDeniedError, normalizeError, reportError } from '@/shared/errors/core';
@@ -74,6 +75,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
 
     const [operator, setOperator] = useState<FilterOperator>(FilterOperator.Equal);
     const [value, setValue] = useState(0);
+    const [valueInput, setValueInput] = useState('0');
     const [action, setAction] = useState<FilterAction>(FilterAction.Delete);
     const [previewResult, setPreviewResult] = useState<PreviewResult | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -112,6 +114,16 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
     const isLoadingPreview = previewMutation.isPending;
     const isApplying = applyFilterMutation.isPending;
 
+    const handleValueChange = useCallback((nextValue: string) => {
+        setValueInput(nextValue);
+        setError(null);
+
+        const parsedValue = parseNumericInput(nextValue);
+        if (parsedValue !== null) {
+            setValue(parsedValue);
+        }
+    }, []);
+
     const handlePropertyChange = useCallback((newValue: string) => {
         baseHandlePropertyChange(newValue);
         setPreviewResult(null);
@@ -146,6 +158,12 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
             return;
         }
 
+        const parsedValue = parseNumericInput(valueInput);
+        if (parsedValue === null) {
+            setError('Enter a valid numeric value');
+            return;
+        }
+
         const selectedOption = propertyOptions.find((opt) => opt.value === property);
         if (selectedOption?.exposureId && !analysisId) {
             setError('Analysis required for modifier properties');
@@ -164,7 +182,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 timestep: currentTimestep,
                 property,
                 operator,
-                value,
+                value: parsedValue,
                 exposureId: normalizedExposureId
             });
 
@@ -174,7 +192,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 filterParams: {
                     property,
                     operator,
-                    value,
+                    value: parsedValue,
                     exposureId: normalizedExposureId
                 }
             });
@@ -185,7 +203,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 fallbackTitle: 'Preview failed'
             }).title);
         }
-    }, [trajectoryId, analysisId, currentTimestep, property, operator, value, exposureId, propertyOptions, previewMutation]);
+    }, [trajectoryId, analysisId, currentTimestep, property, operator, valueInput, exposureId, propertyOptions, previewMutation]);
 
     const handleApplyAction = useCallback(async () => {
         if (!previewResult || !trajectoryId || currentTimestep === undefined) {
@@ -251,8 +269,12 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
     }, [previewResult]);
 
     const canPreview = useMemo(() => {
-        return !isLoadingPreview && !isApplying && !!property && !isLoadingProperties;
-    }, [isLoadingPreview, isApplying, property, isLoadingProperties]);
+        return !isLoadingPreview
+            && !isApplying
+            && !!property
+            && !isLoadingProperties
+            && parseNumericInput(valueInput) !== null;
+    }, [isLoadingPreview, isApplying, property, isLoadingProperties, valueInput]);
 
     return {
         property,
@@ -262,7 +284,8 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         operator,
         setOperator,
         value,
-        setValue,
+        valueInput,
+        setValue: handleValueChange,
         action,
         setAction,
         valueSuggestions,

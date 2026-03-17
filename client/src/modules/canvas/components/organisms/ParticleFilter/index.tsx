@@ -52,8 +52,8 @@ interface FilterFormViewProps {
     onPropertyChange: (value: string) => void;
     operator: FilterOperator;
     setOperator: (operator: FilterOperator) => void;
-    value: number;
-    setValue: (value: number) => void;
+    valueInput: string;
+    setValue: (value: string) => void;
     valueSuggestions: number[];
     onFetchSuggestions: () => void;
     isLoadingSuggestions: boolean;
@@ -138,7 +138,7 @@ const FilterFormView = ({
     onPropertyChange,
     operator,
     setOperator,
-    value,
+    valueInput,
     setValue,
     valueSuggestions,
     onFetchSuggestions,
@@ -188,12 +188,13 @@ const FilterFormView = ({
                 <FormFieldRHF
                     fieldKey="value"
                     fieldType="input"
-                    onFieldChange={(_, nextValue) => setValue(Number(nextValue))}
-                    fieldValue={value}
+                    onFieldChange={(_, nextValue) => setValue(String(nextValue))}
+                    fieldValue={valueInput}
                     label="Value"
                     suggestions={valueSuggestions}
                     onFetchSuggestions={onFetchSuggestions}
                     isLoading={isLoadingSuggestions}
+                    inputProps={{ inputMode: 'decimal' }}
                     variant="canvas"
                 />
 
@@ -226,7 +227,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
         handlePropertyChange,
         operator,
         setOperator,
-        value,
+        valueInput,
         setValue,
         action,
         setAction,
@@ -269,7 +270,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
             onPropertyChange={handlePropertyChange}
             operator={operator}
             setOperator={setOperator}
-            value={value}
+            valueInput={valueInput}
             setValue={setValue}
             valueSuggestions={valueSuggestions}
             onFetchSuggestions={fetchValueSuggestions}

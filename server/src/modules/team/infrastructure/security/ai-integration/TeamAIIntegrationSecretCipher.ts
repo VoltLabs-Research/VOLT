@@ -4,11 +4,11 @@ import { injectable } from 'tsyringe';
 
 @injectable()
 export default class TeamAIIntegrationSecretCipher implements ITeamAIIntegrationSecretCipher {
-    encrypt(value: string): string {
+    async encrypt(value: string): Promise<string> {
         return encrypt(value);
     }
 
-    decrypt(value: string): string {
+    async decrypt(value: string): Promise<string> {
         return decrypt(value);
     }
 };

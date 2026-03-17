@@ -1,5 +1,6 @@
 import { UseModifierBaseOptions } from './use-modifier-base';
 import useModifierBase from './use-modifier-base';
+import { parseNumericInput } from '../utilities/parse-numeric-input';
 import { isAccessDeniedError } from '@/shared/errors/core';
 
 import { useApplyColorCodingMutation, colorCodingStatsQuery } from '@/modules/trajectory/hooks/color-coding/queries';
@@ -27,11 +28,41 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
     const applyMutation = useApplyColorCodingMutation();
 
     const [startValue, setStartValue] = useState(0);
+    const [startValueInput, setStartValueInput] = useState('0');
     const [endValue, setEndValue] = useState(0);
+    const [endValueInput, setEndValueInput] = useState('0');
     const [gradient, setGradient] = useState<ColorGradient>('Viridis');
     const [automaticRange, setAutomaticRange] = useState(true);
     const [symmetricRange, setSymmetricRange] = useState(true);
     const [isApplying, setIsApplying] = useState(false);
+
+    const syncStartValue = useCallback((nextValue: number) => {
+        setStartValue(nextValue);
+        setStartValueInput(String(nextValue));
+    }, []);
+
+    const syncEndValue = useCallback((nextValue: number) => {
+        setEndValue(nextValue);
+        setEndValueInput(String(nextValue));
+    }, []);
+
+    const handleStartValueChange = useCallback((nextValue: string) => {
+        setStartValueInput(nextValue);
+
+        const parsedValue = parseNumericInput(nextValue);
+        if (parsedValue !== null) {
+            setStartValue(parsedValue);
+        }
+    }, []);
+
+    const handleEndValueChange = useCallback((nextValue: string) => {
+        setEndValueInput(nextValue);
+
+        const parsedValue = parseNumericInput(nextValue);
+        if (parsedValue !== null) {
+            setEndValue(parsedValue);
+        }
+    }, []);
 
     const selectedOption = useMemo(() =>
         propertyOptions.find((opt) => opt.value === property),
@@ -58,10 +89,10 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
 
     useEffect(() => {
         if (statsQuery.data) {
-            setStartValue(statsQuery.data.min);
-            setEndValue(statsQuery.data.max);
+            syncStartValue(statsQuery.data.min);
+            syncEndValue(statsQuery.data.max);
         }
-    }, [statsQuery.data]);
+    }, [statsQuery.data, syncEndValue, syncStartValue]);
 
     const applyColorCoding = useCallback(async () => {
         if (!trajectoryId || currentTimestep === undefined || !property) return;
@@ -120,10 +151,14 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
         }
         const limit = Math.max(Math.abs(startValue), Math.abs(endValue));
         if (startValue !== -limit || endValue !== limit) {
-            setStartValue(-limit);
-            setEndValue(limit);
+            syncStartValue(-limit);
+            syncEndValue(limit);
         }
-    }, [symmetricRange, endValue, startValue, automaticRange]);
+    }, [symmetricRange, endValue, startValue, automaticRange, syncEndValue, syncStartValue]);
+
+    const hasValidRange = useMemo(() => {
+        return parseNumericInput(startValueInput) !== null && parseNumericInput(endValueInput) !== null;
+    }, [startValueInput, endValueInput]);
 
     const gradientOptions = useMemo(() =>
         COLOR_GRADIENTS.map((color) => ({
@@ -132,8 +167,8 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
         })), []);
 
     const canApply = useMemo(() =>
-        !isLoadingProperties && !isFetchingStats && !isApplying,
-        [isLoadingProperties, isFetchingStats, isApplying]);
+        !isLoadingProperties && !isFetchingStats && !isApplying && hasValidRange,
+        [isLoadingProperties, isFetchingStats, isApplying, hasValidRange]);
 
     return {
         property,
@@ -144,9 +179,11 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
         setGradient,
         gradientOptions,
         startValue,
-        setStartValue,
+        startValueInput,
+        setStartValue: handleStartValueChange,
         endValue,
-        setEndValue,
+        endValueInput,
+        setEndValue: handleEndValueChange,
         automaticRange,
         setAutomaticRange,
         symmetricRange,

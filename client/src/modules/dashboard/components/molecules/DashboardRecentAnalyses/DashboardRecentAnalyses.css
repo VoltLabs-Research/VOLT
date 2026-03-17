@@ -27,10 +27,6 @@
     background: var(--color-surface-2);
 }
 
-.dashboard-recent-analyses-list {
-    gap: 0.25rem;
-}
-
 .dashboard-recent-analyses-item {
     cursor: pointer;
     background: none;

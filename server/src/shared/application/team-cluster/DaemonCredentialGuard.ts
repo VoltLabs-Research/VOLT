@@ -31,7 +31,7 @@ export default class DaemonCredentialGuard {
         const teamCluster = await this.requireSensitiveCluster(teamClusterId);
         const persistedDaemonPassword = this.requireEncryptedDaemonPassword(teamCluster);
 
-        if (!secureCompare(this.teamClusterCredentialsCipher.decrypt(persistedDaemonPassword), daemonPassword)) {
+        if (!secureCompare(await this.teamClusterCredentialsCipher.decrypt(persistedDaemonPassword), daemonPassword)) {
             throw ApplicationError.unauthorized('TeamCluster::DaemonUnauthorized', 'Invalid daemon credentials');
         }
 
@@ -59,11 +59,11 @@ export default class DaemonCredentialGuard {
         return teamCluster;
     }
 
-    getDecryptedDaemonPassword(teamCluster: TeamCluster): string {
+    async getDecryptedDaemonPassword(teamCluster: TeamCluster): Promise<string> {
         return this.teamClusterCredentialsCipher.decrypt(this.requireEncryptedDaemonPassword(teamCluster));
     }
 
-    getDecryptedServiceCredentials(teamCluster: TeamCluster): DecryptedTeamClusterServiceCredentials {
+    async getDecryptedServiceCredentials(teamCluster: TeamCluster): Promise<DecryptedTeamClusterServiceCredentials> {
         const minioUsername = teamCluster.props.services.minio.username;
         const minioPassword = teamCluster.props.services.minio.password;
         const redisUsername = teamCluster.props.services.redis.username;
@@ -77,13 +77,13 @@ export default class DaemonCredentialGuard {
         }
 
         return {
-            minioUsername: this.teamClusterCredentialsCipher.decrypt(minioUsername),
-            minioPassword: this.teamClusterCredentialsCipher.decrypt(minioPassword),
-            redisUsername: this.teamClusterCredentialsCipher.decrypt(redisUsername),
-            redisPassword: this.teamClusterCredentialsCipher.decrypt(redisPassword),
-            mongodbUsername: this.teamClusterCredentialsCipher.decrypt(mongodbUsername),
-            mongodbPassword: this.teamClusterCredentialsCipher.decrypt(mongodbPassword),
-            daemonPassword: this.teamClusterCredentialsCipher.decrypt(daemonPassword)
+            minioUsername: await this.teamClusterCredentialsCipher.decrypt(minioUsername),
+            minioPassword: await this.teamClusterCredentialsCipher.decrypt(minioPassword),
+            redisUsername: await this.teamClusterCredentialsCipher.decrypt(redisUsername),
+            redisPassword: await this.teamClusterCredentialsCipher.decrypt(redisPassword),
+            mongodbUsername: await this.teamClusterCredentialsCipher.decrypt(mongodbUsername),
+            mongodbPassword: await this.teamClusterCredentialsCipher.decrypt(mongodbPassword),
+            daemonPassword: await this.teamClusterCredentialsCipher.decrypt(daemonPassword)
         };
     }
 

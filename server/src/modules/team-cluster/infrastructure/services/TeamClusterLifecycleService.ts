@@ -96,7 +96,7 @@ export default class TeamClusterLifecycleService {
         daemonPassword: string;
     }> {
         const teamCluster = await this.daemonCredentialGuard.requireByEnrollment(teamClusterId, enrollmentToken);
-        const daemonPassword = this.daemonCredentialGuard.getDecryptedDaemonPassword(teamCluster);
+        const daemonPassword = await this.daemonCredentialGuard.getDecryptedDaemonPassword(teamCluster);
         const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
             status: TeamClusterStatus.HealthcheckReceived,
             installedVersion,

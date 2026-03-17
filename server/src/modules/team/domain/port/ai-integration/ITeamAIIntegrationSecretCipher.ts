@@ -1,4 +1,4 @@
 export interface ITeamAIIntegrationSecretCipher {
-    encrypt(value: string): string;
-    decrypt(value: string): string;
+    encrypt(value: string): Promise<string>;
+    decrypt(value: string): Promise<string>;
 };

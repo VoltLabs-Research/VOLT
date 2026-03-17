@@ -16,12 +16,12 @@ import { inject, injectable } from 'tsyringe';
 import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 
-const decryptRequiredValue = (
+const decryptRequiredValue = async (
     value: string | undefined,
     teamClusterId: string,
     field: string,
     teamClusterCredentialsCipher: ITeamClusterCredentialsCipher
-): string => {
+): Promise<string> => {
     if (!value) {
         throw ApplicationError.internalServerError(`Missing sensitive field ${field} for team cluster ${teamClusterId}`);
     }
@@ -68,13 +68,13 @@ export default class RevealTeamClusterCredentialsUseCase implements IUseCase<Rev
         const revealedServices: TeamClusterCredentialServicesDTO = {
             minio: {
                 port: services.minio.port,
-                username: decryptRequiredValue(
+                username: await decryptRequiredValue(
                     services.minio.username,
                     teamCluster._id,
                     'services.minio.username',
                     this.teamClusterCredentialsCipher
                 ),
-                password: decryptRequiredValue(
+                password: await decryptRequiredValue(
                     services.minio.password,
                     teamCluster._id,
                     'services.minio.password',
@@ -83,13 +83,13 @@ export default class RevealTeamClusterCredentialsUseCase implements IUseCase<Rev
             },
             redis: {
                 port: services.redis.port,
-                username: decryptRequiredValue(
+                username: await decryptRequiredValue(
                     services.redis.username,
                     teamCluster._id,
                     'services.redis.username',
                     this.teamClusterCredentialsCipher
                 ),
-                password: decryptRequiredValue(
+                password: await decryptRequiredValue(
                     services.redis.password,
                     teamCluster._id,
                     'services.redis.password',
@@ -98,13 +98,13 @@ export default class RevealTeamClusterCredentialsUseCase implements IUseCase<Rev
             },
             mongodb: {
                 port: services.mongodb.port,
-                username: decryptRequiredValue(
+                username: await decryptRequiredValue(
                     services.mongodb.username,
                     teamCluster._id,
                     'services.mongodb.username',
                     this.teamClusterCredentialsCipher
                 ),
-                password: decryptRequiredValue(
+                password: await decryptRequiredValue(
                     services.mongodb.password,
                     teamCluster._id,
                     'services.mongodb.password',
@@ -113,7 +113,7 @@ export default class RevealTeamClusterCredentialsUseCase implements IUseCase<Rev
             },
             daemon: {
                 port: services.daemon.port,
-                password: decryptRequiredValue(
+                password: await decryptRequiredValue(
                     services.daemon.password,
                     teamCluster._id,
                     'services.daemon.password',
