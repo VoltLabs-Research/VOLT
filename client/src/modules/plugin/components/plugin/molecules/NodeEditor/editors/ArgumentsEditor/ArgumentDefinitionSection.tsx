@@ -1,5 +1,8 @@
 import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import { createDefaultArgumentDefinition } from '@/modules/plugin/utilities/plugin/argument-values';
+import {
+    createDefaultArgumentDefinition,
+    isPluginReferenceArgumentType
+} from '@/modules/plugin/utilities/plugin/argument-values';
 import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
 import Button from '@/shared/presentation/components/Button';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
@@ -140,12 +143,16 @@ const ArgumentDefinitionSection = ({
                     nextArgument.listArguments = [];
                 }
 
-                if (nextType === ArgumentType.PLUGIN_CONFIG) {
+                if (isPluginReferenceArgumentType(nextType)) {
                     delete nextArgument.options;
                     delete nextArgument.min;
                     delete nextArgument.max;
                     delete nextArgument.step;
                     delete nextArgument.listArguments;
+                }
+
+                if (!isPluginReferenceArgumentType(nextType)) {
+                    delete nextArgument.pluginReferenceFilter;
                 }
 
                 if (nextType !== ArgumentType.NUMBER) {
@@ -370,7 +377,31 @@ const ArgumentDefinitionSection = ({
                         </Container>
                     )}
 
-                    {argument.type !== ArgumentType.LIST && argument.type !== ArgumentType.PLUGIN_CONFIG && (
+                    {isPluginReferenceArgumentType(argument.type) && (
+                        <FormFieldRHF
+                            variant='inline'
+                            label='Allowed Plugin IDs'
+                            name={`plugin-reference-filter-${level}-${index}`}
+                            fieldType='input'
+                            value={(argument.pluginReferenceFilter ?? []).join(',')}
+                            onChange={(event) => {
+                                const pluginReferenceFilter = event.target.value
+                                    .split(',')
+                                    .map((value) => value.trim())
+                                    .filter(Boolean);
+
+                                handleArgumentChange(index, {
+                                    ...argument,
+                                    pluginReferenceFilter: pluginReferenceFilter.length > 0
+                                        ? pluginReferenceFilter
+                                        : undefined
+                                });
+                            }}
+                            placeholder='plugin-id-1,plugin-id-2'
+                        />
+                    )}
+
+                    {argument.type !== ArgumentType.LIST && !isPluginReferenceArgumentType(argument.type) && (
                         <FormFieldRHF
                             variant='inline'
                             label='Default Value'

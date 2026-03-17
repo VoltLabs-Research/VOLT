@@ -1,6 +1,10 @@
 import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
-import type { IPluginExecutionRouter, RoutePluginExecutionInput } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
+import type {
+    IPluginExecutionRouter,
+    RoutePluginExecutionInput,
+    PluginReferenceExecutionRequest
+} from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
@@ -90,6 +94,8 @@ interface NestedPluginDefinition {
     workflow: WorkflowSerializable;
 };
 
+interface DaemonPluginReferenceExecutionRequest extends PluginReferenceExecutionRequest {}
+
 @injectable()
 export default class PluginExecutionRouter implements IPluginExecutionRouter {
     constructor(
@@ -113,6 +119,11 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             pluginId: dependency.id,
             workflow: dependency.props.workflow.props as unknown as WorkflowSerializable
         }));
+        const pluginReferenceExecutions: DaemonPluginReferenceExecutionRequest[] = input.pluginReferenceExecutions.map((reference) => ({
+            referencePath: reference.referencePath,
+            pluginId: reference.pluginId,
+            config: reference.config
+        }));
 
         const response = await this.teamClusterDaemonClient.command<DaemonAnalysisStartResponse>(input.teamClusterId, 'analysis.start', {
             analysis: serializeAnalysis(input.analysis, input.trajectoryName),
@@ -126,6 +137,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             trajectoryFrames: input.trajectoryFrames,
             workflow: input.plugin.props.workflow.props as unknown as WorkflowSerializable,
             nestedPlugins,
+            pluginReferenceExecutions,
             config: input.config,
             selectedFrameOnly: input.selectedFrameOnly,
             selectedTimesteps: input.selectedTimesteps,

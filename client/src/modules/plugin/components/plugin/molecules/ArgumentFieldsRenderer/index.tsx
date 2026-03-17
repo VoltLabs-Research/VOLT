@@ -3,7 +3,8 @@ import {
     coerceArgumentInputValue,
     createDefaultListItem,
     getListArgumentValue,
-    getPrimitiveArgumentFieldValue
+    getPrimitiveArgumentFieldValue,
+    isPluginReferenceArgumentType
 } from '@/modules/plugin/utilities/plugin/argument-values';
 import PluginConfigField from '@/modules/plugin/components/plugin/molecules/PluginConfigField';
 import Button from '@/shared/presentation/components/Button';
@@ -183,7 +184,7 @@ const ArgumentFieldsRenderer = ({
         const argumentValue = values[argument.argument];
         const fieldKey = `${path}.${argument.argument}.${index}`;
 
-        if (argument.type === ArgumentType.PLUGIN_CONFIG) {
+        if (isPluginReferenceArgumentType(argument.type)) {
             return (
                 <PluginConfigField
                     key={fieldKey}

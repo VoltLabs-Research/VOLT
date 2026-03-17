@@ -216,6 +216,10 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             selectedTimesteps,
             !hasSelectedTimestepsCollision
         );
+        const pluginReferenceExecutions = this.pluginDependencyResolverService.getArgumentPluginReferenceExecutions(
+            plugin,
+            analysisConfig
+        );
         const dependencyResolution = await this.pluginDependencyResolverService.collectTransitivePublishedDependencies(plugin);
         if (dependencyResolution.errors.length) {
             return Result.fail(ApplicationError.badRequest(
@@ -223,6 +227,13 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
                 dependencyResolution.errors.join('; ')
             ));
         }
+        const runtimePluginIds = Array.from(new Set(pluginReferenceExecutions.map((reference) => reference.pluginId)));
+        const runtimePlugins = runtimePluginIds.length > 0
+            ? await this.pluginRepo.findByIds(runtimePluginIds)
+            : [];
+        const allDependencies = Array.from(new Map(
+            [...dependencyResolution.dependencies, ...runtimePlugins].map((candidate) => [candidate.id, candidate])
+        ).values());
 
         await this.eventBus.publish(new PluginExecutionRequestEvent({
             pluginId: plugin._id,
@@ -265,7 +276,8 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             trajectoryFrames: trajectory.props.frames,
             teamId: input.teamId,
             plugin,
-            pluginDependencies: dependencyResolution.dependencies,
+            pluginDependencies: allDependencies,
+            pluginReferenceExecutions,
             config: analysisConfig,
             selectedFrameOnly: input.selectedFrameOnly,
             selectedTimesteps,

@@ -35,6 +35,9 @@ export const ArgumentDefinitionSchema = new Schema({
         type: Schema.Types.Mixed
     },
     options: [ArgumentOptionSchema],
+    pluginReferenceFilter: [{
+        type: String
+    }],
     min: {
         type: Number
     },
