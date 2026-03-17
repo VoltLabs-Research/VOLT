@@ -33,7 +33,6 @@
 }
 
 .workflow-node {
-    background-color: var(--color-surface-1);
     padding: 1rem 1.5rem;
     max-width: 300px;
     transition: border-color 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;

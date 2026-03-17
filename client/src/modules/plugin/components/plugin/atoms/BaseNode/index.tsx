@@ -121,7 +121,7 @@ const BaseNode = ({
                 </span>
             )}
 
-            <Container className={`p-relative b-soft radius-sm workflow-node ${selected ? 'workflow-node--selected' : ''} ${debugClass}`}>
+            <Container className={`p-relative b-soft radius-sm workflow-node glass-bg ${selected ? 'workflow-node--selected' : ''} ${debugClass}`}>
                 {config.inputs > 0 && (
                     <Handle type='target' position={Position.Left} id='input' />
                 )}

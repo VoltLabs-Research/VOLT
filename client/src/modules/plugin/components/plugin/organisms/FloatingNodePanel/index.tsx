@@ -81,7 +81,7 @@ const FloatingNodePanel = () => {
             {liveSelectedNode && config && position && (
                 <motion.div
                     ref={panelRef}
-                    className='floating-node-panel p-absolute overflow-hidden card-elevated d-flex column'
+                    className='floating-node-panel p-absolute overflow-hidden glass-bg d-flex column'
                     style={{ top: position.top, right: position.right }}
                     variants={panelVariants}
                     initial='hidden'
