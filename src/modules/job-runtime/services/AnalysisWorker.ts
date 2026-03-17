@@ -1,6 +1,6 @@
 import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
-import { isMemoryPressured } from '@/core/memory';
+import { isMemoryPressured, forceGC } from '@/core/memory';
 import { ANALYSIS_QUEUE_NAME } from '@/modules/platform/services';
 import { MinioService } from '@/modules/platform/services';
 import { RedisConnectionService } from '@/modules/platform/services';
@@ -452,6 +452,20 @@ export class AnalysisWorker {
             await bullJob.updateProgress(70);
 
             for (const exposure of executionData.exposures) {
+                // Memory-aware scheduling between exposures: if heap is above
+                // 75 % after a previous exposure, force GC and wait before
+                // starting the next one to avoid compounding allocations.
+                if (isMemoryPressured()) {
+                    logger.warn(
+                        { jobId: job.jobId, exposure: exposure.name },
+                        'Heap pressure detected between exposures — forcing GC and yielding'
+                    );
+                    forceGC();
+                    // Yield to the event loop so V8 can finish sweeping before
+                    // the next heavy allocation.
+                    await new Promise((resolve) => setImmediate(resolve));
+                }
+
                 const exposureStartedAt = Date.now();
                 logger.info(
                     {
@@ -479,6 +493,11 @@ export class AnalysisWorker {
                     },
                     'Completed exposure result processing'
                 );
+
+                // Always force GC after each exposure to reclaim decoded
+                // msgpack data, typed arrays, and intermediate objects before
+                // the next exposure starts.
+                forceGC();
             }
 
             logMemoryUsage('after-result-processing', job.jobId);

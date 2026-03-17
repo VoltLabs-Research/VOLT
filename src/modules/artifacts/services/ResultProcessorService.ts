@@ -1,5 +1,6 @@
 import { AnalysisExposureDefinition, type AnalysisJobExecutionData } from '@/shared/contracts';
 import { logger } from '@/core/logger';
+import { forceGC } from '@/core/memory';
 import type { MinioService } from '@/modules/platform/services';
 import type { PluginListingRepository } from '../repositories/PluginListingRepository';
 import type { ExportNodeProcessorService } from './ExportNodeProcessorService';
@@ -17,6 +18,13 @@ const LISTING_KEYS = new Set(['main_listing', 'sub_listings']);
 
 /** Keys to keep during export-only decode pass. */
 const EXPORT_KEY_PREFIX = 'export';
+
+/**
+ * Maximum number of sub-listing documents to insert into MongoDB in a single
+ * `insertMany` call.  Keeps peak memory bounded when sub-listings contain
+ * hundreds of thousands of rows.
+ */
+const SUB_LISTING_BATCH_SIZE = 2_000;
 
 const logMemoryUsage = (context: string): void => {
     const usage = process.memoryUsage();
@@ -36,22 +44,25 @@ const shouldIgnoreValue = (value: unknown): boolean => {
     return Array.isArray(value) && value.length >= 1 && Array.isArray(value[0]);
 };
 
-const cleanSubListingRows = (rawRows: Array<Record<string, unknown>>): Array<Record<string, unknown>> => {
-    if (rawRows.length === 0) {
-        return [];
+/**
+ * Builds a single cleaned sub-listing document ready for MongoDB insertion,
+ * filtering out columns whose first-row value is a nested array (large binary
+ * data that should not be stored in listings).
+ *
+ * This replaces the old `cleanSubListingRows` which created a full copy of
+ * every row — now we build the document wrapper and the cleaned row in one step,
+ * eliminating the intermediate `cleanedRows` array entirely.
+ */
+const buildSubListingDocument = (
+    rawRow: Record<string, unknown>,
+    validKeys: string[],
+    shared: Record<string, unknown>
+): Record<string, unknown> => {
+    const cleaned: Record<string, unknown> = {};
+    for (const key of validKeys) {
+        cleaned[key] = rawRow[key];
     }
-
-    const firstRow = rawRows[0];
-    const validKeys = Object.keys(firstRow).filter((key) => !shouldIgnoreValue(firstRow[key]));
-
-    return rawRows.map((rawRow) => {
-        const cleaned: Record<string, unknown> = {};
-        for (const key of validKeys) {
-            cleaned[key] = rawRow[key];
-        }
-
-        return cleaned;
-    });
+    return { ...shared, row: cleaned };
 };
 
 const mergeSelectiveChunk = (
@@ -92,12 +103,26 @@ async function* decodeMultiStream(src: AsyncIterable<Uint8Array | Buffer>): Asyn
 }
 
 /**
- * PASS 1 — Listing decode.
- * Streams the msgpack file and only materializes `main_listing` and `sub_listings`.
- * All other keys (export data, per-atom-properties, etc.) are discarded during decode,
- * so they never occupy heap space.
+ * Single-pass decode — reads the msgpack file ONCE, extracting both listing
+ * keys (`main_listing`, `sub_listings`) and export keys (`export`/`export.*`)
+ * in a single streaming pass.
+ *
+ * Previous implementation decoded the same file twice (once for listings, once
+ * for exports), each time fully materializing every key before filtering.
+ * This caused ~2x memory amplification since `@msgpack/msgpack`'s
+ * `Decoder.decodeStream` materializes each top-level message as a complete JS
+ * object before yielding — so "selective" filtering only discards keys *after*
+ * they've already been allocated on the V8 heap.
+ *
+ * With a single pass we still pay the per-message materialization cost, but
+ * only once instead of twice.  The returned `listing` and `exportData` are the
+ * *only* surviving references; everything else from each decoded message is
+ * eligible for GC as soon as the loop iteration completes.
  */
-async function readListingPayload(filePath: string): Promise<Record<string, unknown> | null> {
+async function readPayload(filePath: string): Promise<{
+    listing: Record<string, unknown> | null;
+    exportData: Record<string, unknown> | null;
+}> {
     const stream = createReadStream(filePath) as unknown as Readable;
     const asyncIterable = (async function* () {
         for await (const chunk of stream) {
@@ -105,33 +130,15 @@ async function readListingPayload(filePath: string): Promise<Record<string, unkn
         }
     })();
 
-    let decoded: Record<string, unknown> | null = null;
+    let listing: Record<string, unknown> | null = null;
+    let exportData: Record<string, unknown> | null = null;
+
     for await (const message of decodeMultiStream(asyncIterable)) {
-        decoded = mergeSelectiveChunk(decoded, message, (key) => LISTING_KEYS.has(key));
+        listing = mergeSelectiveChunk(listing, message, (key) => LISTING_KEYS.has(key));
+        exportData = mergeSelectiveChunk(exportData, message, (key) => key === EXPORT_KEY_PREFIX || key.startsWith(`${EXPORT_KEY_PREFIX}.`));
     }
 
-    return decoded;
-}
-
-/**
- * PASS 2 — Export decode.
- * Streams the msgpack file and only materializes the `export` key.
- * Listing data and per-atom-properties are discarded.
- */
-async function readExportPayload(filePath: string): Promise<Record<string, unknown> | null> {
-    const stream = createReadStream(filePath) as unknown as Readable;
-    const asyncIterable = (async function* () {
-        for await (const chunk of stream) {
-            yield chunk as Uint8Array | Buffer;
-        }
-    })();
-
-    let decoded: Record<string, unknown> | null = null;
-    for await (const message of decodeMultiStream(asyncIterable)) {
-        decoded = mergeSelectiveChunk(decoded, message, (key) => key === EXPORT_KEY_PREFIX || key.startsWith(`${EXPORT_KEY_PREFIX}.`));
-    }
-
-    return decoded;
+    return { listing, exportData };
 }
 
 export interface ResultProcessorService {
@@ -199,33 +206,35 @@ export const createResultProcessorService = (
 
         logger.info({ storageKey }, 'Uploaded exposure .msgpack');
 
-        // ── PASS 1: Decode only listing keys ──────────────────────────────
+        // ── Single-pass decode: listing + export in one read ──────────
         logMemoryUsage('before-listing-decode');
-        const listingPayload = await readListingPayload(outputFilePath);
+        let { listing: listingPayload, exportData: exportPayload } = await readPayload(outputFilePath);
         logMemoryUsage('after-listing-decode');
 
+        // ── Process listings ──────────────────────────────────────────
         await precomputeListingRows(pluginListingRepository, executionData, exposure, listingPayload, storageKey, timestep, teamId);
 
-        // Release listing data explicitly before export pass
-        // (listingPayload becomes unreachable and eligible for GC)
+        // Release listing data explicitly — make it eligible for GC before
+        // the (potentially heavy) export processing begins.
+        listingPayload = null;
+        forceGC();
 
-        // ── PASS 2: Decode only export key (if needed) ───────────────────
-        if (exposure.export) {
-            logMemoryUsage('before-export-decode');
-            const exportPayload = await readExportPayload(outputFilePath);
-            logMemoryUsage('after-export-decode');
-
-            if (exportPayload) {
-                await exportNodeProcessorService.process({
-                    executionData,
-                    exposure,
-                    decodedPayload: exportPayload,
-                    timestep,
-                    teamClusterId: executionData.teamClusterId || ''
-                });
-                logMemoryUsage('after-export-processing');
-            }
+        // ── Process exports (if needed) ──────────────────────────────
+        if (exposure.export && exportPayload) {
+            logMemoryUsage('before-export-processing');
+            await exportNodeProcessorService.process({
+                executionData,
+                exposure,
+                decodedPayload: exportPayload,
+                timestep,
+                teamClusterId: executionData.teamClusterId || ''
+            });
+            logMemoryUsage('after-export-processing');
         }
+
+        // Release export data
+        exportPayload = null;
+        forceGC();
 
         logger.info(
             {
@@ -301,13 +310,21 @@ async function precomputeListingRows(
         }
     }]);
 
+    // ── Batched sub-listing insertion ─────────────────────────────────
+    // Instead of materializing ALL documents for a sub-listing at once
+    // (which triples memory: rawRows + cleanedRows + document wrappers),
+    // we iterate in fixed-size batches and insert each batch before
+    // building the next one.  Only the current batch lives in memory.
     for (const [subListingName, rawRows] of Object.entries(subListings)) {
-        const cleanedRows = cleanSubListingRows(rawRows);
-        if (cleanedRows.length === 0) {
-            continue;
-        }
+        if (rawRows.length === 0) continue;
 
-        const documents = cleanedRows.map((cleanedRow) => ({
+        // Determine valid keys from the first row (same logic as before)
+        const firstRow = rawRows[0];
+        const validKeys = Object.keys(firstRow).filter((key) => !shouldIgnoreValue(firstRow[key]));
+        if (validKeys.length === 0) continue;
+
+        // Shared fields that are identical for every document in this sub-listing
+        const sharedFields: Record<string, unknown> = {
             plugin: executionData.pluginId,
             team: teamId,
             trajectory: executionData.trajectoryId,
@@ -315,12 +332,24 @@ async function precomputeListingRows(
             exposureId: exposure.nodeId,
             exposureName: exposure.name,
             timestep,
-            subListingName,
-            row: cleanedRow
-        }));
+            subListingName
+        };
 
-        await pluginListingRepository.insertSubListingRows(documents);
+        for (let offset = 0; offset < rawRows.length; offset += SUB_LISTING_BATCH_SIZE) {
+            const end = Math.min(offset + SUB_LISTING_BATCH_SIZE, rawRows.length);
+            const batch: Record<string, unknown>[] = [];
+
+            for (let i = offset; i < end; i++) {
+                batch.push(buildSubListingDocument(rawRows[i], validKeys, sharedFields));
+            }
+
+            await pluginListingRepository.insertSubListingRows(batch);
+        }
     }
+
+    // Release sub-listing references — the raw arrays from the decoded
+    // msgpack can be very large and we no longer need them.
+    subListings = {};
 
     logger.info(
         {

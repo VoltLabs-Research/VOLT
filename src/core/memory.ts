@@ -68,6 +68,24 @@ export const tryForceGC = (): boolean => {
     return true;
 };
 
+/**
+ * Unconditional GC — bypasses the cooldown timer.
+ * Use this in critical memory paths (e.g. between exposure processing passes)
+ * where we *know* large allocations just became unreachable and we need the
+ * heap reclaimed before the next heavy allocation.
+ *
+ * Returns `true` if GC was triggered, `false` if `--expose-gc` is unavailable.
+ */
+export const forceGC = (): boolean => {
+    if (typeof global.gc !== 'function') {
+        return false;
+    }
+
+    lastGcTimestamp = Date.now();
+    global.gc();
+    return true;
+};
+
 const checkAndLogThresholds = (): void => {
     const { heapUsed, heapLimit, ratio } = getHeapStats();
 

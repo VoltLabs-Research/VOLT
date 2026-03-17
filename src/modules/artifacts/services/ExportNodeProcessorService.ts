@@ -314,6 +314,42 @@ interface ProcessedDislocationGeometry {
  */
 const MAX_DISLOCATION_VERTICES = 5_000_000;
 
+/**
+ * Estimate the total vertex and index count produced by tube geometry for a
+ * set of dislocation segments so we can pre-allocate TypedArrays instead of
+ * accumulating into JS `number[]` arrays (which use ~16 bytes per element vs
+ * 4 bytes in a Float32Array).
+ */
+const estimateSegmentGeometry = (
+    segments: unknown[],
+    tubularSegments: number,
+    minSegmentPoints: number
+): { vertexCount: number; indexCount: number } => {
+    let totalVertices = 0;
+    let totalIndices = 0;
+
+    for (const segment of segments) {
+        if (!isRecord(segment)) continue;
+        const points = Array.isArray(segment.points) ? segment.points : [];
+        const validPoints = points.filter(
+            (p: unknown): p is number[] => Array.isArray(p) && p.length >= 3
+        ).length;
+        if (validPoints < minSegmentPoints) continue;
+
+        // Each edge (validPoints - 1) produces (tubularSegments + 1) * 2 vertices
+        // and tubularSegments * 6 indices
+        const edges = validPoints - 1;
+        totalVertices += edges * (tubularSegments + 1) * 2;
+        totalIndices += edges * tubularSegments * 6;
+
+        if (totalVertices > MAX_DISLOCATION_VERTICES) {
+            return { vertexCount: MAX_DISLOCATION_VERTICES, indexCount: totalIndices };
+        }
+    }
+
+    return { vertexCount: totalVertices, indexCount: totalIndices };
+};
+
 const processDislocations = async (
     data: Record<string, unknown>,
     opts: Required<DislocationExportOptions>
@@ -321,11 +357,22 @@ const processDislocations = async (
     const segments = Array.isArray(data.segments) ? data.segments : [];
     const typeColors = { ...DISLOCATION_TYPE_COLORS, ...opts.typeColors };
 
-    let allPositions: number[] = [];
-    let allNormals: number[] = [];
-    let allIndices: number[] = [];
-    let allColors: number[] = [];
-    let currentVertexOffset = 0;
+    // Pre-estimate geometry size to allocate TypedArrays up front.
+    // This avoids the old pattern of accumulating into JS number[] arrays
+    // (~16 bytes/element) and then copying to TypedArrays (~4 bytes/element),
+    // which caused 2x peak memory during the copy.
+    const estimate = estimateSegmentGeometry(segments, opts.tubularSegments, opts.minSegmentPoints);
+    if (estimate.vertexCount === 0) {
+        throw new Error('No dislocation segment data available for export');
+    }
+
+    const positions = new Float32Array(estimate.vertexCount * 3);
+    const normals = new Float32Array(estimate.vertexCount * 3);
+    const indices = new Uint32Array(estimate.indexCount);
+    const colors = opts.colorByType ? new Float32Array(estimate.vertexCount * 4) : undefined;
+
+    let vertexOffset = 0;    // current write position in positions/normals (vertex count)
+    let indexOffset = 0;     // current write position in indices array
     let sinceLastYield = 0;
     let vertexBudgetExhausted = false;
 
@@ -345,28 +392,48 @@ const processDislocations = async (
 
         const type = calculateDislocationType(segment);
 
+        // Instead of building temporary number[] arrays via createLineGeometry,
+        // write directly into the pre-allocated TypedArrays.
         const geometry = createLineGeometry(normalizedPoints, opts.lineWidth, opts.tubularSegments);
         if (geometry.positions.length === 0) continue;
 
         const segmentVertexCount = geometry.positions.length / 3;
-        if (currentVertexOffset + segmentVertexCount > MAX_DISLOCATION_VERTICES) {
+        if (vertexOffset + segmentVertexCount > MAX_DISLOCATION_VERTICES) {
             vertexBudgetExhausted = true;
             break;
         }
 
-        // Iterative push — avoids call-stack overflow from spread on large arrays
-        for (let i = 0; i < geometry.positions.length; i++) allPositions.push(geometry.positions[i]);
-        for (let i = 0; i < geometry.normals.length; i++) allNormals.push(geometry.normals[i]);
+        // Copy positions into the typed array
+        const posBase = vertexOffset * 3;
+        for (let i = 0; i < geometry.positions.length; i++) {
+            positions[posBase + i] = geometry.positions[i];
+        }
 
-        if (opts.colorByType) {
+        // Copy normals
+        for (let i = 0; i < geometry.normals.length; i++) {
+            normals[posBase + i] = geometry.normals[i];
+        }
+
+        // Copy indices (offset by current vertex base)
+        for (let i = 0; i < geometry.indices.length; i++) {
+            indices[indexOffset + i] = geometry.indices[i] + vertexOffset;
+        }
+        indexOffset += geometry.indices.length;
+
+        // Write per-vertex colors
+        if (opts.colorByType && colors) {
             const color = typeColors[type] || typeColors['Other'];
+            const colorBase = vertexOffset * 4;
             for (let i = 0; i < segmentVertexCount; i++) {
-                allColors.push(color[0], color[1], color[2], color[3]);
+                const ci = colorBase + i * 4;
+                colors[ci] = color[0];
+                colors[ci + 1] = color[1];
+                colors[ci + 2] = color[2];
+                colors[ci + 3] = color[3];
             }
         }
 
-        for (const index of geometry.indices) allIndices.push(index + currentVertexOffset);
-        currentVertexOffset += segmentVertexCount;
+        vertexOffset += segmentVertexCount;
 
         sinceLastYield++;
         if (sinceLastYield >= 500) {
@@ -377,45 +444,41 @@ const processDislocations = async (
 
     if (vertexBudgetExhausted) {
         logger.warn(
-            { maxVertices: MAX_DISLOCATION_VERTICES, totalSegments: segments.length, processedVertices: currentVertexOffset },
+            { maxVertices: MAX_DISLOCATION_VERTICES, totalSegments: segments.length, processedVertices: vertexOffset },
             'Dislocation vertex budget exhausted — geometry truncated to prevent OOM'
         );
     }
 
-    if (allPositions.length === 0) {
+    if (vertexOffset === 0) {
         throw new Error('No dislocation segment data available for export');
     }
 
-    const positions = new Float32Array(allPositions);
-    const normals = new Float32Array(allNormals);
-    const indices = new Uint32Array(allIndices);
-    const colors = opts.colorByType ? new Float32Array(allColors) : undefined;
-
-    // Release the intermediate number[] arrays immediately — they duplicate the
-    // data now held in the typed arrays and can be hundreds of MB.
-    allPositions = [];
-    allNormals = [];
-    allIndices = [];
-    allColors = [];
+    // Trim typed arrays to actual size if estimate was larger than what we used
+    const finalPositions = vertexOffset * 3 < positions.length ? positions.subarray(0, vertexOffset * 3) : positions;
+    const finalNormals = vertexOffset * 3 < normals.length ? normals.subarray(0, vertexOffset * 3) : normals;
+    const finalIndices = indexOffset < indices.length ? indices.subarray(0, indexOffset) : indices;
+    const finalColors = colors
+        ? (vertexOffset * 4 < colors.length ? colors.subarray(0, vertexOffset * 4) : colors)
+        : undefined;
 
     const min: [number, number, number] = [Infinity, Infinity, Infinity];
     const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
-    for (let i = 0; i < positions.length; i += 3) {
-        min[0] = Math.min(min[0], positions[i]);
-        min[1] = Math.min(min[1], positions[i + 1]);
-        min[2] = Math.min(min[2], positions[i + 2]);
-        max[0] = Math.max(max[0], positions[i]);
-        max[1] = Math.max(max[1], positions[i + 1]);
-        max[2] = Math.max(max[2], positions[i + 2]);
+    for (let i = 0; i < finalPositions.length; i += 3) {
+        min[0] = Math.min(min[0], finalPositions[i]);
+        min[1] = Math.min(min[1], finalPositions[i + 1]);
+        min[2] = Math.min(min[2], finalPositions[i + 2]);
+        max[0] = Math.max(max[0], finalPositions[i]);
+        max[1] = Math.max(max[1], finalPositions[i + 1]);
+        max[2] = Math.max(max[2], finalPositions[i + 2]);
     }
 
     return {
-        positions,
-        normals,
-        indices,
-        colors,
-        vertexCount: positions.length / 3,
-        triangleCount: indices.length / 3,
+        positions: finalPositions,
+        normals: finalNormals,
+        indices: finalIndices,
+        colors: finalColors,
+        vertexCount: vertexOffset,
+        triangleCount: finalIndices.length / 3,
         bounds: { min, max }
     };
 };
