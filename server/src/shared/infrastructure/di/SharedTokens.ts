@@ -1,6 +1,7 @@
 export const SHARED_TOKENS = Object.freeze({
     StorageService: Symbol.for('StorageService'),
     TempFileService: Symbol.for('TempFileService'),
+    TempStorageLifecycleService: Symbol.for('TempStorageLifecycleService'),
     EventBus: Symbol.for('EventBus'),
     RedisClient: Symbol.for('RedisClient'),
     FileExtractorService: Symbol.for('FileExtractorService'),

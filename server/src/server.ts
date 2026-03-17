@@ -3,6 +3,7 @@ import './core/config/env';
 import './shared/infrastructure/logging/installOutputDuplicateGuard';
 
 import { registerAllDependencies } from './core/bootstrap/register-deps';
+import { startTempStorageLifecycle } from './core/bootstrap/start-temp-storage-lifecycle';
 import { initializeMinio } from './core/config/minio';
 import { initializeRedis } from './core/config/redis';
 import { registerAllSubscribers } from './core/events/registerAllSubscribers';
@@ -41,6 +42,8 @@ process.on('uncaughtException', (error: Error) => {
 });
 
 const startServer = async () => {
+    await startTempStorageLifecycle();
+
     const { default: mountHttpRoutes } = await import('./core/bootstrap/mount-http-routes');
 
     const server = http.createServer(app);
