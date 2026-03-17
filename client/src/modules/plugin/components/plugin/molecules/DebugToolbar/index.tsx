@@ -124,7 +124,7 @@ const DebugToolbar = () => {
 
     return (
         <Container className='p-absolute z-10 d-flex column items-center top-1 center-x debug-toolbar-wrapper'>
-            <Container className='d-flex items-center gap-05 panel-floating radius-full debug-toolbar'>
+            <Container className='d-flex items-center gap-05 panel-floating radius-full debug-toolbar glass-bg'>
                 <Container className='d-flex items-center gap-05'>
                     <Bug size={14} className='color-secondary' />
                     <Paragraph className='font-size-2 color-secondary font-weight-6'>Debug</Paragraph>

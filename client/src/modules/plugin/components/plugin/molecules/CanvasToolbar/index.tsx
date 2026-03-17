@@ -25,7 +25,7 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
     const handleFitView = useCallback(() => { fitView({ padding: 0.2 }); }, [fitView]);
 
     return (
-        <Container className='p-absolute z-10 center-x d-flex items-center gap-05 b-soft radius-full canvas-toolbar'>
+        <Container className='p-absolute z-10 center-x d-flex items-center gap-05 radius-full canvas-toolbar glass-bg'>
             {saveStatus === 'saving' && (
                 <Container className='d-flex items-center gap-05 canvas-toolbar-status'>
                     <Container className='f-shrink-0 radius-full canvas-toolbar-status-dot' />

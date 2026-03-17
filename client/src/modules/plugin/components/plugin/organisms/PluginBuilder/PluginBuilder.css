@@ -33,8 +33,6 @@
 .canvas-toolbar {
     bottom: 1.25rem;
     padding: 0.375rem 0.5rem;
-    background: var(--color-surface-1);
-    box-shadow: var(--shadow-elevated);
 }
 
 .canvas-toolbar-zoom-label {
@@ -83,11 +81,7 @@
     z-index: 100;
     width: 380px;
     max-height: 75vh;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    background: color-mix(in srgb, var(--color-surface-1) 85%, transparent);
-    border: 1px solid var(--color-border-soft);
-    box-shadow: var(--shadow-elevated);
+    border-radius: var(--radius-lg);
 }
 
 .floating-node-panel-header {
