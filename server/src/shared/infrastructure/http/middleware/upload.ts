@@ -1,6 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import logger from '@shared/infrastructure/logger';
 import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import fs from 'node:fs';
@@ -42,6 +43,27 @@ const trajectoryUploadStorage = multer.diskStorage({
     }
 });
 
+const resolveUploadErrorDetail = (error: unknown): string => {
+    if (!(error instanceof Error)) {
+        return 'Failed to process uploaded file.';
+    }
+
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'EMFILE' || code === 'ENFILE') {
+        return 'Too many files open on the server. Try uploading fewer files at once.';
+    }
+
+    if (code === 'ENOSPC') {
+        return 'Server ran out of disk space during upload.';
+    }
+
+    if (error.message.includes('Aborted') || error.message.includes('aborted') || code === 'ECONNRESET') {
+        return 'Upload was interrupted. Check your network connection and try again.';
+    }
+
+    return error.message || 'Failed to process uploaded file.';
+};
+
 const createUploadErrorResponse = (response: Response, error: unknown): void => {
     if (error instanceof multer.MulterError) {
         if (error.code === 'LIMIT_FILE_SIZE') {
@@ -63,9 +85,11 @@ const createUploadErrorResponse = (response: Response, error: unknown): void => 
         return;
     }
 
+    logger.error({ err: error }, '[Upload] Non-multer error during file upload');
+
     BaseResponse.error(
         response,
-        'Failed to process uploaded file.',
+        resolveUploadErrorDetail(error),
         HttpStatus.BadRequest,
         ErrorCodes.FILE_READ_ERROR
     );
@@ -94,6 +118,8 @@ export const uploadTrajectoryFiles = (fieldName: string) => (
     response: Response,
     next: NextFunction
 ) => {
+    req.setTimeout(0);
+
     uploadTrajectory.array(fieldName)(req, response, (error: unknown) => {
         if (!error) {
             return next();
