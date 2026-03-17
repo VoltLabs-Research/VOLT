@@ -15,7 +15,7 @@ RUN python -m pip install --no-cache-dir --upgrade \
     msgpack \
     pandas \
     vtk \
-    voltsdk \
+    voltsdk==2.0.0 \
     ovito \
     ase \
     pymatgen \

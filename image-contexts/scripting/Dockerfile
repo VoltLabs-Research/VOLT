@@ -9,4 +9,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 USER ${NB_UID}
 
-RUN pip install --no-cache-dir msgpack pandas vtk minio voltsdk
+RUN pip install --no-cache-dir msgpack pandas vtk minio voltsdk==2.0.0
