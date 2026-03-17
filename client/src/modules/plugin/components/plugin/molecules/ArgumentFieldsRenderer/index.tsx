@@ -5,6 +5,7 @@ import {
     getListArgumentValue,
     getPrimitiveArgumentFieldValue
 } from '@/modules/plugin/utilities/plugin/argument-values';
+import PluginConfigField from '@/modules/plugin/components/plugin/molecules/PluginConfigField';
 import Button from '@/shared/presentation/components/Button';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import Container from '@/shared/presentation/components/Container';
@@ -182,6 +183,19 @@ const ArgumentFieldsRenderer = ({
         const argumentValue = values[argument.argument];
         const fieldKey = `${path}.${argument.argument}.${index}`;
 
+        if (argument.type === ArgumentType.PLUGIN_CONFIG) {
+            return (
+                <PluginConfigField
+                    key={fieldKey}
+                    argument={argument}
+                    value={argumentValue}
+                    onChange={onChange}
+                    fieldKey={fieldKey}
+                    frameOptions={resolvedFrameOptions}
+                />
+            );
+        }
+
         if (argument.type === ArgumentType.LIST) {
             const items = getListArgumentValue(argument, argumentValue);
 
@@ -223,7 +237,7 @@ const ArgumentFieldsRenderer = ({
                 autocomplete={autocompleteOptions?.length ? { options: autocompleteOptions } : undefined}
             />
         );
-    }, [autocompleteOptions, handleListItemAdd, handlePrimitiveChange, path, renderListItem, resolvedFrameOptions, values]);
+    }, [autocompleteOptions, handleListItemAdd, handlePrimitiveChange, onChange, path, renderListItem, resolvedFrameOptions, values]);
 
     if (!argumentDefinitions.length) {
         return (

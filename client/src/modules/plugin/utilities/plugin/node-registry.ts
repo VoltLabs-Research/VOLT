@@ -55,6 +55,9 @@ export const ARGUMENT_TYPE_OPTIONS: NodeOption<ArgumentType>[] = [{
 }, {
     value: ArgumentType.LIST,
     label: 'List'
+}, {
+    value: ArgumentType.PLUGIN_CONFIG,
+    label: 'Plugin Config'
 }];
 
 export const EXPORTER_OPTIONS: NodeOption<Exporter>[] = [{
