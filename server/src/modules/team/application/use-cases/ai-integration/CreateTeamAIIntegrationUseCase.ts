@@ -68,7 +68,7 @@ export default class CreateTeamAIIntegrationUseCase implements IUseCase<CreateTe
             ));
         }
 
-        const encryptedApiKey = this.secretService.resolveEncryptedApiKey(providedApiKey);
+        const encryptedApiKey = await this.secretService.resolveEncryptedApiKey(providedApiKey);
 
         const metadata = this.inputService.resolveMetadata(input.metadata);
         const enabledModels = this.inputService.normalizeEnabledModels(input.enabledModels);

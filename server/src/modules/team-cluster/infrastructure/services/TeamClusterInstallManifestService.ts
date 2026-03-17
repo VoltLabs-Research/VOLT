@@ -140,7 +140,7 @@ const getDaemonPackageRoot = async (): Promise<string> => {
 };
 
 const readDaemonManifestFiles = async (): Promise<DaemonManifestFile[]> => {
-    const daemonRoot = getDaemonPackageRoot();
+    const daemonRoot = await getDaemonPackageRoot();
     const daemonFiles: DaemonManifestFile[] = [];
 
     const walk = async (currentPath: string): Promise<void> => {
@@ -354,7 +354,7 @@ export default class TeamClusterInstallManifestService {
         const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
         const cloudUrl = this.requireCloudUrl();
         const normalizedInstallRoot = this.requireInstallRoot(installRoot);
-        const credentials = this.daemonCredentialGuard.getDecryptedServiceCredentials(teamCluster);
+        const credentials = await this.daemonCredentialGuard.getDecryptedServiceCredentials(teamCluster);
         const daemonDistributionMode = await getDaemonDistributionMode();
 
         await this.persistInstallContext(teamCluster, normalizedInstallRoot, ports);

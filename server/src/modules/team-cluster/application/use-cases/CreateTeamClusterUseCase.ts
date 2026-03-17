@@ -67,6 +67,16 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
         const mongodbCredentials = createServiceCredentials('mongodb');
         const daemonPassword = crypto.randomBytes(24).toString('hex');
 
+        const [encryptedMinioUsername, encryptedMinioPassword, encryptedRedisUsername, encryptedRedisPassword, encryptedMongodbUsername, encryptedMongodbPassword, encryptedDaemonPassword] = await Promise.all([
+            this.teamClusterCredentialsCipher.encrypt(minioCredentials.username),
+            this.teamClusterCredentialsCipher.encrypt(minioCredentials.password),
+            this.teamClusterCredentialsCipher.encrypt(redisCredentials.username),
+            this.teamClusterCredentialsCipher.encrypt(redisCredentials.password),
+            this.teamClusterCredentialsCipher.encrypt(mongodbCredentials.username),
+            this.teamClusterCredentialsCipher.encrypt(mongodbCredentials.password),
+            this.teamClusterCredentialsCipher.encrypt(daemonPassword)
+        ]);
+
         const teamCluster = new TeamCluster('', {
             name: input.name.trim(),
             team: input.teamId,
@@ -80,22 +90,22 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
             services: {
                 minio: {
                     port: null,
-                    username: this.teamClusterCredentialsCipher.encrypt(minioCredentials.username),
-                    password: this.teamClusterCredentialsCipher.encrypt(minioCredentials.password)
+                    username: encryptedMinioUsername,
+                    password: encryptedMinioPassword
                 },
                 redis: {
                     port: null,
-                    username: this.teamClusterCredentialsCipher.encrypt(redisCredentials.username),
-                    password: this.teamClusterCredentialsCipher.encrypt(redisCredentials.password)
+                    username: encryptedRedisUsername,
+                    password: encryptedRedisPassword
                 },
                 mongodb: {
                     port: null,
-                    username: this.teamClusterCredentialsCipher.encrypt(mongodbCredentials.username),
-                    password: this.teamClusterCredentialsCipher.encrypt(mongodbCredentials.password)
+                    username: encryptedMongodbUsername,
+                    password: encryptedMongodbPassword
                 },
                 daemon: {
                     port: null,
-                    password: this.teamClusterCredentialsCipher.encrypt(daemonPassword)
+                    password: encryptedDaemonPassword
                 }
             },
             createdAt: new Date(),

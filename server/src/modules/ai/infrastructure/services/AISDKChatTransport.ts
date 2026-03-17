@@ -311,7 +311,7 @@ export default class AISDKChatTransport implements IAIChatTransport {
                 );
             }
 
-            const apiKey = this.secretService.decryptApiKey(integration.props.encryptedApiKey);
+            const apiKey = await this.secretService.decryptApiKey(integration.props.encryptedApiKey);
             const model = requestedModel || integration.props.defaultModel;
             if (!model) {
                 throw ApplicationError.badRequest(
@@ -325,7 +325,7 @@ export default class AISDKChatTransport implements IAIChatTransport {
 
         const first = integrations[0];
         const provider = first.props.provider;
-        const apiKey = this.secretService.decryptApiKey(first.props.encryptedApiKey);
+        const apiKey = await this.secretService.decryptApiKey(first.props.encryptedApiKey);
         const model = requestedModel || first.props.defaultModel;
         if (!model) {
             throw ApplicationError.badRequest(
