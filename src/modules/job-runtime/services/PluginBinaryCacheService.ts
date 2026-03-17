@@ -3,8 +3,10 @@ import { DAEMON_PATHS } from '@/core/paths';
 import { MinioService } from '@/modules/platform/services';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
+import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { pipeline } from 'node:stream/promises';
 import type { Readable } from 'node:stream';
 import { EntrypointType } from '@/shared/contracts';
 
@@ -27,20 +29,8 @@ const buildPythonRuntimeKey = (binaryObjectPath: string, requirementsFile: strin
         .digest('hex');
 };
 
-const writeStreamToFile = (stream: Readable, filePath: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        const chunks: Buffer[] = [];
-        stream.on('data', (chunk: Buffer) => chunks.push(chunk));
-        stream.on('end', async () => {
-            try {
-                await fs.writeFile(filePath, Buffer.concat(chunks));
-                resolve();
-            } catch (error) {
-                reject(error);
-            }
-        });
-        stream.on('error', reject);
-    });
+const writeStreamToFile = async (stream: Readable, filePath: string): Promise<void> => {
+    await pipeline(stream, createWriteStream(filePath));
 };
 
 export interface PluginBinaryCacheService {

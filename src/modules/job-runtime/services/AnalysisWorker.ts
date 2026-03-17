@@ -21,6 +21,21 @@ import { createWorkflowNodeRegistry } from '@/modules/workflow-runtime/factories
 import type { WorkflowNodeRegistry } from '@/modules/workflow-runtime/services';
 const DUMPS_BUCKET = 'volt-dumps';
 
+const logMemoryUsage = (context: string, jobId: string): void => {
+    const usage = process.memoryUsage();
+    logger.info(
+        {
+            jobId,
+            context,
+            heapUsedMB: Math.round(usage.heapUsed / 1024 / 1024),
+            heapTotalMB: Math.round(usage.heapTotal / 1024 / 1024),
+            rssMB: Math.round(usage.rss / 1024 / 1024),
+            externalMB: Math.round(usage.external / 1024 / 1024)
+        },
+        'Memory usage'
+    );
+};
+
 interface QueueJobPayload extends AnalysisQueueJobPayload {
     metadata?: Record<string, unknown>;
     executionData: AnalysisJobExecutionData;
@@ -294,6 +309,7 @@ export class AnalysisWorker {
                 requirementsFile: executionData.requirementsFile
             });
             dumpLocalPath = await this.downloadDump(inputFile);
+            logMemoryUsage('after-dump-download', job.jobId);
             outputDir = path.join(DAEMON_PATHS.analysisOutput, `${executionData.analysisId}-${forEachIndex}-${Date.now()}`);
             await fs.mkdir(outputDir, { recursive: true });
 
@@ -324,6 +340,7 @@ export class AnalysisWorker {
             }
 
             logger.info({ jobId: job.jobId, exitCode: result.code }, 'Binary execution completed');
+            logMemoryUsage('after-binary-execution', job.jobId);
             await bullJob.updateProgress(70);
 
             for (const exposure of executionData.exposures) {
@@ -336,6 +353,7 @@ export class AnalysisWorker {
                 );
             }
 
+            logMemoryUsage('after-result-processing', job.jobId);
             await bullJob.updateProgress(95);
 
             const completedTimestamp = new Date().toISOString();

@@ -5,7 +5,7 @@ import {
     NATIVE_PROCESSING_RUNTIME_DIR,
     NativeModuleOperation
 } from './NativeModuleLoader';
-import { createWriteStream } from 'node:fs';
+import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import { pipeline } from 'node:stream/promises';
 import type { MinioService } from '@/modules/platform/services';
@@ -35,11 +35,12 @@ export const createRasterizerService = (
 
             await this.rasterizeLocalGlb(tempGlbPath, tempPngPath);
 
-            const pngBuffer = await fs.readFile(tempPngPath);
-            await minioService.putObject({
+            const pngStat = await fs.stat(tempPngPath);
+            await minioService.putObjectStream({
                 bucket: ObjectBucketName.Rasterizer,
                 objectKey: input.outputObjectKey,
-                body: pngBuffer,
+                stream: createReadStream(tempPngPath),
+                size: pngStat.size,
                 metadata: {
                     'Content-Type': 'image/png',
                     'Cache-Control': 'public, max-age=86400'

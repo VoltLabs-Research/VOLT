@@ -1,6 +1,8 @@
 import { registerProcess, unregisterProcess } from './processTracker';
 import { spawn } from 'node:child_process';
 
+const MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
+
 export interface ProcessResult {
     code: number;
     stdout: string;
@@ -31,9 +33,21 @@ export const createBinaryExecutorService = (): BinaryExecutorService => ({
 
             const stdoutChunks: Buffer[] = [];
             const stderrChunks: Buffer[] = [];
+            let stdoutBytes = 0;
+            let stderrBytes = 0;
 
-            child.stdout.on('data', (chunk: Buffer) => stdoutChunks.push(chunk));
-            child.stderr.on('data', (chunk: Buffer) => stderrChunks.push(chunk));
+            child.stdout.on('data', (chunk: Buffer) => {
+                if (stdoutBytes < MAX_OUTPUT_BYTES) {
+                    stdoutChunks.push(chunk);
+                    stdoutBytes += chunk.length;
+                }
+            });
+            child.stderr.on('data', (chunk: Buffer) => {
+                if (stderrBytes < MAX_OUTPUT_BYTES) {
+                    stderrChunks.push(chunk);
+                    stderrBytes += chunk.length;
+                }
+            });
 
             child.on('error', (error) => {
                 unregisterProcess(jobId);

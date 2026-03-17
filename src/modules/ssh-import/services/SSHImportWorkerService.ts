@@ -11,6 +11,8 @@ import { TrajectoryParserFactory } from './TrajectoryParserFactory';
 import { logger } from '@/core/logger';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import type { Worker } from 'bullmq';
@@ -125,20 +127,27 @@ export class SSHImportWorkerService {
             for (const file of extractedFiles) {
                 const metadata = await TrajectoryParserFactory.parseMetadata(file.path);
                 const objectKey = `trajectory-${job.trajectoryId}/timestep-${metadata.timestep}.dump.gz`;
-                const dumpBuffer = await fs.readFile(file.path);
-                const compressedDump = zlib.gzipSync(dumpBuffer, {
-                    level: zlib.constants.Z_BEST_SPEED
-                });
-
-                await this.minioService.putObject({
-                    bucket: ObjectBucketName.Dumps,
-                    objectKey,
-                    body: compressedDump,
-                    metadata: {
-                        'Content-Type': 'application/gzip',
-                        'Content-Encoding': 'gzip'
-                    }
-                });
+                const tempGzPath = `${file.path}.gz`;
+                try {
+                    await pipeline(
+                        createReadStream(file.path),
+                        zlib.createGzip({ level: zlib.constants.Z_BEST_SPEED }),
+                        createWriteStream(tempGzPath)
+                    );
+                    const gzStat = await fs.stat(tempGzPath);
+                    await this.minioService.putObjectStream({
+                        bucket: ObjectBucketName.Dumps,
+                        objectKey,
+                        stream: createReadStream(tempGzPath),
+                        size: gzStat.size,
+                        metadata: {
+                            'Content-Type': 'application/gzip',
+                            'Content-Encoding': 'gzip'
+                        }
+                    });
+                } finally {
+                    await fs.unlink(tempGzPath).catch(() => {});
+                }
 
                 logger.info(
                     {

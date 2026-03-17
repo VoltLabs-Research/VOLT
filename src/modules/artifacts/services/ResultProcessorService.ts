@@ -11,6 +11,20 @@ import type { Readable } from 'node:stream';
 
 const PLUGINS_BUCKET = 'volt-plugins';
 
+const logMemoryUsage = (context: string): void => {
+    const usage = process.memoryUsage();
+    logger.info(
+        {
+            context,
+            heapUsedMB: Math.round(usage.heapUsed / 1024 / 1024),
+            heapTotalMB: Math.round(usage.heapTotal / 1024 / 1024),
+            rssMB: Math.round(usage.rss / 1024 / 1024),
+            externalMB: Math.round(usage.external / 1024 / 1024)
+        },
+        'Memory usage'
+    );
+};
+
 
 const shouldIgnoreValue = (value: unknown): boolean => {
     return Array.isArray(value) && value.length >= 1 && Array.isArray(value[0]);
@@ -158,11 +172,19 @@ export const createResultProcessorService = (
         });
 
         logger.info({ storageKey }, 'Uploaded exposure .msgpack');
+        logMemoryUsage('before-msgpack-decode');
         // Decode directly from the local file — avoids redundant MinIO re-download
         const decoded = await readDecodedPayload(createReadStream(outputFilePath) as unknown as Readable);
+        logMemoryUsage('after-msgpack-decode');
         await precomputeListingRows(pluginListingRepository, executionData, exposure, decoded, storageKey, timestep, teamId);
 
         if (decoded && exposure.export) {
+            // Release listing data before heavy export processing to reduce peak memory.
+            // The listing rows have already been persisted to the database above.
+            delete decoded.main_listing;
+            delete decoded.sub_listings;
+
+            logMemoryUsage('before-export-processing');
             await exportNodeProcessorService.process({
                 executionData,
                 exposure,
@@ -170,6 +192,7 @@ export const createResultProcessorService = (
                 timestep,
                 teamClusterId: executionData.teamClusterId || ''
             });
+            logMemoryUsage('after-export-processing');
         }
     }
 });

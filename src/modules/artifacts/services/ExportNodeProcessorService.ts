@@ -6,6 +6,10 @@ import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import type { BubbleDataPoint, ChartConfiguration, ChartDataset, ChartTypeRegistry, Point } from 'chart.js';
 import type { DaemonArtifactReporterService } from '@/modules/cloud-control/services';
 import { isRecord, toRecord } from '@/shared/utils';
+import { createReadStream } from 'node:fs';
+import fsPromises from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 
 type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
 
@@ -302,10 +306,10 @@ interface ProcessedDislocationGeometry {
     };
 };
 
-const processDislocations = (
+const processDislocations = async (
     data: Record<string, unknown>,
     opts: Required<DislocationExportOptions>
-): ProcessedDislocationGeometry => {
+): Promise<ProcessedDislocationGeometry> => {
     const segments = Array.isArray(data.segments) ? data.segments : [];
     const typeColors = { ...DISLOCATION_TYPE_COLORS, ...opts.typeColors };
 
@@ -314,6 +318,7 @@ const processDislocations = (
     let allIndices: number[] = [];
     let allColors: number[] = [];
     let currentVertexOffset = 0;
+    let sinceLastYield = 0;
 
     for (const segment of segments) {
         if (!isRecord(segment)) continue;
@@ -345,6 +350,12 @@ const processDislocations = (
 
         for (const index of geometry.indices) allIndices.push(index + currentVertexOffset);
         currentVertexOffset += geometry.positions.length / 3;
+
+        sinceLastYield++;
+        if (sinceLastYield >= 500) {
+            sinceLastYield = 0;
+            await yieldToEventLoop();
+        }
     }
 
     if (allPositions.length === 0) {
@@ -448,12 +459,12 @@ const buildPointCloudData = (atomsByType: AtomsGroupedByType): {
  * skipping the intermediate PrimitiveAtom[] JS objects that normalizeAtomsByType creates.
  * For 4.5M atoms this saves ~1GB+ of JS heap overhead.
  */
-const buildPointCloudDataDirect = (exportData: Record<string, unknown>): {
+const buildPointCloudDataDirect = async (exportData: Record<string, unknown>): Promise<{
     positions: Float32Array;
     colors: Float32Array;
     min: [number, number, number];
     max: [number, number, number];
-} => {
+}> => {
     // First pass: count valid atoms to pre-allocate typed arrays
     const entries: Array<[string, unknown[]]> = [];
     let totalAtoms = 0;
@@ -471,9 +482,11 @@ const buildPointCloudDataDirect = (exportData: Record<string, unknown>): {
     const min: [number, number, number] = [Infinity, Infinity, Infinity];
     const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
     let offset = 0;
+    let sinceLastYield = 0;
 
-    entries.forEach(([typeName, atoms], typeIndex) => {
-        const color = colorForType(typeName, typeIndex);
+    for (let entryIdx = 0; entryIdx < entries.length; entryIdx++) {
+        const [typeName, atoms] = entries[entryIdx];
+        const color = colorForType(typeName, entryIdx);
         for (const atom of atoms) {
             if (!isRecord(atom) || !Array.isArray(atom.pos) || atom.pos.length < 3) {
                 continue;
@@ -495,8 +508,13 @@ const buildPointCloudDataDirect = (exportData: Record<string, unknown>): {
             max[1] = Math.max(max[1], y);
             max[2] = Math.max(max[2], z);
             offset++;
+            sinceLastYield++;
+            if (sinceLastYield >= YIELD_INTERVAL) {
+                sinceLastYield = 0;
+                await yieldToEventLoop();
+            }
         }
-    });
+    }
 
     if (offset === 0) {
         throw new Error('No valid atom data available for export');
@@ -659,6 +677,44 @@ type SupportedChartType = 'line' | 'bar' | 'scatter';
 
 type SupportedChartDatasetValue = number | [number, number] | Point | BubbleDataPoint | null;
 
+const STREAM_UPLOAD_THRESHOLD = 10 * 1024 * 1024;
+const YIELD_INTERVAL = 50_000;
+
+const yieldToEventLoop = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
+
+const uploadBuffer = async (
+    minio: MinioService,
+    bucket: string,
+    objectKey: string,
+    buffer: Buffer,
+    contentType: string
+): Promise<void> => {
+    if (buffer.length < STREAM_UPLOAD_THRESHOLD) {
+        await minio.putObject({
+            bucket,
+            objectKey,
+            body: buffer,
+            metadata: { 'Content-Type': contentType }
+        });
+        return;
+    }
+
+    const tmpPath = path.join(os.tmpdir(), `volt-export-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const size = buffer.length;
+    try {
+        await fsPromises.writeFile(tmpPath, buffer);
+        await minio.putObjectStream({
+            bucket,
+            objectKey,
+            stream: createReadStream(tmpPath),
+            size,
+            metadata: { 'Content-Type': contentType }
+        });
+    } finally {
+        await fsPromises.unlink(tmpPath).catch(() => {});
+    }
+};
+
 const buildChartDataset = (
     chartData: ChartPoint[],
     chartType: SupportedChartType,
@@ -693,17 +749,10 @@ export const createExportNodeProcessorService = (
             throw new Error('Atomistic export data missing from exposure payload');
         }
 
-        const { positions, colors, min, max } = buildPointCloudDataDirect(exportData);
+        const { positions, colors, min, max } = await buildPointCloudDataDirect(exportData);
         const buffer = nativeModuleLoader.getExporterModule().generatePointCloudGLB(positions, colors, min, max);
 
-        await minioService.putObject({
-            bucket: ObjectBucketName.Models,
-            objectKey: objectPath,
-            body: buffer,
-            metadata: {
-                'Content-Type': 'model/gltf-binary'
-            }
-        });
+        await uploadBuffer(minioService, ObjectBucketName.Models, objectPath, buffer, 'model/gltf-binary');
     };
 
     const exportMesh = async (decodedPayload: Record<string, unknown>, objectPath: string, options: MeshExportOptions): Promise<void> => {
@@ -725,14 +774,7 @@ export const createExportNodeProcessorService = (
             material
         );
 
-        await minioService.putObject({
-            bucket: ObjectBucketName.Models,
-            objectKey: objectPath,
-            body: buffer,
-            metadata: {
-                'Content-Type': 'model/gltf-binary'
-            }
-        });
+        await uploadBuffer(minioService, ObjectBucketName.Models, objectPath, buffer, 'model/gltf-binary');
     };
 
     const processMesh = (mesh: MeshInput, smoothIterations?: number): {
@@ -821,7 +863,7 @@ export const createExportNodeProcessorService = (
             typeColors: options.typeColors ?? {},
         };
 
-        const geom = processDislocations(exportData, opts);
+        const geom = await processDislocations(exportData, opts);
         const useU16 = geom.vertexCount > 0 && geom.vertexCount <= 65535;
         const idx = useU16 ? new Uint16Array(geom.indices) : geom.indices;
 
@@ -848,14 +890,7 @@ export const createExportNodeProcessorService = (
             }
         );
 
-        await minioService.putObject({
-            bucket: ObjectBucketName.Models,
-            objectKey: objectPath,
-            body: buffer,
-            metadata: {
-                'Content-Type': 'model/gltf-binary'
-            }
-        });
+        await uploadBuffer(minioService, ObjectBucketName.Models, objectPath, buffer, 'model/gltf-binary');
     };
 
     const exportChart = async (decodedPayload: Record<string, unknown>, objectPath: string, options: ChartExportOptions): Promise<void> => {
@@ -922,14 +957,7 @@ export const createExportNodeProcessorService = (
         };
         const buffer = await chartCanvas.renderToBuffer(chartConfiguration);
 
-        await minioService.putObject({
-            bucket: ObjectBucketName.Plugins,
-            objectKey: objectPath,
-            body: buffer,
-            metadata: {
-                'Content-Type': 'image/png'
-            }
-        });
+        await uploadBuffer(minioService, ObjectBucketName.Plugins, objectPath, buffer, 'image/png');
     };
 
     return {
