@@ -38,7 +38,7 @@ const queueTypeNames: Record<string, string> = {
     'analysis_processing': 'Analysis',
     'trajectory_rasterization': 'Rasterization',
     'trajectory_glb_conversion': 'GLB Conversion',
-    'cloud_upload': 'Cloud Upload',
+    'cloud_upload': 'Uploading to Cluster',
     'ssh_import': 'SSH Import'
 };
 
