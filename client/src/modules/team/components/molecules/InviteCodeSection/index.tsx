@@ -105,7 +105,7 @@ export const InviteCodeSection = ({
                 </Container>
             ) : (
                 canManageCode && (
-                    <Container className='d-flex column gap-05'>
+                    <Container className='d-flex column gap-1   '>
                         <Paragraph className='font-size-2 color-tertiary'>
                             Generate a code so anyone with it can join this team.
                         </Paragraph>
