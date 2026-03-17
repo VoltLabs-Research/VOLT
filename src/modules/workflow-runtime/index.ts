@@ -1,9 +1,10 @@
 import { createWorkflowNodeRegistry } from './factories';
-import { WorkflowEngine, type WorkflowNodeRegistry } from './services';
+import { DebugSessionManager, WorkflowEngine, type WorkflowNodeRegistry } from './services';
 
 export interface WorkflowRuntimeModule {
     workflowNodeRegistry: WorkflowNodeRegistry;
     workflowEngine: WorkflowEngine;
+    debugSessionManager: DebugSessionManager;
 }
 
 export const createWorkflowRuntimeModule = (): WorkflowRuntimeModule => {
@@ -11,6 +12,7 @@ export const createWorkflowRuntimeModule = (): WorkflowRuntimeModule => {
 
     return {
         workflowNodeRegistry,
-        workflowEngine: new WorkflowEngine(workflowNodeRegistry)
+        workflowEngine: new WorkflowEngine(workflowNodeRegistry),
+        debugSessionManager: new DebugSessionManager(workflowNodeRegistry)
     };
 };

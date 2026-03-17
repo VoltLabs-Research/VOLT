@@ -48,7 +48,8 @@ export const bootstrap = async (): Promise<void> => {
         filterEvaluatorService: trajectoryNative.filterEvaluatorService,
         jupyterRuntimeService: jupyter.jupyterRuntimeService,
         pluginListingRepository,
-        analysisDispatchService
+        analysisDispatchService,
+        debugSessionManager: workflowRuntime.debugSessionManager
     });
     const jobRuntime = createJobRuntimeModule({
         workflowEngine: workflowRuntime.workflowEngine,
@@ -106,6 +107,7 @@ export const bootstrap = async (): Promise<void> => {
     });
 
     const shutdown = async () => {
+        workflowRuntime.debugSessionManager.shutdown();
         await analysisWorker.stop();
         await trajectoryRasterWorkerService.stop();
         await trajectoryGlbWorkerService.stop();

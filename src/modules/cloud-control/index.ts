@@ -3,6 +3,7 @@ import type { DaemonConfig } from '@/core/config';
 import type { RuntimeEventBroker } from '@/shared/services';
 import type { DockerRuntimeService, HostShellService, MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { AnalysisDispatchService } from '@/modules/job-runtime/services';
+import type { DebugSessionManager } from '@/modules/workflow-runtime/services';
 import {
     createDaemonArtifactReporterService,
     createDaemonJobReporterService,
@@ -22,6 +23,7 @@ import type {
 } from '@/modules/trajectory-native/services';
 import {
     createAnalysisHandlers,
+    createDebugHandlers,
     createJobHandlers,
     createTrajectoryHandlers,
     createObjectHandlers,
@@ -56,6 +58,7 @@ export const createCloudControlModule = (deps: {
     jupyterRuntimeService: JupyterRuntimeService;
     pluginListingRepository: PluginListingRepository;
     analysisDispatchService: AnalysisDispatchService;
+    debugSessionManager: DebugSessionManager;
 }): CloudControlModule => {
     const reverseChannelSocketBridge = new ReverseChannelSocketBridge(
         deps.dockerRuntimeService,
@@ -67,6 +70,7 @@ export const createCloudControlModule = (deps: {
 
     const handlers = [
         ...createAnalysisHandlers({ analysisDispatchService: deps.analysisDispatchService }),
+        ...createDebugHandlers({ debugSessionManager: deps.debugSessionManager }),
         ...createJobHandlers({ queueService: deps.queueService, redisConnectionService: deps.redisConnectionService }),
         ...createTrajectoryHandlers({
             minioService: deps.minioService,

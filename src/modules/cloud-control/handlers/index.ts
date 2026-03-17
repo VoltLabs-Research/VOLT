@@ -1,5 +1,6 @@
 export * from './analysis';
 export * from './container';
+export * from './debug';
 export * from './jobs';
 export * from './notebook';
 export * from './object';
