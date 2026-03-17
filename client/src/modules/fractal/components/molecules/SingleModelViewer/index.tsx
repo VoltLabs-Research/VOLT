@@ -48,6 +48,7 @@ interface SingleModelViewerProps {
     onModelLoaded?: (bounds: BoundsInfo) => void;
     onSelect?: () => void;
     isSelected?: boolean;
+    onContentTypeDetected?: (info: { hasPointClouds: boolean }) => void;
 };
 
 const SingleModelViewer: FC<SingleModelViewerProps> = ({
@@ -80,7 +81,8 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     isPrimary: _isPrimary = false,
     onModelLoaded,
     onSelect,
-    isSelected = false
+    isSelected = false,
+    onContentTypeDetected
 }) => {
     const lastEmittedModelWorldBoundsReference = useRef<ModelWorldBounds | null>(null);
     // Imperative container for the 3D model — keeps the heavy Object3D out of
@@ -178,7 +180,8 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         sceneOpacities,
         activeModelBounds,
         onModelBoundsChanged,
-        onLoadingStateChanged
+        onLoadingStateChanged,
+        onContentTypeDetected
     }, modelContainerRef);
 
     useEffect(() => {

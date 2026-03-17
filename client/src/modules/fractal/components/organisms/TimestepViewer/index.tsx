@@ -45,6 +45,7 @@ interface TimestepViewerProps {
     updateThrottle?: number;
     spacing?: number;
     forceDefaultScene?: boolean;
+    onContentTypeDetected?: (info: { hasPointClouds: boolean }) => void;
 };
 
 export interface TimestepViewerRef {
@@ -79,7 +80,8 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     enableInstancing = true,
     updateThrottle = 16,
     spacing = 0.5,
-    forceDefaultScene = false
+    forceDefaultScene = false,
+    onContentTypeDetected
 }, _ref) => {
     const scenesToRender = useMemo(() => {
         return getRenderableScenes(storeActiveScenes, pluginScenes, forceDefaultScene);
@@ -163,6 +165,7 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
                 onModelLoaded={(bounds) => handleModelLoaded(index, bounds)}
                 onSelect={() => setSelectedModelIndex(index)}
                 isSelected={selectedModelIndex === index}
+                onContentTypeDetected={onContentTypeDetected}
             />
         );
     }, [
@@ -189,7 +192,8 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         slicePlaneConfig,
         teamId,
         trajectoryId,
-        updateThrottle
+        updateThrottle,
+        onContentTypeDetected
     ]);
 
     if (scenesToRender.length === 0) return null;

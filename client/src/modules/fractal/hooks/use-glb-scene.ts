@@ -71,7 +71,8 @@ export default function useGlbScene(
         sceneOpacities,
         activeModelBounds,
         onModelBoundsChanged,
-        onLoadingStateChanged
+        onLoadingStateChanged,
+        onContentTypeDetected
     } = params;
 
     const engineRef = useRef<ReturnType<typeof createFractalEngine> | null>(null);
@@ -81,6 +82,9 @@ export default function useGlbScene(
 
     const onLoadingStateChangedRef = useRef(onLoadingStateChanged);
     onLoadingStateChangedRef.current = onLoadingStateChanged;
+
+    const onContentTypeDetectedRef = useRef(onContentTypeDetected);
+    onContentTypeDetectedRef.current = onContentTypeDetected;
 
     const [loadingState, setLoadingState] = useState<ModelLoadingState>({
         isLoading: false,
@@ -106,6 +110,9 @@ export default function useGlbScene(
                 onLoadingState: (state) => {
                     setLoadingState(state);
                     onLoadingStateChangedRef.current?.(state);
+                },
+                onContentTypeDetected: (info) => {
+                    onContentTypeDetectedRef.current?.(info);
                 },
                 onModelAvailable: (modelObj) => {
                     const parent = modelContainerRef?.current;

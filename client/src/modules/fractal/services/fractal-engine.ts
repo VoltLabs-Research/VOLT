@@ -49,6 +49,7 @@ type EngineCallbacks = {
     onModelLoaded?: (bounds: BoundsInfo) => void;
     onLoadingState?: (state: ModelLoadingState) => void;
     onModelAvailable?: (model: THREE.Group | null) => void;
+    onContentTypeDetected?: (info: { hasPointClouds: boolean }) => void;
 };
 
 const getPointCloudDetailRatio = (detailLevel: PointCloudDetailLevel, pointCount: number): number => {
@@ -206,8 +207,11 @@ export class FractalEngine {
             }
 
             const pointClouds = this.materialPipeline.detectPointClouds(loadedModel);
+            const hasPointClouds = pointClouds.length > 0;
+            this.callbacks.onContentTypeDetected?.({ hasPointClouds });
+
             let newMesh: THREE.Mesh | THREE.Points | null = null;
-            if (pointClouds.length > 0) {
+            if (hasPointClouds) {
                 pointClouds.forEach((pointCloud) => {
                     this.materialPipeline.configurePointCloud(pointCloud);
                 });

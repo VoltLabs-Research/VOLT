@@ -14,6 +14,7 @@ import type { RenderGroup } from '../../types';
 
 const useEffectsGroup = (): RenderGroup => {
     const effects = useEditorStore(useShallow((state) => state.effects));
+    const isPointCloudScene = useEditorStore((s) => s.isPointCloudScene);
 
     return useMemo(() => {
         const sectionsById = {
@@ -91,7 +92,10 @@ const useEffectsGroup = (): RenderGroup => {
 
         const subsections = EFFECT_SECTION_ORDER.map((sectionId) => ({
             label: EFFECT_SECTION_TITLES[sectionId],
-            sections: [sectionsById[sectionId]]
+            sections: [sectionsById[sectionId]],
+            ...(sectionId === EffectSectionId.SSAO && isPointCloudScene
+                ? { disabled: true, disabledReason: 'Not compatible with point cloud scenes' }
+                : {})
         }));
 
         return {
@@ -100,7 +104,7 @@ const useEffectsGroup = (): RenderGroup => {
             icon: <MdAutoFixHigh size={12} />,
             subsections
         };
-    }, [effects]);
+    }, [effects, isPointCloudScene]);
 };
 
 export default useEffectsGroup;

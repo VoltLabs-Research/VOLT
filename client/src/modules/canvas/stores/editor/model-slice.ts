@@ -36,7 +36,8 @@ const createInitialState = (): ModelState => ({
     pointCloudSettings: POINT_CLOUD_SETTINGS_INITIAL,
     sceneOpacities: {},
     modelWorldBounds: null,
-    showSimulationCell: true
+    showSimulationCell: true,
+    isPointCloudScene: false
 });
 
 export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (set, get) => ({
@@ -161,5 +162,12 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
 
     setShowSimulationCell(show: boolean) {
         set({ showSimulationCell: show });
+    },
+
+    setIsPointCloudScene(isPointCloud: boolean) {
+        set((state) => {
+            if (state.isPointCloudScene === isPointCloud) return state;
+            return { isPointCloudScene: isPointCloud };
+        });
     }
 });

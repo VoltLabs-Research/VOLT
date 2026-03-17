@@ -18,6 +18,7 @@ import type { RenderGroup } from '../../types';
 
 const useRendererGroup = (): RenderGroup => {
     const { runtime, setRuntime } = useEditorStore(useShallow((state) => state.rendererSettings));
+    const isPointCloudScene = useEditorStore((s) => s.isPointCloudScene);
 
     return useMemo(() => {
         const toneSection = {
@@ -63,10 +64,16 @@ const useRendererGroup = (): RenderGroup => {
             icon: <MdTune size={12} />,
             subsections: [
                 { label: RENDERER_SUBSECTION_TITLES.toneMapping, sections: [toneSection] },
-                { label: RENDERER_SUBSECTION_TITLES.shadows, sections: [shadowSection] }
+                {
+                    label: RENDERER_SUBSECTION_TITLES.shadows,
+                    sections: [shadowSection],
+                    ...(isPointCloudScene
+                        ? { disabled: true, disabledReason: 'Not compatible with point cloud scenes' }
+                        : {})
+                }
             ]
         };
-    }, [runtime, setRuntime]);
+    }, [runtime, setRuntime, isPointCloudScene]);
 };
 
 export default useRendererGroup;
