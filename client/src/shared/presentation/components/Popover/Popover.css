@@ -1,7 +1,6 @@
 .popover {
     min-width: 180px;
     max-width: 320px;
-    padding: 0.75rem;
     box-shadow: var(--shadow-elevated);
     animation: popoverIn .15s cubic-bezier(0.16, 1, 0.3, 1);
     max-height: min(24rem, calc(100dvh - 2rem));
