@@ -648,14 +648,16 @@ export class AnalysisWorker {
             outputs.set(nodeId, { ...nodeOutput });
         }
 
-        const forEachOutput = outputs.get(executionData.forEachNodeId) || {};
-        forEachOutput.currentValue = {
-            ...forEachItem,
-            path: dumpLocalPath
-        };
-        forEachOutput.currentIndex = forEachIndex;
-        forEachOutput.outputPath = outputDir;
-        outputs.set(executionData.forEachNodeId, forEachOutput);
+        if (executionData.forEachNodeId) {
+            const forEachOutput = outputs.get(executionData.forEachNodeId) || {};
+            forEachOutput.currentValue = {
+                ...forEachItem,
+                path: dumpLocalPath
+            };
+            forEachOutput.currentIndex = forEachIndex;
+            forEachOutput.outputPath = outputDir;
+            outputs.set(executionData.forEachNodeId, forEachOutput);
+        }
 
         return outputs;
     }
@@ -692,17 +694,14 @@ export class AnalysisWorker {
         outputDir: string
     ): Promise<void> {
         const dumpTarget = this.createDumpExecutionTargets(executionData, [dumpLocalPath], timestep)[0];
-        if (dumpTarget) {
-            await this.executeArgumentPluginReferences(executionData, outputs, [dumpTarget], outputDir);
-        }
-
-        const pluginNodes = resolveInlinePluginExecutionOrder(executionData.workflow);
-        if (!pluginNodes.length) {
+        if (!dumpTarget) {
             return;
         }
 
-        
-        if (!dumpTarget) {
+        await this.executeArgumentPluginReferences(executionData, outputs, [dumpTarget], outputDir);
+
+        const pluginNodes = resolveInlinePluginExecutionOrder(executionData.workflow);
+        if (!pluginNodes.length) {
             return;
         }
 
