@@ -19,6 +19,7 @@ import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastru
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import { buildWebSocketProtocolList } from '@shared/infrastructure/utilities/websocket-protocols';
 import { inject, injectable } from 'tsyringe';
 import { WebSocketServer, WebSocket } from 'ws';
 import http from 'node:http';
@@ -146,9 +147,6 @@ const readJupyterNativeToken = (): string => {
 
 @injectable()
 export class ScriptingJupyterProxyService {
-    private readonly webSocketServer = new WebSocketServer({
-        noServer: true
-    });
     private readonly jupyterNativeToken = readJupyterNativeToken();
 
     constructor(
@@ -222,17 +220,45 @@ export class ScriptingJupyterProxyService {
             const runtime = await this.requireNotebookRuntime(context);
             const target = this.extractProxyTarget(request.url || '');
             const tunnel = await this.openNotebookTunnel(context.teamClusterId, runtime, TeamClusterServiceExposureAccessMode.WebSocket);
-            const upstreamWebSocket = new WebSocket(
-                `ws://${runtime.tunnelTargetHost}:${runtime.tunnelTargetPort}${target.proxiedPath}${target.rawQuery}`,
-                {
-                    createConnection: () => tunnel,
-                    headers: this.readUpgradeRequestHeaders(request, runtime)
-                }
-            );
+            const upstreamWebSocketUrl = `ws://${runtime.tunnelTargetHost}:${runtime.tunnelTargetPort}${target.proxiedPath}${target.rawQuery}`;
+            const requestedProtocols = buildWebSocketProtocolList(request.headers['sec-websocket-protocol']);
+            const upstreamWebSocketOptions = {
+                createConnection: () => tunnel,
+                headers: this.readUpgradeRequestHeaders(request, runtime)
+            };
+            const upstreamWebSocket = requestedProtocols
+                ? new WebSocket(upstreamWebSocketUrl, requestedProtocols, upstreamWebSocketOptions)
+                : new WebSocket(upstreamWebSocketUrl, upstreamWebSocketOptions);
 
-            this.webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
-                this.bindWebSocketProxy(webSocket, upstreamWebSocket);
-            });
+            // Wait for the upstream WebSocket to open before completing the client
+            // handshake. This ensures two things:
+            // 1. The negotiated subprotocol from upstream (e.g. v1.kernel.websocket.jupyter.org)
+            //    is echoed back to the client, so JupyterLab knows to use the v1 binary
+            //    deserializer instead of the default JSON one.
+            // 2. The upstream connection is ready to receive messages immediately after
+            //    bindWebSocketProxy is called, preventing a race condition where client
+            //    messages arrive before the upstream handshake completes.
+            const onUpstreamReady = (): void => {
+                const negotiatedProtocol = upstreamWebSocket.protocol;
+                const webSocketServer = new WebSocketServer({
+                    noServer: true,
+                    handleProtocols: negotiatedProtocol
+                        ? () => negotiatedProtocol
+                        : undefined
+                });
+                webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
+                    this.bindWebSocketProxy(webSocket, upstreamWebSocket);
+                });
+            };
+
+            if (upstreamWebSocket.readyState === WebSocket.OPEN) {
+                onUpstreamReady();
+            } else {
+                upstreamWebSocket.once('open', onUpstreamReady);
+                upstreamWebSocket.once('error', (error: Error) => {
+                    writeUpgradeError(socket, 502, error.message || 'Upstream WebSocket connection failed');
+                });
+            }
         } catch (error: unknown) {
             const mappedError = this.mapNotebookProxyError(error);
             const statusCode = mappedError instanceof ApplicationError ? mappedError.statusCode : 500;
