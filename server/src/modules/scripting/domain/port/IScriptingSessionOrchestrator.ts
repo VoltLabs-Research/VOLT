@@ -32,4 +32,5 @@ export interface IScriptingSessionOrchestrator {
     startSession(input: ScriptingSessionStartInput): Promise<ScriptingSessionStartResult>;
     deleteSession(trajectoryId: string): Promise<void>;
     resolveDefaultNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<string>;
+    resolveOvitoNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<string>;
 };

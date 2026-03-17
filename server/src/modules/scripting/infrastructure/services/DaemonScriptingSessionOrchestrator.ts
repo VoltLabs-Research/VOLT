@@ -147,6 +147,10 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         return this.notebookService.resolveDefaultNotebookTemplateContent(context);
     }
 
+    async resolveOvitoNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<string> {
+        return this.notebookService.resolveOvitoNotebookTemplateContent(context);
+    }
+
     private resolveDaemonJupyterPath(jupyter: DaemonNotebookJupyterResponse): string {
         return jupyter.internalPath;
     }

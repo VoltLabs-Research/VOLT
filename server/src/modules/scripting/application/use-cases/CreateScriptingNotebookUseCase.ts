@@ -17,6 +17,7 @@ import type { IUseCase } from '@shared/application/IUseCase';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 
 const DEFAULT_NOTEBOOK_TITLE = 'General Notebook';
+const OVITO_NOTEBOOK_TITLE = 'OVITO Usage Example';
 
 @injectable()
 export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingNotebookInputDTO, CreateScriptingNotebookOutputDTO, ApplicationError> {
@@ -40,7 +41,10 @@ export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingN
         }
 
         try {
-            const templateRaw = await this.jupyterNotebookService.resolveDefaultNotebookTemplateContent({});
+            const [templateRaw, ovitoTemplateRaw] = await Promise.all([
+                this.jupyterNotebookService.resolveDefaultNotebookTemplateContent({}),
+                this.jupyterNotebookService.resolveOvitoNotebookTemplateContent({})
+            ]);
             const now = new Date();
             const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(input.teamId);
             const createData: ScriptingNotebookProps = {
@@ -55,6 +59,19 @@ export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingN
                 updatedAt: now
             };
             const notebook = await this.scriptingNotebookRepository.create(createData);
+
+            const ovitoCreateData: ScriptingNotebookProps = {
+                team: input.teamId,
+                teamCluster: teamClusterId,
+                title: OVITO_NOTEBOOK_TITLE,
+                notebookPath: buildScriptingNotebookPath(randomUUID()),
+                trajectory: null,
+                createdBy: input.userId,
+                content: parseScriptingNotebookContent(ovitoTemplateRaw),
+                createdAt: now,
+                updatedAt: now
+            };
+            await this.scriptingNotebookRepository.create(ovitoCreateData);
 
             return Result.ok(toScriptingNotebookDTO(notebook));
         } catch (error) {
