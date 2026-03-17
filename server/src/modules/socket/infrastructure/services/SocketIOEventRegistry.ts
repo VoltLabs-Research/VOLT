@@ -8,10 +8,17 @@ import type { ISocketEventRegistryRuntime } from '@modules/socket/infrastructure
 
 /**
  * Handles event registration and provides connection abstraction.
+ *
+ * Disconnect handlers are aggregated per socket: only a single
+ * `socket.on('disconnect', ...)` listener is registered regardless
+ * of how many modules call `onDisconnect()`.  This avoids the
+ * MaxListenersExceededWarning that would otherwise fire when > 10
+ * modules each attach their own listener.
  */
 @injectable()
 export default class SocketIOEventRegistry implements ISocketEventRegistry, ISocketEventRegistryRuntime{
     private sockets: Map<string, Socket> = new Map();
+    private disconnectHandlers: Map<string, Array<(connection: ISocketConnection) => void | Promise<void>>> = new Map();
 
     constructor(
         @inject(SOCKET_TOKENS.SocketConnectionMapper)
@@ -38,6 +45,7 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
      */
     private unregisterSocket(socketId: string): void{
         this.sockets.delete(socketId);
+        this.disconnectHandlers.delete(socketId);
     }
 
     on<T = unknown>(
@@ -80,10 +88,20 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
         const socket = this.sockets.get(socketId);
         if(!socket) return;
 
-        socket.on('disconnect', async () => {
-            const connection = this.socketMapper.toDomain(socket);
-            await handler(connection);
-        });
+        let handlers = this.disconnectHandlers.get(socketId);
+        if(!handlers){
+            handlers = [];
+            this.disconnectHandlers.set(socketId, handlers);
+
+            // Register the single native listener that fans-out to all handlers
+            socket.on('disconnect', async () => {
+                const connection = this.socketMapper.toDomain(socket);
+                const fns = this.disconnectHandlers.get(socketId) ?? [];
+                await Promise.all(fns.map((fn) => fn(connection)));
+            });
+        }
+
+        handlers.push(handler);
     }
 
     /**
