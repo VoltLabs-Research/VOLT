@@ -245,7 +245,7 @@ export default function SimulationCardFooter({
 
     return (
         <Container className='simulation-card-footer z-10 p-1-5 d-flex items-center gap-05 p-absolute bottom-0 left-0 right-0'>
-            <Container className='d-flex column gap-025 flex-1'>
+            <Container className='d-flex column gap-05 flex-1'>
                 <EditableTrajectoryName
                     trajectoryId={trajectoryId}
                     name={name}

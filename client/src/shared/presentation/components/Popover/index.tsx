@@ -180,7 +180,7 @@ const Popover: React.FC<PopoverProps> = ({
                         <Container
                             ref={refs.setFloating}
                             id={id}
-                            className={`popover radius-lg d-flex column glass-bg ${noPadding ? '' : 'p-05'} ${className} color-primary`}
+                            className={`popover radius-lg d-flex column glass-bg ${className} color-primary`}
                             style={floatingStyles}
                             onClick={(event) => event.stopPropagation()}
                             aria-label={ariaLabel}

@@ -16,13 +16,13 @@ export default function SimulationCardHeader({ user }: SimulationCardHeaderProps
 
     return (
         <div className='simulation-card-header d-flex column gap-075 p-absolute top-0 left-0 right-0 z-5'>
-            <div className='simulation-card-header-user d-flex items-center gap-075 p-relative'>
+            <div className='simulation-card-header-user d-flex items-center gap-1 p-relative'>
                 <div className='header-avatar-wrapper'>
                     <Avatar user={user} size='sm' />
                 </div>
-                <div className='d-flex column content-center overflow-hidden'>
+                <div className='d-flex column gap-025 content-center overflow-hidden'>
                     <Paragraph className='font-size-1 font-weight-5 color-secondary simulation-card-header-label'>Uploaded by</Paragraph>
-                    <Paragraph className='font-size-1 font-weight-5 color-primary header-user-name text-truncate' title={userFullName}>
+                    <Paragraph className='font-size-1 font-weight-2 color-primary header-user-name text-truncate' title={userFullName}>
                         {userFullName}
                     </Paragraph>
                 </div>
