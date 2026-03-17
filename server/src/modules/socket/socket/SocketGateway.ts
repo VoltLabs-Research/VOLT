@@ -141,8 +141,9 @@ export default class SocketGateway{
             module.onConnection(connection);
         }
 
-        // Disconnect cleanup
-        socket.on('disconnect', () => {
+        // Disconnect cleanup — routed through the event registry so only
+        // one native `socket.on('disconnect')` listener exists per socket.
+        this.socketEventRegistry.onDisconnect(socket.id, () => {
             this.getSocketEmitterRuntime().unregisterConnection(socket.id);
             this.getSocketRoomManagerRuntime().unregisterConnection(socket.id);
             this.getSocketEventRegistryRuntime().unregisterConnection(socket.id);
