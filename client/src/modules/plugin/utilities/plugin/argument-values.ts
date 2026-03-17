@@ -63,6 +63,10 @@ export const getArgumentDefaultValue = (definition: IArgumentDefinition): unknow
         return [];
     }
 
+    if (definition.type === ArgumentType.PLUGIN_CONFIG) {
+        return { pluginId: '', config: {} };
+    }
+
     return '';
 };
 
@@ -114,6 +118,30 @@ export const getListArgumentValue = (
     }
 
     return [];
+};
+
+export interface PluginConfigValue {
+    pluginId: string;
+    config: Record<string, unknown>;
+};
+
+const isPluginConfigValue = (value: unknown): value is PluginConfigValue => {
+    return isRecord(value) && typeof value.pluginId === 'string';
+};
+
+export const getPluginConfigValue = (
+    definition: IArgumentDefinition,
+    value: unknown
+): PluginConfigValue => {
+    if (isPluginConfigValue(value)) {
+        return value;
+    }
+
+    if (isPluginConfigValue(definition.default)) {
+        return definition.default;
+    }
+
+    return { pluginId: '', config: {} };
 };
 
 export const coerceArgumentInputValue = (

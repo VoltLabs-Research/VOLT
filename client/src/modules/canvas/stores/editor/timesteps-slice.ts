@@ -1,4 +1,5 @@
 import { preloadFractalSceneAsset } from '@/modules/fractal/api/service/preload-scene-asset';
+import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
 
 import type { EditorStore } from './types';
 import type { TimestepData, TimestepState, TimestepStore, SceneObjectType } from '@/modules/fractal/stores/contracts/editor/scene-types';
@@ -76,7 +77,6 @@ export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStor
         const { useTeamStore } = await import('@/modules/team/stores/team/use-team-store');
         const { useEditorStore } = await import('@/modules/canvas/stores/editor');
         const { default: queryClient } = await import('@/shared/infrastructure/query/query-client');
-        const { TRAJECTORY_QUERY_KEYS } = await import('@/modules/trajectory/hooks/trajectory/queries');
 
         const teamId = useTeamStore.getState().selectedTeamId;
 

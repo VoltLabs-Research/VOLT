@@ -90,7 +90,7 @@ const buildComposeFile = (daemonDistributionMode: DaemonDistributionMode): strin
         '  daemon:',
         '    image: ${VOLT_CLUSTER_DAEMON_IMAGE}',
         ...daemonBuildConfiguration,
-        '    restart: unless-stopped',
+        '    restart: always',
         '    env_file:',
         '      - ./.env',
         '      - ./daemon.env',

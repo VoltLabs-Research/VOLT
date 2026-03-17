@@ -4,7 +4,8 @@ export enum ArgumentType{
     Frame = 'frame',
     Boolean = 'boolean',
     String = 'string',
-    List = 'list'
+    List = 'list',
+    PluginConfig = 'pluginConfig'
 };
 
 export interface ArgumentOption{

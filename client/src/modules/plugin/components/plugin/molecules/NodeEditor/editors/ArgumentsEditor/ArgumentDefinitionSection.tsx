@@ -140,6 +140,14 @@ const ArgumentDefinitionSection = ({
                     nextArgument.listArguments = [];
                 }
 
+                if (nextType === ArgumentType.PLUGIN_CONFIG) {
+                    delete nextArgument.options;
+                    delete nextArgument.min;
+                    delete nextArgument.max;
+                    delete nextArgument.step;
+                    delete nextArgument.listArguments;
+                }
+
                 if (nextType !== ArgumentType.NUMBER) {
                     delete nextArgument.min;
                     delete nextArgument.max;
@@ -362,7 +370,7 @@ const ArgumentDefinitionSection = ({
                         </Container>
                     )}
 
-                    {argument.type !== ArgumentType.LIST && (
+                    {argument.type !== ArgumentType.LIST && argument.type !== ArgumentType.PLUGIN_CONFIG && (
                         <FormFieldRHF
                             variant='inline'
                             label='Default Value'
