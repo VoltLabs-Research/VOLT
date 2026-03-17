@@ -3,7 +3,8 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import assert from 'node:assert/strict';
 import express from 'express';
 import test from 'node:test';
-import { uploadTrajectoryFiles } from './upload';
+import path from 'node:path';
+import { DEFAULT_TRAJECTORY_UPLOAD_DIR, TRAJECTORY_MAX_FILES, uploadTrajectoryFiles } from './upload';
 
 interface ErrorResponseBody {
     code: string;
@@ -75,7 +76,7 @@ const requestUpload = async (files: Array<{ filename: string; contents: string }
 };
 
 test('uploadTrajectoryFiles: returns a clear error when file count exceeds the limit', async () => {
-    const files = Array.from({ length: 201 }, (_, index) => ({
+    const files = Array.from({ length: TRAJECTORY_MAX_FILES + 1 }, (_, index) => ({
         contents: `frame-${index}`,
         filename: `frame-${index}.dump`
     }));
@@ -89,6 +90,13 @@ test('uploadTrajectoryFiles: returns a clear error when file count exceeds the l
 
     assert.equal(response.status, 400);
     assert.equal(body.code, ErrorCodes.TRAJECTORY_UPLOAD_FILE_LIMIT_EXCEEDED);
-    assert.equal(body.message, 'Trajectory upload supports up to 200 files per request.');
+    assert.equal(body.message, `Trajectory upload supports up to ${TRAJECTORY_MAX_FILES} files per request.`);
     assert.equal(body.statusCode, 400);
+});
+
+test('uploadTrajectoryFiles: defaults trajectory staging to storage/temp', () => {
+    assert.equal(
+        DEFAULT_TRAJECTORY_UPLOAD_DIR,
+        path.resolve(process.cwd(), 'storage/temp/trajectory-uploads')
+    );
 });

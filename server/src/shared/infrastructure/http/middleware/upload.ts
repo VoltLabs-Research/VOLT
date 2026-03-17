@@ -5,11 +5,10 @@ import logger from '@shared/infrastructure/logger';
 import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 
 const storage = multer.memoryStorage();
-const DEFAULT_TRAJECTORY_UPLOAD_DIR = path.join(os.homedir(), '.volt', 'trajectory-uploads');
+export const DEFAULT_TRAJECTORY_UPLOAD_DIR = path.resolve(process.cwd(), 'storage/temp/trajectory-uploads');
 const trajectoryUploadDir = process.env.TRAJECTORY_UPLOAD_DIR || DEFAULT_TRAJECTORY_UPLOAD_DIR;
 const CHAT_MAX_FILE_SIZE = 25 * 1024 * 1024;
 const DEFAULT_TRAJECTORY_MAX_FILES = 10_000;
@@ -23,7 +22,7 @@ const parsePositiveInteger = (value: string | undefined, fallbackValue: number):
     return parsedValue;
 };
 
-const TRAJECTORY_MAX_FILES = parsePositiveInteger(
+export const TRAJECTORY_MAX_FILES = parsePositiveInteger(
     process.env.TRAJECTORY_UPLOAD_MAX_FILES,
     DEFAULT_TRAJECTORY_MAX_FILES
 );
