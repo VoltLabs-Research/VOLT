@@ -2,6 +2,7 @@ import { Resource } from '@core/constants/resources';
 import controllers from '@modules/team-cluster/infrastructure/http/controllers';
 import { teamClusterValidation } from '@modules/team-cluster/infrastructure/http/validation/team-cluster-schemas';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 
 export default createHttpModule({
     basePath: '/api/teams/:teamId/clusters',
@@ -23,11 +24,13 @@ export default createHttpModule({
         );
         router.post(
             '/:teamClusterId/credentials/reveal',
+            RATE_LIMIT_POLICIES.passwordConfirmedClusterAction,
             teamClusterValidation.revealCredentials,
             controllers.revealCredentials.handle
         );
         router.post(
             '/:teamClusterId/remote-access/sessions',
+            RATE_LIMIT_POLICIES.passwordConfirmedClusterAction,
             teamClusterValidation.createRemoteAccessSession,
             controllers.createRemoteAccessSession.handle
         );
@@ -53,11 +56,13 @@ export default createHttpModule({
         );
         router.post(
             '/:teamClusterId/delete-requests',
+            RATE_LIMIT_POLICIES.passwordConfirmedClusterAction,
             teamClusterValidation.deleteById,
             controllers.deleteById.handle
         );
         router.post(
             '/:teamClusterId/update-requests',
+            RATE_LIMIT_POLICIES.passwordConfirmedClusterAction,
             teamClusterValidation.requestUpdate,
             controllers.requestUpdate.handle
         );
