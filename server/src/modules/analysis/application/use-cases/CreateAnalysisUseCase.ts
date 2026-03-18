@@ -1,6 +1,7 @@
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { ExecutePluginUseCase } from '@modules/plugin/application/use-cases/plugin/ExecutePluginUseCase';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import { TeamClusterRole } from '@modules/team-cluster/domain/entities/TeamCluster';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { resolveConnectedTeamCluster } from '@modules/trajectory/utilities/team-cluster/resolve-connected-team-cluster';
 import { Result } from '@shared/domain/port/Result';
@@ -36,7 +37,8 @@ export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, C
 
         const teamCluster = await resolveConnectedTeamCluster(this.teamClusterRepository, {
             teamId: input.teamId,
-            requestedTeamClusterId: input.teamClusterId || trajectory.props.teamCluster
+            requestedTeamClusterId: input.teamClusterId || trajectory.props.teamCluster,
+            requiredRoles: [TeamClusterRole.Cluster, TeamClusterRole.ComputeNode]
         });
 
         const executionResult = await this.executePluginUseCase.execute({

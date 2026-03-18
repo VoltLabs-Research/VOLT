@@ -141,7 +141,13 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             config: input.config,
             selectedFrameOnly: input.selectedFrameOnly,
             selectedTimesteps: input.selectedTimesteps,
-            timestep: input.timestep
+            timestep: input.timestep,
+            ...(input.storageClusterId && {
+                storageCluster: {
+                    clusterId: input.storageClusterId,
+                    minio: input.storageClusterMinioConfig
+                }
+            })
         });
 
         await this.daemonAnalysisCompletionService.initializeSession(

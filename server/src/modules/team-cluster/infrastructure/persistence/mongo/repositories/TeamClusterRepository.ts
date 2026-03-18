@@ -1,4 +1,4 @@
-import TeamCluster, { TeamClusterProps, TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import TeamCluster, { TeamClusterProps, TeamClusterStatus, TeamClusterRole } from '@modules/team-cluster/domain/entities/TeamCluster';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import teamClusterMapper from '@modules/team-cluster/infrastructure/persistence/mongo/mappers/TeamClusterMapper';
 import TeamClusterModel, { TeamClusterDocument } from '@modules/team-cluster/infrastructure/persistence/mongo/models/TeamClusterModel';
@@ -73,5 +73,29 @@ export default class TeamClusterRepository
                 $ne: null
             }
         }));
+    }
+
+    async findStorageClusterForTeam(teamId: string): Promise<TeamCluster | null> {
+        // Prefer dedicated StorageServer first
+        let document = await this.model.findOne({
+            team: teamId,
+            status: TeamClusterStatus.Connected,
+            role: TeamClusterRole.StorageServer
+        })
+        .select(SENSITIVE_FIELDS_SELECTION)
+        .exec();
+
+        // Fall back to any Cluster-role node
+        if (!document) {
+            document = await this.model.findOne({
+                team: teamId,
+                status: TeamClusterStatus.Connected,
+                role: TeamClusterRole.Cluster
+            })
+            .select(SENSITIVE_FIELDS_SELECTION)
+            .exec();
+        }
+
+        return document ? this.mapper.toDomain(document) : null;
     }
 };
