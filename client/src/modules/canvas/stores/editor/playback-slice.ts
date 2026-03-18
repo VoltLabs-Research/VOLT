@@ -2,6 +2,9 @@ import type { EditorStore } from './types';
 import type { PlaybackState, PlaybackStore } from '@/modules/fractal/stores/contracts/editor/scene-types';
 import type { StateCreator } from 'zustand';
 
+type PlaybackSliceSet = Parameters<StateCreator<EditorStore, [], [], PlaybackStore>>[0];
+type PlaybackSliceGet = Parameters<StateCreator<EditorStore, [], [], PlaybackStore>>[1];
+
 const DEFAULT_PLAY_SPEED = 1;
 const MIN_PLAY_SPEED = 0.1;
 const MAX_PLAY_SPEED = 10;
@@ -46,6 +49,15 @@ const advancePlaybackGeneration = () => {
 
 const isAbortError = (error: unknown) => {
     return error instanceof Error && error.name === 'AbortError';
+};
+
+const updateCurrentTimestep = (timestep: number, set: PlaybackSliceSet, get: PlaybackSliceGet) => {
+    if (get().currentTimestep === timestep) {
+        return;
+    }
+
+    set({ currentTimestep: timestep });
+    get().clearTimestepScopedScenes();
 };
 
 export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStore> = (set, get) => ({
@@ -133,7 +145,7 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
                 if (get().currentTimestep === undefined) {
                     const rangedTs = get().getRangedTimesteps();
                     if (rangedTs.length) {
-                        set({ currentTimestep: rangedTs[0] });
+                        updateCurrentTimestep(rangedTs[0], set, get);
                     }
                 }
 
@@ -177,14 +189,14 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
                         }
 
                         if (currentTimestep === undefined) {
-                            set({ currentTimestep: ts[0] });
+                            updateCurrentTimestep(ts[0], set, get);
                         } else {
                             const index = ts.indexOf(currentTimestep);
                             if (index === -1) {
-                                set({ currentTimestep: ts[0] });
+                                updateCurrentTimestep(ts[0], set, get);
                             } else {
                                 const nextIndex = (index + 1) % ts.length;
-                                set({ currentTimestep: ts[nextIndex] });
+                                updateCurrentTimestep(ts[nextIndex], set, get);
                             }
                         }
                     }
@@ -203,7 +215,7 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
     },
 
     setCurrentTimestep(timestep: number) {
-        set({ currentTimestep: timestep });
+        updateCurrentTimestep(timestep, set, get);
     },
 
     playNextFrame() {
@@ -217,12 +229,12 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
 
         const currentIndex = timesteps.indexOf(currentTimestep);
         if (currentIndex === -1) {
-            set({ currentTimestep: timesteps[0] });
+            updateCurrentTimestep(timesteps[0], set, get);
             return;
         }
 
         const nextIndex = (currentIndex + 1) % timesteps.length;
-        set({ currentTimestep: timesteps[nextIndex] });
+        updateCurrentTimestep(timesteps[nextIndex], set, get);
     },
 
     /**
@@ -242,9 +254,13 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         if (clamped !== undefined && currentTimestep !== undefined) {
             const effectiveEnd = rangeEnd ?? Infinity;
             if (currentTimestep < clamped) {
-                updates.currentTimestep = clamped;
+                set({ rangeStart: clamped });
+                updateCurrentTimestep(clamped, set, get);
+                return;
             } else if (currentTimestep > effectiveEnd) {
-                updates.currentTimestep = effectiveEnd;
+                set({ rangeStart: clamped });
+                updateCurrentTimestep(effectiveEnd, set, get);
+                return;
             }
         }
 
@@ -268,9 +284,13 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         if (clamped !== undefined && currentTimestep !== undefined) {
             const effectiveStart = rangeStart ?? -Infinity;
             if (currentTimestep > clamped) {
-                updates.currentTimestep = clamped;
+                set({ rangeEnd: clamped });
+                updateCurrentTimestep(clamped, set, get);
+                return;
             } else if (currentTimestep < effectiveStart) {
-                updates.currentTimestep = effectiveStart;
+                set({ rangeEnd: clamped });
+                updateCurrentTimestep(effectiveStart, set, get);
+                return;
             }
         }
 

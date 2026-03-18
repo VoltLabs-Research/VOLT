@@ -13,6 +13,7 @@ import { isDesktopEnvironment } from '@/shared/utils/desktop-environment';
 import AppToaster from '@/shared/presentation/components/AppToaster';
 import DesktopShell from '@/shared/presentation/components/DesktopShell';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
+import GlobalContextMenu from '@/shared/presentation/components/GlobalContextMenu';
 import GlobalErrorListener from '@/shared/presentation/components/GlobalErrorListener';
 import QueryProvider from '@/shared/presentation/components/QueryProvider';
 import NotFoundState from '@/shared/presentation/components/NotFoundState';
@@ -80,8 +81,10 @@ export default function App() {
         <QueryProvider>
             <Router unstable_useTransitions={false}>
                 <DesktopShell>
-                    <AppRoutes />
-                    <AppToaster />
+                    <GlobalContextMenu>
+                        <AppRoutes />
+                        <AppToaster />
+                    </GlobalContextMenu>
                 </DesktopShell>
             </Router>
         </QueryProvider>

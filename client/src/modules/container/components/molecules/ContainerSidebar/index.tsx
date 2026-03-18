@@ -4,7 +4,6 @@ import {
     Activity,
     ArrowLeft,
     Box,
-    FileText,
     Folder,
     Layers,
     Monitor,
@@ -52,11 +51,6 @@ const BASE_NAV_ITEMS: NavItem[] = [
         path: 'terminal',
         label: 'Terminal',
         icon: Terminal
-    },
-    {
-        path: 'logs',
-        label: 'Logs',
-        icon: FileText
     },
     {
         path: 'storage',
