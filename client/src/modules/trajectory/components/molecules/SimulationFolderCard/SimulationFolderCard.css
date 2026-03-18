@@ -1,19 +1,16 @@
 .simulation-folder-card {
-    min-height: 19.5rem;
-    background:
-        radial-gradient(circle at top right, color-mix(in srgb, var(--accent-blue) 10%, transparent), transparent 45%),
-        linear-gradient(180deg, color-mix(in srgb, var(--color-surface-2) 82%, transparent), var(--color-surface-1));
-    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     transition:
         transform 0.22s ease,
         border-color 0.22s ease,
         box-shadow 0.22s ease;
 }
 
-.simulation-folder-card:hover {
-    transform: translateY(-0.15rem);
-    border-color: color-mix(in srgb, var(--accent-blue) 35%, var(--color-border-soft));
-    box-shadow: var(--shadow-elevated);
+.simulation-folder-card:hover span{
+    text-decoration: underline;
+    text-underline-offset: .5rem    ;
 }
 
 .simulation-folder-card:focus-visible {
@@ -33,10 +30,6 @@
     color: var(--accent-blue);
     background: color-mix(in srgb, var(--accent-blue) 12%, var(--color-surface-1));
     border: 1px solid color-mix(in srgb, var(--accent-blue) 18%, var(--color-border-soft));
-}
-
-.simulation-folder-card__description {
-    line-height: 1.5;
 }
 
 .simulation-folder-card__footer {

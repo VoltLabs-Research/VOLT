@@ -16,14 +16,6 @@ import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 
-const formatConfigValue = (value: unknown): string => {
-    if (value === null || value === undefined) return '—';
-    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-    if (typeof value === 'number') return String(value);
-    if (typeof value === 'string') return value;
-    return JSON.stringify(value);
-};
-
 interface AnalysisTreeNodeProps {
     section: AnalysisSectionData;
     effectiveStatus?: CanvasAnalysisStatus;
@@ -71,7 +63,7 @@ const AnalysisTreeNode = ({
     selectedScene,
     onSelectRasterScene
 }: AnalysisTreeNodeProps) => {
-    const { analysis, pluginDisplayName, entry, isCurrentAnalysis, config } = section;
+    const { analysis, pluginDisplayName, entry, isCurrentAnalysis, userConfig } = section;
     const isRasterSelectionMode = selectionMode === 'raster';
     const hasExposures = entry.state === 'loaded' && entry.exposures.length > 0;
     const isLoading = entry.state === 'loading';
@@ -83,33 +75,30 @@ const AnalysisTreeNode = ({
         ? selectedScene?.source === 'plugin' && 'analysisId' in selectedScene && selectedScene.analysisId === analysis._id
         : isCurrentAnalysis;
 
-    const configEntries = useMemo(() => Object.entries(config ?? {}), [config]);
+    const formattedUserConfig = useMemo(() => {
+        return JSON.stringify(userConfig ?? {}, null, 2);
+    }, [userConfig]);
 
     const tooltipContent = useMemo(() => {
-        const hasConfig = configEntries.length > 0;
+        const hasConfig = formattedUserConfig !== '{}';
         if (!isAnalysisInProgress && !hasConfig) return null;
+
         return (
-            <>
+            <div className='canvas-tree-config-tooltip__content'>
+                <div className='canvas-tree-config-tooltip__header'>Execution config</div>
                 {isAnalysisInProgress && (
-                    <div className="canvas-tree-config-tooltip__warning">
+                    <div className='canvas-tree-config-tooltip__warning'>
                         Analysis still running. Some options will be disabled until it finishes.
                     </div>
                 )}
                 {hasConfig ? (
-                    <div className="canvas-tree-config-tooltip__list">
-                        {configEntries.map(([key, value]) => (
-                            <div key={key} className="canvas-tree-config-tooltip__row">
-                                <span className="canvas-tree-config-tooltip__key">{key}</span>
-                                <span className="canvas-tree-config-tooltip__value">{formatConfigValue(value)}</span>
-                            </div>
-                        ))}
-                    </div>
+                    <pre className='canvas-tree-config-tooltip__json'>{formattedUserConfig}</pre>
                 ) : (
-                    <div className="canvas-tree-config-tooltip__empty">No configuration</div>
+                    <div className='canvas-tree-config-tooltip__empty'>No execution config captured for this analysis.</div>
                 )}
-            </>
+            </div>
         );
-    }, [configEntries, isAnalysisInProgress]);
+    }, [formattedUserConfig, isAnalysisInProgress]);
 
     const handleSelectAnalysis = () => {
         if (isAnalysisInProgress) {
@@ -191,18 +180,20 @@ const AnalysisTreeNode = ({
         </Container>
     );
 
+    const analysisTriggerWithContextMenu = isRasterSelectionMode ? analysisTrigger : (
+        <ContextMenuPopover
+            id={`canvas-ctx-analysis-${analysis._id}`}
+            trigger={analysisTrigger}
+            options={analysisMenuOptions}
+            size='sm'
+        />
+    );
+
     return (
         <>
-            {isRasterSelectionMode ? analysisTrigger : (
-                <Tooltip content={tooltipContent} disabled={!tooltipContent} placement='bottom' className='canvas-tree-config-tooltip'>
-                    <ContextMenuPopover
-                        id={`canvas-ctx-analysis-${analysis._id}`}
-                        trigger={analysisTrigger}
-                        options={analysisMenuOptions}
-                        size='sm'
-                    />
-                </Tooltip>
-            )}
+            <Tooltip content={tooltipContent} disabled={!tooltipContent} placement='right-start' className='canvas-tree-config-tooltip'>
+                {analysisTriggerWithContextMenu}
+            </Tooltip>
 
             {isExpanded && isLoading && (
                 <Container className="canvas-tree-item d-flex items-center gap-05 color-secondary canvas-tree-item--indent-lg">

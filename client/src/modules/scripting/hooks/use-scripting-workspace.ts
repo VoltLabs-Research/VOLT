@@ -3,8 +3,7 @@ import { useCreateScriptingSessionMutation, scriptingNotebooksQuery } from './qu
 import {
     JUPYTER_SESSION_TIMEOUT_MESSAGE,
     normalizeScriptingJupyterUrl,
-    startAndWaitForReadyScriptingSession,
-    waitForReadyScriptingSession
+    startAndWaitForReadyScriptingSession
 } from '../utilities/jupyter-session';
 import { getNotebookTeamClusterId } from '../utilities/notebooks';
 import {
@@ -80,20 +79,20 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         };
     }, []);
 
-    const readExistingSession = useCallback(async (): Promise<ScriptingSession | null> => {
+    const deleteExistingSession = useCallback(async (): Promise<void> => {
         if (!activeNotebook?._id) {
-            return null;
+            return;
         }
 
         try {
-            return await service.readNotebookSessionStatus({ notebookId: activeNotebook._id });
+            await service.deleteNotebookSession({ notebookId: activeNotebook._id });
         } catch (error: unknown) {
             if (checkAccessDeniedError(error)) {
                 throw error;
             }
 
             if (isApiError(error) && error.status === 404) {
-                return null;
+                return;
             }
 
             throw error;
@@ -133,45 +132,27 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                     }
                 }
             };
-            const existingSession = await readExistingSession();
+            await deleteExistingSession();
             if (isRequestCancelled()) {
                 return;
             }
 
-            if (existingSession) {
-                setContainerStage(existingSession.jupyter.containerStage ?? null);
+            sileo.info({ title: 'Starting Jupyter session...' });
 
-                if (existingSession.jupyter.ready && existingSession.jupyter.url) {
-                    setContainerStage('ready');
-                    setJupyterUrl(normalizeScriptingJupyterUrl(existingSession.jupyter.url));
-                    return;
-                }
-            }
-
-            let result: WaitForReadyScriptingSessionResult;
-            if (existingSession) {
-                result = await waitForReadyScriptingSession({
-                    initialSession: existingSession,
-                    readSession
-                }, waitForReadyOptions);
-            } else {
-                sileo.info({ title: 'Starting Jupyter session...' });
-
-                result = await startAndWaitForReadyScriptingSession({
-                    createSession: async () => {
-                        const session = await createScriptingSession({
-                            trajectoryId,
-                            notebookId: activeNotebook?._id,
-                            teamClusterId: getNotebookTeamClusterId(activeNotebook)
-                        });
-                        if (!isRequestCancelled()) {
-                            setContainerStage(session.jupyter.containerStage ?? 'creating');
-                        }
-                        return session;
-                    },
-                    readSession
-                }, waitForReadyOptions);
-            }
+            const result: WaitForReadyScriptingSessionResult = await startAndWaitForReadyScriptingSession({
+                createSession: async () => {
+                    const session = await createScriptingSession({
+                        trajectoryId,
+                        notebookId: activeNotebook?._id,
+                        teamClusterId: getNotebookTeamClusterId(activeNotebook)
+                    });
+                    if (!isRequestCancelled()) {
+                        setContainerStage(session.jupyter.containerStage ?? 'creating');
+                    }
+                    return session;
+                },
+                readSession
+            }, waitForReadyOptions);
 
             if (isRequestCancelled()) {
                 return;
@@ -203,7 +184,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                 setIsWaitingForJupyter(false);
             }
         }
-    }, [activeNotebook, checkAccessDeniedError, createScriptingSession, readExistingSession, trajectoryId]);
+    }, [activeNotebook, checkAccessDeniedError, createScriptingSession, deleteExistingSession, trajectoryId]);
 
     useEffect(() => {
         if (!trajectoryId || notebooksQuery.isLoading) {

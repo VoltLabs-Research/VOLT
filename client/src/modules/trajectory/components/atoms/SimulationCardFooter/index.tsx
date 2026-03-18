@@ -14,7 +14,7 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';
-import { Play, ScanSearch } from 'lucide-react';
+import { FolderInput, Play, ScanSearch } from 'lucide-react';
 import { sileo } from 'sileo';
 import { HiOutlineViewfinderCircle } from 'react-icons/hi2';
 import { PiDotsThreeVerticalBold } from 'react-icons/pi';
@@ -30,6 +30,7 @@ interface SimulationCardFooterProps {
     updatedAt: string;
     isProcessing: boolean;
     processingMessage?: string;
+    onMoveToFolder?: () => void;
     onDelete?: (_id: string) => void;
 };
 
@@ -138,6 +139,7 @@ export default function SimulationCardFooter({
     updatedAt,
     isProcessing,
     processingMessage,
+    onMoveToFolder,
     onDelete
 }: SimulationCardFooterProps) {
     const navigate = useNavigate();
@@ -219,7 +221,11 @@ export default function SimulationCardFooter({
         onClick: handleViewRaster,
         label: 'Open raster workspace',
         icon: <ScanSearch />
-    }, {
+    }, ...(onMoveToFolder ? [{
+        onClick: onMoveToFolder,
+        label: 'Move to folder',
+        icon: <FolderInput />
+    }] : []), {
         onClick: handleRasterizeTrajectory,
         label: 'Rasterize trajectory',
         icon: <Play />,

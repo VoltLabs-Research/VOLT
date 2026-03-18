@@ -49,6 +49,18 @@
     color: var(--selected-indicator);
 }
 
+.canvas-tree-item__text {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.canvas-tree-item__text--muted {
+    color: var(--color-text-muted);
+}
+
 .canvas-tree-toggle.button.icon-only {
     background-color: transparent;
     color: var(--color-text-muted);
@@ -153,52 +165,56 @@
     color: var(--color-text-primary);
 }
 
-.canvas-tree-config-tooltip {
+.volt-tooltip.canvas-tree-config-tooltip {
     white-space: normal;
-    max-width: 320px;
+    width: min(32rem, calc(100vw - 2rem));
+    max-width: 32rem;
     padding: 0;
     pointer-events: auto;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-card);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
 }
 
-.canvas-tree-config-tooltip__list {
+.canvas-tree-config-tooltip__content {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    padding: 0.5rem 0.75rem;
-    max-height: 240px;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    max-height: min(24rem, calc(100dvh - 2rem));
 }
 
-.canvas-tree-config-tooltip__row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 1rem;
+.canvas-tree-config-tooltip__header {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    color: var(--color-text-primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.canvas-tree-config-tooltip__json {
+    margin: 0;
+    padding: 0.75rem;
+    overflow: auto;
+    overscroll-behavior: contain;
+    color: var(--color-text-primary);
     font-size: 0.75rem;
     line-height: 1.4;
-}
-
-.canvas-tree-config-tooltip__key {
-    color: var(--color-text-muted);
-    flex-shrink: 0;
-}
-
-.canvas-tree-config-tooltip__value {
-    color: var(--color-text-primary);
-    text-align: right;
+    white-space: pre-wrap;
     word-break: break-word;
     font-variant-numeric: tabular-nums;
+    font-family: var(--font-family-mono, 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace);
 }
 
 .canvas-tree-config-tooltip__empty {
     color: var(--color-text-muted);
     font-size: 0.75rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem;
 }
 
 .canvas-tree-config-tooltip__warning {
-    padding: 0.375rem 0.75rem;
+    padding: 0.5rem 0.75rem;
     font-size: 0.75rem;
     color: var(--accent-yellow);
     border-bottom: 1px solid var(--color-border-soft);

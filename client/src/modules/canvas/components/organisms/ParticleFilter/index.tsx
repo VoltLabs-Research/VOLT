@@ -19,6 +19,14 @@ interface FilterConditionViewModel {
     valueInput: string;
 };
 
+interface ConditionFieldHandlers {
+    handleRemoveCondition: () => void;
+    handlePropertyFieldChange: (_fieldKey: string, value: unknown) => void;
+    handleOperatorFieldChange: (_fieldKey: string, value: unknown) => void;
+    handleValueFieldChange: (_fieldKey: string, value: unknown) => void;
+    handleFetchSuggestions: () => void;
+};
+
 const isFilterOperator = (value: string): value is FilterOperator => {
     return OPERATORS.some((option) => option.value === value);
 };
@@ -69,8 +77,62 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
         valueInput: condition.valueInput
     }));
 
+    const createConditionFieldHandlers = (conditionId: string): ConditionFieldHandlers => {
+        const handleRemoveCondition = () => {
+            removeCondition(conditionId);
+        };
+
+        const handlePropertyFieldChange = (_fieldKey: string, value: unknown) => {
+            handlePropertyChange(conditionId, String(value));
+        };
+
+        const handleOperatorFieldChange = (_fieldKey: string, value: unknown) => {
+            const nextValue = String(value);
+            if (!isFilterOperator(nextValue)) {
+                return;
+            }
+
+            handleOperatorChange(conditionId, nextValue);
+        };
+
+        const handleValueFieldChange = (_fieldKey: string, value: unknown) => {
+            handleValueChange(conditionId, String(value));
+        };
+
+        const handleFetchSuggestions = () => {
+            fetchValueSuggestions(conditionId);
+        };
+
+        return {
+            handleRemoveCondition,
+            handlePropertyFieldChange,
+            handleOperatorFieldChange,
+            handleValueFieldChange,
+            handleFetchSuggestions
+        };
+    };
+
+    const handleActionFieldChange = (_fieldKey: string, value: unknown) => {
+        const nextValue = String(value);
+        if (!isFilterAction(nextValue)) {
+            return;
+        }
+
+        setAction(nextValue);
+    };
+
+    const handleMatchModeFieldChange = (_fieldKey: string, value: unknown) => {
+        const nextValue = String(value);
+        if (!isParticleFilterCombinator(nextValue)) {
+            return;
+        }
+
+        setMatchMode(nextValue);
+    };
+
     const renderConditionRow = (condition: FilterConditionViewModel, index: number) => {
         const isRemovable = conditionViewModels.length > 1;
+        const handlers = createConditionFieldHandlers(condition.id);
 
         return (
             <Container key={condition.id} className='canvas-filter-condition d-flex column gap-05'>
@@ -82,7 +144,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                             intent='danger'
                             shape='rounded'
                             size='sm'
-                            onClick={() => removeCondition(condition.id)}
+                            onClick={handlers.handleRemoveCondition}
                             className='font-size-05'
                         >
                             Remove
@@ -95,7 +157,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                     fieldType='select'
                     label='Property'
                     fieldValue={condition.propertyValue}
-                    onFieldChange={(_, value) => handlePropertyChange(condition.id, String(value))}
+                    onFieldChange={handlers.handlePropertyFieldChange}
                     options={propertyOptions}
                     variant='canvas'
                 />
@@ -105,14 +167,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                     fieldType='select'
                     label='Operator'
                     fieldValue={condition.operator}
-                    onFieldChange={(_, value) => {
-                        const nextValue = String(value);
-                        if (!isFilterOperator(nextValue)) {
-                            return;
-                        }
-
-                        handleOperatorChange(condition.id, nextValue);
-                    }}
+                    onFieldChange={handlers.handleOperatorFieldChange}
                     options={OPERATORS}
                     variant='canvas'
                 />
@@ -120,11 +175,11 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                 <FormFieldRHF
                     fieldKey={`value-${condition.id}`}
                     fieldType='input'
-                    onFieldChange={(_, nextValue) => handleValueChange(condition.id, String(nextValue))}
+                    onFieldChange={handlers.handleValueFieldChange}
                     fieldValue={condition.valueInput}
                     label='Value'
                     suggestions={getValueSuggestions(condition.id)}
-                    onFetchSuggestions={() => fetchValueSuggestions(condition.id)}
+                    onFetchSuggestions={handlers.handleFetchSuggestions}
                     isLoading={isLoadingValueSuggestions}
                     inputProps={{ inputMode: 'decimal' }}
                     variant='canvas'
@@ -152,14 +207,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                     fieldType='select'
                     label='Action'
                     fieldValue={action}
-                    onFieldChange={(_, value) => {
-                        const nextValue = String(value);
-                        if (!isFilterAction(nextValue)) {
-                            return;
-                        }
-
-                        setAction(nextValue);
-                    }}
+                    onFieldChange={handleActionFieldChange}
                     options={ACTIONS}
                     variant='canvas'
                 />
@@ -206,14 +254,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                         fieldType='select'
                         label='Combine'
                         fieldValue={matchMode}
-                        onFieldChange={(_, value) => {
-                            const nextValue = String(value);
-                            if (!isParticleFilterCombinator(nextValue)) {
-                                return;
-                            }
-
-                            setMatchMode(nextValue);
-                        }}
+                        onFieldChange={handleMatchModeFieldChange}
                         options={MATCH_MODES}
                         variant='canvas'
                     />

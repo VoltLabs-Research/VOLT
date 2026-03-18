@@ -1,11 +1,12 @@
 import type { TrajectoryFolderRow } from '@/modules/trajectory/utilities/listing';
 import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
 import { ChevronRight, Folder } from 'lucide-react';
-import { useCallback } from 'react';
-import type { KeyboardEvent } from 'react';
+import { useCallback, useRef } from 'react';
+import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react';
 import './SimulationFolderCard.css';
+
+const FOLDER_DRAG_INTENT_DISTANCE = 8;
 
 interface SimulationFolderCardProps {
     folder: TrajectoryFolderRow;
@@ -13,9 +14,53 @@ interface SimulationFolderCardProps {
 };
 
 export default function SimulationFolderCard({ folder, onOpen }: SimulationFolderCardProps) {
-    const handleOpen = useCallback(() => {
+    const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+    const didDragRef = useRef(false);
+
+    const resetPointerIntent = useCallback(() => {
+        pointerStartRef.current = null;
+        didDragRef.current = false;
+    }, []);
+
+    const openFolder = useCallback(() => {
         onOpen(folder._id);
     }, [folder._id, onOpen]);
+
+    const handlePointerDown = useCallback((event: PointerEvent<HTMLElement>) => {
+        if (!event.isPrimary || event.button !== 0) {
+            resetPointerIntent();
+            return;
+        }
+
+        pointerStartRef.current = {
+            x: event.clientX,
+            y: event.clientY
+        };
+        didDragRef.current = false;
+    }, [resetPointerIntent]);
+
+    const handlePointerMove = useCallback((event: PointerEvent<HTMLElement>) => {
+        if (!pointerStartRef.current) {
+            return;
+        }
+
+        const distanceX = Math.abs(event.clientX - pointerStartRef.current.x);
+        const distanceY = Math.abs(event.clientY - pointerStartRef.current.y);
+        if (distanceX >= FOLDER_DRAG_INTENT_DISTANCE || distanceY >= FOLDER_DRAG_INTENT_DISTANCE) {
+            didDragRef.current = true;
+        }
+    }, []);
+
+    const handleClick = useCallback((event: MouseEvent<HTMLElement>) => {
+        const shouldSuppressClick = didDragRef.current;
+        resetPointerIntent();
+
+        if (shouldSuppressClick || event.metaKey || event.ctrlKey) {
+            return;
+        }
+
+        openFolder();
+    }, [openFolder, resetPointerIntent]);
 
     const handleKeyDown = useCallback((event: KeyboardEvent<HTMLElement>) => {
         if (event.key !== 'Enter' && event.key !== ' ') {
@@ -23,14 +68,17 @@ export default function SimulationFolderCard({ folder, onOpen }: SimulationFolde
         }
 
         event.preventDefault();
-        onOpen(folder._id);
-    }, [folder._id, onOpen]);
+        openFolder();
+    }, [openFolder]);
 
     return (
         <article
             className='simulation-folder-card radius-md b-soft p-1-5 cursor-pointer'
-            onClick={handleOpen}
+            onClick={handleClick}
             onKeyDown={handleKeyDown}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerCancel={resetPointerIntent}
             tabIndex={0}
             role='button'
             aria-label={`Open folder ${folder.title}`}
@@ -44,9 +92,6 @@ export default function SimulationFolderCard({ folder, onOpen }: SimulationFolde
                     <Title className='font-size-4 font-weight-5 color-primary text-truncate'>
                         {folder.title}
                     </Title>
-                    <Paragraph className='font-size-2 color-secondary simulation-folder-card__description'>
-                        Organize trajectories and drag files here to move them into this folder.
-                    </Paragraph>
                 </Container>
 
                 <Container className='simulation-folder-card__footer d-flex items-center gap-05 color-secondary font-size-2'>
