@@ -198,8 +198,8 @@ export class TrajectoryPluginParserService {
                 for (const item of perAtomData) {
                     if (shouldBreak) break;
 
-                    const id = (item as Record<string, unknown>)?.id as number | undefined;
-                    if (id === undefined) continue;
+                    const id = this.normalizeAtomId((item as Record<string, unknown>)?.id);
+                    if (id === null) continue;
                     if (!targetIdsSet.has(id)) continue;
 
                     pluginIndex.set(id, item as Record<string, unknown>);
@@ -323,8 +323,8 @@ export class TrajectoryPluginParserService {
         for (const result of exposureResults) {
             const mapping = exposureMappings.get(result.exposureId)!;
             for (const row of result.rows) {
-                if (row.id === undefined) continue;
-                const atomId = Number(row.id);
+                const atomId = this.normalizeAtomId(row.id);
+                if (atomId === null) continue;
                 if (atomIds && !atomIds.has(atomId)) continue;
                 const existing = mergedAtoms.get(atomId) ?? { id: atomId };
 
@@ -364,8 +364,8 @@ export class TrajectoryPluginParserService {
         const items = data as Array<Record<string, unknown>>;
         let maxId = 0;
         for (let i = 0; i < items.length; i++) {
-            const id = items[i]?.id as number | undefined;
-            if (typeof id === 'number' && id > maxId) maxId = id;
+            const id = this.normalizeAtomId(items[i]?.id);
+            if (id !== null && id > maxId) maxId = id;
         }
         if (maxId <= 0) return undefined;
 
@@ -377,8 +377,8 @@ export class TrajectoryPluginParserService {
         if (!isVector) {
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];
-                const id = item?.id as number | undefined;
-                if (typeof id !== 'number') continue;
+                const id = this.normalizeAtomId(item?.id);
+                if (id === null) continue;
                 out[id] = Number(item?.[property]) || 0;
             }
             return out;
@@ -386,8 +386,8 @@ export class TrajectoryPluginParserService {
 
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
-            const id = item?.id as number | undefined;
-            if (typeof id !== 'number') continue;
+            const id = this.normalizeAtomId(item?.id);
+            if (id === null) continue;
 
             const vec = item?.[property] as number[] | undefined;
             if (!Array.isArray(vec) || vec.length === 0) continue;
@@ -443,6 +443,20 @@ export class TrajectoryPluginParserService {
         }
 
         return Array.from(keys);
+    }
+
+    private normalizeAtomId(value: unknown): number | null {
+        const parsed = typeof value === 'string'
+            ? Number(value.trim())
+            : typeof value === 'number'
+                ? value
+                : Number.NaN;
+
+        if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0) {
+            return null;
+        }
+
+        return parsed;
     }
 
     private normalizePerAtomProperties(value: unknown): PerAtomRow[] | null {

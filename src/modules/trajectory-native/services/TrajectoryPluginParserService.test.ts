@@ -1,0 +1,84 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { encode } from '@msgpack/msgpack';
+import { TrajectoryPluginParserService } from './TrajectoryPluginParserService';
+
+import type { MinioService } from '@/modules/platform/services';
+
+const createAsyncStream = (...messages: unknown[]): AsyncIterable<Uint8Array> => {
+    return {
+        async *[Symbol.asyncIterator]() {
+            for (const message of messages) {
+                yield encode(message);
+            }
+        }
+    };
+};
+
+test('buildPluginIndexForAtomIds joins rows with numeric string ids', async () => {
+    const minioService = {
+        getObjectStream: async () => createAsyncStream({
+            'per-atom-properties': [
+                { id: '10', charge: 1.5 },
+                { id: '20', charge: 2.5 },
+                { id: 'bad-id', charge: 3.5 }
+            ]
+        })
+    } as unknown as MinioService;
+
+    const service = new TrajectoryPluginParserService(minioService);
+
+    const result = await service.buildPluginIndexForAtomIds({
+        trajectoryId: 'traj-1',
+        analysisId: 'analysis-1',
+        exposureId: 'exposure-1',
+        timestep: 0,
+        targetIds: [10, 20]
+    });
+
+    assert.ok(result instanceof Map);
+    assert.equal(result?.get(10)?.charge, 1.5);
+    assert.equal(result?.get(20)?.charge, 2.5);
+    assert.equal(result?.has(30), false);
+});
+
+test('getModifierValues and getAnalysisAllPerAtomData normalize string ids consistently', async () => {
+    const timestepPayload = {
+        'per-atom-properties': [
+            { id: '2', energy: 7 },
+            { id: '5', energy: 11 },
+            { id: '', energy: 13 }
+        ]
+    };
+
+    const minioService = {
+        listObjects: async () => [
+            'plugins/trajectory-traj-1/analysis-analysis-1/exposure-a/timestep-0.msgpack'
+        ],
+        getObjectStream: async () => createAsyncStream(timestepPayload)
+    } as unknown as MinioService;
+
+    const service = new TrajectoryPluginParserService(minioService);
+
+    const values = await service.getModifierValues({
+        trajectoryId: 'traj-1',
+        analysisId: 'analysis-1',
+        exposureId: 'exposure-a',
+        timestep: 0,
+        property: 'energy'
+    });
+
+    assert.ok(values instanceof Float32Array);
+    assert.equal(values?.[2], 7);
+    assert.equal(values?.[5], 11);
+
+    const merged = await service.getAnalysisAllPerAtomData({
+        trajectoryId: 'traj-1',
+        analysisId: 'analysis-1',
+        timestep: 0,
+        atomIds: new Set([5])
+    });
+
+    assert.deepEqual(merged.propertyNames, ['energy']);
+    assert.deepEqual(merged.atoms, [{ id: 5, energy: 11 }]);
+});
