@@ -22,6 +22,7 @@ const FAKE_PARSED: ParsedTrajectory = {
     },
     positions: new Float32Array([0, 0, 0, 1, 1, 1, 2, 2, 2]),
     types: new Uint16Array([1, 1, 2]),
+    ids: new Uint32Array([10, 20, 30]),
     min: [0, 0, 0],
     max: [2, 2, 2]
 };
@@ -182,4 +183,114 @@ test('EmptyFilterResultError exposes the correct code and name properties', () =
     assert.equal(error.name, 'EmptyFilterResultError');
     assert.ok(error instanceof Error);
     assert.match(error.message, /42 atom/);
+});
+
+test('previewFilter: remaps external values by atom id before evaluating', async () => {
+    let capturedMaskBase64 = '';
+
+    const trajectoryParserService: TrajectoryParserService = {
+        async withDumpFile<T>(_input: unknown, action: (dumpPath: string) => Promise<T>): Promise<T> {
+            return action('/fake/dump.lammpstrj');
+        },
+        parseTrajectory(): ParsedTrajectory {
+            return FAKE_PARSED;
+        },
+        decodeFloat32Array(value: string): Float32Array {
+            const buffer = Buffer.from(value, 'base64');
+            return new Float32Array(buffer.buffer, buffer.byteOffset, Math.floor(buffer.byteLength / Float32Array.BYTES_PER_ELEMENT));
+        },
+        remapExternalValues(parsed: ParsedTrajectory, externalValues: Float32Array): Float32Array {
+            const values = new Float32Array(parsed.ids?.length || 0);
+            values.fill(Number.NaN);
+
+            if (parsed.ids) {
+                for (let index = 0; index < parsed.ids.length; index++) {
+                    const atomId = parsed.ids[index];
+                    const externalValue = externalValues[atomId];
+                    values[index] = Number.isFinite(externalValue) ? externalValue : Number.NaN;
+                }
+            }
+
+            return values;
+        }
+    } as unknown as TrajectoryParserService;
+
+    const minioService = {} as MinioService;
+    const nativeModuleLoader = {
+        getExporterModule: () => ({})
+    } as unknown as NativeModuleLoader;
+
+    const service = createFilterEvaluatorService(minioService, nativeModuleLoader, trajectoryParserService);
+
+    const external = new Float32Array(31);
+    external.fill(Number.NaN);
+    external[10] = 5;
+    external[20] = 1;
+    external[30] = 8;
+
+    const result = await service.previewFilter({
+        trajectoryId: 'traj-1',
+        timestep: 0,
+        property: 'pluginProp',
+        operator: '>',
+        value: 4,
+        externalValuesBase64: Buffer.from(external.buffer, external.byteOffset, external.byteLength).toString('base64')
+    });
+
+    capturedMaskBase64 = result.maskBase64;
+    assert.equal(result.matchCount, 2);
+    assert.equal(result.totalAtoms, 3);
+    assert.deepEqual(Array.from(Buffer.from(capturedMaskBase64, 'base64')), [1, 0, 1]);
+});
+
+test('previewFilter: ignores missing external values instead of treating them as zero', async () => {
+    const trajectoryParserService: TrajectoryParserService = {
+        async withDumpFile<T>(_input: unknown, action: (dumpPath: string) => Promise<T>): Promise<T> {
+            return action('/fake/dump.lammpstrj');
+        },
+        parseTrajectory(): ParsedTrajectory {
+            return FAKE_PARSED;
+        },
+        decodeFloat32Array(value: string): Float32Array {
+            const buffer = Buffer.from(value, 'base64');
+            return new Float32Array(buffer.buffer, buffer.byteOffset, Math.floor(buffer.byteLength / Float32Array.BYTES_PER_ELEMENT));
+        },
+        remapExternalValues(parsed: ParsedTrajectory, externalValues: Float32Array): Float32Array {
+            const values = new Float32Array(parsed.ids?.length || 0);
+            values.fill(Number.NaN);
+
+            if (parsed.ids) {
+                for (let index = 0; index < parsed.ids.length; index++) {
+                    const atomId = parsed.ids[index];
+                    const externalValue = externalValues[atomId];
+                    values[index] = Number.isFinite(externalValue) ? externalValue : Number.NaN;
+                }
+            }
+
+            return values;
+        }
+    } as unknown as TrajectoryParserService;
+
+    const service = createFilterEvaluatorService(
+        {} as MinioService,
+        { getExporterModule: () => ({}) } as unknown as NativeModuleLoader,
+        trajectoryParserService
+    );
+
+    const external = new Float32Array(31);
+    external.fill(Number.NaN);
+    external[10] = 5;
+    external[30] = 8;
+
+    const result = await service.previewFilter({
+        trajectoryId: 'traj-1',
+        timestep: 0,
+        property: 'pluginProp',
+        operator: '==',
+        value: 0,
+        externalValuesBase64: Buffer.from(external.buffer, external.byteOffset, external.byteLength).toString('base64')
+    });
+
+    assert.equal(result.matchCount, 0);
+    assert.deepEqual(Array.from(Buffer.from(result.maskBase64, 'base64')), [0, 0, 0]);
 });

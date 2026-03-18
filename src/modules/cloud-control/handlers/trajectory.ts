@@ -258,6 +258,12 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
             })
         },
         {
+            command: 'trajectory.native.atom-ids',
+            execute: async (payload) => ({
+                data: await deps.trajectoryParserService.getAtomIds(readNativeTrajectoryRequest(payload))
+            })
+        },
+        {
             command: 'trajectory.native.atoms',
             execute: async (payload) => {
                 const request = readNativeAtomsPageRequest(payload);

@@ -84,6 +84,11 @@ const evaluateFilter = (values: Float32Array, operator: string, compareValue: nu
 
     for (let index = 0; index < values.length; index++) {
         const value = values[index];
+
+        if (!Number.isFinite(value)) {
+            continue;
+        }
+
         let matches = false;
 
         if (operator === '==') {
@@ -189,13 +194,7 @@ export const createFilterEvaluatorService = (
                     properties: []
                 });
                 const externalValues = trajectoryParserService.decodeFloat32Array(input.externalValuesBase64);
-                values = new Float32Array(parsed.ids?.length || 0);
-
-                if (parsed.ids) {
-                    for (let index = 0; index < parsed.ids.length; index++) {
-                        values[index] = externalValues[parsed.ids[index]] || 0;
-                    }
-                }
+                values = trajectoryParserService.remapExternalValues(parsed, externalValues);
             } else {
                 const parsed = trajectoryParserService.parseTrajectory(dumpPath, {
                     includeIds: input.property.toLowerCase() === 'id',

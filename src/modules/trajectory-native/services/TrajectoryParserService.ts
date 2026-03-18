@@ -109,6 +109,7 @@ export interface TrajectoryParserService {
     getTrajectoryMetadata(input: NativeTrajectoryRequest): Promise<ParsedTrajectory['metadata']>;
     getPropertyStats(input: NativePropertyStatsRequest): Promise<NativeStatsResult>;
     getUniqueValues(input: NativeUniqueValuesRequest): Promise<number[]>;
+    getAtomIds(input: NativeTrajectoryRequest): Promise<number[]>;
     getAtomsPage(input: NativeAtomsPageRequest): Promise<NativeAtomsPageResponse>;
     withDumpFile<T>(input: NativeTrajectoryRequest, action: (dumpPath: string) => Promise<T>): Promise<T>;
     parseTrajectory(filePath: string, options?: ParseOptions): ParsedTrajectory;
@@ -205,6 +206,21 @@ export const createTrajectoryParserService = (
                 totalAtoms,
                 nativeProperties
             };
+        });
+    },
+
+    async getAtomIds(input) {
+        return this.withDumpFile(input, async (dumpPath) => {
+            const parsed = this.parseTrajectory(dumpPath, {
+                includeIds: true,
+                properties: []
+            });
+
+            if (!parsed.ids) {
+                throw new Error('Trajectory atom ids are required for atom-id lookup');
+            }
+
+            return Array.from(parsed.ids, (id) => Number(id));
         });
     },
 
@@ -423,8 +439,11 @@ export const createTrajectoryParserService = (
         }
 
         const values = new Float32Array(parsed.ids.length);
+        values.fill(Number.NaN);
         for (let index = 0; index < parsed.ids.length; index++) {
-            values[index] = externalValues[parsed.ids[index]] || 0;
+            const atomId = parsed.ids[index];
+            const externalValue = externalValues[atomId];
+            values[index] = Number.isFinite(externalValue) ? externalValue : Number.NaN;
         }
 
         return values;
