@@ -1,4 +1,5 @@
-import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
+import { isSameScene, isTimestepScopedScene } from '@/modules/canvas/utilities/scene-identity';
+import { DEFAULT_SCENE } from '@/modules/fractal/utilities/scene-utils';
 import { areModelWorldBoundsEqual } from '@/modules/fractal/utilities/model-world-bounds';
 
 import type { EditorStore } from './types';
@@ -25,10 +26,38 @@ const POINT_CLOUD_SETTINGS_INITIAL: PointCloudSettingsState = {
     style: PointCloudStyleMode.Softened
 };
 
+const areSceneListsEqual = (left: SceneObjectType[], right: SceneObjectType[]): boolean => {
+    if (left.length !== right.length) {
+        return false;
+    }
+
+    return left.every((scene, index) => isSameScene(scene, right[index]));
+};
+
+const getSceneStateWithoutTimestepScopedScenes = (state: ModelState): Pick<ModelState, 'activeScene' | 'activeScenes'> | null => {
+    const activeScenes = state.activeScenes.filter((scene) => !isTimestepScopedScene(scene));
+    const nextActiveScenes = activeScenes.length > 0 ? activeScenes : [DEFAULT_SCENE];
+    const nextActiveScene = isTimestepScopedScene(state.activeScene)
+        ? nextActiveScenes[0]
+        : state.activeScene;
+
+    const didChangeActiveScene = !isSameScene(state.activeScene, nextActiveScene);
+    const didChangeActiveScenes = !areSceneListsEqual(state.activeScenes, nextActiveScenes);
+
+    if (!didChangeActiveScene && !didChangeActiveScenes) {
+        return null;
+    }
+
+    return {
+        activeScene: nextActiveScene,
+        activeScenes: nextActiveScenes
+    };
+};
+
 const createInitialState = (): ModelState => ({
     activeModel: null,
-    activeScene: { sceneType: 'trajectory', source: 'default' },
-    activeScenes: [{ sceneType: 'trajectory', source: 'default' }],
+    activeScene: DEFAULT_SCENE,
+    activeScenes: [DEFAULT_SCENE],
     isModelLoading: false,
     modelLoadProgress: 0,
     modelLoadError: null,
@@ -47,6 +76,12 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
         set({
             activeScene: scene,
             activeScenes: [scene]
+        });
+    },
+
+    clearTimestepScopedScenes() {
+        set((state) => {
+            return getSceneStateWithoutTimestepScopedScenes(state) ?? state;
         });
     },
 

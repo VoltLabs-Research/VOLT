@@ -31,7 +31,6 @@ const CONTAINER_SECTION_TITLES: ContainerSectionTitleMap = {
     overview: 'Overview',
     processes: 'Processes',
     terminal: 'Terminal',
-    logs: 'Logs',
     storage: 'Storage',
     'remote-desktop': 'Remote Desktop'
 };

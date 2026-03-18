@@ -10,6 +10,8 @@ import type { HTMLAttributes, ReactNode, ReactElement, Ref } from 'react';
 
 type PopoverRole = 'dialog' | 'menu' | 'listbox' | 'tooltip';
 
+type ContextMenuOpenPredicate = (event: React.MouseEvent<Element>) => boolean;
+
 type PopoverTriggerProps = HTMLAttributes<HTMLElement> & {
     ref?: Ref<HTMLElement>;
     'data-popover-trigger'?: string;
@@ -36,6 +38,7 @@ interface PopoverProps {
     ariaLabel?: string;
     ariaLabelledBy?: string;
     ariaDescribedBy?: string;
+    shouldOpenOnContextMenu?: ContextMenuOpenPredicate;
 };
 
 const Popover: React.FC<PopoverProps> = ({
@@ -51,7 +54,8 @@ const Popover: React.FC<PopoverProps> = ({
     triggerAriaHaspopup,
     ariaLabel,
     ariaLabelledBy,
-    ariaDescribedBy
+    ariaDescribedBy,
+    shouldOpenOnContextMenu
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [contextMenuPosition, setContextMenuPosition] = useState<ContextMenuPosition | null>(null);
@@ -134,6 +138,8 @@ const Popover: React.FC<PopoverProps> = ({
 
     const handleContextMenu = useCallback((event: React.MouseEvent) => {
         if (triggerAction !== 'contextmenu') return;
+        if (event.defaultPrevented) return;
+        if (shouldOpenOnContextMenu && !shouldOpenOnContextMenu(event)) return;
         event.preventDefault();
         event.stopPropagation();
         setContextMenuPosition({
@@ -141,7 +147,7 @@ const Popover: React.FC<PopoverProps> = ({
             y: event.clientY
         });
         handleOpenChange(true);
-    }, [triggerAction, handleOpenChange]);
+    }, [triggerAction, handleOpenChange, shouldOpenOnContextMenu]);
 
     const renderChildren = () => {
         if (typeof children === 'function') {
