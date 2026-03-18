@@ -1,6 +1,9 @@
 import { Result } from '@shared/domain/port/Result';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamCluster, { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryCreatedEvent';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
@@ -11,15 +14,10 @@ import { ImportTrajectoryFromSSHOutputDTO } from '@modules/ssh/application/dtos/
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { v4 } from 'uuid';
-import IORedis from 'ioredis';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import type { IEventBus } from '@shared/application/events/IEventBus';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-
-const PENDING_DAEMON_TRAJECTORY_IMPORT_TTL_SECONDS = 86400;
-
-const pendingDaemonTrajectoryImportKey = (trajectoryId: string): string => {
-    return `daemon-trajectory-import:${trajectoryId}:pending`;
-};
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 @injectable()
 export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTrajectoryFromSSHInputDTO, ImportTrajectoryFromSSHOutputDTO, ApplicationError>{
@@ -30,8 +28,11 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
         private readonly teamClusterRepository: ITeamClusterRepository,
 
-        @inject(SHARED_TOKENS.RedisClient)
-        private readonly redis: IORedis,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
+        private readonly trajectoryRepository: ITrajectoryRepository,
+
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus,
 
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
@@ -74,17 +75,25 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
         try {
             const trajectoryName = `Import: ${remotePath.split('/').pop() || remotePath}`;
 
-            await this.redis.set(
-                pendingDaemonTrajectoryImportKey(trajectoryId),
-                JSON.stringify({
-                    teamId,
-                    userId,
-                    trajectoryName,
-                    teamClusterId: connectedTeamCluster.id
-                }),
-                'EX',
-                PENDING_DAEMON_TRAJECTORY_IMPORT_TTL_SECONDS
-            );
+            await this.trajectoryRepository.createWithId(trajectoryId, {
+                name: trajectoryName,
+                team: teamId,
+                folder: null,
+                teamCluster: connectedTeamCluster.id,
+                createdBy: userId,
+                status: TrajectoryStatus.WaitingForProcess,
+                frames: [],
+                stats: {
+                    totalFiles: 0,
+                    totalSize: 0
+                },
+                analysis: [],
+                rasterSceneViews: 0,
+                hasPreview: false,
+                isPublic: true,
+                updatedAt: new Date(),
+                createdAt: new Date()
+            });
 
             await this.teamClusterDaemonClient.command(connectedTeamCluster.id, 'queue.dispatch', {
                 queueName: 'ssh_import',
@@ -102,12 +111,19 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
                 }
             });
 
+            await this.eventBus.publish(new TrajectoryCreatedEvent({
+                trajectoryId,
+                trajectoryName,
+                teamId,
+                userId
+            }));
+
             return Result.ok({
                 message: 'Import request sent to the team cluster daemon',
                 trajectoryId
             });
         } catch (error: unknown) {
-            await this.redis.del(pendingDaemonTrajectoryImportKey(trajectoryId)).catch(() => undefined);
+            await this.trajectoryRepository.deleteById(trajectoryId).catch(() => undefined);
 
             return Result.fail(new ApplicationError(
                 ErrorCodes.SSH_IMPORT_ERROR,

@@ -1,4 +1,4 @@
-import { Upload, Download, LogOut, Undo2, Redo2, Settings, Maximize, PanelBottom, Camera, BookOpen, FileText, Bug, Check } from 'lucide-react';
+import { Upload, Download, LogOut, Undo2, Redo2, Settings, Maximize, PanelBottom, Camera, BookOpen, FileText, Check } from 'lucide-react';
 
 import type { ReactNode } from 'react';
 
@@ -31,6 +31,7 @@ export interface MenuConfig {
 };
 
 const ICON_SIZE = 16;
+const openExternalUrl = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
 
 export const buildMenus = ({
     showStatusBar,
@@ -128,22 +129,15 @@ export const buildMenus = ({
         items: [
             {
                 type: MenuItemType.Item,
-                label: 'Manual',
+                label: 'Read the docs',
                 icon: <BookOpen size={ICON_SIZE} />,
-                disabled: true
+                action: () => openExternalUrl('https://docs.voltcloud.dev')
             },
             {
                 type: MenuItemType.Item,
                 label: 'Release Notes',
                 icon: <FileText size={ICON_SIZE} />,
-                disabled: true
-            },
-            { type: MenuItemType.Separator },
-            {
-                type: MenuItemType.Item,
-                label: 'Report a Bug',
-                icon: <Bug size={ICON_SIZE} />,
-                disabled: true
+                action: () => openExternalUrl('https://github.com/voltlabs-research')
             }
         ]
     }

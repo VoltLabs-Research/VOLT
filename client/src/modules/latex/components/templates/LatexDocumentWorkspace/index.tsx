@@ -9,6 +9,7 @@ import EmptyState from '@/shared/presentation/components/EmptyState';
 import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
+import '@/shared/presentation/styles/resize-handle.css';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import LatexEditorPanel from './LatexEditorPanel';
@@ -588,7 +589,9 @@ const LatexDocumentWorkspace = () => {
                             onPointerUp={handleDragPointerUp}
                             onPointerCancel={handleDragPointerCancel}
                             onKeyDown={(event) => handleSeparatorKeyDown(event, 'files')}
-                        />
+                        >
+                            <span className='latex-drag-handle__grip volt-resize-handle__grip volt-resize-handle__grip--horizontal' aria-hidden='true' />
+                        </div>
 
                         <Container className='latex-workspace__main-content d-flex column flex-1 min-w-0'>
                             <LatexEditorPanel
@@ -635,7 +638,9 @@ const LatexDocumentWorkspace = () => {
                                         onPointerUp={handleDragPointerUp}
                                         onPointerCancel={handleDragPointerCancel}
                                         onKeyDown={(event) => handleSeparatorKeyDown(event, 'ai')}
-                                    />
+                                    >
+                                        <span className='latex-drag-handle__grip volt-resize-handle__grip volt-resize-handle__grip--vertical' aria-hidden='true' />
+                                    </div>
                                     <Suspense fallback={
                                         <Container id='latex-ai-panel' className='latex-ai-panel d-flex column flex-center items-center' style={{ height: panelWidths.ai }}>
                                             <Loader scale={0.5} isFixed={false} />
@@ -668,7 +673,9 @@ const LatexDocumentWorkspace = () => {
                             onPointerUp={handleDragPointerUp}
                             onPointerCancel={handleDragPointerCancel}
                             onKeyDown={(event) => handleSeparatorKeyDown(event, 'preview')}
-                        />
+                        >
+                            <span className='latex-drag-handle__grip volt-resize-handle__grip volt-resize-handle__grip--horizontal' aria-hidden='true' />
+                        </div>
 
                         <LatexPreviewPanel
                             panelId='latex-preview-panel'

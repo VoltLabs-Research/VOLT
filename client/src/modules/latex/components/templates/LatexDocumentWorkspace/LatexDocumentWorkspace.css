@@ -175,7 +175,6 @@
     z-index: 1;
     user-select: none;
     touch-action: none;
-    transition: background 150ms;
 }
 
 .latex-drag-handle:focus-visible,
@@ -184,25 +183,19 @@
     background: color-mix(in srgb, var(--focus-ring) 18%, transparent);
 }
 
-.latex-drag-handle::after {
-    content: '';
+.latex-drag-handle__grip,
+.latex-drag-handle-horizontal .latex-drag-handle__grip {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 1px;
-    background: var(--color-border-soft);
-    transition: background 150ms, width 150ms;
+    inset: 0;
 }
 
-.latex-drag-handle:hover::after {
-    width: 2px;
+.latex-drag-handle:hover .volt-resize-handle__grip::before,
+.latex-drag-handle-horizontal:hover .volt-resize-handle__grip::before {
     background: var(--color-border);
 }
 
-.latex-drag-handle:focus-visible::after {
-    width: 3px;
+.latex-drag-handle:focus-visible .volt-resize-handle__grip::before,
+.latex-drag-handle-horizontal:focus-visible .volt-resize-handle__grip::before {
     background: var(--accent-blue);
 }
 
@@ -215,29 +208,6 @@
     z-index: 1;
     user-select: none;
     touch-action: none;
-    transition: background 150ms;
-}
-
-.latex-drag-handle-horizontal::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    height: 1px;
-    background: var(--color-border-soft);
-    transition: background 150ms, height 150ms;
-}
-
-.latex-drag-handle-horizontal:hover::after {
-    height: 2px;
-    background: var(--color-border);
-}
-
-.latex-drag-handle-horizontal:focus-visible::after {
-    height: 3px;
-    background: var(--accent-blue);
 }
 
 /** Toolbar */
