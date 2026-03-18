@@ -7,3 +7,4 @@ export * from './GetMyTeamPermissionsDTO';
 export * from './JoinTeamByInviteCodeDTO';
 export * from './LeaveTeamDTO';
 export * from './ListUserTeamsDTO';
+export * from './PreviewJoinTeamByInviteCodeDTO';

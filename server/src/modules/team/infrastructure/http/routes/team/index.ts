@@ -10,6 +10,7 @@ export default createHttpModule({
     teamScope: HttpModuleTeamScope.Param,
     protected: true,
     routes: (router) => {
+        router.post('/join/preview', teamValidation.previewJoinByCode, controllers.previewJoinByCode.handle);
         router.post('/join', teamValidation.joinByCode, controllers.joinByCode.handle);
 
         router.route('/')

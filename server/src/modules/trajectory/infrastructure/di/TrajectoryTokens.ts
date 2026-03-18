@@ -5,6 +5,7 @@ export const TRAJECTORY_TOKENS = {
     SceneArtifactRepository: Symbol.for('SceneArtifactRepository'),
     TrajectoryReader: Symbol.for('TrajectoryReader'),
     TrajectoryDumpStorageService: Symbol.for('TrajectoryDumpStorageService'),
+    TrajectoryUploadStagingService: Symbol.for('TrajectoryUploadStagingService'),
     TrajectoryBackgroundProcessor: Symbol.for('TrajectoryBackgroundProcessor'),
     CloudUploadProcessor: Symbol.for('CloudUploadProcessor'),
     TrajectoryNativeDaemonService: Symbol.for('TrajectoryNativeDaemonService'),

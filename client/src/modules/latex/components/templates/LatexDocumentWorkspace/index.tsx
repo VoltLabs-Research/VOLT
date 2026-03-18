@@ -107,6 +107,7 @@ const LatexDocumentWorkspace = () => {
         isCompiling,
         compiledPdfUrl,
         compileError,
+        activePendingRemoteUpdate,
         accessDenied,
         accessDeniedMessage,
         files,
@@ -122,6 +123,8 @@ const LatexDocumentWorkspace = () => {
         handleExportZip,
         handleExportPdf,
         handleCompile,
+        applyPendingRemoteUpdate,
+        dismissPendingRemoteUpdate,
         handleSelectFileById,
         handleSelectAssetById,
         handleSelectTab,
@@ -594,8 +597,23 @@ const LatexDocumentWorkspace = () => {
                                 files={files}
                                 assets={rawAssets}
                                 dirtyFileIds={dirtyFileIds}
+                                hasPendingRemoteUpdate={Boolean(selection?.type === 'file' && activePendingRemoteUpdate)}
                                 content={editorContent}
                                 onChange={handleEditorChange}
+                                onApplyRemoteUpdate={() => {
+                                    if (selection?.type !== 'file') {
+                                        return;
+                                    }
+
+                                    applyPendingRemoteUpdate(selection.id);
+                                }}
+                                onDismissRemoteUpdate={() => {
+                                    if (selection?.type !== 'file') {
+                                        return;
+                                    }
+
+                                    dismissPendingRemoteUpdate(selection.id);
+                                }}
                                 onTabSelect={handleSelectTab}
                                 onTabClose={handleCloseTab}
                             />

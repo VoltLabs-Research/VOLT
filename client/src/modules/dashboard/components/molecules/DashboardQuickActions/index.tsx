@@ -52,7 +52,7 @@ const actions: DashboardQuickAction[] = [
         description: 'Extend your workflow',
         icon: <Puzzle size={16} strokeWidth={1.8} />,
         variant: DashboardQuickActionVariant.Plugin,
-        path: '/dashboard/plugins/catalog',
+        path: '/dashboard/plugins/list',
         requiredPermissions: ['plugin:read'],
         disabledReason: 'You do not have permission to view plugins.'
     },

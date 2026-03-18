@@ -37,6 +37,7 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
     const { create: createSecretKey, isPending: isCreating } = useCreateSecretKey();
 
     const [generatedKey, setGeneratedKey] = useState<string | null>(null);
+    const [hasConfirmedCopy, setHasConfirmedCopy] = useState(false);
 
     const [name, setName] = useState('');
     const [roleId, setRoleId] = useState('');
@@ -44,6 +45,7 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
 
     const resetState = () => {
         setGeneratedKey(null);
+        setHasConfirmedCopy(false);
         setName('');
         setRoleId('');
         setErrors({});
@@ -55,6 +57,10 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
     });
 
     const handleClose = () => {
+        if (generatedKey && !hasConfirmedCopy) {
+            return;
+        }
+
         modalForm.close();
     };
 
@@ -96,6 +102,7 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
         <Modal
             id={SECRET_KEY_CREATION_MODAL_ID}
             title={generatedKey ? 'Secret Key Created' : 'Create Secret Key'}
+            dismissible={!generatedKey || hasConfirmedCopy}
             description={
                 generatedKey
                     ? 'Please copy this secret key and store it securely. You will not be able to see it again.'
@@ -110,7 +117,8 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                     }}
                     primary={generatedKey ? {
                         label: 'Done',
-                        onClick: handleClose
+                        onClick: handleClose,
+                        disabled: !hasConfirmedCopy
                     } : {
                         label: 'Create Key',
                         type: 'submit',
@@ -123,10 +131,20 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
             <Container className='p-1-5'>
                 <form id={SECRET_KEY_CREATION_FORM_ID} className='d-flex column gap-1-5' onSubmit={handleFormSubmit}>
                     {generatedKey ? (
-                        <CopyableField
-                            value={generatedKey}
-                            successMessage='Secret key copied to clipboard'
-                        />
+                        <>
+                            <CopyableField
+                                value={generatedKey}
+                                successMessage='Secret key copied to clipboard'
+                            />
+                            <label className='d-flex items-center gap-075 color-secondary font-size-2 cursor-pointer'>
+                                <input
+                                    type='checkbox'
+                                    checked={hasConfirmedCopy}
+                                    onChange={(event) => setHasConfirmedCopy(event.target.checked)}
+                                />
+                                <span>I copied or stored this secret key somewhere safe.</span>
+                            </label>
+                        </>
                     ) : (
                         <>
                             <FormFieldRHF

@@ -1,4 +1,5 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
+import useChatActions from '@/modules/chat/hooks/chat/use-chat-actions';
 import { useRemoveTeamMemberMutation, useUpdateTeamMemberMutation } from '@/modules/team/hooks/member/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useUpdateTeamMutation } from '@/modules/team/hooks/team/queries';
@@ -22,7 +23,6 @@ import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { formatDistanceToNow } from 'date-fns';
 import { IoChatbubbleOutline, IoPersonRemoveOutline } from 'react-icons/io5';
 import { useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { TeamMemberStats } from '@/modules/team/api/entities/member/team-member';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import './MyTeam.css';
@@ -71,7 +71,7 @@ const formatTrackedMinutes = (minutes: number): string => {
 };
 
 export default function MyTeamTemplate() {
-    const navigate = useNavigate();
+    const chatActions = useChatActions();
 
     const currentUser = useCurrentUser();
     const selectedTeam = useSelectedTeam()!;
@@ -247,7 +247,9 @@ export default function MyTeamTemplate() {
             message: {
                 label: 'Message',
                 icon: IoChatbubbleOutline,
-                handler: ({ item: member }) => navigate(`/messages/${member._id}`)
+                handler: async ({ item: member }) => {
+                    await chatActions.getOrCreateChat(selectedTeam._id, member.user._id);
+                }
             },
             delete: {
                 label: 'Remove from Team',

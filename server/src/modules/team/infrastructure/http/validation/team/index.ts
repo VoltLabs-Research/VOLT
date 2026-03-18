@@ -13,5 +13,6 @@ const joinByCodeSchema = z.object({
 export const teamValidation = createResourceValidation({
     create: createTeamSchema,
     update: updateTeamSchema,
-    joinByCode: joinByCodeSchema
+    joinByCode: joinByCodeSchema,
+    previewJoinByCode: joinByCodeSchema
 });

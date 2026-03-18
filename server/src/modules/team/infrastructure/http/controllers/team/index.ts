@@ -6,6 +6,7 @@ import GetTeamByIdController from './GetTeamByIdController';
 import JoinTeamByInviteCodeController from './JoinTeamByInviteCodeController';
 import LeaveTeamController from './LeaveTeamController';
 import ListUserTeamsController from './ListUserTeamsController';
+import PreviewJoinTeamByInviteCodeController from './PreviewJoinTeamByInviteCodeController';
 import UpdateTeamByIdController from './UpdateTeamByIdController';
 import CheckInvitePermissionController from './CheckInvitePermissionController';
 import GetMyTeamPermissionsController from './GetMyTeamPermissionsController';
@@ -20,6 +21,7 @@ export default createControllerRegistry({
     joinByCode: JoinTeamByInviteCodeController,
     leave: LeaveTeamController,
     listUserTeams: ListUserTeamsController,
+    previewJoinByCode: PreviewJoinTeamByInviteCodeController,
     updateById: UpdateTeamByIdController,
     checkInvitePermission: CheckInvitePermissionController,
     getMyPermissions: GetMyTeamPermissionsController

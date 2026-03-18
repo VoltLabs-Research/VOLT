@@ -12,6 +12,11 @@
     background: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
 }
 
+.team-invitation-by-code-icon-ready {
+    color: var(--status-success);
+    background: var(--status-success-bg);
+}
+
 .team-invitation-by-code-spinner {
     animation: team-invitation-by-code-spin 1s linear infinite;
 }

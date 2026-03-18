@@ -55,6 +55,11 @@ interface FileEditorState {
     isDirty: boolean;
 };
 
+interface PendingRemoteFileUpdate {
+    content: string;
+    timestamp: number;
+};
+
 const AUTOSAVE_DELAY = 500;
 const TEX_EXTENSION = '.tex';
 
@@ -93,6 +98,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const [selection, setSelection] = useState<LatexWorkspaceSelection>(null);
     const [openTabs, setOpenTabs] = useState<LatexWorkspaceTab[]>([]);
     const [fileEditorStates, setFileEditorStates] = useState<Record<string, FileEditorState>>({});
+    const [pendingRemoteUpdates, setPendingRemoteUpdates] = useState<Record<string, PendingRemoteFileUpdate>>({});
     const [compiledPdfUrl, setCompiledPdfUrl] = useState<string | null>(null);
     const [compiledPdfBlob, setCompiledPdfBlob] = useState<Blob | null>(null);
     const [compileError, setCompileError] = useState<string | null>(null);
@@ -306,6 +312,39 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         }
     }, [compileDocument, documentId, hasCompilableTexFile]);
 
+    const clearAutosaveTimer = useCallback((fileId: string): void => {
+        const existingTimer = autosaveTimersRef.current[fileId];
+        if (!existingTimer) {
+            return;
+        }
+
+        window.clearTimeout(existingTimer);
+        delete autosaveTimersRef.current[fileId];
+    }, []);
+
+    const applyRemoteFileContent = useCallback((fileId: string, content: string): void => {
+        clearAutosaveTimer(fileId);
+        setPendingRemoteUpdates((currentUpdates) => {
+            if (!(fileId in currentUpdates)) {
+                return currentUpdates;
+            }
+
+            const nextUpdates = { ...currentUpdates };
+            delete nextUpdates[fileId];
+            return nextUpdates;
+        });
+        setFileEditorStates((currentStates) => ({
+            ...currentStates,
+            [fileId]: {
+                ...(currentStates[fileId] ?? createFileEditorState(content)),
+                content,
+                lastSavedContent: content,
+                remoteContent: content,
+                isDirty: false
+            }
+        }));
+    }, [clearAutosaveTimer]);
+
     const scheduleFileAutosave = useCallback((fileId: string, content: string): void => {
         const existingTimer = autosaveTimersRef.current[fileId];
         if (existingTimer) {
@@ -420,23 +459,44 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
             return;
         }
 
-        const existingTimer = autosaveTimersRef.current[fileId];
-        if (existingTimer) {
-            window.clearTimeout(existingTimer);
-            delete autosaveTimersRef.current[fileId];
-        }
+        setFileEditorStates((currentStates) => {
+            const currentState = currentStates[fileId] ?? createFileEditorState(content);
+            const hasConflict = currentState.isDirty && currentState.content !== content;
 
-        setFileEditorStates((currentStates) => ({
-            ...currentStates,
-            [fileId]: {
-                ...(currentStates[fileId] ?? createFileEditorState(content)),
-                content,
-                lastSavedContent: content,
-                remoteContent: content,
-                isDirty: false
+            if (hasConflict) {
+                setPendingRemoteUpdates((currentUpdates) => ({
+                    ...currentUpdates,
+                    [fileId]: {
+                        content,
+                        timestamp: _timestamp
+                    }
+                }));
+                return currentStates;
             }
-        }));
-    }, [documentId]);
+
+            clearAutosaveTimer(fileId);
+            setPendingRemoteUpdates((currentUpdates) => {
+                if (!(fileId in currentUpdates)) {
+                    return currentUpdates;
+                }
+
+                const nextUpdates = { ...currentUpdates };
+                delete nextUpdates[fileId];
+                return nextUpdates;
+            });
+
+            return {
+                ...currentStates,
+                [fileId]: {
+                    ...currentState,
+                    content,
+                    lastSavedContent: content,
+                    remoteContent: content,
+                    isDirty: false
+                }
+            };
+        });
+    }, [clearAutosaveTimer, documentId]);
 
     const { collaborators, sendContentUpdate } = useLatexDocumentSocket({
         documentId,
@@ -467,6 +527,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const activeFileEditorState = activeFile
         ? fileEditorStates[activeFile._id] ?? createFileEditorState(activeFile.content)
         : null;
+    const activePendingRemoteUpdate = activeFile ? pendingRemoteUpdates[activeFile._id] ?? null : null;
 
     const editorContent = activeFileEditorState?.content ?? '';
     const dirtyFileIds = useMemo(
@@ -538,6 +599,26 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
             });
 
             return hasChanged ? nextStates : currentStates;
+        });
+    }, [latexFiles]);
+
+    useEffect(() => {
+        const nextFileIds = new Set(latexFiles.map((file) => file._id));
+
+        setPendingRemoteUpdates((currentUpdates) => {
+            let hasChanges = false;
+            const nextUpdates: Record<string, PendingRemoteFileUpdate> = {};
+
+            Object.entries(currentUpdates).forEach(([fileId, update]) => {
+                if (!nextFileIds.has(fileId)) {
+                    hasChanges = true;
+                    return;
+                }
+
+                nextUpdates[fileId] = update;
+            });
+
+            return hasChanges ? nextUpdates : currentUpdates;
         });
     }, [latexFiles]);
 
@@ -748,6 +829,27 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         [isTexFile, latexFiles, selection]
     );
 
+    const applyPendingRemoteUpdate = useCallback((fileId: string): void => {
+        const pendingUpdate = pendingRemoteUpdates[fileId];
+        if (!pendingUpdate) {
+            return;
+        }
+
+        applyRemoteFileContent(fileId, pendingUpdate.content);
+    }, [applyRemoteFileContent, pendingRemoteUpdates]);
+
+    const dismissPendingRemoteUpdate = useCallback((fileId: string): void => {
+        setPendingRemoteUpdates((currentUpdates) => {
+            if (!(fileId in currentUpdates)) {
+                return currentUpdates;
+            }
+
+            const nextUpdates = { ...currentUpdates };
+            delete nextUpdates[fileId];
+            return nextUpdates;
+        });
+    }, []);
+
     return {
         latexDocument,
         documentId,
@@ -766,6 +868,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         isCompiling,
         compiledPdfUrl,
         compileError,
+        activePendingRemoteUpdate,
         accessDenied,
         accessDeniedMessage,
         files,
@@ -781,6 +884,8 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         handleExportZip,
         handleExportPdf,
         handleCompile: compileSilently,
+        applyPendingRemoteUpdate,
+        dismissPendingRemoteUpdate,
         handleSelectFileById,
         handleSelectAssetById,
         handleSelectTab,
