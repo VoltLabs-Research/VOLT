@@ -22,8 +22,20 @@ type ExcalidrawChangeHandler = NonNullable<ExcalidrawProps['onChange']>;
 type ExcalidrawElements = Parameters<ExcalidrawChangeHandler>[0];
 type ExcalidrawAppState = Parameters<ExcalidrawChangeHandler>[1];
 type ExcalidrawFiles = Parameters<ExcalidrawChangeHandler> extends [unknown, unknown, infer T, ...unknown[]] ? T : Record<string, unknown>;
-type ExcalidrawSceneFiles = ExcalidrawProps['initialData'] extends { files?: infer T } ? T : Record<string, unknown>;
 type RenderTopRightUI = NonNullable<ExcalidrawProps['renderTopRightUI']>;
+
+const syncSceneFiles = (api: ExcalidrawAPI, files?: Record<string, unknown>) => {
+    if (!files) {
+        return;
+    }
+
+    const nextFiles = Object.values(files);
+    if (nextFiles.length === 0) {
+        return;
+    }
+
+    api.addFiles(nextFiles as Parameters<ExcalidrawAPI['addFiles']>[0]);
+};
 
 const createSceneSignature = (elements: Record<string, unknown>[], appState: Record<string, unknown>) => {
     const elementSignature = elements.map((element) => [
@@ -87,10 +99,10 @@ const WhiteboardEditorPage = () => {
             }
 
             ignoredSceneSignatureRef.current = createSceneSignature(scene.elements, scene.appState);
+            syncSceneFiles(excalidrawApiRef.current, scene.files);
             excalidrawApiRef.current.updateScene({
                 elements: scene.elements as unknown as ExcalidrawElements,
-                appState: scene.appState as unknown as ExcalidrawAppState,
-                files: scene.files as ExcalidrawSceneFiles
+                appState: scene.appState as unknown as ExcalidrawAppState
             });
         },
         [mergeRemoteState]
@@ -131,10 +143,10 @@ const WhiteboardEditorPage = () => {
         }
 
         ignoredSceneSignatureRef.current = createSceneSignature(pendingScene.elements, pendingScene.appState);
+        syncSceneFiles(api, pendingScene.files);
         api.updateScene({
             elements: pendingScene.elements as unknown as ExcalidrawElements,
-            appState: pendingScene.appState as unknown as ExcalidrawAppState,
-            files: pendingScene.files as ExcalidrawSceneFiles
+            appState: pendingScene.appState as unknown as ExcalidrawAppState
         });
     }, []);
 
