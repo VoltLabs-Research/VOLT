@@ -99,6 +99,12 @@ export default class TrajectoryNativeDaemonService {
         });
     }
 
+    async getAtomIds(input: TrajectoryNativeRequest): Promise<number[]> {
+        return this.teamClusterDaemonClient.command(input.teamClusterId, 'trajectory.native.atom-ids', {
+            ...this.toBaseBody(input)
+        });
+    }
+
     async getAtomsPage(input: TrajectoryNativeAtomsPageRequest): Promise<TrajectoryNativeAtomsPageResponse> {
         return this.teamClusterDaemonClient.command(input.teamClusterId, 'trajectory.native.atoms', {
             ...this.toBaseBody(input),
