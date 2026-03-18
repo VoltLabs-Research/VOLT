@@ -55,7 +55,7 @@ interface ProxyTarget {
 };
 
 const DEFAULT_SESSION_TTL_MS = 3_600_000;
-const DEFAULT_RELAY_BIND_HOST = '0.0.0.0';
+const DEFAULT_RELAY_BIND_HOST = '127.0.0.1';
 const DEFAULT_RELAY_PORT_START = 24000;
 const DEFAULT_RELAY_PORT_END = 24999;
 const PROXY_URL_ORIGIN = 'http://volt.local';
@@ -90,7 +90,11 @@ const readCookies = (rawCookieHeader?: string): Record<string, string> => {
             continue;
         }
 
-        cookies[key] = decodeURIComponent(rawValueParts.join('=').trim());
+        try {
+            cookies[key] = decodeURIComponent(rawValueParts.join('=').trim());
+        } catch {
+            continue;
+        }
     }
 
     return cookies;
@@ -172,6 +176,7 @@ export class ContainerPortProxyRelayService {
         const cleanupTimer = setTimeout(() => {
             void this.closeSession(sessionId);
         }, this.sessionTtlMs);
+        cleanupTimer.unref();
 
         const session: ContainerPortProxyRelaySession = {
             sessionId,
