@@ -10,9 +10,9 @@ import Title from '@/shared/presentation/components/Title';
 import { Skeleton } from '@mui/material';
 import { FlaskConical } from 'lucide-react';
 import { GoArrowRight } from 'react-icons/go';
-import type { FocusEventHandler, PointerEventHandler } from 'react';
+import type { FocusEventHandler, HTMLAttributes, PointerEventHandler } from 'react';
 
-interface DashboardRecentAnalysesProps {
+interface DashboardRecentAnalysesProps extends HTMLAttributes<HTMLDivElement> {
     className?: string;
     bodyClassName?: string;
     onPointerEnter?: PointerEventHandler<HTMLDivElement>;
@@ -23,7 +23,8 @@ const DashboardRecentAnalyses = ({
     className = '',
     bodyClassName = '',
     onPointerEnter,
-    onFocusCapture
+    onFocusCapture,
+    ...props
 }: DashboardRecentAnalysesProps) => {
     const { accessDenied, accessDeniedMessage, error, isLoading, items, openAll, openAnalysis, refresh } = useDashboardRecentAnalyses();
     const cardClassName = ['dashboard-recent-analyses', 'd-flex', 'column', 'flex-1', 'min-h-0'];
@@ -110,6 +111,7 @@ const DashboardRecentAnalyses = ({
             overflowHidden={true}
             onPointerEnter={onPointerEnter}
             onFocusCapture={onFocusCapture}
+            {...props}
         >
             <Container className='dashboard-recent-analyses-header d-flex items-center content-between w-max'>
                 <Title className='font-size-2 color-primary font-weight-6'>
