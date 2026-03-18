@@ -342,12 +342,52 @@ export default class ParticleFilterService implements IParticleFilterService {
             return undefined;
         }
 
-        return this.atomProps.getModifierValues(
-            trajectoryId,
-            analysisId,
-            exposureId,
-            timestep,
-            property
+        const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
+        const teamClusterId = trajectory?.props.teamCluster;
+
+        if (!teamClusterId) {
+            return undefined;
+        }
+
+        const dumpAtomIds = await this.trajectoryNativeDaemonService.getAtomIds({
+            teamClusterId,
+            trajectoryId: String(trajectoryId),
+            timestep: Number(timestep),
+            objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep))
+        });
+
+        if (dumpAtomIds.length === 0) {
+            return new Float32Array();
+        }
+
+        const pluginIndex = await this.atomProps.buildPluginIndexForAtomIds(
+            String(trajectoryId),
+            String(analysisId),
+            String(exposureId),
+            String(timestep),
+            new Set(dumpAtomIds)
         );
+
+        const maxAtomId = dumpAtomIds.reduce((maxId, atomId) => Math.max(maxId, atomId), 0);
+        const externalValues = new Float32Array(maxAtomId + 1);
+        externalValues.fill(Number.NaN);
+
+        if (!pluginIndex) {
+            return externalValues;
+        }
+
+        for (const atomId of dumpAtomIds) {
+            const row = pluginIndex.get(atomId);
+            if (!row) {
+                continue;
+            }
+
+            const rawValue = row[property];
+            if (typeof rawValue === 'number' && Number.isFinite(rawValue)) {
+                externalValues[atomId] = rawValue;
+            }
+        }
+
+        return externalValues;
     }
 };
