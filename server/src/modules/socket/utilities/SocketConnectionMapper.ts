@@ -29,7 +29,7 @@ export default class SocketConnectionMapper implements ISocketConnectionMapper {
                     teams: user.teams?.map((teamId) => teamId.toString())
                 }
                 : undefined,
-            data: socket.data || {},
+            data: socket.data,
             rooms: socket.rooms,
             nativeSocket: socket
         };

@@ -28,8 +28,41 @@ const SERVER_TIMEOUT = readNumberEnv('SERVER_TIMEOUT', 1800000);
 
 registerAllDependencies();
 
+let activeServer: http.Server | null = null;
+let activeSocketGateway: SocketGateway | null = null;
+let shuttingDown = false;
+
 const shutdown = async () => {
-    process.exit(0);
+    if (shuttingDown) {
+        return;
+    }
+
+    shuttingDown = true;
+
+    try {
+        if (activeSocketGateway) {
+            await activeSocketGateway.close();
+        }
+
+        if (activeServer) {
+            await new Promise<void>((resolve, reject) => {
+                activeServer?.close((error) => {
+                    if (error) {
+                        reject(error);
+                        return;
+                    }
+
+                    resolve();
+                });
+            });
+        }
+
+        process.exit(0);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.stack || error.message : String(error);
+        logger.error(`@server: shutdown error: ${message}`);
+        process.exit(1);
+    }
 };
 
 process.on('unhandledRejection', (reason: unknown) => {
@@ -47,6 +80,7 @@ const startServer = async () => {
     const { default: mountHttpRoutes } = await import('./core/bootstrap/mount-http-routes');
 
     const server = http.createServer(app);
+    activeServer = server;
 
     app.use('/api-docs', apiDocsRouter);
     app.use(mountHttpRoutes());
@@ -114,13 +148,13 @@ const startServer = async () => {
 
             await registerAllSubscribers();
 
-            const socketGateway = container.resolve<SocketGateway>(SOCKET_TOKENS.SocketGateway);
+            activeSocketGateway = container.resolve<SocketGateway>(SOCKET_TOKENS.SocketGateway);
             const socketModules = container.resolveAll<ISocketModule>(SOCKET_TOKENS.SocketModule);
             for (const module of socketModules) {
-                socketGateway.register(module);
+                activeSocketGateway.register(module);
             }
 
-            await socketGateway.initialize(server);
+            await activeSocketGateway.initialize(server);
             logger.info(`@server: SocketGateway ready on :${SERVER_PORT}`);
 
             logger.info(`@server: running at http://${SERVER_HOST}:${SERVER_PORT}/`);

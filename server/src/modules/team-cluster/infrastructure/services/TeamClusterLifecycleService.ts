@@ -252,6 +252,45 @@ export default class TeamClusterLifecycleService {
         return toTeamClusterDTO(updatedTeamCluster);
     }
 
+    async markDaemonConnected(teamClusterId: string): Promise<TeamClusterDTO> {
+        const teamCluster = await this.requireTeamClusterById(teamClusterId);
+        const nextStatus = HEARTBEAT_LOCKED_STATUSES.has(teamCluster.props.status)
+            ? teamCluster.props.status
+            : TeamClusterStatus.Connected;
+        const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
+            status: nextStatus,
+            lastHeartbeatAt: new Date(),
+            lastDisconnectAt: null
+        }, {
+            preconditions: {
+                allowedCurrentStatuses: [teamCluster.props.status]
+            },
+            logContext: 'daemon-socket-connected'
+        });
+
+        return toTeamClusterDTO(updatedTeamCluster);
+    }
+
+    async markDaemonDisconnected(teamClusterId: string): Promise<TeamClusterDTO> {
+        const teamCluster = await this.requireTeamClusterById(teamClusterId);
+        const nextStatus = HEARTBEAT_LOCKED_STATUSES.has(teamCluster.props.status)
+            ? teamCluster.props.status
+            : teamCluster.props.status === TeamClusterStatus.Connected
+                ? TeamClusterStatus.Disconnected
+                : teamCluster.props.status;
+        const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
+            status: nextStatus,
+            lastDisconnectAt: new Date()
+        }, {
+            preconditions: {
+                allowedCurrentStatuses: [teamCluster.props.status]
+            },
+            logContext: 'daemon-socket-disconnected'
+        });
+
+        return toTeamClusterDTO(updatedTeamCluster);
+    }
+
     private toSystemMetrics(teamClusterId: string, metrics: DaemonMetricsSnapshot): SystemMetrics {
         const timestamp = new Date(metrics.timestamp);
         const safeTimestamp = Number.isNaN(timestamp.getTime()) ? new Date() : timestamp;
@@ -557,7 +596,7 @@ export default class TeamClusterLifecycleService {
             return true;
         }
 
-        return TEAM_CLUSTER_ALLOWED_TRANSITIONS[currentStatus]?.has(nextStatus) ?? false;
+        return TEAM_CLUSTER_ALLOWED_TRANSITIONS[currentStatus].has(nextStatus);
     }
 
     private emitLifecycleUpdate(teamCluster: TeamCluster): void {

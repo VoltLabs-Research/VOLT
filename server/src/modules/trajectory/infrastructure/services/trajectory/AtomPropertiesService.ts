@@ -137,7 +137,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             throw new ApplicationError(ErrorCodes.TEAM_CLUSTER_NOT_FOUND, ErrorCodes.TEAM_CLUSTER_NOT_FOUND, 404);
         }
 
-        const rawIndex = await this.daemonClient.command<Record<number, Record<string, unknown>> | null>(
+        const rawIndex = await this.daemonClient.command<Record<string, Record<string, unknown>> | null>(
             teamClusterId,
             'trajectory.plugin.atom-index',
             {

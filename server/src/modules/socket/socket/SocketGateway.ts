@@ -129,7 +129,7 @@ export default class SocketGateway{
     private handleConnection(socket: Socket): void{
         logger.info(`@socket-gateway - connected: ${socket.id}`);
 
-        socket.data = (socket.data ?? {}) as ISocketConnectionData;
+        socket.data = socket.data as ISocketConnectionData;
 
         this.getSocketEmitterRuntime().registerConnection(socket);
         this.getSocketRoomManagerRuntime().registerConnection(socket);
@@ -212,7 +212,7 @@ export default class SocketGateway{
             const token = socket.handshake.auth?.token;
             const auth = await this.authenticateSocketConnectionUseCase.execute(token);
 
-            socket.data = (socket.data ?? {}) as ISocketConnectionData;
+            socket.data = socket.data as ISocketConnectionData;
             socket.data.auth = auth;
 
             if(auth.state === 'guest'){
