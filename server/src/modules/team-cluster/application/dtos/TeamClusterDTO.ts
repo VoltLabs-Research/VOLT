@@ -2,8 +2,7 @@ import TeamCluster, {
     TeamClusterDaemonServiceProps,
     TeamClusterServiceProps,
     TeamClusterServicesProps,
-    TeamClusterStatus,
-    TeamClusterRole
+    TeamClusterStatus
 } from '@modules/team-cluster/domain/entities/TeamCluster';
 
 export interface TeamClusterServiceDTO {
@@ -36,7 +35,6 @@ export interface TeamClusterCredentialServicesDTO {
 export interface TeamClusterDTO {
     _id: string;
     name: string;
-    role: TeamClusterRole;
     team: string;
     createdBy: string;
     status: TeamClusterStatus;
@@ -60,7 +58,6 @@ export const toTeamClusterDTO = (teamCluster: TeamCluster): TeamClusterDTO => {
     return {
         _id: teamCluster._id,
         name: teamCluster.props.name,
-        role: teamCluster.props.role,
         team: teamCluster.props.team,
         createdBy: teamCluster.props.createdBy,
         status: teamCluster.props.status,

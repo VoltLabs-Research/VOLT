@@ -49,13 +49,6 @@ const COLUMNS: ColumnDef[] = [
         )
     },
     {
-        key: 'role',
-        header: 'Role',
-        render: (row) => (
-            <Paragraph className='font-size-2 color-secondary'>{row.role}</Paragraph>
-        )
-    },
-    {
         key: 'status',
         header: 'Lifecycle',
         render: (row) => (

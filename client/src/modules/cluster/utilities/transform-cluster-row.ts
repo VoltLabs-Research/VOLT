@@ -2,14 +2,13 @@ import { formatNetworkSpeed } from './format-network';
 import { formatUptime } from './format-uptime';
 import { ClusterStatus } from '../api/entities/cluster-metrics';
 import type { ClusterMetrics } from '../api/entities/cluster-metrics';
-import type { TeamCluster, TeamClusterStatus, TeamClusterRole } from '../api/entities/team-cluster';
+import type { TeamCluster, TeamClusterStatus } from '../api/entities/team-cluster';
 
 export interface ServerRow {
     _id: string;
     teamCluster: TeamCluster;
     id: string;
     name: string;
-    role: TeamClusterRole;
     status: ClusterStatus;
     statusClass: string;
     lifecycleStatus: TeamClusterStatus;
@@ -69,7 +68,6 @@ export const transformClusterToRow = ({ teamCluster, metrics }: TransformCluster
     teamCluster,
     id: teamCluster._id,
     name: teamCluster.name,
-    role: teamCluster.role,
     status: getMetricsStatus(metrics),
     statusClass: getStatusClass(metrics),
     lifecycleStatus: teamCluster.status,

@@ -1,8 +1,7 @@
 import './ClusterOnboardingPage.css';
 import ClusterListPanel from '@/modules/cluster/components/molecules/ClusterListPanel';
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/DeleteClusterModal';
-import { TeamClusterStatus, TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
-import { CLUSTER_ROLE_OPTIONS } from '@/modules/cluster/constants';
+import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import { resolvePostAuthDestination } from '@/modules/auth/services/post-auth-destination-storage';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import { buildClusterInstallCommand } from '@/modules/cluster/utilities/build-cluster-install-command';
@@ -82,7 +81,6 @@ const ClusterOnboardingPage = () => {
     const [step, setStep] = useState<OnboardingStep>(OnboardingStep.Type);
     const [clusterType, setClusterType] = useState<ClusterType | null>(null);
     const [name, setName] = useState('');
-    const [role, setRole] = useState<TeamClusterRole>(TeamClusterRole.Cluster);
     const [error, setError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [createdCluster, setCreatedCluster] = useState<TeamCluster | null>(null);
@@ -176,7 +174,7 @@ const ClusterOnboardingPage = () => {
         setIsSubmitting(true);
 
         try {
-            const result = await createCluster(name.trim(), role);
+            const result = await createCluster(name.trim());
             setCreatedCluster(result.teamCluster);
             setEnrollmentToken(result.enrollmentToken);
             openModal(INSTALL_MODAL_ID);
@@ -358,17 +356,6 @@ const ClusterOnboardingPage = () => {
                                             setError(undefined);
                                         }
                                     }}
-                                />
-                            </Container>
-
-                            <Container className='cluster-onboarding-name-input'>
-                                <FormFieldRHF
-                                    label='Cluster role'
-                                    fieldType='select'
-                                    fieldKey='cluster-role'
-                                    fieldValue={role}
-                                    options={CLUSTER_ROLE_OPTIONS}
-                                    onFieldChange={(_, value) => setRole(value as TeamClusterRole)}
                                 />
                             </Container>
 
