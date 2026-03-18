@@ -20,10 +20,37 @@ import { openModal } from '@/shared/presentation/components/Modal';
 import { Database, FolderOpen, KeyRound, Monitor, RefreshCw, Terminal, TerminalSquare, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { ColumnConfig, MenuOption, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
 import '@/modules/cluster/components/organisms/ServerTable/ServerTable.css';
+
+const renderMetricValue = (value: number | null): ReactNode => {
+    if (value === null) {
+        return <Paragraph className='font-size-1 color-muted'>--</Paragraph>;
+    }
+
+    return (
+        <Container className='d-flex items-center gap-05'>
+            <MetricBars percentage={value} />
+            <Paragraph className='font-size-1 color-muted'>{value}%</Paragraph>
+        </Container>
+    );
+};
+
+const renderDiskValue = (row: ServerRow): ReactNode => {
+    if (row.diskUsagePercent === null || row.diskFree === null) {
+        return <Paragraph className='font-size-1 color-muted'>--</Paragraph>;
+    }
+
+    return (
+        <Container className='d-flex items-center gap-05'>
+            <MetricBars percentage={row.diskUsagePercent} />
+            <Paragraph className='font-size-1 color-muted'>{row.diskFree.toFixed(1)}GB Available</Paragraph>
+        </Container>
+    );
+};
 
 const ClustersListing = () => {
     const navigate = useNavigate();
@@ -115,9 +142,11 @@ const ClustersListing = () => {
             key: 'status',
             title: 'Metrics',
             sortable: true,
-            width: 160,
+            width: 220,
             render: (_, row) => (
-                <StatusBadge status={row.status} />
+                <StatusBadge variant={row.statusVariant} size='compact'>
+                    {row.status}
+                </StatusBadge>
             )
         },
         {
@@ -146,36 +175,21 @@ const ClustersListing = () => {
             title: 'CPU',
             sortable: true,
             width: 180,
-            render: (_, row) => (
-                <Container className='d-flex items-center gap-05'>
-                    <MetricBars percentage={row.cpu} />
-                    <Paragraph className='font-size-1 color-muted'>{row.cpu}%</Paragraph>
-                </Container>
-            )
+            render: (_, row) => renderMetricValue(row.cpu)
         },
         {
             key: 'memory',
             title: 'Memory',
             sortable: true,
             width: 180,
-            render: (_, row) => (
-                <Container className='d-flex items-center gap-05'>
-                    <MetricBars percentage={row.memory} />
-                    <Paragraph className='font-size-1 color-muted'>{row.memory}%</Paragraph>
-                </Container>
-            )
+            render: (_, row) => renderMetricValue(row.memory)
         },
         {
             key: 'diskUsagePercent',
             title: 'Disk',
             sortable: true,
             width: 220,
-            render: (_, row) => (
-                <Container className='d-flex items-center gap-05'>
-                    <MetricBars percentage={row.diskUsagePercent} />
-                    <Paragraph className='font-size-1 color-muted'>{row.diskFree.toFixed(1)}GB Available</Paragraph>
-                </Container>
-            )
+            render: (_, row) => renderDiskValue(row)
         },
         {
             key: 'network',
@@ -187,7 +201,8 @@ const ClustersListing = () => {
             key: 'analysisCount',
             title: 'Computed Analyzes',
             sortable: true,
-            width: 180
+            width: 180,
+            render: (_, row) => <Paragraph className='font-size-2 color-secondary'>{row.analysisCount ?? '--'}</Paragraph>
         },
         {
             key: 'uptime',

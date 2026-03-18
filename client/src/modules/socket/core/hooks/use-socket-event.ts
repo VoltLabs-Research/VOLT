@@ -21,6 +21,8 @@ const useSocketEvent = <T = unknown>(
             return;
         }
 
+        socketService.connect().catch(() => undefined);
+
         const handler = (data: T): void => {
             callbackRef.current(data);
         };

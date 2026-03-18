@@ -3,6 +3,7 @@ import {
     getNearestTimestep,
     getSelectedTimestepsForAnalysis
 } from '../utilities/selected-timestep-analysis';
+import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import useCanvasUrlState from './use-canvas-url-state';
 import useGetTrajectoryById from '@/modules/trajectory/hooks/trajectory/use-get-trajectory-by-id';
@@ -47,14 +48,18 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
             return undefined;
         }
 
-        return analyses.find((analysis) => analysis._id === analysisId);
-    }, [analyses, analysisId]);
+        return findCachedAnalysisById({
+            analysisId,
+            trajectoryId,
+            fallbackAnalyses: [...analyses, ...(trajectory?.analysis ?? [])]
+        });
+    }, [analyses, analysisId, trajectory?.analysis, trajectoryId]);
     const selectedAnalysisTimesteps = useMemo(() => {
         return getSelectedTimestepsForAnalysis(selectedAnalysis, trajectoryTimesteps);
     }, [selectedAnalysis, trajectoryTimesteps]);
     const visibleTimesteps = selectedAnalysisTimesteps ?? trajectoryTimesteps;
     const resolvedCurrentTimestep = getNearestTimestep(currentTimestep, visibleTimesteps);
-    const isAwaitingSelectedAnalysis = Boolean(analysisId && analysesQuery.isLoading && analyses.length === 0);
+    const isAwaitingSelectedAnalysis = Boolean(analysisId && analysesQuery.isLoading && !selectedAnalysis);
 
     useEffect(() => {
         if (!trajectory || isAwaitingSelectedAnalysis) {

@@ -12,7 +12,7 @@ import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { GetWhiteboardStateInputDTO, GetWhiteboardStateOutputDTO } from '@modules/whiteboards/application/dtos/GetWhiteboardStateDTO';
 
 /** Empty scene returned for whiteboards that have never been saved. */
-const EMPTY_SCENE_JSON = JSON.stringify({ elements: [], appState: {} });
+const EMPTY_SCENE_JSON = JSON.stringify({ revision: 0, elements: [], appState: {} });
 
 @injectable()
 export class GetWhiteboardStateUseCase implements IUseCase<GetWhiteboardStateInputDTO, GetWhiteboardStateOutputDTO, ApplicationError> {

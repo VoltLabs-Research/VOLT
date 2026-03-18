@@ -1,7 +1,9 @@
 import { Theme } from '@/shared/presentation/hooks/use-theme';
 
-/** Returns the active application theme from the global theme contract. */
-export const getActiveAppTheme = (): Theme => {
+type VisualTheme = Theme.Light | Theme.Dark;
+
+/** Returns the active application theme from the global theme contract (always Light or Dark). */
+export const getActiveAppTheme = (): VisualTheme => {
     const theme = document.documentElement.getAttribute('data-theme');
 
     if (theme === Theme.Light) {
@@ -12,7 +14,7 @@ export const getActiveAppTheme = (): Theme => {
 };
 
 /** Subscribes to document-level theme contract changes. */
-export const subscribeToAppTheme = (listener: (theme: Theme) => void): (() => void) => {
+export const subscribeToAppTheme = (listener: (theme: VisualTheme) => void): (() => void) => {
     let currentTheme = getActiveAppTheme();
     listener(currentTheme);
 

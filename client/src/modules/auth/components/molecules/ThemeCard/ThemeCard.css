@@ -90,6 +90,22 @@
     color: var(--accent-blue);
 }
 
+.theme-preview.system-preview {
+    background: linear-gradient(
+        135deg,
+        var(--theme-preview-light-bg) 0%,
+        var(--theme-preview-light-bg) 50%,
+        var(--theme-preview-dark-bg) 50%,
+        var(--theme-preview-dark-bg) 100%
+    );
+    color: var(--theme-preview-dark-fg);
+}
+
+.theme-preview.system-preview::before,
+.theme-preview.system-preview::after {
+    display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .theme-card {
         transition: none;

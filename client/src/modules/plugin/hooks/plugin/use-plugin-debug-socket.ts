@@ -75,6 +75,15 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
     const { searchParams } = useSearchParamsState();
     const currentPluginId = searchParams.get('id');
 
+    const isCurrentSessionEvent = useCallback((eventSessionId?: string): boolean => {
+        if (!eventSessionId) {
+            return false;
+        }
+
+        const activeSessionId = usePluginDebugStore.getState().sessionId;
+        return activeSessionId === eventSessionId;
+    }, []);
+
     useSocketEvent<DebugSessionCreatedEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.SESSION_CREATED, (event) => {
         usePluginDebugStore.getState().onSessionCreated(
             event.sessionId,
@@ -85,27 +94,51 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
     }, { enabled: subscribe });
 
     useSocketEvent<DebugNodeStartedEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.NODE_STARTED, (event) => {
+        if (!isCurrentSessionEvent(event.sessionId)) {
+            return;
+        }
+
         usePluginDebugStore.getState().onNodeStarted(event.nodeId, event.index, event.total);
-    }, { enabled: subscribe });
+    }, { enabled: subscribe && !!sessionId });
 
     useSocketEvent<DebugNodeCompletedEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.NODE_COMPLETED, (event) => {
+        if (!isCurrentSessionEvent(event.sessionId)) {
+            return;
+        }
+
         usePluginDebugStore.getState().onNodeCompleted(event.nodeId, event.output, event.durationMs, event.contextSnapshot);
-    }, { enabled: subscribe });
+    }, { enabled: subscribe && !!sessionId });
 
     useSocketEvent<DebugNodeSkippedEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.NODE_SKIPPED, (event) => {
+        if (!isCurrentSessionEvent(event.sessionId)) {
+            return;
+        }
+
         usePluginDebugStore.getState().onNodeSkipped(event.nodeId, event.reason);
-    }, { enabled: subscribe });
+    }, { enabled: subscribe && !!sessionId });
 
     useSocketEvent<DebugNodeErrorEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.NODE_ERROR, (event) => {
+        if (!isCurrentSessionEvent(event.sessionId)) {
+            return;
+        }
+
         usePluginDebugStore.getState().onNodeError(event.nodeId, event.error, event.stack);
         sileo.error({ title: 'Node execution failed', description: event.error });
-    }, { enabled: subscribe });
+    }, { enabled: subscribe && !!sessionId });
 
     useSocketEvent<DebugSessionCompletedEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.SESSION_COMPLETED, (event) => {
+        if (!isCurrentSessionEvent(event.sessionId)) {
+            return;
+        }
+
         usePluginDebugStore.getState().onSessionCompleted(event.totalDuration);
-    }, { enabled: subscribe });
+    }, { enabled: subscribe && !!sessionId });
 
     useSocketEvent<DebugSessionErrorEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.SESSION_ERROR, (event) => {
+        if (event.sessionId && !isCurrentSessionEvent(event.sessionId)) {
+            return;
+        }
+
         usePluginDebugStore.getState().onSessionError(event.error);
         sileo.error({ title: 'Debug session failed', description: event.error });
     }, { enabled: subscribe });

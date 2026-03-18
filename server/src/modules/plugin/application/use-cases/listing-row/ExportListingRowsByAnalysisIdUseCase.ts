@@ -4,8 +4,10 @@ import {
     ListingRowByAnalysisData,
     AnalysisSubListingExportData
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
+import { enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
 import { IUseCase } from '@shared/application/IUseCase';
@@ -17,6 +19,7 @@ import { injectable, inject } from 'tsyringe';
 
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
 import type { IListingRowsExportPresenter } from '@modules/plugin/domain/port/listing-row/IListingRowsExportPresenter';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 interface ListingAggregation {
     listingId: string;
@@ -86,6 +89,7 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
         @inject(PLUGIN_TOKENS.ListingRowsExportPresenter)
         private readonly listingRowsExportPresenter: IListingRowsExportPresenter,
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private analysisRepository: IAnalysisRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private trajectoryRepository: ITrajectoryRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private daemonClient: TeamClusterDaemonClient
     ) {}
 
@@ -214,6 +218,7 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
         let page = 1;
         let totalPages = 1;
         const listingMap = new Map<string, ListingAggregation>();
+        const listingRows: DaemonListingRow[] = [];
 
         do {
             const daemonResult = await this.daemonClient.command<DaemonPaginatedResult<DaemonListingRow>>(
@@ -223,23 +228,31 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
             );
 
             totalPages = Math.max(1, daemonResult.totalPages || 1);
-
-            for (const doc of (daemonResult.data || [])) {
-                const mapped: ListingRowByAnalysisData = {
-                    _id: doc._id || '',
-                    plugin: String(doc.plugin || ''),
-                    exposureId: doc.exposureId || '',
-                    exposureName: doc.exposureName || '',
-                    trajectory: String(doc.trajectory || ''),
-                    trajectoryName: doc.trajectoryName || '',
-                    timestep: doc.timestep ?? 0,
-                    row: (doc.row && typeof doc.row === 'object') ? doc.row : {}
-                };
-                this.aggregateListingRow(listingMap, analysisId, mapped);
-            }
+            listingRows.push(...(daemonResult.data || []));
 
             page += 1;
         } while (page <= totalPages);
+
+        const enrichedRows = await enrichDaemonListingRows({
+            rows: listingRows,
+            analysisRepository: this.analysisRepository,
+            trajectoryRepository: this.trajectoryRepository,
+            fallbackAnalysisId: analysisId
+        });
+
+        for (const doc of enrichedRows) {
+            const mapped: ListingRowByAnalysisData = {
+                _id: doc._id || '',
+                plugin: String(doc.plugin || ''),
+                exposureId: doc.exposureId || '',
+                exposureName: doc.exposureName || '',
+                trajectory: String(doc.trajectory || ''),
+                trajectoryName: doc.trajectoryName || '',
+                timestep: doc.timestep ?? 0,
+                row: (doc.row && typeof doc.row === 'object') ? doc.row : {}
+            };
+            this.aggregateListingRow(listingMap, analysisId, mapped);
+        }
 
         return this.finalizeListingMap(listingMap);
     }

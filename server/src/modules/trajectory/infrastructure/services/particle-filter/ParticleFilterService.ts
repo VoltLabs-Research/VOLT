@@ -36,6 +36,24 @@ const buildClusterRequiredError = (): ApplicationError => {
     );
 };
 
+const buildPluginPropertyUnmappableError = (property: string): ApplicationError => {
+    return ApplicationError.badRequest(
+        ErrorCodes.PARTICLE_FILTER_PLUGIN_PROPERTY_UNMAPPABLE,
+        `Plugin per-atom property "${property}" cannot be mapped to trajectory atom ids`
+    );
+};
+
+const buildPluginPropertyUnavailableError = (
+    exposureId: string,
+    property: string,
+    timestep: string
+): ApplicationError => {
+    return ApplicationError.badRequest(
+        ErrorCodes.PARTICLE_FILTER_PLUGIN_PROPERTY_UNAVAILABLE,
+        `Plugin per-atom property "${property}" is not available for exposure "${exposureId}" at timestep ${timestep}`
+    );
+};
+
 @injectable()
 export default class ParticleFilterService implements IParticleFilterService {
     constructor(
@@ -65,7 +83,7 @@ export default class ParticleFilterService implements IParticleFilterService {
         trajectoryId: string,
         timestep: string | number,
         analysisId?: string
-    ): Promise<{ dump: string[]; perAtom: Record<string, string[]> }> {
+    ): Promise<{ dump: string[]; perAtom: Record<string, string[]>; exposureNames: Record<string, string> }> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
 
@@ -81,13 +99,29 @@ export default class ParticleFilterService implements IParticleFilterService {
         });
         const dumpHeaders = metadata.headers || [];
 
-        const modifierProps = resolvedAnalysisId
-            ? await this.atomProps.getModifierPerAtomProps(String(resolvedAnalysisId))
-            : {};
+        const modifierProps: Record<string, string[]> = {};
+        const exposureNames: Record<string, string> = {};
+
+        if (resolvedAnalysisId) {
+            const configs = await this.atomProps.getAnalysisExposureAtomConfigs(
+                String(resolvedAnalysisId),
+                String(timestep)
+            );
+
+            for (const config of configs) {
+                if (config.perAtomProperties.length === 0) {
+                    continue;
+                }
+
+                modifierProps[config.exposureId] = config.perAtomProperties;
+                exposureNames[config.exposureId] = config.exposureName;
+            }
+        }
 
         return {
             dump: dumpHeaders,
-            perAtom: modifierProps
+            perAtom: modifierProps,
+            exposureNames
         };
     }
 
@@ -333,13 +367,13 @@ export default class ParticleFilterService implements IParticleFilterService {
             return undefined;
         }
 
-        try {
-            const config = await this.atomProps.getExposureAtomConfig(analysisId, exposureId);
-            if (!config.perAtomProperties.includes(property)) {
-                return undefined;
-            }
-        } catch {
-            return undefined;
+        const exposureConfigs = typeof this.atomProps.getAnalysisExposureAtomConfigs === 'function'
+            ? await this.atomProps.getAnalysisExposureAtomConfigs(analysisId, timestep)
+            : [await this.atomProps.getExposureAtomConfig(analysisId, exposureId)];
+        const exposureConfig = exposureConfigs.find((config) => config.exposureId === exposureId);
+
+        if (!exposureConfig || !exposureConfig.perAtomProperties.includes(property)) {
+            throw buildPluginPropertyUnavailableError(exposureId, property, timestep);
         }
 
         const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
@@ -373,7 +407,7 @@ export default class ParticleFilterService implements IParticleFilterService {
         externalValues.fill(Number.NaN);
 
         if (!pluginIndex) {
-            return externalValues;
+            throw buildPluginPropertyUnmappableError(property);
         }
 
         for (const atomId of dumpAtomIds) {
@@ -383,8 +417,9 @@ export default class ParticleFilterService implements IParticleFilterService {
             }
 
             const rawValue = row[property];
-            if (typeof rawValue === 'number' && Number.isFinite(rawValue)) {
-                externalValues[atomId] = rawValue;
+            const numericValue = Number(rawValue);
+            if (Number.isFinite(numericValue)) {
+                externalValues[atomId] = numericValue;
             }
         }
 

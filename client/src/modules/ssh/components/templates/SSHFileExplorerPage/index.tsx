@@ -5,11 +5,13 @@ import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { FileEntryType } from '@/modules/ssh/api/entities/ssh-connection';
 import { formatSize } from '@/shared/utils/format';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import SSHBreadcrumbs from '@/modules/ssh/components/atoms/SSHBreadcrumbs';
 import SSHExplorerHeaderLeft from '@/modules/ssh/components/atoms/SSHExplorerHeaderLeft';
 import SSHExplorerHeaderRight from '@/modules/ssh/components/atoms/SSHExplorerHeaderRight';
 import FileExplorer from '@/shared/presentation/components/FileExplorer';
 import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileExplorerRow';
+import Paragraph from '@/shared/presentation/components/Paragraph';
 import useTip from '@/shared/tips/use-tip';
 import { formatDistanceToNow } from 'date-fns';
 import { LuFile, LuFolder } from 'react-icons/lu';
@@ -29,9 +31,12 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
     const navigate = useNavigate();
     const connectionId = propConnectionId || params.connectionId;
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
+    const { searchParams, updateSearchParams } = useSearchParamsState();
+    const selectedEntryPath = searchParams.get('selected') || null;
+    const explorerStorageKey = connectionId ? `volt:ssh-explorer:${connectionId}` : null;
 
     const remoteExplorer = useRemoteExplorer({
-        initialPath: '.',
+        initialPath: explorerStorageKey ? sessionStorage.getItem(explorerStorageKey) || '.' : '.',
         normalizeRootPath: (path) => {
             if (!path || path === '/') {
                 return '.';
@@ -90,6 +95,14 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
         }
     }, [filesQuery.error, checkAccessDeniedError]);
 
+    useEffect(() => {
+        if (!explorerStorageKey) {
+            return;
+        }
+
+        sessionStorage.setItem(explorerStorageKey, remoteExplorer.path);
+    }, [explorerStorageKey, remoteExplorer.path]);
+
     let explorerError: string | null = null;
     if (filesQuery.error) {
         explorerError = mapErrorToUserMessage(normalizeError(filesQuery.error), {
@@ -102,8 +115,23 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
         cwd: filesQuery.data?.cwd || remoteExplorer.path,
         isLoading: connectionQuery.isLoading || filesQuery.isLoading,
         error: explorerError,
-        refresh: filesQuery.refetch
+        refresh: filesQuery.refetch,
+        isRefreshing: filesQuery.isRefetching
     });
+
+    useEffect(() => {
+        if (selectedEntryPath && selectedEntryPath !== explorer.selectedPath) {
+            explorer.setSelectedPath(selectedEntryPath);
+        }
+    }, [explorer, selectedEntryPath]);
+
+    useEffect(() => {
+        if ((searchParams.get('selected') || null) === explorer.selectedPath) {
+            return;
+        }
+
+        updateSearchParams({ selected: explorer.selectedPath ?? null }, { replace: true });
+    }, [explorer.selectedPath, searchParams, updateSearchParams]);
 
     const handleEntryClick = (entry: SSHFileEntry) => {
         if (entry.type === FileEntryType.Dir) {
@@ -137,7 +165,10 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
     );
 
     const breadcrumb = <SSHBreadcrumbs cwd={explorer.cwd} onNavigate={explorer.navigateTo} />;
-    const headerRight = <SSHExplorerHeaderRight onRefresh={explorer.refresh} />;
+    const headerRight = <SSHExplorerHeaderRight onRefresh={explorer.refresh} isRefreshing={filesQuery.isRefetching} />;
+    const helperCopy = explorer.selectedPath
+        ? `Selected: ${explorer.selectedPath}`
+        : `Browsing ${explorer.cwd}`;
 
     return (
         <FileExplorer
@@ -153,6 +184,9 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
             onRetry={explorer.refresh}
             emptyMessage='No files found in this directory'
         >
+            <Paragraph className='font-size-1 color-secondary p-075' role='status' aria-live='polite'>
+                {helperCopy}. The current folder stays in the URL so you can reload or share this exact location.
+            </Paragraph>
             {explorer.entries.map((entry) => (
                 <FileExplorerRow
                     key={entry.name}

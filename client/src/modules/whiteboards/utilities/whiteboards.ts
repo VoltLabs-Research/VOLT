@@ -9,28 +9,52 @@ import type { PaginationParams } from '@/shared/presentation/hooks/use-paginatio
  */
 const PERSISTABLE_APP_STATE_KEYS = new Set([
     'viewBackgroundColor',
-    'theme',
     'gridSize',
-    'gridColor',
-    'scrollX',
-    'scrollY',
-    'zoom',
-    'currentStrokeColor',
-    'currentBackgroundColor',
-    'currentFillStyle',
-    'currentLinearStrokeSharpness',
-    'currentItemStrokeWidth',
-    'currentItemOpacity',
-    'currentItemFontFamily',
-    'currentItemFontSize',
-    'currentItemTextAlign',
-    'currentItemStartArrowhead',
-    'currentItemEndArrowhead',
-    'exportBackground',
-    'exportWithDarkMode',
-    'exportEmbedScene',
-    'exportScale'
+    'gridColor'
 ]);
+
+type WhiteboardElement = Record<string, unknown>;
+
+const getElementId = (element: WhiteboardElement): string | null => {
+    const id = element.id;
+    return typeof id === 'string' && id.length > 0 ? id : null;
+};
+
+const getElementVersion = (element: WhiteboardElement): number => {
+    return typeof element.version === 'number' && Number.isFinite(element.version)
+        ? element.version
+        : 0;
+};
+
+const getElementUpdated = (element: WhiteboardElement): number => {
+    return typeof element.updated === 'number' && Number.isFinite(element.updated)
+        ? element.updated
+        : 0;
+};
+
+const getElementVersionNonce = (element: WhiteboardElement): number => {
+    return typeof element.versionNonce === 'number' && Number.isFinite(element.versionNonce)
+        ? element.versionNonce
+        : 0;
+};
+
+const shouldReplaceElement = (current: WhiteboardElement | undefined, incoming: WhiteboardElement): boolean => {
+    if (!current) {
+        return true;
+    }
+
+    const versionDelta = getElementVersion(incoming) - getElementVersion(current);
+    if (versionDelta !== 0) {
+        return versionDelta > 0;
+    }
+
+    const updatedDelta = getElementUpdated(incoming) - getElementUpdated(current);
+    if (updatedDelta !== 0) {
+        return updatedDelta > 0;
+    }
+
+    return getElementVersionNonce(incoming) > getElementVersionNonce(current);
+};
 
 /**
  * Returns a copy of `appState` containing only fields that are safe to
@@ -47,6 +71,83 @@ export const filterPersistableAppState = (
         }
     }
     return result;
+};
+
+export const mergeWhiteboardElements = (
+    currentElements: WhiteboardElement[],
+    incomingElements: WhiteboardElement[]
+): WhiteboardElement[] => {
+    const merged = new Map<string, WhiteboardElement>();
+    const currentOrder: string[] = [];
+    const incomingOrder: string[] = [];
+
+    for (const element of currentElements) {
+        const id = getElementId(element);
+        if (!id) {
+            continue;
+        }
+
+        merged.set(id, element);
+        currentOrder.push(id);
+    }
+
+    for (const element of incomingElements) {
+        const id = getElementId(element);
+        if (!id) {
+            continue;
+        }
+
+        incomingOrder.push(id);
+        if (shouldReplaceElement(merged.get(id), element)) {
+            merged.set(id, element);
+        }
+    }
+
+    const orderedIds = new Set<string>();
+    const result: WhiteboardElement[] = [];
+
+    for (const id of incomingOrder) {
+        const element = merged.get(id);
+        if (!element || orderedIds.has(id)) {
+            continue;
+        }
+
+        orderedIds.add(id);
+        result.push(element);
+    }
+
+    for (const id of currentOrder) {
+        const element = merged.get(id);
+        if (!element || orderedIds.has(id)) {
+            continue;
+        }
+
+        orderedIds.add(id);
+        result.push(element);
+    }
+
+    return result;
+};
+
+export const mergeWhiteboardAppState = (
+    currentAppState: Record<string, unknown>,
+    incomingAppState: Record<string, unknown>
+): Record<string, unknown> => ({
+    ...currentAppState,
+    ...filterPersistableAppState(incomingAppState)
+});
+
+export const extractWhiteboardFileIds = (elements: WhiteboardElement[]): string[] => {
+    const fileIds = new Set<string>();
+
+    for (const element of elements) {
+        const fileId = element.fileId;
+        if (typeof fileId === 'string' && fileId.length > 0) {
+            fileIds.add(fileId);
+        }
+    }
+
+    return Array.from(fileIds);
 };
 
 export const createEmptyWhiteboardsResponse = <T extends { _id: string }>(

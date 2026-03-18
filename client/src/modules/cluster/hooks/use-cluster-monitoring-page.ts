@@ -1,6 +1,7 @@
 import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-cluster-metric-id';
+import { resolveSelectedClusterId } from '@/modules/cluster/utilities/resolve-selected-cluster-id';
 import { useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
@@ -16,35 +17,38 @@ export interface ClusterMonitoringPageViewModel extends ClusterPageState {
 
 const useClusterMonitoringPage = (): ClusterMonitoringPageViewModel => {
     const state = useClusterPageState();
-    const metricsState = useClusterMetrics();
     const params = useParams<{ clusterId: string }>();
     const navigate = useNavigate();
+    const resolvedRouteClusterId = useMemo(() => {
+        return resolveSelectedClusterId(params.clusterId ?? null, state.clusters);
+    }, [params.clusterId, state.clusters]);
+    const metricsState = useClusterMetrics({ clusterId: resolvedRouteClusterId });
+    const requestHistory = metricsState.requestHistory;
 
     useEffect(() => {
-        if (!state.clusters.length) {
+        if (!metricsState.isConnected || !resolvedRouteClusterId) {
             return;
         }
 
-        const routeClusterId = params.clusterId;
-        if (!routeClusterId) {
-            navigate(`/dashboard/clusters/${state.clusters[0]._id}`, {
+        requestHistory(5, resolvedRouteClusterId);
+    }, [metricsState.isConnected, requestHistory, resolvedRouteClusterId]);
+
+    useEffect(() => {
+        if (!resolvedRouteClusterId) {
+            return;
+        }
+
+        if (params.clusterId !== resolvedRouteClusterId) {
+            navigate(`/dashboard/clusters/${resolvedRouteClusterId}`, {
                 replace: true
             });
             return;
         }
 
-        const targetCluster = state.clusters.find((cluster) => cluster._id === routeClusterId);
-        if (!targetCluster) {
-            navigate('/dashboard/clusters', {
-                replace: true
-            });
-            return;
+        if (state.selectedClusterId !== resolvedRouteClusterId) {
+            state.setSelectedClusterId(resolvedRouteClusterId);
         }
-
-        if (state.selectedClusterId !== routeClusterId) {
-            state.setSelectedClusterId(routeClusterId);
-        }
-    }, [navigate, params.clusterId, state]);
+    }, [navigate, params.clusterId, resolvedRouteClusterId, state.selectedClusterId, state.setSelectedClusterId]);
 
     const metricsByClusterId = useMemo<Record<string, ClusterMetrics>>(() => {
         return metricsState.clusters.reduce<Record<string, ClusterMetrics>>((acc, cluster) => {
@@ -54,16 +58,26 @@ const useClusterMonitoringPage = (): ClusterMonitoringPageViewModel => {
         }, {});
     }, [metricsState.clusters]);
 
-    const metrics = useMemo(() => {
-        if (!state.selectedCluster) {
+    const selectedCluster = useMemo(() => {
+        if (!resolvedRouteClusterId) {
             return null;
         }
 
-        return metricsByClusterId[state.selectedCluster._id] ?? null;
-    }, [metricsByClusterId, state.selectedCluster]);
+        return state.clusters.find((cluster) => cluster._id === resolvedRouteClusterId) ?? null;
+    }, [resolvedRouteClusterId, state.clusters]);
+
+    const metrics = useMemo(() => {
+        if (!metricsState.isConnected || !resolvedRouteClusterId) {
+            return null;
+        }
+
+        return metricsByClusterId[resolvedRouteClusterId] ?? null;
+    }, [metricsByClusterId, metricsState.isConnected, resolvedRouteClusterId]);
 
     return {
         ...state,
+        selectedCluster,
+        selectedClusterId: resolvedRouteClusterId,
         metrics,
         history: metricsState.history,
         metricsByClusterId,

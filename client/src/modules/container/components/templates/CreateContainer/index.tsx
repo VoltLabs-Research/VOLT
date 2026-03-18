@@ -1,4 +1,4 @@
-import useCreateContainerForm from '../../../hooks/use-create-container-form';
+import useCreateContainerForm, { getCustomImageValidationError } from '../../../hooks/use-create-container-form';
 import { ImageSelectionStep, ConfigurationStep, ReviewStep } from '../../organisms/CreateContainerSteps';
 import useStepper from '@/shared/presentation/hooks/use-stepper';
 import useTip from '@/shared/tips/use-tip';
@@ -10,6 +10,7 @@ import { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Stepper from '@/shared/presentation/components/Stepper';
 import Title from '@/shared/presentation/components/Title';
+import { formatDistanceToNow } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -55,6 +56,7 @@ const CreateContainer = () => {
         config,
         selectedTemplate,
         customImage,
+        customImageError,
         selectedTeamId,
         selectedTeamClusterId,
         teams,
@@ -63,6 +65,7 @@ const CreateContainer = () => {
         isLoadingResourceLimits,
         isLoading,
         deployProgressMessage,
+        draftLastSavedAt,
         setSelectedTeamId,
         setSelectedTeamClusterId,
         updateConfig,
@@ -70,11 +73,13 @@ const CreateContainer = () => {
         setCustomImage,
         handleCreate,
         getSelectedImage,
+        getSelectedTemplate,
         canProceedToConfig,
         canProceedToReview
     } = useCreateContainerForm();
 
     const trimmedCustomImage = tempCustomImage.trim();
+    const tempCustomImageError = trimmedCustomImage ? getCustomImageValidationError(trimmedCustomImage) : null;
 
     const confirmCustomImage = () => {
         if (!trimmedCustomImage) {
@@ -105,11 +110,12 @@ const CreateContainer = () => {
             key: StepKey.Image,
             content: (
                 <Container className='d-flex column gap-2'>
-                    <ImageSelectionStep
-                        selectedTemplate={selectedTemplate}
-                        customImage={customImage}
-                        onTemplateSelect={handleTemplateSelect}
-                        onCustomImageClick={() => {
+                        <ImageSelectionStep
+                            selectedTemplate={selectedTemplate}
+                            customImage={customImage}
+                            customImageError={customImageError}
+                            onTemplateSelect={handleTemplateSelect}
+                            onCustomImageClick={() => {
                             setTempCustomImage(customImage);
                             openModal(CUSTOM_IMAGE_MODAL_ID);
                         }}
@@ -156,6 +162,8 @@ const CreateContainer = () => {
                     selectedTeamId={selectedTeamId}
                     selectedTeamClusterId={selectedTeamClusterId}
                     image={getSelectedImage()}
+                    selectedTemplateName={getSelectedTemplate()?.name}
+                    draftLastSavedAt={draftLastSavedAt}
                     isLoading={isLoading}
                     deployProgressMessage={deployProgressMessage}
                     onBack={() => goTo(StepKey.Config)}
@@ -174,6 +182,9 @@ const CreateContainer = () => {
                 <Container className='d-flex column gap-02'>
                     <Title className='font-size-5 font-weight-6'>Create New Container</Title>
                     <Paragraph className='color-muted'>Deploy a new containerized application in seconds.</Paragraph>
+                    {draftLastSavedAt && (
+                        <Paragraph className='font-size-1 color-secondary'>Draft saved {formatDistanceToNow(new Date(draftLastSavedAt), { addSuffix: true })}.</Paragraph>
+                    )}
                 </Container>
             </Container>
 
@@ -193,7 +204,7 @@ const CreateContainer = () => {
                 footer={
                     <>
                         <Button variant='outline' intent='neutral' onClick={() => closeModal(CUSTOM_IMAGE_MODAL_ID)}>Cancel</Button>
-                        <Button variant='solid' intent='brand' onClick={confirmCustomImage} disabled={!trimmedCustomImage}>Save image and continue</Button>
+                        <Button variant='solid' intent='brand' onClick={confirmCustomImage} disabled={!trimmedCustomImage || !!tempCustomImageError}>Save image and continue</Button>
                     </>
                 }
             >
@@ -203,9 +214,10 @@ const CreateContainer = () => {
                         placeholder='e.g., nginx:latest, mysql:8.0'
                         value={tempCustomImage}
                         onChange={(e) => setTempCustomImage(e.target.value)}
+                        error={tempCustomImageError ?? undefined}
                         autoFocus
                     />
-                    <Paragraph className='font-size-2 color-secondary'>A non-empty image reference is required before you can continue.</Paragraph>
+                    <Paragraph className='font-size-2 color-secondary'>Use a full Docker image reference. Tags are recommended so deployments stay predictable.</Paragraph>
                 </Container>
             </Modal>
         </Container>

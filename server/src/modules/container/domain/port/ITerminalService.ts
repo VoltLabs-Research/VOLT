@@ -4,6 +4,12 @@ export interface ContainerTerminalAttachPayload {
     containerId: string;
 };
 
+export interface ContainerTerminalAttachContext {
+    containerId: string;
+    userId: string;
+    teamId: string;
+}
+
 export type ContainerTerminalResizePayload = ContainerTerminalSize;
 
 export interface ContainerTerminalError {
@@ -12,6 +18,7 @@ export interface ContainerTerminalError {
 };
 
 export interface ITerminalClient {
+    readonly id: string;
     joinRoom(room: string): void;
     leaveRoom(room: string): void;
     emitData(data: string): void;
@@ -29,6 +36,6 @@ export interface ITerminalClient {
 };
 
 export interface ITerminalService {
-    attach(client: ITerminalClient, containerId: string): Promise<void>;
+    attach(client: ITerminalClient, context: ContainerTerminalAttachContext): Promise<void>;
     detach(client: ITerminalClient, containerId: string): void;
 };

@@ -13,7 +13,7 @@ import useCanvasUrlState from './use-canvas-url-state';
 import useExposureManager from './use-exposure-manager';
 
 import { useAnalysesByTrajectoryQuery, analysisQuery } from '@/modules/analysis/hooks/queries';
-import { upsertAnalysisCaches, updateAnalysisStatusCaches } from '@/modules/analysis/services/cache';
+import { findCachedAnalysisById, upsertAnalysisCaches, updateAnalysisStatusCaches } from '@/modules/analysis/services/cache';
 import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
 import { showPromise } from '@/shared/presentation/hooks/toast';
@@ -86,6 +86,24 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     const bootstrapLoading = analysesQuery.isLoading;
 
     const analyses = analysesQuery.data?.data ?? [];
+    const selectedAnalysis = useMemo(() => {
+        if (!analysisConfigId) {
+            return undefined;
+        }
+
+        return findCachedAnalysisById({
+            analysisId: analysisConfigId,
+            trajectoryId,
+            fallbackAnalyses: [...analyses, ...(trajectory?.analysis ?? [])]
+        });
+    }, [analyses, analysisConfigId, trajectory?.analysis, trajectoryId]);
+    const resolvedAnalyses = useMemo(() => {
+        if (!selectedAnalysis || analyses.some((analysis) => analysis._id === selectedAnalysis._id)) {
+            return analyses;
+        }
+
+        return [selectedAnalysis, ...analyses];
+    }, [analyses, selectedAnalysis]);
 
     useEffect(() => {
         if (analysesQuery.error) {
@@ -159,23 +177,22 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     }, [analysisConfigId]);
 
     useEffect(() => {
-        if (!analysisConfigId || analyses.length === 0) return;
-        const analysis = analyses.find((x: Analysis) => x._id === analysisConfigId);
-        if (!analysis) return;
-        loadExposuresForAnalysis(analysis._id);
-    }, [analysisConfigId, analyses, loadExposuresForAnalysis]);
+        if (!selectedAnalysis) return;
+
+        loadExposuresForAnalysis(selectedAnalysis._id);
+    }, [loadExposuresForAnalysis, selectedAnalysis]);
 
     useEffect(() => {
-        if (analyses.length === 0) return;
+        if (resolvedAnalyses.length === 0) return;
         expandedSections.forEach((analysisId) => {
-            const analysis = analyses.find((x: Analysis) => x._id === analysisId);
+            const analysis = resolvedAnalyses.find((x: Analysis) => x._id === analysisId);
             if (!analysis) return;
             const entry = getEntry(analysisId);
             if (entry.state === 'idle' || entry.state === 'error') {
                 loadExposuresForAnalysis(analysisId);
             }
         });
-    }, [expandedSections, analyses, getEntry, loadExposuresForAnalysis]);
+    }, [expandedSections, resolvedAnalyses, getEntry, loadExposuresForAnalysis]);
 
     useEffect(() => {
         if (!analysisConfigId) return;
@@ -224,16 +241,16 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     }, [analysisConfigId, getEntry, setActiveScene]);
 
     const differingConfigByAnalysis = useMemo(() => {
-        if (analyses.length === 0) return new Map<string, [string, unknown][]>();
-        return computeDifferingConfigFields(analyses);
-    }, [analyses]);
+        if (resolvedAnalyses.length === 0) return new Map<string, [string, unknown][]>();
+        return computeDifferingConfigFields(resolvedAnalyses);
+    }, [resolvedAnalyses]);
 
     const trajectoryTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
 
     const allAnalysisSections = useMemo((): AnalysisSectionData[] => {
-        if (analyses.length === 0) return [];
+        if (resolvedAnalyses.length === 0) return [];
 
-        return analyses.map((analysis: Analysis) => {
+        return resolvedAnalyses.map((analysis: Analysis) => {
             const entry = exposureEntries.get(analysis._id) ?? DEFAULT_ENTRY;
 
             return {
@@ -245,7 +262,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                 config: analysis.config
             };
         });
-    }, [analyses, exposureEntries, analysisConfigId]);
+    }, [resolvedAnalyses, exposureEntries, analysisConfigId]);
 
     const filteredSections = useMemo(() => {
         if (!searchQuery.trim()) return allAnalysisSections;
@@ -338,7 +355,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         return map;
     }, [filteredSections, setHeaderPopoverOpen]);
 
-    const showSectionsSkeleton = bootstrapLoading || (analyses.length > 0 && allAnalysisSections.length === 0);
+    const showSectionsSkeleton = bootstrapLoading || (resolvedAnalyses.length > 0 && allAnalysisSections.length === 0);
 
     return {
         trajectoryId,
@@ -346,7 +363,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         setSearchQuery,
         expandedSections,
         bootstrapLoading,
-        analyses,
+        analyses: resolvedAnalyses,
         headerPopoverStates,
         accessDenied,
         accessDeniedMessage,

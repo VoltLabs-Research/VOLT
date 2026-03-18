@@ -152,8 +152,9 @@ const AIConversationSidebar = ({
         }
 
         return (
-            <Container
+            <button
                 key={conversation._id}
+                type='button'
                 className={itemClassName}
                 onClick={() => onSelectConversation(conversation._id)}
             >
@@ -190,7 +191,7 @@ const AIConversationSidebar = ({
                 <Paragraph className='font-size-1 color-muted'>
                     {formatDistanceToNow(new Date(conversation.lastMessageAt || conversation.updatedAt), { addSuffix: true })}
                 </Paragraph>
-            </Container>
+            </button>
         );
     };
 
@@ -201,14 +202,19 @@ const AIConversationSidebar = ({
             <Container key={index} className='ai-conversation-item-skeleton' />
         ));
     } else if (filteredConversations.length === 0) {
+        let title = 'No conversations yet';
         let description = 'Create a new chat to get started.';
         if (query) {
+            title = 'No matching conversations';
             description = 'No matching conversations found.';
+        } else if (!canCreate) {
+            title = 'No conversations available';
+            description = 'You do not have permission to start a conversation here.';
         }
 
         listContent = (
             <EmptyState
-                title='No conversations yet'
+                title={title}
                 description={description}
             />
         );

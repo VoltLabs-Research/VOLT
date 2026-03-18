@@ -1,7 +1,8 @@
 import './HeaderBreadcrumbs.css';
 import { useMemo } from 'react';
 import { IoChevronForward } from 'react-icons/io5';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 
 interface BreadcrumbItem {
@@ -12,7 +13,6 @@ interface BreadcrumbItem {
 
 const HeaderBreadcrumbs = () => {
     const { pathname } = useLocation();
-    const navigate = useNavigate();
 
     const breadcrumbs = useMemo(() => {
         const segments = pathname.split('/').filter(Boolean).slice(1);
@@ -48,13 +48,15 @@ const HeaderBreadcrumbs = () => {
             const { path } = breadcrumb;
 
             return (
-                <button
-                    type='button'
+                <Button
+                    to={path}
+                    variant='ghost'
+                    intent='neutral'
+                    size='sm'
                     className='breadcrumb-item breadcrumb-link color-secondary'
-                    onClick={() => navigate(path)}
                 >
                     {breadcrumb.label}
-                </button>
+                </Button>
             );
         }
 
@@ -70,13 +72,15 @@ const HeaderBreadcrumbs = () => {
 
     return (
         <nav className='breadcrumb-nav d-flex items-center gap-05 font-size-2' aria-label='Dashboard breadcrumbs'>
-            <button
-                type='button'
+            <Button
+                to='/dashboard'
+                variant='ghost'
+                intent='neutral'
+                size='sm'
                 className='breadcrumb-item breadcrumb-link color-secondary'
-                onClick={() => navigate('/dashboard')}
             >
                 Dashboard
-            </button>
+            </Button>
 
             {breadcrumbs.map((breadcrumb, index) => (
                 <Container key={`${breadcrumb.label}-${index}`} className='d-flex items-center gap-05'>

@@ -119,8 +119,20 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                             successfulFrames: frames.length,
                             droppedFrames: allFrames.length - frames.length
                         },
-                        '@trajectory-background-processor: some upload jobs failed, only enqueueing GLB for successfully uploaded frames'
+                        '@trajectory-background-processor: upload failures detected, marking trajectory as failed'
                     );
+
+                    await this.updateStatus(
+                        trajectoryId,
+                        trajectory.props.team,
+                        TrajectoryStatus.Failed,
+                        {
+                            failureCode: ErrorCodes.TRAJECTORY_UPLOAD_FAILED,
+                            failureDetails: 'One or more trajectory frame uploads failed before GLB preprocessing.'
+                        }
+                    );
+
+                    return;
                 }
 
                 if (frames.length === 0) {
@@ -128,6 +140,17 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                         { trajectoryId, failedCount },
                         '@trajectory-background-processor: drain callback — no successfully uploaded frames, skipping GLB enqueue'
                     );
+
+                    await this.updateStatus(
+                        trajectoryId,
+                        trajectory.props.team,
+                        TrajectoryStatus.Failed,
+                        {
+                            failureCode: ErrorCodes.TRAJECTORY_UPLOAD_FAILED,
+                            failureDetails: 'No trajectory frames were uploaded successfully.'
+                        }
+                    );
+
                     return;
                 }
 
@@ -499,15 +522,19 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
             '@trajectory-background-processor: sending trajectory.enqueue-preprocessing to daemon'
         );
 
-        await this.teamClusterDaemonClient.command(teamClusterId, 'trajectory.enqueue-preprocessing', {
-            trajectoryId: trajectory._id,
-            teamId,
-            trajectoryName: trajectory.props.name,
-            frames: frameDescriptors
-        });
-
-        // Initialize GLB session counter for drain tracking
         await this.initializeGlbSession(trajectory._id, frameDescriptors.length);
+
+        try {
+            await this.teamClusterDaemonClient.command(teamClusterId, 'trajectory.enqueue-preprocessing', {
+                trajectoryId: trajectory._id,
+                teamId,
+                trajectoryName: trajectory.props.name,
+                frames: frameDescriptors
+            });
+        } catch (error) {
+            await this.clearGlbSession(trajectory._id);
+            throw error;
+        }
 
         logger.info(
             {
@@ -526,14 +553,40 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
     private async initializeGlbSession(trajectoryId: string, totalJobs: number): Promise<void> {
         const remainingKey = `daemon-glb:${trajectoryId}:remaining`;
         const failedKey = `daemon-glb:${trajectoryId}:failed`;
+        const terminalReceiptSetKey = `daemon-glb:${trajectoryId}:terminal-keys`;
+        const staleReceiptKeys = await this.redis.smembers(terminalReceiptSetKey);
 
         const pipeline = this.redis.pipeline();
         pipeline.set(remainingKey, totalJobs.toString(), 'EX', GLB_SESSION_TTL_SECONDS);
         pipeline.del(failedKey);
+        pipeline.del(terminalReceiptSetKey);
+
+        if (staleReceiptKeys.length > 0) {
+            pipeline.del(...staleReceiptKeys);
+        }
+
         await pipeline.exec();
 
         logger.info(
             `@trajectory-background-processor: initialized GLB session for trajectory ${trajectoryId} with ${totalJobs} jobs`
         );
+    }
+
+    private async clearGlbSession(trajectoryId: string): Promise<void> {
+        const remainingKey = `daemon-glb:${trajectoryId}:remaining`;
+        const failedKey = `daemon-glb:${trajectoryId}:failed`;
+        const terminalReceiptSetKey = `daemon-glb:${trajectoryId}:terminal-keys`;
+        const staleReceiptKeys = await this.redis.smembers(terminalReceiptSetKey);
+
+        const pipeline = this.redis.pipeline();
+        pipeline.del(remainingKey);
+        pipeline.del(failedKey);
+        pipeline.del(terminalReceiptSetKey);
+
+        if (staleReceiptKeys.length > 0) {
+            pipeline.del(...staleReceiptKeys);
+        }
+
+        await pipeline.exec();
     }
 };

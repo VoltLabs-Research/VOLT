@@ -26,20 +26,31 @@ interface CreateContainerVncSessionInput {
 
 interface ContainerVncTokenPayload {
     type: 'container-vnc';
+    sessionId: string;
     teamId: string;
     containerId: string;
-    teamClusterId: string;
-    exposureId: string;
-    password: string;
-    width: number;
-    height: number;
-    dpi: number;
     expiresAt: number;
 };
 
 interface ContainerVncTokenEnvelope {
     iv: string;
+    tag: string;
     value: string;
+};
+
+interface StoredContainerVncSession {
+    sessionId: string;
+    teamId: string;
+    containerId: string;
+    userId: string;
+    teamClusterId: string;
+    exposureId: string;
+    password: string;
+    parentOrigin: string;
+    width: number;
+    height: number;
+    dpi: number;
+    expiresAt: number;
 };
 
 interface ContainerVncConnectRequest {
@@ -60,8 +71,9 @@ export interface ContainerVncSessionDescriptor {
     parentOrigin: string;
 };
 
-const TOKEN_CYPHER = 'aes-256-cbc';
-const DEFAULT_SESSION_TTL_MS = 120_000;
+const TOKEN_CYPHER = 'aes-256-gcm';
+const DEFAULT_SESSION_TTL_MS = 60_000;
+const SESSION_SWEEP_INTERVAL_MS = 60_000;
 const DEFAULT_WIDTH = 1280;
 const DEFAULT_HEIGHT = 720;
 const DEFAULT_DPI = 96;
@@ -127,14 +139,9 @@ const isContainerVncTokenPayload = (value: unknown): value is ContainerVncTokenP
     }
 
     return value.type === 'container-vnc'
+        && typeof value.sessionId === 'string'
         && typeof value.teamId === 'string'
         && typeof value.containerId === 'string'
-        && typeof value.teamClusterId === 'string'
-        && typeof value.exposureId === 'string'
-        && typeof value.password === 'string'
-        && typeof value.width === 'number'
-        && typeof value.height === 'number'
-        && typeof value.dpi === 'number'
         && typeof value.expiresAt === 'number';
 };
 
@@ -175,6 +182,8 @@ export class ContainerVncGatewayService {
         'CONTAINER_VNC_SESSION_TTL_MS',
         DEFAULT_SESSION_TTL_MS
     );
+    private readonly sessions = new Map<string, StoredContainerVncSession>();
+    private readonly sweepTimer: ReturnType<typeof setInterval>;
     private readonly webSocketServer = new WebSocketServer({
         noServer: true
     });
@@ -182,27 +191,44 @@ export class ContainerVncGatewayService {
     constructor(
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
-    ) {}
+    ) {
+        this.sweepTimer = setInterval(() => this.cleanupExpiredSessions(), SESSION_SWEEP_INTERVAL_MS);
+        this.sweepTimer.unref();
+    }
 
     public createSession(input: CreateContainerVncSessionInput): ContainerVncSessionDescriptor {
         const parentOrigin = this.requireAllowedParentOrigin(input.parentOrigin);
         const expiresAt = Date.now() + this.sessionTtlMs;
-        const token = this.encrypt({
-            type: 'container-vnc',
+        const sessionId = randomBytes(16).toString('hex');
+
+        this.cleanupExpiredSessions();
+        this.sessions.set(sessionId, {
+            sessionId,
             teamId: input.teamId,
             containerId: input.containerId,
+            userId: input.userId,
             teamClusterId: input.teamClusterId,
             exposureId: input.exposureId,
             password: input.password,
+            parentOrigin,
             width: input.width ?? DEFAULT_WIDTH,
             height: input.height ?? DEFAULT_HEIGHT,
             dpi: input.dpi ?? DEFAULT_DPI,
+            expiresAt
+        });
+
+        const token = this.encrypt({
+            type: 'container-vnc',
+            sessionId,
+            teamId: input.teamId,
+            containerId: input.containerId,
             expiresAt
         });
         const noVncUrl = this.buildConnectPath(input.teamId, input.containerId, token, parentOrigin);
 
         logger.info({
             action: 'container.vnc.session.created',
+            sessionId,
             teamId: input.teamId,
             containerId: input.containerId,
             userId: input.userId,
@@ -450,14 +476,12 @@ initializeRemoteDesktop().catch((error) => {
         });
     }
 
-    private requireValidSession(input: ContainerVncConnectRequest): ContainerVncTokenPayload {
+    private requireValidSession(input: ContainerVncConnectRequest): StoredContainerVncSession {
         if (!input.token) {
             throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_REQUIRED, 'VNC session token is required');
         }
 
-        if (input.parentOrigin) {
-            this.requireAllowedParentOrigin(input.parentOrigin);
-        }
+        this.cleanupExpiredSessions();
 
         const payload = this.decrypt(input.token);
         if (payload.expiresAt < Date.now()) {
@@ -468,7 +492,27 @@ initializeRemoteDesktop().catch((error) => {
             throw ApplicationError.forbidden(ErrorCodes.TEAM_ACCESS_DENIED, 'VNC session token does not match the requested container');
         }
 
-        return payload;
+        const session = this.sessions.get(payload.sessionId);
+        if (!session || session.expiresAt < Date.now()) {
+            if (session) {
+                this.sessions.delete(session.sessionId);
+            }
+
+            throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 'VNC session token expired');
+        }
+
+        if (session.teamId !== input.teamId || session.containerId !== input.containerId) {
+            throw ApplicationError.forbidden(ErrorCodes.TEAM_ACCESS_DENIED, 'VNC session token does not match the requested container');
+        }
+
+        if (input.parentOrigin) {
+            const parentOrigin = this.requireAllowedParentOrigin(input.parentOrigin);
+            if (session.parentOrigin !== parentOrigin) {
+                throw ApplicationError.forbidden(ErrorCodes.TEAM_ACCESS_DENIED, 'VNC session token does not match the requested parent origin');
+            }
+        }
+
+        return session;
     }
 
     private buildConnectPath(teamId: string, containerId: string, token: string, parentOrigin: string): string {
@@ -503,6 +547,16 @@ initializeRemoteDesktop().catch((error) => {
         return `/api/container-vnc/${encodeURIComponent(teamId)}/${encodeURIComponent(containerId)}/ws?token=${encodeURIComponent(token)}`;
     }
 
+    private cleanupExpiredSessions(): void {
+        const now = Date.now();
+
+        for (const [sessionId, session] of this.sessions.entries()) {
+            if (session.expiresAt <= now) {
+                this.sessions.delete(sessionId);
+            }
+        }
+    }
+
     private encrypt(payload: ContainerVncTokenPayload): string {
         const iv = randomBytes(16);
         const cipher = createCipheriv(TOKEN_CYPHER, this.encryptionKey, iv);
@@ -510,9 +564,11 @@ initializeRemoteDesktop().catch((error) => {
             cipher.update(JSON.stringify(payload), 'utf8'),
             cipher.final()
         ]);
+        const tag = cipher.getAuthTag();
 
         return Buffer.from(JSON.stringify({
             iv: iv.toString('base64'),
+            tag: tag.toString('base64'),
             value: encrypted.toString('base64')
         } satisfies ContainerVncTokenEnvelope)).toString('base64');
     }
@@ -525,7 +581,12 @@ initializeRemoteDesktop().catch((error) => {
             throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 'Invalid VNC session token');
         }
 
-        if (!isRecord(envelope) || typeof envelope.iv !== 'string' || typeof envelope.value !== 'string') {
+        if (
+            !isRecord(envelope)
+            || typeof envelope.iv !== 'string'
+            || typeof envelope.tag !== 'string'
+            || typeof envelope.value !== 'string'
+        ) {
             throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 'Invalid VNC session token');
         }
 
@@ -535,6 +596,7 @@ initializeRemoteDesktop().catch((error) => {
                 this.encryptionKey,
                 Buffer.from(envelope.iv, 'base64')
             );
+            decipher.setAuthTag(Buffer.from(envelope.tag, 'base64'));
             const decrypted = Buffer.concat([
                 decipher.update(Buffer.from(envelope.value, 'base64')),
                 decipher.final()

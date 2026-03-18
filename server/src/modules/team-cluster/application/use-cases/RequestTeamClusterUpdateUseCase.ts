@@ -17,6 +17,7 @@ import { inject, injectable } from 'tsyringe';
 import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import type { TeamClusterDaemonSemanticCommandResult } from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 const DAEMON_IMAGE_REPOSITORY = 'ghcr.io/voltlabs-research/volt-cluster-daemon';
 
@@ -84,14 +85,18 @@ export default class RequestTeamClusterUpdateUseCase
         }
 
         const targetImage = buildTargetImage(input.targetVersion, input.isEdge);
+        let updateCommandResult: TeamClusterDaemonSemanticCommandResult<{ accepted?: boolean; reason?: string; message?: string; }>;
 
         try {
-            await this.teamClusterDaemonClient.command<{ accepted: boolean }>(
+            updateCommandResult = await this.teamClusterDaemonClient.commandWithSemanticResult<{ accepted?: boolean; reason?: string; message?: string; }>(
                 input.teamClusterId,
                 'runtime.update',
                 {
                     targetImage,
                     targetVersion: input.targetVersion
+                },
+                {
+                    timeoutClass: 'long-running-control-plane'
                 }
             );
         } catch (error: unknown) {
@@ -106,6 +111,28 @@ export default class RequestTeamClusterUpdateUseCase
             return Result.fail(ApplicationError.conflict(
                 'TeamCluster::UpdateRequestFailed',
                 'Failed to send update command to the connected cluster daemon'
+            ));
+        }
+
+        if (!updateCommandResult.accepted) {
+            const rejectionReason = updateCommandResult.reason
+                || updateCommandResult.data?.reason
+                || updateCommandResult.data?.message
+                || 'The daemon rejected the update request.';
+
+            logger.warn({
+                action: 'team-cluster.update.remote-request-rejected',
+                teamClusterId: input.teamClusterId,
+                teamId: input.teamId,
+                userId: input.userId,
+                targetVersion: input.targetVersion,
+                targetImage,
+                reason: rejectionReason
+            }, 'Cluster daemon rejected runtime.update command');
+
+            return Result.fail(ApplicationError.conflict(
+                'TeamCluster::UpdateRejected',
+                rejectionReason
             ));
         }
 

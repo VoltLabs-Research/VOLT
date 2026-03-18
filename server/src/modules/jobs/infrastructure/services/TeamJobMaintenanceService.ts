@@ -7,7 +7,8 @@ import type {
     ClearTeamJobsHistoryResult,
     ITeamJobMaintenanceService,
     RemoveTeamRunningJobsResult,
-    RetryTeamFailedJobsResult
+    RetryTeamFailedJobsResult,
+    TeamClusterFailureDetail
 } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
 import type { TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -26,6 +27,8 @@ interface ClusterMutationResult {
     affectedJobs: number;
     affectedClusters: number;
     confirmedAnalysisIds: Set<string>;
+    clusterFailures: TeamClusterFailureDetail[];
+    allClustersConfirmed: boolean;
 };
 
 interface LocalMutationResult {
@@ -66,8 +69,12 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
                 teamId,
                 jobIds
             });
+        }, {
+            requireFullConfirmation: true
         });
-        const localResult = await this.removeProjectedJobs(teamId, localCleanupTargets);
+        const localResult = daemonResult.allClustersConfirmed
+            ? await this.removeProjectedJobs(teamId, localCleanupTargets)
+            : this.emptyLocalMutationResult();
         const deletedAnalyses = this.combineAnalysisIds(
             daemonResult.confirmedAnalysisIds,
             localResult.affectedAnalysisIds
@@ -76,7 +83,8 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         return {
             deletedJobs: daemonResult.affectedJobs + localResult.affectedJobs,
             deletedAnalyses: deletedAnalyses.size,
-            affectedClusters: daemonResult.affectedClusters
+            affectedClusters: daemonResult.affectedClusters,
+            clusterFailures: daemonResult.clusterFailures
         };
     }
 
@@ -89,8 +97,12 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
             return this.teamClusterDaemonClient.command<ClusterActionResponse>(teamClusterId, 'jobs.remove-running', {
                 jobIds
             });
+        }, {
+            requireFullConfirmation: true
         });
-        const localResult = await this.removeProjectedJobs(teamId, localCleanupTargets);
+        const localResult = daemonResult.allClustersConfirmed
+            ? await this.removeProjectedJobs(teamId, localCleanupTargets)
+            : this.emptyLocalMutationResult();
         const deletedAnalyses = this.combineAnalysisIds(
             daemonResult.confirmedAnalysisIds,
             localResult.affectedAnalysisIds
@@ -99,7 +111,8 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         return {
             deletedJobs: daemonResult.affectedJobs + localResult.affectedJobs,
             deletedAnalyses: deletedAnalyses.size,
-            affectedClusters: daemonResult.affectedClusters
+            affectedClusters: daemonResult.affectedClusters,
+            clusterFailures: daemonResult.clusterFailures
         };
     }
 
@@ -126,22 +139,43 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
 
         return {
             retriedFrames: daemonResult.affectedJobs,
-            affectedClusters: daemonResult.affectedClusters
+            affectedClusters: daemonResult.affectedClusters,
+            clusterFailures: daemonResult.clusterFailures
         };
     }
 
     private async callPerCluster(
         jobsByCluster: Map<string, TeamJobSummary[]>,
-        handler: (teamClusterId: string, jobIds: string[]) => Promise<ClusterActionResponse>
+        handler: (teamClusterId: string, jobIds: string[]) => Promise<ClusterActionResponse>,
+        options: {
+            requireFullConfirmation?: boolean;
+        } = {}
     ): Promise<ClusterMutationResult> {
         let affectedJobs = 0;
         let affectedClusters = 0;
         const confirmedAnalysisIds = new Set<string>();
+        const clusterFailures: TeamClusterFailureDetail[] = [];
+        const requireFullConfirmation = options.requireFullConfirmation === true;
 
         for (const [teamClusterId, jobs] of jobsByCluster.entries()) {
             try {
                 const response = await handler(teamClusterId, jobs.map((job) => job.jobId));
                 const confirmedAffectedJobs = this.normalizeAffectedJobs(response.affectedJobs, jobs.length);
+
+                if (confirmedAffectedJobs !== jobs.length) {
+                    logger.warn({
+                        teamClusterId,
+                        requestedJobs: jobs.length,
+                        affectedJobs: confirmedAffectedJobs
+                    }, '[TeamJobMaintenanceService] Cluster returned partial confirmation for job action');
+                    clusterFailures.push({
+                        teamClusterId,
+                        requestedJobs: jobs.length,
+                        affectedJobs: confirmedAffectedJobs,
+                        reason: 'partial-confirmation',
+                        message: `Cluster confirmed ${confirmedAffectedJobs} of ${jobs.length} requested job mutations`
+                    });
+                }
 
                 affectedClusters += 1;
 
@@ -149,8 +183,17 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
                     this.addAnalysisIds(confirmedAnalysisIds, jobs);
                 }
 
-                affectedJobs += confirmedAffectedJobs;
+                affectedJobs += requireFullConfirmation && confirmedAffectedJobs !== jobs.length
+                    ? 0
+                    : confirmedAffectedJobs;
             } catch (error) {
+                clusterFailures.push({
+                    teamClusterId,
+                    requestedJobs: jobs.length,
+                    affectedJobs: 0,
+                    reason: 'command-failed',
+                    message: this.getErrorMessage(error)
+                });
                 logger.warn(error, `[TeamJobMaintenanceService] Failed to perform job action on cluster ${teamClusterId}`);
             }
         }
@@ -158,7 +201,16 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         return {
             affectedJobs,
             affectedClusters,
-            confirmedAnalysisIds
+            confirmedAnalysisIds,
+            clusterFailures,
+            allClustersConfirmed: clusterFailures.length === 0
+        };
+    }
+
+    private emptyLocalMutationResult(): LocalMutationResult {
+        return {
+            affectedJobs: 0,
+            affectedAnalysisIds: new Set<string>()
         };
     }
 
@@ -393,6 +445,14 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         }
 
         return Math.max(0, Math.min(requestedJobs, Math.trunc(affectedJobs)));
+    }
+
+    private getErrorMessage(error: unknown): string | undefined {
+        if (error instanceof Error && error.message.trim().length > 0) {
+            return error.message;
+        }
+
+        return undefined;
     }
 
     private didRedisMutationAffect(result: [Error | null, unknown] | undefined): boolean {

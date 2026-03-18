@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { create } from 'zustand';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import type { PresenceUser } from '@/modules/socket/trajectory/api/entities/presence-user';
@@ -42,40 +42,14 @@ const isPresencePayload = (value: unknown): value is PresenceUser[] => {
 
 const useWhiteboardPresence = ({ whiteboardId, enabled = true }: UseWhiteboardPresenceProps) => {
     const socketService = useSocket();
-    const isConnectedRef = useRef(socketService.isConnected());
-    const subscribedRef = useRef(false);
     const previousUsersRef = useRef<PresenceUser[]>([]);
 
     const users = usePresenceStore((state) => state.users);
     const announcement = usePresenceStore((state) => state.announcement);
 
     useEffect(() => {
-        const unsubscribe = socketService.onConnectionChange((connected) => {
-            isConnectedRef.current = connected;
-            if (connected && enabled && whiteboardId && !subscribedRef.current) {
-                subscribeToPresence();
-            }
-        });
-        return unsubscribe;
-    }, [enabled, whiteboardId, socketService]);
-
-    const subscribeToPresence = useCallback(() => {
-        if (!enabled || !whiteboardId || !isConnectedRef.current || subscribedRef.current) {
-            return;
-        }
-
-        subscribedRef.current = true;
-
-        socketService.emit('subscribe_to_whiteboard', { whiteboardId }).catch(console.warn);
-    }, [enabled, whiteboardId, socketService]);
-
-    useEffect(() => {
         if (!enabled || !whiteboardId) {
             return;
-        }
-
-        if (isConnectedRef.current) {
-            subscribeToPresence();
         }
 
         const unsubscribePresence = socketService.on(
@@ -110,18 +84,13 @@ const useWhiteboardPresence = ({ whiteboardId, enabled = true }: UseWhiteboardPr
         );
 
         return () => {
-            subscribedRef.current = false;
             unsubscribePresence();
-
-            if (isConnectedRef.current) {
-                socketService.emit('unsubscribe_from_whiteboard', { whiteboardId }).catch(console.warn);
-            }
 
             setUsers([]);
             setAnnouncement(null);
             previousUsersRef.current = [];
         };
-    }, [whiteboardId, enabled, subscribeToPresence, socketService]);
+    }, [whiteboardId, enabled, socketService]);
 
     return { users, announcement };
 };

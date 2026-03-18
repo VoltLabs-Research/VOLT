@@ -10,5 +10,6 @@ export const WHITEBOARD_TOKENS = Object.freeze({
     SaveWhiteboardStateUseCase: Symbol.for('SaveWhiteboardStateUseCase'),
     UploadWhiteboardAssetUseCase: Symbol.for('UploadWhiteboardAssetUseCase'),
     GetWhiteboardAssetUseCase: Symbol.for('GetWhiteboardAssetUseCase'),
+    WhiteboardRealtimeStateService: Symbol.for('WhiteboardRealtimeStateService'),
     WhiteboardSocketModule: Symbol.for('WhiteboardSocketModule')
 });

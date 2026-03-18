@@ -68,7 +68,7 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
                     return;
                 }
 
-                socketService.emit('container:terminal:detach').catch(() => undefined);
+                socketService.emitWithoutAck('container:terminal:detach');
                 connectionState.isAttached = false;
                 isAttachedRef.current = false;
                 connectionState.detachTimer = null;
@@ -89,7 +89,7 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
                 return;
             }
 
-            socketService.emit('container:terminal:attach', { containerId: id }).catch(() => undefined);
+            socketService.emitWithoutAck('container:terminal:attach', { containerId: id });
             connectionState.isAttached = true;
             isAttachedRef.current = true;
         };
@@ -139,7 +139,7 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
     }, [container._id, socketService]);
 
     const handleTerminalData = (data: string) => {
-        socketService.emit('container:terminal:input', data).catch(() => undefined);
+        socketService.emitWithoutAck('container:terminal:input', data);
     };
 
     useEffect(() => {

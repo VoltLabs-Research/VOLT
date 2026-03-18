@@ -321,7 +321,6 @@ const buildDaemonEnvFile = (
         `TEAM_CLUSTER_LIFECYCLE_PATH=/api/team-clusters/${teamClusterId}/lifecycle`,
         `TEAM_CLUSTER_HEALTHCHECK_PATH=/api/team-clusters/${teamClusterId}/healthcheck`,
         `TEAM_CLUSTER_DELETE_COMPLETION_PATH=/api/team-clusters/${teamClusterId}/delete-completions`,
-        `TEAM_CLUSTER_INSTALL_MANIFEST_PATH=/api/team-clusters/${teamClusterId}/install-manifest`,
         'MINIO_ENDPOINT=http://minio:9000',
         `MINIO_ACCESS_KEY=${credentials.minioUsername}`,
         `MINIO_SECRET_KEY=${credentials.minioPassword}`,

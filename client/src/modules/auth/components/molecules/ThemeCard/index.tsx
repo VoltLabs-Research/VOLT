@@ -19,6 +19,12 @@ interface ThemePreviewStyles extends CSSProperties {
     '--theme-preview-panel-end': string;
 };
 
+interface SystemPreviewStyles extends CSSProperties {
+    '--theme-preview-light-bg': string;
+    '--theme-preview-dark-bg': string;
+    '--theme-preview-dark-fg': string;
+};
+
 interface ThemePreviewConfig {
     bgStart: string;
     bgEnd: string;
@@ -34,7 +40,9 @@ interface ThemeTokenMap {
     [tokenName: string]: string;
 };
 
-const extractThemeTokens = (theme: Theme): ThemeTokenMap => {
+type VisualTheme = Theme.Light | Theme.Dark;
+
+const extractThemeTokens = (theme: VisualTheme): ThemeTokenMap => {
     const blockPattern = new RegExp(`:root\\[data-theme='${theme}'\\]\\s*\\{([\\s\\S]*?)\\}`, 'm');
     const blockMatch = themeTokensStylesheet.match(blockPattern);
 
@@ -53,7 +61,7 @@ const extractThemeTokens = (theme: Theme): ThemeTokenMap => {
     return tokens;
 };
 
-const createThemePreviewConfig = (theme: Theme): ThemePreviewConfig => {
+const createThemePreviewConfig = (theme: VisualTheme): ThemePreviewConfig => {
     const tokens = extractThemeTokens(theme);
 
     return {
@@ -68,9 +76,35 @@ const createThemePreviewConfig = (theme: Theme): ThemePreviewConfig => {
     };
 };
 
-const THEME_PREVIEW_CONFIG: Record<Theme, ThemePreviewConfig> = {
+const THEME_PREVIEW_CONFIG: Record<VisualTheme, ThemePreviewConfig> = {
     [Theme.Light]: createThemePreviewConfig(Theme.Light),
     [Theme.Dark]: createThemePreviewConfig(Theme.Dark)
+};
+
+const getPreviewStyles = (theme: Theme): ThemePreviewStyles | SystemPreviewStyles => {
+    if (theme === Theme.System) {
+        const lightConfig = THEME_PREVIEW_CONFIG[Theme.Light];
+        const darkConfig = THEME_PREVIEW_CONFIG[Theme.Dark];
+
+        return {
+            '--theme-preview-light-bg': lightConfig.bgStart,
+            '--theme-preview-dark-bg': darkConfig.bgStart,
+            '--theme-preview-dark-fg': darkConfig.fg
+        };
+    }
+
+    const preview = THEME_PREVIEW_CONFIG[theme];
+
+    return {
+        '--theme-preview-bg-start': preview.bgStart,
+        '--theme-preview-bg-end': preview.bgEnd,
+        '--theme-preview-fg': preview.fg,
+        '--theme-preview-header-start': preview.headerStart,
+        '--theme-preview-header-end': preview.headerEnd,
+        '--theme-preview-header-border': preview.headerBorder,
+        '--theme-preview-panel-start': preview.panelStart,
+        '--theme-preview-panel-end': preview.panelEnd
+    };
 };
 
 interface ThemeCardProps {
@@ -103,17 +137,7 @@ const ThemeCard = forwardRef<HTMLButtonElement, ThemeCardProps>(({
         isSelected && 'selected'
     );
 
-    const preview = THEME_PREVIEW_CONFIG[theme];
-    const previewStyles: ThemePreviewStyles = {
-        '--theme-preview-bg-start': preview.bgStart,
-        '--theme-preview-bg-end': preview.bgEnd,
-        '--theme-preview-fg': preview.fg,
-        '--theme-preview-header-start': preview.headerStart,
-        '--theme-preview-header-end': preview.headerEnd,
-        '--theme-preview-header-border': preview.headerBorder,
-        '--theme-preview-panel-start': preview.panelStart,
-        '--theme-preview-panel-end': preview.panelEnd
-    };
+    const previewStyles = getPreviewStyles(theme);
 
     return (
         <button

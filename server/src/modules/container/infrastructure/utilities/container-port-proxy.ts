@@ -92,7 +92,7 @@ export const readContainerPortProxyAccessTokenFromUrl = (requestUrl: string): st
 export class ContainerPortProxyAccessTokenService {
     private readonly secret = getSecretKey();
     private readonly signOptions: SignOptions = {
-        expiresIn: '10m'
+        expiresIn: '2m'
     };
 
     create(input: ContainerPortProxyAccessTokenContext): string {

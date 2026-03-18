@@ -26,8 +26,8 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         private readonly pluginRepository: IPluginRepository
     ) { }
 
-    async getModifierPerAtomProps(analysisId: string): Promise<Record<string, string[]>> {
-        const exposureConfigs = await this.getAnalysisExposureAtomConfigs(analysisId);
+    async getModifierPerAtomProps(analysisId: string, timestep?: string): Promise<Record<string, string[]>> {
+        const exposureConfigs = await this.getAnalysisExposureAtomConfigs(analysisId, timestep);
         const props: Record<string, string[]> = {};
 
         for (const config of exposureConfigs) {
@@ -39,7 +39,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         return props;
     }
 
-    async getAnalysisExposureAtomConfigs(analysisId: string): Promise<ExposureAtomConfig[]> {
+    async getAnalysisExposureAtomConfigs(analysisId: string, timestep?: string): Promise<ExposureAtomConfig[]> {
         const { analysis, plugin } = await this.getAnalysisAndPlugin(analysisId);
         const trajectoryId = analysis.props.trajectory;
         const teamClusterId = analysis.props.teamCluster;
@@ -57,7 +57,8 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
                 teamClusterId,
                 trajectoryId,
                 analysisId,
-                exposureId
+                exposureId,
+                timestep
             );
 
             configs.push({
@@ -277,7 +278,8 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         teamClusterId: string,
         trajectoryId: string,
         analysisId: string,
-        exposureId: string
+        exposureId: string,
+        timestep?: string
     ): Promise<string[]> {
         const perAtomProperties = await this.daemonClient.command<string[]>(
             teamClusterId,
@@ -285,7 +287,8 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             {
                 trajectoryId,
                 analysisId,
-                exposureId
+                exposureId,
+                ...(timestep ? { timestep: Number(timestep) } : {})
             }
         );
 

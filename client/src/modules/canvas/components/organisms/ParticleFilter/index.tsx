@@ -47,7 +47,7 @@ interface PreviewResultViewProps {
 };
 
 interface FilterFormViewProps {
-    property: string;
+    propertyValue: string;
     propertyOptions: SelectOption[];
     onPropertyChange: (value: string) => void;
     operator: FilterOperator;
@@ -133,7 +133,7 @@ const PreviewResultView = ({
 );
 
 const FilterFormView = ({
-    property,
+    propertyValue,
     propertyOptions,
     onPropertyChange,
     operator,
@@ -156,7 +156,7 @@ const FilterFormView = ({
         {
             key: 'property',
             label: 'Property',
-            value: property,
+            value: propertyValue,
             onChange: onPropertyChange,
             options: propertyOptions
         },
@@ -222,7 +222,7 @@ const FilterFormView = ({
 
 const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleFilterProps) => {
     const {
-        property,
+        propertyValue,
         propertyOptions,
         handlePropertyChange,
         operator,
@@ -265,7 +265,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
 
     return (
         <FilterFormView
-            property={property}
+            propertyValue={propertyValue}
             propertyOptions={propertyOptions}
             onPropertyChange={handlePropertyChange}
             operator={operator}

@@ -7,10 +7,11 @@ import MetricsCards from '@/modules/cluster/components/molecules/MetricsCards';
 import ResourceUsage from '@/modules/cluster/components/molecules/ResourceUsage';
 import ResponseTimeChart from '@/modules/cluster/components/molecules/ResponseTimeChart';
 import useClusterMonitoringPage from '@/modules/cluster/hooks/use-cluster-monitoring-page';
+import { getClusterMetricsRecoveryState } from '@/modules/cluster/utilities/cluster-live-metrics-status';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import NetworkChart from '@/shared/presentation/components/NetworkChart';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import RecoveryState from '@/shared/presentation/components/RecoveryState';
 import useTip from '@/shared/tips/use-tip';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { useMemo } from 'react';
@@ -34,6 +35,19 @@ const ClusterMonitoringPage = () => {
         };
     }, [vm.metrics]);
 
+    const metricsUnavailableState = useMemo(() => {
+        if (!vm.hasClusters || vm.metrics) {
+            return null;
+        }
+
+        const clusterName = vm.selectedCluster?.name ?? 'This cluster';
+
+        return getClusterMetricsRecoveryState({
+            clusterName,
+            isMetricsConnected: vm.isMetricsConnected
+        });
+    }, [vm.hasClusters, vm.isMetricsConnected, vm.metrics, vm.selectedCluster]);
+
     return (
         <Container className='clusters-page vh-max color-primary'>
             <Container className='clusters-main d-flex column gap-1-5 w-max'>
@@ -43,15 +57,15 @@ const ClusterMonitoringPage = () => {
 
                 {!vm.isLoading && !vm.hasClusters && <ClustersEmptyState />}
 
-                {vm.hasClusters && !vm.isMetricsConnected && !vm.metrics && (
+                {metricsUnavailableState && (
                     <RecoveryState
-                        title='Metrics unavailable'
-                        description='Unable to connect to the metrics stream. The cluster may be offline or unreachable.'
-                        tone={RecoveryStateTone.Error}
+                        title={metricsUnavailableState.title}
+                        description={metricsUnavailableState.description}
+                        tone={metricsUnavailableState.tone}
                     />
                 )}
 
-                {vm.hasClusters && (
+                {vm.hasClusters && vm.metrics && (
                     <>
                         <MetricsCards metrics={vm.metrics} />
 

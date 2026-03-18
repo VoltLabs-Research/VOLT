@@ -2,7 +2,6 @@ import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../util
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import { useCallback, useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 
 export enum CanvasWorkspace {
@@ -21,6 +20,20 @@ interface CanvasUrlStateOptions {
 
 const CANVAS_WORKSPACES = new Set<string>(Object.values(CanvasWorkspace));
 
+const getLatestCompletedAnalysisId = (trajectory?: Trajectory | null): string | undefined => {
+    const analyses = trajectory?.analysis ?? [];
+
+    for (let index = analyses.length - 1; index >= 0; index -= 1) {
+        const analysis = analyses[index];
+
+        if (analysis?._id && normalizeCanvasAnalysisStatus(analysis.status) === CanvasAnalysisStatusEnum.Completed) {
+            return analysis._id;
+        }
+    }
+
+    return undefined;
+};
+
 const resolveCanvasWorkspace = (workspace: string | null): CanvasWorkspace => {
     if (workspace === CanvasWorkspace.Raster) {
         return CanvasWorkspace.Raster;
@@ -34,7 +47,6 @@ const resolveCanvasWorkspace = (workspace: string | null): CanvasWorkspace => {
 };
 
 const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
-    const location = useLocation();
     const { searchParams, updateSearchParams } = useSearchParamsState();
     const {
         selectedIds: activeModifiers,
@@ -113,17 +125,15 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
     }, [pluginParam]);
 
     const trajectory = options?.trajectory;
-    const isCanvasRoute = location.pathname.startsWith('/canvas/');
 
     useEffect(() => {
-        if (isCanvasRoute || !trajectory?.analysis?.length || analysisId) return;
+        if (analysisId) return;
 
-        const latest = trajectory.analysis[trajectory.analysis.length - 1];
+        const latestCompletedAnalysisId = getLatestCompletedAnalysisId(trajectory);
+        if (!latestCompletedAnalysisId) return;
 
-        if (!latest?._id || normalizeCanvasAnalysisStatus(latest.status) !== CanvasAnalysisStatusEnum.Completed) return;
-
-        setAnalysisId(latest._id, { replace: true });
-    }, [trajectory, analysisId, isCanvasRoute, setAnalysisId]);
+        setAnalysisId(latestCompletedAnalysisId, { replace: true });
+    }, [trajectory, analysisId, setAnalysisId]);
 
     return {
         searchParams,

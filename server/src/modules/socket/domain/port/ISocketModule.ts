@@ -7,10 +7,26 @@ export interface ISocketConnectionUser {
     readonly email?: string;
     readonly avatar?: string;
     readonly teams?: string[];
+    readonly role?: string;
 };
+
+export type SocketAuthenticationState = 'guest' | 'authenticated' | 'rejected';
+
+export type SocketAuthenticationReason =
+    | 'missing_token'
+    | 'invalid_token'
+    | 'user_not_found'
+    | 'password_changed';
+
+export interface ISocketAuthenticationResult {
+    readonly state: SocketAuthenticationState;
+    readonly reason?: SocketAuthenticationReason;
+    readonly user?: ISocketConnectionUser;
+}
 
 export interface ISocketConnectionData {
     currentTeamId?: string;
+    auth?: ISocketAuthenticationResult;
     [key: string]: unknown;
 }
 

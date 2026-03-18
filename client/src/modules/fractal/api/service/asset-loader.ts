@@ -8,8 +8,11 @@ import type IFractalAssetLoader from '@/modules/fractal/api/entities/asset-loade
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export class FractalAssetLoader implements IFractalAssetLoader {
+    private static readonly BYTES_PER_MEGABYTE = 1024 * 1024;
     private static readonly MAX_CACHE_ENTRIES = 50;
-    private static cache = new Map<string, ArrayBuffer>();
+    private static readonly MAX_CACHE_BYTES = 128 * FractalAssetLoader.BYTES_PER_MEGABYTE;
+    private static cache = new Map<string, { buffer: ArrayBuffer; size: number }>();
+    private static cacheBytes = 0;
     private static sharedDracoLoader: DRACOLoader | null = null;
 
     private static createAbortError() {
@@ -26,15 +29,51 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         return FractalAssetLoader.sharedDracoLoader;
     }
 
-    private static evictIfNeeded(): void {
-        while (FractalAssetLoader.cache.size >= FractalAssetLoader.MAX_CACHE_ENTRIES) {
+    private static touchCacheEntry(url: string) {
+        const entry = FractalAssetLoader.cache.get(url);
+        if (!entry) {
+            return null;
+        }
+
+        FractalAssetLoader.cache.delete(url);
+        FractalAssetLoader.cache.set(url, entry);
+
+        return entry;
+    }
+
+    private static evictIfNeeded(incomingBytes = 0): void {
+        while (
+            FractalAssetLoader.cache.size >= FractalAssetLoader.MAX_CACHE_ENTRIES
+            || FractalAssetLoader.cacheBytes + incomingBytes > FractalAssetLoader.MAX_CACHE_BYTES
+        ) {
             const oldestKey = FractalAssetLoader.cache.keys().next().value;
             if (oldestKey !== undefined) {
+                const entry = FractalAssetLoader.cache.get(oldestKey);
+                if (entry) {
+                    FractalAssetLoader.cacheBytes = Math.max(0, FractalAssetLoader.cacheBytes - entry.size);
+                }
                 FractalAssetLoader.cache.delete(oldestKey);
             } else {
                 break;
             }
         }
+    }
+
+    private static cacheBuffer(url: string, arrayBuffer: ArrayBuffer): void {
+        const size = arrayBuffer.byteLength;
+        if (size <= 0 || size > FractalAssetLoader.MAX_CACHE_BYTES) {
+            return;
+        }
+
+        const existingEntry = FractalAssetLoader.cache.get(url);
+        if (existingEntry) {
+            FractalAssetLoader.cacheBytes = Math.max(0, FractalAssetLoader.cacheBytes - existingEntry.size);
+            FractalAssetLoader.cache.delete(url);
+        }
+
+        FractalAssetLoader.evictIfNeeded(size);
+        FractalAssetLoader.cache.set(url, { buffer: arrayBuffer, size });
+        FractalAssetLoader.cacheBytes += size;
     }
 
     private static createGlbLoader() {
@@ -51,6 +90,7 @@ export class FractalAssetLoader implements IFractalAssetLoader {
 
     static clearCache() {
         FractalAssetLoader.cache.clear();
+        FractalAssetLoader.cacheBytes = 0;
     }
 
     static async preload(url: string, signal?: AbortSignal): Promise<void> {
@@ -69,8 +109,7 @@ export class FractalAssetLoader implements IFractalAssetLoader {
 
         if (signal?.aborted) return;
 
-        FractalAssetLoader.evictIfNeeded();
-        FractalAssetLoader.cache.set(url, arrayBuffer);
+        FractalAssetLoader.cacheBuffer(url, arrayBuffer);
     }
 
     async load(
@@ -96,9 +135,10 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         onProgress?: (progress: number) => void,
         signal?: AbortSignal
     ) {
-        if (FractalAssetLoader.cache.has(url)) {
+        const cachedEntry = FractalAssetLoader.touchCacheEntry(url);
+        if (cachedEntry) {
             onProgress?.(1);
-            return FractalAssetLoader.cache.get(url)!;
+            return cachedEntry.buffer;
         }
 
         const blob = await http.request<Blob>({
@@ -120,8 +160,7 @@ export class FractalAssetLoader implements IFractalAssetLoader {
             throw FractalAssetLoader.createAbortError();
         }
 
-        FractalAssetLoader.evictIfNeeded();
-        FractalAssetLoader.cache.set(url, arrayBuffer);
+        FractalAssetLoader.cacheBuffer(url, arrayBuffer);
         return arrayBuffer;
     }
 

@@ -1,12 +1,23 @@
 import SocketIOAdapter from './socket-io-adapter';
 import { tokenStorage } from '@/shared/auth/token-storage';
 import { getBackendOrigin } from '@/app/core/http/utilities/backend-origin';
+import { SocketConnectionStatus } from '@/modules/socket/core/socket-connection-status';
 import type { ISocketService } from './contracts/socket-service';
-import type { SocketConnectionStatus } from '@/modules/socket/core/socket-connection-status';
 
 type SocketAuth = Record<string, unknown>;
 
+export class SocketUnavailableError extends Error {
+    code = 'Socket::Unavailable';
+
+    constructor(message: string, readonly cause?: unknown) {
+        super(message);
+        this.name = 'SocketUnavailableError';
+    }
+}
+
 class SocketService implements ISocketService {
+    private static readonly EMIT_WAIT_TIMEOUT_MS = 5_000;
+
     private authOverrides: SocketAuth = {};
     private appliedAuth: SocketAuth = {};
     private connectPromise: Promise<void> | null = null;
@@ -55,11 +66,31 @@ class SocketService implements ISocketService {
     }
 
     async emit<T = unknown>(event: string, data?: unknown): Promise<T> {
+        try {
+            await this.ensureConnectedForEmit(event);
+            return await this.transport.emit<T>(event, data);
+        } catch (error) {
+            if (error instanceof SocketUnavailableError) {
+                throw error;
+            }
+
+            if (error instanceof Error && error.message === 'Socket is not connected') {
+                throw this.createUnavailableError(event, this.transport.getConnectionStatus(), error);
+            }
+
+            throw error;
+        }
+    }
+
+    emitWithoutAck(event: string, data?: unknown): void {
+        this.syncAuth();
+
         if (!this.transport.isConnected()) {
-            await this.connect();
+            this.connect().catch(() => undefined);
+            return;
         }
 
-        return this.transport.emit<T>(event, data);
+        this.transport.emitWithoutAck(event, data);
     }
 
     updateAuth(auth: SocketAuth): void {
@@ -108,6 +139,47 @@ class SocketService implements ISocketService {
         }
 
         return previousKeys.every((key) => previousAuth[key] === nextAuth[key]);
+    }
+
+    private async ensureConnectedForEmit(event: string): Promise<void> {
+        if (this.transport.isConnected()) {
+            return;
+        }
+
+        const status = this.transport.getConnectionStatus();
+        const timeoutError = this.createUnavailableError(event, status);
+        let timeoutId: ReturnType<typeof globalThis.setTimeout> | null = null;
+
+        try {
+            await Promise.race([
+                this.connect(),
+                new Promise<never>((_, reject) => {
+                    timeoutId = globalThis.setTimeout(() => {
+                        reject(timeoutError);
+                    }, SocketService.EMIT_WAIT_TIMEOUT_MS);
+                })
+            ]);
+        } catch (error) {
+            throw error instanceof SocketUnavailableError
+                ? error
+                : this.createUnavailableError(event, status, error);
+        } finally {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        }
+
+        if (!this.transport.isConnected()) {
+            throw this.createUnavailableError(event, this.transport.getConnectionStatus());
+        }
+    }
+
+    private createUnavailableError(event: string, status: SocketConnectionStatus, cause?: unknown): SocketUnavailableError {
+        const state = status === SocketConnectionStatus.Reconnecting
+            ? 'reconnecting'
+            : 'offline';
+
+        return new SocketUnavailableError(`Socket unavailable while emitting "${event}" (${state}).`, cause);
     }
 };
 

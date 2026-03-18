@@ -48,12 +48,6 @@ interface UsePluginListingReturn {
     getMenuOptions: (item: ListingRow, selectedItems: ListingRow[]) => MenuOption[];
 };
 
-const TRAJECTORY_COLUMN: ColumnConfig = {
-    key: 'trajectoryName',
-    title: 'Trajectory',
-    sortable: false
-};
-
 const usePluginListing = ({
     pluginId,
     exposureName,
@@ -114,8 +108,11 @@ const usePluginListing = ({
     }, [listingMetaQuery.data?._meta?.columns]);
 
     const columns = useMemo(() => {
-        if (!shouldShowTrajectory) return dynamicColumns;
-        return [TRAJECTORY_COLUMN, ...dynamicColumns];
+        if (shouldShowTrajectory) {
+            return dynamicColumns;
+        }
+
+        return dynamicColumns.filter((column) => String(column.key) !== 'trajectoryName');
     }, [dynamicColumns, shouldShowTrajectory]);
 
     const resolvedExposureName = listingMetaQuery.data?._meta?.exposureName ?? exposureName;

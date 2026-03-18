@@ -1,7 +1,8 @@
 import rasterService from '@/modules/raster/api/service';
 import { RasterFrameScope } from '@/modules/raster/api/entities/raster';
 import { isApiError } from '@/shared/errors/core';
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
 import type { ApiError } from '@voltstack/voltclient';
 import type { RasterSceneFrame } from '@/modules/raster/api/entities/raster';
 
@@ -22,6 +23,42 @@ interface UseRasterFrameResult {
     isMissing: boolean;
 };
 
+type RasterFrameQueryKey = readonly [
+    'raster',
+    'frame',
+    RasterFrameScope,
+    string | undefined,
+    number | undefined,
+    string | undefined,
+    string | undefined,
+    number | undefined
+];
+
+const buildRasterFrameQueryKey = (
+    params: Pick<UseRasterFrameParams, 'scope' | 'trajectoryId' | 'timestep' | 'analysisId' | 'model' | 'requestKey'>
+): RasterFrameQueryKey => [
+    'raster',
+    'frame',
+    params.scope,
+    params.trajectoryId,
+    params.timestep,
+    params.analysisId,
+    params.model,
+    params.requestKey
+];
+
+const resolveRasterFrameError = (error: unknown): ApiError | Error => {
+    if (error instanceof Error || isApiError(error)) {
+        return error;
+    }
+
+    return new Error('Failed to load raster frame');
+};
+
+const isAbortError = (error: unknown): error is DOMException => {
+    return error instanceof DOMException && error.name === 'AbortError';
+};
+
 export const useRasterFrame = ({
     trajectoryId,
     timestep,
@@ -31,98 +68,83 @@ export const useRasterFrame = ({
     enabled = true,
     requestKey
 }: UseRasterFrameParams): UseRasterFrameResult => {
-    const [frame, setFrame] = useState<RasterSceneFrame | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<ApiError | Error | null>(null);
-    const [isMissing, setIsMissing] = useState(false);
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const requiresAnalysisFrame = scope === RasterFrameScope.Analysis;
+    const canFetchFrame = enabled
+        && Boolean(trajectoryId)
+        && timestep !== undefined
+        && (!requiresAnalysisFrame || Boolean(analysisId && model));
+
+    const frameQuery = useQuery<Blob, ApiError | Error>({
+        queryKey: buildRasterFrameQueryKey({ scope, trajectoryId, timestep, analysisId, model, requestKey }),
+        enabled: canFetchFrame,
+        retry: false,
+        queryFn: async ({ signal }) => {
+            const blob = requiresAnalysisFrame
+                ? await rasterService.getFrame({
+                    trajectoryId: trajectoryId!,
+                    timestep: timestep!,
+                    analysisId: analysisId!,
+                    model: model!
+                })
+                : await rasterService.getTrajectoryFrame({
+                    trajectoryId: trajectoryId!,
+                    timestep: timestep!
+                });
+
+            if (signal.aborted) {
+                throw new DOMException('The raster frame request was aborted', 'AbortError');
+            }
+
+            return blob;
+        },
+        throwOnError: false,
+        meta: {
+            requestKey
+        }
+    });
 
     useEffect(() => {
-        let cancelled = false;
-        let objectUrl: string | null = null;
-        const requiresAnalysisFrame = scope === RasterFrameScope.Analysis;
-
-        if (!enabled || !trajectoryId || timestep === undefined || (requiresAnalysisFrame && (!analysisId || !model))) {
-            setFrame(null);
-            setIsLoading(false);
-            setError(null);
-            setIsMissing(false);
+        if (!frameQuery.data) {
+            setImageUrl(null);
             return undefined;
         }
 
-        const loadFrame = async () => {
-            setIsLoading(true);
-            setError(null);
-            setIsMissing(false);
-
-            try {
-                const blob = requiresAnalysisFrame
-                    ? await rasterService.getFrame({
-                        trajectoryId,
-                        timestep,
-                        analysisId,
-                        model
-                    })
-                    : await rasterService.getTrajectoryFrame({
-                        trajectoryId,
-                        timestep
-                    });
-
-                if (cancelled) {
-                    return;
-                }
-
-                objectUrl = URL.createObjectURL(blob);
-                setFrame({
-                    frame: timestep,
-                    model: model ?? null,
-                    analysisId: analysisId ?? null,
-                    scope,
-                    imageUrl: objectUrl,
-                    isUnavailable: false
-                });
-            } catch (requestError) {
-                if (cancelled) {
-                    return;
-                }
-
-                let resolvedError: ApiError | Error;
-                if (requestError instanceof Error || isApiError(requestError)) {
-                    resolvedError = requestError;
-                } else {
-                    resolvedError = new Error('Failed to load raster frame');
-                }
-
-                const nextIsMissing = isApiError(resolvedError) && resolvedError.status === 404;
-                setError(resolvedError);
-                setIsMissing(nextIsMissing);
-                setFrame({
-                    frame: timestep,
-                    model: model ?? null,
-                    analysisId: analysisId ?? null,
-                    scope,
-                    imageUrl: null,
-                    isUnavailable: true
-                });
-            } finally {
-                if (!cancelled) {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        loadFrame();
+        const nextImageUrl = URL.createObjectURL(frameQuery.data);
+        setImageUrl(nextImageUrl);
 
         return () => {
-            cancelled = true;
-            if (objectUrl) {
-                URL.revokeObjectURL(objectUrl);
-            }
+            URL.revokeObjectURL(nextImageUrl);
         };
-    }, [analysisId, enabled, model, requestKey, scope, timestep, trajectoryId]);
+    }, [frameQuery.data]);
+
+    const error = canFetchFrame && frameQuery.error && !isAbortError(frameQuery.error)
+        ? resolveRasterFrameError(frameQuery.error)
+        : null;
+    const isMissing = Boolean(error && isApiError(error) && error.status === 404);
+
+    const frame = useMemo<RasterSceneFrame | null>(() => {
+        if (!canFetchFrame) {
+            return null;
+        }
+
+        if (!frameQuery.data && !error) {
+            return null;
+        }
+
+        return {
+            frame: timestep!,
+            model: model ?? null,
+            analysisId: analysisId ?? null,
+            scope,
+            imageUrl,
+            isUnavailable: Boolean(error)
+        };
+    }, [analysisId, canFetchFrame, error, frameQuery.data, imageUrl, model, scope, timestep]);
 
     return {
         frame,
-        isLoading,
+        isLoading: frameQuery.isLoading || frameQuery.isFetching,
         error,
         isMissing
     };

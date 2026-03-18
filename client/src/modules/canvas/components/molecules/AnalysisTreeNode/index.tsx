@@ -7,6 +7,7 @@ import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../../utilities/analysis-status';
+import { useMemo } from 'react';
 
 import type { AnalysisSectionData } from '../../../hooks/use-canvas-sidebar-scene';
 import type { CanvasAnalysisStatus } from '../../../utilities/analysis-status';
@@ -14,6 +15,14 @@ import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
 import type { MenuOption } from '@/shared/presentation/types/menu';
+
+const formatConfigValue = (value: unknown): string => {
+    if (value === null || value === undefined) return '—';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'string') return value;
+    return JSON.stringify(value);
+};
 
 interface AnalysisTreeNodeProps {
     section: AnalysisSectionData;
@@ -62,7 +71,7 @@ const AnalysisTreeNode = ({
     selectedScene,
     onSelectRasterScene
 }: AnalysisTreeNodeProps) => {
-    const { analysis, pluginDisplayName, entry, isCurrentAnalysis } = section;
+    const { analysis, pluginDisplayName, entry, isCurrentAnalysis, config } = section;
     const isRasterSelectionMode = selectionMode === 'raster';
     const hasExposures = entry.state === 'loaded' && entry.exposures.length > 0;
     const isLoading = entry.state === 'loading';
@@ -73,6 +82,34 @@ const AnalysisTreeNode = ({
     const isSelectedAnalysis = isRasterSelectionMode
         ? selectedScene?.source === 'plugin' && 'analysisId' in selectedScene && selectedScene.analysisId === analysis._id
         : isCurrentAnalysis;
+
+    const configEntries = useMemo(() => Object.entries(config ?? {}), [config]);
+
+    const tooltipContent = useMemo(() => {
+        const hasConfig = configEntries.length > 0;
+        if (!isAnalysisInProgress && !hasConfig) return null;
+        return (
+            <>
+                {isAnalysisInProgress && (
+                    <div className="canvas-tree-config-tooltip__warning">
+                        Analysis still running. Some options will be disabled until it finishes.
+                    </div>
+                )}
+                {hasConfig ? (
+                    <div className="canvas-tree-config-tooltip__list">
+                        {configEntries.map(([key, value]) => (
+                            <div key={key} className="canvas-tree-config-tooltip__row">
+                                <span className="canvas-tree-config-tooltip__key">{key}</span>
+                                <span className="canvas-tree-config-tooltip__value">{formatConfigValue(value)}</span>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="canvas-tree-config-tooltip__empty">No configuration</div>
+                )}
+            </>
+        );
+    }, [configEntries, isAnalysisInProgress]);
 
     const handleSelectAnalysis = () => {
         if (isAnalysisInProgress) {
@@ -157,7 +194,7 @@ const AnalysisTreeNode = ({
     return (
         <>
             {isRasterSelectionMode ? analysisTrigger : (
-                <Tooltip content='Analysis still running. Some options will be disabled until it finishes.' disabled={!isAnalysisInProgress} placement='bottom'>
+                <Tooltip content={tooltipContent} disabled={!tooltipContent} placement='bottom' className='canvas-tree-config-tooltip'>
                     <ContextMenuPopover
                         id={`canvas-ctx-analysis-${analysis._id}`}
                         trigger={analysisTrigger}

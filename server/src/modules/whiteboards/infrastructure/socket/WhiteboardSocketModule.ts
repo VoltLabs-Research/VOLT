@@ -1,8 +1,10 @@
+import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
+import WhiteboardRealtimeStateService from '@modules/whiteboards/infrastructure/services/WhiteboardRealtimeStateService';
 import logger from '@shared/infrastructure/logger';
-import { injectable } from 'tsyringe';
-import { inject } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
+
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
@@ -12,11 +14,12 @@ interface SubscribePayload extends Record<string, unknown> {
     whiteboardId: string;
 };
 
-interface WhiteboardDeltaPayload {
+interface WhiteboardPatchPayload extends Record<string, unknown> {
     whiteboardId: string;
-    elements: unknown[];
+    clientId: string;
+    baseRevision: number;
+    elements: Record<string, unknown>[];
     appState: Record<string, unknown>;
-    version: number;
 };
 
 @injectable()
@@ -26,7 +29,9 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
     constructor(
         @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
         @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
-        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry
+        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry,
+        @inject(WHITEBOARD_TOKENS.WhiteboardRealtimeStateService)
+        private readonly realtimeStateService: WhiteboardRealtimeStateService
     ) {
         super(emitter, roomManager, eventRegistry);
     }
@@ -38,67 +43,115 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
 
         this.registerSubscribe(connection);
         this.registerUnsubscribe(connection);
-        this.registerDelta(connection);
-        this.wirePresenceOnDisconnect(
-            connection,
-            (conn) => this.getWhiteboardRoom(conn),
-            'whiteboard_users_update',
-            this.toPresenceUser
-        );
+        this.registerPatch(connection);
+        this.registerDisconnect(connection);
     }
 
     private registerSubscribe(connection: ISocketConnection): void {
-        this.wirePresenceSubscription<SubscribePayload>(connection, {
-            event: 'subscribe_to_whiteboard',
-            roomOf: (payload) => this.buildRoomId(payload.whiteboardId),
-            previousOf: (payload) => {
-                const prevId = (connection.data['whiteboardId'] as string | undefined);
-                return prevId && prevId !== payload.whiteboardId
-                    ? this.buildRoomId(prevId)
-                    : undefined;
-            },
-            setContext: (conn, payload) => {
-                conn.data['whiteboardId'] = payload.whiteboardId;
-            },
-            updateEvent: 'whiteboard_users_update',
-            userExtractor: this.toPresenceUser
+        this.on<SubscribePayload>(connection.id, 'subscribe_to_whiteboard', async (conn, payload) => {
+            if (typeof payload.whiteboardId !== 'string' || payload.whiteboardId.length === 0) {
+                return;
+            }
+
+            const previousWhiteboardId = conn.data['whiteboardId'] as string | undefined;
+            const previousRoom = previousWhiteboardId && previousWhiteboardId !== payload.whiteboardId
+                ? this.buildRoomId(previousWhiteboardId)
+                : undefined;
+
+            if (previousRoom) {
+                await this.leaveRoom(conn.id, previousRoom);
+                await this.broadcastPresence(previousRoom, 'whiteboard_users_update', this.toPresenceUser);
+                await this.releaseRoomIfIdle(previousWhiteboardId);
+            }
+
+            const room = this.buildRoomId(payload.whiteboardId);
+            conn.data['whiteboardId'] = payload.whiteboardId;
+
+            await this.joinRoom(conn.id, room);
+
+            const snapshot = await this.realtimeStateService.getSnapshot(payload.whiteboardId);
+            if (snapshot) {
+                this.emitToSocket(conn.id, 'whiteboard_sync_state', snapshot);
+            }
+
+            await this.broadcastPresence(room, 'whiteboard_users_update', this.toPresenceUser);
         });
     }
 
     private registerUnsubscribe(connection: ISocketConnection): void {
         this.on<SubscribePayload>(connection.id, 'unsubscribe_from_whiteboard', async (conn, payload) => {
+            if (typeof payload.whiteboardId !== 'string' || payload.whiteboardId.length === 0) {
+                return;
+            }
+
             const room = this.buildRoomId(payload.whiteboardId);
             await this.leaveRoom(conn.id, room);
 
-            delete conn.data['whiteboardId'];
+            if (conn.data['whiteboardId'] === payload.whiteboardId) {
+                delete conn.data['whiteboardId'];
+            }
 
             await this.broadcastPresence(room, 'whiteboard_users_update', this.toPresenceUser);
+            await this.releaseRoomIfIdle(payload.whiteboardId);
 
             logger.info(`@whiteboard-socket - user ${conn.user?._id} unsubscribed from ${room}`);
         });
     }
 
-    private registerDelta(connection: ISocketConnection): void {
-        this.on<WhiteboardDeltaPayload>(connection.id, 'whiteboard_delta', (conn, payload) => {
-            if (!conn.user) {
+    private registerPatch(connection: ISocketConnection): void {
+        this.on<WhiteboardPatchPayload>(connection.id, 'whiteboard_patch', async (conn, payload) => {
+            if (!conn.user || typeof payload.whiteboardId !== 'string' || payload.whiteboardId.length === 0 || typeof payload.clientId !== 'string') {
+                return;
+            }
+
+            const snapshot = await this.realtimeStateService.mergeScene(
+                payload.whiteboardId,
+                Array.isArray(payload.elements) ? payload.elements : [],
+                typeof payload.appState === 'object' && payload.appState !== null ? payload.appState : {},
+                conn.user._id
+            );
+
+            if (!snapshot) {
                 return;
             }
 
             const room = this.buildRoomId(payload.whiteboardId);
-            this.emitToRoomExcept(conn.id, room, 'whiteboard_delta', {
-                ...payload,
-                senderId: conn.user._id
+            this.emitToRoom(room, 'whiteboard_sync_state', {
+                ...snapshot,
+                senderId: conn.user._id,
+                clientId: payload.clientId,
+                baseRevision: payload.baseRevision
             });
         });
     }
 
-    private buildRoomId(whiteboardId: string): string {
-        return `whiteboard-${whiteboardId}`;
+    private registerDisconnect(connection: ISocketConnection): void {
+        this.onDisconnect(connection.id, async (conn) => {
+            const whiteboardId = conn.data['whiteboardId'] as string | undefined;
+            if (!whiteboardId) {
+                return;
+            }
+
+            const room = this.buildRoomId(whiteboardId);
+            await this.broadcastPresence(room, 'whiteboard_users_update', this.toPresenceUser);
+            await this.releaseRoomIfIdle(whiteboardId);
+        });
     }
 
-    private getWhiteboardRoom(connection: ISocketConnection): string | undefined {
-        const id = connection.data['whiteboardId'] as string | undefined;
-        return id ? this.buildRoomId(id) : undefined;
+    private async releaseRoomIfIdle(whiteboardId: string | undefined): Promise<void> {
+        if (!whiteboardId) {
+            return;
+        }
+
+        const room = this.buildRoomId(whiteboardId);
+        const socketIds = await this.roomManager.getSocketsInRoom(room);
+        if (socketIds.length === 0) {
+            await this.realtimeStateService.flushAndRelease(whiteboardId);
+        }
+    }
+
+    private buildRoomId(whiteboardId: string): string {
+        return `whiteboard-${whiteboardId}`;
     }
 
     private readonly toPresenceUser = (connection: ISocketConnection): PresenceUser => ({
@@ -107,4 +160,4 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
         lastName: connection.user?.lastName,
         isAnonymous: !connection.user
     });
-};
+}

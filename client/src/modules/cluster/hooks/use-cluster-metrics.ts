@@ -1,5 +1,7 @@
-import { DEFAULT_CLUSTER_ID } from '../stores/constants';
 import { useClusterStore } from '../stores/use-cluster-store';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
+import teamSocketRoomService from '@/modules/socket/team/services/team-socket-room-service';
 import {
     clusterHistoryLoadedQuery,
     clusterHistoryQuery,
@@ -11,20 +13,22 @@ import {
 import { observeClusterMetrics, requestClusterHistory } from '../api/service';
 import { resolveClusterMetricId } from '../utilities/resolve-cluster-metric-id';
 import { useQueryClient } from '@tanstack/react-query';
-import { useMemo, useCallback, useEffect, useRef } from 'react';
+import { useMemo, useCallback, useEffect } from 'react';
 
-const useClusterMetrics = () => {
+interface UseClusterMetricsOptions {
+    clusterId?: string | null;
+};
+
+const useClusterMetrics = (options: UseClusterMetricsOptions = {}) => {
     const queryClient = useQueryClient();
-    const requestedHistoryClusterIdRef = useRef<string | null>(null);
+    const selectedTeamId = useSelectedTeamId();
 
     const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
     const isConnected = useClusterStore((state) => state.isConnected);
     const setSelectedClusterId = useClusterStore((state) => state.setSelectedClusterId);
     const setConnected = useClusterStore((state) => state.setConnected);
+    const targetClusterId = options.clusterId ?? selectedClusterId;
 
-    useEffect(() => {
-        resetClusterHistoryQuery(queryClient);
-    }, [queryClient]);
     useEffect(() => {
         return observeClusterMetrics().execute({
             onConnectionChange: (connected) => {
@@ -38,36 +42,61 @@ const useClusterMetrics = () => {
                 setClusterMetricsQueryData(queryClient, clusters);
 
                 const state = useClusterStore.getState();
-                const currentExists = clusters.some((cluster) => resolveClusterMetricId(cluster) === state.selectedClusterId);
-                if (!currentExists && clusters.length > 0 && state.selectedClusterId === DEFAULT_CLUSTER_ID) {
+                if (!state.selectedClusterId && clusters.length > 0) {
                     state.setSelectedClusterId(resolveClusterMetricId(clusters[0]));
                 }
             },
-            onMetricsHistory: (history) => {
+            onMetricsHistory: ({ clusterId, history }) => {
                 setClusterHistoryQueryData(
                     queryClient,
                     history,
-                    requestedHistoryClusterIdRef.current ?? useClusterStore.getState().selectedClusterId
+                    clusterId
                 );
-                requestedHistoryClusterIdRef.current = null;
             }
         });
     }, [queryClient, setConnected]);
 
     const { data: clusters = [] } = clusterMetricsQuery(undefined);
-    const { data: history = [] } = clusterHistoryQuery(selectedClusterId);
-    const { data: isHistoryLoaded = false } = clusterHistoryLoadedQuery(selectedClusterId);
+    const historyClusterId = targetClusterId ?? '';
+    const { data: history = [] } = clusterHistoryQuery(historyClusterId);
+    const { data: isHistoryLoaded = false } = clusterHistoryLoadedQuery(historyClusterId);
 
     const metrics = useMemo(() => {
         if (!clusters.length) return null;
-        return clusters.find((cluster) => resolveClusterMetricId(cluster) === selectedClusterId) || null;
-    }, [clusters, selectedClusterId]);
+        return clusters.find((cluster) => resolveClusterMetricId(cluster) === targetClusterId) || null;
+    }, [clusters, targetClusterId]);
 
-    const handleRequestHistory = useCallback((minutes: number = 5) => {
-        if (!isConnected || isHistoryLoaded) return;
-        requestedHistoryClusterIdRef.current = useClusterStore.getState().selectedClusterId;
-        requestClusterHistory(minutes, requestedHistoryClusterIdRef.current ?? undefined).catch(console.warn);
-    }, [isConnected, isHistoryLoaded, selectedClusterId]);
+    const handleRequestHistory = useCallback((minutes: number = 5, clusterId?: string | null) => {
+        const targetClusterId = clusterId ?? useClusterStore.getState().selectedClusterId;
+        if (!targetClusterId) {
+            return;
+        }
+
+        const targetTeamId = selectedTeamId;
+        if (!targetTeamId) {
+            return;
+        }
+
+        const isTargetHistoryLoaded = clusterHistoryLoadedQuery.get(targetClusterId) ?? false;
+        if (isTargetHistoryLoaded) {
+            return;
+        }
+
+        teamSocketRoomService.waitUntilSubscribed(targetTeamId)
+            .then(() => {
+                if (clusterHistoryLoadedQuery.get(targetClusterId) ?? false) {
+                    return;
+                }
+
+                const currentTeamId = useTeamStore.getState().selectedTeamId;
+                if (currentTeamId !== targetTeamId) {
+                    return;
+                }
+
+                return requestClusterHistory(minutes, targetClusterId);
+            })
+            .catch(console.warn);
+    }, [selectedTeamId]);
 
     return {
         metrics,
