@@ -3,19 +3,22 @@ import { useCreateScriptingSessionMutation, scriptingNotebooksQuery } from './qu
 import {
     JUPYTER_SESSION_TIMEOUT_MESSAGE,
     normalizeScriptingJupyterUrl,
-    startAndWaitForReadyScriptingSession
+    startAndWaitForReadyScriptingSession,
+    waitForReadyScriptingSession
 } from '../utilities/jupyter-session';
 import { getNotebookTeamClusterId } from '../utilities/notebooks';
 import {
     getJupyterStartErrorMessage,
     pickActiveNotebook
 } from '../utilities/workspace';
+import { isApiError } from '@/shared/errors/core';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ScriptingNotebook } from '../api/entities/scripting-notebook';
 import type { ScriptingSession, NotebookContainerStage } from '../api/entities/scripting-session';
+import type { WaitForReadyScriptingSessionOptions, WaitForReadyScriptingSessionResult } from '../utilities/jupyter-session';
 
 interface UseScriptingWorkspaceInput {
     trajectoryId: string;
@@ -39,9 +42,9 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
     const [containerStage, setContainerStage] = useState<NotebookContainerStage | null>(null);
     const [startAttempt, setStartAttempt] = useState(0);
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
-    const hasAutoStartedRef = useRef(false);
     const isMountedRef = useRef(true);
     const activeStartRequestRef = useRef(0);
+    const lastStartedWorkspaceKeyRef = useRef<string | null>(null);
 
     const notebooksQuery = scriptingNotebooksQuery(
         {
@@ -64,6 +67,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         () => pickActiveNotebook(notebooks, notebookId),
         [notebooks, notebookId]
     );
+    const workspaceSessionKey = `${trajectoryId}:${activeNotebook?._id ?? 'shared'}:${startAttempt}`;
 
     const { mutateAsync: createScriptingSession, isPending: isCreatingJupyterSession } = useCreateScriptingSessionMutation();
 
@@ -75,6 +79,26 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
             activeStartRequestRef.current += 1;
         };
     }, []);
+
+    const readExistingSession = useCallback(async (): Promise<ScriptingSession | null> => {
+        if (!activeNotebook?._id) {
+            return null;
+        }
+
+        try {
+            return await service.readNotebookSessionStatus({ notebookId: activeNotebook._id });
+        } catch (error: unknown) {
+            if (checkAccessDeniedError(error)) {
+                throw error;
+            }
+
+            if (isApiError(error) && error.status === 404) {
+                return null;
+            }
+
+            throw error;
+        }
+    }, [activeNotebook, checkAccessDeniedError]);
 
     const startJupyterSession = useCallback(async () => {
         if (!trajectoryId) {
@@ -88,40 +112,66 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         setIsWaitingForJupyter(true);
         setContainerStage(null);
 
-        sileo.info({ title: 'Starting Jupyter session...' });
-
         try {
             const isRequestCancelled = (): boolean => {
                 return !isMountedRef.current || activeStartRequestRef.current !== requestId;
             };
-            const result = await startAndWaitForReadyScriptingSession({
-                createSession: async () => {
-                    const session = await createScriptingSession({
-                        trajectoryId,
-                        notebookId: activeNotebook?._id,
-                        teamClusterId: getNotebookTeamClusterId(activeNotebook)
-                    });
-                    if (!isRequestCancelled()) {
-                        setContainerStage(session.jupyter.containerStage ?? 'creating');
-                    }
-                    return session;
-                },
-                readSession: (session) => {
-                    const sessionNotebookId = getSessionNotebookId(session, activeNotebook);
-                    if (!sessionNotebookId) {
-                        throw new Error('Unable to determine notebook session status because no notebook id was returned.');
-                    }
 
-                    return service.readNotebookSessionStatus({ notebookId: sessionNotebookId });
+            const readSession = (session: ScriptingSession) => {
+                const sessionNotebookId = getSessionNotebookId(session, activeNotebook);
+                if (!sessionNotebookId) {
+                    throw new Error('Unable to determine notebook session status because no notebook id was returned.');
                 }
-            }, {
+
+                return service.readNotebookSessionStatus({ notebookId: sessionNotebookId });
+            };
+            const waitForReadyOptions: WaitForReadyScriptingSessionOptions = {
                 isCancelled: isRequestCancelled,
                 onPending: (session) => {
                     if (!isRequestCancelled()) {
                         setContainerStage(session.jupyter.containerStage ?? null);
                     }
                 }
-            });
+            };
+            const existingSession = await readExistingSession();
+            if (isRequestCancelled()) {
+                return;
+            }
+
+            if (existingSession) {
+                setContainerStage(existingSession.jupyter.containerStage ?? null);
+
+                if (existingSession.jupyter.ready && existingSession.jupyter.url) {
+                    setContainerStage('ready');
+                    setJupyterUrl(normalizeScriptingJupyterUrl(existingSession.jupyter.url));
+                    return;
+                }
+            }
+
+            let result: WaitForReadyScriptingSessionResult;
+            if (existingSession) {
+                result = await waitForReadyScriptingSession({
+                    initialSession: existingSession,
+                    readSession
+                }, waitForReadyOptions);
+            } else {
+                sileo.info({ title: 'Starting Jupyter session...' });
+
+                result = await startAndWaitForReadyScriptingSession({
+                    createSession: async () => {
+                        const session = await createScriptingSession({
+                            trajectoryId,
+                            notebookId: activeNotebook?._id,
+                            teamClusterId: getNotebookTeamClusterId(activeNotebook)
+                        });
+                        if (!isRequestCancelled()) {
+                            setContainerStage(session.jupyter.containerStage ?? 'creating');
+                        }
+                        return session;
+                    },
+                    readSession
+                }, waitForReadyOptions);
+            }
 
             if (isRequestCancelled()) {
                 return;
@@ -153,20 +203,20 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                 setIsWaitingForJupyter(false);
             }
         }
-    }, [activeNotebook, checkAccessDeniedError, createScriptingSession, trajectoryId]);
+    }, [activeNotebook, checkAccessDeniedError, createScriptingSession, readExistingSession, trajectoryId]);
 
     useEffect(() => {
         if (!trajectoryId || notebooksQuery.isLoading) {
             return;
         }
 
-        if (hasAutoStartedRef.current && startAttempt === 0) {
+        if (lastStartedWorkspaceKeyRef.current === workspaceSessionKey) {
             return;
         }
 
-        hasAutoStartedRef.current = true;
+        lastStartedWorkspaceKeyRef.current = workspaceSessionKey;
         startJupyterSession();
-    }, [trajectoryId, startAttempt, notebooksQuery.isLoading, startJupyterSession]);
+    }, [trajectoryId, notebooksQuery.isLoading, startJupyterSession, workspaceSessionKey]);
 
     const retryStartJupyter = () => {
         if (!trajectoryId || isWaitingForJupyter || isCreatingJupyterSession) {

@@ -1,5 +1,5 @@
 import { useRasterWorkspace } from '@/modules/raster/hooks/use-raster-workspace';
-import { createInitialRasterContainerSelections } from '@/modules/raster/types/container-selection';
+import { createDefaultRasterContainerSelection, createInitialRasterContainerSelections } from '@/modules/raster/types/container-selection';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import Loader from '@/shared/presentation/components/Loader';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
@@ -7,7 +7,8 @@ import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/componen
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { ImageOff } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { sileo } from 'sileo';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/types/container-selection';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
@@ -42,6 +43,7 @@ const RasterViewportPanel = ({
     currentTimestep?: number;
     onUpdateContainerSelection?: (containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => void;
 }) => {
+    const handledUnavailableSelectionKeyRef = useRef<string | null>(null);
     const analysisId = selection.scene.source === 'plugin' ? selection.scene.analysisId : undefined;
     const vm = useRasterWorkspace({
         trajectoryId,
@@ -51,6 +53,38 @@ const RasterViewportPanel = ({
         model: selection.model,
         onModelChange: (model) => onUpdateContainerSelection?.(selection.id, { model: model ?? undefined })
     });
+
+    useEffect(() => {
+        let warningKey: string | null = null;
+        let warningTitle = '';
+        let warningDescription = '';
+
+        if (vm.isSelectionUnavailable && selection.scene.source === 'plugin') {
+            warningKey = `selection:${selection.id}:${selection.scene.analysisId}`;
+            warningTitle = 'Raster selection unavailable';
+            warningDescription = 'The selected raster output is no longer available. This panel was reset to trajectory.';
+        } else if (vm.isModelUnavailable && selection.scene.source === 'plugin') {
+            warningKey = `model:${selection.id}:${selection.scene.analysisId}:${selection.model ?? 'unknown'}`;
+            warningTitle = 'Raster model unavailable';
+            warningDescription = 'The selected raster model is no longer available. This panel was reset to trajectory.';
+        }
+
+        if (!warningKey) {
+            handledUnavailableSelectionKeyRef.current = null;
+            return;
+        }
+
+        if (handledUnavailableSelectionKeyRef.current === warningKey) {
+            return;
+        }
+
+        handledUnavailableSelectionKeyRef.current = warningKey;
+        sileo.warning({
+            title: warningTitle,
+            description: warningDescription
+        });
+        onUpdateContainerSelection?.(selection.id, createDefaultRasterContainerSelection(selection.id));
+    }, [onUpdateContainerSelection, selection.id, selection.model, selection.scene, vm.isModelUnavailable, vm.isSelectionUnavailable]);
 
     const headerActions = (
         <Container className='canvas-raster-viewport__header-actions d-flex items-center gap-075'>

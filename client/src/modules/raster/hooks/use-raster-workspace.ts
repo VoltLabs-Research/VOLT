@@ -42,6 +42,7 @@ interface UseRasterWorkspaceResult {
     hasRasterData: boolean;
     isFrameMissing: boolean;
     isSelectionUnavailable: boolean;
+    isModelUnavailable: boolean;
     refetchMetadata: () => Promise<unknown>;
 };
 
@@ -104,6 +105,7 @@ export const useRasterWorkspace = ({
 }: UseRasterWorkspaceParams): UseRasterWorkspaceResult => {
     const metadataQuery = useRasterMetadata({ trajectoryId, enabled: Boolean(trajectoryId) });
     const [requestKey, setRequestKey] = useState(0);
+    const hasResolvedMetadata = !metadataQuery.isLoading;
     const analyses = metadataQuery.metadata?.analyses ?? [];
     const hasTrajectoryRaster = Boolean(metadataQuery.metadata?.trajectory);
     const trajectoryAvailableTimesteps = metadataQuery.metadata?.trajectory?.availableTimesteps ?? [];
@@ -148,6 +150,15 @@ export const useRasterWorkspace = ({
         return getAvailableTimesteps(source, trajectoryAvailableTimesteps);
     }, [source, trajectoryAvailableTimesteps]);
 
+    const isSourceUnavailable = hasResolvedMetadata && Boolean(analysisId) && !selectedAnalysis;
+    const isModelUnavailable = useMemo(() => {
+        if (!hasResolvedMetadata || source?.scope !== RasterFrameScope.Analysis || !model) {
+            return false;
+        }
+
+        return !modelOptions.some((option) => option.value === model);
+    }, [hasResolvedMetadata, model, modelOptions, source]);
+
     const displayTimestep = useMemo(() => {
         if (currentTimestep !== undefined && availableTimesteps.includes(currentTimestep)) {
             return currentTimestep;
@@ -161,14 +172,22 @@ export const useRasterWorkspace = ({
             return null;
         }
 
+        if (isModelUnavailable) {
+            return null;
+        }
+
         if (model && modelOptions.some((option) => option.value === model)) {
             return model;
         }
 
         return modelOptions[0].value;
-    }, [model, modelOptions, source]);
+    }, [isModelUnavailable, model, modelOptions, source]);
 
     useEffect(() => {
+        if (isSourceUnavailable || isModelUnavailable) {
+            return;
+        }
+
         if (source?.scope !== RasterFrameScope.Analysis || !selectedModel) {
             if (model) {
                 onModelChange?.(undefined);
@@ -180,7 +199,7 @@ export const useRasterWorkspace = ({
         if (selectedModel !== model) {
             onModelChange?.(selectedModel);
         }
-    }, [model, onModelChange, selectedModel, source]);
+    }, [isModelUnavailable, isSourceUnavailable, model, onModelChange, selectedModel, source]);
 
     const isFrameEnabled = Boolean(
         trajectoryId
@@ -205,7 +224,7 @@ export const useRasterWorkspace = ({
     }, [metadataQuery]);
 
     const hasRasterData = hasTrajectoryRaster || analyses.length > 0;
-    const isSelectionUnavailable = !source && hasRasterData && Boolean(analysisId);
+    const isSelectionUnavailable = isSourceUnavailable;
 
     let error: Error | null = null;
     if (metadataQuery.error instanceof Error) {
@@ -231,6 +250,7 @@ export const useRasterWorkspace = ({
         hasRasterData,
         isFrameMissing: frameQuery.isMissing,
         isSelectionUnavailable,
+        isModelUnavailable,
         refetchMetadata
     };
 };

@@ -4,7 +4,7 @@ import { buildPropertyOptions, resolvePropertySelection } from './use-property-s
 
 import type { FilterPropertiesData } from '../../api/dtos/particle-filter';
 
-test('buildPropertyOptions disambiguates duplicate plugin properties and preserves exposure-aware selection', () => {
+test('buildPropertyOptions keeps plugin selections exposure-aware without showing exposure labels', () => {
     const properties: FilterPropertiesData = {
         dump: ['type'],
         perAtom: {
@@ -21,8 +21,8 @@ test('buildPropertyOptions disambiguates duplicate plugin properties and preserv
 
     assert.deepEqual(options.map((option) => option.title), [
         'type',
-        'charge (Shared Exposure - exposure-a)',
-        'charge (Shared Exposure - exposure-b)'
+        'charge',
+        'charge'
     ]);
 
     assert.deepEqual(
