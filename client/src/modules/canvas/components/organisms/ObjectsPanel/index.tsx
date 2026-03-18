@@ -188,13 +188,7 @@ const ObjectsPanel = ({
         }
 
         setExpandedParticleFilterTimesteps((current) => {
-            const next = new Set([...current].filter((timestep) => particleFilterTimesteps.includes(timestep)));
-
-            if (next.size === 0) {
-                next.add(particleFilterTimesteps[0]);
-            }
-
-            return next;
+            return new Set([...current].filter((timestep) => particleFilterTimesteps.includes(timestep)));
         });
     }, [particleFilterTimesteps]);
 
@@ -205,13 +199,7 @@ const ObjectsPanel = ({
         }
 
         setExpandedColorCodingTimesteps((current) => {
-            const next = new Set([...current].filter((timestep) => colorCodingTimesteps.includes(timestep)));
-
-            if (next.size === 0) {
-                next.add(colorCodingTimesteps[0]);
-            }
-
-            return next;
+            return new Set([...current].filter((timestep) => colorCodingTimesteps.includes(timestep)));
         });
     }, [colorCodingTimesteps]);
 
