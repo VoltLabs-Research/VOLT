@@ -13,15 +13,7 @@ const buildModifierPropertyValue = (exposureId: string, property: string): strin
     return `plugin:${exposureId}:${property}`;
 };
 
-const buildOptionTitle = (property: string, exposureName: string | undefined, exposureId: string): string => {
-    const normalizedExposureName = exposureName?.trim();
-
-    if (!normalizedExposureName || normalizedExposureName === exposureId) {
-        return `${property} (${exposureId})`;
-    }
-
-    return `${property} (${normalizedExposureName} - ${exposureId})`;
-};
+const buildOptionTitle = (property: string): string => property;
 
 export const buildPropertyOptions = (properties: FilterPropertiesData | undefined): PropertyOption[] => {
     if (!properties) {
@@ -43,7 +35,7 @@ export const buildPropertyOptions = (properties: FilterPropertiesData | undefine
         perAtomProperties.forEach((property) => {
             options.push({
                 value: buildModifierPropertyValue(exposureId, property),
-                title: buildOptionTitle(property, properties.exposureNames[exposureId], exposureId),
+                title: buildOptionTitle(property),
                 property,
                 exposureId
             });
