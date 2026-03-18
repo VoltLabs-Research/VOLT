@@ -93,6 +93,14 @@ const DashboardPage = () => {
         });
     }, []);
     const activePanel = focusedPanel ?? hoveredPanel;
+    const jobsEmptyState = (
+        <EmptyState
+            icon={<HiOutlineServerStack size={20} />}
+            title='No jobs yet'
+            description='Start a simulation or analysis to see activity here.'
+            className='flex-1 dashboard-jobs-empty-state'
+        />
+    );
     const jobsPanelClassName = useMemo(() => {
         return getSharedPanelStateClassName(activePanel, DashboardBottomPanel.Jobs);
     }, [activePanel]);
@@ -242,6 +250,7 @@ const DashboardPage = () => {
                             overflowHidden={true}
                             onPointerEnter={handleJobsPanelPointerEnter}
                             onFocusCapture={handleJobsPanelFocusCapture}
+                            tabIndex={0}
                         >
                             <Container className='d-flex items-center content-between w-max dashboard-jobs-card-header'>
                                 <Title className='font-size-2 color-primary font-weight-6'>
@@ -253,14 +262,7 @@ const DashboardPage = () => {
                                     variant='embedded'
                                     displayMode='full'
                                     hideAfterComplete={false}
-                                    emptyState={(
-                                        <EmptyState
-                                            icon={<HiOutlineServerStack size={20} />}
-                                            title='No jobs yet'
-                                            description='Start a simulation or analysis to see activity here.'
-                                            className='flex-1 dashboard-jobs-empty-state'
-                                        />
-                                    )}
+                                    emptyState={jobsEmptyState}
                                 />
                             </Container>
                         </DashboardCard>
@@ -270,6 +272,7 @@ const DashboardPage = () => {
                             bodyClassName='dashboard-shared-panel-body'
                             onPointerEnter={handleAnalysesPanelPointerEnter}
                             onFocusCapture={handleAnalysesPanelFocusCapture}
+                            tabIndex={0}
                         />
                     </Container>
                 </Container>

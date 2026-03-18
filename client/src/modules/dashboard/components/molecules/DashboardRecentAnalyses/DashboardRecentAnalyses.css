@@ -1,15 +1,21 @@
 .dashboard-recent-analyses {
     padding: 1.25rem;
     min-height: 0;
+    outline: none;
+    transition: padding-bottom 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dashboard-recent-analyses-header {
     margin-bottom: 1rem;
     flex-shrink: 0;
+    transition:
+        margin-bottom 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dashboard-recent-analyses.dashboard-shared-panel--collapsed .dashboard-recent-analyses-header {
     margin-bottom: 0;
+    transform: translateY(0.08rem);
 }
 
 .dashboard-recent-analyses-view-all {
@@ -24,12 +30,22 @@
     cursor: pointer;
     padding: 0.3rem 0.5rem;
     border-radius: var(--radius-sm);
-    transition: color 0.15s ease, background 0.15s ease;
+    transform: translateX(0);
+    transition:
+        color 0.15s ease,
+        background 0.15s ease,
+        opacity 0.24s ease,
+        transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dashboard-recent-analyses-view-all:hover {
     color: var(--accent-blue);
     background: var(--color-surface-2);
+}
+
+.dashboard-recent-analyses.dashboard-shared-panel--expanded .dashboard-recent-analyses-view-all,
+.dashboard-recent-analyses:focus-within .dashboard-recent-analyses-view-all {
+    transform: translateX(0.12rem);
 }
 
 .dashboard-recent-analyses-item {
@@ -58,4 +74,26 @@
     padding: 2rem;
     color: var(--color-text-muted);
     min-height: 0 !important;
+}
+
+@media screen and (max-width: 1200px) {
+    .dashboard-recent-analyses.dashboard-shared-panel--collapsed .dashboard-recent-analyses-header {
+        margin-bottom: 1rem;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dashboard-recent-analyses,
+    .dashboard-recent-analyses-header,
+    .dashboard-recent-analyses-view-all {
+        transition-duration: 0.01ms;
+        transition-delay: 0ms;
+    }
+
+    .dashboard-recent-analyses.dashboard-shared-panel--collapsed .dashboard-recent-analyses-header,
+    .dashboard-recent-analyses.dashboard-shared-panel--expanded .dashboard-recent-analyses-view-all,
+    .dashboard-recent-analyses:focus-within .dashboard-recent-analyses-view-all {
+        transform: none;
+    }
 }
