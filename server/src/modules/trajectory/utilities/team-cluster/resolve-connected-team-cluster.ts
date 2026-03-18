@@ -1,11 +1,10 @@
-import TeamCluster, { TeamClusterStatus, TeamClusterRole } from '@modules/team-cluster/domain/entities/TeamCluster';
+import TeamCluster, { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 
 interface ResolveConnectedTeamClusterInput {
     teamId: string;
     requestedTeamClusterId?: string;
-    requiredRoles?: TeamClusterRole[];
 };
 
 const buildMissingTeamClusterError = (): ApplicationError => {
@@ -29,30 +28,14 @@ export const resolveConnectedTeamCluster = async (
             throw buildMissingTeamClusterError();
         }
 
-        if (input.requiredRoles?.length) {
-            const role = requestedTeamCluster.props.role ?? TeamClusterRole.Cluster;
-            if (!input.requiredRoles.includes(role)) {
-                throw ApplicationError.badRequest(
-                    'TeamCluster::InvalidRole',
-                    `Cluster role "${role}" is not allowed for this operation`
-                );
-            }
-        }
-
         return requestedTeamCluster;
     }
 
-    const filter: Record<string, unknown> = {
-        team: input.teamId,
-        status: TeamClusterStatus.Connected
-    };
-
-    if (input.requiredRoles?.length) {
-        filter.role = { $in: input.requiredRoles };
-    }
-
     const teamClusters = await teamClusterRepository.findAll({
-        filter,
+        filter: {
+            team: input.teamId,
+            status: TeamClusterStatus.Connected
+        },
         sort: {
             createdAt: 1
         },

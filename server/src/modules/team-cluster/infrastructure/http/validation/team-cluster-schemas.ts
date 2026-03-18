@@ -1,5 +1,5 @@
 import { createPaginationQuerySchema, createTeamScopedParamsSchema, teamParamsSchema } from '@shared/infrastructure/http/validation/shared-schemas';
-import { TeamClusterStatus, TeamClusterRole } from '@modules/team-cluster/domain/entities/TeamCluster';
+import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
 import { TeamClusterRemoteAccessTargetDTO } from '@modules/team-cluster/application/dtos/TeamClusterRemoteAccessDTO';
 import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
 import { requiredTextSchema } from '@shared/infrastructure/http/validation/resource-schemas';
@@ -11,15 +11,8 @@ const publicTeamClusterParamsSchema = z.object({
     teamClusterId: requiredTextSchema
 }).strict();
 
-const teamClusterRoleSchema = z.nativeEnum(TeamClusterRole);
-
-const updateRoleSchema = z.object({
-    role: teamClusterRoleSchema
-}).strict();
-
 const createTeamClusterSchema = z.object({
-    name: requiredTextSchema.min(2).max(64),
-    role: teamClusterRoleSchema.optional()
+    name: requiredTextSchema.min(2).max(64)
 }).strict();
 
 const passwordConfirmationSchema = z.object({
@@ -51,8 +44,6 @@ const daemonPasswordSchema = z.object({
 const listTeamClustersQuerySchema = createPaginationQuerySchema({
     maxLimit: 100,
     includeSearch: true
-}).extend({
-    roles: z.string().optional()
 });
 
 const publicStatusSchema = z.union([
@@ -214,9 +205,5 @@ export const teamClusterValidation = createResourceValidation({
     generateInstallManifest: {
         params: publicTeamClusterParamsSchema,
         body: teamClusterInstallManifestSchema
-    },
-    updateRole: {
-        params: teamClusterParamsSchema,
-        body: updateRoleSchema
     }
 });

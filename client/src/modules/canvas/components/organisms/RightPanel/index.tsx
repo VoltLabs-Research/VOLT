@@ -9,7 +9,6 @@ import CanvasRenderSections from '../CanvasRenderSections';
 
 import PluginExecutionConfigFields from '@/modules/plugin/components/plugin/molecules/PluginExecutionConfigFields';
 import { useExecutePluginMutation, usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
-import { TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { Wrench, Monitor } from 'lucide-react';
@@ -70,17 +69,10 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
     const availableTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
 
     const teamClusterOptions = useMemo<SelectOption[]>(() => {
-        const COMPUTE_CAPABLE_ROLES: TeamClusterRole[] = [
-            TeamClusterRole.Cluster,
-            TeamClusterRole.ComputeNode
-        ];
-
-        return (teamClustersResponse?.data ?? [])
-            .filter((teamCluster) => COMPUTE_CAPABLE_ROLES.includes(teamCluster.role))
-            .map((teamCluster) => ({
-                value: teamCluster._id,
-                title: teamCluster.name
-            }));
+        return (teamClustersResponse?.data ?? []).map((teamCluster) => ({
+            value: teamCluster._id,
+            title: teamCluster.name
+        }));
     }, [teamClustersResponse?.data]);
 
     const hasTeamClusterOptions = teamClusterOptions.length > 0;

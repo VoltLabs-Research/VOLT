@@ -1,13 +1,6 @@
 import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
 
-export interface StorageClusterMinioConfig {
-    host: string;
-    port: number;
-    username: string;
-    password: string;
-};
-
 export interface PluginReferenceExecutionRequest {
     referencePath: string;
     pluginId: string;
@@ -30,8 +23,6 @@ export interface RoutePluginExecutionInput {
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];
     timestep?: number;
-    storageClusterId?: string;
-    storageClusterMinioConfig?: StorageClusterMinioConfig;
 };
 
 export interface IPluginExecutionRouter {

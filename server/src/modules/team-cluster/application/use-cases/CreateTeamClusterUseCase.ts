@@ -4,7 +4,7 @@ import {
     CreateTeamClusterOutputDTO
 } from '@modules/team-cluster/application/dtos/CreateTeamClusterDTO';
 import { toTeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
-import TeamCluster, { TeamClusterStatus, TeamClusterRole } from '@modules/team-cluster/domain/entities/TeamCluster';
+import TeamCluster, { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
 import type { ITeamClusterCredentialsCipher } from '@modules/team-cluster/domain/port/ITeamClusterCredentialsCipher';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
@@ -79,7 +79,6 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
 
         const teamCluster = new TeamCluster('', {
             name: input.name.trim(),
-            role: input.role ?? TeamClusterRole.Cluster,
             team: input.teamId,
             createdBy: input.userId,
             status: TeamClusterStatus.WaitingForConnection,

@@ -12,7 +12,6 @@ import { inject, injectable } from 'tsyringe';
 
 interface ListTeamClustersFilter extends Record<string, unknown> {
     team: string;
-    role?: string | { $in: string[] };
 };
 
 @injectable()
@@ -54,10 +53,6 @@ export default class ListTeamClustersByTeamIdUseCase implements IUseCase<ListTea
                     }
                 }
             ];
-        }
-
-        if (input.roles?.length) {
-            filter.role = { $in: input.roles };
         }
 
         const result = await this.teamClusterRepository.findAll({

@@ -5,21 +5,19 @@ import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/c
 import UpdateClusterModal, { UPDATE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/UpdateClusterModal';
 import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
 import useClustersListingPage from '@/modules/cluster/hooks/use-clusters-listing-page';
-import { invalidateAvailableVersionsQuery, useRegenerateTeamClusterEnrollmentTokenMutation, useUpdateTeamClusterRoleMutation, TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
+import { invalidateAvailableVersionsQuery, useRegenerateTeamClusterEnrollmentTokenMutation, TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
 import { formatClusterTimestamp } from '@/modules/cluster/utilities/format-cluster-timestamp';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
-import { TeamClusterStatus, TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
-import { CLUSTER_ROLE_OPTIONS } from '@/modules/cluster/constants';
+import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
 import { TEAM_CLUSTER_SOCKET_EVENTS } from '@/modules/cluster/api/service/endpoints/team-cluster-socket-events';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import MetricBars from '@/modules/cluster/components/organisms/MetricBars';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
 import { openModal } from '@/shared/presentation/components/Modal';
-import { Check, Database, FolderOpen, KeyRound, Layers, Monitor, RefreshCw, Terminal, TerminalSquare, Trash2 } from 'lucide-react';
+import { Database, FolderOpen, KeyRound, Monitor, RefreshCw, Terminal, TerminalSquare, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
@@ -34,7 +32,6 @@ const ClustersListing = () => {
     const [installCommandClusterId, setInstallCommandClusterId] = useState<string | null>(null);
     const [installCommandToken, setInstallCommandToken] = useState<string | null>(null);
     const regenerateTokenMutation = useRegenerateTeamClusterEnrollmentTokenMutation();
-    const updateRoleMutation = useUpdateTeamClusterRoleMutation();
     const createNew = useMemo(() => {
         return {
             buttonTitle: 'Add new Cluster',
@@ -75,31 +72,6 @@ const ClustersListing = () => {
         });
     }, [vm.selectedTeamId, regenerateTokenMutation]);
 
-    const handleChangeRole = useCallback((cluster: TeamCluster, role: TeamClusterRole) => {
-        if (!vm.selectedTeamId || cluster.role === role) return;
-        updateRoleMutation.mutate({
-            teamId: vm.selectedTeamId,
-            teamClusterId: cluster._id,
-            role
-        });
-    }, [vm.selectedTeamId, updateRoleMutation]);
-
-    const buildRoleSubmenu = useCallback((cluster: TeamCluster) => (
-        <>
-            {CLUSTER_ROLE_OPTIONS.map((option) => (
-                <PopoverMenuItem
-                    key={option.value}
-                    size='sm'
-                    disabled={cluster.role === option.value}
-                    onClick={() => handleChangeRole(cluster, option.value)}
-                    icon={cluster.role === option.value ? <Check size={14} /> : undefined}
-                >
-                    {option.label}
-                </PopoverMenuItem>
-            ))}
-        </>
-    ), [handleChangeRole]);
-
     const socketInvalidation = useMemo<SocketInvalidationConfig[] | undefined>(() => {
         if (!vm.selectedTeamId) {
             return undefined;
@@ -126,17 +98,6 @@ const ClustersListing = () => {
                     </Container>
                     <Paragraph className='font-size-1 color-muted font-family-mono'>{row.id}</Paragraph>
                 </Container>
-            )
-        },
-        {
-            key: 'role',
-            title: 'Role',
-            sortable: true,
-            width: 140,
-            render: (_, row) => (
-                <StatusBadge variant='neutral' size='compact'>
-                    {row.role}
-                </StatusBadge>
             )
         },
         {
@@ -281,17 +242,12 @@ const ClustersListing = () => {
             onClick: () => navigate(`/dashboard/clusters/${row.id}/minio`)
         },
         {
-            label: 'Change role',
-            icon: Layers,
-            submenuContent: buildRoleSubmenu(row.teamCluster)
-        },
-        {
             label: 'Delete cluster',
             icon: Trash2,
             destructive: true,
             onClick: () => handleDeleteCluster(row.teamCluster)
         }
-    ], [buildRoleSubmenu, handleDeleteCluster, handleRevealCredentials, handleShowInstallCommand, handleUpdateCluster, navigate]);
+    ], [handleDeleteCluster, handleRevealCredentials, handleShowInstallCommand, handleUpdateCluster, navigate]);
 
     return (
         <>
