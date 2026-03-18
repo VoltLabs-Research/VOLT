@@ -532,7 +532,6 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                     onLoadMore={handleLoadMore}
                     renderItem={renderGridItem}
                     renderSkeleton={renderGridSkeleton}
-                    dragAndDrop={dragAndDrop}
                     emptyIcon={emptyIcon}
                     emptyTitle={emptyTitle}
                     emptyMessage={emptyMessage}

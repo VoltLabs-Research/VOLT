@@ -7,7 +7,7 @@ import type { ListScriptingNotebooksParams } from '../dtos/list-scripting-notebo
 import type { UpdateScriptingNotebookParams } from '../dtos/update-scripting-notebook';
 import type { ScriptingNotebook } from '../entities/scripting-notebook';
 import type { ScriptingSession } from '../entities/scripting-session';
-import type { ReadNotebookSessionStatusParams } from './endpoints/sessions';
+import type { DeleteNotebookSessionParams, ReadNotebookSessionStatusParams } from './endpoints/sessions';
 import client from './client';
 import endpoints from './endpoints';
 
@@ -19,6 +19,7 @@ type ScriptingService = {
     createSession: (params: CreateScriptingSessionParams) => Promise<ScriptingSession>;
     createNotebookSession: (params: CreateScriptingNotebookSessionParams) => Promise<ScriptingSession>;
     readNotebookSessionStatus: (params: ReadNotebookSessionStatusParams) => Promise<ScriptingSession>;
+    deleteNotebookSession: (params: DeleteNotebookSessionParams) => Promise<void>;
 };
 
 const service: ScriptingService = defineServiceModule({

@@ -24,7 +24,6 @@
 
 .folder-breadcrumbs__link,
 .folder-breadcrumbs__current {
-    min-height: 2.75rem;
     padding: 0.5rem 0.625rem;
     border-radius: var(--radius-sm);
     display: inline-flex;

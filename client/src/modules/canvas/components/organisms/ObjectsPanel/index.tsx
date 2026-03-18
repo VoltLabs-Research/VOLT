@@ -7,8 +7,8 @@ import useSceneArtifacts from '../../../hooks/use-scene-artifacts';
 import PanelHeader from '../../atoms/PanelHeader';
 import SceneCollection from '../../molecules/SceneCollection';
 
-import { Eye, Filter, Layers, Minus, Palette, Plus } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { ChevronDown, ChevronRight, Eye, Filter, Layers, Minus, Palette, Plus } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
@@ -18,7 +18,7 @@ import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
+import type { SceneArtifact, SceneArtifactParticleFilterCondition } from '@/modules/trajectory/api/entities/scene-artifacts';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { RasterContainerId, RasterContainerSelection, RasterSelectableScene } from '@/modules/raster/types/container-selection';
 
@@ -41,6 +41,80 @@ interface ObjectsPanelProps {
 };
 
 const PANEL_ICON_COLOR = 'var(--color-text-secondary)';
+const TREE_MODIFIER_ICON_SIZE = 12;
+const TREE_MODIFIER_ICON_COLOR = 'var(--accent-blue)';
+
+const PARTICLE_FILTER_ACTION_LABELS = {
+    delete: 'Delete',
+    highlight: 'Color Selection'
+} as const;
+
+const formatArtifactValue = (value: unknown): string => {
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+        return String(value ?? '');
+    }
+
+    if (Number.isInteger(value)) {
+        return String(value);
+    }
+
+    return String(Number(value.toFixed(3)));
+};
+
+const formatParticleFilterConditionLabel = (condition: SceneArtifactParticleFilterCondition | SceneArtifact['params']): string => {
+    if (typeof condition.property !== 'string' || typeof condition.operator !== 'string' || condition.value === undefined) {
+        return '';
+    }
+
+    return `${condition.property} ${condition.operator} ${formatArtifactValue(condition.value)}`;
+};
+
+const formatParticleFilterArtifactLabel = (artifact: SceneArtifact): string => {
+    const { params, displayName } = artifact;
+    const baseCondition = Array.isArray(params.conditions) && params.conditions.length > 0
+        ? formatParticleFilterConditionLabel(params.conditions[0])
+        : formatParticleFilterConditionLabel(params);
+
+    if (!baseCondition) {
+        return displayName;
+    }
+
+    const extraConditions = Array.isArray(params.conditions) && params.conditions.length > 1
+        ? `+${params.conditions.length - 1} more`
+        : '';
+    const actionLabel = params.action ? PARTICLE_FILTER_ACTION_LABELS[params.action] ?? params.action : '';
+
+    return [baseCondition, extraConditions, actionLabel].filter(Boolean).join(' · ');
+};
+
+const formatColorCodingArtifactLabel = (artifact: SceneArtifact): string => {
+    const { params, displayName } = artifact;
+
+    if (
+        typeof params.property !== 'string'
+        || params.startValue === undefined
+        || params.endValue === undefined
+    ) {
+        return displayName;
+    }
+
+    const rangeLabel = `[${formatArtifactValue(params.startValue)}, ${formatArtifactValue(params.endValue)}]`;
+    const gradientLabel = typeof params.gradient === 'string' ? params.gradient : '';
+
+    return [params.property, rangeLabel, gradientLabel].filter(Boolean).join(' · ');
+};
+
+const formatArtifactLabel = (artifact: SceneArtifact): string => {
+    if (artifact.sourceType === 'particle-filter') {
+        return formatParticleFilterArtifactLabel(artifact);
+    }
+
+    if (artifact.sourceType === 'color-coding') {
+        return formatColorCodingArtifactLabel(artifact);
+    }
+
+    return artifact.displayName;
+};
 
 const ObjectsPanel = ({
     trajectory,
@@ -55,6 +129,8 @@ const ObjectsPanel = ({
     const [selectedTimestepAnalysisOpen, setSelectedTimestepAnalysisOpen] = useState(true);
     const [colorCodingOpen, setColorCodingOpen] = useState(true);
     const [particleFilterOpen, setParticleFilterOpen] = useState(true);
+    const [expandedColorCodingTimesteps, setExpandedColorCodingTimesteps] = useState<Set<number>>(new Set());
+    const [expandedParticleFilterTimesteps, setExpandedParticleFilterTimesteps] = useState<Set<number>>(new Set());
     const { activeWorkspace } = useCanvasUrlState();
     const isRasterWorkspace = activeWorkspace === CanvasWorkspace.Raster;
 
@@ -83,6 +159,14 @@ const ObjectsPanel = ({
         particleFilterArtifacts
     } = useSceneArtifacts({ trajectoryId: trajectory?._id });
 
+    const particleFilterTimesteps = useMemo(() => {
+        return [...new Set(particleFilterArtifacts.map((artifact) => artifact.timestep))].sort((left, right) => right - left);
+    }, [particleFilterArtifacts]);
+
+    const colorCodingTimesteps = useMemo(() => {
+        return [...new Set(colorCodingArtifacts.map((artifact) => artifact.timestep))].sort((left, right) => right - left);
+    }, [colorCodingArtifacts]);
+
     const {
         showSimulationCell,
         setShowSimulationCell,
@@ -96,6 +180,40 @@ const ObjectsPanel = ({
     })));
 
     const handleToggleSimulationCell = () => setShowSimulationCell(!showSimulationCell);
+
+    useEffect(() => {
+        if (particleFilterTimesteps.length === 0) {
+            setExpandedParticleFilterTimesteps(new Set());
+            return;
+        }
+
+        setExpandedParticleFilterTimesteps((current) => {
+            const next = new Set([...current].filter((timestep) => particleFilterTimesteps.includes(timestep)));
+
+            if (next.size === 0) {
+                next.add(particleFilterTimesteps[0]);
+            }
+
+            return next;
+        });
+    }, [particleFilterTimesteps]);
+
+    useEffect(() => {
+        if (colorCodingTimesteps.length === 0) {
+            setExpandedColorCodingTimesteps(new Set());
+            return;
+        }
+
+        setExpandedColorCodingTimesteps((current) => {
+            const next = new Set([...current].filter((timestep) => colorCodingTimesteps.includes(timestep)));
+
+            if (next.size === 0) {
+                next.add(colorCodingTimesteps[0]);
+            }
+
+            return next;
+        });
+    }, [colorCodingTimesteps]);
 
     const handleSelectRasterScene = useCallback((scene: RasterSelectableScene, label: string) => {
         if (!onUpdateRasterContainerSelection) {
@@ -194,8 +312,6 @@ const ObjectsPanel = ({
         toggleSection
     ]);
 
-    const isArtifactActive = (artifact: SceneArtifact): boolean => isArtifactSceneActive(activeScene, artifact);
-
     const getArtifactMenuOptions = useCallback((artifact: SceneArtifact): MenuOption[] => {
         const scene = toSceneObjectFromArtifact(artifact);
         if (!scene) return [];
@@ -203,6 +319,7 @@ const ObjectsPanel = ({
         const isActive = isSceneInActiveScenes(scene);
         const sceneKey = getSceneKey(scene);
         const currentOpacity = sceneOpacities[sceneKey] ?? 1;
+        const artifactLabel = formatArtifactLabel(artifact);
 
         const options: MenuOption[] = [];
 
@@ -225,7 +342,7 @@ const ObjectsPanel = ({
             <div className="context-menu-transparency">
                 <span className="context-menu-transparency__label">Transparency</span>
                 <CanvasSlider
-                    ariaLabel={`Adjust ${artifact.displayName} transparency`}
+                    ariaLabel={`Adjust ${artifactLabel} transparency`}
                     min={0}
                     max={1}
                     step={0.01}
@@ -244,6 +361,185 @@ const ObjectsPanel = ({
 
         return options;
     }, [isSceneInActiveScenes, sceneOpacities, addScene, removeScene, setSceneOpacity]);
+
+    const renderArtifactPlaceholder = useCallback((label: string) => {
+        return (
+            <Container className="canvas-tree-item canvas-tree-item--indent d-flex items-center gap-05 color-muted font-size-1">
+                <span className="canvas-tree-spacer" />
+                <span className="canvas-tree-item__text canvas-tree-item__text--muted">{label}</span>
+            </Container>
+        );
+    }, []);
+
+    const toggleParticleFilterTimestep = useCallback((timestep: number) => {
+        setExpandedParticleFilterTimesteps((current) => {
+            const next = new Set(current);
+
+            if (next.has(timestep)) {
+                next.delete(timestep);
+            } else {
+                next.add(timestep);
+            }
+
+            return next;
+        });
+    }, []);
+
+    const toggleColorCodingTimestep = useCallback((timestep: number) => {
+        setExpandedColorCodingTimesteps((current) => {
+            const next = new Set(current);
+
+            if (next.has(timestep)) {
+                next.delete(timestep);
+            } else {
+                next.add(timestep);
+            }
+
+            return next;
+        });
+    }, []);
+
+    const renderArtifactTreeItem = useCallback((artifact: SceneArtifact, icon: typeof Palette, menuIdPrefix: string, indentClassName: string = 'canvas-tree-item--indent') => {
+        const scene = toSceneObjectFromArtifact(artifact);
+        const isActive = isArtifactSceneActive(activeScene, artifact);
+        const artifactLabel = formatArtifactLabel(artifact);
+        const itemClassName = `canvas-tree-item ${indentClassName} font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none ${isActive ? 'selected' : ''}`;
+        const textClassName = `canvas-tree-item__text ${isActive ? 'color-primary' : 'color-secondary'}`;
+        const Icon = icon;
+
+        const trigger = (
+            <button
+                className={itemClassName}
+                onClick={() => {
+                    if (!scene) {
+                        return;
+                    }
+
+                    onSelectScene(scene);
+                }}
+                role="treeitem"
+                aria-selected={isActive}
+                type="button"
+                title={artifactLabel}
+            >
+                <span className="canvas-tree-spacer" />
+                <Icon style={{ width: TREE_MODIFIER_ICON_SIZE, height: TREE_MODIFIER_ICON_SIZE, color: TREE_MODIFIER_ICON_COLOR }} />
+                <span className={textClassName}>{artifactLabel}</span>
+            </button>
+        );
+
+        return (
+            <ContextMenuPopover
+                key={artifact._id}
+                id={`${menuIdPrefix}-${artifact._id}`}
+                trigger={trigger}
+                options={getArtifactMenuOptions(artifact)}
+                size='sm'
+            />
+        );
+    }, [activeScene, getArtifactMenuOptions, onSelectScene]);
+
+    const renderParticleFilterTreeSection = useCallback(() => {
+        if (sceneArtifactsLoading && particleFilterArtifacts.length === 0) {
+            return (
+                <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Particle Filter hierarchy">
+                    {renderArtifactPlaceholder('Loading...')}
+                </Container>
+            );
+        }
+
+        if (!sceneArtifactsLoading && particleFilterArtifacts.length === 0) {
+            return (
+                <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Particle Filter hierarchy">
+                    {renderArtifactPlaceholder('No models generated')}
+                </Container>
+            );
+        }
+
+        return (
+            <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Particle Filter hierarchy">
+                {particleFilterTimesteps.map((timestep) => {
+                    const timestepArtifacts = particleFilterArtifacts.filter((artifact) => artifact.timestep === timestep);
+                    const isExpanded = expandedParticleFilterTimesteps.has(timestep);
+                    const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
+
+                    return (
+                        <Container key={timestep} className="canvas-tree-group">
+                            <button
+                                type="button"
+                                className="canvas-tree-group-header d-flex items-center gap-05"
+                                onClick={() => toggleParticleFilterTimestep(timestep)}
+                                aria-expanded={isExpanded}
+                            >
+                                <ChevronIcon className={`canvas-tree-group-chevron ${isExpanded ? '' : 'collapsed'}`} style={{ width: 13, height: 13 }} />
+                                <Filter style={{ width: TREE_MODIFIER_ICON_SIZE, height: TREE_MODIFIER_ICON_SIZE, color: TREE_MODIFIER_ICON_COLOR }} />
+                                <span className="canvas-tree-item__text">T{timestep}</span>
+                                <span className="canvas-tree-group-count">{timestepArtifacts.length}</span>
+                            </button>
+
+                            {isExpanded && timestepArtifacts.map((artifact) => renderArtifactTreeItem(
+                                artifact,
+                                Filter,
+                                'canvas-ctx-particle-filter',
+                                'canvas-tree-item--indent-lg'
+                            ))}
+                        </Container>
+                    );
+                })}
+            </Container>
+        );
+    }, [expandedParticleFilterTimesteps, particleFilterArtifacts, particleFilterTimesteps, renderArtifactPlaceholder, renderArtifactTreeItem, sceneArtifactsLoading, toggleParticleFilterTimestep]);
+
+    const renderColorCodingTreeSection = useCallback(() => {
+        if (sceneArtifactsLoading && colorCodingArtifacts.length === 0) {
+            return (
+                <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Color Coding hierarchy">
+                    {renderArtifactPlaceholder('Loading...')}
+                </Container>
+            );
+        }
+
+        if (!sceneArtifactsLoading && colorCodingArtifacts.length === 0) {
+            return (
+                <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Color Coding hierarchy">
+                    {renderArtifactPlaceholder('No models generated')}
+                </Container>
+            );
+        }
+
+        return (
+            <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Color Coding hierarchy">
+                {colorCodingTimesteps.map((timestep) => {
+                    const timestepArtifacts = colorCodingArtifacts.filter((artifact) => artifact.timestep === timestep);
+                    const isExpanded = expandedColorCodingTimesteps.has(timestep);
+                    const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
+
+                    return (
+                        <Container key={timestep} className="canvas-tree-group">
+                            <button
+                                type="button"
+                                className="canvas-tree-group-header d-flex items-center gap-05"
+                                onClick={() => toggleColorCodingTimestep(timestep)}
+                                aria-expanded={isExpanded}
+                            >
+                                <ChevronIcon className={`canvas-tree-group-chevron ${isExpanded ? '' : 'collapsed'}`} style={{ width: 13, height: 13 }} />
+                                <Palette style={{ width: TREE_MODIFIER_ICON_SIZE, height: TREE_MODIFIER_ICON_SIZE, color: TREE_MODIFIER_ICON_COLOR }} />
+                                <span className="canvas-tree-item__text">T{timestep}</span>
+                                <span className="canvas-tree-group-count">{timestepArtifacts.length}</span>
+                            </button>
+
+                            {isExpanded && timestepArtifacts.map((artifact) => renderArtifactTreeItem(
+                                artifact,
+                                Palette,
+                                'canvas-ctx-color-coding',
+                                'canvas-tree-item--indent-lg'
+                            ))}
+                        </Container>
+                    );
+                })}
+            </Container>
+        );
+    }, [colorCodingArtifacts, colorCodingTimesteps, expandedColorCodingTimesteps, renderArtifactPlaceholder, renderArtifactTreeItem, sceneArtifactsLoading, toggleColorCodingTimestep]);
 
     return (
         <Container className="canvas-objects-panel d-flex column min-h-0 overflow-auto">
@@ -353,41 +649,7 @@ const ObjectsPanel = ({
                 useDefaultHeaderStyles={false}
                 useDefaultTitleStyles={false}
             >
-                <Container className="canvas-tree-container d-flex column gap-025">
-                    {sceneArtifactsLoading && colorCodingArtifacts.length === 0 && (
-                        <Container className="canvas-tree-item color-muted font-size-1 canvas-tree-item--indent">
-                            Loading...
-                        </Container>
-                    )}
-                    {!sceneArtifactsLoading && colorCodingArtifacts.length === 0 && (
-                        <Container className="canvas-tree-item color-muted font-size-1 canvas-tree-item--indent">
-                            No models generated
-                        </Container>
-                    )}
-                    {colorCodingArtifacts.map((artifact: SceneArtifact) => (
-                        <ContextMenuPopover
-                            key={artifact._id}
-                            id={`canvas-ctx-color-coding-${artifact._id}`}
-                            trigger={(
-                                <button
-                                    className={`canvas-tree-item canvas-tree-item--indent font-size-1 color-secondary cursor-pointer u-select-none ${isArtifactActive(artifact) ? 'selected' : ''}`}
-                                    onClick={() => {
-                                        const scene = toSceneObjectFromArtifact(artifact);
-                                        if (!scene) return;
-                                        onSelectScene(scene);
-                                    }}
-                                    type="button"
-                                >
-                                    <span className={`${isArtifactActive(artifact) ? 'color-primary' : 'color-secondary'}`}>
-                                        {artifact.displayName}
-                                    </span>
-                                </button>
-                            )}
-                            options={getArtifactMenuOptions(artifact)}
-                            size='sm'
-                        />
-                    ))}
-                </Container>
+                {renderColorCodingTreeSection()}
             </CollapsibleSection>
 
             <CollapsibleSection
@@ -406,41 +668,7 @@ const ObjectsPanel = ({
                 useDefaultHeaderStyles={false}
                 useDefaultTitleStyles={false}
             >
-                <Container className="canvas-tree-container d-flex column gap-025">
-                    {sceneArtifactsLoading && particleFilterArtifacts.length === 0 && (
-                        <Container className="canvas-tree-item color-muted font-size-1 canvas-tree-item--indent">
-                            Loading...
-                        </Container>
-                    )}
-                    {!sceneArtifactsLoading && particleFilterArtifacts.length === 0 && (
-                        <Container className="canvas-tree-item color-muted font-size-1 canvas-tree-item--indent">
-                            No models generated
-                        </Container>
-                    )}
-                    {particleFilterArtifacts.map((artifact: SceneArtifact) => (
-                        <ContextMenuPopover
-                            key={artifact._id}
-                            id={`canvas-ctx-particle-filter-${artifact._id}`}
-                            trigger={(
-                                <button
-                                    className={`canvas-tree-item canvas-tree-item--indent font-size-1 color-secondary cursor-pointer u-select-none ${isArtifactActive(artifact) ? 'selected' : ''}`}
-                                    onClick={() => {
-                                        const scene = toSceneObjectFromArtifact(artifact);
-                                        if (!scene) return;
-                                        onSelectScene(scene);
-                                    }}
-                                    type="button"
-                                >
-                                    <span className={`${isArtifactActive(artifact) ? 'color-primary' : 'color-secondary'}`}>
-                                        {artifact.displayName}
-                                    </span>
-                                </button>
-                            )}
-                            options={getArtifactMenuOptions(artifact)}
-                            size='sm'
-                        />
-                    ))}
-                </Container>
+                {renderParticleFilterTreeSection()}
             </CollapsibleSection>
         </Container>
     );

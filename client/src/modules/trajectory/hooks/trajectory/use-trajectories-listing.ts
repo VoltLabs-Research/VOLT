@@ -359,7 +359,7 @@ const useTrajectoriesListing = () => {
         }
 
         return {
-            activationDistance: 6,
+            activationDistance: 8,
             getDraggableId: getTrajectoryListingDraggableId,
             getDroppableId: getTrajectoryListingDroppableId,
             onDragEnd: handleTrajectoryRowDragEnd
@@ -381,6 +381,7 @@ const useTrajectoriesListing = () => {
         handleCreateFolder,
         handleDeleteCurrentFolder,
         handleItemClick,
+        handleMoveTrajectoryOpen,
         handleMoveTrajectoryClose,
         handleMoveTrajectorySubmit,
         handlePickerChange,

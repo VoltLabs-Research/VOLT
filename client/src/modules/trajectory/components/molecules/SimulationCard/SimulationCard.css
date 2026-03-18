@@ -1,4 +1,7 @@
 .simulation-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     overflow: hidden;
     background: var(--color-surface-1);
     box-shadow: var(--shadow-card);

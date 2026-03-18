@@ -1,7 +1,7 @@
 import { Resource } from '@core/constants/resources';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
-import { buildJupyterProxyUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
+import { buildJupyterProxyUrl, persistJupyterProxyAccessCookieFromUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import { ErrorCodes } from '@core/constants/error-codes';
 import scriptingControllers from '@modules/scripting/infrastructure/http/controllers';
@@ -33,6 +33,11 @@ interface ScriptingSessionStatusResponse {
         url: string;
         containerStage?: 'creating' | 'starting' | 'ready';
     };
+};
+
+interface DeleteScriptingSessionResponse {
+    notebookId: string;
+    deleted: boolean;
 };
 
 const normalizeRouteParam = (
@@ -175,7 +180,56 @@ const handleScriptingSessionStatus = async (
             req.userId
         );
 
+        if (status.jupyter.url) {
+            persistJupyterProxyAccessCookieFromUrl(res, status.jupyter.url);
+        }
+
         res.json({ status: 'success', data: status });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const handleDeleteScriptingSession = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const { teamId, notebookId } = getScriptingSessionStatusInput(req.params);
+        const notebook = await scriptingNotebookRepository.findByTeamAndNotebookId(teamId, notebookId);
+
+        if (!notebook) {
+            throw ApplicationError.notFound(
+                ErrorCodes.SCRIPTING_NOTEBOOK_NOT_FOUND,
+                'Notebook not found'
+            );
+        }
+
+        const runtimeNotebookId = notebook.props.runtimeNotebookId;
+        const teamClusterId = notebook.props.teamCluster;
+
+        if (runtimeNotebookId && teamClusterId) {
+            try {
+                await teamClusterDaemonClient.command(
+                    teamClusterId,
+                    'notebook.delete',
+                    { notebookId: runtimeNotebookId }
+                );
+            } catch {
+            }
+        }
+
+        await scriptingNotebookRepository.updateById(notebook.id, {
+            runtimeNotebookId: undefined
+        });
+
+        const response: DeleteScriptingSessionResponse = {
+            notebookId: notebook.id,
+            deleted: Boolean(runtimeNotebookId)
+        };
+
+        res.json({ status: 'success', data: response });
     } catch (error) {
         next(error);
     }
@@ -190,6 +244,7 @@ export default createHttpModule({
         router.patch('/notebooks/:notebookId', scriptingControllers.updateNotebook.handle);
         router.get('/:trajectoryId/notebooks', scriptingControllers.listNotebooks.handle);
         router.get('/sessions/:notebookId/status', handleScriptingSessionStatus);
+        router.delete('/sessions/:notebookId', handleDeleteScriptingSession);
         router.post('/sessions', scriptingControllers.createNotebookJupyterSession.handle);
         router.post('/:trajectoryId/sessions', scriptingControllers.createJupyterSession.handle);
         router.delete('/notebooks/:notebookId', scriptingControllers.deleteNotebook.handle);
