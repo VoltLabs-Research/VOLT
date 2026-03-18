@@ -147,10 +147,13 @@ export const readOptionalUnknownRecord = (value: unknown, fieldName: string): Re
 
 export const readPluginPropertyNamesRequest = (payload: unknown) => {
     const record = readOptionalPayloadRecord(payload);
+    const timestep = readOptionalNumber(record.timestep);
+
     return {
         trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
         analysisId: readString(record.analysisId, 'analysisId'),
-        exposureId: readString(record.exposureId, 'exposureId')
+        exposureId: readString(record.exposureId, 'exposureId'),
+        ...(typeof timestep === 'number' ? { timestep } : {})
     };
 };
 

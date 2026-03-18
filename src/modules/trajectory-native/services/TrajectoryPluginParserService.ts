@@ -36,6 +36,7 @@ export interface PluginPropertyNamesRequest {
     trajectoryId: string;
     analysisId: string;
     exposureId: string;
+    timestep?: number;
 }
 
 export interface PluginModifierAnalysisRequest {
@@ -99,31 +100,39 @@ export class TrajectoryPluginParserService {
     ) {}
 
     async discoverPerAtomPropertyNames(request: PluginPropertyNamesRequest): Promise<string[]> {
-        const { trajectoryId, analysisId, exposureId } = request;
-        const prefix = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/`;
-        let firstObjectName: string | null = null;
+        const { trajectoryId, analysisId, exposureId, timestep } = request;
+        let objectName: string | null = null;
 
-        const objects = await this.minioService.listObjects(ObjectBucketName.Plugins, prefix);
-        for (const objectName of objects) {
-            if (objectName.endsWith('.msgpack')) {
-                firstObjectName = objectName;
-                break;
+        if (typeof timestep === 'number') {
+            objectName = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, String(timestep));
+        } else {
+            const prefix = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/`;
+            const objects = await this.minioService.listObjects(ObjectBucketName.Plugins, prefix);
+
+            for (const candidateObjectName of objects) {
+                if (candidateObjectName.endsWith('.msgpack')) {
+                    objectName = candidateObjectName;
+                    break;
+                }
             }
         }
 
-        if (!firstObjectName) return [];
+        if (!objectName) return [];
 
-        const stream = await this.minioService.getObjectStream(ObjectBucketName.Plugins, firstObjectName);
+        try {
+            const stream = await this.minioService.getObjectStream(ObjectBucketName.Plugins, objectName);
 
-        // Selective decode: only keep 'per-atom-properties' key, discard everything else
-        let decoded: Record<string, unknown> | null = null;
-        for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
-            decoded = mergeSelectiveChunk(decoded, message, (key) => key === 'per-atom-properties');
+            let decoded: Record<string, unknown> | null = null;
+            for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
+                decoded = mergeSelectiveChunk(decoded, message, (key) => key === 'per-atom-properties');
+            }
+
+            if (!decoded) return [];
+
+            return this.extractPerAtomPropertyNames(decoded['per-atom-properties']);
+        } catch {
+            return [];
         }
-
-        if (!decoded) return [];
-
-        return this.extractPerAtomPropertyNames(decoded['per-atom-properties']);
     }
 
     async getModifierAnalysisData(request: PluginModifierAnalysisRequest): Promise<Record<string, unknown>[] | null> {
