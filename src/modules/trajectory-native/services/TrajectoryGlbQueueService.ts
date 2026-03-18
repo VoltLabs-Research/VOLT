@@ -112,14 +112,36 @@ export const createTrajectoryGlbQueueService = (
         const missingCount = input.frames.length - existingKeys.size;
 
         if (missingCount > 0) {
+            // List all objects under this trajectory prefix for diagnostic purposes
+            const prefix = `trajectory-${input.trajectoryId}/`;
+            let allKeysInPrefix: string[] = [];
+            try {
+                allKeysInPrefix = await minioService.listObjects(ObjectBucketName.Dumps, prefix);
+            } catch {
+                // Ignore listing errors
+            }
+
             logger.warn(
                 {
                     trajectoryId: input.trajectoryId,
                     totalFrames: input.frames.length,
                     missingDumps: missingCount,
-                    existingDumps: existingKeys.size
+                    existingDumps: existingKeys.size,
+                    requestedKeys: input.frames.map(f => f.objectKey),
+                    existingKeysVerified: [...existingKeys],
+                    allKeysInBucketPrefix: allKeysInPrefix,
+                    allKeysInBucketCount: allKeysInPrefix.length
                 },
-                'Some dump objects do not exist in S3 — skipping GLB enqueue for missing frames'
+                'DIAG: Some dump objects do not exist in S3 — skipping GLB enqueue for missing frames'
+            );
+        } else {
+            logger.info(
+                {
+                    trajectoryId: input.trajectoryId,
+                    totalFrames: input.frames.length,
+                    allExist: true
+                },
+                'DIAG: Pre-flight check passed — all dump objects verified in S3'
             );
         }
 

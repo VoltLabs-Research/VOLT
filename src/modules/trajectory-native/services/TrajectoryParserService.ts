@@ -228,6 +228,44 @@ export const createTrajectoryParserService = (
         );
 
         try {
+            // DIAG: Pre-download verification — check if object exists before attempting download
+            try {
+                const stat = await minioService.statObject(ObjectBucketName.Dumps, objectKey);
+                logger.info(
+                    {
+                        objectKey,
+                        bucket: ObjectBucketName.Dumps,
+                        minioSize: stat.size,
+                        timestep: input.timestep,
+                        trajectoryId: input.trajectoryId
+                    },
+                    'DIAG: Pre-download statObject succeeded — dump exists in MinIO'
+                );
+            } catch (statError: unknown) {
+                // List objects with the trajectory prefix to understand what IS in the bucket
+                const prefix = `trajectory-${input.trajectoryId}/`;
+                let existingKeys: string[] = [];
+                try {
+                    existingKeys = await minioService.listObjects(ObjectBucketName.Dumps, prefix, 20);
+                } catch {
+                    // Ignore listing errors
+                }
+
+                logger.error(
+                    {
+                        objectKey,
+                        bucket: ObjectBucketName.Dumps,
+                        timestep: input.timestep,
+                        trajectoryId: input.trajectoryId,
+                        prefix,
+                        existingKeysInPrefix: existingKeys,
+                        existingKeyCount: existingKeys.length,
+                        err: statError
+                    },
+                    'DIAG: Pre-download statObject FAILED — dump NOT found in MinIO before download attempt'
+                );
+            }
+
             const stream = await minioService.getObjectStream(ObjectBucketName.Dumps, objectKey);
             await pipeline(stream, zlib.createGunzip(), createWriteStream(tempDumpPath));
             const dumpStats = await fs.stat(tempDumpPath);

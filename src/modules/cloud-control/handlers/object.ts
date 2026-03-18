@@ -241,6 +241,22 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                 }
 
                 try {
+                    // Verify temp file size matches expected total before streaming
+                    const tempStats = await fsPromises.stat(transfer.tempPath);
+                    if (tempStats.size !== transfer.totalSize) {
+                        logger.error(
+                            {
+                                transferId,
+                                objectKey: transfer.objectKey,
+                                expectedSize: transfer.totalSize,
+                                actualFileSize: tempStats.size,
+                                receivedChunks: transfer.receivedCount,
+                                totalChunks: transfer.totalChunks
+                            },
+                            'DIAG: Temp file size mismatch before MinIO upload — data may be corrupted'
+                        );
+                    }
+
                     // Stream the spooled temp file directly to MinIO — no in-memory concat
                     await deps.minioService.putObjectStream({
                         bucket: transfer.bucket,
@@ -249,6 +265,46 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                         size: transfer.totalSize,
                         metadata: transfer.metadata
                     });
+
+                    // Post-write verification: confirm the object actually landed in MinIO
+                    try {
+                        const stat = await deps.minioService.statObject(transfer.bucket, transfer.objectKey);
+                        logger.info(
+                            {
+                                transferId,
+                                objectKey: transfer.objectKey,
+                                bucket: transfer.bucket,
+                                uploadedSize: transfer.totalSize,
+                                minioReportedSize: stat.size,
+                                sizeMatch: stat.size === transfer.totalSize
+                            },
+                            'DIAG: Post-write verification — object confirmed in MinIO'
+                        );
+
+                        if (stat.size !== transfer.totalSize) {
+                            logger.error(
+                                {
+                                    transferId,
+                                    objectKey: transfer.objectKey,
+                                    bucket: transfer.bucket,
+                                    uploadedSize: transfer.totalSize,
+                                    minioReportedSize: stat.size
+                                },
+                                'DIAG: Post-write size mismatch — MinIO object size differs from uploaded size'
+                            );
+                        }
+                    } catch (verifyError) {
+                        logger.error(
+                            {
+                                transferId,
+                                objectKey: transfer.objectKey,
+                                bucket: transfer.bucket,
+                                uploadedSize: transfer.totalSize,
+                                err: verifyError
+                            },
+                            'DIAG: Post-write verification FAILED — object NOT found in MinIO after putObjectStream succeeded'
+                        );
+                    }
                 } finally {
                     chunkedTransfers.delete(transferId);
                     await fsPromises.unlink(transfer.tempPath).catch(() => {});
