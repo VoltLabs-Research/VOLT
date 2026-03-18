@@ -1,12 +1,13 @@
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ExecutePluginInputDTO } from '@modules/plugin/application/dtos/plugin/ExecutePluginDTO';
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
-import { IPluginExecutionRouter } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
+import { IPluginExecutionRouter, StorageClusterMinioConfig } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { IWorkflowValidatorService, WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
 import PluginDisplayNameResolver from '@modules/plugin/utilities/plugin/PluginDisplayNameResolver';
 import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/services/plugin/PluginDependencyResolverService';
+import { TeamClusterRole } from '@modules/team-cluster/domain/entities/TeamCluster';
 
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
@@ -23,6 +24,7 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
 
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import type { ITeamClusterCredentialsCipher } from '@modules/team-cluster/domain/port/ITeamClusterCredentialsCipher';
 import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import type { WorkflowNode } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 
@@ -121,6 +123,9 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
         private readonly teamClusterRepository: ITeamClusterRepository,
 
+        @inject(TEAM_CLUSTER_TOKENS.TeamClusterCredentialsCipher)
+        private readonly teamClusterCredentialsCipher: ITeamClusterCredentialsCipher,
+
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private trajectoryRepo: ITrajectoryRepository,
 
@@ -195,6 +200,42 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
                 'TeamCluster::NotFound',
                 'Team cluster not found'
             ));
+        }
+
+        const clusterRole = teamCluster.props.role ?? TeamClusterRole.Cluster;
+        if (clusterRole === TeamClusterRole.StorageServer) {
+            return Result.fail(ApplicationError.badRequest(
+                'TeamCluster::CannotExecute',
+                'A StorageServer cluster cannot execute plugins. Choose a Cluster or ComputeNode.'
+            ));
+        }
+
+        let storageClusterId: string | undefined;
+        let storageClusterMinioConfig: StorageClusterMinioConfig | undefined;
+
+        if (clusterRole === TeamClusterRole.ComputeNode) {
+            const storageCluster = await this.teamClusterRepository.findStorageClusterForTeam(input.teamId);
+            if (!storageCluster) {
+                return Result.fail(ApplicationError.conflict(
+                    'TeamCluster::NoStorageCluster',
+                    'No connected storage cluster found for this team. A StorageServer or Cluster-role node is required.'
+                ));
+            }
+
+            storageClusterId = storageCluster.id;
+
+            const [minioUsername, minioPassword] = await Promise.all([
+                this.teamClusterCredentialsCipher.decrypt(storageCluster.props.services.minio.username!),
+                this.teamClusterCredentialsCipher.decrypt(storageCluster.props.services.minio.password!)
+            ]);
+
+            const configuredHost = process.env.TEAM_CLUSTER_PUBLIC_HOST?.trim();
+            storageClusterMinioConfig = {
+                host: configuredHost || `team-cluster-${storageCluster.id}`,
+                port: storageCluster.props.services.minio.port!,
+                username: minioUsername,
+                password: minioPassword
+            };
         }
 
         const pluginDisplayName = PluginDisplayNameResolver.resolve(plugin.props.workflow);
@@ -281,7 +322,9 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             config: analysisConfig,
             selectedFrameOnly: input.selectedFrameOnly,
             selectedTimesteps,
-            timestep: input.timestep
+            timestep: input.timestep,
+            storageClusterId,
+            storageClusterMinioConfig
         });
 
         return Result.ok({ analysisId: analysis.id });

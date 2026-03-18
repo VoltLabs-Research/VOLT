@@ -1,3 +1,9 @@
+export enum TeamClusterRole {
+    Cluster = 'Cluster',
+    ComputeNode = 'ComputeNode',
+    StorageServer = 'StorageServer'
+};
+
 export enum TeamClusterStatus {
     WaitingForConnection = 'waiting-for-connection',
     HealthcheckReceived = 'healthcheck-received',
@@ -42,6 +48,7 @@ export interface TeamClusterCredentialServices {
 export interface TeamCluster {
     _id: string;
     name: string;
+    role: TeamClusterRole;
     team: string;
     createdBy: string;
     status: TeamClusterStatus;

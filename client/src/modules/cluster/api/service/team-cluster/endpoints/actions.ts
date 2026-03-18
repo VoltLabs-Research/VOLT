@@ -29,6 +29,10 @@ import type {
     RevealTeamClusterCredentialsInputDTO,
     RevealTeamClusterCredentialsOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/reveal-team-cluster-credentials';
+import type {
+    UpdateTeamClusterRoleInputDTO,
+    UpdateTeamClusterRoleOutputDTO
+} from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-role';
 
 export default {
     deleteById: post<DeleteTeamClusterInputDTO, DeleteTeamClusterOutputDTO>('/:teamId/clusters/:teamClusterId/delete-requests'),
@@ -53,5 +57,8 @@ export default {
     ),
     regenerateEnrollmentToken: post<RegenerateTeamClusterEnrollmentTokenInputDTO, RegenerateTeamClusterEnrollmentTokenOutputDTO>(
         '/:teamId/clusters/:teamClusterId/enrollment-token/regenerate'
+    ),
+    updateRole: post<UpdateTeamClusterRoleInputDTO, UpdateTeamClusterRoleOutputDTO>(
+        '/:teamId/clusters/:teamClusterId/role'
     )
 };
