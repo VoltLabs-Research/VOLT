@@ -61,5 +61,10 @@ export default createHttpModule({
             teamClusterValidation.requestUpdate,
             controllers.requestUpdate.handle
         );
+        router.post(
+            '/:teamClusterId/role',
+            teamClusterValidation.updateRole,
+            controllers.updateRole.handle
+        );
     }
 });

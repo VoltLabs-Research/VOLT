@@ -12,6 +12,12 @@ export enum TeamClusterStatus {
     UpdateFailed = 'update-failed'
 };
 
+export enum TeamClusterRole {
+    Cluster = 'Cluster',
+    ComputeNode = 'ComputeNode',
+    StorageServer = 'StorageServer'
+};
+
 export interface TeamClusterServiceProps {
     port: number | null;
     username?: string;
@@ -32,6 +38,7 @@ export interface TeamClusterServicesProps {
 
 export interface TeamClusterProps {
     name: string;
+    role: TeamClusterRole;
     team: string;
     createdBy: string;
     status: TeamClusterStatus;

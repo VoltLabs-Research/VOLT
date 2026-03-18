@@ -2,12 +2,11 @@ import type { TeamUserScopedInputDTO } from '@modules/team/application/dtos/comm
 import type { TeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
 import type { TeamClusterRole } from '@modules/team-cluster/domain/entities/TeamCluster';
 
-export interface CreateTeamClusterInputDTO extends TeamUserScopedInputDTO {
-    name: string;
-    role?: TeamClusterRole;
+export interface UpdateTeamClusterRoleInputDTO extends TeamUserScopedInputDTO {
+    teamClusterId: string;
+    role: TeamClusterRole;
 };
 
-export interface CreateTeamClusterOutputDTO {
+export interface UpdateTeamClusterRoleOutputDTO {
     teamCluster: TeamClusterDTO;
-    enrollmentToken: string;
 };
