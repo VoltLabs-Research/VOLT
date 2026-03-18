@@ -249,11 +249,6 @@ export const routesConfig: RouteGroup = {
                     loader: () => import('@/modules/container/components/templates/ContainerDetailsRoutes/container-terminal-route')
                 },
                 {
-                    path: 'logs',
-                    title: 'Container Logs',
-                    loader: () => import('@/modules/container/components/templates/ContainerDetailsRoutes/container-logs-route')
-                },
-                {
                     path: 'storage',
                     title: 'Container Storage',
                     loader: () => import('@/modules/container/components/templates/ContainerDetailsRoutes/container-storage-route')

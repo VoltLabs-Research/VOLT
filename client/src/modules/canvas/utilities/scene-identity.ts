@@ -63,6 +63,14 @@ export const isSameScene = (left?: MaybeScene | null, right?: MaybeScene | null)
     return true;
 };
 
+export const isTimestepScopedScene = (scene?: MaybeScene | null): boolean => {
+    if (!scene) {
+        return false;
+    }
+
+    return scene.source === 'color-coding' || scene.source === 'particle-filter';
+};
+
 export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectType | null => {
     const analysisId = getArtifactAnalysisId(artifact.analysis);
 

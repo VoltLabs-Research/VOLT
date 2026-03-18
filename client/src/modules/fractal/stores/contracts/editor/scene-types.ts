@@ -62,6 +62,7 @@ export interface ModelActions {
     setModelBounds: (modelBounds: BoundsInfo | null) => void;
     setModelWorldBounds: (bounds: ModelWorldBounds | null) => void;
     setActiveScene: (scene: SceneObjectType) => void;
+    clearTimestepScopedScenes: () => void;
     addScene: (scene: SceneObjectType) => void;
     removeScene: (scene: SceneObjectType) => void;
     toggleScene: (scene: SceneObjectType) => void;

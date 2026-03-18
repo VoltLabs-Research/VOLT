@@ -6,7 +6,9 @@ import SubmenuItemWrapper from './SubmenuItemWrapper';
 import './ContextMenuPopover.css';
 import { useState } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
+
+type ContextMenuOpenPredicate = (event: MouseEvent<Element>) => boolean;
 
 interface ContextMenuPopoverProps {
     id: string;
@@ -14,6 +16,7 @@ interface ContextMenuPopoverProps {
     options?: MenuOption[];
     size?: 'sm' | 'md';
     triggerAction?: 'click' | 'contextmenu';
+    shouldOpenOnContextMenu?: ContextMenuOpenPredicate;
 };
 
 const ContextMenuPopover = ({
@@ -21,7 +24,8 @@ const ContextMenuPopover = ({
     trigger,
     options = [],
     size = 'md',
-    triggerAction = 'contextmenu'
+    triggerAction = 'contextmenu',
+    shouldOpenOnContextMenu
 }: ContextMenuPopoverProps) => {
     const [menuError, setMenuError] = useState<string | null>(null);
 
@@ -64,6 +68,7 @@ const ContextMenuPopover = ({
             role='menu'
             triggerAriaHaspopup='menu'
             ariaLabel='Context menu'
+            shouldOpenOnContextMenu={shouldOpenOnContextMenu}
             onOpenChange={(isOpen) => {
                 if (!isOpen) {
                     setMenuError(null);
