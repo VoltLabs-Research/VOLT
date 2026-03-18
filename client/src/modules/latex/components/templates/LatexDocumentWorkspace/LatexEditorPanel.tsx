@@ -2,6 +2,7 @@ import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Button from '@/shared/presentation/components/Button';
+import WarningZone from '@/shared/presentation/components/WarningZone';
 import { applyMonacoTheme, getMonacoThemeName } from '@/shared/presentation/utilities/ensure-monaco';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import Editor from '@monaco-editor/react';
@@ -21,8 +22,11 @@ interface LatexEditorPanelProps {
     files: LatexFileEntry[];
     assets: LatexAsset[];
     dirtyFileIds: string[];
+    hasPendingRemoteUpdate: boolean;
     content: string;
     onChange: (value: string | undefined) => void;
+    onApplyRemoteUpdate: () => void;
+    onDismissRemoteUpdate: () => void;
     onTabSelect: (tab: LatexWorkspaceTab) => void;
     onTabClose: (tab: LatexWorkspaceTab) => void;
 };
@@ -105,8 +109,11 @@ const LatexEditorPanel = ({
     files,
     assets,
     dirtyFileIds,
+    hasPendingRemoteUpdate,
     content,
     onChange,
+    onApplyRemoteUpdate,
+    onDismissRemoteUpdate,
     onTabSelect,
     onTabClose
 }: LatexEditorPanelProps) => {
@@ -350,6 +357,19 @@ const LatexEditorPanel = ({
                 <Container className='latex-editor-tabs__header d-flex items-center p-05'>
                     <Container className='latex-editor-tabs d-flex items-center gap-05 overflow-auto' role='tablist' aria-label='Open LaTeX files'>
                         {tabItems.map(renderTab)}
+                    </Container>
+                </Container>
+            )}
+            {activeFile && hasPendingRemoteUpdate && (
+                <Container className='d-flex items-center content-between gap-1 p-075'>
+                    <WarningZone message={`A collaborator updated ${activeFile.name}. Apply the remote version or keep editing your local draft.`} />
+                    <Container className='d-flex items-center gap-05'>
+                        <Button variant='ghost' intent='neutral' size='sm' onClick={onDismissRemoteUpdate}>
+                            Keep mine
+                        </Button>
+                        <Button variant='solid' intent='brand' size='sm' onClick={onApplyRemoteUpdate}>
+                            Apply remote
+                        </Button>
                     </Container>
                 </Container>
             )}

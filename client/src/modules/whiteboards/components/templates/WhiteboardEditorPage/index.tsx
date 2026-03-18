@@ -3,8 +3,10 @@ import useWhiteboardPresence from '@/modules/whiteboards/hooks/use-whiteboard-pr
 import useWhiteboardSync from '@/modules/whiteboards/hooks/use-whiteboard-sync';
 import { DASHBOARD_LAYOUT_EVENTS } from '@/modules/dashboard/utilities/layout-events';
 import { filterPersistableAppState } from '@/modules/whiteboards/utilities/whiteboards';
+import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
+import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import AIFloatingAssistantPanel from '@/modules/ai/components/organisms/AIFloatingAssistantPanel';
@@ -36,6 +38,7 @@ const WhiteboardEditorPage = () => {
         whiteboard,
         initialState,
         isLoading,
+        hasPendingLocalChanges,
         handleChange,
         generateIdForFile
     } = useWhiteboardEditor({ whiteboardId: whiteboardId! });
@@ -61,9 +64,15 @@ const WhiteboardEditorPage = () => {
         []
     );
 
-    const { sendDelta } = useWhiteboardSync({
+    const {
+        sendDelta,
+        hasPendingRemoteDelta,
+        applyPendingRemoteDelta,
+        dismissPendingRemoteDelta
+    } = useWhiteboardSync({
         whiteboardId,
         enabled: Boolean(whiteboardId),
+        hasPendingLocalChanges,
         onRemoteDelta: handleRemoteDelta
     });
 
@@ -100,10 +109,21 @@ const WhiteboardEditorPage = () => {
                         {collaboratorsLabel}
                     </div>
                 )}
+                {hasPendingRemoteDelta && (
+                    <div className='d-flex items-center gap-05'>
+                        <StatusBadge variant='warning' size='compact'>Remote update waiting</StatusBadge>
+                        <Button variant='ghost' intent='neutral' size='sm' onClick={dismissPendingRemoteDelta}>
+                            Keep mine
+                        </Button>
+                        <Button variant='solid' intent='brand' size='sm' onClick={applyPendingRemoteDelta}>
+                            Apply remote
+                        </Button>
+                    </div>
+                )}
                 <AIFloatingAssistantPanel />
             </div>
         );
-    }, [users]);
+    }, [applyPendingRemoteDelta, dismissPendingRemoteDelta, hasPendingRemoteDelta, users]);
 
     if (!whiteboardId) {
         return null;

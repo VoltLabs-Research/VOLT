@@ -7,6 +7,10 @@ import type { DeleteTeamInputDTO } from '../../../dtos/team/delete-team';
 import type { GenerateInviteCodeInputDTO } from '../../../dtos/team/generate-invite-code';
 import type { DeleteInviteCodeInputDTO } from '../../../dtos/team/delete-invite-code';
 import type { JoinByInviteCodeInputDTO, JoinByInviteCodeOutputDTO } from '../../../dtos/team/join-by-invite-code';
+import type {
+    PreviewJoinByInviteCodeInputDTO,
+    PreviewJoinByInviteCodeOutputDTO
+} from '../../../dtos/team/preview-join-by-invite-code';
 
 export default {
     getAll: get<EmptyParams, Team[]>('/'),
@@ -15,5 +19,6 @@ export default {
     delete: del<DeleteTeamInputDTO>('/:teamId'),
     generateInviteCode: post<GenerateInviteCodeInputDTO, Team>('/:teamId/invite-code'),
     deleteInviteCode: del<DeleteInviteCodeInputDTO>('/:teamId/invite-code'),
+    previewJoinByCode: post<PreviewJoinByInviteCodeInputDTO, PreviewJoinByInviteCodeOutputDTO>('/join/preview'),
     joinByCode: post<JoinByInviteCodeInputDTO, JoinByInviteCodeOutputDTO>('/join')
 };

@@ -26,6 +26,7 @@ import TeamMetricsQueryService from '@modules/trajectory/infrastructure/services
 import TrajectoryBackgroundProcessor from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryBackgroundProcessor';
 import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
 import TrajectoryReader from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryReader';
+import TrajectoryUploadStagingService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryUploadStagingService';
 import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 import CreateTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/CreateTrajectoryFolderUseCase';
 import DeleteTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/DeleteTrajectoryFolderUseCase';
@@ -53,6 +54,7 @@ export const registerTrajectoryDependencies = (): void => {
             [TRAJECTORY_TOKENS.CloudUploadQueueService, CloudUploadQueueService],
             [TRAJECTORY_TOKENS.TrajectoryNativeDaemonService, TrajectoryNativeDaemonService],
             [TRAJECTORY_TOKENS.TrajectoryDumpStorageService, TrajectoryDumpStorageService],
+            [TRAJECTORY_TOKENS.TrajectoryUploadStagingService, TrajectoryUploadStagingService],
             [TRAJECTORY_TOKENS.TrajectoryReader, TrajectoryReader],
             [TRAJECTORY_TOKENS.TrajectoryBackgroundProcessor, TrajectoryBackgroundProcessor],
             [TRAJECTORY_TOKENS.AtomPropertiesService, AtomPropertiesService],

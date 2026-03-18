@@ -34,16 +34,18 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
     const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { confirm } = useConfirm();
 
-    const { nodes, updateNodeData, selectedNode, selectNode, deleteNode, addNode, undo, redo } = usePluginBuilderStore(
+    const { nodes, edges, updateNodeData, selectedNode, selectNode, deleteNode, addNode, undo, redo, getWorkflow } = usePluginBuilderStore(
         useShallow((state) => ({
             nodes: state.nodes,
+            edges: state.edges,
             updateNodeData: state.updateNodeData,
             selectedNode: state.selectedNode,
             selectNode: state.selectNode,
             deleteNode: state.deleteNode,
             addNode: state.addNode,
             undo: state.undo,
-            redo: state.redo
+            redo: state.redo,
+            getWorkflow: state.getWorkflow
         }))
     );
 
@@ -118,6 +120,10 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
     useKeyboardShortcut('z', handleUndo, { ctrl: true });
     useKeyboardShortcut('z', handleRedo, { ctrl: true, shift: true });
 
+    const workflowFingerprint = useMemo(() => {
+        return JSON.stringify(getWorkflow());
+    }, [edges, getWorkflow, nodes]);
+
     const isFirstRender = useRef(true);
     useEffect(() => {
         if (isFirstRender.current) {
@@ -125,7 +131,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             return;
         }
         setHasUnsavedChanges(true);
-    }, [nodes.length]);
+    }, [workflowFingerprint]);
 
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {

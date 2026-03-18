@@ -62,6 +62,7 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     const fullSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const titleRef = useRef<string | null>(null);
     const titleSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [hasPendingLocalChanges, setHasPendingLocalChanges] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -127,6 +128,10 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     const saveState = useCallback(async (state: WhiteboardState) => {
         try {
             await service.saveWhiteboardState({ whiteboardId, state });
+            if (pendingStateRef.current === state) {
+                pendingStateRef.current = null;
+                setHasPendingLocalChanges(false);
+            }
         } catch {
             sileo.error({ title: 'Auto-save failed' });
         }
@@ -137,12 +142,14 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
             elements,
             appState: filterPersistableAppState(appState)
         };
+        setHasPendingLocalChanges(true);
 
         if (saveTimerRef.current) {
             clearTimeout(saveTimerRef.current);
         }
 
         saveTimerRef.current = setTimeout(() => {
+            saveTimerRef.current = null;
             const state = pendingStateRef.current;
             if (state) {
                 saveState(state);
@@ -208,6 +215,7 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
         whiteboard,
         initialState,
         isLoading,
+        hasPendingLocalChanges,
         handleChange,
         generateIdForFile
     };

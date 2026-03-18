@@ -7,4 +7,5 @@ export * from './trajectory/ITrajectoryBackgroundProcessor';
 export * from './trajectory/ITrajectoryDumpStorageService';
 export * from './trajectory/ITrajectoryReader';
 export * from './trajectory/ITrajectoryRepository';
+export * from './trajectory/ITrajectoryUploadStagingService';
 export * from './trajectory/ParserTypes';

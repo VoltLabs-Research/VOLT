@@ -28,6 +28,7 @@ interface ModalProps {
     className?: string;
     width?: string;
     onClose?: () => void;
+    dismissible?: boolean;
 };
 
 const COARSE_POINTER_MEDIA_QUERY = '(pointer: coarse)';
@@ -88,7 +89,8 @@ const Modal = ({
     footer,
     className = '',
     width,
-    onClose
+    onClose,
+    dismissible = true
 }: ModalProps) => {
     const [dialogElement, setDialogElement] = useState<HTMLDialogElement | null>(null);
     const restoreFocusElementRef = useRef<HTMLElement | null>(null);
@@ -147,6 +149,10 @@ const Modal = ({
     }, [dialogElement]);
 
     const handleBackdropClick = (event: React.MouseEvent<HTMLDialogElement>) => {
+        if (!dismissible) {
+            return;
+        }
+
         const dialog = event.currentTarget;
         const rect = dialog.getBoundingClientRect();
         const isInDialog = (
@@ -158,6 +164,12 @@ const Modal = ({
 
         if (!isInDialog) {
             dialog.close();
+        }
+    };
+
+    const handleCancel = (event: React.SyntheticEvent<HTMLDialogElement>) => {
+        if (!dismissible) {
+            event.preventDefault();
         }
     };
 
@@ -179,6 +191,7 @@ const Modal = ({
                 className={`volt-modal ${className}`}
                 style={width ? { maxWidth: width } : undefined}
                 onClick={handleBackdropClick}
+                onCancel={handleCancel}
                 onClose={onClose}
                 aria-modal='true'
                 aria-labelledby={titleId}
@@ -193,11 +206,13 @@ const Modal = ({
                                     {title && <Title id={titleId} className='font-size-4 font-weight-6'>{title}</Title>}
                                     {description && <Paragraph id={descriptionId} className='font-size-2 color-secondary'>{description}</Paragraph>}
                                 </Container>
-                                <CloseButton
-                                    commandfor={id}
-                                    command='close'
-                                    aria-label='Close modal'
-                                />
+                                {dismissible && (
+                                    <CloseButton
+                                        commandfor={id}
+                                        command='close'
+                                        aria-label='Close modal'
+                                    />
+                                )}
                             </Container>
                         )}
 

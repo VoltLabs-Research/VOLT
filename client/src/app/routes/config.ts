@@ -14,6 +14,7 @@ import ContainerDetailsLayout from '@/modules/container/components/templates/Con
 import ContainerOverviewPage from '@/modules/container/components/templates/ContainerDetailsRoutes/container-overview-route';
 import ContainerProcessesPage from '@/modules/container/components/templates/ContainerDetailsRoutes/container-processes-route';
 import ContainerRemoteDesktopPage from '@/modules/container/components/templates/ContainerDetailsRoutes/container-remote-desktop-route';
+import ContainerLogsPage from '@/modules/container/components/templates/ContainerDetailsRoutes/container-logs-route';
 import ContainerStoragePage from '@/modules/container/components/templates/ContainerDetailsRoutes/container-storage-route';
 import ContainerTerminalPage from '@/modules/container/components/templates/ContainerDetailsRoutes/container-terminal-route';
 import ContainersListing from '@/modules/container/components/templates/ContainersListing';
@@ -253,7 +254,7 @@ export const routesConfig: RouteGroup = {
                 { path: 'overview', title: 'Container Overview', component: ContainerOverviewPage, index: true },
                 { path: 'processes', title: 'Container Processes', component: ContainerProcessesPage },
                 { path: 'terminal', title: 'Container Terminal', component: ContainerTerminalPage },
-                { path: 'logs', title: 'Container Logs', component: ContainerTerminalPage },
+                { path: 'logs', title: 'Container Logs', component: ContainerLogsPage },
                 { path: 'storage', title: 'Container Storage', component: ContainerStoragePage },
                 { path: 'remote-desktop', title: 'Container Remote Desktop', component: ContainerRemoteDesktopPage }
             ]
