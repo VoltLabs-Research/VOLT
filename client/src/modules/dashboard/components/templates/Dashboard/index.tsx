@@ -23,11 +23,16 @@ import Title from '@/shared/presentation/components/Title';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import './Dashboard.css';
-import { useMemo } from 'react';
 import { FlaskConical, Puzzle } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 import { HiOutlineServerStack } from 'react-icons/hi2';
 import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/api/entities/dashboard';
-import type { ReactNode } from 'react';
+import type { FocusEventHandler, PointerEventHandler, ReactNode } from 'react';
+
+enum DashboardBottomPanel {
+    Jobs = 'jobs',
+    Analyses = 'analyses'
+};
 
 const CARD_ICONS: Record<string, ReactNode> = {
     trajectories: <HiOutlineServerStack size={16} />,
@@ -46,12 +51,30 @@ const getGreeting = (): string => {
     return 'Good Night';
 };
 
+const getSharedPanelStateClassName = (
+    activePanel: DashboardBottomPanel | null,
+    panel: DashboardBottomPanel
+): string => {
+    if (activePanel === null) {
+        return '';
+    }
+
+    if (activePanel === panel) {
+        return 'dashboard-shared-panel--expanded';
+    }
+
+    return 'dashboard-shared-panel--collapsed';
+};
+
 const DashboardPage = () => {
     usePageTitle('Dashboard');
 
     const selectedTeam = useSelectedTeam();
     const user = useCurrentUser();
     const { loading, error, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam?._id);
+    const sharedPanelsRef = useRef<HTMLDivElement | null>(null);
+    const [hoveredPanel, setHoveredPanel] = useState<DashboardBottomPanel | null>(null);
+    const [focusedPanel, setFocusedPanel] = useState<DashboardBottomPanel | null>(null);
 
     useTip('dashboard-drag-upload', {
         enabled: Boolean(selectedTeam)
@@ -69,6 +92,55 @@ const DashboardPage = () => {
             day: 'numeric'
         });
     }, []);
+    const activePanel = focusedPanel ?? hoveredPanel;
+    const jobsPanelClassName = useMemo(() => {
+        return getSharedPanelStateClassName(activePanel, DashboardBottomPanel.Jobs);
+    }, [activePanel]);
+    const analysesPanelClassName = useMemo(() => {
+        return getSharedPanelStateClassName(activePanel, DashboardBottomPanel.Analyses);
+    }, [activePanel]);
+
+    const handleSharedPanelsPointerLeave: PointerEventHandler<HTMLDivElement> = (event) => {
+        if (event.pointerType !== 'mouse') {
+            return;
+        }
+
+        setHoveredPanel(null);
+    };
+
+    const handleJobsPanelPointerEnter: PointerEventHandler<HTMLDivElement> = (event) => {
+        if (event.pointerType !== 'mouse') {
+            return;
+        }
+
+        setHoveredPanel(DashboardBottomPanel.Jobs);
+    };
+
+    const handleAnalysesPanelPointerEnter: PointerEventHandler<HTMLDivElement> = (event) => {
+        if (event.pointerType !== 'mouse') {
+            return;
+        }
+
+        setHoveredPanel(DashboardBottomPanel.Analyses);
+    };
+
+    const handleJobsPanelFocusCapture: FocusEventHandler<HTMLDivElement> = () => {
+        setFocusedPanel(DashboardBottomPanel.Jobs);
+    };
+
+    const handleAnalysesPanelFocusCapture: FocusEventHandler<HTMLDivElement> = () => {
+        setFocusedPanel(DashboardBottomPanel.Analyses);
+    };
+
+    const handleSharedPanelsBlurCapture: FocusEventHandler<HTMLDivElement> = (event) => {
+        const nextTarget = event.relatedTarget;
+        if (nextTarget instanceof Node && sharedPanelsRef.current?.contains(nextTarget)) {
+            return;
+        }
+
+        setFocusedPanel(null);
+    };
+
     let statCards = cards.map((card: DashboardMetricsCard, index: number) => (
         <DashboardOverviewCard
             key={`${card.key}-${index}`}
@@ -159,29 +231,46 @@ const DashboardPage = () => {
                 <Container className='dashboard-bottom-row'>
                     <DashboardPreviewCard />
 
-                    <Container className='dashboard-bottom-sidebar'>
-                        <DashboardCard className='dashboard-jobs-card d-flex column flex-1 min-h-0' overflowHidden={true}>
+                    <Container
+                        ref={sharedPanelsRef}
+                        className='dashboard-bottom-sidebar'
+                        onPointerLeave={handleSharedPanelsPointerLeave}
+                        onBlurCapture={handleSharedPanelsBlurCapture}
+                    >
+                        <DashboardCard
+                            className={`dashboard-jobs-card dashboard-shared-panel d-flex column flex-1 min-h-0 ${jobsPanelClassName}`.trim()}
+                            overflowHidden={true}
+                            onPointerEnter={handleJobsPanelPointerEnter}
+                            onFocusCapture={handleJobsPanelFocusCapture}
+                        >
                             <Container className='d-flex items-center content-between w-max dashboard-jobs-card-header'>
                                 <Title className='font-size-2 color-primary font-weight-6'>
                                     Jobs History
                                 </Title>
                             </Container>
-                            <JobsHistoryViewer
-                                variant='embedded'
-                                displayMode='full'
-                                hideAfterComplete={false}
-                                emptyState={(
-                                    <EmptyState
-                                        icon={<HiOutlineServerStack size={20} />}
-                                        title='No jobs yet'
-                                        description='Start a simulation or analysis to see activity here.'
-                                        className='flex-1 dashboard-jobs-empty-state'
-                                    />
-                                )}
-                            />
+                            <Container className='dashboard-jobs-card-body dashboard-shared-panel-body d-flex column flex-1 min-h-0'>
+                                <JobsHistoryViewer
+                                    variant='embedded'
+                                    displayMode='full'
+                                    hideAfterComplete={false}
+                                    emptyState={(
+                                        <EmptyState
+                                            icon={<HiOutlineServerStack size={20} />}
+                                            title='No jobs yet'
+                                            description='Start a simulation or analysis to see activity here.'
+                                            className='flex-1 dashboard-jobs-empty-state'
+                                        />
+                                    )}
+                                />
+                            </Container>
                         </DashboardCard>
 
-                        <DashboardRecentAnalyses />
+                        <DashboardRecentAnalyses
+                            className={`dashboard-shared-panel ${analysesPanelClassName}`.trim()}
+                            bodyClassName='dashboard-shared-panel-body'
+                            onPointerEnter={handleAnalysesPanelPointerEnter}
+                            onFocusCapture={handleAnalysesPanelFocusCapture}
+                        />
                     </Container>
                 </Container>
 

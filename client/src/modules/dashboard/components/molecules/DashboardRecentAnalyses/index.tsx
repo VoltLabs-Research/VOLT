@@ -10,9 +10,33 @@ import Title from '@/shared/presentation/components/Title';
 import { Skeleton } from '@mui/material';
 import { FlaskConical } from 'lucide-react';
 import { GoArrowRight } from 'react-icons/go';
+import type { FocusEventHandler, PointerEventHandler } from 'react';
 
-const DashboardRecentAnalyses = () => {
+interface DashboardRecentAnalysesProps {
+    className?: string;
+    bodyClassName?: string;
+    onPointerEnter?: PointerEventHandler<HTMLDivElement>;
+    onFocusCapture?: FocusEventHandler<HTMLDivElement>;
+};
+
+const DashboardRecentAnalyses = ({
+    className = '',
+    bodyClassName = '',
+    onPointerEnter,
+    onFocusCapture
+}: DashboardRecentAnalysesProps) => {
     const { accessDenied, accessDeniedMessage, error, isLoading, items, openAll, openAnalysis, refresh } = useDashboardRecentAnalyses();
+    const cardClassName = ['dashboard-recent-analyses', 'd-flex', 'column', 'flex-1', 'min-h-0'];
+    const listClassName = ['dashboard-recent-analyses-list', 'd-flex', 'column', 'flex-1', 'y-auto', 'gap-1', 'min-h-0'];
+
+    if (className) {
+        cardClassName.push(className);
+    }
+
+    if (bodyClassName) {
+        listClassName.push(bodyClassName);
+    }
+
     let content = items.map((item) => (
         <Button
             key={item.id}
@@ -81,7 +105,12 @@ const DashboardRecentAnalyses = () => {
     }
 
     return (
-        <DashboardCard className='dashboard-recent-analyses d-flex column flex-1 min-h-0' overflowHidden={true}>
+        <DashboardCard
+            className={cardClassName.join(' ')}
+            overflowHidden={true}
+            onPointerEnter={onPointerEnter}
+            onFocusCapture={onFocusCapture}
+        >
             <Container className='dashboard-recent-analyses-header d-flex items-center content-between w-max'>
                 <Title className='font-size-2 color-primary font-weight-6'>
                     Recent Analyses
@@ -98,7 +127,7 @@ const DashboardRecentAnalyses = () => {
                 </Button>
             </Container>
 
-            <Container className='dashboard-recent-analyses-list d-flex column flex-1 y-auto gap-1 min-h-0'>
+            <Container className={listClassName.join(' ')}>
                 {content}
             </Container>
         </DashboardCard>
