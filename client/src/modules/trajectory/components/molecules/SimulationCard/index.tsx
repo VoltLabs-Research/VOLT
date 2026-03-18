@@ -6,36 +6,25 @@ import Container from '@/shared/presentation/components/Container';
 import SimulationCardFooter from '../../atoms/SimulationCardFooter';
 import SimulationCardHeader from '../../atoms/SimulationCardHeader';
 import SimulationCardUsers from '../../atoms/SimulationCardUsers';
-import React, { useCallback, useRef } from 'react';
 import { PiAtomThin } from 'react-icons/pi';
 import { useNavigate } from 'react-router-dom';
+import type { KeyboardEvent, MouseEvent } from 'react';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import './SimulationCard.css';
 
-const CARD_DRAG_INTENT_DISTANCE = 8;
-const INTERACTIVE_CARD_TARGET_SELECTOR = [
-    'a[href]',
-    'button',
-    'input',
-    'select',
-    'textarea',
-    '[contenteditable="true"]',
-    '[contenteditable=""]',
+const NON_NAVIGABLE_CARD_TARGET_SELECTOR = [
+    '.footer-options-btn',
     '[data-popover-trigger]',
-    '[data-interactive-card-control="true"]'
+    '[data-interactive-card-control="true"]',
+    '.simulation-card-title'
 ].join(', ');
 
-const isCardInteractiveTarget = (target: EventTarget | null, currentTarget: EventTarget | null): boolean => {
+const shouldSkipCardNavigation = (target: EventTarget | null): boolean => {
     if (!(target instanceof Element)) {
         return false;
     }
 
-    const interactiveElement = target.closest(INTERACTIVE_CARD_TARGET_SELECTOR);
-    if (!interactiveElement) {
-        return false;
-    }
-
-    return interactiveElement !== currentTarget;
+    return target.closest(NON_NAVIGABLE_CARD_TARGET_SELECTOR) !== null;
 };
 
 interface SimulationCardProps {
@@ -50,14 +39,12 @@ interface SimulationCardProps {
 export default function SimulationCard({
     trajectory,
     isSelected,
-    onSelect,
+    onSelect: _onSelect,
     onMoveToFolder,
     onDelete,
     disablePrimaryInteraction = false
 }: SimulationCardProps) {
     const navigate = useNavigate();
-    const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
-    const didDragRef = useRef(false);
     const createdBy = typeof trajectory.createdBy === 'object' ? trajectory.createdBy : null;
     const completedRasterTrajectoryIds = useTeamJobsStore((state) => state.completedRasterTrajectoryIds);
     const hasRasterPreviewReadySignal = completedRasterTrajectoryIds.has(trajectory._id);
@@ -83,55 +70,16 @@ export default function SimulationCard({
         isSelected && 'is-selected'
     );
 
-    const resetPointerIntent = useCallback(() => {
-        pointerStartRef.current = null;
-        didDragRef.current = false;
-    }, []);
-
-    const handlePointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
-        if (!event.isPrimary || event.button !== 0) {
-            resetPointerIntent();
-            return;
-        }
-
-        pointerStartRef.current = {
-            x: event.clientX,
-            y: event.clientY
-        };
-        didDragRef.current = false;
-    }, [resetPointerIntent]);
-
-    const handlePointerMove = useCallback((event: React.PointerEvent<HTMLElement>) => {
-        if (!pointerStartRef.current) {
-            return;
-        }
-
-        const distanceX = Math.abs(event.clientX - pointerStartRef.current.x);
-        const distanceY = Math.abs(event.clientY - pointerStartRef.current.y);
-        if (distanceX >= CARD_DRAG_INTENT_DISTANCE || distanceY >= CARD_DRAG_INTENT_DISTANCE) {
-            didDragRef.current = true;
-        }
-    }, []);
-
-    const handleClick = useCallback((event: React.MouseEvent) => {
-        const isInteractiveTarget = isCardInteractiveTarget(event.target, event.currentTarget);
-        const shouldSuppressClick = didDragRef.current;
-        resetPointerIntent();
-
-        if (isInteractiveTarget || shouldSuppressClick) {
-            return;
-        }
-
-        if (event.metaKey || event.ctrlKey) {
-            onSelect(trajectory._id);
+    const handleClick = (event: MouseEvent<HTMLElement>): void => {
+        if (shouldSkipCardNavigation(event.target)) {
             return;
         }
 
         navigate(canvasPath);
-    }, [canvasPath, navigate, onSelect, resetPointerIntent, trajectory._id]);
+    };
 
-    const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLElement>) => {
-        if (isCardInteractiveTarget(event.target, event.currentTarget)) {
+    const handleKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
+        if (shouldSkipCardNavigation(event.target)) {
             return;
         }
 
@@ -140,23 +88,14 @@ export default function SimulationCard({
         }
 
         event.preventDefault();
-
-        if (event.metaKey || event.ctrlKey) {
-            onSelect(trajectory._id);
-            return;
-        }
-
         navigate(canvasPath);
-    }, [canvasPath, navigate, onSelect, trajectory._id]);
+    };
 
     return (
         <article
             className={containerClass}
             onClick={disablePrimaryInteraction ? undefined : handleClick}
             onKeyDown={disablePrimaryInteraction ? undefined : handleKeyDown}
-            onPointerDown={disablePrimaryInteraction ? undefined : handlePointerDown}
-            onPointerMove={disablePrimaryInteraction ? undefined : handlePointerMove}
-            onPointerCancel={disablePrimaryInteraction ? undefined : resetPointerIntent}
             tabIndex={disablePrimaryInteraction ? undefined : 0}
             role={disablePrimaryInteraction ? undefined : 'link'}
             aria-label={disablePrimaryInteraction ? undefined : cardAriaLabel}

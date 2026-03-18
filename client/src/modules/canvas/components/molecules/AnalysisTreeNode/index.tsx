@@ -180,10 +180,16 @@ const AnalysisTreeNode = ({
         </Container>
     );
 
-    const analysisTriggerWithContextMenu = isRasterSelectionMode ? analysisTrigger : (
+    const analysisTriggerWithTooltip = (
+        <Tooltip content={tooltipContent} disabled={!tooltipContent} placement='right-start' className='canvas-tree-config-tooltip'>
+            {analysisTrigger}
+        </Tooltip>
+    );
+
+    const analysisTriggerWithContextMenu = isRasterSelectionMode ? analysisTriggerWithTooltip : (
         <ContextMenuPopover
             id={`canvas-ctx-analysis-${analysis._id}`}
-            trigger={analysisTrigger}
+            trigger={<Container>{analysisTriggerWithTooltip}</Container>}
             options={analysisMenuOptions}
             size='sm'
         />
@@ -191,9 +197,7 @@ const AnalysisTreeNode = ({
 
     return (
         <>
-            <Tooltip content={tooltipContent} disabled={!tooltipContent} placement='right-start' className='canvas-tree-config-tooltip'>
-                {analysisTriggerWithContextMenu}
-            </Tooltip>
+            {analysisTriggerWithContextMenu}
 
             {isExpanded && isLoading && (
                 <Container className="canvas-tree-item d-flex items-center gap-05 color-secondary canvas-tree-item--indent-lg">
