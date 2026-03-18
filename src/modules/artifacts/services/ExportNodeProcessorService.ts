@@ -906,7 +906,7 @@ const buildChartDataset = (
 };
 
 export interface ExportNodeProcessorService {
-    process(input: ExportExecutionInput, minio: MinioService): Promise<void>;
+    process(input: ExportExecutionInput): Promise<void>;
 };
 
 export const createExportNodeProcessorService = (
@@ -914,14 +914,14 @@ export const createExportNodeProcessorService = (
     nativeModuleLoader: NativeModuleLoader,
     daemonArtifactReporterService: DaemonArtifactReporterService
 ): ExportNodeProcessorService => {
-    const exportAtomistic = async (exportData: Record<string, unknown>, objectPath: string, minio: MinioService): Promise<void> => {
+    const exportAtomistic = async (exportData: Record<string, unknown>, objectPath: string): Promise<void> => {
         const { positions, colors, min, max } = await buildPointCloudDataDirect(exportData);
         const buffer = nativeModuleLoader.getExporterModule().generatePointCloudGLB(positions, colors, min, max);
 
-        await uploadBuffer(minio, ObjectBucketName.Models, objectPath, buffer, 'model/gltf-binary');
+        await uploadBuffer(minioService, ObjectBucketName.Models, objectPath, buffer, 'model/gltf-binary');
     };
 
-    const exportMesh = async (exportData: Record<string, unknown>, objectPath: string, options: MeshExportOptions, minio: MinioService): Promise<void> => {
+    const exportMesh = async (exportData: Record<string, unknown>, objectPath: string, options: MeshExportOptions): Promise<void> => {
         const mesh = normalizeMesh(exportData);
         const material = resolveMaterial(options.material, options.enableDoubleSided);
         const processed = processMesh(mesh, options.smoothIterations);
@@ -935,7 +935,7 @@ export const createExportNodeProcessorService = (
             material
         );
 
-        await uploadBuffer(minio, ObjectBucketName.Models, objectPath, buffer, 'model/gltf-binary');
+        await uploadBuffer(minioService, ObjectBucketName.Models, objectPath, buffer, 'model/gltf-binary');
     };
 
     const processMesh = (mesh: MeshInput, smoothIterations?: number): {
@@ -1004,7 +1004,7 @@ export const createExportNodeProcessorService = (
         return { positions, normals, indices, bounds };
     };
 
-    const exportDislocation = async (exportData: Record<string, unknown>, objectPath: string, options: DislocationExportOptions, minio: MinioService): Promise<void> => {
+    const exportDislocation = async (exportData: Record<string, unknown>, objectPath: string, options: DislocationExportOptions): Promise<void> => {
         const opts: Required<DislocationExportOptions> = {
             lineWidth: options.lineWidth ?? 0.08,
             tubularSegments: options.tubularSegments ?? 12,
@@ -1046,10 +1046,10 @@ export const createExportNodeProcessorService = (
             }
         );
 
-        await uploadBuffer(minio, ObjectBucketName.Models, objectPath, buffer, 'model/gltf-binary');
+        await uploadBuffer(minioService, ObjectBucketName.Models, objectPath, buffer, 'model/gltf-binary');
     };
 
-    const exportChart = async (decodedPayload: Record<string, unknown>, objectPath: string, options: ChartExportOptions, minio: MinioService): Promise<void> => {
+    const exportChart = async (decodedPayload: Record<string, unknown>, objectPath: string, options: ChartExportOptions): Promise<void> => {
         const width = options.width || 1200;
         const height = options.height || 800;
         const chartCanvas = new ChartJSNodeCanvas({
@@ -1113,7 +1113,7 @@ export const createExportNodeProcessorService = (
         };
         const buffer = await chartCanvas.renderToBuffer(chartConfiguration);
 
-        await uploadBuffer(minio, ObjectBucketName.Plugins, objectPath, buffer, 'image/png');
+        await uploadBuffer(minioService, ObjectBucketName.Plugins, objectPath, buffer, 'image/png');
     };
 
     /**
@@ -1199,7 +1199,7 @@ export const createExportNodeProcessorService = (
     };
 
     return {
-        async process(input, minio: MinioService) {
+        async process(input) {
             const exportConfig = input.exposure.export;
             if (!exportConfig) {
                 return;
@@ -1211,7 +1211,7 @@ export const createExportNodeProcessorService = (
             // ChartExporter operates on the full decoded payload, not the export key — handle separately
             if (exporter === 'ChartExporter') {
                 const objectPath = buildObjectPath(input, exporter, exportConfig.type);
-                await exportChart(input.decodedPayload, objectPath, options as unknown as ChartExportOptions, minio);
+                await exportChart(input.decodedPayload, objectPath, options as unknown as ChartExportOptions);
                 return;
             }
 
@@ -1225,13 +1225,13 @@ export const createExportNodeProcessorService = (
 
                 switch (exporter) {
                     case 'AtomisticExporter':
-                        await exportAtomistic(exportData, objectPath, minio);
+                        await exportAtomistic(exportData, objectPath);
                         break;
                     case 'MeshExporter':
-                        await exportMesh(exportData, objectPath, options as MeshExportOptions, minio);
+                        await exportMesh(exportData, objectPath, options as MeshExportOptions);
                         break;
                     case 'DislocationExporter':
-                        await exportDislocation(exportData, objectPath, options as DislocationExportOptions, minio);
+                        await exportDislocation(exportData, objectPath, options as DislocationExportOptions);
                         break;
                     default:
                         logger.warn({ exporter }, 'Unsupported export node exporter on daemon');

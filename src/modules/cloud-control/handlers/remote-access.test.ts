@@ -99,13 +99,7 @@ class TestMinioService extends MinioService {
     constructor(
         private readonly objectKeysByPrefix: Map<string, string[]> = new Map()
     ) {
-        super({
-            endpoint: TEST_CONFIG.minio.endpoint,
-            accessKey: TEST_CONFIG.minio.accessKey,
-            secretKey: TEST_CONFIG.minio.secretKey,
-            useSSL: TEST_CONFIG.minio.useSSL,
-            allowedBuckets: TEST_CONFIG.allowedBuckets
-        });
+        super(TEST_CONFIG);
     }
 
     override listBuckets(): string[] {
