@@ -14,9 +14,7 @@ import './SimulationCard.css';
 
 const NON_NAVIGABLE_CARD_TARGET_SELECTOR = [
     '.footer-options-btn',
-    '[data-popover-trigger]',
-    '[data-interactive-card-control="true"]',
-    '.simulation-card-title'
+    '[data-popover-trigger^="simulation-card-popover-"]'
 ].join(', ');
 
 const shouldSkipCardNavigation = (target: EventTarget | null): boolean => {
@@ -71,7 +69,9 @@ export default function SimulationCard({
     );
 
     const handleClick = (event: MouseEvent<HTMLElement>): void => {
-        if (shouldSkipCardNavigation(event.target)) {
+        const shouldSkipNavigation = shouldSkipCardNavigation(event.target);
+
+        if (shouldSkipNavigation) {
             return;
         }
 

@@ -8,6 +8,7 @@ interface EditableTagProps {
     children: React.ReactNode;
     className?: string;
     title?: string;
+    allowSingleClickPropagation?: boolean;
 };
 
 const getTextValue = (children: React.ReactNode): string => {
@@ -18,7 +19,7 @@ const getTextValue = (children: React.ReactNode): string => {
     return '';
 };
 
-const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: Tag, onSave, children, className, title }, ref) => {
+const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: Tag, onSave, children, className, title, allowSingleClickPropagation = false }, ref) => {
     const [isEditing, setIsEditing] = useState(false);
     const elementRef = useRef<HTMLElement>(null);
     const textValue = useMemo(() => getTextValue(children), [children]);
@@ -53,11 +54,19 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
         setIsEditing(true);
     };
 
-    const stopPropagation = (event: React.MouseEvent<HTMLElement>): void => {
+    const handleClick = (event: React.MouseEvent<HTMLElement>): void => {
+        if (allowSingleClickPropagation && !isEditing) {
+            return;
+        }
+
         event.stopPropagation();
     };
 
     const handleDoubleClick = (event: React.MouseEvent<HTMLElement>): void => {
+        if (allowSingleClickPropagation) {
+            return;
+        }
+
         event.stopPropagation();
         enableEditing();
     };
@@ -114,8 +123,8 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
             className: `editable-tag ${className || ''} ${isEditing ? 'is-editing radius-xs' : 'editable-tag--interactive radius-xs'}`.trim(),
             contentEditable: isEditing,
             tabIndex: isEditing ? -1 : 0,
-            onClick: stopPropagation,
-            onMouseDown: stopPropagation,
+            onClick: handleClick,
+            onMouseDown: handleClick,
             onDoubleClick: handleDoubleClick,
             onBlur: handleSave,
             onKeyDown: handleKeyDown,
@@ -123,7 +132,7 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
             title: combinedTitle,
             'aria-label': accessibleLabel,
             'aria-keyshortcuts': 'Enter F2',
-            'data-interactive-card-control': 'true'
+            'data-interactive-card-control': allowSingleClickPropagation ? undefined : 'true'
         },
         children
     );

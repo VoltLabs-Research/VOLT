@@ -158,7 +158,7 @@ export default function SimulationCardFooter({
     const isRasterizeDisabled = !teamId || isRasterizing || isProcessing || hasPendingRasterization || hasInFlightRasterizationRequest;
 
     const handleViewScene = useCallback(() => {
-        navigate(`/canvas/${trajectoryId}/`);
+        navigate(`/canvas/${trajectoryId}`);
     }, [navigate, trajectoryId]);
 
     const handleViewRaster = useCallback(() => {
@@ -256,6 +256,7 @@ export default function SimulationCardFooter({
                     trajectoryId={trajectoryId}
                     name={name}
                     className='simulation-card-title font-size-3 color-primary font-weight-5 text-truncate'
+                    allowSingleClickPropagation
                 />
                 <Container className='simulation-card-status d-flex items-center gap-075 color-secondary font-size-2'>
                     {isProcessing ? (
