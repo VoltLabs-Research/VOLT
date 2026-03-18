@@ -4,6 +4,11 @@ import os from 'node:os';
 import { promisify } from 'node:util';
 import type { MetricsSnapshot } from '@/shared/contracts';
 
+interface CloudMetricsSnapshot {
+    cloudLatencyMs: number | null;
+    connectedToCloud: boolean;
+};
+
 interface DiskIOSnapshot {
     reads: number;
     writes: number;
@@ -34,18 +39,8 @@ export class MetricsService {
     private lastDiskIO: DiskIOSnapshot | null = null;
     private lastNetworkSnapshot: NetworkCounterSnapshot | null = null;
     private lastCpuTimes: CpuTimeSnapshot[] | null = null;
-    private cloudLatencyMs: number | null = null;
-    private cloudConnected = false;
 
-    updateCloudLatency(latencyMs: number | null): void {
-        this.cloudLatencyMs = latencyMs;
-    }
-
-    updateCloudConnectionState(isConnected: boolean): void {
-        this.cloudConnected = isConnected;
-    }
-
-    async collectSnapshot(): Promise<MetricsSnapshot> {
+    async collectSnapshot(cloudMetrics?: CloudMetricsSnapshot): Promise<MetricsSnapshot> {
         const cpuPerCoreUsagePercent = this.getCpuPerCoreUsagePercent();
         const cpuUsagePercent = cpuPerCoreUsagePercent.length > 0
             ? Math.round(cpuPerCoreUsagePercent.reduce((total, value) => total + value, 0) / cpuPerCoreUsagePercent.length)
@@ -66,8 +61,8 @@ export class MetricsService {
             disk,
             diskOperations,
             network,
-            cloudLatencyMs: this.cloudLatencyMs,
-            connectedToCloud: this.cloudConnected
+            cloudLatencyMs: cloudMetrics?.cloudLatencyMs ?? null,
+            connectedToCloud: cloudMetrics?.connectedToCloud ?? false
         };
     }
 

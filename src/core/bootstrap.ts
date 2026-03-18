@@ -88,13 +88,10 @@ export const bootstrap = async (): Promise<void> => {
     await platform.connect();
     startMemoryMonitor();
 
-    platform.eventBroker.emitLifecycle({
-        type: 'services-ready',
-        teamClusterId: config.teamClusterId,
-        timestamp: new Date().toISOString(),
-        connectedToCloud: false,
-        details: 'Cluster-local Redis, MongoDB, MinIO, and Docker coordination ready'
-    });
+    cloudControl.voltCloudConnection.emitLifecycleEvent(
+        'services-ready',
+        'Cluster-local Redis, MongoDB, MinIO, and Docker coordination ready'
+    );
 
     await cloudControl.voltCloudConnection.start();
     cloudControl.daemonExposureRegistryService.start();

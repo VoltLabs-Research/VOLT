@@ -1,16 +1,16 @@
 import type { DaemonConfig } from '@/core/config';
 import type { DockerRuntimeService } from '@/modules/platform/services';
 import type { HostShellService } from '@/modules/platform/services';
-import type { RuntimeEventBroker } from '@/shared/services';
 import type { ReverseChannelCommandHandler } from '../services';
+import type { RuntimeLifecycleEventType } from '@voltstack/daemon-cluster-client';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 interface RuntimeHandlersDependencies {
     config: DaemonConfig;
-    eventBroker: RuntimeEventBroker;
     dockerRuntimeService: DockerRuntimeService;
     hostShellService: HostShellService;
+    emitLifecycle: (type: RuntimeLifecycleEventType, details?: string) => void;
     /**
      * Called after the update ack when async update work fails so the server
      * can transition the cluster to `UpdateFailed`.
@@ -49,13 +49,7 @@ export const createRuntimeHandlers = (deps: RuntimeHandlersDependencies): Revers
     {
         command: 'runtime.uninstall',
         execute: async () => {
-            deps.eventBroker.emitLifecycle({
-                type: 'uninstall-requested',
-                teamClusterId: deps.config.teamClusterId,
-                timestamp: new Date().toISOString(),
-                connectedToCloud: true,
-                details: 'Remote uninstall requested'
-            });
+            deps.emitLifecycle('uninstall-requested', 'Remote uninstall requested');
 
             setTimeout(async () => {
                 try {
@@ -97,13 +91,7 @@ export const createRuntimeHandlers = (deps: RuntimeHandlersDependencies): Revers
                 };
             }
 
-            deps.eventBroker.emitLifecycle({
-                type: 'update-requested',
-                teamClusterId: deps.config.teamClusterId,
-                timestamp: new Date().toISOString(),
-                connectedToCloud: true,
-                details: `Updating daemon to ${payload.targetVersion}`
-            });
+            deps.emitLifecycle('update-requested', `Updating daemon to ${payload.targetVersion}`);
 
             // Ack immediately - pull, .env write, and restart happen in deferred
             // async work so the reverse-channel response is never blocked by the
@@ -114,13 +102,7 @@ export const createRuntimeHandlers = (deps: RuntimeHandlersDependencies): Revers
                     await deps.dockerRuntimeService.forcePullImage(capturedPayload.targetImage);
                 } catch (pullError: unknown) {
                     const message = pullError instanceof Error ? pullError.message : String(pullError);
-                    deps.eventBroker.emitLifecycle({
-                        type: 'update-failed',
-                        teamClusterId: deps.config.teamClusterId,
-                        timestamp: new Date().toISOString(),
-                        connectedToCloud: true,
-                        details: `Image pull failed: ${message}`
-                    });
+                    deps.emitLifecycle('update-failed', `Image pull failed: ${message}`);
                     deps.reportUpdateFailed(`Image pull failed: ${message}`).catch(() => {});
                     return;
                 }
@@ -135,13 +117,7 @@ export const createRuntimeHandlers = (deps: RuntimeHandlersDependencies): Revers
                         await fs.writeFile(envFilePath, envContent, 'utf-8');
                     } catch (envError: unknown) {
                         const message = envError instanceof Error ? envError.message : String(envError);
-                        deps.eventBroker.emitLifecycle({
-                            type: 'update-failed',
-                            teamClusterId: deps.config.teamClusterId,
-                            timestamp: new Date().toISOString(),
-                            connectedToCloud: true,
-                            details: `Failed to update .env: ${message}`
-                        });
+                        deps.emitLifecycle('update-failed', `Failed to update .env: ${message}`);
                         deps.reportUpdateFailed(`Failed to update .env: ${message}`).catch(() => {});
                         return;
                     }

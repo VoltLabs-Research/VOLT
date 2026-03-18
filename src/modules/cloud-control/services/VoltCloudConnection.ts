@@ -7,7 +7,11 @@ import {
     DaemonClientError
 } from '@voltstack/daemon-cluster-client';
 import type { DaemonConfig } from '@/core/config';
-import type { RuntimeLifecycleEventType, TeamClusterDaemonMessage } from '@voltstack/daemon-cluster-client';
+import type {
+    RuntimeLifecycleEvent,
+    RuntimeLifecycleEventType,
+    TeamClusterDaemonMessage
+} from '@voltstack/daemon-cluster-client';
 import { TeamClusterStatus } from '../contracts/voltCloudTypes';
 
 interface RuntimeLifecycleUpdateRequest {
@@ -62,7 +66,10 @@ export class VoltCloudConnection {
                     teamClusterId: this.client.getTeamClusterId(),
                     daemonPassword: this.client.getDaemonPassword(),
                     installedVersion: config.installedVersion,
-                    metrics: await this.metricsService.collectSnapshot()
+                    metrics: await this.metricsService.collectSnapshot({
+                        cloudLatencyMs: this.latestLatencyMs,
+                        connectedToCloud: this.connectedToCloud
+                    })
                 })
             },
             commandTimeout: 30_000
@@ -71,23 +78,19 @@ export class VoltCloudConnection {
         this.client
             .onConnected(() => {
                 this.connectedToCloud = true;
-                this.emitLifecycle('cloud-socket-connected', 'Outbound cloud socket connected');
+                this.emitLifecycleEvent('cloud-socket-connected', 'Outbound cloud socket connected');
                 logger.info('Connected to VoltCloud');
             })
             .onDisconnected((reason) => {
                 this.connectedToCloud = false;
                 this.latestLatencyMs = null;
-                this.metricsService.updateCloudLatency(null);
-                this.metricsService.updateCloudConnectionState(false);
-                this.emitLifecycle('cloud-socket-disconnected', `Outbound cloud socket disconnected (${reason})`);
+                this.emitLifecycleEvent('cloud-socket-disconnected', `Outbound cloud socket disconnected (${reason})`);
             })
             .onError((err: DaemonClientError) => {
                 if (err.message.includes('heartbeat')) {
                     this.connectedToCloud = false;
                     this.latestLatencyMs = null;
-                    this.metricsService.updateCloudLatency(null);
-                    this.metricsService.updateCloudConnectionState(false);
-                    this.emitLifecycle('heartbeat-failed', err.message);
+                    this.emitLifecycleEvent('heartbeat-failed', err.message);
                     logger.warn(`Heartbeat failed: ${err.message}`);
                     return;
                 }
@@ -111,7 +114,7 @@ export class VoltCloudConnection {
     }
 
     async start(): Promise<void> {
-        this.emitLifecycle('starting', 'Cluster daemon starting');
+        this.emitLifecycleEvent('starting', 'Cluster daemon starting');
         await this.client.connect();
     }
 
@@ -183,6 +186,10 @@ export class VoltCloudConnection {
         return this.client.sendCommand<T>(command, payload);
     }
 
+    emitLifecycleEvent(type: RuntimeLifecycleEventType, details?: string): void {
+        this.eventBroker.emitLifecycle(this.createLifecycleEvent(type, details));
+    }
+
     private async sendLifecycleStatus(status: TeamClusterStatus, details: string): Promise<void> {
         try {
             const requestBody: RuntimeLifecycleUpdateRequest = {
@@ -193,19 +200,19 @@ export class VoltCloudConnection {
             };
 
             await this.sendServerCommand('runtime.lifecycle', requestBody);
-            this.emitLifecycle('services-ready', details);
+            this.emitLifecycleEvent('services-ready', details);
         } catch (error: unknown) {
             logger.warn({ err: error, status }, 'Failed to send lifecycle status to VoltCloud');
         }
     }
 
-    private emitLifecycle(type: RuntimeLifecycleEventType, details?: string): void {
-        this.eventBroker.emitLifecycle({
+    private createLifecycleEvent(type: RuntimeLifecycleEventType, details?: string): RuntimeLifecycleEvent {
+        return {
             type,
             teamClusterId: this.client.getTeamClusterId(),
             timestamp: new Date().toISOString(),
             connectedToCloud: this.connectedToCloud,
             details
-        });
+        };
     }
 };

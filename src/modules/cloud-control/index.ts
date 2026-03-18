@@ -95,9 +95,11 @@ export const createCloudControlModule = (deps: {
         ...createNotebookHandlers({ jupyterRuntimeService: deps.jupyterRuntimeService }),
         ...createRuntimeHandlers({
             config: deps.config,
-            eventBroker: deps.eventBroker,
             dockerRuntimeService: deps.dockerRuntimeService,
             hostShellService: deps.hostShellService,
+            emitLifecycle: (type, details) => {
+                voltCloudConnectionRef?.emitLifecycleEvent(type, details);
+            },
             reportUpdateFailed: (details) => voltCloudConnectionRef?.reportUpdateFailed(details) ?? Promise.resolve()
         })
     ];
