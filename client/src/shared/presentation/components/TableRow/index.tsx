@@ -22,6 +22,7 @@ interface TableRowProps<T extends Identifiable> {
     onContextMenu: (item: T) => void;
     useFlexDistribution: boolean;
     columnGap?: number;
+    dragIntentDistance?: number;
     draggableId?: string | null;
     droppableId?: string | null;
 };
@@ -38,6 +39,7 @@ const TableRow = <T extends Identifiable>({
     onContextMenu,
     useFlexDistribution,
     columnGap = 16,
+    dragIntentDistance: _dragIntentDistance = 6,
     draggableId = null,
     droppableId = null
 }: TableRowProps<T>) => {

@@ -3,15 +3,20 @@ import SimulationCard from '../SimulationCard';
 import SimulationFolderCard from '../SimulationFolderCard';
 import useDeleteSelectedTrajectories from '@/modules/trajectory/hooks/trajectory/use-delete-selected-trajectories';
 import useDownloadSamples from '@/modules/trajectory/hooks/trajectory/use-download-samples';
-import useTrajectoriesListing, { NEW_TRAJECTORY_FOLDER_MODAL_ID } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
-import { isTrajectoryFolderRow, type TrajectoryListingRow } from '@/modules/trajectory/utilities/listing';
+import useTrajectoriesListing, {
+    MOVE_TRAJECTORY_MODAL_ID,
+    NEW_TRAJECTORY_FOLDER_MODAL_ID
+} from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
+import { isTrajectoryFolderRow } from '@/modules/trajectory/utilities/listing';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import FolderBreadcrumbs from '@/shared/presentation/components/FolderBreadcrumbs';
+import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import Container from '@/shared/presentation/components/Container';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import { Download, Upload } from 'lucide-react';
 import { useEffect, useCallback, useMemo, useState } from 'react';
+import type { TrajectoryListingRow } from '@/modules/trajectory/utilities/listing';
 
 export type SimulationGridItem = TrajectoryListingRow;
 
@@ -24,13 +29,18 @@ export default function SimulationGrid() {
         breadcrumbs,
         context,
         currentFolderId,
-        dragAndDrop,
         fetchData,
         fileInputRef,
+        getMoveFolder,
         handleCreate,
         handleCreateFolder,
+        handleMoveTrajectoryClose,
+        handleMoveTrajectoryOpen,
+        handleMoveTrajectorySubmit,
         handlePickerChange,
         isUploading,
+        listMoveFolders,
+        movingTrajectory,
         navigateToFolder,
         openFolder,
         queryKey
@@ -66,10 +76,7 @@ export default function SimulationGrid() {
     const renderGridItem = useCallback((item: SimulationGridItem) => {
         if (isTrajectoryFolderRow(item)) {
             return (
-                <SimulationFolderCard
-                    folder={item}
-                    onOpen={handleFolderOpen}
-                />
+                <SimulationFolderCard folder={item} onOpen={handleFolderOpen} />
             );
         }
 
@@ -78,9 +85,10 @@ export default function SimulationGrid() {
                 trajectory={item}
                 isSelected={isSelected(item._id)}
                 onSelect={toggleSelection}
+                onMoveToFolder={handleMoveTrajectoryOpen}
             />
         );
-    }, [handleFolderOpen, isSelected, toggleSelection]);
+    }, [handleFolderOpen, handleMoveTrajectoryOpen, isSelected, toggleSelection]);
 
     const renderGridSkeleton = useCallback(() => (
         <SimulationSkeletonCard />
@@ -162,7 +170,6 @@ export default function SimulationGrid() {
                 fetchData={fetchData}
                 context={context}
                 renderGridItem={renderGridItem}
-                dragAndDrop={dragAndDrop}
                 hideHeader={true}
                 hideTabs={true}
                 renderGridSkeleton={renderGridSkeleton}
@@ -179,6 +186,17 @@ export default function SimulationGrid() {
                 title='New Trajectory Folder'
                 description='Create a folder in the current trajectories location.'
                 onSubmit={handleCreateFolder}
+            />
+            <MoveToFolderModal
+                id={MOVE_TRAJECTORY_MODAL_ID}
+                itemId={movingTrajectory?._id ?? null}
+                itemName={movingTrajectory?.name ?? null}
+                itemLabel='Trajectory'
+                sourceFolderId={movingTrajectory?.folder ?? null}
+                listFolders={listMoveFolders}
+                getFolder={getMoveFolder}
+                onSubmit={handleMoveTrajectorySubmit}
+                onClose={handleMoveTrajectoryClose}
             />
         </>
     );

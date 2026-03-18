@@ -32,7 +32,7 @@ export interface AnalysisSectionData {
     pluginDisplayName: string;
     entry: ExposureEntry;
     isCurrentAnalysis: boolean;
-    config: Record<string, unknown>;
+    userConfig: Record<string, unknown>;
 };
 
 interface UseCanvasSidebarSceneProps {
@@ -259,7 +259,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                 pluginDisplayName: analysis.pluginDisplayName,
                 entry,
                 isCurrentAnalysis: analysis._id === analysisConfigId,
-                config: analysis.config
+                userConfig: analysis.config
             };
         });
     }, [resolvedAnalyses, exposureEntries, analysisConfigId]);
@@ -319,7 +319,10 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         if (analysis?._id) {
             setAnalysisId(analysis._id, { replace: true });
         } else {
-            setAnalysisId(undefined, { replace: true });
+            setAnalysisId(undefined, {
+                replace: true,
+                preserveClearedSelection: true
+            });
         }
     }, [currentTimestep, setActiveScene, setAnalysisId, setCurrentTimestep, trajectoryTimesteps]);
 
