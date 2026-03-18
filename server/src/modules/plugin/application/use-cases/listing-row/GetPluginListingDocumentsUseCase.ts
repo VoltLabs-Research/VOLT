@@ -2,9 +2,11 @@ import {
     GetPluginListingDocumentsInputDTO,
     GetPluginListingDocumentsOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
+import { buildListingColumns, enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
 import { resolveListingPagination } from '@modules/plugin/application/use-cases/listing-row/listing-row-pagination';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -12,22 +14,21 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { inject, injectable } from 'tsyringe';
 
-import { deriveColumns, mapDaemonRow } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
+import { mapDaemonRow } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
 
 import type { PluginListingDocumentsMeta } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
-import type { DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
+import type { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 const buildMeta = (
     pluginId: string,
+    rows: DaemonListingRow[],
     daemonResult: DaemonPaginatedResult,
     input: GetPluginListingDocumentsInputDTO
 ): PluginListingDocumentsMeta => {
-    const rows = daemonResult.data || [];
     const firstRow = rows[0];
 
-    const columns = daemonResult.columns
-        ? daemonResult.columns.map((label) => ({ label, sortable: true }))
-        : deriveColumns(rows);
+    const columns = buildListingColumns(rows, daemonResult.columns);
 
     const subListingNames = daemonResult.subListingNames ?? firstRow?.subListingNames ?? [];
 
@@ -57,6 +58,8 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private readonly analysisRepository: IAnalysisRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
+        private readonly trajectoryRepository: ITrajectoryRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
         private readonly daemonClient: TeamClusterDaemonClient
     ){}
@@ -84,7 +87,13 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<
             }
         );
 
-        const data = (daemonResult.data || []).map(mapDaemonRow);
+        const rows = await enrichDaemonListingRows({
+            rows: daemonResult.data || [],
+            analysisRepository: this.analysisRepository,
+            trajectoryRepository: this.trajectoryRepository,
+            fallbackAnalysisId: resolved.analysisId
+        });
+        const data = rows.map(mapDaemonRow);
 
         return Result.ok({
             data,
@@ -92,7 +101,7 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<
             page: daemonResult.page || page,
             totalPages: daemonResult.totalPages || 1,
             limit: daemonResult.limit || limit,
-            _meta: buildMeta(input.pluginId, daemonResult, input)
+            _meta: buildMeta(input.pluginId, rows, daemonResult, input)
         });
     }
 

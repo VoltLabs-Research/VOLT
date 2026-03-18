@@ -8,9 +8,12 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import IORedis from 'ioredis';
 import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
+import type Analysis from '@modules/analysis/domain/entities/Analysis';
+import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 
 const ANALYSIS_QUEUE_TYPE = 'analysis_processing';
 const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
@@ -31,6 +34,7 @@ interface JobTrajectoryContext {
 };
 
 interface DaemonJobCompletionInput {
+    teamClusterId: string;
     jobId: string;
     name: string;
     analysisId: string;
@@ -43,6 +47,7 @@ interface DaemonJobCompletionInput {
 };
 
 interface DaemonRasterJobStatusInput {
+    teamClusterId: string;
     jobId: string;
     teamId: string;
     trajectoryId: string;
@@ -53,6 +58,7 @@ interface DaemonRasterJobStatusInput {
 };
 
 interface DaemonGlbJobStatusInput {
+    teamClusterId: string;
     jobId: string;
     teamId: string;
     trajectoryId: string;
@@ -63,6 +69,7 @@ interface DaemonGlbJobStatusInput {
 };
 
 interface DaemonAnalysisJobStatusInput {
+    teamClusterId: string;
     jobId: string;
     name: string;
     analysisId: string;
@@ -97,6 +104,16 @@ interface ProjectedJobStatusInput {
     error?: string;
 };
 
+interface ResolvedTrajectoryOwnership {
+    teamId: string;
+    trajectory: Trajectory;
+    trajectoryContext: JobTrajectoryContext;
+};
+
+interface ResolvedAnalysisOwnership extends ResolvedTrajectoryOwnership {
+    analysis: Analysis;
+};
+
 @injectable()
 export default class DaemonAnalysisCompletionService {
     constructor(
@@ -120,10 +137,18 @@ export default class DaemonAnalysisCompletionService {
     async initializeSession(analysisId: string, totalJobs: number): Promise<void> {
         const remainingKey = this.remainingKey(analysisId);
         const failedKey = this.failedKey(analysisId);
+        const terminalReceiptSetKey = this.analysisTerminalReceiptSetKey(analysisId);
+        const staleReceiptKeys = await this.redis.smembers(terminalReceiptSetKey);
 
         const pipeline = this.redis.pipeline();
         pipeline.set(remainingKey, totalJobs.toString(), 'EX', SESSION_TTL_SECONDS);
         pipeline.del(failedKey);
+        pipeline.del(terminalReceiptSetKey);
+
+        if (staleReceiptKeys.length > 0) {
+            pipeline.del(...staleReceiptKeys);
+        }
+
         await pipeline.exec();
 
         logger.info(
@@ -177,10 +202,21 @@ export default class DaemonAnalysisCompletionService {
      * Projects status to Redis, publishes socket events, and handles session drain.
      */
     async handleJobCompletion(input: DaemonJobCompletionInput): Promise<void> {
-        const { jobId, analysisId, teamId, success, error } = input;
+        const { jobId, analysisId, success, error } = input;
+        const resolved = await this.resolveAnalysisOwnership(input);
+        const teamId = resolved.teamId;
         const status = success ? JobStatus.Completed : JobStatus.Failed;
-        const trajectoryContext = await this.resolveTrajectoryContext(input);
+        const trajectoryContext = resolved.trajectoryContext;
         const name = input.name;
+
+        const accepted = await this.tryMarkTerminalReceipt(
+            this.analysisTerminalReceiptKey(analysisId, jobId),
+            this.analysisTerminalReceiptSetKey(analysisId),
+            status
+        );
+        if (!accepted) {
+            return;
+        }
 
         // 1. Project job status to Redis for dashboard/socket consumers
         await this.projectJobStatus({
@@ -243,12 +279,14 @@ export default class DaemonAnalysisCompletionService {
      * the transition immediately. Does NOT affect session drain counters.
      */
     async handleAnalysisJobStatus(input: DaemonAnalysisJobStatusInput): Promise<void> {
-        const { jobId, analysisId, teamId, status, error } = input;
-        const trajectoryContext: JobTrajectoryContext = {
-            trajectoryId: input.trajectoryId,
-            trajectoryName: input.trajectoryName,
-            timestep: input.timestep
-        };
+        const { jobId, analysisId, status, error } = input;
+        const resolved = await this.resolveAnalysisOwnership(input);
+        const teamId = resolved.teamId;
+        const trajectoryContext = resolved.trajectoryContext;
+
+        if (await this.hasTerminalReceipt(this.analysisTerminalReceiptKey(analysisId, jobId))) {
+            return;
+        }
 
         await this.projectJobStatus({
             jobId,
@@ -276,16 +314,13 @@ export default class DaemonAnalysisCompletionService {
     }
 
     async handleRasterJobStatus(input: DaemonRasterJobStatusInput): Promise<void> {
+        const resolved = await this.resolveTrajectoryOwnership(input);
         const jobId = this.requireRasterJobId(input.jobId);
-        const trajectoryContext: JobTrajectoryContext = {
-            trajectoryId: input.trajectoryId,
-            trajectoryName: input.trajectoryName,
-            timestep: input.timestep
-        };
+        const trajectoryContext = resolved.trajectoryContext;
 
         await this.projectJobStatus({
             jobId,
-            teamId: input.teamId,
+            teamId: resolved.teamId,
             status: input.status,
             queueType: RASTER_QUEUE_TYPE,
             cleanupScope: RASTER_PROJECTED_JOB_CLEANUP_SCOPE,
@@ -295,7 +330,7 @@ export default class DaemonAnalysisCompletionService {
 
         await this.publishJobStatusChanged({
             jobId,
-            teamId: input.teamId,
+            teamId: resolved.teamId,
             status: input.status,
             queueType: RASTER_QUEUE_TYPE,
             cleanupScope: RASTER_PROJECTED_JOB_CLEANUP_SCOPE,
@@ -309,12 +344,27 @@ export default class DaemonAnalysisCompletionService {
      * Projects status to Redis, publishes socket events, and handles GLB session drain.
      */
     async handleGlbJobStatus(input: DaemonGlbJobStatusInput): Promise<void> {
-        const { jobId, teamId, trajectoryId, status, error } = input;
-        const trajectoryContext: JobTrajectoryContext = {
-            trajectoryId: input.trajectoryId,
-            trajectoryName: input.trajectoryName,
-            timestep: input.timestep
-        };
+        const { jobId, status, error } = input;
+        const resolved = await this.resolveTrajectoryOwnership(input);
+        const teamId = resolved.teamId;
+        const trajectoryId = resolved.trajectory.id;
+        const trajectoryContext = resolved.trajectoryContext;
+        const terminalReceiptKey = this.glbTerminalReceiptKey(trajectoryId, jobId);
+        const isTerminal = status === JobStatus.Completed || status === JobStatus.Failed;
+
+        if (isTerminal) {
+            const accepted = await this.tryMarkTerminalReceipt(
+                terminalReceiptKey,
+                this.glbTerminalReceiptSetKey(trajectoryId),
+                status
+            );
+
+            if (!accepted) {
+                return;
+            }
+        } else if (await this.hasTerminalReceipt(terminalReceiptKey)) {
+            return;
+        }
 
         // 1. Project job status to Redis for dashboard/socket consumers
         await this.projectJobStatus({
@@ -339,7 +389,6 @@ export default class DaemonAnalysisCompletionService {
         });
 
         // 3. Only process drain logic for terminal statuses
-        const isTerminal = status === JobStatus.Completed || status === JobStatus.Failed;
         if (!isTerminal) {
             return;
         }
@@ -485,25 +534,137 @@ export default class DaemonAnalysisCompletionService {
         return jobId;
     }
 
-    private async resolveTrajectoryContext(input: DaemonJobCompletionInput): Promise<JobTrajectoryContext> {
-        let trajectoryId = input.trajectoryId;
-
-        if (!trajectoryId) {
-            const analysis = await this.analysisRepo.findById(input.analysisId);
-            trajectoryId = trajectoryId || analysis?.props.trajectory;
+    private async resolveAnalysisOwnership(
+        input: Pick<
+            DaemonJobCompletionInput,
+            'teamClusterId' | 'analysisId' | 'teamId' | 'trajectoryId' | 'trajectoryName' | 'timestep'
+        >
+    ): Promise<ResolvedAnalysisOwnership> {
+        const analysis = await this.analysisRepo.findById(input.analysisId);
+        if (!analysis) {
+            throw ApplicationError.notFound('TEAM_CLUSTER_DAEMON_ANALYSIS_NOT_FOUND', 'Analysis not found');
         }
 
-        let trajectoryName: string | undefined;
-        if (trajectoryId) {
-            const trajectory = await this.trajectoryRepo.findById(trajectoryId);
-            trajectoryName = trajectory?.props.name;
+        if (analysis.props.team !== input.teamId) {
+            throw ApplicationError.forbidden(
+                'TEAM_CLUSTER_DAEMON_ANALYSIS_TEAM_MISMATCH',
+                'Analysis does not belong to the provided team'
+            );
+        }
+
+        if (analysis.props.teamCluster && analysis.props.teamCluster !== input.teamClusterId) {
+            throw ApplicationError.forbidden(
+                'TEAM_CLUSTER_DAEMON_ANALYSIS_CLUSTER_MISMATCH',
+                'Analysis does not belong to the authenticated team cluster'
+            );
+        }
+
+        const trajectory = await this.trajectoryRepo.findById(analysis.props.trajectory);
+        if (!trajectory) {
+            throw ApplicationError.notFound('TEAM_CLUSTER_DAEMON_TRAJECTORY_NOT_FOUND', 'Trajectory not found');
+        }
+
+        if (trajectory.props.team !== analysis.props.team) {
+            throw ApplicationError.conflict(
+                'TEAM_CLUSTER_DAEMON_ANALYSIS_TRAJECTORY_TEAM_MISMATCH',
+                'Analysis ownership does not match its trajectory'
+            );
+        }
+
+        if (trajectory.props.teamCluster && trajectory.props.teamCluster !== input.teamClusterId) {
+            throw ApplicationError.forbidden(
+                'TEAM_CLUSTER_DAEMON_TRAJECTORY_CLUSTER_MISMATCH',
+                'Trajectory does not belong to the authenticated team cluster'
+            );
+        }
+
+        if (input.trajectoryId && input.trajectoryId !== trajectory.id) {
+            throw ApplicationError.badRequest(
+                'TEAM_CLUSTER_DAEMON_ANALYSIS_TRAJECTORY_MISMATCH',
+                'Payload trajectory does not match persisted analysis ownership'
+            );
+        }
+
+        if (input.trajectoryName && input.trajectoryName !== trajectory.props.name) {
+            throw ApplicationError.badRequest(
+                'TEAM_CLUSTER_DAEMON_TRAJECTORY_NAME_MISMATCH',
+                'Payload trajectory name does not match persisted trajectory ownership'
+            );
         }
 
         return {
-            trajectoryId,
-            trajectoryName,
-            timestep: input.timestep
+            analysis,
+            trajectory,
+            teamId: analysis.props.team,
+            trajectoryContext: {
+                trajectoryId: trajectory.id,
+                trajectoryName: trajectory.props.name,
+                timestep: input.timestep
+            }
         };
+    }
+
+    private async resolveTrajectoryOwnership(
+        input: Pick<
+            DaemonRasterJobStatusInput,
+            'teamClusterId' | 'trajectoryId' | 'teamId' | 'trajectoryName' | 'timestep'
+        >
+    ): Promise<ResolvedTrajectoryOwnership> {
+        const trajectory = await this.trajectoryRepo.findById(input.trajectoryId);
+        if (!trajectory) {
+            throw ApplicationError.notFound('TEAM_CLUSTER_DAEMON_TRAJECTORY_NOT_FOUND', 'Trajectory not found');
+        }
+
+        if (trajectory.props.team !== input.teamId) {
+            throw ApplicationError.forbidden(
+                'TEAM_CLUSTER_DAEMON_TRAJECTORY_TEAM_MISMATCH',
+                'Trajectory does not belong to the provided team'
+            );
+        }
+
+        if (trajectory.props.teamCluster && trajectory.props.teamCluster !== input.teamClusterId) {
+            throw ApplicationError.forbidden(
+                'TEAM_CLUSTER_DAEMON_TRAJECTORY_CLUSTER_MISMATCH',
+                'Trajectory does not belong to the authenticated team cluster'
+            );
+        }
+
+        if (input.trajectoryName && input.trajectoryName !== trajectory.props.name) {
+            throw ApplicationError.badRequest(
+                'TEAM_CLUSTER_DAEMON_TRAJECTORY_NAME_MISMATCH',
+                'Payload trajectory name does not match persisted trajectory ownership'
+            );
+        }
+
+        return {
+            teamId: trajectory.props.team,
+            trajectory,
+            trajectoryContext: {
+                trajectoryId: trajectory.id,
+                trajectoryName: trajectory.props.name,
+                timestep: input.timestep
+            }
+        };
+    }
+
+    private async tryMarkTerminalReceipt(
+        receiptKey: string,
+        receiptSetKey: string | undefined,
+        status: JobStatus
+    ): Promise<boolean> {
+        const result = await this.redis.set(receiptKey, status, 'EX', SESSION_TTL_SECONDS, 'NX');
+        if (result === 'OK' && receiptSetKey) {
+            const pipeline = this.redis.pipeline();
+            pipeline.sadd(receiptSetKey, receiptKey);
+            pipeline.expire(receiptSetKey, SESSION_TTL_SECONDS);
+            await pipeline.exec();
+        }
+
+        return result === 'OK';
+    }
+
+    private async hasTerminalReceipt(receiptKey: string): Promise<boolean> {
+        return (await this.redis.exists(receiptKey)) === 1;
     }
 
     private async recordFailure(analysisId: string): Promise<void> {
@@ -515,6 +676,9 @@ export default class DaemonAnalysisCompletionService {
     private async decrementAndCheckDrain(analysisId: string): Promise<{ drained: boolean; failedJobs: number }> {
         const luaScript = `
             local ttl = tonumber(ARGV[1])
+            if redis.call('EXISTS', KEYS[1]) == 0 then
+                return {0, 0}
+            end
             redis.call('EXPIRE', KEYS[1], ttl)
 
             local remaining = redis.call('DECR', KEYS[1])
@@ -606,6 +770,9 @@ export default class DaemonAnalysisCompletionService {
     private async decrementAndCheckGlbDrain(trajectoryId: string): Promise<{ drained: boolean; failedJobs: number }> {
         const luaScript = `
             local ttl = tonumber(ARGV[1])
+            if redis.call('EXISTS', KEYS[1]) == 0 then
+                return {0, 0}
+            end
             redis.call('EXPIRE', KEYS[1], ttl)
 
             local remaining = redis.call('DECR', KEYS[1])
@@ -678,12 +845,28 @@ export default class DaemonAnalysisCompletionService {
         return `daemon-glb:${trajectoryId}:remaining`;
     }
 
+    private glbTerminalReceiptKey(trajectoryId: string, jobId: string): string {
+        return `daemon-glb:${trajectoryId}:terminal:${jobId}`;
+    }
+
+    private glbTerminalReceiptSetKey(trajectoryId: string): string {
+        return `daemon-glb:${trajectoryId}:terminal-keys`;
+    }
+
     private glbFailedKey(trajectoryId: string): string {
         return `daemon-glb:${trajectoryId}:failed`;
     }
 
     private remainingKey(analysisId: string): string {
         return `daemon-analysis:${analysisId}:remaining`;
+    }
+
+    private analysisTerminalReceiptKey(analysisId: string, jobId: string): string {
+        return `daemon-analysis:${analysisId}:terminal:${jobId}`;
+    }
+
+    private analysisTerminalReceiptSetKey(analysisId: string): string {
+        return `daemon-analysis:${analysisId}:terminal-keys`;
     }
 
     private failedKey(analysisId: string): string {

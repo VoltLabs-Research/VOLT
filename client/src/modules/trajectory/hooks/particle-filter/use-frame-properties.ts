@@ -16,7 +16,8 @@ interface UseFramePropertiesResult {
 
 const INITIAL_PROPERTIES: FilterPropertiesData = {
     dump: [],
-    perAtom: {}
+    perAtom: {},
+    exposureNames: {}
 };
 
 export default function useFrameProperties(params: UseFramePropertiesParams): UseFramePropertiesResult {

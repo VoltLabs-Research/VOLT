@@ -14,7 +14,7 @@ import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWh
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { CreateWhiteboardInputDTO, CreateWhiteboardOutputDTO } from '@modules/whiteboards/application/dtos/CreateWhiteboardDTO';
 
-const EMPTY_STATE = Buffer.from(JSON.stringify({ elements: [], appState: {} }));
+const EMPTY_STATE = Buffer.from(JSON.stringify({ revision: 0, elements: [], appState: {} }));
 
 @injectable()
 export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDTO, CreateWhiteboardOutputDTO, ApplicationError> {

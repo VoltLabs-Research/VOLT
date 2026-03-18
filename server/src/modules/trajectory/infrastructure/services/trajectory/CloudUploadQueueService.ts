@@ -10,8 +10,11 @@ import logger from '@shared/infrastructure/logger';
 
 import { injectable, inject } from 'tsyringe';
 import { Queue, Worker } from 'bullmq';
+import type { Job } from 'bullmq';
 import { v4 as uuid } from 'uuid';
 import IORedis from 'ioredis';
+
+import type { JobStatusChangedValue } from '@modules/jobs/domain/events/JobStatusChangedEvent';
 
 const QUEUE_NAME = 'cloud_upload';
 const QUEUE_TYPE = 'cloud_upload';
@@ -110,18 +113,7 @@ export default class CloudUploadQueueService {
                     frameFilePath: job.data.frameFilePath
                 });
 
-                // Emit completed status
-                await this.publishStatus(jobId, teamId, JobStatus.Completed, {
-                    trajectoryId,
-                    trajectoryName,
-                    timestep
-                });
-
-                // Track successful timestep
-                await this.trackSuccessfulTimestep(trajectoryId, timestep);
-
-                // Decrement session counter and fire drain callback if all settled
-                await this.decrementSession(job.data);
+                return job.data;
             },
             {
                 connection,
@@ -131,26 +123,74 @@ export default class CloudUploadQueueService {
             }
         );
 
+        this.worker.on('completed', async (job) => {
+            const { jobId, teamId, trajectoryId, trajectoryName, timestep } = job.data;
+
+            await this.runListenerStep('publish completed upload status', async () => {
+                await this.publishStatus(jobId, teamId, JobStatus.Completed, {
+                    trajectoryId,
+                    trajectoryName,
+                    timestep
+                });
+            });
+
+            await this.runListenerStep('track successful upload timestep', async () => {
+                await this.trackSuccessfulTimestep(trajectoryId, timestep);
+            });
+            await this.runListenerStep('decrement upload session', async () => {
+                await this.decrementSession(job.data);
+            });
+        });
+
         this.worker.on('failed', async (job, error) => {
             if (!job) return;
 
             const { jobId, teamId, trajectoryId, trajectoryName, timestep } = job.data;
+            const terminalFailure = this.isTerminalFailure(job);
 
             logger.error(
-                { jobId, trajectoryId, timestep, error: error.message },
+                {
+                    jobId,
+                    trajectoryId,
+                    timestep,
+                    error: error.message,
+                    attemptsMade: job.attemptsMade,
+                    attempts: this.getAttemptLimit(job),
+                    terminalFailure
+                },
                 `@cloud-upload-queue: job failed`
             );
 
-            await this.publishStatus(jobId, teamId, JobStatus.Failed, {
-                trajectoryId,
-                trajectoryName,
-                timestep,
-                error: error.message
+            if (!terminalFailure) {
+                await this.runListenerStep('publish retrying upload status', async () => {
+                    await this.publishStatus(jobId, teamId, 'retrying', {
+                        trajectoryId,
+                        trajectoryName,
+                        timestep,
+                        error: error.message,
+                        attemptsMade: job.attemptsMade,
+                        attempts: this.getAttemptLimit(job)
+                    });
+                });
+
+                return;
+            }
+
+            await this.runListenerStep('publish failed upload status', async () => {
+                await this.publishStatus(jobId, teamId, JobStatus.Failed, {
+                    trajectoryId,
+                    trajectoryName,
+                    timestep,
+                    error: error.message
+                });
             });
 
-            // Track failure and decrement session counter
-            await this.incrementFailed(job.data.trajectoryId);
-            await this.decrementSession(job.data);
+            await this.runListenerStep('increment failed upload count', async () => {
+                await this.incrementFailed(job.data.trajectoryId);
+            });
+            await this.runListenerStep('decrement upload session', async () => {
+                await this.decrementSession(job.data);
+            });
         });
 
         this.worker.on('error', (error) => {
@@ -317,12 +357,34 @@ export default class CloudUploadQueueService {
         }
     }
 
+    private isTerminalFailure(job: Job<CloudUploadJobData>): boolean {
+        return job.attemptsMade >= this.getAttemptLimit(job);
+    }
+
+    private getAttemptLimit(job: Job<CloudUploadJobData>): number {
+        const attempts = job.opts.attempts;
+
+        if (typeof attempts === 'number' && Number.isFinite(attempts) && attempts > 0) {
+            return attempts;
+        }
+
+        return 1;
+    }
+
+    private async runListenerStep(action: string, operation: () => Promise<void>): Promise<void> {
+        try {
+            await operation();
+        } catch (error) {
+            logger.error(error, `@cloud-upload-queue: failed to ${action}`);
+        }
+    }
+
     // ── Event publishing ──────────────────────────────────────────────
 
     private async publishStatus(
         jobId: string,
         teamId: string,
-        status: JobStatus,
+        status: JobStatusChangedValue,
         metadata: Record<string, unknown>
     ): Promise<void> {
         await this.eventBus.publish(

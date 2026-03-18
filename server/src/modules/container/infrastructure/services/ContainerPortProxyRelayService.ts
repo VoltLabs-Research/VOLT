@@ -54,7 +54,7 @@ interface ProxyTarget {
     rawQuery: string;
 };
 
-const DEFAULT_SESSION_TTL_MS = 3_600_000;
+const DEFAULT_SESSION_TTL_MS = 600_000;
 const DEFAULT_RELAY_BIND_HOST = '127.0.0.1';
 const DEFAULT_RELAY_PORT_START = 24000;
 const DEFAULT_RELAY_PORT_END = 24999;
@@ -310,7 +310,11 @@ export class ContainerPortProxyRelayService {
             throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_UNAUTHORIZED, ErrorCodes.AUTHENTICATION_UNAUTHORIZED);
         }
 
-        if (verifiedToken.sessionId !== session.sessionId || verifiedToken.relayPort !== session.relayPort) {
+        if (
+            verifiedToken.sessionId !== session.sessionId
+            || verifiedToken.relayPort !== session.relayPort
+            || verifiedToken.userId !== session.userId
+        ) {
             throw ApplicationError.forbidden(ErrorCodes.TEAM_ACCESS_DENIED, ErrorCodes.TEAM_ACCESS_DENIED);
         }
 

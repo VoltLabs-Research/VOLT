@@ -1,11 +1,13 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 
+export type JobStatusChangedValue = JobStatus | 'retrying';
+
 export interface JobStatusChangedMetadata {
     name?: string;
     jobId?: string;
     analysisId?: string;
-    status?: JobStatus;
+    status?: JobStatusChangedValue;
     queueType?: string;
     trajectoryId?: string;
     trajectoryName?: string;
@@ -18,7 +20,7 @@ export interface JobStatusChangedMetadata {
 export interface JobStatusChangedEventPayload {
     jobId: string;
     teamId: string;
-    status: JobStatus;
+    status: JobStatusChangedValue;
     queueType: string;
     metadata?: JobStatusChangedMetadata;
 };

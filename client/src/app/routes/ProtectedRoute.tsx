@@ -7,6 +7,7 @@ import {
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { refreshSocketSession } from '@/modules/socket/core/services/socket-auth-session';
+import socketService from '@/modules/socket/core/services/socket-service';
 import { setGetTeamId } from '@/app/core/http/utilities/create-client';
 import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
 import { resetTeamSessionState, useTeamStore } from '@/modules/team/stores/team/use-team-store';
@@ -119,6 +120,33 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
         refreshedOnboardingTeamIdRef.current = selectedTeamId;
         refreshSocketSession();
     }, [hasToken, isAuthenticated, isOnboardingRoute, mode, selectedTeamId]);
+
+    useEffect(() => {
+        if (mode !== RouteMode.Protected || !hasToken || !isAuthenticated) {
+            return;
+        }
+
+        const ensureSocketConnection = () => {
+            socketService.connect().catch(() => undefined);
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                ensureSocketConnection();
+            }
+        };
+
+        ensureSocketConnection();
+        window.addEventListener('online', ensureSocketConnection);
+        window.addEventListener('focus', ensureSocketConnection);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('online', ensureSocketConnection);
+            window.removeEventListener('focus', ensureSocketConnection);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [hasToken, isAuthenticated, mode]);
 
     if(!isInitialized || isLoading){
         return renderProtectedContent(<Loader scale={0.6} label='Loading workspace…' announce />);

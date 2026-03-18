@@ -14,6 +14,7 @@ import Title from '@/shared/presentation/components/Title';
 import { Skeleton } from '@mui/material';
 import { useMemo, useCallback } from 'react';
 import { Database, FolderOpen, KeyRound, MoreHorizontal, Terminal, Trash2 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
@@ -22,7 +23,8 @@ import type { MenuOption } from '@/shared/presentation/types/menu';
 interface ServerTableProps {
     clusters: TeamCluster[];
     metricsByClusterId: Record<string, ClusterMetrics>;
-    selectedClusterId: string;
+    isMetricsConnected?: boolean;
+    selectedClusterId: string | null;
     onSelectCluster: (clusterId: string) => void;
     onRevealCredentials: (clusterId: string) => void;
     onDeleteCluster: (clusterId: string) => void;
@@ -32,7 +34,33 @@ interface ServerTableProps {
 interface ColumnDef {
     key: string;
     header: string;
-    render: (row: ServerRow) => React.ReactNode;
+    render: (row: ServerRow) => ReactNode;
+};
+
+const renderMetricValue = (value: number | null): ReactNode => {
+    if (value === null) {
+        return <Paragraph className='font-size-1 color-muted'>--</Paragraph>;
+    }
+
+    return (
+        <Container className='d-flex items-center gap-05'>
+            <MetricBars percentage={value} />
+            <Paragraph className='font-size-1 color-muted'>{value}%</Paragraph>
+        </Container>
+    );
+};
+
+const renderDiskValue = (row: ServerRow): ReactNode => {
+    if (row.diskUsagePercent === null || row.diskFree === null) {
+        return <Paragraph className='font-size-1 color-muted'>--</Paragraph>;
+    }
+
+    return (
+        <Container className='d-flex items-center gap-05'>
+            <MetricBars percentage={row.diskUsagePercent} />
+            <Paragraph className='font-size-1 color-muted'>{row.diskFree.toFixed(1)}GB Available</Paragraph>
+        </Container>
+    );
 };
 
 const COLUMNS: ColumnDef[] = [
@@ -61,9 +89,9 @@ const COLUMNS: ColumnDef[] = [
         key: 'metricsStatus',
         header: 'Metrics',
         render: (row) => (
-            <Paragraph className={`server-table-status ${row.statusClass} font-size-1 font-weight-5`}>
+            <StatusBadge variant={row.statusVariant} size='compact'>
                 {row.status}
-            </Paragraph>
+            </StatusBadge>
         )
     },
     {
@@ -90,32 +118,17 @@ const COLUMNS: ColumnDef[] = [
     {
         key: 'cpu',
         header: 'CPU',
-        render: (row) => (
-            <Container className='d-flex items-center gap-05'>
-                <MetricBars percentage={row.cpu} />
-                <Paragraph className='font-size-1 color-muted'>{row.cpu}%</Paragraph>
-            </Container>
-        )
+        render: (row) => renderMetricValue(row.cpu)
     },
     {
         key: 'memory',
         header: 'Memory',
-        render: (row) => (
-            <Container className='d-flex items-center gap-05'>
-                <MetricBars percentage={row.memory} />
-                <Paragraph className='font-size-1 color-muted'>{row.memory}%</Paragraph>
-            </Container>
-        )
+        render: (row) => renderMetricValue(row.memory)
     },
     {
         key: 'disk',
         header: 'Disk',
-        render: (row) => (
-            <Container className='d-flex items-center gap-05'>
-                <MetricBars percentage={row.diskUsagePercent} />
-                <Paragraph className='font-size-1 color-muted'>{row.diskFree.toFixed(1)}GB Available</Paragraph>
-            </Container>
-        )
+        render: (row) => renderDiskValue(row)
     },
     {
         key: 'network',
@@ -125,7 +138,7 @@ const COLUMNS: ColumnDef[] = [
     {
         key: 'analysisCount',
         header: 'Computed Analyzes',
-        render: (row) => <Paragraph className='font-size-2 color-secondary'>{row.analysisCount}</Paragraph>
+        render: (row) => <Paragraph className='font-size-2 color-secondary'>{row.analysisCount ?? '--'}</Paragraph>
     },
     {
         key: 'uptime',
@@ -139,6 +152,7 @@ const SKELETON_COUNT = 3;
 const ServerTable = ({
     clusters,
     metricsByClusterId,
+    isMetricsConnected = true,
     selectedClusterId,
     onSelectCluster,
     onRevealCredentials,
@@ -150,9 +164,10 @@ const ServerTable = ({
     const rows = useMemo(() => {
         return transformClustersToRows(clusters.map((cluster) => ({
             teamCluster: cluster,
-            metrics: metricsByClusterId[cluster._id] ?? null
+            metrics: metricsByClusterId[cluster._id] ?? null,
+            isMetricsConnected
         })));
-    }, [clusters, metricsByClusterId]);
+    }, [clusters, isMetricsConnected, metricsByClusterId]);
 
     const getMenuOptions = useCallback((row: ServerRow): MenuOption[] => [
         {

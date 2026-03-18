@@ -18,12 +18,15 @@ import { sileo } from 'sileo';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import type { ChatMessage } from '../../api/entities/message';
 
+const MAX_CACHED_CHAT_ROOMS = 4;
+
 const useChatData = () => {
     const socket = useSocket();
     const queryClient = useQueryClient();
 
     const [currentChatId, setCurrentChatId] = useState<string | null>(null);
     const currentChatIdRef = useRef<string | null>(null);
+    const cachedChatIdsRef = useRef<string[]>([]);
 
     const markAsReadMutationResult = useMarkAsReadMutation();
 
@@ -81,11 +84,27 @@ const useChatData = () => {
         updateMessageInCache(queryClient, currentChatIdRef.current, _id, updates);
     }, [queryClient]);
 
+    const retainChatMessageCache = useCallback((chatId: string) => {
+        cachedChatIdsRef.current = [
+            ...cachedChatIdsRef.current.filter((cachedChatId) => cachedChatId !== chatId),
+            chatId
+        ];
+
+        while (cachedChatIdsRef.current.length > MAX_CACHED_CHAT_ROOMS) {
+            const evictedChatId = cachedChatIdsRef.current.shift();
+
+            if (evictedChatId) {
+                removeChatMessagesFromCache(queryClient, evictedChatId);
+            }
+        }
+    }, [queryClient]);
+
     const resetState = useCallback(() => {
         if (currentChatIdRef.current) {
-            socket.emit(CHAT_SOCKET_EVENTS.LEAVE_CHAT, currentChatIdRef.current);
+            socket.emit(CHAT_SOCKET_EVENTS.LEAVE_CHAT, currentChatIdRef.current).catch(() => undefined);
         }
 
+        cachedChatIdsRef.current = [];
         currentChatIdRef.current = null;
         setCurrentChatId(null);
         resetChatQueries(queryClient);
@@ -96,9 +115,9 @@ const useChatData = () => {
 
         if (currentChatIdRef.current) {
             socket.emit(CHAT_SOCKET_EVENTS.LEAVE_CHAT, currentChatIdRef.current).catch(() => undefined);
-            removeChatMessagesFromCache(queryClient, currentChatIdRef.current);
         }
 
+        retainChatMessageCache(chatId);
         currentChatIdRef.current = chatId;
         setCurrentChatId(chatId);
 
@@ -118,7 +137,7 @@ const useChatData = () => {
             const userIds = chat.participants.map((p) => p._id);
             socket.emit(CHAT_SOCKET_EVENTS.GET_USERS_PRESENCE, { userIds }).catch(() => undefined);
         }
-    }, [socket, queryClient, markAsReadMutationResult]);
+    }, [socket, markAsReadMutationResult, retainChatMessageCache]);
 
     return {
         chats,

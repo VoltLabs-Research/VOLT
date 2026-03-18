@@ -17,6 +17,26 @@ interface TeamClusterDaemonResponseEnvelope<T> {
     message?: string;
 };
 
+interface TeamClusterDaemonSemanticPayload {
+    accepted?: boolean;
+    reason?: string;
+    message?: string;
+};
+
+export interface TeamClusterDaemonCommandOptions {
+    timeoutMs?: number;
+    timeoutClass?: 'default' | 'interactive' | 'long-running-control-plane';
+    retryClass?: 'none' | 'safe-read' | 'idempotent-command';
+}
+
+export interface TeamClusterDaemonSemanticCommandResult<T> {
+    accepted: boolean;
+    data: T;
+    reason?: string;
+    retryClass: NonNullable<TeamClusterDaemonCommandOptions['retryClass']>;
+    timeoutClass: NonNullable<TeamClusterDaemonCommandOptions['timeoutClass']>;
+}
+
 export interface TeamClusterDaemonNotebookRuntime {
     tunnelTargetHost: string;
     tunnelTargetPort: number;
@@ -39,6 +59,10 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
 
 const isResponseEnvelope = <T>(value: unknown): value is TeamClusterDaemonResponseEnvelope<T> => {
     return isRecord(value) && typeof value.status === 'string' && 'data' in value;
+};
+
+const isSemanticPayload = (value: unknown): value is TeamClusterDaemonSemanticPayload => {
+    return isRecord(value);
 };
 
 // TODO: THIS IS UGLY, VOLTSDK EXISTS FOR AVOID THIS
@@ -72,10 +96,25 @@ const mapDaemonStatusToApplicationError = (
 
 @injectable()
 export default class TeamClusterDaemonClient {
+    private static readonly TIMEOUT_BY_CLASS: Record<NonNullable<TeamClusterDaemonCommandOptions['timeoutClass']>, number> = {
+        default: 30_000,
+        interactive: 10_000,
+        'long-running-control-plane': 60_000
+    };
+
     constructor(
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterReverseChannelService)
         private readonly teamClusterReverseChannelService: TeamClusterReverseChannelService
     ) {}
+
+    private resolveCommandOptions(options?: TeamClusterDaemonCommandOptions): Required<TeamClusterDaemonCommandOptions> {
+        const timeoutClass = options?.timeoutClass ?? 'default';
+        return {
+            timeoutMs: options?.timeoutMs ?? TeamClusterDaemonClient.TIMEOUT_BY_CLASS[timeoutClass],
+            timeoutClass,
+            retryClass: options?.retryClass ?? 'none'
+        };
+    }
 
     /**
      * Extracts the error code and message from a daemon response, logs a warning,
@@ -105,18 +144,45 @@ export default class TeamClusterDaemonClient {
         throw mapDaemonStatusToApplicationError(response.status, errorCode, errorMessage);
     }
 
-    async command<T>(teamClusterId: string, command: string, payload?: Record<string, unknown>, options?: { timeoutMs?: number }): Promise<T> {
+    async command<T>(teamClusterId: string, command: string, payload?: Record<string, unknown>, options?: TeamClusterDaemonCommandOptions): Promise<T> {
+        const resolvedOptions = this.resolveCommandOptions(options);
         const response = await this.teamClusterReverseChannelService.command(teamClusterId, {
             command,
             payload,
             responseType: TeamClusterDaemonResponseType.Json
-        }, options);
+        }, {
+            timeoutMs: resolvedOptions.timeoutMs
+        });
 
         if (!response.ok || !isResponseEnvelope<T>(response.data)) {
             this.throwDaemonError(command, response, 'Daemon command returned a failure response');
         }
 
         return response.data.data;
+    }
+
+    async commandWithSemanticResult<T>(
+        teamClusterId: string,
+        command: string,
+        payload?: Record<string, unknown>,
+        options?: TeamClusterDaemonCommandOptions
+    ): Promise<TeamClusterDaemonSemanticCommandResult<T>> {
+        const resolvedOptions = this.resolveCommandOptions(options);
+        const data = await this.command<T>(teamClusterId, command, payload, resolvedOptions);
+        const semanticPayload = isSemanticPayload(data) ? data : null;
+        const accepted = semanticPayload?.accepted !== false;
+
+        return {
+            accepted,
+            data,
+            reason: typeof semanticPayload?.reason === 'string'
+                ? semanticPayload.reason
+                : typeof semanticPayload?.message === 'string'
+                    ? semanticPayload.message
+                    : undefined,
+            retryClass: resolvedOptions.retryClass,
+            timeoutClass: resolvedOptions.timeoutClass
+        };
     }
 
     async getNotebookRuntime(

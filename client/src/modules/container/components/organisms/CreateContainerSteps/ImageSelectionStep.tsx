@@ -8,6 +8,7 @@ import { Server } from 'lucide-react';
 interface ImageSelectionStepProps {
     selectedTemplate: string | null;
     customImage: string;
+    customImageError?: string | null;
     onTemplateSelect: (templateId: string) => void;
     onCustomImageClick: () => void;
 };
@@ -15,6 +16,7 @@ interface ImageSelectionStepProps {
 const ImageSelectionStep = ({
     selectedTemplate,
     customImage,
+    customImageError,
     onTemplateSelect,
     onCustomImageClick
 }: ImageSelectionStepProps) => {
@@ -47,6 +49,16 @@ const ImageSelectionStep = ({
                     variant='custom'
                 />
             </Container>
+
+            {customImage && (
+                <Container className='d-flex column gap-025 p-1 radius-sm create-container-step-gate'>
+                    <Paragraph className='font-size-2 color-secondary'>Custom image preview</Paragraph>
+                    <Paragraph className='font-size-2 font-family-mono color-primary'>{customImage}</Paragraph>
+                    <Paragraph className={`font-size-2 ${customImageError ? 'color-danger' : 'color-secondary'}`}>
+                        {customImageError ?? 'Volt will pull this image directly from the registry when you deploy.'}
+                    </Paragraph>
+                </Container>
+            )}
         </Container>
     );
 };

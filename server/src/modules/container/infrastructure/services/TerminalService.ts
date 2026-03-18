@@ -1,9 +1,10 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import type { ContainerTerminalAttachment } from '@modules/container/domain/port/IContainerService';
 import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
-import { ContainerTerminalError, ContainerTerminalResizePayload, ITerminalClient, ITerminalService } from '@modules/container/domain/port/ITerminalService';
+import { ContainerTerminalAttachContext, ContainerTerminalError, ContainerTerminalResizePayload, ITerminalClient, ITerminalService } from '@modules/container/domain/port/ITerminalService';
+import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 
@@ -25,36 +26,42 @@ interface TerminalSession {
 export class TerminalService implements ITerminalService {
     private sessions: Map<string, TerminalSession> = new Map();
     private readonly HISTORY_LIMIT_BYTES = 10000;
+    private readonly IDLE_TIMEOUT_MS = 5000;
     private readonly clientHandlers = new WeakMap<ITerminalClient, SocketTerminalHandlers>();
+    private readonly clientSessions = new WeakMap<ITerminalClient, string>();
+    private readonly clientContexts = new WeakMap<ITerminalClient, ContainerTerminalAttachContext>();
 
     constructor(
         @inject(CONTAINER_TOKENS.ContainerRuntimeService) private containerRuntimeService: ITeamClusterContainerRuntimeService,
-        @inject(CONTAINER_TOKENS.ContainerRepository) private repository: IContainerRepository
+        @inject(ContainerOwnershipService)
+        private readonly ownershipService: ContainerOwnershipService
     ) {}
 
-    async attach(client: ITerminalClient, containerId: string): Promise<void> {
-        // Idempotent: if this client already has handlers registered (e.g.
-        // re-attach without detach), remove them first to avoid leaking
-        // stale event listeners.
-        this.removeClientHandlers(client);
+    async attach(client: ITerminalClient, context: ContainerTerminalAttachContext): Promise<void> {
+        const previousContainerId = this.clientSessions.get(client);
+        if (previousContainerId) {
+            this.detach(client, previousContainerId);
+        } else {
+            this.removeClientHandlers(client);
+        }
 
-        client.joinRoom(containerId);
-        let session = this.sessions.get(containerId);
+        try {
+            const container = await this.ownershipService.getOwnedByTeam(context.containerId, context.teamId);
+            if (!container.containerId) {
+                this.emitError(client, ErrorCodes.CONTAINER_NOT_FOUND, 'Container not found or not created');
+                return;
+            }
 
-        if (!session) {
-            try {
-                const containerDoc = await this.repository.findById(containerId);
-                if (!containerDoc || !containerDoc.containerId) {
-                    this.emitError(client, ErrorCodes.CONTAINER_NOT_FOUND, 'Container not found or not created');
-                    return;
-                }
+            if (!container.teamCluster) {
+                this.emitError(client, ErrorCodes.CONTAINER_NOT_FOUND, 'Container is not assigned to a team cluster');
+                return;
+            }
 
-                if (!containerDoc.teamCluster) {
-                    this.emitError(client, ErrorCodes.CONTAINER_NOT_FOUND, 'Container is not assigned to a team cluster');
-                    return;
-                }
+            client.joinRoom(context.containerId);
+            let session = this.sessions.get(context.containerId);
 
-                const attachment = await this.containerRuntimeService.attachTerminal(containerDoc.teamCluster, containerDoc.containerId);
+            if (!session) {
+                const attachment = await this.containerRuntimeService.attachTerminal(container.teamCluster, container.containerId);
                 session = {
                     attachment,
                     history: [],
@@ -63,11 +70,11 @@ export class TerminalService implements ITerminalService {
                     cleanupTimer: null
                 };
 
-                this.sessions.set(containerId, session);
+                this.sessions.set(context.containerId, session);
 
                 attachment.stream.on('data', (chunk: Buffer) => {
                     const data = chunk.toString('utf-8');
-                    client.emitDataToRoom(containerId, data);
+                    client.emitDataToRoom(context.containerId, data);
                     if (session) {
                         session.history.push(chunk);
                         session.historySize += chunk.length;
@@ -78,67 +85,100 @@ export class TerminalService implements ITerminalService {
                     }
                 });
 
-                attachment.stream.on('end', () => this.cleanupSession(containerId));
+                attachment.stream.on('end', () => this.cleanupSession(context.containerId));
                 attachment.stream.on('error', (error: Error) => {
-                    this.emitErrorToRoom(client, containerId, ErrorCodes.CONTAINER_EXEC_FAILED, this.getErrorDetails(error, 'Terminal stream error'));
-                    this.cleanupSession(containerId);
+                    this.emitErrorToRoom(client, context.containerId, ErrorCodes.CONTAINER_EXEC_FAILED, this.getErrorDetails(error, 'Terminal stream error'));
+                    this.cleanupSession(context.containerId);
                 });
+            }
 
-            } catch (error: unknown) {
-                this.emitError(client, ErrorCodes.INTERNAL_SERVER_ERROR, this.getErrorDetails(error, 'Unexpected terminal error'));
-                client.leaveRoom(containerId);
+            if (!session) {
+                client.leaveRoom(context.containerId);
                 return;
             }
-        }
 
-        if (session.cleanupTimer) {
-            clearTimeout(session.cleanupTimer);
-            session.cleanupTimer = null;
-        }
-
-        session.activeConnections++;
-        if (session.history.length > 0) {
-            const combined = Buffer.concat(session.history).toString('utf8');
-            client.emitData(combined);
-        }
-
-        const onInput = (input: string) => {
-            if (session && !session.attachment.stream.destroyed) {
-                session.attachment.stream.write(input);
+            if (session.cleanupTimer) {
+                clearTimeout(session.cleanupTimer);
+                session.cleanupTimer = null;
             }
-        };
 
-        const onResize = (size: ContainerTerminalResizePayload) => {
-            if (session) {
-                session.attachment.exec.resize(size).catch(() => { });
+            session.activeConnections++;
+            this.clientSessions.set(client, context.containerId);
+            this.clientContexts.set(client, context);
+
+            logger.info({
+                event: 'container_terminal_open',
+                containerId: context.containerId,
+                teamId: context.teamId,
+                userId: context.userId,
+                socketId: client.id,
+                activeConnections: session.activeConnections
+            }, '@container-terminal');
+
+            if (session.history.length > 0) {
+                const combined = Buffer.concat(session.history).toString('utf8');
+                client.emitData(combined);
             }
-        };
 
-        const onDisconnect = () => this.detach(client, containerId);
+            const onInput = (input: string) => {
+                if (session && !session.attachment.stream.destroyed) {
+                    session.attachment.stream.write(input);
+                }
+            };
 
-        this.clientHandlers.set(client, {
-            onInput,
-            onResize,
-            onDisconnect
-        });
+            const onResize = (size: ContainerTerminalResizePayload) => {
+                if (session) {
+                    session.attachment.exec.resize(size).catch(() => { });
+                }
+            };
 
-        client.onInput(onInput);
-        client.onResize(onResize);
-        client.onDetach(onDisconnect);
-        client.onDisconnect(onDisconnect);
+            const onDisconnect = () => this.detach(client, context.containerId);
+
+            this.clientHandlers.set(client, {
+                onInput,
+                onResize,
+                onDisconnect
+            });
+
+            client.onInput(onInput);
+            client.onResize(onResize);
+            client.onDetach(onDisconnect);
+            client.onDisconnect(onDisconnect);
+        } catch (error: unknown) {
+            if (error instanceof ApplicationError) {
+                this.emitError(client, error.code, error.message);
+            } else {
+                this.emitError(client, ErrorCodes.INTERNAL_SERVER_ERROR, this.getErrorDetails(error, 'Unexpected terminal error'));
+            }
+
+            client.leaveRoom(context.containerId);
+        }
     }
 
     detach(client: ITerminalClient, containerId: string): void {
         this.removeClientHandlers(client);
+        this.clientSessions.delete(client);
+        const context = this.clientContexts.get(client);
+        this.clientContexts.delete(client);
         client.leaveRoom(containerId);
 
         const session = this.sessions.get(containerId);
         if (!session) return;
 
         session.activeConnections--;
+
+        logger.info({
+            event: 'container_terminal_close',
+            containerId,
+            teamId: context?.teamId,
+            userId: context?.userId,
+            socketId: client.id,
+            activeConnections: Math.max(session.activeConnections, 0)
+        }, '@container-terminal');
+
         if (session.activeConnections <= 0) {
             session.activeConnections = 0;
-            session.cleanupTimer = setTimeout(() => this.cleanupSession(containerId), 5000);
+            session.cleanupTimer = setTimeout(() => this.cleanupSession(containerId), this.IDLE_TIMEOUT_MS);
         }
     }
 
@@ -160,6 +200,11 @@ export class TerminalService implements ITerminalService {
     private cleanupSession(containerId: string) {
         const session = this.sessions.get(containerId);
         if (!session || session.activeConnections > 0) return;
+
+        if (session.cleanupTimer) {
+            clearTimeout(session.cleanupTimer);
+            session.cleanupTimer = null;
+        }
 
         try {
             session.attachment.stream.removeAllListeners();

@@ -49,7 +49,7 @@ interface ColorCodingProps {
 };
 
 interface ColorCodingFormProps {
-    property: string;
+    propertyValue: string;
     propertyOptions: SelectOption[];
     onPropertyChange: (value: string) => void;
     gradient: ColorGradient;
@@ -68,7 +68,7 @@ interface ColorCodingFormProps {
 };
 
 const ColorCodingForm = ({
-    property,
+    propertyValue,
     propertyOptions,
     onPropertyChange,
     gradient,
@@ -93,7 +93,7 @@ const ColorCodingForm = ({
         {
             key: 'property',
             label: 'Property',
-            value: property,
+            value: propertyValue,
             onChange: onPropertyChange,
             options: propertyOptions
         },
@@ -189,7 +189,7 @@ const ColorCodingForm = ({
 
 const ColorCoding = ({ trajectoryId, analysisId, currentTimestep, legacyRef }: ColorCodingProps) => {
     const {
-        property,
+        propertyValue,
         propertyOptions,
         handlePropertyChange,
         gradient,
@@ -235,7 +235,7 @@ const ColorCoding = ({ trajectoryId, analysisId, currentTimestep, legacyRef }: C
 
     return (
         <ColorCodingForm
-            property={property}
+            propertyValue={propertyValue}
             propertyOptions={propertyOptions}
             onPropertyChange={handlePropertyChange}
             gradient={gradient}

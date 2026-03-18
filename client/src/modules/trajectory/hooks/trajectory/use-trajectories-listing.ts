@@ -1,3 +1,4 @@
+import { extractTrajectoryTimesteps } from '@/modules/canvas/utilities/selected-timestep-analysis';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { TrajectoryFolder } from '@/modules/trajectory/api/entities/trajectory/trajectory-folder';
 import {
@@ -280,7 +281,7 @@ const useTrajectoriesListing = () => {
                 label: 'Inspect Atoms',
                 icon: RiTableLine,
                 handler: ({ item: trajectory }) => {
-                    const firstTimestep = trajectory.frames[0]?.timestep;
+                    const firstTimestep = extractTrajectoryTimesteps(trajectory)[0];
                     if (firstTimestep === undefined) {
                         return;
                     }

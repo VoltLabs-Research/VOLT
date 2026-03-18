@@ -29,7 +29,9 @@ const ResizeHandle = ({ direction, isDragging, onPointerDown, onKeyDown, label, 
         aria-valuemin={valueMin}
         aria-valuemax={valueMax}
         aria-valuenow={valueNow}
-    />
+    >
+        <span className='canvas-resize-handle__grip' aria-hidden='true' />
+    </Container>
 );
 
 export default ResizeHandle;

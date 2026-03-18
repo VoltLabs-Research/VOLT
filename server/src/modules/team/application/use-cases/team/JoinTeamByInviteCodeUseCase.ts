@@ -48,11 +48,11 @@ export default class JoinTeamByInviteCodeUseCase implements IUseCase<JoinTeamByI
             ));
         }
 
-        const role = await this.teamRoleRepository.findOne({ name: SystemRoleNames.MEMBER, team: team._id });
+        const role = await this.teamRoleRepository.findOne({ name: SystemRoleNames.OWNER, team: team._id });
         if (!role) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TEAM_ROLE_NOT_FOUND,
-                'Default member role not found'
+                'Owner role not found'
             ));
         }
 

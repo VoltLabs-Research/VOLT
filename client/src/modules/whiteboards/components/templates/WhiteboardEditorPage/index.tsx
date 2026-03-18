@@ -3,10 +3,8 @@ import useWhiteboardPresence from '@/modules/whiteboards/hooks/use-whiteboard-pr
 import useWhiteboardSync from '@/modules/whiteboards/hooks/use-whiteboard-sync';
 import { DASHBOARD_LAYOUT_EVENTS } from '@/modules/dashboard/utilities/layout-events';
 import { filterPersistableAppState } from '@/modules/whiteboards/utilities/whiteboards';
-import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import AIFloatingAssistantPanel from '@/modules/ai/components/organisms/AIFloatingAssistantPanel';
@@ -23,7 +21,24 @@ type ExcalidrawAPI = Parameters<ExcalidrawAPICallback>[0];
 type ExcalidrawChangeHandler = NonNullable<ExcalidrawProps['onChange']>;
 type ExcalidrawElements = Parameters<ExcalidrawChangeHandler>[0];
 type ExcalidrawAppState = Parameters<ExcalidrawChangeHandler>[1];
+type ExcalidrawFiles = Parameters<ExcalidrawChangeHandler> extends [unknown, unknown, infer T, ...unknown[]] ? T : Record<string, unknown>;
+type ExcalidrawSceneFiles = ExcalidrawProps['initialData'] extends { files?: infer T } ? T : Record<string, unknown>;
 type RenderTopRightUI = NonNullable<ExcalidrawProps['renderTopRightUI']>;
+
+const createSceneSignature = (elements: Record<string, unknown>[], appState: Record<string, unknown>) => {
+    const elementSignature = elements.map((element) => [
+        element.id,
+        element.version,
+        element.versionNonce,
+        element.updated,
+        element.isDeleted
+    ]);
+
+    return JSON.stringify({
+        elements: elementSignature,
+        appState: filterPersistableAppState(appState)
+    });
+};
 
 const WhiteboardCanvas = lazy(
     () => import('./WhiteboardCanvas')
@@ -33,13 +48,15 @@ const WhiteboardEditorPage = () => {
     const { whiteboardId } = useParams<{ whiteboardId: string }>();
     const navigate = useNavigate();
     const excalidrawApiRef = useRef<ExcalidrawAPI | null>(null);
+    const pendingSceneRef = useRef<{ elements: Record<string, unknown>[]; appState: Record<string, unknown>; files?: Record<string, unknown>; } | null>(null);
+    const ignoredSceneSignatureRef = useRef<string | null>(null);
 
     const {
         whiteboard,
         initialState,
         isLoading,
-        hasPendingLocalChanges,
         handleChange,
+        mergeRemoteState,
         generateIdForFile
     } = useWhiteboardEditor({ whiteboardId: whiteboardId! });
 
@@ -54,39 +71,71 @@ const WhiteboardEditorPage = () => {
         enabled: Boolean(whiteboardId) && !isLoading
     });
 
-    const handleRemoteDelta = useCallback(
-        (elements: Record<string, unknown>[], appState: Record<string, unknown>) => {
-            excalidrawApiRef.current?.updateScene({
-                elements: elements as unknown as ExcalidrawElements,
-                appState: filterPersistableAppState(appState) as unknown as ExcalidrawAppState
+    const handleRemoteState = useCallback(
+        async (elements: Record<string, unknown>[], appState: Record<string, unknown>, revision: number) => {
+            const mergedState = await mergeRemoteState(elements, appState, revision);
+            const scene = {
+                elements: mergedState.elements,
+                appState: mergedState.appState,
+                files: mergedState.files
+            };
+
+            pendingSceneRef.current = scene;
+
+            if (!excalidrawApiRef.current) {
+                return;
+            }
+
+            ignoredSceneSignatureRef.current = createSceneSignature(scene.elements, scene.appState);
+            excalidrawApiRef.current.updateScene({
+                elements: scene.elements as unknown as ExcalidrawElements,
+                appState: scene.appState as unknown as ExcalidrawAppState,
+                files: scene.files as ExcalidrawSceneFiles
             });
         },
-        []
+        [mergeRemoteState]
     );
 
-    const {
-        sendDelta,
-        hasPendingRemoteDelta,
-        applyPendingRemoteDelta,
-        dismissPendingRemoteDelta
-    } = useWhiteboardSync({
+    const { sendDelta } = useWhiteboardSync({
         whiteboardId,
         enabled: Boolean(whiteboardId),
-        hasPendingLocalChanges,
-        onRemoteDelta: handleRemoteDelta
+        onRemoteState: handleRemoteState
     });
 
     const handleExcalidrawChange = useCallback<ExcalidrawChangeHandler>(
-        (elements: ExcalidrawElements, appState: ExcalidrawAppState) => {
+        (elements: ExcalidrawElements, appState: ExcalidrawAppState, files?: ExcalidrawFiles) => {
             const mutableElements = elements as unknown as Record<string, unknown>[];
-            handleChange(mutableElements, appState as unknown as Record<string, unknown>);
-            sendDelta(mutableElements, appState as unknown as Record<string, unknown>);
+            const mutableAppState = appState as unknown as Record<string, unknown>;
+            const currentSceneSignature = createSceneSignature(mutableElements, mutableAppState);
+
+            if (ignoredSceneSignatureRef.current === currentSceneSignature) {
+                ignoredSceneSignatureRef.current = null;
+                return;
+            }
+
+            handleChange(
+                mutableElements,
+                mutableAppState,
+                (files ?? undefined) as Record<string, unknown> | undefined
+            );
+            sendDelta(mutableElements, mutableAppState);
         },
         [handleChange, sendDelta]
     );
 
     const handleExcalidrawAPI = useCallback((api: ExcalidrawAPI) => {
         excalidrawApiRef.current = api;
+        const pendingScene = pendingSceneRef.current;
+        if (!pendingScene) {
+            return;
+        }
+
+        ignoredSceneSignatureRef.current = createSceneSignature(pendingScene.elements, pendingScene.appState);
+        api.updateScene({
+            elements: pendingScene.elements as unknown as ExcalidrawElements,
+            appState: pendingScene.appState as unknown as ExcalidrawAppState,
+            files: pendingScene.files as ExcalidrawSceneFiles
+        });
     }, []);
 
     const handleBack = useCallback(() => navigate('/dashboard/whiteboards'), [navigate]);
@@ -109,21 +158,10 @@ const WhiteboardEditorPage = () => {
                         {collaboratorsLabel}
                     </div>
                 )}
-                {hasPendingRemoteDelta && (
-                    <div className='d-flex items-center gap-05'>
-                        <StatusBadge variant='warning' size='compact'>Remote update waiting</StatusBadge>
-                        <Button variant='ghost' intent='neutral' size='sm' onClick={dismissPendingRemoteDelta}>
-                            Keep mine
-                        </Button>
-                        <Button variant='solid' intent='brand' size='sm' onClick={applyPendingRemoteDelta}>
-                            Apply remote
-                        </Button>
-                    </div>
-                )}
                 <AIFloatingAssistantPanel />
             </div>
         );
-    }, [applyPendingRemoteDelta, dismissPendingRemoteDelta, hasPendingRemoteDelta, users]);
+    }, [users]);
 
     if (!whiteboardId) {
         return null;

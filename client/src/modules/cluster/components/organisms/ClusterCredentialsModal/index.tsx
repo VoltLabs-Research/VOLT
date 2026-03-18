@@ -29,17 +29,20 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [hasAcknowledgedSensitiveCopy, setHasAcknowledgedSensitiveCopy] = useState(false);
 
     useEffect(() => {
         if (credentials) {
             setPassword('');
             setError(undefined);
         }
+        setHasAcknowledgedSensitiveCopy(false);
     }, [credentials]);
 
     const handleClose = () => {
         setPassword('');
         setError(undefined);
+        setHasAcknowledgedSensitiveCopy(false);
         closeModal(CLUSTER_CREDENTIALS_MODAL_ID);
     };
 
@@ -118,21 +121,44 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
                     </>
                 )}
 
-                {credentials && services.map((service) => (
-                    <Container key={service.label} className='cluster-credentials-card d-flex column gap-025 p-1 radius-md'>
-                        <Title className='font-size-2 font-weight-6 color-primary'>{service.label}</Title>
-                        <Paragraph className='font-size-1 color-secondary'>Port: {service.port ?? 'Not assigned'}</Paragraph>
-                        {'username' in service && service.username && (
-                            <Paragraph className='font-size-1 color-secondary'>Username: {service.username}</Paragraph>
-                        )}
-                        <Container className='d-flex items-center content-between gap-05'>
-                            <Paragraph className='font-family-mono font-size-1 color-primary'>Password: {service.password}</Paragraph>
-                            <Button variant='ghost' intent='neutral' size='sm' onClick={() => handleCopyPassword(service.password)}>
-                                Copy
-                            </Button>
+                {credentials && (
+                    <>
+                        <Container className='cluster-credentials-warning d-flex column gap-05 p-1 radius-md' role='status' aria-live='polite'>
+                            <Title as='h3' className='font-size-2 font-weight-6 color-primary'>Sensitive credentials</Title>
+                            <Paragraph className='font-size-2 color-secondary'>Copy these only into secure tools. Anyone with these values can access cluster services directly.</Paragraph>
+                            <label className='d-flex items-start gap-05 cluster-credentials-acknowledgement'>
+                                <input
+                                    type='checkbox'
+                                    checked={hasAcknowledgedSensitiveCopy}
+                                    onChange={(event) => setHasAcknowledgedSensitiveCopy(event.target.checked)}
+                                />
+                                <span className='font-size-2 color-secondary'>I understand these credentials are sensitive and should not be pasted into chat, tickets, or shared docs.</span>
+                            </label>
                         </Container>
-                    </Container>
-                ))}
+
+                        {services.map((service) => (
+                            <Container key={service.label} className='cluster-credentials-card d-flex column gap-025 p-1 radius-md'>
+                                <Title className='font-size-2 font-weight-6 color-primary'>{service.label}</Title>
+                                <Paragraph className='font-size-1 color-secondary'>Port: {service.port ?? 'Not assigned'}</Paragraph>
+                                {'username' in service && service.username && (
+                                    <Paragraph className='font-size-1 color-secondary'>Username: {service.username}</Paragraph>
+                                )}
+                                <Container className='d-flex items-center content-between gap-05'>
+                                    <Paragraph className='font-family-mono font-size-1 color-primary'>Password: {service.password}</Paragraph>
+                                    <Button
+                                        variant='ghost'
+                                        intent='neutral'
+                                        size='sm'
+                                        onClick={() => handleCopyPassword(service.password)}
+                                        disabled={!hasAcknowledgedSensitiveCopy}
+                                    >
+                                        Copy
+                                    </Button>
+                                </Container>
+                            </Container>
+                        ))}
+                    </>
+                )}
             </Container>
         </Modal>
     );

@@ -9,16 +9,12 @@ import type { SelectOption } from '@/shared/presentation/components/Select';
 
 interface ClusterSelectorProps {
     clusters: TeamCluster[];
-    selectedClusterId: string;
+    selectedClusterId: string | null;
     onClusterChange: (clusterId: string) => void;
 };
 
 const ClusterSelector = ({ clusters, selectedClusterId, onClusterChange }: ClusterSelectorProps) => {
     const options = useMemo<SelectOption[]>(() => {
-        if(!clusters.length){
-            return [{ value: 'main-cluster', title: 'No clusters yet' }];
-        }
-        
         return clusters.map((cluster) => ({
             value: cluster._id,
             title: cluster.name,
@@ -36,7 +32,8 @@ const ClusterSelector = ({ clusters, selectedClusterId, onClusterChange }: Clust
                     options={options}
                     value={selectedClusterId}
                     onChange={onClusterChange}
-                    placeholder='Select cluster...'
+                    placeholder='No clusters yet'
+                    disabled={!options.length}
                 />
             </Container>
 

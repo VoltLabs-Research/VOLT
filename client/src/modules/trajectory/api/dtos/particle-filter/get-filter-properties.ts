@@ -7,6 +7,7 @@ export interface GetFilterPropertiesInputDTO {
 export interface FilterPropertiesData {
     dump: string[];
     perAtom: Record<string, string[]>;
+    exposureNames: Record<string, string>;
 };
 
 export interface GetFilterPropertiesOutputDTO {

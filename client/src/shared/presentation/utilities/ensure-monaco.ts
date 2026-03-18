@@ -32,7 +32,9 @@ export enum MonacoThemeName {
 
 let monacoSetupPromise: Promise<typeof Monaco> | null = null;
 
-const MONACO_THEME_TOKENS: Record<Theme, MonacoThemeTokens> = {
+type VisualTheme = Theme.Light | Theme.Dark;
+
+const MONACO_THEME_TOKENS: Record<VisualTheme, MonacoThemeTokens> = {
     [Theme.Dark]: {
         background: '#101011',
         surface: '#171719',
@@ -73,7 +75,7 @@ const getMonacoTokenColor = (colorValue: string): string => {
     return colorValue.slice(1);
 };
 
-const buildMonacoTheme = (theme: Theme): Monaco.editor.IStandaloneThemeData => {
+const buildMonacoTheme = (theme: VisualTheme): Monaco.editor.IStandaloneThemeData => {
     const tokens = MONACO_THEME_TOKENS[theme];
 
     return {
@@ -126,7 +128,7 @@ export const getMonacoThemeName = (theme: Theme): MonacoThemeName => {
 };
 
 /** Registers the Volt Monaco theme that matches the active application theme. */
-export const registerMonacoTheme = (monaco: typeof Monaco, theme: Theme): void => {
+export const registerMonacoTheme = (monaco: typeof Monaco, theme: VisualTheme): void => {
     monaco.editor.defineTheme(getMonacoThemeName(theme), buildMonacoTheme(theme));
 };
 
@@ -172,7 +174,7 @@ export const ensureMonaco = (): Promise<typeof Monaco> => {
 };
 
 /** Applies the active Volt Monaco theme to all mounted editors. */
-export const applyMonacoTheme = (theme = getActiveAppTheme()): Promise<typeof Monaco> => {
+export const applyMonacoTheme = (theme: VisualTheme = getActiveAppTheme()): Promise<typeof Monaco> => {
     return ensureMonaco().then((monaco) => {
         registerMonacoTheme(monaco, theme);
         monaco.editor.setTheme(getMonacoThemeName(theme));

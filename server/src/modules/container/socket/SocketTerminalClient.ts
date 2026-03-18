@@ -5,6 +5,10 @@ import type { Socket } from 'socket.io';
 export class SocketTerminalClient implements ITerminalClient {
     constructor(private readonly socket: Socket) {}
 
+    get id(): string {
+        return this.socket.id;
+    }
+
     joinRoom(room: string): void {
         this.socket.join(room);
     }

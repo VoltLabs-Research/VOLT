@@ -15,8 +15,82 @@ import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/I
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
 import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
+import type { TeamClusterLifecycleUpdatePreconditions } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 
 const BYTES_PER_GB = 1024 ** 3;
+const TEAM_CLUSTER_ALLOWED_TRANSITIONS: Record<TeamClusterStatus, ReadonlySet<TeamClusterStatus>> = {
+    [TeamClusterStatus.WaitingForConnection]: new Set([
+        TeamClusterStatus.HealthcheckReceived,
+        TeamClusterStatus.Connected,
+        TeamClusterStatus.Deleting
+    ]),
+    [TeamClusterStatus.HealthcheckReceived]: new Set([
+        TeamClusterStatus.HealthcheckReceived,
+        TeamClusterStatus.PreparingEnvironment,
+        TeamClusterStatus.Connected,
+        TeamClusterStatus.DependenciesInstallationFailed,
+        TeamClusterStatus.OperatingSystemNotSupported,
+        TeamClusterStatus.Deleting
+    ]),
+    [TeamClusterStatus.PreparingEnvironment]: new Set([
+        TeamClusterStatus.PreparingEnvironment,
+        TeamClusterStatus.Connected,
+        TeamClusterStatus.DependenciesInstallationFailed,
+        TeamClusterStatus.OperatingSystemNotSupported,
+        TeamClusterStatus.Deleting
+    ]),
+    [TeamClusterStatus.DependenciesInstallationFailed]: new Set([
+        TeamClusterStatus.HealthcheckReceived,
+        TeamClusterStatus.PreparingEnvironment,
+        TeamClusterStatus.DependenciesInstallationFailed,
+        TeamClusterStatus.Deleting
+    ]),
+    [TeamClusterStatus.OperatingSystemNotSupported]: new Set([
+        TeamClusterStatus.HealthcheckReceived,
+        TeamClusterStatus.PreparingEnvironment,
+        TeamClusterStatus.OperatingSystemNotSupported,
+        TeamClusterStatus.Deleting
+    ]),
+    [TeamClusterStatus.Connected]: new Set([
+        TeamClusterStatus.Connected,
+        TeamClusterStatus.Disconnected,
+        TeamClusterStatus.Updating,
+        TeamClusterStatus.Deleting
+    ]),
+    [TeamClusterStatus.Disconnected]: new Set([
+        TeamClusterStatus.Connected,
+        TeamClusterStatus.Disconnected,
+        TeamClusterStatus.Updating,
+        TeamClusterStatus.Deleting
+    ]),
+    [TeamClusterStatus.Deleting]: new Set([
+        TeamClusterStatus.Deleting,
+        TeamClusterStatus.DeleteFailed
+    ]),
+    [TeamClusterStatus.DeleteFailed]: new Set([
+        TeamClusterStatus.DeleteFailed,
+        TeamClusterStatus.Deleting
+    ]),
+    [TeamClusterStatus.Updating]: new Set([
+        TeamClusterStatus.Updating,
+        TeamClusterStatus.Connected,
+        TeamClusterStatus.UpdateFailed,
+        TeamClusterStatus.Deleting
+    ]),
+    [TeamClusterStatus.UpdateFailed]: new Set([
+        TeamClusterStatus.UpdateFailed,
+        TeamClusterStatus.Updating,
+        TeamClusterStatus.Connected,
+        TeamClusterStatus.Deleting
+    ])
+};
+
+const HEARTBEAT_LOCKED_STATUSES = new Set<TeamClusterStatus>([
+    TeamClusterStatus.Deleting,
+    TeamClusterStatus.DeleteFailed,
+    TeamClusterStatus.Updating,
+    TeamClusterStatus.UpdateFailed
+]);
 
 interface DaemonMetricsSnapshot {
     timestamp: string;
@@ -63,6 +137,11 @@ interface TeamClusterLifecycleUpdate {
     clearEnrollmentToken?: boolean;
 };
 
+interface PersistLifecycleUpdateOptions {
+    preconditions?: TeamClusterLifecycleUpdatePreconditions;
+    logContext?: string;
+}
+
 interface TeamClusterLifecycleEventPayload {
     teamClusterId: string;
     teamId: string;
@@ -101,6 +180,11 @@ export default class TeamClusterLifecycleService {
             status: TeamClusterStatus.HealthcheckReceived,
             installedVersion,
             clearEnrollmentToken: true
+        }, {
+            preconditions: {
+                allowedCurrentStatuses: [teamCluster.props.status]
+            },
+            logContext: 'healthcheck'
         });
 
         return {
@@ -121,6 +205,11 @@ export default class TeamClusterLifecycleService {
             status,
             installedVersion,
             lastDisconnectAt: status === TeamClusterStatus.Disconnected ? new Date() : undefined
+        }, {
+            preconditions: {
+                allowedCurrentStatuses: [teamCluster.props.status]
+            },
+            logContext: 'lifecycle-status'
         });
 
         return toTeamClusterDTO(updatedTeamCluster);
@@ -133,10 +222,7 @@ export default class TeamClusterLifecycleService {
         metrics?: DaemonMetricsSnapshot
     ): Promise<TeamClusterDTO> {
         const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
-        const nextStatus = teamCluster.props.status === TeamClusterStatus.Deleting
-            || teamCluster.props.status === TeamClusterStatus.DeleteFailed
-            || teamCluster.props.status === TeamClusterStatus.Updating
-            || teamCluster.props.status === TeamClusterStatus.UpdateFailed
+        const nextStatus = HEARTBEAT_LOCKED_STATUSES.has(teamCluster.props.status)
             ? teamCluster.props.status
             : TeamClusterStatus.Connected;
         const isFirstTeamConnection = teamCluster.props.lastHeartbeatAt === null
@@ -145,6 +231,11 @@ export default class TeamClusterLifecycleService {
             status: nextStatus,
             installedVersion,
             lastHeartbeatAt: new Date()
+        }, {
+            preconditions: {
+                allowedCurrentStatuses: [teamCluster.props.status]
+            },
+            logContext: 'heartbeat'
         });
 
         if (isFirstTeamConnection) {
@@ -229,6 +320,11 @@ export default class TeamClusterLifecycleService {
         const teamCluster = await this.requireTeamClusterById(teamClusterId);
         const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
             status: TeamClusterStatus.Deleting
+        }, {
+            preconditions: {
+                allowedCurrentStatuses: [teamCluster.props.status]
+            },
+            logContext: 'mark-deleting'
         });
 
         return toTeamClusterDTO(updatedTeamCluster);
@@ -238,6 +334,11 @@ export default class TeamClusterLifecycleService {
         const teamCluster = await this.requireTeamClusterById(teamClusterId);
         const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
             status: TeamClusterStatus.Updating
+        }, {
+            preconditions: {
+                allowedCurrentStatuses: [teamCluster.props.status]
+            },
+            logContext: 'mark-updating'
         });
 
         return toTeamClusterDTO(updatedTeamCluster);
@@ -245,11 +346,25 @@ export default class TeamClusterLifecycleService {
 
     async markUpdatingTimeouts(cutoff: Date): Promise<number> {
         const timedOutClusters = await this.teamClusterRepository.findUpdatingTimedOutClusters(cutoff);
+        let markedCount = 0;
 
         for (const teamCluster of timedOutClusters) {
-            await this.persistLifecycleUpdate(teamCluster, {
+            const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
                 status: TeamClusterStatus.UpdateFailed
+            }, {
+                preconditions: {
+                    allowedCurrentStatuses: [TeamClusterStatus.Updating],
+                    requireUpdatedBefore: cutoff
+                },
+                logContext: 'update-timeout'
             });
+
+            if (updatedTeamCluster.props.status !== TeamClusterStatus.UpdateFailed
+                || updatedTeamCluster.props.updatedAt.getTime() <= teamCluster.props.updatedAt.getTime()) {
+                continue;
+            }
+
+            markedCount += 1;
 
             logger.warn({
                 action: 'team-cluster.update-timeout',
@@ -258,7 +373,7 @@ export default class TeamClusterLifecycleService {
             }, 'Team cluster marked as update-failed after update timeout');
         }
 
-        return timedOutClusters.length;
+        return markedCount;
     }
 
     async completeDeletion(teamClusterId: string, daemonPassword: string): Promise<void> {
@@ -268,12 +383,29 @@ export default class TeamClusterLifecycleService {
 
     async markHeartbeatTimeouts(cutoff: Date): Promise<number> {
         const timedOutClusters = await this.teamClusterRepository.findHeartbeatTimedOutConnectedClusters(cutoff);
+        let markedCount = 0;
 
         for (const teamCluster of timedOutClusters) {
-            await this.persistLifecycleUpdate(teamCluster, {
+            const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
                 status: TeamClusterStatus.Disconnected,
                 lastDisconnectAt: new Date()
+            }, {
+                preconditions: {
+                    allowedCurrentStatuses: [TeamClusterStatus.Connected],
+                    requireHeartbeatBefore: cutoff
+                },
+                logContext: 'heartbeat-timeout'
             });
+
+            if (updatedTeamCluster.props.status !== TeamClusterStatus.Disconnected) {
+                continue;
+            }
+
+            if (updatedTeamCluster.props.updatedAt.getTime() <= teamCluster.props.updatedAt.getTime()) {
+                continue;
+            }
+
+            markedCount += 1;
 
             logger.warn({
                 action: 'team-cluster.heartbeat-timeout',
@@ -283,14 +415,25 @@ export default class TeamClusterLifecycleService {
             }, 'Team cluster marked as disconnected after heartbeat timeout');
         }
 
-        return timedOutClusters.length;
+        return markedCount;
     }
 
     async finalizeDeletingClustersByEvidence(cutoff: Date): Promise<number> {
         const deletingClusters = await this.teamClusterRepository.findHeartbeatTimedOutDeletingClusters(cutoff);
+        let deletedCount = 0;
 
         for (const teamCluster of deletingClusters) {
-            await this.deleteTeamCluster(teamCluster);
+            const currentTeamCluster = await this.requireTeamClusterById(teamCluster.id);
+            if (currentTeamCluster.props.status !== TeamClusterStatus.Deleting) {
+                continue;
+            }
+
+            if (currentTeamCluster.props.lastHeartbeatAt !== null && currentTeamCluster.props.lastHeartbeatAt >= cutoff) {
+                continue;
+            }
+
+            await this.deleteTeamCluster(currentTeamCluster);
+            deletedCount += 1;
 
             logger.info({
                 action: 'team-cluster.delete.completed-from-heartbeat-timeout',
@@ -300,7 +443,42 @@ export default class TeamClusterLifecycleService {
             }, 'Team cluster deletion completed after runtime disconnect evidence');
         }
 
-        return deletingClusters.length;
+        return deletedCount;
+    }
+
+    async markDeletingTimeouts(cutoff: Date): Promise<number> {
+        const timedOutClusters = await this.teamClusterRepository.findDeletingTimedOutClusters(cutoff);
+        let markedCount = 0;
+
+        for (const teamCluster of timedOutClusters) {
+            const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
+                status: TeamClusterStatus.DeleteFailed
+            }, {
+                preconditions: {
+                    allowedCurrentStatuses: [TeamClusterStatus.Deleting],
+                    requireUpdatedBefore: cutoff
+                },
+                logContext: 'delete-timeout'
+            });
+
+            if (updatedTeamCluster.props.status !== TeamClusterStatus.DeleteFailed) {
+                continue;
+            }
+
+            if (updatedTeamCluster.props.updatedAt.getTime() <= teamCluster.props.updatedAt.getTime()) {
+                continue;
+            }
+
+            markedCount += 1;
+
+            logger.warn({
+                action: 'team-cluster.delete-timeout',
+                teamClusterId: teamCluster.id,
+                teamId: teamCluster.props.team
+            }, 'Team cluster marked as delete-failed after delete timeout');
+        }
+
+        return markedCount;
     }
 
     async deleteTeamCluster(teamCluster: TeamCluster): Promise<void> {
@@ -323,9 +501,23 @@ export default class TeamClusterLifecycleService {
 
     private async persistLifecycleUpdate(
         teamCluster: TeamCluster,
-        update: TeamClusterLifecycleUpdate
+        update: TeamClusterLifecycleUpdate,
+        options: PersistLifecycleUpdateOptions = {}
     ): Promise<TeamCluster> {
-        const updatedTeamCluster = await this.teamClusterRepository.updateById(teamCluster.id, {
+        if (!this.isTransitionAllowed(teamCluster.props.status, update.status)) {
+            logger.info({
+                action: 'team-cluster.lifecycle-transition-ignored',
+                teamClusterId: teamCluster.id,
+                teamId: teamCluster.props.team,
+                fromStatus: teamCluster.props.status,
+                toStatus: update.status,
+                context: options.logContext
+            }, 'Ignored illegal team cluster lifecycle transition');
+
+            return teamCluster;
+        }
+
+        const updatedTeamCluster = await this.teamClusterRepository.updateLifecycleById(teamCluster.id, {
             status: update.status,
             installedVersion: update.installedVersion ?? teamCluster.props.installedVersion,
             enrollmentTokenHash: update.clearEnrollmentToken ? null : teamCluster.props.enrollmentTokenHash,
@@ -335,14 +527,37 @@ export default class TeamClusterLifecycleService {
             lastDisconnectAt: update.lastDisconnectAt === undefined
                 ? teamCluster.props.lastDisconnectAt
                 : update.lastDisconnectAt
-        });
+        }, options.preconditions);
 
         if (!updatedTeamCluster) {
-            throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
+            const latestTeamCluster = await this.teamClusterRepository.findById(teamCluster.id);
+            if (!latestTeamCluster) {
+                throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
+            }
+
+            logger.info({
+                action: 'team-cluster.lifecycle-transition-stale',
+                teamClusterId: teamCluster.id,
+                teamId: teamCluster.props.team,
+                attemptedFromStatus: teamCluster.props.status,
+                attemptedToStatus: update.status,
+                currentStatus: latestTeamCluster.props.status,
+                context: options.logContext
+            }, 'Ignored stale team cluster lifecycle update');
+
+            return latestTeamCluster;
         }
 
         this.emitLifecycleUpdate(updatedTeamCluster);
         return updatedTeamCluster;
+    }
+
+    private isTransitionAllowed(currentStatus: TeamClusterStatus, nextStatus: TeamClusterStatus): boolean {
+        if (currentStatus === nextStatus) {
+            return true;
+        }
+
+        return TEAM_CLUSTER_ALLOWED_TRANSITIONS[currentStatus]?.has(nextStatus) ?? false;
     }
 
     private emitLifecycleUpdate(teamCluster: TeamCluster): void {

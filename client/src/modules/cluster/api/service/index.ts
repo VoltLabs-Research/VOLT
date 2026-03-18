@@ -1,11 +1,11 @@
 import { getClusterMetricsSource } from './client';
-import type { ClusterHistoryMetric, ClusterMetrics } from '../entities/cluster-metrics';
-import type { IClusterMetricsSource } from './contracts';
+import type { ClusterMetrics } from '../entities/cluster-metrics';
+import type { ClusterMetricsHistoryResponse, IClusterMetricsSource } from './contracts';
 
 interface ObserveClusterMetricsHandlers {
     onConnectionChange?: (connected: boolean) => void;
     onMetricsAll?: (clusters: ClusterMetrics[]) => void;
-    onMetricsHistory?: (history: ClusterHistoryMetric[]) => void;
+    onMetricsHistory?: (payload: ClusterMetricsHistoryResponse) => void;
 };
 
 export class ClusterObserver {
@@ -44,7 +44,7 @@ export const observeClusterMetrics = (): ClusterObserver => {
     return new ClusterObserver();
 };
 
-export const requestClusterHistory = async (minutes?: number, clusterId?: string): Promise<void> => {
+export const requestClusterHistory = async (minutes: number | undefined, clusterId: string): Promise<void> => {
     const source = getClusterMetricsSource();
     await source.requestHistory(minutes, clusterId);
 };

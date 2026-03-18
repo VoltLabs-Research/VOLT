@@ -40,6 +40,9 @@ const ChatSidebar = ({
     const [searchQuery, setSearchQuery] = useState('');
     const [showTeamMembers, setShowTeamMembers] = useState(false);
     let chatListContent: ReactNode;
+    const availableTeamMembers = useMemo(() => {
+        return teamMembers.filter((member) => member._id !== currentUserId);
+    }, [teamMembers, currentUserId]);
 
     const filteredChats = useMemo(() => {
         return chats.filter((chat) => {
@@ -58,6 +61,13 @@ const ChatSidebar = ({
         setShowTeamMembers(false);
     };
 
+    let newChatTooltip = 'New Chat';
+    if (availableTeamMembers.length === 0) {
+        newChatTooltip = 'No team members available';
+    } else if (showTeamMembers) {
+        newChatTooltip = 'Hide team members';
+    }
+
     if (isLoading) {
         chatListContent = <ChatListSkeleton count={5} />;
     } else if (error && filteredChats.length === 0) {
@@ -69,10 +79,17 @@ const ChatSidebar = ({
             />
         );
     } else if (filteredChats.length === 0) {
+        let emptyDescription = 'Start a chat with a team member!';
+        if (searchQuery) {
+            emptyDescription = 'No matches found';
+        } else if (availableTeamMembers.length === 0) {
+            emptyDescription = 'Invite teammates to start chatting here.';
+        }
+
         chatListContent = (
             <EmptyState
                 title='No conversations'
-                description={searchQuery ? 'No matches found' : 'Start a chat with a team member!'}
+                description={emptyDescription}
             />
         );
     } else {
@@ -93,13 +110,14 @@ const ChatSidebar = ({
                 <Container className='d-flex items-center content-between'>
                     <Paragraph className='font-size-5 font-weight-6 color-primary'>Messages</Paragraph>
                     <Container className='d-flex items-center gap-025'>
-                        <Tooltip content='New Chat'>
+                        <Tooltip content={newChatTooltip}>
                             <IconButton
                                 size='sm'
                                 variant='ghost'
                                 onClick={() => setShowTeamMembers(!showTeamMembers)}
-                                title='New Chat'
-                                aria-label='New Chat'
+                                title={newChatTooltip}
+                                aria-label={newChatTooltip}
+                                disabled={availableTeamMembers.length === 0}
                             >
                                 <IoPersonAddOutline size={18} />
                             </IconButton>
@@ -126,7 +144,7 @@ const ChatSidebar = ({
                 />
             </Container>
 
-            {showTeamMembers && (
+            {showTeamMembers && availableTeamMembers.length > 0 && (
                 <Container className='d-flex column p-1'>
                     <Paragraph className='font-size-2 font-weight-6 color-secondary chat-sidebar-section-title'>
                         Team Members

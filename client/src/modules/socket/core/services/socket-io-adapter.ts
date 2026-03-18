@@ -9,6 +9,7 @@ class SocketIOAdapter implements ISocketService {
     private connectionUrl: string;
     private options: SocketOptions;
     private connectionPromise: Promise<void> | null = null;
+    private pendingResolve: (() => void) | null = null;
     private pendingReject: ((reason?: unknown) => void) | null = null;
     private connectionListeners: Array<(connected: boolean) => void> = [];
     private connectionStatus = SocketConnectionStatus.Disconnected;
@@ -27,7 +28,7 @@ class SocketIOAdapter implements ISocketService {
 
         if (this.options.autoConnect) {
             this.setConnectionStatus(SocketConnectionStatus.Connecting);
-            this.connect();
+            this.connect().catch(() => undefined);
         }
     }
 
@@ -42,38 +43,18 @@ class SocketIOAdapter implements ISocketService {
 
         this.setConnectionStatus(this.hasConnectedOnce ? SocketConnectionStatus.Reconnecting : SocketConnectionStatus.Connecting);
 
-        this.cleanupSocket();
         this.connectionPromise = new Promise((resolve, reject) => {
+            this.pendingResolve = resolve;
             this.pendingReject = reject;
+
             try {
-                this.socket = io(this.connectionUrl, {
-                    path: this.options.path,
-                    timeout: this.options.timeout,
-                    auth: this.options.auth,
-                    transports: ['websocket', 'polling'],
-                    reconnection: true,
-                    reconnectionAttempts: Infinity,
-                    reconnectionDelay: 1000,
-                    reconnectionDelayMax: 30000,
-                    randomizationFactor: 0.5
-                });
-
-                this.socket.on(SOCKET_CONNECTION_EVENTS.CONNECT, () => {
-                    this.pendingReject = null;
-                    this.handleConnect();
-                    resolve();
-                });
-
-                this.socket.on(SOCKET_CONNECTION_EVENTS.CONNECT_ERROR, (error) => {
-                    this.handleConnectError(error);
-                });
-
-                this.socket.on(SOCKET_CONNECTION_EVENTS.DISCONNECT, () => {
-                    this.handleDisconnect();
-                });
+                if (!this.socket) {
+                    this.initializeSocket();
+                } else if (!this.socket.active) {
+                    this.socket.connect();
+                }
             } catch (error) {
-                this.pendingReject = null;
-                this.connectionPromise = null;
+                this.clearPendingConnection();
                 this.setConnectionStatus(SocketConnectionStatus.Error);
                 reject(error);
             }
@@ -85,9 +66,8 @@ class SocketIOAdapter implements ISocketService {
     disconnect(): void {
         if (this.pendingReject) {
             this.pendingReject(new Error('Socket disconnected'));
-            this.pendingReject = null;
         }
-        this.connectionPromise = null;
+        this.clearPendingConnection();
         this.cleanupSocket();
         this.setConnectionStatus(SocketConnectionStatus.Disconnected);
         this.notifyConnectionListeners(false);
@@ -188,6 +168,14 @@ class SocketIOAdapter implements ISocketService {
         });
     }
 
+    emitWithoutAck(event: string, data?: unknown): void {
+        if (!event || !this.socket?.connected) {
+            return;
+        }
+
+        this.socket.emit(event, data);
+    }
+
     updateAuth(auth: Record<string, unknown>): void {
         this.options.auth = { ...auth };
 
@@ -212,7 +200,8 @@ class SocketIOAdapter implements ISocketService {
     }
 
     private handleConnect(): void {
-        this.connectionPromise = null;
+        this.pendingResolve?.();
+        this.clearPendingConnection();
         this.connectErrorAttempts = 0;
         this.hasConnectedOnce = true;
         this.setConnectionStatus(SocketConnectionStatus.Connected);
@@ -226,6 +215,8 @@ class SocketIOAdapter implements ISocketService {
         console.warn(
             `[SocketIOAdapter] connect_error (attempt #${this.connectErrorAttempts}): ${error?.message ?? 'unknown'} | transport: ${transport} | url: ${this.connectionUrl}`
         );
+        this.pendingReject?.(error ?? new Error('Socket connection failed'));
+        this.clearPendingConnection();
         this.setConnectionStatus(this.hasConnectedOnce ? SocketConnectionStatus.Reconnecting : SocketConnectionStatus.Error);
         this.notifyConnectionListeners(false);
     }
@@ -248,6 +239,39 @@ class SocketIOAdapter implements ISocketService {
         this.socket.removeAllListeners();
         this.socket.disconnect();
         this.socket = null;
+    }
+
+    private initializeSocket(): void {
+        this.cleanupSocket();
+        this.socket = io(this.connectionUrl, {
+            path: this.options.path,
+            timeout: this.options.timeout,
+            auth: this.options.auth,
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 30000,
+            randomizationFactor: 0.5
+        });
+
+        this.socket.on(SOCKET_CONNECTION_EVENTS.CONNECT, () => {
+            this.handleConnect();
+        });
+
+        this.socket.on(SOCKET_CONNECTION_EVENTS.CONNECT_ERROR, (error) => {
+            this.handleConnectError(error);
+        });
+
+        this.socket.on(SOCKET_CONNECTION_EVENTS.DISCONNECT, () => {
+            this.handleDisconnect();
+        });
+    }
+
+    private clearPendingConnection(): void {
+        this.pendingResolve = null;
+        this.pendingReject = null;
+        this.connectionPromise = null;
     }
 
     private resubscribeToEvents(): void {

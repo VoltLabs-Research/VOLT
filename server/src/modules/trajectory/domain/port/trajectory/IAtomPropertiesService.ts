@@ -18,9 +18,9 @@ export interface AnalysisAllAtomsResult {
 };
 
 export interface IAtomPropertiesService {
-    getModifierPerAtomProps(analysisId: string): Promise<Record<string, string[]>>;
+    getModifierPerAtomProps(analysisId: string, timestep?: string): Promise<Record<string, string[]>>;
 
-    getAnalysisExposureAtomConfigs(analysisId: string): Promise<ExposureAtomConfig[]>;
+    getAnalysisExposureAtomConfigs(analysisId: string, timestep?: string): Promise<ExposureAtomConfig[]>;
 
     getExposureAtomConfig(analysisId: string, exposureId: string): Promise<ExposureAtomConfig>;
 

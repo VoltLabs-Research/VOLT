@@ -1,7 +1,7 @@
 import Container from '@/shared/presentation/components/Container';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import './AutoScrollList.css';
-import { Fragment, useCallback, useEffect, useRef } from 'react';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type { Key, ReactNode } from 'react';
 
 interface AutoScrollListProps<T> {
@@ -21,7 +21,15 @@ interface AutoScrollListProps<T> {
     renderAfter?: ReactNode;
     autoScrollDependency?: unknown;
     autoScrollDependencyEnabled?: boolean;
+    preserveScrollOnPrepend?: boolean;
+    autoScrollBottomThreshold?: number;
 };
+
+interface ScrollSnapshot {
+    scrollHeight: number;
+    scrollTop: number;
+    wasNearBottom: boolean;
+}
 
 const joinClasses = (...classes: Array<string | undefined | false>) => (
     classes.filter(Boolean).join(' ')
@@ -43,13 +51,42 @@ const AutoScrollList = <T,>({
     emptyClassName,
     renderAfter,
     autoScrollDependency,
-    autoScrollDependencyEnabled = false
+    autoScrollDependencyEnabled = false,
+    preserveScrollOnPrepend = false,
+    autoScrollBottomThreshold = 120
 }: AutoScrollListProps<T>) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
     const previousItemsLengthRef = useRef(items.length);
+    const previousFirstItemKeyRef = useRef<Key | null>(items.length > 0 ? (getItemKey ? getItemKey(items[0], 0) : 0) : null);
+    const previousLastItemKeyRef = useRef<Key | null>(items.length > 0 ? (getItemKey ? getItemKey(items[items.length - 1], items.length - 1) : items.length - 1) : null);
+    const scrollSnapshotRef = useRef<ScrollSnapshot>({
+        scrollHeight: 0,
+        scrollTop: 0,
+        wasNearBottom: true
+    });
     const prefersReducedMotion = usePrefersReducedMotion();
     const hasItems = items.length > 0;
+
+    const getItemKeyValue = useCallback((item: T, index: number): Key => {
+        return getItemKey ? getItemKey(item, index) : index;
+    }, [getItemKey]);
+
+    const updateScrollSnapshot = useCallback(() => {
+        const container = containerRef.current;
+
+        if (!container) {
+            return;
+        }
+
+        const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+
+        scrollSnapshotRef.current = {
+            scrollHeight: container.scrollHeight,
+            scrollTop: container.scrollTop,
+            wasNearBottom: distanceFromBottom <= autoScrollBottomThreshold
+        };
+    }, [autoScrollBottomThreshold]);
 
     const scrollToBottom = useCallback((smooth: boolean) => {
         let behavior: ScrollBehavior = 'auto';
@@ -61,18 +98,41 @@ const AutoScrollList = <T,>({
         bottomRef.current?.scrollIntoView({ behavior });
     }, [prefersReducedMotion]);
 
-    useEffect(() => {
-        if (items.length > previousItemsLengthRef.current) {
+    useLayoutEffect(() => {
+        const previousItemsLength = previousItemsLengthRef.current;
+        const previousFirstItemKey = previousFirstItemKeyRef.current;
+        const previousLastItemKey = previousLastItemKeyRef.current;
+        const previousSnapshot = scrollSnapshotRef.current;
+        const nextFirstItemKey = items.length > 0 ? getItemKeyValue(items[0], 0) : null;
+        const nextLastItemKey = items.length > 0 ? getItemKeyValue(items[items.length - 1], items.length - 1) : null;
+        const hasPrependedItems = preserveScrollOnPrepend
+            && items.length > previousItemsLength
+            && previousItemsLength > 0
+            && previousFirstItemKey !== nextFirstItemKey
+            && previousLastItemKey === nextLastItemKey;
+        const hasAppendedItems = items.length > previousItemsLength
+            && previousItemsLength > 0
+            && previousFirstItemKey === nextFirstItemKey
+            && previousLastItemKey !== nextLastItemKey;
+
+        if (hasPrependedItems && containerRef.current) {
+            const scrollDelta = containerRef.current.scrollHeight - previousSnapshot.scrollHeight;
+            containerRef.current.scrollTop = previousSnapshot.scrollTop + scrollDelta;
+        } else if (previousItemsLength === 0 && items.length > 0) {
+            scrollToBottom(false);
+        } else if (hasAppendedItems && previousSnapshot.wasNearBottom) {
             scrollToBottom(true);
         }
+
         previousItemsLengthRef.current = items.length;
-    }, [items.length, scrollToBottom]);
+        previousFirstItemKeyRef.current = nextFirstItemKey;
+        previousLastItemKeyRef.current = nextLastItemKey;
+        updateScrollSnapshot();
+    }, [items, getItemKeyValue, preserveScrollOnPrepend, scrollToBottom, updateScrollSnapshot]);
 
     useEffect(() => {
-        if (items.length > 0 && !isLoading) {
-            scrollToBottom(false);
-        }
-    }, [isLoading, items.length, scrollToBottom]);
+        updateScrollSnapshot();
+    }, [items.length, isLoading, updateScrollSnapshot]);
 
     useEffect(() => {
         if (!autoScrollDependencyEnabled || autoScrollDependency == null) {
@@ -83,6 +143,8 @@ const AutoScrollList = <T,>({
     }, [autoScrollDependency, autoScrollDependencyEnabled, scrollToBottom]);
 
     const handleScroll = () => {
+        updateScrollSnapshot();
+
         if (!containerRef.current || !hasMore || isLoading || !onLoadMore) {
             return;
         }

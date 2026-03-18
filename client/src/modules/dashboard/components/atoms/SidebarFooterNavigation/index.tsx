@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { IoSettingsOutline } from 'react-icons/io5';
 import { useLocation, useNavigate } from 'react-router';
-import { TbHelp } from 'react-icons/tb';
+import { TbBook } from 'react-icons/tb';
 import Container from '@/shared/presentation/components/Container';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
@@ -15,6 +15,8 @@ interface SidebarFooterNavigationProps {
 const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collapsed = false }: SidebarFooterNavigationProps) => {
     const { pathname } = useLocation();
     const navigate = useNavigate();
+
+    const handleOpenDocs = () => window.open('https://docs.voltcloud.dev', '_blank', 'noopener,noreferrer');
 
     const settingsSubItems = useMemo(() => [
         {
@@ -55,8 +57,9 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
                 />
 
                 <SidebarNavItem
-                    label='Report a bug'
-                    icon={TbHelp}
+                    label='Read the docs'
+                    icon={TbBook}
+                    onClick={handleOpenDocs}
                 />
             </Container>
         );
@@ -74,8 +77,9 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
             />
 
             <SidebarNavItem
-                label='Report a bug'
-                icon={TbHelp}
+                label='Read the docs'
+                icon={TbBook}
+                onClick={handleOpenDocs}
             />
         </Container>
     );

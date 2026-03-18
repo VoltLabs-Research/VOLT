@@ -3,6 +3,8 @@ import useChatActions from '@/modules/chat/hooks/chat/use-chat-actions';
 import { useRemoveTeamMemberMutation, useUpdateTeamMemberMutation } from '@/modules/team/hooks/member/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useUpdateTeamMutation } from '@/modules/team/hooks/team/queries';
+import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
+import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
@@ -81,6 +83,8 @@ export default function MyTeamTemplate() {
 
     const { roles } = useTeamRoleData({ teamId: selectedTeam._id });
     const { queryKey, fetchData } = useTeamMembersListing(selectedTeam._id);
+    const onlineUserIds = useTeamPresenceStore((state) => state.onlineUserIds);
+    const hasPresenceSnapshot = useTeamPresenceStore((state) => state.hasPresenceSnapshot);
 
     const updateTeamMutation = useUpdateTeamMutation();
     const updateTeamMemberMutation = useUpdateTeamMemberMutation();
@@ -194,7 +198,9 @@ export default function MyTeamTemplate() {
             title: 'Status',
             render: (_value, member) => {
                 const lastSeenAt = member.user.lastSeenAt ? new Date(member.user.lastSeenAt) : null;
-                return member.user.isOnline ? (
+                const isOnline = resolveTeamUserOnline(member.user, onlineUserIds, hasPresenceSnapshot);
+
+                return isOnline ? (
                     <StatusBadge status='online' size='compact'>Online</StatusBadge>
                 ) : (
                     <Container className='d-flex column'>
@@ -240,7 +246,7 @@ export default function MyTeamTemplate() {
             }
         },
         dateColumn<TeamMemberStats>('joinedAt', 'Joined At', { sortable: false, withTitle: true })
-    ], [canInvite, currentUser?._id, selectedTeam, roleOptions, handleRoleChange]);
+    ], [canInvite, currentUser?._id, selectedTeam, roleOptions, handleRoleChange, onlineUserIds, hasPresenceSnapshot]);
 
     const { getMenuOptions, getSelectionActionOptions } = useListingActions<TeamMemberStats>({
         actions: {

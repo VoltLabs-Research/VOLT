@@ -8,8 +8,8 @@ export interface ClusterPageState {
     clusters: TeamCluster[];
     selectedTeamId: string | null;
     selectedCluster: TeamCluster | null;
-    selectedClusterId: string;
-    setSelectedClusterId: (clusterId: string) => void;
+    selectedClusterId: string | null;
+    setSelectedClusterId: (clusterId: string | null) => void;
     revealCredentials: (password: string) => Promise<void>;
     deleteCluster: (password: string) => Promise<DeleteTeamClusterOutputDTO>;
     requestUpdate: (targetVersion: string, isEdge: boolean, password: string) => Promise<RequestClusterUpdateOutputDTO>;

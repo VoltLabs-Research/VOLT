@@ -27,6 +27,8 @@ const DEFAULT_CPU = 1;
 const DEFAULT_MEMORY = 512;
 const MIN_CPU = 0.5;
 const MIN_MEMORY = 128;
+const CREATE_CONTAINER_DRAFT_STORAGE_KEY = 'volt:create-container:draft';
+const DOCKER_IMAGE_REFERENCE_PATTERN = /^(?:(?:[a-z0-9]+(?:(?:[._-][a-z0-9]+)+)?)(?:\/[a-z0-9]+(?:(?:[._-][a-z0-9]+)+)?)*)(?::[\w][\w.-]{0,127})?(?:@[A-Za-z][A-Za-z0-9]*:[0-9a-fA-F]{32,})?$/;
 
 interface ContainerDeployProgressEvent {
     operationId: string;
@@ -38,6 +40,15 @@ interface ContainerDeployProgressEvent {
     containerName?: string;
     containerId?: string;
     timestamp: string;
+};
+
+interface CreateContainerDraft {
+    selectedTemplate: string | null;
+    customImage: string;
+    selectedTeamId: string | null;
+    selectedTeamClusterId: string | null;
+    config: ContainerConfig;
+    savedAt: number;
 };
 
 const clampResourceValue = (value: number, min: number, max: number | null | undefined) => {
@@ -213,10 +224,25 @@ export const getMaskedCustomFieldValue = (customField: ContainerTemplateCustomFi
     return value;
 };
 
+export const getCustomImageValidationError = (image: string): string | null => {
+    const trimmedImage = image.trim();
+
+    if (!trimmedImage) {
+        return 'Please enter a Docker image reference.';
+    }
+
+    if (!DOCKER_IMAGE_REFERENCE_PATTERN.test(trimmedImage)) {
+        return 'Use a valid Docker image reference, for example nginx:latest or ghcr.io/org/image:tag.';
+    }
+
+    return null;
+};
+
 export interface UseCreateContainerFormReturn {
     config: ContainerConfig;
     selectedTemplate: string | null;
     customImage: string;
+    customImageError: string | null;
     selectedTeamId: string | null;
     selectedTeamClusterId: string | null;
     teams: Team[];
@@ -225,6 +251,7 @@ export interface UseCreateContainerFormReturn {
     isLoadingResourceLimits: boolean;
     isLoading: boolean;
     deployProgressMessage: string | null;
+    draftLastSavedAt: number | null;
     setSelectedTeamId: (id: string | null) => void;
     setSelectedTeamClusterId: (id: string | null) => void;
     updateConfig: <K extends keyof ContainerConfig>(key: K, value: ContainerConfig[K]) => void;
@@ -255,6 +282,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
     const [isLoadingResourceLimits, setIsLoadingResourceLimits] = useState(false);
     const [activeCreateOperationId, setActiveCreateOperationId] = useState<string | null>(null);
     const [deployProgressMessage, setDeployProgressMessage] = useState<string | null>(null);
+    const [draftLastSavedAt, setDraftLastSavedAt] = useState<number | null>(null);
     const hasResolvedResourceLimits = typeof clusterResourceLimits?.maxCpus === 'number'
         && typeof clusterResourceLimits?.maxMemoryMB === 'number';
 
@@ -290,12 +318,76 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
         customFieldValues: {},
         mountDockerSocket: false
     });
+    const customImageError = useMemo(() => {
+        if (!customImage) {
+            return null;
+        }
+
+        return getCustomImageValidationError(customImage);
+    }, [customImage]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        try {
+            const rawDraft = window.localStorage.getItem(CREATE_CONTAINER_DRAFT_STORAGE_KEY);
+            if (!rawDraft) {
+                return;
+            }
+
+            const draft = JSON.parse(rawDraft) as Partial<CreateContainerDraft>;
+            if (draft.selectedTemplate !== undefined) {
+                setSelectedTemplate(draft.selectedTemplate ?? null);
+            }
+            if (typeof draft.customImage === 'string') {
+                setCustomImageState(draft.customImage);
+            }
+            if (draft.selectedTeamId !== undefined) {
+                setSelectedTeamId(draft.selectedTeamId ?? null);
+            }
+            if (draft.selectedTeamClusterId !== undefined) {
+                setSelectedTeamClusterId(draft.selectedTeamClusterId ?? null);
+            }
+            if (draft.config) {
+                setConfig((previousConfig) => ({
+                    ...previousConfig,
+                    ...draft.config
+                }));
+            }
+            if (typeof draft.savedAt === 'number') {
+                setDraftLastSavedAt(draft.savedAt);
+            }
+        } catch {
+            window.localStorage.removeItem(CREATE_CONTAINER_DRAFT_STORAGE_KEY);
+        }
+    }, []);
 
     useEffect(() => {
         if (selectedTeam && !selectedTeamId) {
             setSelectedTeamId(selectedTeam._id);
         }
     }, [selectedTeam, selectedTeamId]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const savedAt = Date.now();
+        const draft: CreateContainerDraft = {
+            selectedTemplate,
+            customImage,
+            selectedTeamId,
+            selectedTeamClusterId,
+            config,
+            savedAt
+        };
+
+        window.localStorage.setItem(CREATE_CONTAINER_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+        setDraftLastSavedAt(savedAt);
+    }, [config, customImage, selectedTeamClusterId, selectedTeamId, selectedTemplate]);
 
     useEffect(() => {
         if (!selectedTeamId) {
@@ -417,6 +509,12 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
             return;
         }
 
+        const validationError = getCustomImageValidationError(trimmedImage);
+        if (validationError) {
+            sileo.error({ title: 'Invalid image reference', description: validationError });
+            return;
+        }
+
         setCustomImageState(trimmedImage);
         setSelectedTemplate(null);
         setConfig((previousConfig) => ({
@@ -509,6 +607,9 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
             }
         );
         await queryClient.invalidateQueries({ queryKey: containerQuery.QUERY_KEYS.lists() });
+        if (typeof window !== 'undefined') {
+            window.localStorage.removeItem(CREATE_CONTAINER_DRAFT_STORAGE_KEY);
+        }
         const nextPath = currentFolderId
             ? `/dashboard/containers?folderId=${encodeURIComponent(currentFolderId)}`
             : '/dashboard/containers';
@@ -519,6 +620,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
         config,
         selectedTemplate,
         customImage,
+        customImageError,
         selectedTeamId,
         selectedTeamClusterId,
         teams,
@@ -527,6 +629,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
         isLoadingResourceLimits,
         isLoading: createContainerMutation.isPending,
         deployProgressMessage,
+        draftLastSavedAt,
         setSelectedTeamId,
         setSelectedTeamClusterId,
         updateConfig,

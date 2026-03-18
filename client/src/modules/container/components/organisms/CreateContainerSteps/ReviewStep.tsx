@@ -4,6 +4,7 @@ import Button from '@/shared/presentation/components/Button';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader';
 import Title from '@/shared/presentation/components/Title';
+import { formatDistanceToNow } from 'date-fns';
 import { Box } from 'lucide-react';
 import { getMaskedCustomFieldValue, mergeContainerEnvVariables } from '../../../hooks/use-create-container-form';
 import type { ContainerConfig } from '../../../hooks/use-create-container-form';
@@ -19,6 +20,8 @@ interface ReviewStepProps {
     selectedTeamId: string | null;
     selectedTeamClusterId: string | null;
     image: string | undefined;
+    selectedTemplateName?: string | null;
+    draftLastSavedAt?: number | null;
     isLoading: boolean;
     deployProgressMessage: string | null;
     onBack: () => void;
@@ -32,6 +35,8 @@ const ReviewStep = ({
     selectedTeamId,
     selectedTeamClusterId,
     image,
+    selectedTemplateName,
+    draftLastSavedAt,
     isLoading,
     deployProgressMessage,
     onBack,
@@ -40,6 +45,7 @@ const ReviewStep = ({
     const selectedTeamName = teams.find((team) => team._id === selectedTeamId)?.name || 'Not selected';
     const selectedClusterName = teamClusters.find((teamCluster) => teamCluster._id === selectedTeamClusterId)?.name || 'Not selected';
     const selectedImage = image || 'Not selected';
+    const imageSource = selectedTemplateName ? `Template: ${selectedTemplateName}` : (image ? 'Custom image' : 'No image selected');
     const mergedEnvironmentVariables = mergeContainerEnvVariables(config.env, config.customFields, config.customFieldValues);
     const hasUbuntuRemoteDesktopTemplateSettings = config.customFields.some((customField) => customField.env?.key === CONTAINER_USERNAME_ENV_KEY);
     const environmentDisplay = mergedEnvironmentVariables.length > 0
@@ -73,6 +79,7 @@ const ReviewStep = ({
                 <ReviewItem label='Team' value={selectedTeamName} />
                 <ReviewItem label='Cluster' value={selectedClusterName} />
                 <ReviewItem label='Image' value={selectedImage} valueClassName='font-family-mono' />
+                <ReviewItem label='Image source' value={imageSource} />
                 <ReviewItem label='CPU' value={`${config.cpus} vCPU`} />
                 <ReviewItem label='Memory' value={`${config.memory} MB`} />
                 <ReviewItem label='Ports' value={portsDisplay} />
@@ -80,6 +87,7 @@ const ReviewStep = ({
                 {hasUbuntuRemoteDesktopTemplateSettings && <ReviewItem label='Remote desktop login' value='The Linux user password and VNC password will be the same.' />}
                 {customFieldsDisplay && <ReviewItem label='Template settings' value={customFieldsDisplay} />}
                 <ReviewItem label='Docker access' value={dockerAccessLabel} />
+                {draftLastSavedAt ? <ReviewItem label='Draft saved' value={formatDistanceToNow(new Date(draftLastSavedAt), { addSuffix: true })} /> : null}
             </Container>
 
             <ProcessingLoader

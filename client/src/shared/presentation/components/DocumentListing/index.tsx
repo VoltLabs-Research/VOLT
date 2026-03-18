@@ -25,6 +25,7 @@ import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import Title from '@/shared/presentation/components/Title';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 
 import './DocumentListing.css';
 import { Skeleton } from '@mui/material';
@@ -88,23 +89,19 @@ interface DocumentListingProps<T extends { _id: string }, TContext = Record<stri
     headerActions?: React.ReactNode;
     headerMenuOptions?: MenuOption[];
     gap?: string;
-    // Table view props
     columns?: ColumnConfig<T>[];
     getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
     onItemClick?: (item: T, event: React.MouseEvent) => boolean;
     dragAndDrop?: DocumentListingDragAndDropConfig<T>;
-    // Grid view props
     view?: ViewMode;
     renderGridItem?: (item: T, index: number) => React.ReactNode;
     renderGridSkeleton?: () => React.ReactNode;
     gridClassName?: string;
-    // Empty state props
     emptyIcon?: React.ReactNode;
     emptyTitle?: string;
     emptyButtonText?: string;
     emptyButtonIsLoading?: boolean;
     onEmptyButtonClick?: () => void;
-    // Layout options
     hideHeader?: boolean;
     hideTabs?: boolean;
     tabs?: DocumentListingTab[];
@@ -169,6 +166,22 @@ const resolveInitialTabId = (tabs: DocumentListingTab[], preferredTabId?: string
     return firstViewTab?.id || tabs[0]?.id || 'list';
 };
 
+const sanitizePersistenceKey = (value: string): string => {
+    return value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 48) || 'listing';
+};
+
+const resolvePersistenceKey = (queryKey: QueryKey, title: string | React.ReactNode): string => {
+    if (typeof title === 'string' && title.trim()) {
+        return sanitizePersistenceKey(title);
+    }
+
+    return sanitizePersistenceKey(JSON.stringify(queryKey));
+};
+
 const DocumentListing = <T extends { _id: string }, TContext = Record<string, never>>({
     title,
     description,
@@ -208,16 +221,42 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
 }: DocumentListingProps<T, TContext>) => {
     const socketService = useSocket();
     const prefersReducedMotion = usePrefersReducedMotion();
+    const { searchParams, updateSearchParams } = useSearchParamsState();
     const resolvedTabs = useMemo(() => {
         return tabs?.length ? tabs : DEFAULT_TABS;
     }, [tabs]);
+    const persistenceKey = useMemo(() => resolvePersistenceKey(queryKey, title), [queryKey, title]);
+    const tabParamKey = `${persistenceKey}-tab`;
+    const sortKeyParamKey = `${persistenceKey}-sort`;
+    const sortDirectionParamKey = `${persistenceKey}-dir`;
+    const exportTypeParamKey = `${persistenceKey}-export`;
+    const persistedTabId = searchParams.get(tabParamKey) || undefined;
+    const persistedSortKey = searchParams.get(sortKeyParamKey) || undefined;
+    const persistedSortDirection = searchParams.get(sortDirectionParamKey);
+    const persistedExportType = searchParams.get(exportTypeParamKey);
     const initialTabId = useMemo(() => {
-        return resolveInitialTabId(resolvedTabs, defaultTabId);
-    }, [defaultTabId, resolvedTabs]);
-    const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+        return resolveInitialTabId(resolvedTabs, persistedTabId ?? defaultTabId);
+    }, [defaultTabId, persistedTabId, resolvedTabs]);
+    const [sortConfig, setSortConfig] = useState<SortConfig | null>(() => {
+        if (!persistedSortKey || (persistedSortDirection !== 'asc' && persistedSortDirection !== 'desc')) {
+            return null;
+        }
+
+        return {
+            key: persistedSortKey,
+            direction: persistedSortDirection
+        };
+    });
     const [activeTabId, setActiveTabId] = useState(initialTabId);
     const [lastContentTabId, setLastContentTabId] = useState(initialTabId);
-    const [selectedExportType, setSelectedExportType] = useState<ExportType>('json');
+    const [selectedExportType, setSelectedExportType] = useState<ExportType>(() => {
+        const exportType = persistedExportType ?? '';
+        if (isExportType(exportType)) {
+            return exportType;
+        }
+
+        return 'json';
+    });
     const [isExporting, setIsExporting] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -225,6 +264,29 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         setActiveTabId(initialTabId);
         setLastContentTabId(initialTabId);
     }, [initialTabId]);
+
+    useEffect(() => {
+        const currentTab = searchParams.get(tabParamKey);
+        const currentSortKey = searchParams.get(sortKeyParamKey);
+        const currentSortDirection = searchParams.get(sortDirectionParamKey);
+        const currentExportType = searchParams.get(exportTypeParamKey);
+
+        if (
+            currentTab === activeTabId
+            && currentSortKey === (sortConfig?.key ?? null)
+            && currentSortDirection === (sortConfig?.direction ?? null)
+            && currentExportType === selectedExportType
+        ) {
+            return;
+        }
+
+        updateSearchParams({
+            [tabParamKey]: activeTabId,
+            [sortKeyParamKey]: sortConfig?.key ?? null,
+            [sortDirectionParamKey]: sortConfig?.direction ?? null,
+            [exportTypeParamKey]: selectedExportType
+        }, { replace: true });
+    }, [activeTabId, exportTypeParamKey, searchParams, selectedExportType, sortConfig, sortDirectionParamKey, sortKeyParamKey, tabParamKey, updateSearchParams]);
 
     const getColumnSortKey = useCallback((col: ColumnConfig<T>): string => {
         return String(col.key ?? col.path ?? '');

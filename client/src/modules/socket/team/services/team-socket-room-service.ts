@@ -5,14 +5,22 @@ import type { ITeamSocketRoomService } from './contracts/team-socket-room-servic
 
 class TeamSocketRoomService implements ITeamSocketRoomService {
     private currentTeamId: string | null = null;
+    private subscribedTeamId: string | null = null;
+    private pendingSubscriptionPromise: Promise<void> | null = null;
+    private pendingSubscriptionTeamId: string | null = null;
 
     constructor(private readonly socketService: ISocketService) {
         this.socketService.onConnectionChange((connected) => {
-            if (!connected || !this.currentTeamId) {
+            if (!connected) {
+                this.subscribedTeamId = null;
                 return;
             }
 
-            this.socketService.emit(SOCKET_TEAM_EVENTS.SUBSCRIBE, { teamId: this.currentTeamId }).catch(() => undefined);
+            if (!this.currentTeamId) {
+                return;
+            }
+
+            this.subscribe(this.currentTeamId).catch(() => undefined);
         });
     }
 
@@ -26,22 +34,23 @@ class TeamSocketRoomService implements ITeamSocketRoomService {
 
         this.currentTeamId = teamId;
 
-        if (isSameTeam && !resolvedPreviousTeamId && this.socketService.isConnected()) {
+        if (this.isSubscribed(teamId) && isSameTeam && !resolvedPreviousTeamId) {
             return;
         }
 
-        if (!this.socketService.isConnected()) {
-            await this.socketService.connect();
+        if (this.pendingSubscriptionPromise && this.pendingSubscriptionTeamId === teamId && isSameTeam) {
+            return this.pendingSubscriptionPromise;
         }
 
-        if (!this.socketService.isConnected()) {
-            return;
+        if (this.subscribedTeamId !== teamId) {
+            this.subscribedTeamId = null;
         }
 
-        await this.socketService.emit(SOCKET_TEAM_EVENTS.SUBSCRIBE, {
-            teamId,
-            previousTeamId: resolvedPreviousTeamId
-        });
+        const subscribePromise = this.subscribeToTeam(teamId, resolvedPreviousTeamId);
+        this.pendingSubscriptionPromise = subscribePromise;
+        this.pendingSubscriptionTeamId = teamId;
+
+        return subscribePromise;
     }
 
     unsubscribe(teamId?: string): void {
@@ -49,6 +58,15 @@ class TeamSocketRoomService implements ITeamSocketRoomService {
 
         if (targetTeamId === this.currentTeamId) {
             this.currentTeamId = null;
+        }
+
+        if (targetTeamId === this.subscribedTeamId) {
+            this.subscribedTeamId = null;
+        }
+
+        if (targetTeamId === this.pendingSubscriptionTeamId) {
+            this.pendingSubscriptionTeamId = null;
+            this.pendingSubscriptionPromise = null;
         }
 
         if (!targetTeamId || !this.socketService.isConnected()) {
@@ -61,7 +79,49 @@ class TeamSocketRoomService implements ITeamSocketRoomService {
     getCurrentTeamId(): string | null {
         return this.currentTeamId;
     }
-}
+
+    isSubscribed(teamId: string): boolean {
+        return this.subscribedTeamId === teamId && this.socketService.isConnected();
+    }
+
+    async waitUntilSubscribed(teamId: string): Promise<void> {
+        if (this.isSubscribed(teamId)) {
+            return;
+        }
+
+        await this.subscribe(teamId);
+
+        if (!this.isSubscribed(teamId)) {
+            throw new Error(`Team socket subscription unavailable for team "${teamId}".`);
+        }
+    }
+
+    private async subscribeToTeam(teamId: string, previousTeamId?: string): Promise<void> {
+        try {
+            if (!this.socketService.isConnected()) {
+                await this.socketService.connect();
+            }
+
+            if (!this.socketService.isConnected()) {
+                return;
+            }
+
+            await this.socketService.emit(SOCKET_TEAM_EVENTS.SUBSCRIBE, {
+                teamId,
+                previousTeamId
+            });
+
+            if (this.currentTeamId === teamId) {
+                this.subscribedTeamId = teamId;
+            }
+        } finally {
+            if (this.pendingSubscriptionTeamId === teamId) {
+                this.pendingSubscriptionTeamId = null;
+                this.pendingSubscriptionPromise = null;
+            }
+        }
+    }
+};
 
 export const teamSocketRoomService = new TeamSocketRoomService(socketService);
 
