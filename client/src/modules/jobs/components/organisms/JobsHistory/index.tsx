@@ -43,7 +43,7 @@ const JobsHistory = ({
     }, [groups, trajectoryId, queueFilter]);
 
     const shouldShowSkeleton = isLoading;
-    let content: ReactNode = filteredGroups.map((group: TJG, index: number) => {
+    let content: ReactNode = filteredGroups.map((group: TJG) => {
         if (displayMode === 'children-only') {
             return group.frameGroups.map((frame) => (
                 <div key={`${group.trajectoryId}-${frame.timestep}`} className='job-group-children'>
@@ -56,7 +56,6 @@ const JobsHistory = ({
             <JobGroup
                 key={group.trajectoryId}
                 group={group}
-                defaultExpanded={index === 0}
             />
         );
     });

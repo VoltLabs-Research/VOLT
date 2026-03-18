@@ -90,7 +90,18 @@
 .dashboard-jobs-card-header {
     padding: 1.25rem 1.25rem 0 1.25rem;
     flex-shrink: 0;
+    width: 100%;
+    min-width: 0;
     transition: padding 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dashboard-jobs-card-header > :first-child {
+    min-width: 0;
+}
+
+.dashboard-jobs-card-header > :last-child {
+    margin-left: auto;
+    flex-shrink: 0;
 }
 
 .dashboard-jobs-card {
@@ -110,6 +121,10 @@
 
 .dashboard-jobs-card.dashboard-shared-panel--collapsed .dashboard-jobs-card-header {
     padding-bottom: 1.25rem;
+}
+
+.dashboard-jobs-card.dashboard-shared-panel--collapsed .dashboard-jobs-card-header > :last-child {
+    display: none;
 }
 
 .dashboard-shared-panel:focus-visible {
@@ -136,6 +151,18 @@
     flex-direction: column;
     gap: 1rem;
     margin-top: 0.5rem;
+}
+
+.dashboard-simulations-header {
+    min-width: 0;
+}
+
+.dashboard-simulations-new-folder-btn {
+    flex-shrink: 0;
+}
+
+.dashboard-simulations-breadcrumbs {
+    margin-bottom: 0.5rem;
 }
 
 @media screen and (max-width: 1200px) {
@@ -198,5 +225,24 @@
 
     .dashboard-bottom-sidebar {
         flex-direction: column;
+    }
+
+    .dashboard-simulations-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .dashboard-jobs-card-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .dashboard-jobs-card-header > :last-child {
+        margin-left: 0;
+    }
+
+    .dashboard-simulations-new-folder-btn {
+        width: 100%;
+        justify-content: center;
     }
 }

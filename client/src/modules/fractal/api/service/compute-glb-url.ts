@@ -56,18 +56,31 @@ const buildParticleFilterUrl = (
     scene: ParticleFilterScene,
     timestep: number
 ): string | null => {
-    const { property, operator, value, analysisId, exposureId, action } = scene;
-    if (!property || !operator || value === undefined || !action) return null;
+    const { property, operator, value, analysisId, exposureId, action, combinator, conditions } = scene;
+    if (!action) return null;
 
     const effectiveAnalysisId = analysisId || DEFAULT_ANALYSIS_ID;
     const params = new URLSearchParams({
-        property,
-        operator,
-        value: String(value),
         timestep: String(timestep),
         action
     });
-    if (exposureId) params.set('exposureId', exposureId);
+
+    if (Array.isArray(conditions) && conditions.length > 0) {
+        params.set('combinator', combinator || 'AND');
+        params.set('conditions', JSON.stringify(conditions));
+    } else {
+        if (!property || !operator || value === undefined) {
+            return null;
+        }
+
+        params.set('property', property);
+        params.set('operator', operator);
+        params.set('value', String(value));
+        if (exposureId) {
+            params.set('exposureId', exposureId);
+        }
+    }
+
     return buildApiUrl(`/api/particle-filters/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
 };
 

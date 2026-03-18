@@ -1,34 +1,10 @@
-import { ACTIONS, OPERATORS } from '../../../hooks/use-particle-filter';
-import useParticleFilter from '../../../hooks/use-particle-filter';
-
+import useParticleFilter, { ACTIONS, MATCH_MODES, OPERATORS, FilterAction, FilterOperator } from '../../../hooks/use-particle-filter';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-
-import type { FilterAction, FilterOperator } from '../../../hooks/use-particle-filter';
+import { ParticleFilterCombinator } from '@/modules/trajectory/api/dtos/particle-filter';
 
 import './ParticleFilter.css';
-
-interface SelectOption {
-    value: string;
-    title: string;
-};
-
-interface PreviewStatsProps {
-    percentage: string;
-};
-
-interface ErrorMessageProps {
-    error: string;
-};
-
-interface SelectFieldConfig {
-    key: string;
-    label: string;
-    value: string;
-    onChange: (value: string) => void;
-    options: SelectOption[];
-};
 
 interface ParticleFilterProps {
     trajectoryId?: string;
@@ -36,203 +12,40 @@ interface ParticleFilterProps {
     currentTimestep?: number;
 };
 
-interface PreviewResultViewProps {
-    percentage: string;
-    action: FilterAction;
-    setAction: (action: FilterAction) => void;
-    error: string | null;
-    isApplying: boolean;
-    onApply: () => void;
-    onCancel: () => void;
-};
-
-interface FilterFormViewProps {
+interface FilterConditionViewModel {
+    id: string;
     propertyValue: string;
-    propertyOptions: SelectOption[];
-    onPropertyChange: (value: string) => void;
     operator: FilterOperator;
-    setOperator: (operator: FilterOperator) => void;
     valueInput: string;
-    setValue: (value: string) => void;
-    valueSuggestions: number[];
-    onFetchSuggestions: () => void;
-    isLoadingSuggestions: boolean;
-    error: string | null;
-    isLoadingPreview: boolean;
-    canPreview: boolean;
-    onPreview: () => void;
 };
 
-const PreviewStats = ({ percentage }: PreviewStatsProps) => (
-    <Container className="canvas-filter-preview radius-sm d-flex column gap-05">
-        <Container className="d-flex content-between">
-            <span>Selection</span>
-            <span className="color-primary">{percentage}% of total</span>
-        </Container>
-    </Container>
-);
+const isFilterOperator = (value: string): value is FilterOperator => {
+    return OPERATORS.some((option) => option.value === value);
+};
 
-const ErrorMessage = ({ error }: ErrorMessageProps) => (
-    <Container className="canvas-filter-error font-size-05">{error}</Container>
-);
+const isFilterAction = (value: string): value is FilterAction => {
+    return ACTIONS.some((option) => option.value === value);
+};
 
-const PreviewResultView = ({
-    percentage,
-    action,
-    setAction,
-    error,
-    isApplying,
-    onApply,
-    onCancel
-}: PreviewResultViewProps) => (
-    <Container className="canvas-filter-panel d-flex column gap-05">
-        <Container className="d-flex column gap-05">
-            <PreviewStats percentage={percentage} />
-
-            <FormFieldRHF
-                fieldKey="action"
-                fieldType="select"
-                label="Action"
-                fieldValue={action}
-                onFieldChange={(_, value) => setAction(String(value) as FilterAction)}
-                options={ACTIONS}
-                variant="canvas"
-            />
-
-            {error && <ErrorMessage error={error} />}
-        </Container>
-
-        <Container className="d-flex column gap-025">
-            <Button
-                isLoading={isApplying}
-                variant="solid"
-                intent={action === 'delete' ? 'danger' : 'canvas'}
-                block
-                onClick={onApply}
-                disabled={isApplying}
-                shape="rounded"
-                size="sm"
-                className="font-size-05"
-            >
-                {action === 'delete' ? 'Delete Selection' : 'Apply Color'}
-            </Button>
-            <Button
-                variant="ghost"
-                intent="canvas"
-                shape="rounded"
-                size="sm"
-                block
-                onClick={onCancel}
-                disabled={isApplying}
-                className="font-size-05"
-            >
-                Cancel
-            </Button>
-        </Container>
-    </Container>
-);
-
-const FilterFormView = ({
-    propertyValue,
-    propertyOptions,
-    onPropertyChange,
-    operator,
-    setOperator,
-    valueInput,
-    setValue,
-    valueSuggestions,
-    onFetchSuggestions,
-    isLoadingSuggestions,
-    error,
-    isLoadingPreview,
-    canPreview,
-    onPreview
-}: FilterFormViewProps) => {
-    const handleOperatorChange = (value: string) => {
-        setOperator(value as FilterOperator);
-    };
-
-    const selectFields: SelectFieldConfig[] = [
-        {
-            key: 'property',
-            label: 'Property',
-            value: propertyValue,
-            onChange: onPropertyChange,
-            options: propertyOptions
-        },
-        {
-            key: 'operator',
-            label: 'Operator',
-            value: operator,
-            onChange: handleOperatorChange,
-            options: OPERATORS
-        }
-    ];
-
-    return (
-        <Container className="canvas-filter-panel d-flex column gap-05">
-            <Container className="d-flex column gap-05">
-                {selectFields.map((field) => (
-                    <FormFieldRHF
-                        key={field.key}
-                        fieldKey={field.key}
-                        fieldType="select"
-                        label={field.label}
-                        fieldValue={field.value}
-                        onFieldChange={(_, value) => field.onChange(String(value))}
-                        options={field.options}
-                        variant="canvas"
-                    />
-                ))}
-
-                <FormFieldRHF
-                    fieldKey="value"
-                    fieldType="input"
-                    onFieldChange={(_, nextValue) => setValue(String(nextValue))}
-                    fieldValue={valueInput}
-                    label="Value"
-                    suggestions={valueSuggestions}
-                    onFetchSuggestions={onFetchSuggestions}
-                    isLoading={isLoadingSuggestions}
-                    inputProps={{ inputMode: 'decimal' }}
-                    variant="canvas"
-                />
-
-                {error && <ErrorMessage error={error} />}
-            </Container>
-
-            <Container>
-                <Button
-                    isLoading={isLoadingPreview}
-                    variant="soft"
-                    intent="canvas"
-                    shape="rounded"
-                    size="sm"
-                    block
-                    onClick={onPreview}
-                    disabled={!canPreview}
-                    className="font-size-05"
-                >
-                    Preview
-                </Button>
-            </Container>
-        </Container>
-    );
+const isParticleFilterCombinator = (value: string): value is ParticleFilterCombinator => {
+    return MATCH_MODES.some((option) => option.value === value);
 };
 
 const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleFilterProps) => {
     const {
-        propertyValue,
         propertyOptions,
+        conditions,
+        addCondition,
+        removeCondition,
         handlePropertyChange,
-        operator,
-        setOperator,
-        valueInput,
-        setValue,
+        handleOperatorChange,
+        handleValueChange,
+        matchMode,
+        setMatchMode,
         action,
         setAction,
-        valueSuggestions,
         fetchValueSuggestions,
+        getValueSuggestions,
         isLoadingValueSuggestions,
         previewResult,
         isLoadingPreview,
@@ -249,37 +62,198 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
         currentTimestep
     });
 
-    if (previewResult) {
+    const conditionViewModels: FilterConditionViewModel[] = conditions.map((condition) => ({
+        id: condition.id,
+        propertyValue: condition.propertyValue,
+        operator: condition.operator,
+        valueInput: condition.valueInput
+    }));
+
+    const renderConditionRow = (condition: FilterConditionViewModel, index: number) => {
+        const isRemovable = conditionViewModels.length > 1;
+
         return (
-            <PreviewResultView
-                percentage={percentage}
-                action={action}
-                setAction={setAction}
-                error={error}
-                isApplying={isApplying}
-                onApply={handleApplyAction}
-                onCancel={handleCancelPreview}
-            />
+            <Container key={condition.id} className='canvas-filter-condition d-flex column gap-05'>
+                <Container className='d-flex items-center content-between gap-05'>
+                    <span className='font-size-05 color-text-secondary'>Condition {index + 1}</span>
+                    {isRemovable && (
+                        <Button
+                            variant='ghost'
+                            intent='danger'
+                            shape='rounded'
+                            size='sm'
+                            onClick={() => removeCondition(condition.id)}
+                            className='font-size-05'
+                        >
+                            Remove
+                        </Button>
+                    )}
+                </Container>
+
+                <FormFieldRHF
+                    fieldKey={`property-${condition.id}`}
+                    fieldType='select'
+                    label='Property'
+                    fieldValue={condition.propertyValue}
+                    onFieldChange={(_, value) => handlePropertyChange(condition.id, String(value))}
+                    options={propertyOptions}
+                    variant='canvas'
+                />
+
+                <FormFieldRHF
+                    fieldKey={`operator-${condition.id}`}
+                    fieldType='select'
+                    label='Operator'
+                    fieldValue={condition.operator}
+                    onFieldChange={(_, value) => {
+                        const nextValue = String(value);
+                        if (!isFilterOperator(nextValue)) {
+                            return;
+                        }
+
+                        handleOperatorChange(condition.id, nextValue);
+                    }}
+                    options={OPERATORS}
+                    variant='canvas'
+                />
+
+                <FormFieldRHF
+                    fieldKey={`value-${condition.id}`}
+                    fieldType='input'
+                    onFieldChange={(_, nextValue) => handleValueChange(condition.id, String(nextValue))}
+                    fieldValue={condition.valueInput}
+                    label='Value'
+                    suggestions={getValueSuggestions(condition.id)}
+                    onFetchSuggestions={() => fetchValueSuggestions(condition.id)}
+                    isLoading={isLoadingValueSuggestions}
+                    inputProps={{ inputMode: 'decimal' }}
+                    variant='canvas'
+                />
+            </Container>
         );
-    }
+    };
+
+    const renderPreviewSection = () => {
+        if (!previewResult) {
+            return null;
+        }
+
+        return (
+            <Container className='canvas-filter-panel d-flex column gap-05'>
+                <Container className='canvas-filter-preview radius-sm d-flex column gap-05'>
+                    <Container className='d-flex content-between'>
+                        <span>Selection</span>
+                        <span className='color-primary'>{percentage}% of total</span>
+                    </Container>
+                </Container>
+
+                <FormFieldRHF
+                    fieldKey='action'
+                    fieldType='select'
+                    label='Action'
+                    fieldValue={action}
+                    onFieldChange={(_, value) => {
+                        const nextValue = String(value);
+                        if (!isFilterAction(nextValue)) {
+                            return;
+                        }
+
+                        setAction(nextValue);
+                    }}
+                    options={ACTIONS}
+                    variant='canvas'
+                />
+
+                {error && <Container className='canvas-filter-error font-size-05'>{error}</Container>}
+
+                <Container className='d-flex column gap-025'>
+                    <Button
+                        isLoading={isApplying}
+                        variant='solid'
+                        intent={action === FilterAction.Delete ? 'danger' : 'canvas'}
+                        block
+                        onClick={handleApplyAction}
+                        disabled={isApplying}
+                        shape='rounded'
+                        size='sm'
+                        className='font-size-05'
+                    >
+                        {action === FilterAction.Delete ? 'Delete Selection' : 'Apply Color'}
+                    </Button>
+                    <Button
+                        variant='ghost'
+                        intent='canvas'
+                        shape='rounded'
+                        size='sm'
+                        block
+                        onClick={handleCancelPreview}
+                        disabled={isApplying}
+                        className='font-size-05'
+                    >
+                        Cancel
+                    </Button>
+                </Container>
+            </Container>
+        );
+    };
 
     return (
-        <FilterFormView
-            propertyValue={propertyValue}
-            propertyOptions={propertyOptions}
-            onPropertyChange={handlePropertyChange}
-            operator={operator}
-            setOperator={setOperator}
-            valueInput={valueInput}
-            setValue={setValue}
-            valueSuggestions={valueSuggestions}
-            onFetchSuggestions={fetchValueSuggestions}
-            isLoadingSuggestions={isLoadingValueSuggestions}
-            error={error}
-            isLoadingPreview={isLoadingPreview}
-            canPreview={canPreview}
-            onPreview={handlePreview}
-        />
+        <Container className='canvas-filter-panel d-flex column gap-05'>
+            {!previewResult && (
+                <>
+                    <FormFieldRHF
+                        fieldKey='match-mode'
+                        fieldType='select'
+                        label='Combine'
+                        fieldValue={matchMode}
+                        onFieldChange={(_, value) => {
+                            const nextValue = String(value);
+                            if (!isParticleFilterCombinator(nextValue)) {
+                                return;
+                            }
+
+                            setMatchMode(nextValue);
+                        }}
+                        options={MATCH_MODES}
+                        variant='canvas'
+                    />
+
+                    <Container className='d-flex column gap-05'>
+                        {conditionViewModels.map(renderConditionRow)}
+                    </Container>
+
+                    <Button
+                        variant='ghost'
+                        intent='canvas'
+                        shape='rounded'
+                        size='sm'
+                        block
+                        onClick={addCondition}
+                        className='font-size-05'
+                    >
+                        Add Condition
+                    </Button>
+
+                    {error && <Container className='canvas-filter-error font-size-05'>{error}</Container>}
+
+                    <Button
+                        isLoading={isLoadingPreview}
+                        variant='soft'
+                        intent='canvas'
+                        shape='rounded'
+                        size='sm'
+                        block
+                        onClick={handlePreview}
+                        disabled={!canPreview}
+                        className='font-size-05'
+                    >
+                        Preview
+                    </Button>
+                </>
+            )}
+
+            {renderPreviewSection()}
+        </Container>
     );
 };
 

@@ -1,3 +1,5 @@
+import type { ParticleFilterCombinator, ParticleFilterConditionDTO } from './PreviewParticleFilterDTO';
+
 import { Readable } from 'node:stream';
 
 export interface GetFilteredModelStreamInputDTO {
@@ -5,10 +7,12 @@ export interface GetFilteredModelStreamInputDTO {
     timestep: string;
     analysisId?: string;
     exposureId?: string;
-    property: string;
-    operator: string;
-    value: string | number;
+    property?: string;
+    operator?: string;
+    value?: string | number;
     action?: string;
+    combinator?: ParticleFilterCombinator;
+    conditions?: ParticleFilterConditionDTO[];
 };
 
 export interface GetFilteredModelStreamOutputDTO {

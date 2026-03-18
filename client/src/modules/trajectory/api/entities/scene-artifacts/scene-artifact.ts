@@ -3,6 +3,13 @@ import type { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 
 export type SceneArtifactSourceType = 'color-coding' | 'particle-filter' | 'plugin-exposure';
 
+export interface SceneArtifactParticleFilterCondition {
+    property: string;
+    operator: string;
+    value: number;
+    exposureId?: string;
+};
+
 export interface SceneArtifactParams {
     property?: string;
     startValue?: number;
@@ -12,6 +19,8 @@ export interface SceneArtifactParams {
     value?: number;
     action?: 'delete' | 'highlight';
     exposureId?: string;
+    combinator?: 'AND' | 'OR';
+    conditions?: SceneArtifactParticleFilterCondition[];
 };
 
 export interface SceneArtifactTrajectory {

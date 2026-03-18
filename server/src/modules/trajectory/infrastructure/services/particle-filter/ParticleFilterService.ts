@@ -3,8 +3,8 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { IAtomPropertiesService, FilterExpression } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
-import { IParticleFilterService } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
+import { IAtomPropertiesService } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
+import { IParticleFilterService, ParticleFilterCombinator, ParticleFilterCondition, ParticleFilterGroup } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
 import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
@@ -18,6 +18,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
+import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { injectable, inject } from 'tsyringe';
 
@@ -164,9 +165,8 @@ export default class ParticleFilterService implements IParticleFilterService {
     async preview(
         trajectoryId: string,
         timestep: string | number,
-        expression: FilterExpression,
-        analysisId?: string,
-        exposureId?: string
+        filterGroup: ParticleFilterGroup,
+        analysisId?: string
     ): Promise<{ matchCount: number; totalAtoms: number }> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
@@ -175,23 +175,13 @@ export default class ParticleFilterService implements IParticleFilterService {
             throw buildClusterRequiredError();
         }
 
-        const externalValues = await this.resolveRemoteExternalValues(
+        const result = await this.getCombinedFilterResult(
+            trajectory.props.teamCluster,
             String(trajectoryId),
             resolvedAnalysisId || null,
-            exposureId || undefined,
             String(timestep),
-            expression.property
+            filterGroup
         );
-        const result = await this.trajectoryNativeDaemonService.previewFilter({
-            teamClusterId: trajectory.props.teamCluster,
-            trajectoryId: String(trajectoryId),
-            timestep: Number(timestep),
-            objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep)),
-            property: expression.property,
-            operator: expression.operator,
-            value: expression.value,
-            externalValues
-        });
 
         return {
             matchCount: result.matchCount,
@@ -203,21 +193,11 @@ export default class ParticleFilterService implements IParticleFilterService {
         trajectoryId: string,
         timestep: string | number,
         action: 'delete' | 'highlight',
-        expression: FilterExpression,
-        analysisId?: string,
-        exposureId?: string
+        filterGroup: ParticleFilterGroup,
+        analysisId?: string
     ): Promise<{ fileId: string; atomsResult: number; action: string }> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
-        const objectName = buildParticleFilterObjectName(
-            trajectoryId,
-            resolvedAnalysisId,
-            timestep,
-            exposureId,
-            expression.property,
-            expression.operator,
-            expression.value,
-            action
-        );
+        const objectName = this.buildObjectName(trajectoryId, resolvedAnalysisId, timestep, filterGroup, action);
         const teamClusterId = await resolveSceneArtifactTeamCluster({
             trajectoryId: String(trajectoryId),
             analysisId: resolvedAnalysisId,
@@ -241,13 +221,12 @@ export default class ParticleFilterService implements IParticleFilterService {
             );
         }
 
-        const filterResult = await this.getRemoteFilterResult(
+        const filterResult = await this.getCombinedFilterResult(
             teamClusterId,
             String(trajectoryId),
             resolvedAnalysisId || null,
-            exposureId || undefined,
             String(timestep),
-            expression
+            filterGroup
         );
 
         const response = await this.trajectoryNativeDaemonService.exportParticleFilterModel({
@@ -260,6 +239,20 @@ export default class ParticleFilterService implements IParticleFilterService {
         });
         const atomsResult = response.atomsResult;
 
+        const firstCondition = filterGroup.conditions[0];
+        const artifactParams: Record<string, unknown> = {
+            combinator: filterGroup.combinator,
+            conditions: filterGroup.conditions,
+            action
+        };
+
+        if (filterGroup.conditions.length === 1 && firstCondition) {
+            artifactParams.property = String(firstCondition.property);
+            artifactParams.operator = String(firstCondition.operator);
+            artifactParams.value = Number(firstCondition.value);
+            artifactParams.exposureId = firstCondition.exposureId;
+        }
+
         await recordSceneArtifact(this.sceneArtifactRepository, {
             trajectory: String(trajectoryId),
             teamCluster: teamClusterId,
@@ -267,19 +260,13 @@ export default class ParticleFilterService implements IParticleFilterService {
             sourceType: SceneArtifactSourceType.ParticleFilter,
             timestep: Number(timestep),
             objectName,
-            params: {
-                property: String(expression.property),
-                operator: String(expression.operator),
-                value: Number(expression.value),
-                action,
-                exposureId
-            },
-            displayName: `PF · ${expression.property} ${expression.operator} ${expression.value} · ${action} · t=${timestep}`,
+            params: artifactParams,
+            displayName: this.buildDisplayName(filterGroup, action, timestep),
             metadata: {
                 analysisId: resolvedAnalysisId || null,
-                exposureId: exposureId || null,
+                exposureId: firstCondition?.exposureId || null,
                 atomsResult,
-                totalAtoms: filterResult.mask.length
+                totalAtoms: filterResult.totalAtoms
             }
         });
 
@@ -293,23 +280,17 @@ export default class ParticleFilterService implements IParticleFilterService {
     async getModelStream(
         trajectoryId: string,
         timestep: string | number,
-        property: string,
-        operator: string,
-        value: string | number,
+        filterGroup: ParticleFilterGroup,
         action?: string,
-        analysisId?: string,
-        exposureId?: string
+        analysisId?: string
     ): Promise<Readable> {
         const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
         const actionPart = action || 'delete';
-        const objectName = buildParticleFilterObjectName(
+        const objectName = this.buildObjectName(
             trajectoryId,
             normalizeAnalysisId(analysisId),
             timestep,
-            exposureId,
-            property,
-            operator,
-            value,
+            filterGroup,
             actionPart
         );
 
@@ -332,16 +313,15 @@ export default class ParticleFilterService implements IParticleFilterService {
         teamClusterId: string,
         trajectoryId: string,
         analysisId: string | null,
-        exposureId: string | undefined,
         timestep: string,
-        expression: FilterExpression
+        condition: ParticleFilterCondition
     ): Promise<{ mask: Uint8Array; matchCount: number; totalAtoms: number; }> {
         const externalValues = await this.resolveRemoteExternalValues(
             trajectoryId,
             analysisId,
-            exposureId,
+            condition.exposureId,
             timestep,
-            expression.property
+            condition.property
         );
 
         return this.trajectoryNativeDaemonService.previewFilter({
@@ -349,11 +329,96 @@ export default class ParticleFilterService implements IParticleFilterService {
             trajectoryId,
             timestep: Number(timestep),
             objectKey: this.dumpStorage.getObjectName(trajectoryId, timestep),
-            property: expression.property,
-            operator: expression.operator,
-            value: expression.value,
+            property: condition.property,
+            operator: condition.operator,
+            value: condition.value,
             externalValues
         });
+    }
+
+    private async getCombinedFilterResult(
+        teamClusterId: string,
+        trajectoryId: string,
+        analysisId: string | null,
+        timestep: string,
+        filterGroup: ParticleFilterGroup
+    ): Promise<{ mask: Uint8Array; matchCount: number; totalAtoms: number; }> {
+        const results = await Promise.all(filterGroup.conditions.map((condition) => {
+            return this.getRemoteFilterResult(teamClusterId, trajectoryId, analysisId, timestep, condition);
+        }));
+
+        const firstResult = results[0];
+        let combinedMask: Uint8Array = new Uint8Array(Array.from(firstResult.mask));
+
+        for (let index = 1; index < results.length; index += 1) {
+            combinedMask = this.combineMasks(combinedMask, results[index].mask, filterGroup.combinator);
+        }
+
+        return {
+            mask: combinedMask,
+            matchCount: this.countMatches(combinedMask),
+            totalAtoms: firstResult.totalAtoms
+        };
+    }
+
+    private combineMasks(
+        leftMask: Uint8Array,
+        rightMask: Uint8Array,
+        combinator: ParticleFilterCombinator
+    ): Uint8Array {
+        const combinedMask: Uint8Array = new Uint8Array(leftMask.length);
+
+        for (let index = 0; index < leftMask.length; index += 1) {
+            if (combinator === ParticleFilterCombinator.Or) {
+                combinedMask[index] = leftMask[index] || rightMask[index] ? 1 : 0;
+                continue;
+            }
+
+            combinedMask[index] = leftMask[index] && rightMask[index] ? 1 : 0;
+        }
+
+        return combinedMask;
+    }
+
+    private countMatches(mask: Uint8Array): number {
+        return mask.reduce((total, value) => total + (value ? 1 : 0), 0);
+    }
+
+    private buildObjectName(
+        trajectoryId: string,
+        analysisId: string | undefined,
+        timestep: string | number,
+        filterGroup: ParticleFilterGroup,
+        action: string
+    ): string {
+        if (filterGroup.conditions.length === 1) {
+            const condition = filterGroup.conditions[0];
+
+            return buildParticleFilterObjectName(
+                trajectoryId,
+                analysisId,
+                timestep,
+                condition.exposureId,
+                condition.property,
+                condition.operator,
+                condition.value,
+                action
+            );
+        }
+
+        const filterHash = createHash('sha1').update(JSON.stringify(filterGroup)).digest('hex').slice(0, 12);
+        const segment = analysisId || 'default';
+
+        return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/particle-filter/composite/${filterGroup.combinator.toLowerCase()}-${filterHash}-${action}.glb`;
+    }
+
+    private buildDisplayName(filterGroup: ParticleFilterGroup, action: string, timestep: string | number): string {
+        const conditionsLabel = filterGroup.conditions.map((condition) => {
+            const sourcePrefix = condition.exposureId ? `${condition.exposureId}:` : '';
+            return `${sourcePrefix}${condition.property} ${condition.operator} ${condition.value}`;
+        }).join(` ${filterGroup.combinator} `);
+
+        return `PF · ${conditionsLabel} · ${action} · t=${timestep}`;
     }
 
     private async resolveRemoteExternalValues(

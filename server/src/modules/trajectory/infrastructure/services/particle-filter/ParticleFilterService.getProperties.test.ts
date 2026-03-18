@@ -1,7 +1,9 @@
+import 'reflect-metadata';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import ParticleFilterService from './ParticleFilterService';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { ParticleFilterCombinator } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
 
 import type { IAtomPropertiesService } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
 import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
@@ -83,10 +85,14 @@ test('preview rejects a plugin property that is unavailable for the requested ti
 
     await assert.rejects(
         () => service.preview('traj-1', 42, {
-            property: 'spin',
-            operator: '>',
-            value: 0
-        }, 'analysis-1', 'exposure-a'),
+            combinator: ParticleFilterCombinator.And,
+            conditions: [{
+                property: 'spin',
+                operator: '>',
+                value: 0,
+                exposureId: 'exposure-a'
+            }]
+        }, 'analysis-1'),
         (error: unknown) => {
             assert.equal((error as { code?: string }).code, ErrorCodes.PARTICLE_FILTER_PLUGIN_PROPERTY_UNAVAILABLE);
             assert.match(String((error as Error).message), /not available/);
