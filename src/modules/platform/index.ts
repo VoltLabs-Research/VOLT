@@ -17,7 +17,7 @@ export const createPlatformModule = (config: DaemonConfig): PlatformModule => {
     const eventBroker = new RuntimeEventBroker();
     const dockerRuntimeService = new DockerRuntimeService(eventBroker);
     const hostShellService = new HostShellService();
-    const minioService = new MinioService(config);
+    const minioService = MinioService.fromDaemonConfig(config);
     const redisConnectionService = new RedisConnectionService(config);
     const queueService = new QueueService(redisConnectionService);
 

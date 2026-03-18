@@ -3,6 +3,14 @@ import { Client } from 'minio';
 import type { DaemonConfig } from '@/core/config';
 import type { Readable } from 'node:stream';
 
+export interface MinioConnectionConfig {
+    endpoint: string;
+    accessKey: string;
+    secretKey: string;
+    useSSL: boolean;
+    allowedBuckets: string[];
+};
+
 export interface PutObjectInput {
     bucket: string;
     objectKey: string;
@@ -22,15 +30,43 @@ export class MinioService {
     private readonly client: Client;
 
     constructor(
-        private readonly config: DaemonConfig
+        private readonly config: MinioConnectionConfig
     ) {
-        const minioUrl = new URL(config.minio.endpoint);
+        const minioUrl = new URL(config.endpoint);
         this.client = new Client({
             endPoint: minioUrl.hostname,
             port: Number(minioUrl.port || (minioUrl.protocol === 'https:' ? 443 : 80)),
-            useSSL: minioUrl.protocol === 'https:' || config.minio.useSSL,
+            useSSL: minioUrl.protocol === 'https:' || config.useSSL,
+            accessKey: config.accessKey,
+            secretKey: config.secretKey
+        });
+    }
+
+    static fromDaemonConfig(config: DaemonConfig): MinioService {
+        return new MinioService({
+            endpoint: config.minio.endpoint,
             accessKey: config.minio.accessKey,
-            secretKey: config.minio.secretKey
+            secretKey: config.minio.secretKey,
+            useSSL: config.minio.useSSL,
+            allowedBuckets: config.allowedBuckets
+        });
+    }
+
+    static fromExternalCredentials(credentials: {
+        host: string;
+        port: number;
+        username: string;
+        password: string;
+        useSSL?: boolean;
+    }): MinioService {
+        const useSSL = credentials.useSSL ?? false;
+        const protocol = useSSL ? 'https' : 'http';
+        return new MinioService({
+            endpoint: `${protocol}://${credentials.host}:${credentials.port}`,
+            accessKey: credentials.username,
+            secretKey: credentials.password,
+            useSSL,
+            allowedBuckets: []
         });
     }
 

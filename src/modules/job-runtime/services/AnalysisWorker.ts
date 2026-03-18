@@ -387,6 +387,9 @@ export class AnalysisWorker {
         }
 
         const { executionData } = job;
+        const effectiveMinio = executionData.storageCluster
+            ? MinioService.fromExternalCredentials(executionData.storageCluster.minio)
+            : this.minioService;
         const metadata = job.metadata || {};
         const isBatchMode = executionData.batchMode === true;
         const forEachItem = isRecord(metadata.forEachItem) ? metadata.forEachItem : {};
@@ -436,13 +439,13 @@ export class AnalysisWorker {
                 // Batch mode: download ALL dump files
                 batchDumpLocalPaths = [];
                 for (const dumpUrl of executionData.allDumpUrls) {
-                    const localPath = await this.downloadDump(dumpUrl);
+                    const localPath = await this.downloadDump(dumpUrl, effectiveMinio);
                     batchDumpLocalPaths.push(localPath);
                 }
                 dumpLocalPath = batchDumpLocalPaths[0];
                 logMemoryUsage('after-batch-dump-download', job.jobId);
             } else {
-                dumpLocalPath = await this.downloadDump(inputFile);
+                dumpLocalPath = await this.downloadDump(inputFile, effectiveMinio);
                 logMemoryUsage('after-dump-download', job.jobId);
             }
 
@@ -536,7 +539,8 @@ export class AnalysisWorker {
                     exposure,
                     outputDir,
                     timestep!,
-                    job.teamId
+                    job.teamId,
+                    effectiveMinio
                 );
                 logger.info(
                     {
@@ -1014,7 +1018,7 @@ export class AnalysisWorker {
         }
     }
 
-    private async downloadDump(objectKey: string): Promise<string> {
+    private async downloadDump(objectKey: string, minio: MinioService): Promise<string> {
         if (!objectKey) {
             throw new Error('No dump file path specified in job metadata');
         }
@@ -1034,7 +1038,7 @@ export class AnalysisWorker {
         const localPath = path.join(DAEMON_PATHS.analysisDumps, `${localFileName}-${Date.now()}`);
         await fs.mkdir(path.dirname(localPath), { recursive: true });
 
-        const stream = await this.minioService.getObjectStream(DUMPS_BUCKET, normalizedObjectKey);
+        const stream = await minio.getObjectStream(DUMPS_BUCKET, normalizedObjectKey);
         await this.writeStreamToFile(stream, localPath, normalizedObjectKey.endsWith('.gz'));
 
         logger.info(`Dump downloaded: ${normalizedObjectKey} -> ${localPath}`);

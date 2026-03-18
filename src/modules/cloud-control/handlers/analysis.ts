@@ -3,6 +3,7 @@ import type {
     DaemonAnalysisDocument,
     NestedPluginDefinition,
     PluginReferenceExecutionRequest,
+    StorageClusterConfig,
     WorkflowDefinition,
     WorkflowEdgeDefinition,
     WorkflowNodeDefinition
@@ -224,6 +225,21 @@ const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
 
     if (typeof timestep !== 'undefined') {
         request.timestep = timestep;
+    }
+
+    if (typeof record.storageCluster !== 'undefined') {
+        const scRecord = readRecord(record.storageCluster, 'storageCluster');
+        const minioRecord = readRecord(scRecord.minio, 'storageCluster.minio');
+        const storageCluster: StorageClusterConfig = {
+            clusterId: readString(scRecord.clusterId, 'storageCluster.clusterId'),
+            minio: {
+                host: readString(minioRecord.host, 'storageCluster.minio.host'),
+                port: readNumber(minioRecord.port, 'storageCluster.minio.port'),
+                username: readString(minioRecord.username, 'storageCluster.minio.username'),
+                password: readString(minioRecord.password, 'storageCluster.minio.password')
+            }
+        };
+        request.storageCluster = storageCluster;
     }
 
     return request;

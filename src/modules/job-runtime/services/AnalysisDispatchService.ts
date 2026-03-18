@@ -75,7 +75,8 @@ export class AnalysisDispatchService {
                         batchMode: true,
                         allDumpUrls,
                         contextNodeId: plan.contextNodeId
-                    } : {})
+                    } : {}),
+                    ...(input.storageCluster ? { storageCluster: input.storageCluster } : {})
                 }
             });
 

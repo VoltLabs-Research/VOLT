@@ -147,7 +147,8 @@ export interface ResultProcessorService {
         exposure: AnalysisExposureDefinition,
         outputDir: string,
         timestep: number,
-        teamId: string
+        teamId: string,
+        minio: MinioService
     ): Promise<void>;
 }
 
@@ -161,7 +162,8 @@ export const createResultProcessorService = (
         exposure: AnalysisExposureDefinition,
         outputDir: string,
         timestep: number,
-        teamId: string
+        teamId: string,
+        minio: MinioService
     ): Promise<void> {
         const outputFilePath = `${outputDir}_${exposure.results}`;
         const startedAt = Date.now();
@@ -194,7 +196,7 @@ export const createResultProcessorService = (
             'Uploading exposure output'
         );
 
-        await minioService.putObjectStream({
+        await minio.putObjectStream({
             bucket: PLUGINS_BUCKET,
             objectKey: storageKey,
             stream: createReadStream(outputFilePath),
@@ -228,7 +230,7 @@ export const createResultProcessorService = (
                 decodedPayload: exportPayload,
                 timestep,
                 teamClusterId: executionData.teamClusterId || ''
-            });
+            }, minio);
             logMemoryUsage('after-export-processing');
         }
 

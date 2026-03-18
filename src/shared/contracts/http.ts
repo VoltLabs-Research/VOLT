@@ -195,6 +195,16 @@ export interface PluginReferenceExecutionRequest {
     config: Record<string, unknown>;
 };
 
+export interface StorageClusterConfig {
+    clusterId: string;
+    minio: {
+        host: string;
+        port: number;
+        username: string;
+        password: string;
+    };
+};
+
 export interface AnalysisJobExecutionData {
     binaryObjectPath: string;
     entrypointType?: EntrypointType;
@@ -214,6 +224,7 @@ export interface AnalysisJobExecutionData {
     allDumpUrls?: string[];
     batchMode?: boolean;
     contextNodeId?: string;
+    storageCluster?: StorageClusterConfig;
 };
 
 export interface AnalysisStartRequest {
@@ -233,6 +244,7 @@ export interface AnalysisStartRequest {
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];
     timestep?: number;
+    storageCluster?: StorageClusterConfig;
 };
 
 export interface RetryJobsRequest {
