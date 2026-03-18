@@ -8,9 +8,15 @@ interface EditableTrajectoryNameProps {
     trajectoryId: string;
     name: string;
     className?: string;
+    allowSingleClickPropagation?: boolean;
 };
 
-export default function EditableTrajectoryName({ trajectoryId, name, className = '' }: EditableTrajectoryNameProps) {
+export default function EditableTrajectoryName({
+    trajectoryId,
+    name,
+    className = '',
+    allowSingleClickPropagation = false
+}: EditableTrajectoryNameProps) {
     const user = useCurrentUser();
     const updateTrajectory = useUpdateTrajectory();
 
@@ -34,6 +40,7 @@ export default function EditableTrajectoryName({ trajectoryId, name, className =
             onSave={handleSave}
             className={`editable-name ${className}`}
             title={name}
+            allowSingleClickPropagation={allowSingleClickPropagation}
         >
             {name}
         </EditableTag>
