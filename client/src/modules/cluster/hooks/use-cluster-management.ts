@@ -15,7 +15,7 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useMemo, useEffect } from 'react';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type { RequestClusterUpdateOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/request-cluster-update';
-import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
+import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
 import type {
     TeamClusterRemoteAccessSession,
     TeamClusterRemoteAccessTarget,
@@ -98,7 +98,7 @@ export interface ClusterManagementResult {
     setSelectedClusterId: (clusterId: string) => void;
     waitingCluster: TeamCluster | null;
     isLoading: boolean;
-    createCluster: (name: string, role?: TeamClusterRole) => Promise<{ teamCluster: TeamCluster; enrollmentToken: string }>;
+    createCluster: (name: string) => Promise<{ teamCluster: TeamCluster; enrollmentToken: string }>;
     revealCredentials: (teamClusterId: string, password: string) => Promise<TeamClusterCredentialServices>;
     deleteCluster: (teamClusterId: string, password: string) => Promise<DeleteTeamClusterOutputDTO>;
     requestUpdate: (
@@ -180,15 +180,14 @@ const useClusterManagement = (): ClusterManagementResult => {
 
     useTeamClusterSocket(allClusterIds);
 
-    const createCluster = async (name: string, role?: TeamClusterRole) => {
+    const createCluster = async (name: string) => {
         if (!selectedTeamId) {
             throw new Error('Missing selected team');
         }
 
         const result = await showPromise(createMutation.mutateAsync({
             teamId: selectedTeamId,
-            name,
-            role
+            name
         }), CREATE_CLUSTER_TOAST_OPTIONS);
 
         setSelectedClusterId(result.teamCluster._id);

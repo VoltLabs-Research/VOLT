@@ -1,8 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamCluster, {
     TeamClusterProps,
-    TeamClusterStatus,
-    TeamClusterRole
+    TeamClusterStatus
 } from '@modules/team-cluster/domain/entities/TeamCluster';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
@@ -58,12 +57,6 @@ const TeamClusterSchema = new Schema({
         minlength: [2, TEAM_CLUSTER_VALIDATION_ERROR],
         maxlength: [64, TEAM_CLUSTER_VALIDATION_ERROR],
         trim: true
-    },
-    role: {
-        type: String,
-        enum: Object.values(TeamClusterRole),
-        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
-        default: TeamClusterRole.Cluster
     },
     team: {
         ...teamRefField([true, TEAM_CLUSTER_VALIDATION_ERROR]),
@@ -123,7 +116,6 @@ const TeamClusterSchema = new Schema({
 });
 
 TeamClusterSchema.index({ team: 1, name: 1 }, { unique: true });
-TeamClusterSchema.index({ team: 1, role: 1 });
 
 const TeamClusterModel: Model<TeamClusterDocument> = mongoose.model<TeamClusterDocument>('TeamCluster', TeamClusterSchema);
 
